@@ -19,7 +19,7 @@ func predicateColumnNames(columns base.SourceColumnSet) []string {
 	return names
 }
 
-func TestOmniQuerySpanPredicateColumns(t *testing.T) {
+func TestQuerySpanPredicateColumns(t *testing.T) {
 	testCases := []struct {
 		statement string
 		want      []string
@@ -62,8 +62,8 @@ func TestOmniQuerySpanPredicateColumns(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.statement, func(t *testing.T) {
-			q := newOmniTestExtractor(t, "db")
-			span, err := q.getOmniQuerySpan(context.Background(), tc.statement)
+			q := newTestExtractor(t, "db")
+			span, err := q.getQuerySpan(context.Background(), tc.statement)
 			require.NoError(t, err)
 			require.Nil(t, span.NotFoundError)
 			require.Equal(t, tc.want, predicateColumnNames(span.PredicateColumns))
@@ -71,31 +71,31 @@ func TestOmniQuerySpanPredicateColumns(t *testing.T) {
 	}
 }
 
-func TestOmniQuerySpanJoinConditionKeepsLineage(t *testing.T) {
-	q := newOmniTestExtractor(t, "db")
-	span, err := q.getOmniQuerySpan(context.Background(), "SELECT t.a, t1.b FROM t JOIN t1 ON t.c = t1.c")
+func TestQuerySpanJoinConditionKeepsLineage(t *testing.T) {
+	q := newTestExtractor(t, "db")
+	span, err := q.getQuerySpan(context.Background(), "SELECT t.a, t1.b FROM t JOIN t1 ON t.c = t1.c")
 	require.NoError(t, err)
 	require.Len(t, span.Results, 2)
 	require.Equal(t, []string{"t.a"}, predicateColumnNames(span.Results[0].SourceColumns))
 	require.Equal(t, []string{"t1.b"}, predicateColumnNames(span.Results[1].SourceColumns))
 }
 
-func TestOmniQuerySpanRefusesUnsupportedTableSources(t *testing.T) {
+func TestQuerySpanRefusesUnsupportedTableSources(t *testing.T) {
 	for _, statement := range []string{
 		"SELECT * FROM t JOIN db2.dbo.t2 AS u ON t.a = u.x PIVOT (MAX(y) FOR b IN ([1])) AS p",
 		"SELECT j.v FROM t CROSS APPLY OPENJSON(t.c) WITH (v NVARCHAR(100) '$.v') AS j",
 	} {
 		t.Run(statement, func(t *testing.T) {
-			q := newOmniTestExtractor(t, "db")
-			_, err := q.getOmniQuerySpan(context.Background(), statement)
+			q := newTestExtractor(t, "db")
+			_, err := q.getQuerySpan(context.Background(), statement)
 			require.Error(t, err)
 		})
 	}
 }
 
-func TestOmniQuerySpanJoinConditionNotFoundPropagates(t *testing.T) {
-	q := newOmniTestExtractor(t, "db")
-	span, err := q.getOmniQuerySpan(context.Background(), "SELECT t.a FROM t JOIN t1 ON t1.a IN (SELECT x FROM no_such_table)")
+func TestQuerySpanJoinConditionNotFoundPropagates(t *testing.T) {
+	q := newTestExtractor(t, "db")
+	span, err := q.getQuerySpan(context.Background(), "SELECT t.a FROM t JOIN t1 ON t1.a IN (SELECT x FROM no_such_table)")
 	require.NoError(t, err)
 	require.NotNil(t, span.NotFoundError)
 }

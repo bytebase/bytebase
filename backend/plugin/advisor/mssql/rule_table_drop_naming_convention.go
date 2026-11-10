@@ -37,14 +37,14 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	rule := &tableDropNamingConventionRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		format:       format,
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		format:   format,
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type tableDropNamingConventionRule struct {
-	OmniBaseRule
+	BaseRule
 	format *regexp.Regexp
 }
 

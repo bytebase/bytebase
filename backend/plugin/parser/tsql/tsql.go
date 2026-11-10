@@ -32,7 +32,7 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 
 		omniStmts, omniErr := ParseTSQL(stmt.Text)
 		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+			return nil, convertError(omniErr, stmt)
 		}
 
 		if len(omniStmts) == 0 {
@@ -57,8 +57,8 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *mssqlparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

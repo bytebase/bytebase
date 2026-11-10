@@ -41,14 +41,14 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &columnTypeDisallowListRule{
-		OmniBaseRule:  OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		disallowTypes: disallowTypes,
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnTypeDisallowListRule struct {
-	OmniBaseRule
+	BaseRule
 	disallowTypes []string
 }
 

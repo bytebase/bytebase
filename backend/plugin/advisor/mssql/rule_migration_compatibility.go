@@ -31,18 +31,18 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &migrationCompatibilityOmniRule{
-		OmniBaseRule:    OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &migrationCompatibilityRule{
+		BaseRule:        BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		currentDatabase: checkCtx.CurrentDatabase,
 		newTables:       make(map[string]any),
 		newSchemas:      make(map[string]any),
 		newDatabases:    make(map[string]any),
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type migrationCompatibilityOmniRule struct {
-	OmniBaseRule
+type migrationCompatibilityRule struct {
+	BaseRule
 
 	currentDatabase string
 	newTables       map[string]any
@@ -50,11 +50,11 @@ type migrationCompatibilityOmniRule struct {
 	newDatabases    map[string]any
 }
 
-func (*migrationCompatibilityOmniRule) Name() string {
-	return "MigrationCompatibilityOmniRule"
+func (*migrationCompatibilityRule) Name() string {
+	return "MigrationCompatibilityRule"
 }
 
-func (r *migrationCompatibilityOmniRule) OnStatement(node ast.Node) {
+func (r *migrationCompatibilityRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.handleCreateTable(n)
@@ -72,7 +72,7 @@ func (r *migrationCompatibilityOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *migrationCompatibilityOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+func (r *migrationCompatibilityRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -80,7 +80,7 @@ func (r *migrationCompatibilityOmniRule) handleCreateTable(n *ast.CreateTableStm
 	r.newTables[norm] = nil
 }
 
-func (r *migrationCompatibilityOmniRule) handleCreateSchema(n *ast.CreateSchemaStmt) {
+func (r *migrationCompatibilityRule) handleCreateSchema(n *ast.CreateSchemaStmt) {
 	schemaName := strings.ToLower(n.Name)
 	if schemaName == "" {
 		schemaName = strings.ToLower(n.Authorization)
@@ -89,11 +89,11 @@ func (r *migrationCompatibilityOmniRule) handleCreateSchema(n *ast.CreateSchemaS
 	r.newSchemas[norm] = nil
 }
 
-func (r *migrationCompatibilityOmniRule) handleCreateDatabase(n *ast.CreateDatabaseStmt) {
+func (r *migrationCompatibilityRule) handleCreateDatabase(n *ast.CreateDatabaseStmt) {
 	r.newDatabases[strings.ToLower(n.Name)] = nil
 }
 
-func (r *migrationCompatibilityOmniRule) handleDrop(n *ast.DropStmt) {
+func (r *migrationCompatibilityRule) handleDrop(n *ast.DropStmt) {
 	switch n.ObjectType {
 	case ast.DropTable:
 		if n.Names == nil {
@@ -163,7 +163,7 @@ func (r *migrationCompatibilityOmniRule) handleDrop(n *ast.DropStmt) {
 	}
 }
 
-func (r *migrationCompatibilityOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+func (r *migrationCompatibilityRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -305,7 +305,7 @@ func (r *migrationCompatibilityOmniRule) handleAlterTable(n *ast.AlterTableStmt)
 	}
 }
 
-func (r *migrationCompatibilityOmniRule) handleExec(n *ast.ExecStmt) {
+func (r *migrationCompatibilityRule) handleExec(n *ast.ExecStmt) {
 	if n.Name == nil {
 		return
 	}

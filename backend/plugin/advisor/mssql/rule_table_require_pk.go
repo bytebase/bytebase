@@ -30,21 +30,21 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	rule := &tableRequirePkOmniRule{
-		OmniBaseRule:  OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &tableRequirePkRule{
+		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		tableHasPK:    make(map[string]bool),
 		tableOriginal: make(map[string]string),
 		tableLine:     make(map[string]int32),
 		tableBaseLine: make(map[string]int),
 	}
 
-	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	advice = append(advice, rule.generateFinalAdvice()...)
 	return advice, nil
 }
 
-type tableRequirePkOmniRule struct {
-	OmniBaseRule
+type tableRequirePkRule struct {
+	BaseRule
 
 	// tableHasPK tracks whether each table has a primary key.
 	tableHasPK map[string]bool
@@ -56,11 +56,11 @@ type tableRequirePkOmniRule struct {
 	tableBaseLine map[string]int
 }
 
-func (*tableRequirePkOmniRule) Name() string {
-	return "TableRequirePkOmniRule"
+func (*tableRequirePkRule) Name() string {
+	return "TableRequirePkRule"
 }
 
-func (r *tableRequirePkOmniRule) OnStatement(node ast.Node) {
+func (r *tableRequirePkRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.handleCreateTable(n)
@@ -70,7 +70,7 @@ func (r *tableRequirePkOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableRequirePkOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+func (r *tableRequirePkRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -119,7 +119,7 @@ func (r *tableRequirePkOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *tableRequirePkOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+func (r *tableRequirePkRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Name == nil || n.Actions == nil {
 		return
 	}
@@ -151,7 +151,7 @@ func (r *tableRequirePkOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *tableRequirePkOmniRule) generateFinalAdvice() []*storepb.Advice {
+func (r *tableRequirePkRule) generateFinalAdvice() []*storepb.Advice {
 	var result []*storepb.Advice
 	for norm, hasPK := range r.tableHasPK {
 		if !hasPK {

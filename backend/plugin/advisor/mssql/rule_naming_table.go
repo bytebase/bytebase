@@ -48,15 +48,15 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	}
 
 	rule := &namingTableRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		format:       format,
-		maxLength:    maxLength,
+		BaseRule:  BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		format:    format,
+		maxLength: maxLength,
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingTableRule struct {
-	OmniBaseRule
+	BaseRule
 	format    *regexp.Regexp
 	maxLength int
 }

@@ -31,21 +31,21 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	rule := &columnNoNullOmniRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &columnNoNullRule{
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnNoNullOmniRule struct {
-	OmniBaseRule
+type columnNoNullRule struct {
+	BaseRule
 }
 
-func (*columnNoNullOmniRule) Name() string {
-	return "ColumnNoNullOmniRule"
+func (*columnNoNullRule) Name() string {
+	return "ColumnNoNullRule"
 }
 
-func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
+func (r *columnNoNullRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.handleCreateTable(n)
@@ -55,7 +55,7 @@ func (r *columnNoNullOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnNoNullOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+func (r *columnNoNullRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -90,7 +90,7 @@ func (r *columnNoNullOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *columnNoNullOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+func (r *columnNoNullRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Actions == nil {
 		return
 	}
@@ -108,7 +108,7 @@ func (r *columnNoNullOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *columnNoNullOmniRule) checkColumnDef(col *ast.ColumnDef, pkColumns map[string]bool) {
+func (r *columnNoNullRule) checkColumnDef(col *ast.ColumnDef, pkColumns map[string]bool) {
 	// If column is in table-level PK, it's implicitly NOT NULL.
 	if pkColumns != nil && pkColumns[strings.ToLower(col.Name)] {
 		return

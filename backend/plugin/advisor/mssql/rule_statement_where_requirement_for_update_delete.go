@@ -21,12 +21,12 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 	if err != nil {
 		return nil, err
 	}
-	rule := &whereRequirementForUpdateDeleteRule{OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	rule := &whereRequirementForUpdateDeleteRule{BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type whereRequirementForUpdateDeleteRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*whereRequirementForUpdateDeleteRule) Name() string {

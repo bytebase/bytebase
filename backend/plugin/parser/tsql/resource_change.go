@@ -29,7 +29,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 	}
 
 	addTable := func(ref *ast.TableRef, affectData bool) {
-		d, s, t := omniTableRefTriple(ref, currentDatabase, currentSchema)
+		d, s, t := tableRefTriple(ref, currentDatabase, currentSchema)
 		if t == "" {
 			return
 		}
@@ -227,7 +227,7 @@ func tableByExposedName(node ast.Node, name string) *ast.TableRef {
 	return nil
 }
 
-func omniTableRefTriple(ref *ast.TableRef, defaultDatabase, defaultSchema string) (string, string, string) {
+func tableRefTriple(ref *ast.TableRef, defaultDatabase, defaultSchema string) (string, string, string) {
 	if ref == nil {
 		return defaultDatabase, defaultSchema, ""
 	}
