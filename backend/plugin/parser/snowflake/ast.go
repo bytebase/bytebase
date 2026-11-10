@@ -64,7 +64,7 @@ func parseStatementNode(text string) (omniast.Node, error) {
 // such as the sheet manager type-assert on *base.SyntaxError to surface
 // syntax-error advices). The error position is computed inside the statement
 // text (rune-based columns) and offset by the statement's start position in
-// the original multi-statement input — mirroring redshift's convertOmniError.
+// the original multi-statement input — mirroring redshift's convertError.
 func convertParseError(err error, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
