@@ -196,13 +196,6 @@ export const getMaskingExemptionSelectorConfig = (): {
   ],
   factorOperatorOverrideMap: new Map<Factor, Operator[]>([
     [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-    [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-    [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-    [CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME, ["_==_", "@in"]],
-    [
-      CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
-      ["_==_", "_!=_", "_<_", "_<=_", "_>=_", "_>_"],
-    ],
   ]),
 });
 

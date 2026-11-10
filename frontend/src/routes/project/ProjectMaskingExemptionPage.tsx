@@ -1160,7 +1160,14 @@ function ExemptionGrantSection({
             {grant.description || t("project.masking-exemption.no-reason")}
           </div>
 
-          {grant.databaseResources && grant.databaseResources.length > 0 ? (
+          {grant.databaseResources === undefined ? (
+            <div className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">{t("cel.condition.self")}</span>
+              <pre className="whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+                {grant.rawExpression}
+              </pre>
+            </div>
+          ) : grant.databaseResources.length > 0 ? (
             <ExemptionResourceTable
               databaseResources={grant.databaseResources}
               classificationLevel={grant.classificationLevel}
@@ -1172,27 +1179,28 @@ function ExemptionGrantSection({
             />
           )}
 
-          {grant.conditionExpression && (
-            <div className="mt-3 text-sm">
-              <Button
-                aria-expanded={showRawCondition}
-                appearance="link"
-                className="h-auto px-0"
-                onClick={() => setShowRawCondition((show) => !show)}
-                size="sm"
-                type="button"
-              >
-                {showRawCondition
-                  ? t("project.masking-exemption.hide-raw-cel-condition")
-                  : t("project.masking-exemption.show-raw-cel-condition")}
-              </Button>
-              {showRawCondition && (
-                <pre className="mt-1 whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
-                  {grant.conditionExpression}
-                </pre>
-              )}
-            </div>
-          )}
+          {grant.databaseResources !== undefined &&
+            grant.conditionExpression && (
+              <div className="mt-3 text-sm">
+                <Button
+                  aria-expanded={showRawCondition}
+                  appearance="link"
+                  className="h-auto px-0"
+                  onClick={() => setShowRawCondition((show) => !show)}
+                  size="sm"
+                  type="button"
+                >
+                  {showRawCondition
+                    ? t("project.masking-exemption.hide-raw-cel-condition")
+                    : t("project.masking-exemption.show-raw-cel-condition")}
+                </Button>
+                {showRawCondition && (
+                  <pre className="mt-1 whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+                    {grant.conditionExpression}
+                  </pre>
+                )}
+              </div>
+            )}
         </div>
       )}
     </div>

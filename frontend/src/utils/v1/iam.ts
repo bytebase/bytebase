@@ -347,34 +347,32 @@ export const checkQuerierPermission = (
       if (!expr) {
         return true;
       }
-      const conditionExpr = convertFromExpr(expr);
-      if (!conditionExpr) {
+      const expiration = getGuaranteedExpiration(expr);
+      if (expiration && expiration.getTime() < Date.now()) {
         return false;
       }
-      if (
-        conditionExpr.expiredTime &&
-        new Date(conditionExpr.expiredTime).getTime() < Date.now()
-      ) {
-        return false;
+      const conditionExpr = convertFromExpr(expr);
+      if (!conditionExpr) {
+        // This controls SQL Editor entry, not authorization. The server evaluates
+        // the full CEL condition before executing a query.
+        return true;
       }
       if (
         conditionExpr.databaseResources &&
         conditionExpr.databaseResources.length > 0
       ) {
         for (const databaseResource of conditionExpr.databaseResources) {
-          if (databaseResource.databaseFullName === database.name) {
-            if (isUndefined(schema) && isUndefined(table)) {
-              return true;
-            }
-            if (
+          if (
+            (!databaseResource.databaseFullName ||
+              databaseResource.databaseFullName === database.name) &&
+            (isUndefined(schema) ||
               isUndefined(databaseResource.schema) ||
-              (isUndefined(databaseResource.schema) &&
-                isUndefined(databaseResource.table)) ||
-              (databaseResource.schema === schema &&
-                databaseResource.table === table)
-            ) {
-              return true;
-            }
+              databaseResource.schema === schema) &&
+            (isUndefined(table) ||
+              isUndefined(databaseResource.table) ||
+              databaseResource.table === table)
+          ) {
+            return true;
           }
         }
         return false;

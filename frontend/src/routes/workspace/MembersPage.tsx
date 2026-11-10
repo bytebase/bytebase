@@ -106,7 +106,7 @@ import {
   REQUEST_ROLE_REQUIRED_PERMISSIONS,
 } from "@/modules/access-control/requestRoleButton";
 import type { DatabaseMode } from "@/modules/access-control/types";
-import type { ConditionGroupExpr, Factor, Operator } from "@/modules/cel";
+import type { ConditionGroupExpr, Factor } from "@/modules/cel";
 import {
   buildCELExpr,
   emptySimpleExpr,
@@ -148,7 +148,6 @@ import {
 } from "@/utils/cel-attributes";
 import {
   buildConditionExpr,
-  convertFromExpr,
   readableCondition,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
@@ -954,7 +953,6 @@ function DatabaseResourceSection({
   onExprGroupChange,
   factorList,
   factorOptionConfigMap,
-  factorOperatorOverrideMap,
 }: {
   projectName: string;
   mode: DatabaseMode;
@@ -965,7 +963,6 @@ function DatabaseResourceSection({
   onExprGroupChange: (expr: ConditionGroupExpr) => void;
   factorList: Factor[];
   factorOptionConfigMap: Map<Factor, OptionConfig>;
-  factorOperatorOverrideMap: Map<Factor, Operator[]>;
 }) {
   const { t } = useTranslation();
 
@@ -1001,7 +998,6 @@ function DatabaseResourceSection({
           expr={exprGroup}
           factorList={factorList}
           optionConfigMap={factorOptionConfigMap}
-          factorOperatorOverrideMap={factorOperatorOverrideMap}
           onUpdate={onExprGroupChange}
         />
       )}
@@ -1067,15 +1063,6 @@ function ProjectRoleBindingForm({
       CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
       CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
     ],
-    []
-  );
-  const factorOperatorOverrideMap = useMemo(
-    () =>
-      new Map<Factor, Operator[]>([
-        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-      ]),
     []
   );
   const factorOptionConfigMap = useMemo(
@@ -1228,7 +1215,6 @@ function ProjectRoleBindingForm({
           }
           factorList={factorList}
           factorOptionConfigMap={factorOptionConfigMap}
-          factorOperatorOverrideMap={factorOperatorOverrideMap}
         />
       )}
 
@@ -1454,13 +1440,13 @@ function EditMemberRoleDrawer({
     (
       binding: Binding
     ): {
-      databaseResources: DatabaseResource[];
+      databaseResources?: DatabaseResource[];
       expiration?: Date;
     } => {
       if (!binding.parsedExpr) return { databaseResources: [] };
-      const conditionExpr = convertFromExpr(binding.parsedExpr) ?? {};
+      const conditionExpr = readableCondition(binding.parsedExpr);
       return {
-        databaseResources: conditionExpr.databaseResources ?? [],
+        databaseResources: conditionExpr.databaseResources,
         expiration: conditionExpr.expiredTime
           ? new Date(conditionExpr.expiredTime)
           : undefined,
@@ -1886,9 +1872,20 @@ function EditMemberRoleDrawer({
 
                       {/* Database resources table */}
                       <div className="p-4">
-                        <MemberBindingResourceTable
-                          resources={databaseResources}
-                        />
+                        {databaseResources ? (
+                          <MemberBindingResourceTable
+                            resources={databaseResources}
+                          />
+                        ) : (
+                          <div className="flex flex-col gap-y-2">
+                            <span className="text-sm text-control-light">
+                              {t("cel.condition.self")}
+                            </span>
+                            <pre className="whitespace-pre-wrap break-all text-sm">
+                              {binding.condition?.expression}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

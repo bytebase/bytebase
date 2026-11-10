@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/store"
 
@@ -383,5 +384,45 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				a.Equal(tc.wantClassLevel, result.ClassificationLevel, tc.description)
 			}
 		}
+	}
+}
+
+func TestEvaluateExemptionOfColumnStringOperators(t *testing.T) {
+	t.Parallel()
+
+	operators := []struct {
+		name       string
+		expression string
+		wantMatch  bool
+	}{
+		{"equals", `resource.table_name == "orders_archive"`, true},
+		{"not equals", `resource.table_name != "orders_archive"`, false},
+		{"in", `resource.table_name in ["orders_archive", "audit_log"]`, true},
+		{"not in", `!(resource.table_name in ["orders_archive", "audit_log"])`, false},
+		{"contains", `resource.table_name.contains("archive")`, true},
+		{"not contains", `!resource.table_name.contains("archive")`, false},
+		{"starts with", `resource.table_name.startsWith("orders_")`, true},
+		{"ends with", `resource.table_name.endsWith("_archive")`, true},
+		{"matches", `resource.table_name.matches("^orders_[a-z]+$")`, true},
+	}
+	for _, operator := range operators {
+		t.Run(operator.name, func(t *testing.T) {
+			condition := &expr.Expr{Expression: operator.expression}
+			_, err := common.ValidateMaskingExemptionCELExpr(condition)
+			require.NoError(t, err)
+			exemptions := []*storepb.MaskingExemptionPolicy_Exemption{{Condition: condition}}
+			database := &store.DatabaseMessage{InstanceID: "example-instance", DatabaseName: "example-database"}
+			for _, input := range []struct {
+				table string
+				want  bool
+			}{
+				{"orders_archive", operator.wantMatch},
+				{"customers", !operator.wantMatch},
+			} {
+				allowed, err := evaluateExemptionOfColumn(database, "public", input.table, "email", 0, exemptions)
+				require.NoError(t, err, input.table)
+				require.Equal(t, input.want, allowed, input.table)
+			}
+		})
 	}
 }

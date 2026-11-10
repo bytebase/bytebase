@@ -22,6 +22,17 @@ const call = (fn: string, ...args: Expr[]) =>
   create(ExprSchema, {
     exprKind: { case: "callExpr", value: { function: fn, args } },
   });
+const stringCall = (fn: string, attribute: string, value: string) =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "callExpr",
+      value: {
+        function: fn,
+        target: resource(attribute),
+        args: [str(value)],
+      },
+    },
+  });
 const constant = (
   constantKind:
     | { case: "stringValue"; value: string }
@@ -160,6 +171,26 @@ describe("convertFromExpr with a column condition", () => {
     ]);
   });
 
+  test.each(["schema_name", "table_name"])(
+    "keeps a %s-only in scope rather than all databases",
+    (attribute) => {
+      expect(
+        databaseResources(
+          call("@in", resource(attribute), list(str("archive"), str("events")))
+        )
+      ).toEqual([
+        {
+          databaseFullName: "",
+          [attribute === "schema_name" ? "schema" : "table"]: "archive",
+        },
+        {
+          databaseFullName: "",
+          [attribute === "schema_name" ? "schema" : "table"]: "events",
+        },
+      ]);
+    }
+  );
+
   test("collects columns from equality conditions joined by or", () => {
     expect(
       databaseResources(
@@ -236,5 +267,73 @@ describe("convertFromExpr with a column condition", () => {
         )
       )
     ).toBeUndefined();
+  });
+});
+
+describe("convertFromExpr preserves unsupported scopes as raw conditions", () => {
+  test.each(["contains", "startsWith", "endsWith", "matches"])(
+    "does not omit a %s predicate from a database scope",
+    (operator) => {
+      const predicate = stringCall(operator, "table_name", "archive");
+      expect(convertFromExpr(predicate)).toBeUndefined();
+      expect(
+        convertFromExpr(and(eq("database", A), predicate))
+      ).toBeUndefined();
+    }
+  );
+
+  test("does not omit a negated string predicate", () => {
+    expect(
+      convertFromExpr(
+        call("!_", stringCall("contains", "column_name", "email"))
+      )
+    ).toBeUndefined();
+  });
+
+  test("does not omit an inequality or negative list membership", () => {
+    expect(
+      convertFromExpr(call("_!=_", resource("table_name"), str("archive")))
+    ).toBeUndefined();
+    expect(
+      convertFromExpr(
+        call("!_", call("@in", resource("table_name"), list(str("archive"))))
+      )
+    ).toBeUndefined();
+  });
+
+  test("does not turn a computed exact resource into a literal scope", () => {
+    expect(
+      convertFromExpr(
+        call("_==_", resource("table_name"), call("_+_", str("a"), str("b")))
+      )
+    ).toBeUndefined();
+  });
+
+  test("retains classification comparisons and expiration beside an exact scope", () => {
+    expect(
+      convertFromExpr(
+        and(
+          eq("database", A),
+          call("_<=_", resource("classification_level"), int(3)),
+          timeBefore("2026-10-01T00:00:00Z")
+        )
+      )
+    ).toEqual({
+      databaseResources: [{ databaseFullName: A }],
+      expiredTime: "2026-10-01T00:00:00.000Z",
+    });
+  });
+
+  test("keeps a guaranteed expiration when the resource scope stays raw", () => {
+    const result = readableCondition(
+      and(
+        stringCall("contains", "table_name", "archive"),
+        timeBefore("2026-10-01T00:00:00Z"),
+        envIn("prod")
+      )
+    );
+    expect(result.databaseResources).toBeUndefined();
+    expect(result.expiredTime).toBe("2026-10-01T00:00:00.000Z");
+    expect(result.environments).toEqual(["environments/prod"]);
   });
 });

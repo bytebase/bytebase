@@ -23,6 +23,7 @@ const call = (fn: string, args: Expr[], target?: Expr) =>
   create(ExprSchema, {
     exprKind: { case: "callExpr", value: { function: fn, args, target } },
   });
+const table = ident("resource.table_name");
 
 describe("resolveCELExpr", () => {
   describe.each(["_&&_", "_||_"] as const)("%s groups", (operator) => {
@@ -107,6 +108,122 @@ describe("resolveCELExpr", () => {
       if (!built) throw new Error("expected built CEL expression");
       expect(resolveCELExpr(built)).toEqual(flat);
     });
+  });
+
+  it.each(["contains", "matches", "startsWith", "endsWith"])(
+    "keeps the %s string operation structured",
+    (operator) => {
+      expect(
+        resolveCELExpr(call(operator, [string("archive")], table))
+      ).toEqual({
+        type: ExprType.Condition,
+        operator,
+        args: ["resource.table_name", "archive"],
+      });
+    }
+  );
+
+  it.each(["matches", "startsWith", "endsWith"])(
+    "preserves negated %s as raw CEL",
+    (operator) => {
+      expect(
+        resolveCELExpr(call("!_", [call(operator, [string("archive")], table)]))
+      ).toEqual({
+        type: ExprType.RawString,
+        content: `!(resource.table_name.${operator}("archive"))`,
+      });
+    }
+  );
+
+  it("preserves negation of an equality as raw CEL", () => {
+    expect(
+      resolveCELExpr(call("!_", [call("_==_", [table, string("archive")])]))
+    ).toEqual({
+      type: ExprType.RawString,
+      content: '!(resource.table_name == "archive")',
+    });
+  });
+
+  it("preserves negation around a condition group", () => {
+    expect(
+      resolveCELExpr(
+        call("!_", [
+          call("_||_", [
+            call("_==_", [table, string("archive")]),
+            call("startsWith", [string("old_")], table),
+          ]),
+        ])
+      )
+    ).toEqual({
+      type: ExprType.RawString,
+      content:
+        '!((resource.table_name == "archive" || resource.table_name.startsWith("old_")))',
+    });
+  });
+
+  it("preserves double negation", () => {
+    expect(
+      resolveCELExpr(
+        call("!_", [call("!_", [call("contains", [string("archive")], table)])])
+      )
+    ).toEqual({
+      type: ExprType.RawString,
+      content: '!(!(resource.table_name.contains("archive")))',
+    });
+  });
+
+  it("keeps computed string arguments as raw CEL", () => {
+    expect(
+      resolveCELExpr(call("contains", [ident("resource.column_name")], table))
+    ).toEqual({
+      type: ExprType.RawString,
+      content: "resource.table_name.contains(resource.column_name)",
+    });
+  });
+
+  it("preserves function calls in computed string arguments", () => {
+    expect(
+      resolveCELExpr(
+        call(
+          "contains",
+          [call("string", [ident("resource.classification_level")])],
+          table
+        )
+      )
+    ).toEqual({
+      type: ExprType.RawString,
+      content:
+        "resource.table_name.contains(string(resource.classification_level))",
+    });
+  });
+
+  it("keeps string comparisons to another attribute as raw CEL", () => {
+    expect(
+      resolveCELExpr(call("_==_", [table, ident("resource.column_name")]))
+    ).toEqual({
+      type: ExprType.RawString,
+      content: "resource.table_name == resource.column_name",
+    });
+  });
+
+  it.each<SimpleExpr>([
+    {
+      type: ExprType.Condition,
+      operator: "@not_contains",
+      args: ["resource.table_name", "archive"],
+    },
+    {
+      type: ExprType.Condition,
+      operator: "@not_in",
+      args: ["resource.table_name", ["archive", "audit"]],
+    },
+  ])("round-trips the structured $operator operation", async (expr) => {
+    const built = await buildCELExpr(expr);
+    expect(built).toBeDefined();
+    if (!built) {
+      throw new Error("expected built CEL expression");
+    }
+    expect(resolveCELExpr(built)).toEqual(expr);
   });
 
   it("round-trips list membership from built CEL", async () => {
