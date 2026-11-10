@@ -17,24 +17,24 @@ func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_TRINO, parseTrinoStatements)
 }
 
-// omniAST wraps an omni Trino AST node so it satisfies the base.AST interface.
+// astNode wraps an omni Trino AST node so it satisfies the base.AST interface.
 //
 // The concrete statement node types (e.g. *parser.QueryStmt, *parser.InsertStmt)
 // live in the omni trino/parser package and implement ast.Node; parser.Parse
 // returns them inside *ast.File.Stmts.
-type omniAST struct {
+type astNode struct {
 	node     ast.Node
 	startPos *storepb.Position
 }
 
 // ASTStartPosition implements base.AST.
-func (a *omniAST) ASTStartPosition() *storepb.Position {
+func (a *astNode) ASTStartPosition() *storepb.Position {
 	return a.startPos
 }
 
 // Node returns the underlying omni AST node. It may be nil if the segment
 // produced no concrete statement (which should not happen for valid SQL).
-func (a *omniAST) Node() ast.Node {
+func (a *astNode) Node() ast.Node {
 	return a.node
 }
 
@@ -71,18 +71,18 @@ func parseTrinoStatements(statement string) ([]base.ParsedStatement, error) {
 }
 
 // parseTrinoSQL parses the given SQL using the omni Trino parser and returns one
-// *omniAST per non-empty segment (empty / comment-only segments are skipped).
+// *astNode per non-empty segment (empty / comment-only segments are skipped).
 //
 // On the first parse error it returns a *base.SyntaxError with the position
 // translated into the coordinates of the original input. This mirrors the
 // historical ParseTrino signature shape used by other files in this package.
-func parseTrinoSQL(statement string) ([]*omniAST, error) {
+func parseTrinoSQL(statement string) ([]*astNode, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*omniAST
+	var result []*astNode
 	for _, stmt := range stmts {
 		parsed, err := parseSegment(stmt)
 		if err != nil {
@@ -96,11 +96,11 @@ func parseTrinoSQL(statement string) ([]*omniAST, error) {
 }
 
 // parseSegment parses a single already-split statement segment into an
-// *omniAST. A blank or comment-only segment yields (nil, nil) so callers can
+// *astNode. A blank or comment-only segment yields (nil, nil) so callers can
 // decide whether to keep a placeholder (parseTrinoStatements) or skip it
 // (parseTrinoSQL). The first omni parse error is translated into the
 // coordinates of the original input via convertParseError.
-func parseSegment(stmt base.Statement) (*omniAST, error) {
+func parseSegment(stmt base.Statement) (*astNode, error) {
 	if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
 		return nil, nil
 	}
@@ -112,7 +112,7 @@ func parseSegment(stmt base.Statement) (*omniAST, error) {
 	if file != nil && len(file.Stmts) > 0 {
 		node = file.Stmts[0]
 	}
-	return &omniAST{node: node, startPos: stmt.Start}, nil
+	return &astNode{node: node, startPos: stmt.Start}, nil
 }
 
 // convertParseError converts the first omni *parser.ParseError carried by err to

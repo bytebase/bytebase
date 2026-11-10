@@ -15,13 +15,13 @@ func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_DYNAMODB, parsePartiQLStatements)
 }
 
-// omniAST wraps an omni AST node to implement the base.AST interface.
-type omniAST struct {
+// astNode wraps an omni AST node to implement the base.AST interface.
+type astNode struct {
 	node     ast.Node
 	startPos *storepb.Position
 }
 
-func (a *omniAST) ASTStartPosition() *storepb.Position {
+func (a *astNode) ASTStartPosition() *storepb.Position {
 	return a.startPos
 }
 
@@ -58,7 +58,7 @@ func parsePartiQLStatements(statement string) ([]base.ParsedStatement, error) {
 				if len(list.Items) > 0 {
 					node = list.Items[0]
 				}
-				ps.AST = &omniAST{
+				ps.AST = &astNode{
 					node:     node,
 					startPos: stmt.Start,
 				}
