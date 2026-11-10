@@ -50,196 +50,215 @@ GitHub's review thread is the reference where it has an answer: a bordered box o
 title bar that names the lines and holds the fold control, a quiet "Resolved" label, and indented
 replies. Where this design differs from it, the decision says why.
 
+## The card
+
+One component draws a comment thread in both places. It has four parts, top to bottom.
+
+| Part | What it is |
+| --- | --- |
+| Frame | The box: `border-block-border`, `rounded-sm` and `shadow-sm` on `bg-background` |
+| Bar | One line on `bg-control-bg` in 12/16 `text-control`: the fold control, a title, state labels and, in Activity, the lines and a link |
+| Body | In Activity the SQL excerpt, then the first comment and its replies |
+| Footer | The reply field and the Resolve or Reopen button |
+
+What a part shows depends on a few facts about the thread, and the code already has each of them:
+the place the card is drawn in, what the thread is on, whether its lines are still in the
+statement, whether it is resolved, what the reader may do, and whether it is folded. The sections
+below give each part's content from those facts. Together they cover every card the product can
+draw, so a case is never decided one at a time.
+
+### Invariants
+
+These hold for every card, in both places and in every state. A change that breaks one is wrong
+even where it follows the tables.
+
+1. **No thread paints the SQL.** Nothing about a thread's existence, state or priority colors a
+   line. The one highlight is the reader's own selection while writing a new comment. It is
+   neutral grey and ends with the selection.
+2. **Every card has the frame and a bar.** That includes the new-comment composer and a thread that
+   is not on lines.
+3. **The bar is the same folded and unfolded.** Folding hides the body and the footer and changes
+   nothing else.
+4. **The fold control is named by the bar's text.** Its accessible name is the title, followed by
+   the lines where the bar shows them apart from the title. Whatever the title is, the control has
+   a name.
+5. **State is words in the bar.** "Resolved", "Outdated" and "Statement unavailable" are text with
+   an icon, never a filled badge.
+6. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
+   sees none.
+7. **A place adds content, not a layout.** The Changes section and Activity fill the same bar and
+   body differently. Neither draws a different card.
+
+### Title
+
+| Place | The thread is on | Title | Name of the fold control |
+| --- | --- | --- | --- |
+| Changes section | Lines | "Comment on line 3" or "Comment on lines 1–7" | The title |
+| Changes section | A draft, in the composer | "Add a comment on line 3" or "Add a comment on lines 9 to 10", as today | No fold control |
+| Activity | Lines of a change | The change's label, as its tab in the Changes section shows it | The label, then the lines: "alpha_prod, lines 9–10" |
+| Activity | Lines of a change that was deleted | "Deleted change", as today | "Deleted change, lines 9–10" |
+| Activity | No lines | "Comment on the plan" | The title |
+
+The Changes section never draws the last two rows. It shows a thread only while its lines are in
+the current statement, which `selectEditorThreads` decides and this doc does not change.
+
+### State labels, lines and link
+
+| Fact | The bar shows |
+| --- | --- |
+| The thread is resolved | "Resolved" |
+| Its lines changed after the comment (anchor state `OUTDATED`) | "Outdated" |
+| The recorded statement cannot be placed, or the change was deleted (`UNAVAILABLE`) | "Statement unavailable" |
+| In Activity, the thread is on lines | The line range, on the right |
+| In Activity, its lines are still in the current statement (`CURRENT`) | "View in Statement", after the lines |
+| The anchor state is not known yet (`PENDING`) | Neither "Outdated", "Statement unavailable" nor the link, until it settles |
+
+Labels combine: a thread that is outdated and resolved shows both. In the Changes section only
+"Resolved" can appear, because a thread drawn there has its lines in the statement.
+
+### Body and footer
+
+| Part | Shows |
+| --- | --- |
+| Excerpt | In Activity, for a thread on lines, once the recorded sheet has loaded. The Changes section has none, since the statement is directly above the card |
+| First comment | An avatar column, then the author row, the "Applies to" row when a finding applies to only some of the change's databases, the priority and title of a finding, and the text |
+| Replies | Indented by the avatar column and joined to the first comment by a line. With more than four, the middle ones fold behind "N replies hidden · Show all", as today |
+| Footer | Only when the reader can reply or resolve: the reply field if they can reply, and Resolve or Reopen if they can resolve. The open reply editor keeps its "Resolve thread" checkbox |
+
+### Folding
+
+| Place | Starts | Changes when | Who keeps the state |
+| --- | --- | --- | --- |
+| Changes section | The first unresolved thread is unfolded. Every other thread is a margin marker. Clicking a marker opens its line with one thread unfolded and the line's other threads folded | The reader folds or unfolds it, or resolves it themselves, which folds it | `StatementThreadsLayer`, as today. Unfolding also selects the thread in the stepper and scrolls to it, and folding clears that selection. The card reports the click and keeps no state |
+| Activity | Unfolded when open, folded when resolved | The reader folds or unfolds it. It folds when it becomes resolved and unfolds when it is reopened | The card, as today |
+
+### On the statement
+
+| What | In this design |
+| --- | --- |
+| Margin marker | Unchanged. It is the only mark on the statement at rest |
+| Line tint for a thread | None, by invariant 1 |
+| Highlight of the reader's selection | Neutral grey, while selecting lines or writing the comment |
+| Width of a card | At most 48rem, and 16px clear of the editor's right edge |
+
 ## Decisions
 
 **D1 · No color on commented lines.** The four at-rest tints go: grey, amber, red, and the accent
-tint of an unfolded thread. The margin marker stays as the only mark on the statement at rest. The
-highlight while a reader selects lines for a new comment (`bb-thread-line--selecting`) stays,
-because it is feedback on an action and ends with it. Its color changes from `--color-info`, a
-blue, to the neutral `--color-control-bg-hover`, so that no comment state paints the SQL in a hue. Severity stays where it
-already is, on the P0, P1 or P2 badge inside the comment. Rejected: tinting only P1 lines, as
-BYT-10499 asks. Severity would still be painted on the SQL, and the reader would still have to
-learn a color code. Rejected: one neutral tint for every commented range. It still paints the
-statement, and D3 names the lines in words.
+tint of an unfolded thread. The highlight of the reader's selection (`bb-thread-line--selecting`)
+stays, because it is feedback on an action and ends with it. Its color changes from
+`--color-info`, a blue, to the neutral `--color-control-bg-hover`. Severity stays where it already
+is, on the P0, P1 or P2 badge inside the comment. Rejected: tinting only P1 lines, as BYT-10499
+asks. Severity would still be painted on the SQL, and the reader would still have to learn a color
+code. Rejected: one neutral tint for every commented range. It still paints the statement, and the
+title names the lines in words.
 
-**D2 · The box has a width limit.** The thread stack is capped at `max-w-3xl` (48rem), and the view
-zone's right padding grows from `pr-2` to `pr-4`, so on a narrow editor the card keeps 16px clear
-of the right edge. The border (`border-block-border`) and corners (`rounded-sm`) stay. `shadow-sm`,
-which only the Changes section passes to the card today, becomes part of the card, so the Activity
-card gains it; the Activity card keeps its full width. Rejected: keeping the full width. A box as wide as the code reads as a band of the statement.
+**D2 · The box has a width limit.** In the Changes section the card is capped at `max-w-3xl`
+(48rem) and keeps 16px clear of the right edge, where today it is 8px. `shadow-sm`, which only the
+Changes section gives the card today, becomes part of the frame, so the Activity card and the
+composer gain it. The Activity card keeps its full width. Rejected: keeping the full width in the
+Changes section. A box as wide as the code reads as a band of the statement.
 
-**D3 · A title bar names the lines.** Every card starts with a bar on `bg-control-bg`, in 12/16
-text. In the Changes section it reads "Comment on line 1" or "Comment on lines 1–7". In Activity it
-shows the change the thread belongs to on the left, and the line range followed by "View in
-Statement" on the right, which is the order the Activity header has today. A thread that is not on
-lines, which the API allows and the product's own comment box does not create, gets the same bar
-titled "Comment on the plan", with no lines and no link. So every thread has a bar, and the card
-has one layout. The bar's text is
-`text-control`, not `text-control-light`: light text on `bg-control-bg` is 4.4:1, under the 4.5:1
-minimum. The new-comment composer already has a bar of this kind ("Add a comment on lines 9 to
-10"), so a thread keeps one look from draft to posted. Rejected: the range label that appears only
-when ranges differ. With D1 it would leave most threads with nothing saying which lines they are
-on.
+**D3 · A title bar names the lines.** Every card starts with a bar, and its title says what the
+thread is on. The bar's text is `text-control`, not `text-control-light`: light text on
+`bg-control-bg` is 4.4:1, under the 4.5:1 minimum. In Activity the lines stay on the right, before
+"View in Statement", which is the order the Activity header has today. Rejected: the range label
+that appears only when two threads' ranges differ. With D1 it would leave most threads with
+nothing saying which lines they are on.
 
-**D4 · A folded thread is its title bar.** Folding hides the body and changes nothing else. The bar
-is the same folded and unfolded, so nothing moves sideways when a thread opens.
-`CollapsedThreadRow` and `ThreadSummary` are both deleted. A folded finding no longer shows its
-priority. Rejected: keeping the priority badge on the folded bar. The Automated review section
-above the statement already counts open findings by priority, and one colored badge per folded
-thread is the density this doc removes.
+**D4 · A folded thread is its title bar.** `CollapsedThreadRow` and `ThreadSummary`, the two folded
+rows of today, are both deleted. A folded finding no longer shows its priority. Rejected: keeping
+the priority badge on the folded bar. The Automated review section above the statement already
+counts open findings by priority, and one colored badge per folded thread is the density this doc
+removes.
 
 **D5 · Any thread can be folded.** The fold control is an icon-only `Button size="xs"` at the left
 of the bar, with `aria-expanded`. It is the only part of the bar that folds, because in Activity
-the bar also holds a link. Its accessible name is plain text that whoever renders the bar passes
-with it, so each control says which thread it folds. In the Changes section the name is the bar's
-title, "Comment on lines 1–7". In Activity the bar has no single title, so the name is the change's
-label, the one its tab in the Changes section shows, followed by the lines: "alpha_prod, lines
-9–10" for a change whose tab reads "alpha_prod". For a thread that is not on lines it is "Comment
-on the plan". In Activity an open thread starts unfolded
-and a resolved one starts folded, as today, and the reader can now fold an open one. In the
-Changes section the control replaces the close button in the author row, and the default is
-unchanged: the first unresolved thread is unfolded and every other thread is a margin marker until
-clicked (`defaultExpandedThread`). Rejected: folding only resolved threads. A long open finding
-cannot be put away while reading the rest of the timeline.
-
-Who owns the fold does not change. In the Changes section it is `StatementThreadsLayer`: it keeps
-`expandedRoots`, `expandThread` also selects the thread in the stepper and scrolls it into view,
-and `collapseThread` also clears that selection. The card is controlled there: the bar's fold
-control calls those two functions and the card keeps no fold state of its own. In Activity the card
-owns the fold, as it does today. Resolving keeps its rules too: in the Changes section only the
-reader's own Resolve folds the card, and in Activity a thread folds when it becomes resolved.
+the bar also holds a link. In the Changes section it replaces the close button in the author row.
+Rejected: folding only resolved threads. A long open finding cannot be put away while reading the
+rest of the timeline.
 
 **D6 · State is a quiet text label in the bar.** "Resolved" moves from the footer into the bar and
 keeps the form `ThreadStateBadge` has today: an icon and text, no fill. "Outdated" and "Statement
-unavailable", which Activity shows when a thread's lines have changed or cannot be loaded, take the
-same form in the same place. Today "Outdated" is an amber badge, which D1 would leave as the only
-strong color in the card. Rejected: "Resolved by" with the name. `IssueComment` records
-`thread_state` and nothing about who set it, so the name needs a backend field first.
+unavailable" take the same form in the same place. Today "Outdated" is an amber badge, which D1
+would leave as the only strong color in the card. Rejected: "Resolved by" with the name.
+`IssueComment` records `thread_state` and nothing about who set it, so the name needs a backend
+field first.
 
-**D7 · Comment text sits in its own column.** `ThreadComment` becomes a two-column grid: a 20px
-avatar column, then the author row, the "Applies to" row, the priority and title, and the text.
-Replies are indented by that column and joined to the first comment by a vertical line. The
+**D7 · Comment text sits in its own column.** The avatar gets a 20px column, and the author row,
+the "Applies to" row, the priority and title, and the text sit beside it. The
 `bg-control-bg/50` band behind replies goes, since the indent now sets them apart. Rejected:
 GitHub's current layout, which indents replies only and keeps the first comment's text flush with
 its avatar. A finding stacks four rows, and they scan better with the avatar out of the way.
 
-**D8 · The composer is the same card.** `InlineThreadComposer` keeps its title ("Add a comment on
-lines 9 to 10") in the bar, and its avatar moves from the bar into the body's avatar column beside
-the editor. It takes the card's frame as well: the same border, corners and shadow, so a comment
-does not change shape when it is posted.
+**D8 · The composer is the same card.** It has the frame and a bar, by invariant 2. Its avatar
+moves from the bar into the body's avatar column beside the editor, so a comment does not change
+shape when it is posted.
 
-**D9 · The "Applies to" row is unchanged.** A finding that applies to only some of a change's
-databases lists them under the author row, as today (`ReviewTargets`). The bar does not name or
-count them: an open finding is unfolded, so the row is on screen, and a resolved one only needs to
-say it is resolved. Rejected: a count or the database names in the bar. The bar stops being simple
-and long lists do not fit.
+**D9 · The "Applies to" row is unchanged.** The bar does not name or count a finding's databases:
+an open finding is unfolded, so the row is on screen, and a resolved one only needs to say it is
+resolved. Rejected: a count or the database names in the bar. The bar stops being simple and long
+lists do not fit.
 
-## States
-
-| State | Changes section | Activity |
-| --- | --- | --- |
-| Open, lines in the current statement | Margin marker; the first open thread is unfolded | Card, unfolded |
-| Resolved, lines in the current statement | Margin marker in grey; folded bar with "Resolved" once its line is opened | Card, folded, "Resolved" |
-| Several threads ending on one line | Marker with a count; one card per thread, open ones first | One entry per thread |
-| Outdated: the commented lines changed | Not shown | Card with "Outdated" and no link into the statement |
-| Statement unavailable | Not shown | Card with "Statement unavailable" |
-| Thread on a deleted change | Not shown | Card titled "Deleted change" |
-| More than four replies | Middle replies fold behind "N replies hidden · Show all" | Same |
-| Reply editor open | Editor with the "Resolve thread" checkbox, in the footer | Same |
-| Reader cannot reply or resolve | No footer | No footer |
-| New comment | Selected lines highlighted in grey; composer card | Does not apply |
-| Thread that is not on lines | Does not apply | Card with the bar titled "Comment on the plan"; no SQL, no lines, no link |
-
-Which threads the Changes section shows is unchanged and is decided by placement
-(`selectEditorThreads` in `threadModel.ts`): a thread shows there only while its lines are in the
-current statement.
+**D10 · A thread that is not on lines has a bar too.** The API allows such a thread, and the
+product's own comment box does not create one. It is titled "Comment on the plan", so invariant 2
+has no exception and the card has one layout. Rejected: keeping today's card without a bar for it.
+Every other rule would then need a second version. Rejected: never folding it. A resolved one
+could not be put away.
 
 ## Scope
 
 Frontend only. Five PRs. Each leaves main shippable, names what it depends on, and is opened after
-the one before it merges. Every class, token or string that a decision changes is named in one
-slice below, with the test that pins it, and so is the owner of any state a slice rewires. Every
-row of States that differs from today traces to one of them.
+the one before it merges.
 
-1. **Title bar and folding in the Changes section (D3, D4, D5, and "Resolved" from D6).** Depends
-   on nothing.
-   - `CommentThreadCard.tsx`: an optional bar on `bg-control-bg` with `text-control` text, rendered
-     when the caller passes its content together with the fold control's accessible name as a
-     string. It holds the fold control and `ThreadStateBadge`. The fold
-     takes an optional controlled pair, `expanded` and `onExpandedChange`, which replaces `onClose`
-     and the `collapsible` prop; the close button in the author row goes. A card with a bar renders
-     its footer only when the reader can reply or settle, since the badge is in the bar. A card
-     without a bar is unchanged. That is what Activity renders until slice 2, which gives every
-     card a bar and removes the path.
-   - `ThreadStack.tsx`: pass the title, which is also the fold control's name; delete `CollapsedThreadRow` and `showRanges`. Every thread
-     renders the card, folded or not, with `expanded` from `expandedRoots` and `onExpandedChange`
-     calling the layer's `onExpand` and `onCollapse`.
-   - The five locale files, for the two title strings.
-   - Tests: `CommentThreadCard.test.tsx` (with a bar: the thread folds and unfolds; the bar is the
-     same in both states; "Resolved" renders in the bar; a controlled card does not fold on its
-     own; a resolved thread whose reader can neither reply nor settle renders no footer. Without a
-     bar: unchanged), `ThreadStack.test.tsx` (a folded thread renders the card's bar and no
-     `thread-row`), `StatementThreadsLayer.test.tsx` (folding from the bar removes the thread from
-     `expandedRoots` and clears the stepper's selection; unfolding from the bar adds it and selects
-     it). E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this
-     slice removes, and `plan-detail-review.spec.ts` asserts the folded and resolved states in the
-     Changes section.
-2. **The Activity card takes the bar (D2's shadow, D3 and D5 in Activity, the rest of D6).**
-   Depends on slice 1.
-   - `StatementAnchorContext.tsx`: it splits in two. Its header becomes the bar's content and
-     loses its own collapse button (`onCollapse`). Its `SqlExcerpt` stays in the card body,
-     directly under the bar, and is not restyled in this slice. `AnchorStatePill` renders
-     "Outdated" and "Statement unavailable" as text labels in place of `Badge variant="warning"`
-     and `variant="default"`.
-   - `CommentThreadCard.tsx` and `ReviewActivityTimeline.tsx`: the card's `renderContext` slot
-     becomes those two slots, bar content and body excerpt, and `ThreadActivityRow` passes both.
-     It also passes the fold control's name: the change reference's `accessibleLabel` followed by
-     the line range. For a thread that is not on lines it passes the title "Comment on the plan",
-     which is also the name, and no excerpt.
-   - `CommentThreadCard.tsx`: every card now has a bar, so the path without one goes: the bar is
-     required, the footer's guard loses `thread.resolved`, and the last collapse button in the
-     author row goes. An uncontrolled card folds in any state, by dropping the `thread.resolved`
-     condition, and still starts folded when resolved. Delete `ThreadSummary`. Take `shadow-sm`
-     into the card's own classes.
-   - The five locale files, for the title of a thread that is not on lines.
-   - `ThreadStack.tsx`: stop passing `shadow-sm`.
-   - Tests: `CommentThreadCard.test.tsx` (an open thread in Activity folds; folded, it shows the
-     bar and no summary row; unfolded, the excerpt renders in the body under the bar and not
-     inside it; a resolved thread that is not on lines starts folded to a bar titled "Comment on
-     the plan" and unfolds from it; the fold control of an Activity card is named by its change
-     and lines, and two folded cards have different names), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
-     unavailable states; no collapse button of its own). E2E: `plan-detail-review.spec.ts` asserts
-     the folded and resolved states in Activity.
-3. **No line tints, and the width limit (D1, D2).** Depends on slice 1, which gives every thread in
-   the Changes section a title that names its lines.
-   - `StatementThreadsLayer.tsx`: delete `commentedLines` and `LINE_CLASS_BY_WEIGHT`; delete the
-     `bb-thread-line` paint over an unfolded thread's range; keep the two
-     `bb-thread-line--selecting` paints. Both view-zone wrappers, the thread stack's and the
-     composer's, go from `py-2 pr-2` to `py-2 pr-4` with `max-w-3xl`.
-   - `statementThreads.css`: delete the `--passive`, `--attention`, `--blocking` and
-     `bb-thread-line` rules; `bb-thread-line--selecting` changes from `--color-info` to
-     `--color-control-bg-hover`.
-   - Tests: `StatementThreadsLayer.test.tsx` (no decoration carries `bb-thread-line`,
-     `--passive`, `--attention` or `--blocking` for an open or an unfolded thread; a pending
-     selection and an open composer still carry `--selecting`). E2E: `plan-detail-review.spec.ts`
-     asserts that a selected line's computed background is the grey token.
-4. **Comment column and replies (D7).** Depends on nothing.
-   - `ThreadComment.tsx`: the two-column grid.
-   - `CommentThreadCard.tsx` and `CommentThreadCard.css`: indent the replies, draw the joining
-     line, and drop `bg-control-bg/50` from the replies block.
+A slice is finished when the rows it names hold and no invariant is broken. This plan names each
+slice's files so its size can be judged, and its tests by the rows they assert. Which props and
+helpers carry the rules is decided in the slice's own PR and reviewed there.
+
+1. **Bar and folding in the Changes section.** Depends on nothing.
+   - Delivers, for a card in the Changes section: the first row of Title; "Resolved" from State
+     labels; the Footer row; the Changes section row of Folding; invariants 3, 4, 5 and 6.
+     `CollapsedThreadRow` goes. Until slice 2 the Activity card is untouched.
+   - Files: `CommentThreadCard.tsx`, `ThreadStack.tsx`, `StatementThreadsLayer.tsx`, and the five
+     locale files for the title.
+   - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
+     `StatementThreadsLayer.test.tsx`, one case for each row delivered. They include: the bar is
+     the same folded and unfolded; folding from the bar updates the layer's state and the stepper's
+     selection; a resolved thread whose reader can neither reply nor resolve has no footer. E2E:
+     `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this slice
+     removes, and `plan-detail-review.spec.ts` covers folding and resolving in the Changes section.
+2. **The Activity card takes the bar.** Depends on slice 1.
+   - Delivers, for a card in Activity: the three Activity rows of Title; every row of State
+     labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
+     drawn as today; the Activity row of Folding; the frame's shadow. After this slice no card is
+     drawn without a bar, so invariants 2 and 7 hold in full and `ThreadSummary` goes.
+   - Files: `CommentThreadCard.tsx`, `StatementAnchorContext.tsx`, `ReviewActivityTimeline.tsx`,
+     `ThreadStack.tsx`, and the five locale files for "Comment on the plan".
+   - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`, one case for each
+     row delivered. They include: a deleted change and a thread that is not on lines; two folded
+     cards whose fold controls have different names; the excerpt renders in the body and not in the
+     bar. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
+3. **No line tints, and the width limit.** Depends on slice 1, which gives every thread in the
+   Changes section a title that names its lines.
+   - Delivers: invariant 1 and every row of On the statement.
+   - Files: `StatementThreadsLayer.tsx`, `statementThreads.css`.
+   - Tests: `StatementThreadsLayer.test.tsx`: no line is decorated for an open, an unfolded or a
+     resolved thread; a selection and an open composer are still highlighted. E2E:
+     `plan-detail-review.spec.ts` asserts that a selected line's background is the grey token.
+4. **Comment column and replies.** Depends on nothing.
+   - Delivers: the First comment and Replies rows of Body and footer.
+   - Files: `ThreadComment.tsx`, `CommentThreadCard.tsx`, `CommentThreadCard.css`.
    - Tests: `ThreadComment.test.tsx`, `CommentThreadCard.test.tsx`.
-5. **Composer (D8).** Depends on slice 1, for the bar.
-   - `InlineThreadComposer.tsx`: the bar goes from `bg-control-bg/50` with `text-sm` to the card's
-     bar, and the avatar moves into the body. It gains `shadow-sm`, which it does not have today,
-     so its frame matches the posted card's.
-   - Tests: a new `InlineThreadComposer.test.tsx` (the composer carries the card's border, corners
-     and `shadow-sm`; its avatar renders in the body and not in the bar).
+5. **Composer.** Depends on slice 1, for the bar.
+   - Delivers: the composer row of Title, and invariant 2 for the composer.
+   - Files: `InlineThreadComposer.tsx`.
+   - Tests: a new `InlineThreadComposer.test.tsx`: the composer has the frame, including the
+     shadow, and its avatar is in the body.
 
 The two sibling docs add three more PRs. Across all three docs the order is:
 
 | PR | Depends on |
 | --- | --- |
-| Card 1: title bar and folding in the Changes section | Nothing |
+| Card 1: bar and folding in the Changes section | Nothing |
 | Card 2: the Activity card takes the bar | Card 1 |
 | Card 3: no line tints, and the width limit | Card 1 |
 | Card 4: comment column and replies | Nothing |
@@ -257,8 +276,8 @@ The two sibling docs add three more PRs. Across all three docs the order is:
   (BYT-10513), and a label in the bar for a comment that involves a production database
   (BYT-10514).
 - Naming who resolved a thread. It needs a field on the thread first.
-- Creating a thread that is not on lines from the product. The bar in D3 only gives such a thread
-  a title when the API creates one. The comment box in Activity keeps posting a plain comment, and
-  the Changes section keeps creating threads on selected lines only.
+- Creating a thread that is not on lines from the product. D10 only gives such a thread a bar when
+  the API creates one. The comment box in Activity keeps posting a plain comment, and the Changes
+  section keeps creating threads on selected lines only.
 - Highlighting a thread's lines while the pointer is on its title bar.
 - The thread stepper (`StatementThreadWalker`) and the margin markers, which do not change.
