@@ -13,14 +13,17 @@ export function AgentPopoverContent({
   className,
   side = "top",
   align = "end",
+  anchor,
   ...props
 }: ComponentProps<typeof BasePopover.Popup> & {
   side?: ComponentProps<typeof BasePopover.Positioner>["side"];
   align?: ComponentProps<typeof BasePopover.Positioner>["align"];
+  anchor?: ComponentProps<typeof BasePopover.Positioner>["anchor"];
 }) {
   return (
     <BasePopover.Portal container={getLayerRoot("agent")}>
       <BasePopover.Positioner
+        anchor={anchor}
         side={side}
         align={align}
         sideOffset={4}
