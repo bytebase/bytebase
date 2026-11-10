@@ -94,6 +94,13 @@ unchanged: the first unresolved thread is unfolded and every other thread is a m
 clicked (`defaultExpandedThread`). Rejected: folding only resolved threads. A long open finding
 cannot be put away while reading the rest of the timeline.
 
+Who owns the fold does not change. In the Changes section it is `StatementThreadsLayer`: it keeps
+`expandedRoots`, `expandThread` also selects the thread in the stepper and scrolls it into view,
+and `collapseThread` also clears that selection. The card is controlled there: the bar's fold
+control calls those two functions and the card keeps no fold state of its own. In Activity the card
+owns the fold, as it does today. Resolving keeps its rules too: in the Changes section only the
+reader's own Resolve folds the card, and in Activity a thread folds when it becomes resolved.
+
 **D6 · State is a quiet text label in the bar.** "Resolved" moves from the footer into the bar and
 keeps the form `ThreadStateBadge` has today: an icon and text, no fill. "Outdated" and "Statement
 unavailable", which Activity shows when a thread's lines have changed or cannot be loaded, take the
@@ -140,21 +147,28 @@ current statement.
 ## Scope
 
 Frontend only. Four PRs, in order. Each leaves main shippable. Every class, token or string that a
-decision changes is named in one slice below, with the test that pins it.
+decision changes is named in one slice below, with the test that pins it, and so is the owner of
+any state a slice rewires.
 
 1. **Title bar and folding (D2 shadow, D3, D4, D5, D6).**
    - `CommentThreadCard.tsx`: add the bar on `bg-control-bg` with `text-control` text; add the fold
      control and drop the `thread.resolved` condition on folding; delete `ThreadSummary`; move
      `ThreadStateBadge` from the footer into the bar; take `shadow-sm` into the card's own classes.
-   - `ThreadStack.tsx`: delete `CollapsedThreadRow` and `showRanges`; stop passing `shadow-sm` and
-     the close button.
+     The fold takes an optional controlled pair, `expanded` and `onExpandedChange`, which replaces
+     `onClose`. Without it the card keeps its own state, which is what Activity uses.
+   - `ThreadStack.tsx`: delete `CollapsedThreadRow` and `showRanges`, and stop passing
+     `shadow-sm`. Every thread renders the card, folded or not, with `expanded` from
+     `expandedRoots` and `onExpandedChange` calling the layer's `onExpand` and `onCollapse`.
    - `StatementAnchorContext.tsx`: its header becomes the bar's Activity content, and
      `AnchorStatePill` renders "Outdated" and "Statement unavailable" as text labels in place of
      `Badge variant="warning"` and `variant="default"`.
    - The five locale files, for the two title strings.
    - Tests: `CommentThreadCard.test.tsx` (an open thread folds and unfolds; the bar is the same in
-     both states; "Resolved" renders in the bar), `ThreadStack.test.tsx` (a folded thread renders
-     the card's bar and no `thread-row`), `StatementAnchorContext.test.tsx` (no `Badge` for the
+     both states; "Resolved" renders in the bar; a controlled card does not fold on its own),
+     `ThreadStack.test.tsx` (a folded thread renders the card's bar and no `thread-row`),
+     `StatementThreadsLayer.test.tsx` (folding from the bar removes the thread from
+     `expandedRoots` and clears the stepper's selection; unfolding from the bar adds it and selects
+     it), `StatementAnchorContext.test.tsx` (no `Badge` for the
      outdated and unavailable states). E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
      reads `thread-row`, which this slice removes, and `plan-detail-review.spec.ts` asserts the
      folded and resolved states.
