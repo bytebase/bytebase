@@ -10,12 +10,9 @@ import (
 
 	"strings"
 
-	"github.com/pingcap/tidb/pkg/parser"
-	"github.com/pingcap/tidb/pkg/parser/mysql"
-	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
-
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -98,11 +95,6 @@ func requireParses(t *testing.T, migration string) {
 	if strings.TrimSpace(migration) == "" {
 		return
 	}
-	p := parser.New()
-	mode, err := mysql.GetSQLMode(mysql.DefaultSQLMode)
-	require.NoError(t, err)
-	p.SetSQLMode(mode)
-
-	_, _, err = p.Parse(migration, "", "")
+	_, err := tidbparser.ParseTiDBOmni(migration)
 	require.NoError(t, err, "generated migration should parse")
 }
