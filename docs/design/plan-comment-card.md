@@ -217,9 +217,12 @@ could not be put away.
 Frontend only. Five PRs. Each leaves main shippable, names what it depends on, and is opened after
 the one before it merges.
 
-A slice is finished when the rows it names hold and no invariant is broken. This plan names each
-slice's files so its size can be judged, and its tests by the rows they assert. Which props and
-helpers carry the rules is decided in the slice's own PR and reviewed there.
+A slice is finished when the rows it names hold and no invariant is broken. Its tests assert every
+row and invariant it delivers, at least one case each, so a slice cannot pass while a row it
+claims is missing. Under Tests, a slice names where its tests live and the cases that are easy to
+miss. That list is not the whole set. This plan names each slice's files so its size can be
+judged. Which props and helpers carry the rules is decided in the slice's own PR and reviewed
+there.
 
 1. **Bar and folding in the Changes section (D3, D4, D5, and "Resolved" from D6).** Depends on
    nothing.
@@ -229,7 +232,7 @@ helpers carry the rules is decided in the slice's own PR and reviewed there.
    - Files: `CommentThreadCard.tsx`, `ThreadStack.tsx`, `StatementThreadsLayer.tsx`, and the five
      locale files for the title.
    - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
-     `StatementThreadsLayer.test.tsx`, one case for each row delivered. They include: the bar is
+     `StatementThreadsLayer.test.tsx`. They include: the bar is
      the same folded and unfolded, and a folded card shows nothing from the body, by invariant 3;
      folding from the bar updates the layer's state and the stepper's
      selection; a resolved thread whose reader can neither reply nor resolve has no footer. E2E:
@@ -243,26 +246,30 @@ helpers carry the rules is decided in the slice's own PR and reviewed there.
      drawn without a bar, so invariants 2 and 7 hold in full and `ThreadSummary` goes.
    - Files: `CommentThreadCard.tsx`, `StatementAnchorContext.tsx`, `ReviewActivityTimeline.tsx`,
      `ThreadStack.tsx`, and the five locale files for "Comment on the plan".
-   - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`, one case for each
-     row delivered. They include: a deleted change and a thread that is not on lines; two folded
+   - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
+     deleted change and a thread that is not on lines; two folded
      cards whose fold controls have different names; the excerpt renders in the body and not in the
      bar. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
 3. **No line tints, and the width limit (D1, D2's width).** Depends on slice 1, which gives every
    thread in the Changes section a title that names its lines.
    - Delivers: invariant 1 and every row of On the statement.
    - Files: `StatementThreadsLayer.tsx`, `statementThreads.css`.
-   - Tests: `StatementThreadsLayer.test.tsx`: no line is decorated for an open, an unfolded or a
-     resolved thread; a selection and an open composer are still highlighted. E2E:
-     `plan-detail-review.spec.ts` asserts that a selected line's background is the grey token.
+   - Tests: `StatementThreadsLayer.test.tsx`. They include: no line is decorated for an open, an
+     unfolded or a resolved thread; a selection and an open composer are still highlighted; the
+     wrapper of a thread and the wrapper of the composer both carry the width limit and the 16px
+     clearance. E2E: `plan-detail-review.spec.ts` asserts that a selected line's background is
+     the grey token, and that an unfolded card is at most 768px wide and ends 16px or more before
+     the editor's right edge.
 4. **Comment column and replies (D7).** Depends on nothing.
    - Delivers: the First comment and Replies rows of Body and footer.
    - Files: `ThreadComment.tsx`, `CommentThreadCard.tsx`, `CommentThreadCard.css`.
-   - Tests: `ThreadComment.test.tsx`, `CommentThreadCard.test.tsx`.
+   - Tests: `ThreadComment.test.tsx` and `CommentThreadCard.test.tsx`. They include: a reply is
+     indented and the first comment is not.
 5. **Composer (D8).** Depends on slice 1, for the bar.
    - Delivers: the composer row of Title, and invariant 2 for the composer.
    - Files: `InlineThreadComposer.tsx`.
-   - Tests: a new `InlineThreadComposer.test.tsx`: the composer has the frame, including the
-     shadow, and its avatar is in the body.
+   - Tests: a new `InlineThreadComposer.test.tsx`. They include: the composer has the frame,
+     including the shadow, and its avatar is in the body.
 
 D9 changes nothing, so no slice carries it.
 
