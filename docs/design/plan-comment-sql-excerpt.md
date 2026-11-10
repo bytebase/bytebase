@@ -55,9 +55,10 @@ comment's text column once [Plan comment card](plan-comment-card.md) D7 gives th
 column: the comment's own left padding, a 20px avatar and an 8px gap. The comment is padded
 `px-2 sm:px-3`, so the inset is 36px below the `sm` breakpoint and 40px from it up
 (`pl-9 sm:pl-10`), where today it is 12px at every width. The line numbers then line up with the
-comment's text and the avatar column stays clear. The comment, its replies and the reply footer keep the card's full width and
-its left edge. GitHub's conversation view does the same thing: the comment starts at the box's
-left edge and the code sits behind a number gutter about 64px wide. Rejected: a bordered comment
+comment's text and the avatar column stays clear. Only the SQL moves. The comment below it, its
+replies and the reply footer stay where [Plan comment card](plan-comment-card.md) puts them.
+GitHub's conversation view does the same thing: the comment starts at the box's left edge and the
+code sits behind a number gutter about 64px wide. Rejected: a bordered comment
 box that starts at the code column. Inside a review's group it would be a third frame, which
 the Plan review findings group doc rules out. Rejected: indenting the
 comment instead of the SQL. The comment loses width and still sits in the code's column.
