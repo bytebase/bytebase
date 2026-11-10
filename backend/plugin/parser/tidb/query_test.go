@@ -127,6 +127,13 @@ func TestValidateSQLForEditor(t *testing.T) {
 			valid:       true,
 			gotAllQuery: false,
 		},
+		{
+			// omni parses SET TRANSACTION as its own node; it must stay an
+			// allowed session setting, like SET, not fall into the refusal case.
+			statement:   `SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; SELECT * FROM t`,
+			valid:       true,
+			gotAllQuery: false,
+		},
 	}
 
 	for _, test := range tests {
