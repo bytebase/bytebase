@@ -1,3 +1,4 @@
+import type { AgentDiagnosticCapability } from "../types";
 import { checkPreparedApiPermission } from "./apiPermissionPreflight";
 import { dispatchPreparedApiCall, type PreparedApiCall } from "./callApi";
 import {
@@ -119,6 +120,7 @@ export async function resolvePendingApiCall({
   userName,
   approved,
   signal,
+  capability,
 }: {
   actionId: string;
   chatId: string;
@@ -126,6 +128,7 @@ export async function resolvePendingApiCall({
   userName: string;
   approved: boolean;
   signal?: AbortSignal;
+  capability?: AgentDiagnosticCapability;
 }): Promise<string> {
   const pending = pendingApiCalls.get(actionId);
   if (!pending) {
@@ -148,6 +151,11 @@ export async function resolvePendingApiCall({
   }
 
   pendingApiCalls.delete(actionId);
+  if (capability !== undefined) {
+    return JSON.stringify({
+      error: "API permission requests cannot execute in a diagnostic chat.",
+    });
+  }
   if (!approved) {
     return JSON.stringify({ error: "Permission request denied." });
   }

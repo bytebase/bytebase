@@ -114,6 +114,10 @@
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
+    "diagnostic-help": {
+      "ask-agent": "询问 Agent",
+      "scope-mismatch": "此诊断对话已绑定原始资源。请为其他资源发起新的帮助请求。"
+    },
     "empty-chat": {
       "project-heading": "我能为这个项目做些什么？",
       "suggestions": "推荐问题",
@@ -149,9 +153,6 @@
     "input-processing-placeholder": "正在处理...",
     "interrupted": "已中断",
     "interrupted-retry-hint": "对话已中断。您可以重试或发送新消息。",
-    "issue-assistance": {
-      "review": "与 Agent 一起审核"
-    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -245,8 +246,7 @@
       "issue-rejection": "拒绝此工单会停止当前审批流程。处理拒绝原因后才能继续审批。"
     },
     "plan-assistance": {
-      "ask-draft-sql": "让 Agent 起草 SQL",
-      "review": "与 Agent 一起审核"
+      "ask-draft-sql": "让 Agent 起草 SQL"
     },
     "plan-draft": {
       "append-sql": "追加 SQL",

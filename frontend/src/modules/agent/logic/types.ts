@@ -102,6 +102,11 @@ export interface AgentResourceReference {
   label: string;
 }
 
+export type AgentDiagnosticCapability = {
+  kind: "diagnostic";
+  resource: AgentResourceReference;
+};
+
 export interface AgentMentionRange {
   start: number;
   end: number;
@@ -181,6 +186,7 @@ export interface AgentChat {
   interruptionReason?: AgentInterruptionReason;
   runId?: string | null;
   runMode?: AgentRunMode;
+  capability?: AgentDiagnosticCapability;
 }
 
 export type AgentAskUserKind = "input" | "confirm" | "choose";

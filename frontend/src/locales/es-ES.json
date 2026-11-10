@@ -114,6 +114,10 @@
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
+    "diagnostic-help": {
+      "ask-agent": "Preguntar al Agente",
+      "scope-mismatch": "Este chat de diagnóstico está vinculado a su recurso original. Abre una nueva solicitud de ayuda para otro recurso."
+    },
     "empty-chat": {
       "project-heading": "¿Cómo puedo ayudar con este proyecto?",
       "suggestions": "Preguntas sugeridas",
@@ -149,9 +153,6 @@
     "input-processing-placeholder": "Procesando...",
     "interrupted": "Interrumpido",
     "interrupted-retry-hint": "La conversación fue interrumpida. Puede reintentar o enviar un nuevo mensaje.",
-    "issue-assistance": {
-      "review": "Revisar con el agente"
-    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -245,8 +246,7 @@
       "issue-rejection": "Rechazar esta incidencia detiene su flujo de aprobación actual. Hay que resolver el rechazo antes de continuar con la aprobación."
     },
     "plan-assistance": {
-      "ask-draft-sql": "Pedir al agente que redacte SQL",
-      "review": "Revisar con el agente"
+      "ask-draft-sql": "Pedir al agente que redacte SQL"
     },
     "plan-draft": {
       "append-sql": "Añadir SQL",

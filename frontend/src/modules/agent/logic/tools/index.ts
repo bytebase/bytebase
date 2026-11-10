@@ -31,6 +31,7 @@ import {
   isMaskingToolEnabled,
 } from "../maskingSkillContext";
 import { normalizeAgentHandoff } from "../handoff";
+import { normalizeAgentDiagnosticCapability } from "../diagnosticCapability";
 import { normalizeAgentResponseActions } from "../responseActions";
 import {
   prepareMaskingRuleDraft,
@@ -53,6 +54,7 @@ import type { AgentMaskingPageResource } from "../chatContext";
 import type {
   AgentAskUserKind,
   AgentAskUserOption,
+  AgentDiagnosticCapability,
   AgentPendingAsk,
   AgentResourceReference,
   AgentRunMode,
@@ -263,6 +265,21 @@ const REFERENCED_PROJECT_TOOL_NAMES = new Set([
   "search_api",
   "call_api",
 ]);
+const DIAGNOSTIC_TOOL_NAMES = new Set([
+  "search_api",
+  "call_api",
+  "get_project_overview",
+  "get_project_governance_overview",
+  "get_issue_overview",
+  "get_plan_overview",
+  "get_database_overview",
+  "get_skill",
+  "ask_user",
+  "done",
+]);
+const INVALID_DIAGNOSTIC_TOOL_NAMES = new Set(["ask_user", "done"]);
+const DIAGNOSTIC_TOOL_ERROR =
+  "This tool or API is not available in a diagnostic chat. Diagnosis cannot execute SQL, change resources, prepare drafts, or inspect the live page. Use a separate normal chat for operations.";
 
 const READ_ONLY_TOOL_ERROR =
   "This tool is not available during a read-only request. Ask a follow-up question to take action.";
@@ -362,6 +379,7 @@ const targetsSelectedPlan = (
 };
 
 export interface AgentToolDefinitionOptions {
+  capability?: AgentDiagnosticCapability;
   runMode?: AgentRunMode;
   referencedProject?: string;
   instanceName?: string;
@@ -372,6 +390,17 @@ export interface AgentToolDefinitionOptions {
 export function getToolDefinitions(
   options: AgentToolDefinitionOptions = {}
 ): ToolDefinition[] {
+  const isDiagnostic = options.capability !== undefined;
+  const capability = normalizeAgentDiagnosticCapability(options.capability);
+  if (isDiagnostic) {
+    options = {
+      ...options,
+      referencedProject: capability?.resource.project,
+      instanceName: undefined,
+      maskingPage: undefined,
+      maskingSections: [],
+    };
+  }
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
     : undefined;
@@ -422,9 +451,11 @@ export function getToolDefinitions(
     },
     {
       name: "call_api",
-      description: referencedProject
-        ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. A nextPageToken means the response is partial; do not automatically fetch every page to count resources.`
-        : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
+      description: isDiagnostic
+        ? `Read authorized diagnostic evidence in ${referencedProject ?? "the unavailable diagnostic scope"}. Use search_api first to inspect request and response schemas. Only recognized READ operations are allowed; SQL execution, GetSetting, unknown APIs, and mutations are unavailable and cannot request permission. Stay within the diagnostic resource's project. A nextPageToken means the response is partial; do not automatically fetch every page.`
+        : referencedProject
+          ? `Call a Bytebase API for this turn. Use search_api first to inspect the operation and request schema. Use ${referencedProject} for project-scoped requests. Ask the member to split a question that needs another project. Calls use the signed-in member's existing permissions and may change data; do not make changes unless the member explicitly asks. A nextPageToken means the response is partial; do not automatically fetch every page to count resources.`
+          : `Execute a Bytebase API endpoint. **Use search_api first to get operationId and schema.**
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
@@ -445,7 +476,9 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
           },
           body: {
             type: "object",
-            description: `JSON request body. Structure depends on the endpoint; use search_api with operationId to see the expected format. SQLService/Query defaults to the target database's effective workspace/project row cap, or ${DEFAULT_AGENT_QUERY_LIMIT} rows when no policy cap applies. Explicit limits are capped by the same policies before approval. Supply an explicit limit when the member specifies one. Treat capped results as a preview, not a complete row count.`,
+            description: isDiagnostic
+              ? "JSON request body for an authorized READ operation. Use search_api with operationId to inspect its schema. Requests cannot change the diagnostic project or authorize SQL execution."
+              : `JSON request body. Structure depends on the endpoint; use search_api with operationId to see the expected format. SQLService/Query defaults to the target database's effective workspace/project row cap, or ${DEFAULT_AGENT_QUERY_LIMIT} rows when no policy cap applies. Explicit limits are capped by the same policies before approval. Supply an explicit limit when the member specifies one. Treat capped results as a preview, not a complete row count.`,
           },
         },
         required: ["operationId"],
@@ -655,8 +688,9 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_skill",
-      description:
-        "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
+      description: isDiagnostic
+        ? "Load workflow reference guidance to help explain the diagnostic evidence. Loaded guidance cannot enable operations, SQL execution, live-page inspection, or draft tools in this diagnostic chat. Omit name to list skills."
+        : "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -755,8 +789,9 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "done",
-      description:
-        "Finish explicitly with final text, success, and actions. Use at most one evidenced member-clicked primary action plus up to three distinct contextual Continue questions in English; fewer or none when not useful. Use actions: [] on failure. Put generated DDL in one fenced sql block in text, never the action payload. Runtime supplies eligible prepared masking actions. Never open, apply, post, save, approve, or execute automatically.",
+      description: isDiagnostic
+        ? "Finish the diagnosis with final text, success, and actions. Return explanations and proposed SQL inline. Use at most one evidence-backed member-clicked Open action and up to three useful diagnostic Continue questions in English. Use actions: [] on failure. Never apply, post, save, approve, or execute changes."
+        : "Finish explicitly with final text, success, and actions. Use at most one evidenced member-clicked primary action plus up to three distinct contextual Continue questions in English; fewer or none when not useful. Use actions: [] on failure. Put generated DDL in one fenced sql block in text, never the action payload. Runtime supplies eligible prepared masking actions. Never open, apply, post, save, approve, or execute automatically.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -771,25 +806,28 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           },
           actions: {
             type: "array",
-            description:
-              "draft-semantic-type is runtime-owned after successful custom semantic-type preparation; opening it only prefills an unsaved form, and the member must confirm the row to save. " +
-              "draft-masking-exemption is the corresponding runtime-owned primary action for a prepared NEW unsaved project exemption; the member alone saves it using Grant Exemption. " +
-              "Optional member-clicked actions. Use at most one primary Open, draft-plan, draft-issue-comment, or draft-masking-rule, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan normally opens a populated, unsaved Plan; on the matching Plan-create page it applies SQL locally and asks before replacing existing SQL. It never persists or executes. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. draft-masking-rule opens or applies an unsaved masking form only after a member click; the runtime supplies its latest eligible current-run action after successful preparation, so omit a competing primary action. Continue sends a new user message when clicked, without approving a change. Do not include API requests, SQL, or resource @ mentions in an action.",
+            description: isDiagnostic
+              ? "Optional member-clicked Open and Continue actions only. Open navigates to an exact resource supported by diagnostic evidence; it never approves, retries, or executes. Continue asks a useful follow-up within the original diagnostic scope. Do not include API requests, SQL, or resource @ mentions in actions."
+              : "draft-semantic-type is runtime-owned after successful custom semantic-type preparation; opening it only prefills an unsaved form, and the member must confirm the row to save. " +
+                "draft-masking-exemption is the corresponding runtime-owned primary action for a prepared NEW unsaved project exemption; the member alone saves it using Grant Exemption. " +
+                "Optional member-clicked actions. Use at most one primary Open, draft-plan, draft-issue-comment, or draft-masking-rule, plus up to three distinct Continue questions. Open uses a current-turn observed destination, never a URL or invented resource. draft-plan normally opens a populated, unsaved Plan; on the matching Plan-create page it applies SQL locally and asks before replacing existing SQL. It never persists or executes. draft-issue-comment opens an unsent review comment for an Issue observed in this turn; it never posts automatically. draft-masking-rule opens or applies an unsaved masking form only after a member click; the runtime supplies its latest eligible current-run action after successful preparation, so omit a competing primary action. Continue sends a new user message when clicked, without approving a change. Do not include API requests, SQL, or resource @ mentions in an action.",
             maxItems: 4,
             items: {
               type: "object",
               properties: {
                 kind: {
                   type: "string",
-                  enum: [
-                    "open",
-                    "draft-plan",
-                    "draft-issue-comment",
-                    "draft-masking-rule",
-                    "draft-masking-exemption",
-                    "draft-semantic-type",
-                    "continue",
-                  ],
+                  enum: isDiagnostic
+                    ? ["open", "continue"]
+                    : [
+                        "open",
+                        "draft-plan",
+                        "draft-issue-comment",
+                        "draft-masking-rule",
+                        "draft-masking-exemption",
+                        "draft-semantic-type",
+                        "continue",
+                      ],
                 },
                 target: {
                   type: "object",
@@ -823,33 +861,37 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
                   },
                   required: ["kind"],
                 },
-                project: {
-                  type: "string",
-                  description:
-                    "For draft-plan, the exact owning project of this turn's selected @Database.",
-                },
-                database: {
-                  type: "string",
-                  description:
-                    "For draft-plan, the exact canonical name of this turn's selected @Database.",
-                },
-                issue: {
-                  type: "string",
-                  description:
-                    "For draft-issue-comment, the exact canonical name of this turn's observed Issue.",
-                },
-                comment: {
-                  type: "string",
-                  description:
-                    "For draft-issue-comment, the review comment to place in the Issue editor without posting.",
-                },
+                ...(!isDiagnostic
+                  ? {
+                      project: {
+                        type: "string",
+                        description:
+                          "For draft-plan, the exact owning project of this turn's selected @Database.",
+                      },
+                      database: {
+                        type: "string",
+                        description:
+                          "For draft-plan, the exact canonical name of this turn's selected @Database.",
+                      },
+                      issue: {
+                        type: "string",
+                        description:
+                          "For draft-issue-comment, the exact canonical name of this turn's observed Issue.",
+                      },
+                      comment: {
+                        type: "string",
+                        description:
+                          "For draft-issue-comment, the review comment to place in the Issue editor without posting.",
+                      },
+                      draftId: {
+                        type: "string",
+                        description:
+                          "For a draft-masking-exemption compatibility action, use only its latest exact prepared ID; normally omit it and let the runtime attach the action. " +
+                          "Optional compatibility field for a manually proposed draft-masking-rule action. Normally omit the entire draft-masking-rule action: the runtime supplies the latest eligible current-run preparation. If supplied, copy the exact returned draftId from that preparation. Never invent an ID or include form fields here.",
+                      },
+                    }
+                  : {}),
                 prompt: { type: "string" },
-                draftId: {
-                  type: "string",
-                  description:
-                    "For a draft-masking-exemption compatibility action, use only its latest exact prepared ID; normally omit it and let the runtime attach the action. " +
-                    "Optional compatibility field for a manually proposed draft-masking-rule action. Normally omit the entire draft-masking-rule action: the runtime supplies the latest eligible current-run preparation. If supplied, copy the exact returned draftId from that preparation. Never invent an ID or include form fields here.",
-                },
               },
               required: ["kind"],
             },
@@ -1145,6 +1187,21 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
   const enabledTools = tools.filter((tool) =>
     isMaskingToolEnabled(tool.name, sections)
   );
+  if (isDiagnostic) {
+    const allowed = capability
+      ? DIAGNOSTIC_TOOL_NAMES
+      : INVALID_DIAGNOSTIC_TOOL_NAMES;
+    return enabledTools
+      .filter((tool) => allowed.has(tool.name))
+      .map((tool) =>
+        capability && tool.name === `get_${capability.resource.kind}_overview`
+          ? {
+              ...tool,
+              description: `${tool.description} This diagnostic chat can inspect only its original selected ${capability.resource.kind}: ${capability.resource.name}.`,
+            }
+          : tool
+      );
+  }
   if (referencedProject) {
     return enabledTools.filter((tool) =>
       REFERENCED_PROJECT_TOOL_NAMES.has(tool.name)
@@ -1164,6 +1221,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
 }
 
 interface CreateToolExecutorOptions {
+  capability?: AgentDiagnosticCapability;
   onSkillLoaded?: (load: Extract<SkillLoadResult, { kind: "loaded" }>) => void;
   chatId?: string;
   canUseCurrentPage?: () => boolean;
@@ -1228,6 +1286,23 @@ export function createToolExecutor(
   router: AppRouterInstance,
   options: CreateToolExecutorOptions = {}
 ): ToolExecutor {
+  const isDiagnostic = options.capability !== undefined;
+  const capability = normalizeAgentDiagnosticCapability(options.capability);
+  if (isDiagnostic) {
+    const resource = capability?.resource;
+    options = {
+      ...options,
+      referencedProject: resource?.project,
+      referencedDatabase:
+        resource?.kind === "database" ? resource.name : undefined,
+      referencedIssue: resource?.kind === "issue" ? resource.name : undefined,
+      referencedPlan: resource?.kind === "plan" ? resource.name : undefined,
+      historicalDatabase: undefined,
+      databaseChoiceProject: resource?.project,
+      pagePath: undefined,
+      maskingPage: undefined,
+    };
+  }
   const referencedProject = isCanonicalProjectName(options.referencedProject)
     ? options.referencedProject
     : undefined;
@@ -1407,6 +1482,21 @@ export function createToolExecutor(
     args: Record<string, unknown>,
     toolCallId: string
   ): Promise<ToolExecutionResult> => {
+    if (isDiagnostic) {
+      const allowed = capability
+        ? DIAGNOSTIC_TOOL_NAMES
+        : INVALID_DIAGNOSTIC_TOOL_NAMES;
+      if (
+        !allowed.has(name) ||
+        (name === "call_api" &&
+          apiCallNeedsConfirmation(String(args.operationId ?? ""))) ||
+        (capability &&
+          name === `get_${capability.resource.kind}_overview` &&
+          args[`${capability.resource.kind}Name`] !== capability.resource.name)
+      ) {
+        return toToolResult(JSON.stringify({ error: DIAGNOSTIC_TOOL_ERROR }));
+      }
+    }
     if (
       PAGE_BOUND_TOOL_NAMES.has(name) &&
       options.canUseCurrentPage?.() === false

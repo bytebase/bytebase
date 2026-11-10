@@ -2,12 +2,6 @@ import { Ban, CheckCircle2, Menu } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
-import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
-import {
-  buildIssueReviewPrompt,
-  canReviewWithAgent,
-} from "@/modules/agent/logic/planIssueAssistance";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 import { IssueDetailActionBar } from "./IssueDetailActionBar";
@@ -27,21 +21,6 @@ export function IssueDetailHeader() {
       ? "success"
       : "default";
   const showMobileSidebarButton = page.sidebarMode === "MOBILE";
-  const issue = page.issue;
-  const issueProject = issue?.name.includes("/issues/")
-    ? issue.name.split("/issues/")[0]
-    : undefined;
-  const openIssueReview = () => {
-    if (!issue || !issueProject || page.isCreating) return;
-    openAgentWithPrompt(buildIssueReviewPrompt(), [
-      {
-        kind: "issue",
-        name: issue.name,
-        project: issueProject,
-        label: issue.title || `Issue #${issue.name.split("/").at(-1)}`,
-      },
-    ]);
-  };
 
   return (
     <div className="px-2 py-2 sm:px-4">
@@ -68,14 +47,6 @@ export function IssueDetailHeader() {
         </div>
 
         <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
-          {issueProject &&
-            !page.isCreating &&
-            canReviewWithAgent(issue, issue?.plan ? page.plan : undefined) &&
-            !page.rollout && (
-              <AgentHelpButton onClick={openIssueReview} size="md">
-                {t("agent.issue-assistance.review")}
-              </AgentHelpButton>
-            )}
           <IssueDetailActionBar />
           {showMobileSidebarButton && (
             <Button

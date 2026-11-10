@@ -4830,6 +4830,121 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test.each(["typed follow-up", "Continue", "Resend", "Retry"] as const)(
+    "keeps diagnostic capability and resource on %s after navigation",
+    async (action) => {
+      const resource = {
+        kind: "plan" as const,
+        name: "projects/orders/plans/7",
+        project: "projects/orders",
+        label: "projects/orders/plans/7",
+      };
+      const capability = { kind: "diagnostic" as const, resource };
+      mocks.executeTool.mockResolvedValue({
+        kind: "tool_result",
+        result: JSON.stringify({
+          project: resource.project,
+          plan: { status: "available", name: resource.name, state: "ACTIVE" },
+        }),
+      });
+      mocks.runAgentLoop
+        .mockResolvedValueOnce(action === "Retry"
+          ? { kind: "error", error: new Error("Connection lost") }
+          : { kind: "completed", totalTokensUsed: 0 })
+        .mockResolvedValueOnce({ kind: "completed", totalTokensUsed: 0 });
+      const page = { path: "/projects/orders/plans/7", title: "Orders Plan" };
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders", page, capability });
+      store.queueUserMessage({ chatId: chat.id, text: "Explain this SQL error", page });
+      const retryActionRef = createRef<(() => void) | null>();
+      const resendActionRef = createRef<((id: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} resendActionRef={resendActionRef} />);
+      view.render();
+      await act(async () => {
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(
+        expect.anything(), expect.objectContaining({ capability, referencedPlan: resource.name })
+      );
+
+      mocks.currentPath = "/projects/billing/plans/99";
+      mocks.currentContext = "projects/billing";
+      await act(async () => {
+        if (action === "Retry") {
+          retryActionRef.current?.();
+        } else if (action === "Resend") {
+          resendActionRef.current?.(store.getMessages(chat.id).find((message) => message.role === "user")!.id);
+        } else if (action === "Continue") {
+          store.queueUserMessage({ chatId: chat.id, text: "What caused this failure?", page: { path: mocks.currentPath, title: "Billing" }, runMode: "default" });
+        } else {
+          const textarea = view.container.querySelector("textarea") as HTMLTextAreaElement;
+          setTextareaValue(textarea, "What caused this failure?");
+          textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      });
+      if (action === "typed follow-up") {
+        await act(async () => {
+          view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+        });
+      }
+      await act(async () => {
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+      });
+      expect(mocks.buildSystemPrompt).toHaveBeenLastCalledWith(expect.objectContaining({ capability, referencedProject: resource.project, referencedPlan: resource.name }));
+      expect(mocks.getToolDefinitions).toHaveBeenLastCalledWith(expect.objectContaining({ capability }));
+      expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ capability, referencedPlan: resource.name }));
+      expect(store.getChat(chat.id)?.capability).toEqual(capability);
+      expect(mocks.executeTool.mock.calls.every(([name, args]) => name !== "get_plan_overview" || args.planName === resource.name)).toBe(true);
+      view.unmount();
+    }
+  );
+
+  test("does not replace diagnostic scope with another explicit resource", async () => {
+    const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: resource.project, capability: { kind: "diagnostic", resource } });
+    store.queueUserMessage({
+      chatId: chat.id,
+      text: "Explain another Plan",
+      page: { path: "/projects/orders/plans/8", title: "Another Plan" },
+      resourceReferences: [{ ...resource, name: "projects/orders/plans/8" }],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "agent.diagnostic-help.scope-mismatch")).toBe(true));
+    });
+    expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    expect(mocks.createToolExecutor).not.toHaveBeenCalled();
+    expect(store.getChat(chat.id)?.capability?.resource.name).toBe(resource.name);
+    view.unmount();
+  });
+
+  test("diagnostic answers cannot stage Issue comment drafts", async () => {
+    const resource = { kind: "issue" as const, name: "projects/orders/issues/42", project: "projects/orders", label: "projects/orders/issues/42" };
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: resource.project, issue: { status: "available", name: resource.name } }) });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onText("The SQL needs a bounded predicate.");
+      return { kind: "completed", success: true, totalTokensUsed: 0, actions: [
+        { kind: "draft-issue-comment", issue: resource.name, comment: "Add a WHERE clause." },
+        { kind: "continue", prompt: "Which predicate would be appropriate?" },
+      ] };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders/issues/42", title: "Issue" };
+    const chat = store.createChat({ context: resource.project, capability: { kind: "diagnostic", resource } });
+    store.queueUserMessage({ chatId: chat.id, text: "Explain the warning", page, resourceReferences: [resource] });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "The SQL needs a bounded predicate.")).toBe(true));
+    });
+    const answer = store.getMessages(chat.id).find((message) => message.content === "The SQL needs a bounded predicate.");
+    expect(answer?.metadata?.actions).toEqual([{ kind: "continue", prompt: "Which predicate would be appropriate?" }]);
+    expect(answer?.metadata?.resourceReferences).toEqual([resource]);
+    view.unmount();
+  });
+
   test("keeps a read-only starter read-only after answering a pending question", async () => {
     mocks.runAgentLoop
       .mockResolvedValueOnce({
@@ -8168,6 +8283,36 @@ describe("AgentInput", () => {
       ])
     );
     expect(useAgentStore.getState().getPendingAsk(chatId)).toBeNull();
+    view.unmount();
+  });
+
+  test("passes durable diagnostic capability to pending API resolution", async () => {
+    const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
+    const capability = { kind: "diagnostic" as const, resource };
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: resource.project, capability });
+    store.awaitUser(chat.id, {
+      toolCallId: "tool-write",
+      prompt: "bytebase.v1.ProjectService.UpdateProject",
+      kind: "confirm",
+      apiPermission: { actionId: "action-diagnostic", operationId: "bytebase.v1.ProjectService.UpdateProject" },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      body: '{"project":{"name":"projects/orders"}}',
+      expiresAt: Date.now() + 60_000,
+    });
+    mocks.resolvePendingApiCall.mockResolvedValue('{"error":"Diagnostic request denied."}');
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.api-permission-allow")?.click();
+    });
+    expect(mocks.resolvePendingApiCall).toHaveBeenCalledWith(expect.objectContaining({ capability }));
+    expect(store.getMessages(chat.id)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: "tool", content: '{"error":"Diagnostic request denied."}' }),
+    ]));
     view.unmount();
   });
 

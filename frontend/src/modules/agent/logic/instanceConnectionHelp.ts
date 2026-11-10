@@ -2,7 +2,11 @@ import { router } from "@/app/router";
 import { useAppStore } from "@/stores/app";
 import { useAgentStore } from "../store/agent";
 import { getCurrentChatContext } from "./chatContext";
-import type { AgentResourceReference } from "./types";
+import { normalizeAgentDiagnosticCapability } from "./diagnosticCapability";
+import type {
+  AgentDiagnosticCapability,
+  AgentResourceReference,
+} from "./types";
 
 export type InstanceConnectionFailureCategory =
   | "auth_failed"
@@ -84,15 +88,19 @@ export function buildInstanceConnectionHelpPrompt(options: {
 export function openAgentWithPrompt(
   text: string,
   resourceReferences?: AgentResourceReference[],
-  onChatCreated?: (chatId: string) => void
+  onChatCreated?: (chatId: string) => void,
+  options?: { capability?: AgentDiagnosticCapability }
 ): void {
+  const capability = normalizeAgentDiagnosticCapability(options?.capability);
+  if (options?.capability !== undefined && !capability) return;
   const app = useAppStore.getState();
   const workspaceName =
     app.workspace?.name ||
     app.currentUser?.workspace ||
     app.serverInfo?.workspace ||
     undefined;
-  const context = getCurrentChatContext() ?? workspaceName;
+  const context =
+    capability?.resource.project ?? getCurrentChatContext() ?? workspaceName;
   const route = router.currentRoute.value;
   const page = {
     path: route.fullPath || window.location.pathname + window.location.hash,
@@ -100,7 +108,12 @@ export function openAgentWithPrompt(
   };
 
   const store = useAgentStore.getState();
-  const chat = store.createChat({ page, context, workspaceName });
+  const chat = store.createChat({
+    page,
+    context,
+    workspaceName,
+    ...(capability ? { capability } : {}),
+  });
   onChatCreated?.(chat.id);
   store.queueUserMessage({
     chatId: chat.id,

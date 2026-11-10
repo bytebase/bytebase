@@ -5,7 +5,8 @@ import {
   AIChatMessageSchema,
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
-import { buildPlanReviewPrompt } from "./planIssueAssistance";
+import { buildAgentDiagnosticPrompt } from "./diagnosticHelp";
+import { buildPlanCreatePrompt } from "./planIssueAssistance";
 import { buildSystemPrompt } from "./prompt";
 import {
   measureAgentRequest,
@@ -112,7 +113,7 @@ describe("measureAgentRequest", () => {
         }),
         create(AIChatMessageSchema, {
           role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_USER,
-          content: buildPlanReviewPrompt(),
+          content: buildPlanCreatePrompt(),
         }),
       ];
       const toolDefinitions = tools.map((tool) =>
@@ -158,5 +159,68 @@ describe("measureAgentRequest", () => {
       ),
     });
     expect(maskingSections.overview.length).toBeLessThanOrEqual(8_000);
+  });
+
+  test("keeps a bounded diagnostic prompt and its actual tools below 50,000 bytes", () => {
+    const resource = {
+      kind: "plan" as const,
+      name: "projects/example/plans/42",
+      project: "projects/example",
+      label: "Plan",
+    };
+    const capability = { kind: "diagnostic" as const, resource };
+    const content = buildAgentDiagnosticPrompt({
+      resource,
+      kind: "sql-check",
+      sourceId: "projects/example/plans/42/checkRuns/7",
+      summary: "Check failed",
+      detail: "\u6570\u636e\ud83d\ude00".repeat(4000),
+      sql: {
+        source: "draft",
+        text: "SELECT 1;".repeat(4000),
+        sha256: "a".repeat(64),
+      },
+      facts: Array.from({ length: 100 }, () => ({
+        label: "rule",
+        value: "statement.where.require",
+      })),
+    });
+    const systemPrompt = buildSystemPrompt({
+      path: "/projects/example/plans/42",
+      title: "Plan",
+      capability,
+    });
+    const tools = getToolDefinitions({
+      capability,
+      referencedProject: resource.project,
+      runMode: "read-only",
+    });
+    const messages = [
+      create(AIChatMessageSchema, {
+        role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_SYSTEM,
+        content: systemPrompt,
+      }),
+      create(AIChatMessageSchema, {
+        role: AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_USER,
+        content,
+      }),
+    ];
+    const definitions = tools.map((tool) =>
+      create(AIChatToolDefinitionSchema, {
+        name: tool.name,
+        description: tool.description,
+        parametersSchema: JSON.stringify(tool.parametersSchema),
+      })
+    );
+    expect(new TextEncoder().encode(content).byteLength).toBeLessThanOrEqual(
+      6000
+    );
+    expect(tools.map((tool) => tool.name)).toEqual(
+      expect.arrayContaining(["search_api", "call_api"])
+    );
+    expect(tools.map((tool) => tool.name)).not.toContain("dom_action");
+    const measured = measureAgentRequest(messages, definitions);
+    expect(measured.serializedBytes).toBeLessThanOrEqual(50_000);
+    recordBenchmarkMetrics({ fixture: "diagnostic", ...measured });
   });
 });

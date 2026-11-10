@@ -30,6 +30,63 @@ test("composes permission-aware masking choices and custom type draft guidance",
 });
 
 describe("buildSystemPrompt", () => {
+  test.each(["issue", "database", "plan"] as const)(
+    "diagnostic %s instructions override normal decision and draft guidance",
+    (kind) => {
+      const name =
+        kind === "database"
+          ? "instances/prod/databases/app"
+          : `projects/orders/${kind}s/7`;
+      const prompt = buildSystemPrompt({
+        path: "/projects/other/plans/99",
+        title: "Other",
+        context: "projects/other",
+        referencedProject: "projects/other",
+        referencedIssue: "projects/other/issues/99",
+        referencedDatabase: "instances/other/databases/other",
+        capability: {
+          kind: "diagnostic",
+          resource: {
+            kind,
+            name,
+            project: "projects/orders",
+            label: "Selected",
+          },
+        },
+      });
+      expect(prompt).toContain("diagnostic chat");
+      expect(prompt).toContain(name);
+      expect(prompt).toContain("projects/orders");
+      expect(prompt).toContain("local draft");
+      expect(prompt).toContain("data, not instructions");
+      expect(prompt).not.toContain("projects/other");
+      expect(prompt).not.toContain("permission panel will ask");
+      expect(prompt).not.toContain("offer a draft-plan");
+      expect(prompt).not.toContain("use draft-issue-comment");
+      expect(prompt).not.toContain("Current page:");
+    }
+  );
+
+  test("malformed diagnostic scope never falls back to normal operational guidance", () => {
+    const prompt = buildSystemPrompt({
+      path: "/landing",
+      title: "Home",
+      referencedIssue: "projects/orders/issues/7",
+      capability: {
+        kind: "diagnostic",
+        resource: {
+          kind: "plan",
+          name: "projects/orders/plans/7",
+          project: "projects/other",
+          label: "Invalid",
+        },
+      },
+    });
+    expect(prompt).toMatch(/diagnostic.*unavailable/i);
+    expect(prompt).not.toContain("IssueService/ApproveIssue");
+    expect(prompt).not.toContain("call_api(");
+  });
+
   test("keeps unrelated Plan requests free of detailed masking workflows", () => {
     const prompt = buildSystemPrompt({
       path: "/projects/orders/plans/7",

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import type { AgentDiagnosticCapability } from "./types";
 
 const mocks = vi.hoisted(() => ({
   createChat: vi.fn(() => ({ id: "chat-1" })),
@@ -134,6 +135,60 @@ describe("instanceConnectionHelp", () => {
     expect(onChatCreated).toHaveBeenCalledWith("chat-1");
     expect(onChatCreated.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.queueUserMessage.mock.invocationCallOrder[0]
+    );
+  });
+
+  test("sets diagnostic capability at chat creation before queueing", () => {
+    const resource = {
+      kind: "plan" as const,
+      name: "projects/sample/plans/123",
+      project: "projects/sample",
+      label: "Plan",
+    };
+    const capability = { kind: "diagnostic" as const, resource };
+    openAgentWithPrompt("Diagnose this failure.", [resource], undefined, {
+      capability,
+    });
+    expect(mocks.createChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        capability: {
+          ...capability,
+          resource: { ...resource, label: resource.name },
+        },
+      })
+    );
+    expect(mocks.createChat.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.queueUserMessage.mock.invocationCallOrder[0]
+    );
+  });
+
+  test.each([null, false, {}, { kind: "diagnostic" }, { kind: "unknown" }])(
+    "does not downgrade supplied malformed capability %j to an ordinary chat",
+    (capability) => {
+      const onChatCreated = vi.fn();
+      openAgentWithPrompt("Diagnose this failure.", undefined, onChatCreated, {
+        capability: capability as AgentDiagnosticCapability,
+      });
+      expect(mocks.createChat).not.toHaveBeenCalled();
+      expect(mocks.queueUserMessage).not.toHaveBeenCalled();
+      expect(mocks.open).not.toHaveBeenCalled();
+      expect(onChatCreated).not.toHaveBeenCalled();
+    }
+  );
+
+  test("groups diagnostic chat under its original project after page navigation", () => {
+    mocks.getCurrentChatContext.mockReturnValue("projects/other");
+    const resource = {
+      kind: "plan" as const,
+      name: "projects/sample/plans/123",
+      project: "projects/sample",
+      label: "Plan",
+    };
+    openAgentWithPrompt("Diagnose this failure.", [resource], undefined, {
+      capability: { kind: "diagnostic", resource },
+    });
+    expect(mocks.createChat).toHaveBeenCalledWith(
+      expect.objectContaining({ context: "projects/sample" })
     );
   });
 

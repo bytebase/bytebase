@@ -114,6 +114,10 @@
     "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
+    "diagnostic-help": {
+      "ask-agent": "Agent に質問",
+      "scope-mismatch": "この診断チャットは元のリソースに紐付いています。別のリソースには新しいヘルプリクエストを開始してください。"
+    },
     "empty-chat": {
       "project-heading": "このプロジェクトについて、何をお手伝いできますか？",
       "suggestions": "おすすめの質問",
@@ -149,9 +153,6 @@
     "input-processing-placeholder": "処理中...",
     "interrupted": "中断",
     "interrupted-retry-hint": "会話が中断されました。再試行するか、新しいメッセージを送信できます。",
-    "issue-assistance": {
-      "review": "Agent とレビュー"
-    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -245,8 +246,7 @@
       "issue-rejection": "このイシューを却下すると、現在の承認フローは停止します。承認を再開するには却下理由への対応が必要です。"
     },
     "plan-assistance": {
-      "ask-draft-sql": "Agent に SQL の作成を依頼",
-      "review": "Agent とレビュー"
+      "ask-draft-sql": "Agent に SQL の作成を依頼"
     },
     "plan-draft": {
       "append-sql": "SQL を追加",

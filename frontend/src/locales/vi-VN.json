@@ -114,6 +114,10 @@
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
+    "diagnostic-help": {
+      "ask-agent": "Hỏi Agent",
+      "scope-mismatch": "Cuộc trò chuyện chẩn đoán này được liên kết với tài nguyên ban đầu. Hãy tạo yêu cầu trợ giúp mới cho tài nguyên khác."
+    },
     "empty-chat": {
       "project-heading": "Tôi có thể hỗ trợ gì cho dự án này?",
       "suggestions": "Câu hỏi gợi ý",
@@ -149,9 +153,6 @@
     "input-processing-placeholder": "Đang xử lý...",
     "interrupted": "Bị gián đoạn",
     "interrupted-retry-hint": "Cuộc trò chuyện đã bị gián đoạn. Bạn có thể thử lại hoặc gửi tin nhắn mới.",
-    "issue-assistance": {
-      "review": "Đánh giá cùng Agent"
-    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -245,8 +246,7 @@
       "issue-rejection": "Từ chối vấn đề này sẽ dừng quy trình phê duyệt hiện tại. Cần xử lý lý do từ chối trước khi tiếp tục phê duyệt."
     },
     "plan-assistance": {
-      "ask-draft-sql": "Nhờ Agent soạn SQL",
-      "review": "Đánh giá cùng Agent"
+      "ask-draft-sql": "Nhờ Agent soạn SQL"
     },
     "plan-draft": {
       "append-sql": "Thêm SQL",

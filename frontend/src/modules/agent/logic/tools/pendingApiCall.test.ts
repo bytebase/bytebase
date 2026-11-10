@@ -31,6 +31,46 @@ const makeCall = (): PreparedApiCall => ({
 });
 
 describe("pendingApiCall", () => {
+  test.each(["valid", "malformed"])(
+    "consumes an approved %s diagnostic action without dispatch",
+    async (kind) => {
+      const { actionId } = createPendingApiCall({
+        chatId: "diagnostic",
+        toolCallId: "pending",
+        userName: "users/1",
+        call: makeCall(),
+      });
+      const capability = {
+        kind: "diagnostic" as const,
+        resource: {
+          kind: "plan" as const,
+          name: "projects/demo/plans/1",
+          project: kind === "valid" ? "projects/demo" : "projects/other",
+          label: "Plan",
+        },
+      };
+      const result = await resolvePendingApiCall({
+        actionId,
+        chatId: "diagnostic",
+        toolCallId: "pending",
+        userName: "users/1",
+        approved: true,
+        capability,
+      });
+      expect(JSON.parse(result).error).toMatch(/diagnostic/i);
+      expect(mocks.dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(mocks.checkPreparedApiPermission).not.toHaveBeenCalled();
+      const replay = await resolvePendingApiCall({
+        actionId,
+        chatId: "diagnostic",
+        toolCallId: "pending",
+        userName: "users/1",
+        approved: true,
+      });
+      expect(JSON.parse(replay).error).toMatch(/not found|used/i);
+    }
+  );
+
   beforeEach(() => {
     vi.useRealTimers();
     mocks.checkPreparedApiPermission.mockReset();
