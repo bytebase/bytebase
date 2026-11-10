@@ -89,8 +89,13 @@ above the statement already counts open findings by priority, and one colored ba
 thread is the density this doc removes.
 
 **D5 · Any thread can be folded.** The fold control is an icon-only `Button size="xs"` at the left
-of the bar, with `aria-expanded`, named by the bar's title. It is the only part of the bar that
-folds, because in Activity the bar also holds a link. In Activity an open thread starts unfolded
+of the bar, with `aria-expanded`. It is the only part of the bar that folds, because in Activity
+the bar also holds a link. Its accessible name is plain text that whoever renders the bar passes
+with it, so each control says which thread it folds. In the Changes section the name is the bar's
+title, "Comment on lines 1–7". In Activity the bar has no single title, so the name is the change's
+label, the one its tab in the Changes section shows, followed by the lines: "alpha_prod, lines
+9–10" for a change whose tab reads "alpha_prod". For a thread that is not on lines it is "Comment
+on the plan". In Activity an open thread starts unfolded
 and a resolved one starts folded, as today, and the reader can now fold an open one. In the
 Changes section the control replaces the close button in the author row, and the default is
 unchanged: the first unresolved thread is unfolded and every other thread is a margin marker until
@@ -159,13 +164,14 @@ row of States that differs from today traces to one of them.
 1. **Title bar and folding in the Changes section (D3, D4, D5, and "Resolved" from D6).** Depends
    on nothing.
    - `CommentThreadCard.tsx`: an optional bar on `bg-control-bg` with `text-control` text, rendered
-     when the caller passes its content. It holds the fold control and `ThreadStateBadge`. The fold
+     when the caller passes its content together with the fold control's accessible name as a
+     string. It holds the fold control and `ThreadStateBadge`. The fold
      takes an optional controlled pair, `expanded` and `onExpandedChange`, which replaces `onClose`
      and the `collapsible` prop; the close button in the author row goes. A card with a bar renders
      its footer only when the reader can reply or settle, since the badge is in the bar. A card
      without a bar is unchanged. That is what Activity renders until slice 2, which gives every
      card a bar and removes the path.
-   - `ThreadStack.tsx`: pass the title; delete `CollapsedThreadRow` and `showRanges`. Every thread
+   - `ThreadStack.tsx`: pass the title, which is also the fold control's name; delete `CollapsedThreadRow` and `showRanges`. Every thread
      renders the card, folded or not, with `expanded` from `expandedRoots` and `onExpandedChange`
      calling the layer's `onExpand` and `onCollapse`.
    - The five locale files, for the two title strings.
@@ -187,7 +193,9 @@ row of States that differs from today traces to one of them.
      and `variant="default"`.
    - `CommentThreadCard.tsx` and `ReviewActivityTimeline.tsx`: the card's `renderContext` slot
      becomes those two slots, bar content and body excerpt, and `ThreadActivityRow` passes both.
-     For a thread that is not on lines it passes the title "Comment on the plan" and no excerpt.
+     It also passes the fold control's name: the change reference's `accessibleLabel` followed by
+     the line range. For a thread that is not on lines it passes the title "Comment on the plan",
+     which is also the name, and no excerpt.
    - `CommentThreadCard.tsx`: every card now has a bar, so the path without one goes: the bar is
      required, the footer's guard loses `thread.resolved`, and the last collapse button in the
      author row goes. An uncontrolled card folds in any state, by dropping the `thread.resolved`
@@ -198,7 +206,8 @@ row of States that differs from today traces to one of them.
    - Tests: `CommentThreadCard.test.tsx` (an open thread in Activity folds; folded, it shows the
      bar and no summary row; unfolded, the excerpt renders in the body under the bar and not
      inside it; a resolved thread that is not on lines starts folded to a bar titled "Comment on
-     the plan" and unfolds from it), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
+     the plan" and unfolds from it; the fold control of an Activity card is named by its change
+     and lines, and two folded cards have different names), `StatementAnchorContext.test.tsx` (no `Badge` for the outdated and
      unavailable states; no collapse button of its own). E2E: `plan-detail-review.spec.ts` asserts
      the folded and resolved states in Activity.
 3. **No line tints, and the width limit (D1, D2).** Depends on slice 1, which gives every thread in
