@@ -244,5 +244,8 @@ The two sibling docs add three more PRs. Across all three docs the order is:
   (BYT-10513), and a label in the bar for a comment that involves a production database
   (BYT-10514).
 - Naming who resolved a thread. It needs a field on the thread first.
+- Creating a thread that is not on lines from the product. The bar in D3 only gives such a thread
+  a title when the API creates one. The comment box in Activity keeps posting a plain comment, and
+  the Changes section keeps creating threads on selected lines only.
 - Highlighting a thread's lines while the pointer is on its title bar.
 - The thread stepper (`StatementThreadWalker`) and the margin markers, which do not change.
