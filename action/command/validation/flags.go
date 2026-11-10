@@ -58,6 +58,14 @@ func ValidateFlags(w *world.World) error {
 		return errors.Errorf("invalid project format, must be projects/{project}")
 	}
 
+	// Validate plan customization flags
+	if len(w.PlanTitle) > 200 {
+		return errors.Errorf("--plan-title must be at most 200 characters")
+	}
+	if len(w.PlanDescription) > 10000 {
+		return errors.Errorf("--plan-description must be at most 10000 characters")
+	}
+
 	// Validate targets format
 	return validateTargets(w.Targets)
 }
