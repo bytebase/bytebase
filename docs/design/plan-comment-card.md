@@ -78,7 +78,9 @@ even where it follows the tables.
 2. **Every card has the frame and a bar.** That includes the new-comment composer and a thread that
    is not on lines.
 3. **The bar is the same folded and unfolded.** Folding hides the body and the footer and changes
-   nothing else.
+   nothing else. So a folded card says where a thread is and what state it is in, and nothing about
+   what it says: not its author, its priority, its text, its replies or the databases it applies
+   to. Each of those is one click away.
 4. **The fold control is named by the bar's text.** Its accessible name is the title, followed by
    the lines where the bar shows them apart from the title. Whatever the title is, the control has
    a name.
@@ -194,10 +196,12 @@ its avatar. A finding stacks four rows, and they scan better with the avatar out
 moves from the bar into the body's avatar column beside the editor, so a comment does not change
 shape when it is posted.
 
-**D9 · The "Applies to" row is unchanged.** The bar does not name or count a finding's databases:
-an open finding is unfolded, so the row is on screen, and a resolved one only needs to say it is
-resolved. Rejected: a count or the database names in the bar. The bar stops being simple and long
-lists do not fit.
+**D9 · The "Applies to" row is unchanged, and stays in the body.** The bar does not name or count
+a finding's databases. They are part of what the finding says, like its priority in D4, so by
+invariant 3 they show when the card is unfolded and are hidden when it is folded, whether the
+thread is open or resolved. Rejected: a count or the database names in the bar. The bar stops
+being simple and long lists do not fit. BYT-10514 tracks the one signal worth adding there later,
+a label for a comment that involves a production database.
 
 **D10 · A thread that is not on lines has a bar too.** The API allows such a thread, and the
 product's own comment box does not create one. It is titled "Comment on the plan", so invariant 2
@@ -223,7 +227,8 @@ helpers carry the rules is decided in the slice's own PR and reviewed there.
      locale files for the title.
    - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
      `StatementThreadsLayer.test.tsx`, one case for each row delivered. They include: the bar is
-     the same folded and unfolded; folding from the bar updates the layer's state and the stepper's
+     the same folded and unfolded, and a folded card shows nothing from the body, by invariant 3;
+     folding from the bar updates the layer's state and the stepper's
      selection; a resolved thread whose reader can neither reply nor resolve has no footer. E2E:
      `frontend/tests/e2e/plan-detail/plan-detail.page.ts` reads `thread-row`, which this slice
      removes, and `plan-detail-review.spec.ts` covers folding and resolving in the Changes section.
