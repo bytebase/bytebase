@@ -84,7 +84,7 @@ the sheet's preview holds. This doc changes only how it is drawn.
 
 ## Scope
 
-Frontend only. One PR. It depends on slice 3 of [Plan comment card](plan-comment-card.md), which
+Frontend only. One PR. It depends on slice 4 of [Plan comment card](plan-comment-card.md), which
 sets the comment's text column that D3 lines up with.
 
 1. **Excerpt (D1 to D4).**
