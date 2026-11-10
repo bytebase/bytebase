@@ -28,26 +28,26 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &disallowFuncAndCalcOmniRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &disallowFuncAndCalcRule{
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
 	if checkCtx.DBSchema != nil {
 		rule.dbMetadata = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MSSQL, checkCtx.IsObjectCaseSensitive)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type disallowFuncAndCalcOmniRule struct {
-	OmniBaseRule
+type disallowFuncAndCalcRule struct {
+	BaseRule
 	dbMetadata *model.DatabaseMetadata
 }
 
-func (*disallowFuncAndCalcOmniRule) Name() string {
-	return "DisallowFuncAndCalcOmniRule"
+func (*disallowFuncAndCalcRule) Name() string {
+	return "DisallowFuncAndCalcRule"
 }
 
-func (r *disallowFuncAndCalcOmniRule) OnStatement(node ast.Node) {
+func (r *disallowFuncAndCalcRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
 		r.checkSelect(n)
@@ -75,7 +75,7 @@ func (r *disallowFuncAndCalcOmniRule) OnStatement(node ast.Node) {
 }
 
 // checkSelectNode runs checkSelect if node is a *ast.SelectStmt; no-ops otherwise.
-func (r *disallowFuncAndCalcOmniRule) checkSelectNode(node ast.Node) {
+func (r *disallowFuncAndCalcRule) checkSelectNode(node ast.Node) {
 	if sel, ok := node.(*ast.SelectStmt); ok {
 		r.checkSelect(sel)
 	}
@@ -83,7 +83,7 @@ func (r *disallowFuncAndCalcOmniRule) checkSelectNode(node ast.Node) {
 
 // onInsert handles T-SQL INSERT. Source can be a SELECT or a VALUES list; both
 // may embed scalar subqueries with their own WHERE clauses.
-func (r *disallowFuncAndCalcOmniRule) onInsert(n *ast.InsertStmt) {
+func (r *disallowFuncAndCalcRule) onInsert(n *ast.InsertStmt) {
 	r.checkCTEs(n.WithClause)
 	r.recurseIntoNestedSelectsInNode(n.Source, nil)
 }
@@ -91,7 +91,7 @@ func (r *disallowFuncAndCalcOmniRule) onInsert(n *ast.InsertStmt) {
 // onUpdate handles T-SQL UPDATE. It covers the WHERE, derived tables in
 // Relation/FromClause (each with its own WHERE), and scalar subqueries hidden
 // in SET assignments.
-func (r *disallowFuncAndCalcOmniRule) onUpdate(n *ast.UpdateStmt) {
+func (r *disallowFuncAndCalcRule) onUpdate(n *ast.UpdateStmt) {
 	r.checkCTEs(n.WithClause)
 	tables := r.collectUpdateDeleteTables(n.Relation, n.FromClause)
 	r.checkWhere(n.WhereClause, tables)
@@ -101,7 +101,7 @@ func (r *disallowFuncAndCalcOmniRule) onUpdate(n *ast.UpdateStmt) {
 
 // onDelete handles T-SQL DELETE, including any JOINed sources in the FROM clause
 // that carry their own WHERE clauses inside derived tables.
-func (r *disallowFuncAndCalcOmniRule) onDelete(n *ast.DeleteStmt) {
+func (r *disallowFuncAndCalcRule) onDelete(n *ast.DeleteStmt) {
 	r.checkCTEs(n.WithClause)
 	tables := r.collectUpdateDeleteTables(n.Relation, n.FromClause)
 	r.checkWhere(n.WhereClause, tables)
@@ -110,7 +110,7 @@ func (r *disallowFuncAndCalcOmniRule) onDelete(n *ast.DeleteStmt) {
 
 // collectUpdateDeleteTables merges tables referenced by the target Relation
 // with any JOINed tables in the extra FROM clause (T-SQL UPDATE/DELETE shape).
-func (r *disallowFuncAndCalcOmniRule) collectUpdateDeleteTables(relation ast.TableExpr, from *ast.List) tablesByAlias {
+func (r *disallowFuncAndCalcRule) collectUpdateDeleteTables(relation ast.TableExpr, from *ast.List) tablesByAlias {
 	tables := r.collectTablesFromRelation(relation)
 	for alias, ref := range r.collectTableNamesFromList(from) {
 		tables[alias] = ref
@@ -120,7 +120,7 @@ func (r *disallowFuncAndCalcOmniRule) collectUpdateDeleteTables(relation ast.Tab
 
 // recurseDerivedTables walks the relation and every FROM item for nested SELECTs
 // whose own WHERE clause must be checked in its own scope.
-func (r *disallowFuncAndCalcOmniRule) recurseDerivedTables(relation ast.TableExpr, from *ast.List, outer tablesByAlias) {
+func (r *disallowFuncAndCalcRule) recurseDerivedTables(relation ast.TableExpr, from *ast.List, outer tablesByAlias) {
 	r.recurseIntoNestedSelectsInNode(relation, outer)
 	if from == nil {
 		return
@@ -131,7 +131,7 @@ func (r *disallowFuncAndCalcOmniRule) recurseDerivedTables(relation ast.TableExp
 }
 
 // recurseSetClauseValues walks each SET assignment's value for scalar subqueries.
-func (r *disallowFuncAndCalcOmniRule) recurseSetClauseValues(setClause *ast.List, outer tablesByAlias) {
+func (r *disallowFuncAndCalcRule) recurseSetClauseValues(setClause *ast.List, outer tablesByAlias) {
 	if setClause == nil {
 		return
 	}
@@ -145,7 +145,7 @@ func (r *disallowFuncAndCalcOmniRule) recurseSetClauseValues(setClause *ast.List
 // checkMerge handles T-SQL MERGE statements. The ON condition and each WHEN-clause
 // condition are treated like a WHERE for index-aware checking, scoped to the target
 // plus source tables. Nested SELECTs inside the source or conditions are recursed.
-func (r *disallowFuncAndCalcOmniRule) checkMerge(n *ast.MergeStmt) {
+func (r *disallowFuncAndCalcRule) checkMerge(n *ast.MergeStmt) {
 	tables := make(tablesByAlias)
 	if ref, ok := n.Target.(*ast.TableRef); ok {
 		addTableRef(r, tables, ref)
@@ -185,7 +185,7 @@ func (r *disallowFuncAndCalcOmniRule) checkMerge(n *ast.MergeStmt) {
 	}
 }
 
-func (r *disallowFuncAndCalcOmniRule) checkCTEs(wc *ast.WithClause) {
+func (r *disallowFuncAndCalcRule) checkCTEs(wc *ast.WithClause) {
 	if wc == nil || wc.CTEs == nil {
 		return
 	}
@@ -198,7 +198,7 @@ func (r *disallowFuncAndCalcOmniRule) checkCTEs(wc *ast.WithClause) {
 	}
 }
 
-func (r *disallowFuncAndCalcOmniRule) checkSelect(sel *ast.SelectStmt) {
+func (r *disallowFuncAndCalcRule) checkSelect(sel *ast.SelectStmt) {
 	r.checkSelectInScope(sel, nil)
 }
 
@@ -206,7 +206,7 @@ func (r *disallowFuncAndCalcOmniRule) checkSelect(sel *ast.SelectStmt) {
 // so that correlated subqueries can resolve references to outer aliases. Local
 // (inner) tables take precedence for unqualified columns per SQL name resolution;
 // outer tables are consulted only for qualified references.
-func (r *disallowFuncAndCalcOmniRule) checkSelectInScope(sel *ast.SelectStmt, outer tablesByAlias) {
+func (r *disallowFuncAndCalcRule) checkSelectInScope(sel *ast.SelectStmt, outer tablesByAlias) {
 	if sel == nil {
 		return
 	}
@@ -233,7 +233,7 @@ func (r *disallowFuncAndCalcOmniRule) checkSelectInScope(sel *ast.SelectStmt, ou
 // map contain sources whose columns we cannot enumerate — CTE references,
 // derived tables (subqueries in FROM), or plain tables absent from metadata.
 // When true, isIndexed must not fall back to outer scope on unqualified refs.
-func (r *disallowFuncAndCalcOmniRule) localHasUnresolvedSources(from *ast.List, local tablesByAlias) bool {
+func (r *disallowFuncAndCalcRule) localHasUnresolvedSources(from *ast.List, local tablesByAlias) bool {
 	if from != nil {
 		for _, item := range from.Items {
 			derivedFound := false
@@ -263,7 +263,7 @@ func (r *disallowFuncAndCalcOmniRule) localHasUnresolvedSources(from *ast.List, 
 
 // recurseIntoNestedSelectsInNode walks the given AST node and recurses into any
 // nested *ast.SelectStmt, threading the given outer scope.
-func (r *disallowFuncAndCalcOmniRule) recurseIntoNestedSelectsInNode(n ast.Node, outer tablesByAlias) {
+func (r *disallowFuncAndCalcRule) recurseIntoNestedSelectsInNode(n ast.Node, outer tablesByAlias) {
 	if n == nil {
 		return
 	}
@@ -279,7 +279,7 @@ func (r *disallowFuncAndCalcOmniRule) recurseIntoNestedSelectsInNode(n ast.Node,
 // recurseIntoNestedSelects finds nested SelectStmts in the non-WHERE parts of sel
 // (FROM derived tables, SELECT list, HAVING, GROUP BY, ORDER BY) and invokes
 // checkSelectInScope on them with the given outer scope so correlated subqueries resolve.
-func (r *disallowFuncAndCalcOmniRule) recurseIntoNestedSelects(sel *ast.SelectStmt, outer tablesByAlias) {
+func (r *disallowFuncAndCalcRule) recurseIntoNestedSelects(sel *ast.SelectStmt, outer tablesByAlias) {
 	visitor := func(m ast.Node) bool {
 		if sub, ok := m.(*ast.SelectStmt); ok {
 			r.checkSelectInScope(sub, outer)
@@ -323,7 +323,7 @@ type tablesByAlias = map[string]tableRef
 // inner TableRefs into the outer scope, but a derived table's own alias (captured
 // via AliasedTableRef wrapping a SubqueryExpr) is recorded as an opaque entry so
 // qualifier-based resolution can tell it apart from an outer alias of the same name.
-func (r *disallowFuncAndCalcOmniRule) collectTableNamesFromList(from *ast.List) tablesByAlias {
+func (r *disallowFuncAndCalcRule) collectTableNamesFromList(from *ast.List) tablesByAlias {
 	tables := make(tablesByAlias)
 	if from == nil {
 		return tables
@@ -361,7 +361,7 @@ func (r *disallowFuncAndCalcOmniRule) collectTableNamesFromList(from *ast.List) 
 }
 
 // collectTablesFromRelation builds a table map from a single table reference (UPDATE/DELETE).
-func (r *disallowFuncAndCalcOmniRule) collectTablesFromRelation(te ast.TableExpr) tablesByAlias {
+func (r *disallowFuncAndCalcRule) collectTablesFromRelation(te ast.TableExpr) tablesByAlias {
 	tables := make(tablesByAlias)
 	if te == nil {
 		return tables
@@ -375,14 +375,14 @@ func (r *disallowFuncAndCalcOmniRule) collectTablesFromRelation(te ast.TableExpr
 // normalizeIdent lowercases identifiers when the DB is configured case-insensitive
 // (respecting IsObjectCaseSensitive). MSSQL default collation is CI, but a CS DB
 // must be honored too.
-func (r *disallowFuncAndCalcOmniRule) normalizeIdent(name string) string {
+func (r *disallowFuncAndCalcRule) normalizeIdent(name string) string {
 	if r.dbMetadata != nil && r.dbMetadata.GetIsObjectCaseSensitive() {
 		return name
 	}
 	return strings.ToLower(name)
 }
 
-func addTableRef(r *disallowFuncAndCalcOmniRule, tables tablesByAlias, t *ast.TableRef) {
+func addTableRef(r *disallowFuncAndCalcRule, tables tablesByAlias, t *ast.TableRef) {
 	key := t.Alias
 	if key == "" {
 		key = t.Object
@@ -403,7 +403,7 @@ func addTableRef(r *disallowFuncAndCalcOmniRule, tables tablesByAlias, t *ast.Ta
 // tableMetadata fetches the store-model table for the given ref, applying the
 // cross-DB guard and MSSQL's dbo-first-then-sorted-others schema resolution.
 // Returns nil when not resolvable.
-func (r *disallowFuncAndCalcOmniRule) tableMetadata(ref tableRef) *model.TableMetadata {
+func (r *disallowFuncAndCalcRule) tableMetadata(ref tableRef) *model.TableMetadata {
 	if r.dbMetadata == nil {
 		return nil
 	}
@@ -438,7 +438,7 @@ func (r *disallowFuncAndCalcOmniRule) tableMetadata(ref tableRef) *model.TableMe
 }
 
 // indexedColumns returns indexed column names for the table at the given database+schema+object.
-func (r *disallowFuncAndCalcOmniRule) indexedColumns(ref tableRef) map[string]bool {
+func (r *disallowFuncAndCalcRule) indexedColumns(ref tableRef) map[string]bool {
 	table := r.tableMetadata(ref)
 	if table == nil {
 		return nil
@@ -456,7 +456,7 @@ func (r *disallowFuncAndCalcOmniRule) indexedColumns(ref tableRef) map[string]bo
 }
 
 // allColumns returns every column name defined for the given table reference.
-func (r *disallowFuncAndCalcOmniRule) allColumns(ref tableRef) map[string]bool {
+func (r *disallowFuncAndCalcRule) allColumns(ref tableRef) map[string]bool {
 	table := r.tableMetadata(ref)
 	if table == nil {
 		return nil
@@ -493,7 +493,7 @@ func (s scopeIndexed) empty() bool {
 }
 
 // resolveIndexedColumns builds a per-alias map of indexed columns.
-func (r *disallowFuncAndCalcOmniRule) resolveIndexedColumns(tables tablesByAlias) indexedByAlias {
+func (r *disallowFuncAndCalcRule) resolveIndexedColumns(tables tablesByAlias) indexedByAlias {
 	all := make(indexedByAlias)
 	for alias, ref := range tables {
 		if cols := r.indexedColumns(ref); cols != nil {
@@ -507,7 +507,7 @@ func (r *disallowFuncAndCalcOmniRule) resolveIndexedColumns(tables tablesByAlias
 }
 
 // resolveAllColumns builds a per-alias map of every known column for each table.
-func (r *disallowFuncAndCalcOmniRule) resolveAllColumns(tables tablesByAlias) indexedByAlias {
+func (r *disallowFuncAndCalcRule) resolveAllColumns(tables tablesByAlias) indexedByAlias {
 	all := make(indexedByAlias)
 	for alias, ref := range tables {
 		if cols := r.allColumns(ref); cols != nil {
@@ -525,7 +525,7 @@ func (r *disallowFuncAndCalcOmniRule) resolveAllColumns(tables tablesByAlias) in
 //   - Qualified (ref.Table set): check local first, then outer.
 //   - Unqualified: if any local table declares the column, local wins. Only if no
 //     local table declares the column do we fall back to outer indexed columns.
-func (r *disallowFuncAndCalcOmniRule) isIndexed(ref *ast.ColumnRef, s scopeIndexed) bool {
+func (r *disallowFuncAndCalcRule) isIndexed(ref *ast.ColumnRef, s scopeIndexed) bool {
 	if ref == nil || s.empty() {
 		return false
 	}
@@ -572,11 +572,11 @@ func (r *disallowFuncAndCalcOmniRule) isIndexed(ref *ast.ColumnRef, s scopeIndex
 	return false
 }
 
-func (r *disallowFuncAndCalcOmniRule) checkWhere(where ast.ExprNode, tables tablesByAlias) {
+func (r *disallowFuncAndCalcRule) checkWhere(where ast.ExprNode, tables tablesByAlias) {
 	r.checkWhereWithScopes(where, tables, nil, false)
 }
 
-func (r *disallowFuncAndCalcOmniRule) checkWhereWithScopes(where ast.ExprNode, local, outer tablesByAlias, localUnresolved bool) {
+func (r *disallowFuncAndCalcRule) checkWhereWithScopes(where ast.ExprNode, local, outer tablesByAlias, localUnresolved bool) {
 	if where == nil {
 		return
 	}
@@ -610,7 +610,7 @@ func (r *disallowFuncAndCalcOmniRule) checkWhereWithScopes(where ast.ExprNode, l
 	})
 }
 
-func (r *disallowFuncAndCalcOmniRule) checkWhereNode(n ast.Node, indexed scopeIndexed) {
+func (r *disallowFuncAndCalcRule) checkWhereNode(n ast.Node, indexed scopeIndexed) {
 	switch expr := n.(type) {
 	case *ast.FuncCallExpr:
 		if col := r.findIndexedColumnInFuncArgs(expr.Args, indexed); col != "" {
@@ -639,7 +639,7 @@ func (r *disallowFuncAndCalcOmniRule) checkWhereNode(n ast.Node, indexed scopeIn
 	}
 }
 
-func (r *disallowFuncAndCalcOmniRule) addFunctionAdvice(funcName, col string, loc ast.Loc) {
+func (r *disallowFuncAndCalcRule) addFunctionAdvice(funcName, col string, loc ast.Loc) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
@@ -649,7 +649,7 @@ func (r *disallowFuncAndCalcOmniRule) addFunctionAdvice(funcName, col string, lo
 	})
 }
 
-func (r *disallowFuncAndCalcOmniRule) addCalculationAdvice(col string, loc ast.Loc) {
+func (r *disallowFuncAndCalcRule) addCalculationAdvice(col string, loc ast.Loc) {
 	r.AddAdvice(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
@@ -664,7 +664,7 @@ func (r *disallowFuncAndCalcOmniRule) addCalculationAdvice(col string, loc ast.L
 // `ABS((c1))` and `ABS(CAST(c1 AS int))` are still flagged.
 // BinaryExpr/UnaryExpr (arithmetic) are NOT crossed — those are handled by the
 // calculation advice path, so `ABS(c1 + 1)` is reported once as a calculation.
-func (r *disallowFuncAndCalcOmniRule) findIndexedColumnInFuncArgs(args *ast.List, indexed scopeIndexed) string {
+func (r *disallowFuncAndCalcRule) findIndexedColumnInFuncArgs(args *ast.List, indexed scopeIndexed) string {
 	if args == nil {
 		return ""
 	}
@@ -682,7 +682,7 @@ func (r *disallowFuncAndCalcOmniRule) findIndexedColumnInFuncArgs(args *ast.List
 
 // unwrapAndFindIndexedColumn peels ParenExpr/CastExpr/ConvertExpr wrappers off expr
 // and returns the column name if the inner expression is an indexed ColumnRef.
-func (r *disallowFuncAndCalcOmniRule) unwrapAndFindIndexedColumn(expr ast.ExprNode, indexed scopeIndexed) string {
+func (r *disallowFuncAndCalcRule) unwrapAndFindIndexedColumn(expr ast.ExprNode, indexed scopeIndexed) string {
 	for expr != nil {
 		switch e := expr.(type) {
 		case *ast.ColumnRef:

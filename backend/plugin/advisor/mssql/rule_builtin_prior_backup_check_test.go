@@ -10,7 +10,7 @@ import (
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
-func TestPrepareTransformationUsesOmniAST(t *testing.T) {
+func TestPrepareTransformationUsesAST(t *testing.T) {
 	sql := `UPDATE p SET c1 = 1 FROM dbo.pokes AS p WHERE p.c1 = 1;
 DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
 	omniStmts, err := tsqlparser.ParseTSQL(sql)

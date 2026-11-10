@@ -42,8 +42,8 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	rule := &columnMaximumVarcharLengthRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		maximum:      int(numberPayload.Number),
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		maximum:  int(numberPayload.Number),
 		checkTypeString: map[string]bool{
 			"varchar":  true,
 			"nvarchar": true,
@@ -51,11 +51,11 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 			"nchar":    true,
 		},
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnMaximumVarcharLengthRule struct {
-	OmniBaseRule
+	BaseRule
 	checkTypeString map[string]bool
 	maximum         int
 }

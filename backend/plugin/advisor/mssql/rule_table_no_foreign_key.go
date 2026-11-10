@@ -30,21 +30,21 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := &tableNoForeignKeyOmniRule{
-		OmniBaseRule:  OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &tableNoForeignKeyRule{
+		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		tableHasFK:    make(map[string]bool),
 		tableOriginal: make(map[string]string),
 		tableLine:     make(map[string]int32),
 		tableBaseLine: make(map[string]int),
 	}
 
-	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	advice = append(advice, rule.generateFinalAdvice()...)
 	return advice, nil
 }
 
-type tableNoForeignKeyOmniRule struct {
-	OmniBaseRule
+type tableNoForeignKeyRule struct {
+	BaseRule
 
 	tableHasFK    map[string]bool
 	tableOriginal map[string]string
@@ -52,11 +52,11 @@ type tableNoForeignKeyOmniRule struct {
 	tableBaseLine map[string]int
 }
 
-func (*tableNoForeignKeyOmniRule) Name() string {
-	return "TableNoForeignKeyOmniRule"
+func (*tableNoForeignKeyRule) Name() string {
+	return "TableNoForeignKeyRule"
 }
 
-func (r *tableNoForeignKeyOmniRule) OnStatement(node ast.Node) {
+func (r *tableNoForeignKeyRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.handleCreateTable(n)
@@ -66,7 +66,7 @@ func (r *tableNoForeignKeyOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableNoForeignKeyOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+func (r *tableNoForeignKeyRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -117,7 +117,7 @@ func (r *tableNoForeignKeyOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *tableNoForeignKeyOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+func (r *tableNoForeignKeyRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Name == nil || n.Actions == nil {
 		return
 	}
@@ -139,7 +139,7 @@ func (r *tableNoForeignKeyOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *tableNoForeignKeyOmniRule) generateFinalAdvice() []*storepb.Advice {
+func (r *tableNoForeignKeyRule) generateFinalAdvice() []*storepb.Advice {
 	var result []*storepb.Advice
 	for norm, hasFK := range r.tableHasFK {
 		if hasFK {

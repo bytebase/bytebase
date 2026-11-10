@@ -655,7 +655,7 @@ func dmlNodeLoc(node ast.Node) ast.Loc {
 	case *ast.SetExpr:
 		return n.Loc
 	default:
-		loc := omniNodeLoc(node)
+		loc := nodeLoc(node)
 		if loc.Start >= 0 {
 			return loc
 		}

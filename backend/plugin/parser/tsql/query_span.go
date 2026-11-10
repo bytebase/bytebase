@@ -25,7 +25,7 @@ func GetQuerySpan(
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
 	q := newOmniQuerySpanExtractor(database, schema, gCtx, ignoreCaseSensitive)
-	span, err := q.getOmniQuerySpan(ctx, stmt.Text)
+	span, err := q.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
 		return nil, err
 	}

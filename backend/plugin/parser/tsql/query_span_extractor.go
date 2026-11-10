@@ -443,8 +443,8 @@ func newOmniQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.
 	}
 }
 
-// getOmniQuerySpan is the public entry point. Mirrors the ANTLR getQuerySpan flow.
-func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+// getQuerySpan is the public entry point. Mirrors the ANTLR getQuerySpan flow.
+func (q *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.source = statement
 
@@ -487,16 +487,16 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	// @t. Mirrors the legacy ANTLR tsqlSelectOnlyListener.EnterDeclare_statement
 	// side-effect. Non-table DECLARE (plain scalar variables) is a no-op.
 	if d, ok := root.(*ast.DeclareStmt); ok {
-		populateOmniTempTables(d, q.gCtx.TempTables)
+		populateTempTables(d, q.gCtx.TempTables)
 	}
 	if set, ok := root.(*ast.SetOptionStmt); ok {
 		q.setOption = set
 	}
 	if c, ok := root.(*ast.CreateTableStmt); ok {
-		populateOmniCreateTempTable(c, q.gCtx.TempTables)
+		populateCreateTempTable(c, q.gCtx.TempTables)
 	}
 
-	accessTables := collectOmniAccessTables(root, q.defaultDatabase, q.defaultSchema)
+	accessTables := collectAccessTables(root, q.defaultDatabase, q.defaultSchema)
 	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
@@ -576,7 +576,7 @@ func (q *omniQuerySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*ba
 	// Subquery expressions encountered during the walk get cloned extractors;
 	// their results merge back into q.predicateColumns. Errors (including
 	// ResourceNotFoundError from a subquery referencing a missing table)
-	// propagate up to getOmniQuerySpan which converts them into a span with
+	// propagate up to getQuerySpan which converts them into a span with
 	// NotFoundError populated.
 	if err := q.collectPredicatesInScope(sel.WhereClause); err != nil {
 		return nil, err
@@ -955,7 +955,7 @@ func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.Select
 		rarg, rerr := clone.extractFromSelectStmt(body.Rarg)
 		if rerr != nil {
 			// Recursive arm failed to resolve (e.g. ResourceNotFoundError from
-			// a missing table). Propagate — the top-level getOmniQuerySpan
+			// a missing table). Propagate — the top-level getQuerySpan
 			// converts ResourceNotFoundError into a span with NotFoundError
 			// populated so callers don't see a silently-partial lineage.
 			return nil, nil, rerr
@@ -1305,10 +1305,10 @@ func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias stri
 	}
 }
 
-// populateOmniTempTables mirrors the ANTLR tempTableColumnDefinitionListener:
+// populateTempTables mirrors the ANTLR tempTableColumnDefinitionListener:
 // for each VariableDecl of table type, build a PhysicalTable keyed by the
 // variable name (including the leading '@') and store it in the shared map.
-func populateOmniTempTables(d *ast.DeclareStmt, out map[string]*base.PhysicalTable) {
+func populateTempTables(d *ast.DeclareStmt, out map[string]*base.PhysicalTable) {
 	if d == nil || d.Variables == nil || out == nil {
 		return
 	}
@@ -1330,7 +1330,7 @@ func populateOmniTempTables(d *ast.DeclareStmt, out map[string]*base.PhysicalTab
 	}
 }
 
-func populateOmniCreateTempTable(c *ast.CreateTableStmt, out map[string]*base.PhysicalTable) {
+func populateCreateTempTable(c *ast.CreateTableStmt, out map[string]*base.PhysicalTable) {
 	if c == nil || c.Name == nil || out == nil || !strings.HasPrefix(c.Name.Object, "#") {
 		return
 	}
@@ -1807,7 +1807,7 @@ func (q *omniQuerySpanExtractor) mergeOrderBySources(list *ast.List) (base.Query
 // surrounding parens; we strip a matching leading `(` / trailing `)` pair to
 // match the ANTLR subquery.getText() output.
 func (q *omniQuerySpanExtractor) sliceName(n ast.Node) string {
-	loc := omniNodeLoc(n)
+	loc := nodeLoc(n)
 	if loc.Start < 0 || loc.End < 0 || loc.Start >= len(q.source) {
 		return ""
 	}
@@ -1846,14 +1846,14 @@ func normIdent(s string) string {
 	return strings.ToLower(s)
 }
 
-// omniNodeLoc extracts the Loc field from an ast.Node via type switching.
+// nodeLoc extracts the Loc field from an ast.Node via type switching.
 // Not every node has a Loc (the Node interface doesn't expose it), so we
 // enumerate the types we care about. Returns zero Loc otherwise.
-func omniNodeLoc(n ast.Node) ast.Loc {
+func nodeLoc(n ast.Node) ast.Loc {
 	if n == nil {
 		return ast.NoLoc()
 	}
-	if loc, ok := omniExpressionNodeLoc(n); ok {
+	if loc, ok := expressionNodeLoc(n); ok {
 		return loc
 	}
 	switch v := n.(type) {
@@ -1870,7 +1870,7 @@ func omniNodeLoc(n ast.Node) ast.Loc {
 	}
 }
 
-func omniExpressionNodeLoc(n ast.Node) (ast.Loc, bool) {
+func expressionNodeLoc(n ast.Node) (ast.Loc, bool) {
 	switch v := n.(type) {
 	case *ast.ColumnRef:
 		return v.Loc, true
@@ -1935,9 +1935,9 @@ func omniExpressionNodeLoc(n ast.Node) (ast.Loc, bool) {
 
 // -------------------- Access tables --------------------
 
-// collectOmniAccessTables walks the AST and records every table-source
+// collectAccessTables walks the AST and records every table-source
 // position reference. Mirrors the ANTLR accessTableListener.
-func collectOmniAccessTables(root ast.Node, currentDatabase, currentSchema string) base.SourceColumnSet {
+func collectAccessTables(root ast.Node, currentDatabase, currentSchema string) base.SourceColumnSet {
 	out := make(base.SourceColumnSet)
 	walkAccessTables(root, currentDatabase, currentSchema, out)
 	return out

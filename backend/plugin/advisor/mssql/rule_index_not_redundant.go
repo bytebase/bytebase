@@ -33,15 +33,15 @@ func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	rule := &indexNotRedundantRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		curDB:        checkCtx.CurrentDatabase,
-		indexMap:     getIndexMapFromMetadata(checkCtx.DBSchema),
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		curDB:    checkCtx.CurrentDatabase,
+		indexMap: getIndexMapFromMetadata(checkCtx.DBSchema),
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type indexNotRedundantRule struct {
-	OmniBaseRule
+	BaseRule
 	curDB    string
 	indexMap *IndexMap
 }

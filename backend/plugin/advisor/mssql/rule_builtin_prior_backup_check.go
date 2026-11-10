@@ -66,10 +66,10 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	// Use omni rule for DDL detection.
-	ddlRule := &statementDisallowMixDMLOmniRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: title},
+	ddlRule := &statementDisallowMixDMLRule{
+		BaseRule: BaseRule{Level: level, Title: title},
 	}
-	RunRules(checkCtx.ParsedStatements, []OmniRule{ddlRule})
+	RunRules(checkCtx.ParsedStatements, []Rule{ddlRule})
 
 	if ddlRule.hasDDL {
 		adviceList = append(adviceList, &storepb.Advice{
@@ -112,17 +112,17 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-// statementDisallowMixDMLOmniRule uses omni AST to detect DDL statements.
-type statementDisallowMixDMLOmniRule struct {
-	OmniBaseRule
+// statementDisallowMixDMLRule uses omni AST to detect DDL statements.
+type statementDisallowMixDMLRule struct {
+	BaseRule
 	hasDDL bool
 }
 
-func (*statementDisallowMixDMLOmniRule) Name() string {
-	return "StatementDisallowMixDMLOmniRule"
+func (*statementDisallowMixDMLRule) Name() string {
+	return "StatementDisallowMixDMLRule"
 }
 
-func (r *statementDisallowMixDMLOmniRule) OnStatement(node ast.Node) {
+func (r *statementDisallowMixDMLRule) OnStatement(node ast.Node) {
 	if r.hasDDL {
 		return
 	}
