@@ -438,7 +438,7 @@ call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db
           },
           body: {
             type: "object",
-            description: `JSON request body. Structure depends on the endpoint; use search_api with operationId to see the expected format. SQLService/Query defaults to ${DEFAULT_AGENT_QUERY_LIMIT} returned rows when limit is omitted. Supply an explicit limit when the member specifies one. Treat capped results as a preview, not a complete row count.`,
+            description: `JSON request body. Structure depends on the endpoint; use search_api with operationId to see the expected format. SQLService/Query defaults to the target database's effective workspace/project row cap, or ${DEFAULT_AGENT_QUERY_LIMIT} rows when no policy cap applies. Explicit limits are capped by the same policies before approval. Supply an explicit limit when the member specifies one. Treat capped results as a preview, not a complete row count.`,
           },
         },
         required: ["operationId"],
@@ -1450,7 +1450,7 @@ export function createToolExecutor(
         return toToolResult(await searchApi(args as SearchApiArgs));
       case "call_api": {
         const apiArgs = args as unknown as CallApiArgs;
-        const prepared = prepareApiCall(apiArgs);
+        const prepared = await prepareApiCall(apiArgs);
         if (prepared.kind === "error") {
           return toToolResult(prepared.result);
         }

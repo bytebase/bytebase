@@ -23,12 +23,18 @@ import {
   Issue_Type,
   IssueSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { PolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
+import {
+  PlanType,
+  SubscriptionSchema,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import type { MaskingRuleEditorSnapshot } from "../maskingRuleDraftTarget";
 
 const projectApi = vi.hoisted(() => ({ getProject: vi.fn() }));
 const issueApi = vi.hoisted(() => ({ getIssue: vi.fn() }));
 const planApi = vi.hoisted(() => ({ getPlan: vi.fn() }));
 const databaseApi = vi.hoisted(() => ({ getDatabase: vi.fn() }));
+const policyApi = vi.hoisted(() => ({ getPolicy: vi.fn() }));
 const semanticApi = vi.hoisted(() => ({
   setting: vi.fn(),
   prepare: vi.fn(),
@@ -80,6 +86,7 @@ vi.mock("@/api", () => ({
   issueServiceClientConnect: { getIssue: issueApi.getIssue },
   planServiceClientConnect: { getPlan: planApi.getPlan },
   databaseServiceClientConnect: { getDatabase: databaseApi.getDatabase },
+  orgPolicyServiceClientConnect: { getPolicy: policyApi.getPolicy },
   settingServiceClientConnect: { getSetting: semanticApi.setting },
   celServiceClientConnect: { batchParse: celApi.batchParse },
 }));
@@ -263,6 +270,9 @@ beforeEach(() => {
       typeof useAppStore.getState
     >["currentUser"],
     workspaceResourceName: () => "workspaces/example",
+    subscription: create(SubscriptionSchema, { plan: PlanType.FREE }),
+    policyMapByName: {},
+    policyRequests: {},
   });
   const access = {
     status: "allowed",
@@ -314,6 +324,7 @@ beforeEach(() => {
     })
   );
   databaseApi.getDatabase.mockReset();
+  policyApi.getPolicy.mockReset();
   planApi.getPlan.mockReset();
   planApi.getPlan.mockResolvedValue({
     name: "projects/referenced/plans/12",
@@ -1953,7 +1964,27 @@ describe("agent tools referenced project", () => {
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
-  test("previews and dispatches the same default-limited query after approval", async () => {
+  test("previews and dispatches the target database's policy-limited query after approval", async () => {
+    useAppStore.setState({
+      subscription: create(SubscriptionSchema, { plan: PlanType.ENTERPRISE }),
+    });
+    databaseApi.getDatabase.mockResolvedValue(
+      create(DatabaseSchema$, {
+        name: "instances/example/databases/app",
+        project: "projects/target",
+      })
+    );
+    policyApi.getPolicy.mockImplementation(async ({ name }) => {
+      const maximumResultRows = {
+        "workspaces/example/policies/data_query": 1000,
+        "projects/target/policies/data_query": 30,
+      }[name as string];
+      if (!maximumResultRows) throw new Error("Unexpected policy scope");
+      return create(PolicySchema, {
+        name,
+        policy: { case: "queryDataPolicy", value: { maximumResultRows } },
+      });
+    });
     const identity = {
       chatId: "chat-query-preview",
       userName: "users/me@example.com",
@@ -1979,7 +2010,7 @@ describe("agent tools referenced project", () => {
     const preview = getPendingApiCallPreview({ ...identity, actionId });
     expect(preview).toMatchObject({
       operationId: "bytebase.v1.SQLService.Query",
-      body: JSON.stringify({ ...body, limit: 100 }),
+      body: JSON.stringify({ ...body, limit: 30 }),
     });
     expect(body).not.toHaveProperty("limit");
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();

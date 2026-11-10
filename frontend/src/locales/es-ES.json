@@ -285,6 +285,7 @@
       "unavailable": "No se puede cargar la actividad reciente.",
       "unknown-time": "una hora desconocida"
     },
+    "rename-chat": "Renombrar",
     "rename-chat-placeholder": "Ingrese el nombre del chat",
     "reply": "Responder",
     "request-failed": "El asistente no pudo completar esta solicitud.",

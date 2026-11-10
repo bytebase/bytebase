@@ -285,6 +285,7 @@
       "unavailable": "最近のアクティビティを読み込めません。",
       "unknown-time": "不明な時刻"
     },
+    "rename-chat": "名前を変更",
     "rename-chat-placeholder": "チャット名を入力",
     "reply": "返信",
     "request-failed": "アシスタントはこのリクエストを完了できませんでした。",
