@@ -75,7 +75,7 @@ type ColumnRequirementAdvisor struct{}
 // matches case-sensitively — pre-omni would NOT match `a` to required
 // column `A`. Preserved.
 func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

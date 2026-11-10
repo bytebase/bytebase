@@ -28,7 +28,7 @@ type TableDropNamingConventionAdvisor struct {
 
 // Check checks for drop table naming convention.
 func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ type namingDropTableConventionChecker struct {
 	format     *regexp.Regexp
 }
 
-func (c *namingDropTableConventionChecker) checkStmt(ostmt OmniStmt) {
+func (c *namingDropTableConventionChecker) checkStmt(ostmt Stmt) {
 	node, ok := ostmt.Node.(*ast.DropTableStmt)
 	if !ok {
 		return

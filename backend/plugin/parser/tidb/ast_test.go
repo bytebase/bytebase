@@ -110,49 +110,49 @@ func TestByteOffsetToRunePosition(t *testing.T) {
 	}
 }
 
-// stubAST is a base.AST that is not an *OmniAST, for the GetOmniNode negative case.
+// stubAST is a base.AST that is not an *AST, for the GetNode negative case.
 type stubAST struct{}
 
 func (stubAST) ASTStartPosition() *storepb.Position { return nil }
 
-func TestGetOmniNode(t *testing.T) {
+func TestGetNode(t *testing.T) {
 	a := require.New(t)
 
 	// nil base.AST returns (nil, false).
-	node, ok := GetOmniNode(nil)
+	node, ok := GetNode(nil)
 	a.Nil(node)
 	a.False(ok)
 
-	// A base.AST that is not an *OmniAST returns (nil, false).
-	node, ok = GetOmniNode(stubAST{})
+	// A base.AST that is not an *AST returns (nil, false).
+	node, ok = GetNode(stubAST{})
 	a.Nil(node)
 	a.False(ok)
 
-	// OmniAST with non-nil node round-trips.
-	list, err := ParseTiDBOmni("SELECT 1")
+	// AST with non-nil node round-trips.
+	list, err := ParseTiDB("SELECT 1")
 	a.NoError(err)
 	a.NotNil(list)
 	a.NotEmpty(list.Items)
-	wrapped := &OmniAST{
+	wrapped := &AST{
 		Node:          list.Items[0],
 		Text:          "SELECT 1",
 		StartPosition: &storepb.Position{Line: 1, Column: 1},
 	}
-	node, ok = GetOmniNode(wrapped)
+	node, ok = GetNode(wrapped)
 	a.True(ok)
 	a.Equal(list.Items[0], node)
 }
 
-func TestOmniASTStartPosition(t *testing.T) {
+func TestASTStartPosition(t *testing.T) {
 	a := require.New(t)
 	pos := &storepb.Position{Line: 5, Column: 7}
-	o := &OmniAST{StartPosition: pos}
+	o := &AST{StartPosition: pos}
 	a.Equal(pos, o.ASTStartPosition())
 }
 
 // TestParseTiDBStatements_AllAccepted pins the happy path for the registered
 // TiDB ParseStatementsFunc: omni accepts every statement, so every result
-// entry is an *OmniAST and no error is returned.
+// entry is an *AST and no error is returned.
 func TestParseTiDBStatements_AllAccepted(t *testing.T) {
 	const input = "CREATE TABLE t (id INT); INSERT INTO t VALUES (1);"
 
@@ -160,12 +160,12 @@ func TestParseTiDBStatements_AllAccepted(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, result, 2)
 	for _, ps := range result {
-		require.IsType(t, &OmniAST{}, ps.AST,
-			"happy path: every statement must be *OmniAST")
+		require.IsType(t, &AST{}, ps.AST,
+			"happy path: every statement must be *AST")
 	}
 }
 
-// TestParseTiDBStatements_OmniRejectSurfacesError pins that omni is the sole
+// TestParseTiDBStatements_RejectSurfacesError pins that omni is the sole
 // TiDB parser: a statement omni rejects surfaces as a *base.SyntaxError with
 // no pingcap fallback. The COLUMNAR INDEX and TRAFFIC CAPTURE cases are TiDB
 // grammar newer than the pinned v8.5.5 that pingcap-master still accepts —
@@ -173,7 +173,7 @@ func TestParseTiDBStatements_AllAccepted(t *testing.T) {
 // case is a genuine syntax error. Error strings are verified against the live
 // omni pin (they differ per case, so the assertion checks the converted type
 // and a populated position, not a shared substring).
-func TestParseTiDBStatements_OmniRejectSurfacesError(t *testing.T) {
+func TestParseTiDBStatements_RejectSurfacesError(t *testing.T) {
 	cases := []struct {
 		name  string
 		input string

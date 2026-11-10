@@ -52,7 +52,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	caretInBacktick := caretInsideBacktickIdentifier(stmt, pos)
 	candidateMap := make(map[string]base.Candidate)
 	for _, c := range omnicompletion.Complete(stmt, pos, cat) {
-		t := omniCandidateTypeToBase(c.Type)
+		t := candidateTypeToBase(c.Type)
 		text := c.Text
 		switch {
 		case isObjectIdentifierCandidate(t):
@@ -459,11 +459,11 @@ func currentStatement(statement string, pos int) (string, int) {
 	return statement, pos
 }
 
-// omniCandidateTypeToBase maps omni TiDB completion candidate types to the
+// candidateTypeToBase maps omni TiDB completion candidate types to the
 // Bytebase base types. The six core types (keyword/database/table/view/column/
 // function) map to the same base types the mysql completer emits so candidate
 // sets are directly comparable.
-func omniCandidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {
+func candidateTypeToBase(t omnicompletion.CandidateType) base.CandidateType {
 	switch t {
 	case omnicompletion.CandidateKeyword:
 		return base.CandidateTypeKeyword

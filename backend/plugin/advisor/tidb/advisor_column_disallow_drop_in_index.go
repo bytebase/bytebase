@@ -45,7 +45,7 @@ type ColumnDisallowDropInIndexAdvisor struct{}
 // NOT fire (case-mismatched lookup misses the index set) — matches
 // pingcap-tidb's pre-omni case-sensitive behavior. Pinned with fixture.
 func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 				if c == nil || c.Type != ast.ConstrIndex {
 					continue
 				}
-				for _, col := range omniIndexColumns(c.IndexColumns) {
+				for _, col := range indexColumns(c.IndexColumns) {
 					tables[tableName][col] = true
 				}
 			}

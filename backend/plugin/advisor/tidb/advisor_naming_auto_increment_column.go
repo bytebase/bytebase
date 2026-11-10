@@ -28,7 +28,7 @@ type NamingAutoIncrementColumnAdvisor struct {
 
 // Check checks for auto-increment naming convention.
 func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ type ColumnAutoIncrementInitialValueAdvisor struct {
 
 // Check checks for auto-increment column initial value.
 func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ type columnAutoIncrementInitialValueChecker struct {
 // that broader scope is a mysql-side behavior, NOT something the
 // tidb migration should adopt (preserve pingcap behavior per
 // invariant #7's caveat on mysql analog non-authority).
-func (c *columnAutoIncrementInitialValueChecker) checkStmt(ostmt OmniStmt) {
+func (c *columnAutoIncrementInitialValueChecker) checkStmt(ostmt Stmt) {
 	create, ok := ostmt.Node.(*ast.CreateTableStmt)
 	if !ok || create.Table == nil {
 		return

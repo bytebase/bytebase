@@ -35,7 +35,7 @@ type ColumnSetDefaultForNotNullAdvisor struct {
 // Closes BYT-9362 (canNull cleanup) by being the last consumer of the
 // pingcap-typed canNull helper.
 func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 				continue
 			}
 			tableName := n.Table.Name
-			pkCols := omniCreateTablePKColumnSet(n)
+			pkCols := createTablePKColumnSet(n)
 			for _, col := range n.Columns {
 				if col == nil {
 					continue
@@ -63,7 +63,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 				if pkCols[col.Name] {
 					continue
 				}
-				if !omniColumnIsNotNull(col) || omniColumnHasDefault(col) || !omniNeedDefault(col) {
+				if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
 					continue
 				}
 				rows = append(rows, columnName{
@@ -88,7 +88,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 						if col == nil {
 							continue
 						}
-						if !omniColumnIsNotNull(col) || omniColumnHasDefault(col) || !omniNeedDefault(col) {
+						if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
 							continue
 						}
 						rows = append(rows, columnName{
@@ -102,7 +102,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 					if col == nil {
 						continue
 					}
-					if !omniColumnIsNotNull(col) || omniColumnHasDefault(col) || !omniNeedDefault(col) {
+					if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
 						continue
 					}
 					rows = append(rows, columnName{
@@ -131,12 +131,12 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 	return adviceList, nil
 }
 
-// omniCreateTablePKColumnSet returns the set of column names declared as
+// createTablePKColumnSet returns the set of column names declared as
 // PRIMARY KEY via table-level constraints in the CREATE TABLE statement
 // (e.g. `CREATE TABLE t (id INT, PRIMARY KEY (id))`). Inline column-level
 // PRIMARY KEY (e.g. `CREATE TABLE t (id INT PRIMARY KEY)`) is detected
-// by omniNeedDefault directly, not by this set.
-func omniCreateTablePKColumnSet(n *ast.CreateTableStmt) map[string]bool {
+// by needDefault directly, not by this set.
+func createTablePKColumnSet(n *ast.CreateTableStmt) map[string]bool {
 	pkCols := make(map[string]bool)
 	for _, c := range n.Constraints {
 		if c == nil || c.Type != ast.ConstrPrimaryKey {
@@ -149,12 +149,12 @@ func omniCreateTablePKColumnSet(n *ast.CreateTableStmt) map[string]bool {
 	return pkCols
 }
 
-// omniColumnIsNotNull reports whether the column's constraint list
+// columnIsNotNull reports whether the column's constraint list
 // contains a NOT NULL marker (or a PRIMARY KEY marker, which implies NOT
 // NULL in MySQL/TiDB semantics). Mirror of pingcap-typed canNull's
 // inverse — pingcap returned `true` if the column COULD be null
 // (no NotNull or PrimaryKey option); this returns `true` if it CANNOT.
-func omniColumnIsNotNull(col *ast.ColumnDef) bool {
+func columnIsNotNull(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -169,10 +169,10 @@ func omniColumnIsNotNull(col *ast.ColumnDef) bool {
 	return false
 }
 
-// omniColumnHasDefault reports whether the column has a DEFAULT clause.
+// columnHasDefault reports whether the column has a DEFAULT clause.
 // omni stores the default expression in `ColumnDef.DefaultValue` directly
 // (not in Constraints[] like pingcap's column.Options[].Tp ==
 // ColumnOptionDefaultValue). Direct field check — no fallible op.
-func omniColumnHasDefault(col *ast.ColumnDef) bool {
+func columnHasDefault(col *ast.ColumnDef) bool {
 	return col != nil && col.DefaultValue != nil
 }

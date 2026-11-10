@@ -29,7 +29,7 @@ type NoSelectAllAdvisor struct {
 // the wildcard can appear in nested subqueries (e.g. SELECT a FROM
 // (SELECT * FROM t) t).
 func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

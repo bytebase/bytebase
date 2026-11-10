@@ -70,7 +70,7 @@ func getAffectedRows(plan []planRow, statement string) (int64, error) {
 // targets a multi-table DELETE lists, or the tables its assignments qualify, counting an unqualified
 // assignment as another joined table, up to the number of joined tables. Other statements change one.
 func countDMLTargets(statement string) int {
-	list, err := tidbparser.ParseTiDBOmni(statement)
+	list, err := tidbparser.ParseTiDB(statement)
 	if err != nil || list == nil || len(list.Items) != 1 {
 		return 1
 	}

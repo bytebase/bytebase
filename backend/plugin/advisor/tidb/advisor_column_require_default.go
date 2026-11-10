@@ -27,7 +27,7 @@ type ColumRequireDefaultAdvisor struct {
 
 // Check checks for column default requirement.
 func (*ColumRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ type columRequireDefaultChecker struct {
 // (same package) — same {table, column, line} shape across the column
 // attribute advisors.
 
-func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
+func (c *columRequireDefaultChecker) checkStmt(ostmt Stmt) {
 	var cols []columnData
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
@@ -67,7 +67,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 		}
 		tableName := n.Table.Name
 		// Table-level PK columns are exempt. Column-level PK is handled
-		// inside omniNeedDefault via the column's own Constraints.
+		// inside needDefault via the column's own Constraints.
 		// Names are lowercased on both sides — omni preserves user case,
 		// but SQL identifier matching is case-insensitive for unquoted
 		// names (and the pingcap-typed predecessor used `.L` normalization).
@@ -79,7 +79,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 			if pkColumns[strings.ToLower(column.Name)] {
 				continue
 			}
-			if !omniHasDefaultValue(column) && omniNeedDefault(column) {
+			if !hasDefaultValue(column) && needDefault(column) {
 				cols = append(cols, columnData{
 					table:  tableName,
 					column: column.Name,
@@ -103,7 +103,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 					if column == nil {
 						continue
 					}
-					if !omniHasDefaultValue(column) && omniNeedDefault(column) {
+					if !hasDefaultValue(column) && needDefault(column) {
 						cols = append(cols, columnData{table: tableName, column: column.Name, line: stmtLine})
 					}
 				}
@@ -112,7 +112,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 					continue
 				}
 				column := cmd.Column
-				if !omniHasDefaultValue(column) && omniNeedDefault(column) {
+				if !hasDefaultValue(column) && needDefault(column) {
 					cols = append(cols, columnData{table: tableName, column: column.Name, line: stmtLine})
 				}
 			default:
@@ -140,7 +140,7 @@ func (c *columRequireDefaultChecker) checkStmt(ostmt OmniStmt) {
 // lowercase the lookup key before consulting the map (omni preserves the
 // user's literal case on both column.Name and constraint.Columns, so two
 // references to the same column at different casings won't match without
-// normalization). Column-level PK is handled separately by omniNeedDefault
+// normalization). Column-level PK is handled separately by needDefault
 // via the column's own Constraints.
 func tablePKColumnsFromConstraints(constraints []*ast.Constraint) map[string]bool {
 	pkColumns := make(map[string]bool)
@@ -155,10 +155,10 @@ func tablePKColumnsFromConstraints(constraints []*ast.Constraint) map[string]boo
 	return pkColumns
 }
 
-// omniHasDefaultValue reports whether the column declares a DEFAULT clause.
+// hasDefaultValue reports whether the column declares a DEFAULT clause.
 // Mirrors pingcap-typed hasDefault. Omni surfaces DEFAULT directly on the
 // column rather than via the Options/Constraints list, so this is a
 // one-line nil check.
-func omniHasDefaultValue(col *ast.ColumnDef) bool {
+func hasDefaultValue(col *ast.ColumnDef) bool {
 	return col != nil && col.DefaultValue != nil
 }

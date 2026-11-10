@@ -14,18 +14,18 @@ import (
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
-// TestGetTiDBOmniNodesCachesAcrossRules pins the Phase 1.5 single-parse-per-
+// TestGetTiDBNodesCachesAcrossRules pins the Phase 1.5 single-parse-per-
 // review invariant at the post-flip layer: when multiple migrated advisors
-// call getTiDBOmniNodes with the same advisor.Context, the type-switch +
+// call getTiDBNodes with the same advisor.Context, the type-switch +
 // slice construction happens once and the result slice is reused. Without
 // this, every migrated advisor pays the type-switch + allocation cost.
 //
 // Post-flip (§1.5.N+1) the dispatcher already parsed at split time, so
-// stmt.AST is populated with *OmniAST values directly. This test feeds
+// stmt.AST is populated with *AST values directly. This test feeds
 // pre-populated ParsedStatements to mirror the dispatcher's output.
 //
 // See plans/2026-04-23-omni-tidb-completion-plan.md §1.5.0 invariant #1.
-func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
+func TestGetTiDBNodesCachesAcrossRules(t *testing.T) {
 	ctx := advisor.Context{
 		ParsedStatements: []base.ParsedStatement{
 			{
@@ -33,7 +33,7 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 					Text:  "CREATE TABLE t (id INT)",
 					Start: &storepb.Position{Line: 1},
 				},
-				AST: &tidbparser.OmniAST{
+				AST: &tidbparser.AST{
 					Text:          "CREATE TABLE t (id INT)",
 					StartPosition: &storepb.Position{Line: 1},
 				},
@@ -42,19 +42,19 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 	}
 	ctx.InitMemo()
 
-	first, err := getTiDBOmniNodes(ctx)
+	first, err := getTiDBNodes(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, first, "first call should return a parsed statement")
 
-	second, err := getTiDBOmniNodes(ctx)
+	second, err := getTiDBNodes(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, second)
 
 	// Cache hit: same backing array returned both calls. Address equality
 	// on the first element proves the slice header was reused, not a fresh
-	// type-switch walk that would allocate a new []OmniStmt.
+	// type-switch walk that would allocate a new []Stmt.
 	require.True(t, &first[0] == &second[0],
-		"expected cached []OmniStmt; got fresh walk — single-parse-per-review invariant broken")
+		"expected cached []Stmt; got fresh walk — single-parse-per-review invariant broken")
 }
 
 // TestCollectFKCreateTableNilConstraintGuard pins the defensive nil-check
@@ -84,7 +84,7 @@ func TestCollectFKCreateTableNilConstraintGuard(t *testing.T) {
 			},
 		},
 	}
-	ostmt := OmniStmt{
+	ostmt := Stmt{
 		Node:     stmt,
 		Text:     "CREATE TABLE t (author_id INT, FOREIGN KEY (author_id) REFERENCES author(id))",
 		BaseLine: 0,
@@ -130,9 +130,9 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 					Start: &storepb.Position{Line: 1},
 				},
 				// Post-flip §1.5.N+1: the dispatcher pre-populates AST.
-				// Synthetic *OmniAST wrapping a CreateIndexStmt so the
+				// Synthetic *AST wrapping a CreateIndexStmt so the
 				// collector closure proceeds to regex compilation.
-				AST: &tidbparser.OmniAST{
+				AST: &tidbparser.AST{
 					Node: &omniast.CreateIndexStmt{
 						IndexName: "idx_x",
 						Table:     &omniast.TableRef{Name: "t"},
@@ -149,7 +149,7 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 		mismatchCode:       code.NamingIndexConventionMismatch,
 		typeNoun:           "Index",
 		internalErrorTitle: "Internal error for index naming convention rule",
-	}, func(ostmt OmniStmt) []*indexMetaData {
+	}, func(ostmt Stmt) []*indexMetaData {
 		// Synthetic collector: surface one indexMetaData per parsed
 		// statement so the helper proceeds to regex compilation.
 		n, ok := ostmt.Node.(*omniast.CreateIndexStmt)
@@ -178,8 +178,8 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 		"content shape preserved from pre-extraction inline form")
 }
 
-// TestOmniColumnHasComment_PresentAbsentDistinction pins the structural
-// contract that omniColumnHasComment uses to distinguish "no COMMENT
+// TestColumnHasComment_PresentAbsentDistinction pins the structural
+// contract that columnHasComment uses to distinguish "no COMMENT
 // clause" from `COMMENT ”` (deliberately empty). Both produce
 // `ColumnDef.Comment == ""`, so the value field alone is ambiguous; the
 // signal lives in `Constraints[ColConstrComment]`. If a future omni
@@ -189,18 +189,18 @@ func TestRunNamingConventionRuleEmitsInternalErrorAdvice(t *testing.T) {
 //
 // Per peer review on PR #20217 — "the structural-marker contract is
 // plausible but unverified for COMMENT ” specifically". Pin it.
-func TestOmniColumnHasComment_PresentAbsentDistinction(t *testing.T) {
-	// Case 1: no COMMENT clause at all → omniColumnHasComment returns false.
+func TestColumnHasComment_PresentAbsentDistinction(t *testing.T) {
+	// Case 1: no COMMENT clause at all → columnHasComment returns false.
 	noCommentCol := &omniast.ColumnDef{
 		Name:        "c",
 		Comment:     "",
 		Constraints: nil,
 	}
-	require.False(t, omniColumnHasComment(noCommentCol),
-		"absent COMMENT clause: no ColConstrComment marker, omniColumnHasComment must return false")
+	require.False(t, columnHasComment(noCommentCol),
+		"absent COMMENT clause: no ColConstrComment marker, columnHasComment must return false")
 
 	// Case 2: explicit COMMENT '' (deliberately empty) → marker present,
-	// value empty. omniColumnHasComment returns true.
+	// value empty. columnHasComment returns true.
 	emptyCommentCol := &omniast.ColumnDef{
 		Name:    "c",
 		Comment: "",
@@ -208,8 +208,8 @@ func TestOmniColumnHasComment_PresentAbsentDistinction(t *testing.T) {
 			{Type: omniast.ColConstrComment},
 		},
 	}
-	require.True(t, omniColumnHasComment(emptyCommentCol),
-		"explicit COMMENT '' (empty value, marker present): omniColumnHasComment must return true")
+	require.True(t, columnHasComment(emptyCommentCol),
+		"explicit COMMENT '' (empty value, marker present): columnHasComment must return true")
 
 	// Case 3: explicit COMMENT 'something' → marker present, value populated.
 	regularCommentCol := &omniast.ColumnDef{
@@ -219,15 +219,15 @@ func TestOmniColumnHasComment_PresentAbsentDistinction(t *testing.T) {
 			{Type: omniast.ColConstrComment},
 		},
 	}
-	require.True(t, omniColumnHasComment(regularCommentCol),
-		"explicit COMMENT with value: omniColumnHasComment must return true")
+	require.True(t, columnHasComment(regularCommentCol),
+		"explicit COMMENT with value: columnHasComment must return true")
 }
 
-// TestOmniIsTimeType pins the DATETIME/TIMESTAMP detection for
+// TestIsTimeType pins the DATETIME/TIMESTAMP detection for
 // column_current_time_count_limit (batch 13). Pingcap dispatched
 // on mysql.TypeDatetime/TypeTimestamp — distinct type bytes,
 // no unification concern.
-func TestOmniIsTimeType(t *testing.T) {
+func TestIsTimeType(t *testing.T) {
 	cases := []struct {
 		name string
 		dt   *omniast.DataType
@@ -244,16 +244,16 @@ func TestOmniIsTimeType(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniIsTimeType(tc.dt))
+			require.Equal(t, tc.want, isTimeType(tc.dt))
 		})
 	}
 }
 
-// TestOmniIsCurrentTimeFuncCall covers the CURRENT_TIMESTAMP synonym
+// TestIsCurrentTimeFuncCall covers the CURRENT_TIMESTAMP synonym
 // detection used by column_current_time_count_limit. Pingcap used
 // FnName.L (lowercased); omni keeps user case in FuncCallExpr.Name,
 // so we compare case-insensitively.
-func TestOmniIsCurrentTimeFuncCall(t *testing.T) {
+func TestIsCurrentTimeFuncCall(t *testing.T) {
 	cases := []struct {
 		name string
 		expr omniast.ExprNode
@@ -270,17 +270,17 @@ func TestOmniIsCurrentTimeFuncCall(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniIsCurrentTimeFuncCall(tc.expr))
+			require.Equal(t, tc.want, isCurrentTimeFuncCall(tc.expr))
 		})
 	}
 }
 
-// TestOmniIsRandFuncCall pins the case-insensitive RAND function
+// TestIsRandFuncCall pins the case-insensitive RAND function
 // detection contract used by insert_disallow_order_by_rand. Pingcap-tidb
 // matched via lowercase-canonical `FnName.L == ast.Rand`; omni preserves
 // the user's case in `FuncCallExpr.Name`, so we compare via EqualFold.
 // RAND accepts an optional seed arg — we match regardless of arity.
-func TestOmniIsRandFuncCall(t *testing.T) {
+func TestIsRandFuncCall(t *testing.T) {
 	cases := []struct {
 		name string
 		expr omniast.ExprNode
@@ -297,12 +297,12 @@ func TestOmniIsRandFuncCall(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniIsRandFuncCall(tc.expr))
+			require.Equal(t, tc.want, isRandFuncCall(tc.expr))
 		})
 	}
 }
 
-// TestOmniIsCharOrBinaryType pins cumulative #22 — pingcap's
+// TestIsCharOrBinaryType pins cumulative #22 — pingcap's
 // `mysql.TypeString` covered BOTH CHAR and BINARY via charset
 // distinction. The omni port must match both names; a mechanical
 // port matching only "CHAR" (like the mysql analog does) silently
@@ -311,7 +311,7 @@ func TestOmniIsRandFuncCall(t *testing.T) {
 //
 // VARCHAR/VARBINARY are TypeVarString in pingcap, NOT TypeString —
 // pingcap rule did NOT fire on those. Pin the negative case too.
-func TestOmniIsCharOrBinaryType(t *testing.T) {
+func TestIsCharOrBinaryType(t *testing.T) {
 	cases := []struct {
 		name string
 		dt   *omniast.DataType
@@ -329,17 +329,17 @@ func TestOmniIsCharOrBinaryType(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniIsCharOrBinaryType(tc.dt))
+			require.Equal(t, tc.want, isCharOrBinaryType(tc.dt))
 		})
 	}
 }
 
-// TestOmniCharLength pins the MySQL default-1 application for bare
+// TestCharLength pins the MySQL default-1 application for bare
 // CHAR / BINARY columns. Pingcap's column.Tp.GetFlen() returned the
 // canonical default (1) for bare CHAR; omni leaves Length=0, so the
 // helper must apply the default explicitly to preserve pingcap
 // behavior on column_maximum_character_length.
-func TestOmniCharLength(t *testing.T) {
+func TestCharLength(t *testing.T) {
 	cases := []struct {
 		name string
 		dt   *omniast.DataType
@@ -356,12 +356,12 @@ func TestOmniCharLength(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, omniCharLength(tc.dt))
+			require.Equal(t, tc.want, charLength(tc.dt))
 		})
 	}
 }
 
-// A bytebase-side omniIsDDLStmt enumeration was removed earlier because it was
+// A bytebase-side isDDLStmt enumeration was removed earlier because it was
 // brittle for grammar omni once rejected. DDL detection now uses omni's
 // authoritative ast.IsDDL classifier (omni parses the full grammar), so no
 // bytebase enumeration is needed. End-to-end coverage of the

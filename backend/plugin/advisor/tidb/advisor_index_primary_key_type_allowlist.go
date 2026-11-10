@@ -29,7 +29,7 @@ type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 
 // Check checks for primary key type allowlist.
 func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		title:            checkCtx.Rule.Type.String(),
 		allowlist:        allowlist,
 		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableNewOmniColumn),
+		tablesNewColumns: make(tableNewColumn),
 	}
 
 	for _, ostmt := range stmts {
@@ -64,10 +64,10 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 	title            string
 	allowlist        map[string]bool
 	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableNewOmniColumn
+	tablesNewColumns tableNewColumn
 }
 
-func (c *indexPrimaryKeyTypeAllowlistChecker) checkStmt(ostmt OmniStmt) {
+func (c *indexPrimaryKeyTypeAllowlistChecker) checkStmt(ostmt Stmt) {
 	cb := indexFamilyCallbacks{
 		onColumn:       c.addNewColumn,
 		onConstraint:   c.addConstraint,
@@ -98,7 +98,7 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) addNewColumn(tableName string, lin
 	var pkDataList []pkData
 	for _, constraint := range colDef.Constraints {
 		if constraint != nil && constraint.Type == ast.ColConstrPrimaryKey {
-			tp := omniDataTypeNameCompact(colDef.TypeName)
+			tp := dataTypeNameCompact(colDef.TypeName)
 			if _, exists := c.allowlist[tp]; !exists {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
@@ -118,7 +118,7 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) changeColumn(tableName, oldColumnN
 	c.tablesNewColumns.delete(tableName, oldColumnName)
 	for _, constraint := range newColumnDef.Constraints {
 		if constraint != nil && constraint.Type == ast.ColConstrPrimaryKey {
-			tp := omniDataTypeNameCompact(newColumnDef.TypeName)
+			tp := dataTypeNameCompact(newColumnDef.TypeName)
 			if _, exists := c.allowlist[tp]; !exists {
 				pkDataList = append(pkDataList, pkData{
 					table:      tableName,
@@ -161,7 +161,7 @@ func (c *indexPrimaryKeyTypeAllowlistChecker) addConstraint(tableName string, li
 // and the case-insensitive allowlist comparison.
 func (c *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName, columnName string) (string, error) {
 	if colDef, ok := c.tablesNewColumns.get(tableName, columnName); ok {
-		return omniDataTypeNameCompact(colDef.TypeName), nil
+		return dataTypeNameCompact(colDef.TypeName), nil
 	}
 	schema := c.originalMetadata.GetSchemaMetadata("")
 	if schema == nil {

@@ -39,7 +39,7 @@ type IndexKeyNumberLimitAdvisor struct{}
 // Cumulative #19 (case-sensitivity): pre-omni used `.O` throughout
 // (no `.L`). Omni preserves user case via direct strings. Mechanical.
 func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +75,10 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 				if c == nil {
 					continue
 				}
-				if omniIndexKeyCount(c) > maximum {
+				if indexKeyCount(c) > maximum {
 					hits = append(hits, violation{
 						table: n.Table.Name,
-						index: omniConstraintAdviceName(c),
+						index: constraintAdviceName(c),
 						line:  ostmt.AbsoluteLine(c.Loc.Start),
 					})
 				}
@@ -113,10 +113,10 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 				if cmd.Type != ast.ATAddConstraint && cmd.Type != ast.ATAddIndex {
 					continue
 				}
-				if omniIndexKeyCount(cmd.Constraint) > maximum {
+				if indexKeyCount(cmd.Constraint) > maximum {
 					hits = append(hits, violation{
 						table: n.Table.Name,
-						index: omniConstraintAdviceName(cmd.Constraint),
+						index: constraintAdviceName(cmd.Constraint),
 						line:  stmtLine,
 					})
 				}
@@ -138,11 +138,11 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	return adviceList, nil
 }
 
-// omniIndexKeyCount returns the number of key columns declared by the
+// indexKeyCount returns the number of key columns declared by the
 // given constraint. INDEX/PK/UNIQUE store keys in `IndexColumns`;
 // FOREIGN KEY stores its local columns in `Columns []string` with
 // `IndexColumns` empty (verified empirically).
-func omniIndexKeyCount(c *ast.Constraint) int {
+func indexKeyCount(c *ast.Constraint) int {
 	if c == nil {
 		return 0
 	}

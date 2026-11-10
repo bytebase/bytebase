@@ -11,7 +11,7 @@ import (
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, ast := range asts {
-		node, ok := GetOmniNode(ast)
+		node, ok := GetNode(ast)
 		if !ok {
 			return nil, errors.New("expected TiDB AST")
 		}

@@ -28,7 +28,7 @@ type TableCommentConventionAdvisor struct {
 // CREATE TABLE doesn't nest, and EXPLAIN-DDL is invalid grammar in both
 // pingcap and omni.
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		// no ESCAPE wrapper); pingcap stored it the same way after restore.
 		// The "exists" signal is the option's presence in the slice, not a
 		// non-empty value (a deliberate empty COMMENT '' is still present).
-		comment, exists := omniTableOptionPresent(n.Options, omniOptionNamesComment)
+		comment, exists := tableOptionPresent(n.Options, optionNamesComment)
 		line := ostmt.FirstTokenLine()
 		if payload.Required && !exists {
 			adviceList = append(adviceList, &storepb.Advice{

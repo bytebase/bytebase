@@ -28,7 +28,7 @@ type NamingColumnConventionAdvisor struct {
 
 // Check checks for column naming convention.
 func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ type columnDataNamingColumn struct {
 	line int
 }
 
-func (c *namingColumnConventionChecker) checkStmt(ostmt OmniStmt) {
+func (c *namingColumnConventionChecker) checkStmt(ostmt Stmt) {
 	var columnList []columnDataNamingColumn
 	var tableName string
 	switch n := ostmt.Node.(type) {

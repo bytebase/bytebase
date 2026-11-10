@@ -41,7 +41,7 @@ func WalkThrough(d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 	}
 	dbName := d.GetProto().GetName()
 
-	precheck := precheckTiDBOmniWalkThrough(d, asts)
+	precheck := precheckTiDBWalkThrough(d, asts)
 
 	// Step 1: create the catalog and select the target database. LoadMetadata
 	// creates and selects it; cross-database rename destinations are seeded up
@@ -107,11 +107,11 @@ func tidbBuildRawSQL(asts []base.AST) (string, []base.AST) {
 	var b strings.Builder
 	execASTs := make([]base.AST, 0, len(asts))
 	for _, a := range asts {
-		omniAST, ok := a.(*tidbparser.OmniAST)
+		wrapped, ok := a.(*tidbparser.AST)
 		if !ok {
 			continue
 		}
-		text := strings.TrimSpace(omniAST.Text)
+		text := strings.TrimSpace(wrapped.Text)
 		if text == "" {
 			continue
 		}
@@ -154,7 +154,7 @@ func tidbRenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST) []str
 		targets = append(targets, targetTable.Schema)
 	}
 	for _, unifiedAST := range asts {
-		node, ok := tidbparser.GetOmniNode(unifiedAST)
+		node, ok := tidbparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}
@@ -244,24 +244,24 @@ func tidbExecErrorAdvice(d *model.DatabaseMetadata, index int, position *storepb
 	}
 }
 
-// precheckTiDBOmniWalkThrough reports the first statement that the catalog
+// precheckTiDBWalkThrough reports the first statement that the catalog
 // would silently accept but that bytebase still warns on: a cross-database
 // reference, a dropped database, or a CREATE TABLE ... AS SELECT.
-func precheckTiDBOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) tiDBWalkThroughAdvice {
+func precheckTiDBWalkThrough(d *model.DatabaseMetadata, asts []base.AST) tiDBWalkThroughAdvice {
 	// created tracks the tables a preceding statement in this batch added to the
 	// current database, so a later CREATE TABLE IF NOT EXISTS against one of them
 	// is recognized as the no-op it is rather than flagged.
 	created := make(map[string]bool)
 	for i, unifiedAST := range asts {
-		node, ok := tidbparser.GetOmniNode(unifiedAST)
+		node, ok := tidbparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}
 		text := ""
-		if omniAST, ok := unifiedAST.(*tidbparser.OmniAST); ok {
-			text = strings.TrimSpace(omniAST.Text)
+		if wrapped, ok := unifiedAST.(*tidbparser.AST); ok {
+			text = strings.TrimSpace(wrapped.Text)
 		}
-		if advice := precheckTiDBOmniNode(d, node, text, created); advice != nil {
+		if advice := precheckTiDBNode(d, node, text, created); advice != nil {
 			advice.StartPosition = tidbStatementStartPosition(unifiedAST.ASTStartPosition())
 			return tiDBWalkThroughAdvice{index: i, advice: advice}
 		}
@@ -295,7 +295,7 @@ func tidbTableKey(d *model.DatabaseMetadata, name string) string {
 	return name
 }
 
-func precheckTiDBOmniNode(d *model.DatabaseMetadata, node ast.Node, text string, created map[string]bool) *storepb.Advice {
+func precheckTiDBNode(d *model.DatabaseMetadata, node ast.Node, text string, created map[string]bool) *storepb.Advice {
 	switch n := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		if n.Name != "" && !isCurrentDatabase(d, n.Name) {
@@ -381,7 +381,7 @@ func precheckTiDBTableRefDatabase(d *model.DatabaseMetadata, table *ast.TableRef
 // tidbTableExistsInBatch reports whether a table exists either in the loaded
 // metadata or by a preceding statement in the same batch.
 func tidbTableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, table *ast.TableRef) bool {
-	if tidbOmniTableExistsInCurrentDatabase(d, table) {
+	if tidbTableExistsInCurrentDatabase(d, table) {
 		return true
 	}
 	if table == nil || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
@@ -390,7 +390,7 @@ func tidbTableExistsInBatch(d *model.DatabaseMetadata, created map[string]bool, 
 	return created[tidbTableKey(d, table.Name)]
 }
 
-func tidbOmniTableExistsInCurrentDatabase(d *model.DatabaseMetadata, table *ast.TableRef) bool {
+func tidbTableExistsInCurrentDatabase(d *model.DatabaseMetadata, table *ast.TableRef) bool {
 	if table == nil || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
 		return false
 	}

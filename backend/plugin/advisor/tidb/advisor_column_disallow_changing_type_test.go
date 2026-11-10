@@ -1,6 +1,6 @@
 package tidb
 
-// Pure-function unit tests for omniBuildColumnTypeString +
+// Pure-function unit tests for buildColumnTypeString +
 // normalizeColumnType. Each case locks one of the empirical
 // receipts from a Codex review round on PR #20302 so future
 // changes to the type-string rendering path have a CI guard
@@ -17,14 +17,14 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 )
 
-// TestOmniBuildCompactTypeString locks the CompactStr-equivalent
+// TestBuildCompactTypeString locks the CompactStr-equivalent
 // rendering used by column_type_disallow_list. Codex round-1 catch on
-// PR #20308 (Codex P1) flagged that the earlier omniDataTypeNameCompact
+// PR #20308 (Codex P1) flagged that the earlier dataTypeNameCompact
 // rendering dropped length/literal/canonicalization information that
 // pingcap's `column.Tp.CompactStr()` preserved — breaking user
 // blocklist entries like "VARCHAR(255)" / "TINYINT(1)" / "ENUM('X','Y')".
 // These tests pin the CompactStr-equivalent contract.
-func TestOmniBuildCompactTypeString(t *testing.T) {
+func TestBuildCompactTypeString(t *testing.T) {
 	cases := []struct {
 		name string
 		dt   *ast.DataType
@@ -66,7 +66,7 @@ func TestOmniBuildCompactTypeString(t *testing.T) {
 		{"BOOLEAN → tinyint(1)", &ast.DataType{Name: "BOOLEAN"}, "tinyint(1)"},
 		// Crucially: CompactStr does NOT include UNSIGNED/ZEROFILL
 		// modifiers, even when set on the DataType. The wrapper
-		// omniBuildColumnTypeString appends those; the compact form
+		// buildColumnTypeString appends those; the compact form
 		// stays modifier-free (matches pingcap's CompactStr behavior:
 		// `BIGINT UNSIGNED` → CompactStr "bigint(20)" — no UNSIGNED).
 		{"BIGINT UNSIGNED → compact has no UNSIGNED", &ast.DataType{Name: "BIGINT", Unsigned: true}, "bigint(20)"},
@@ -82,15 +82,15 @@ func TestOmniBuildCompactTypeString(t *testing.T) {
 			if tc.dt != nil {
 				lower = strings.ToLower(tc.dt.Name)
 			}
-			got := omniBuildCompactTypeString(tc.dt, lower)
+			got := buildCompactTypeString(tc.dt, lower)
 			if got != tc.want {
-				t.Errorf("omniBuildCompactTypeString = %q, want %q", got, tc.want)
+				t.Errorf("buildCompactTypeString = %q, want %q", got, tc.want)
 			}
 		})
 	}
 }
 
-func TestOmniBuildColumnTypeString(t *testing.T) {
+func TestBuildColumnTypeString(t *testing.T) {
 	cases := []struct {
 		name string
 		dt   *ast.DataType
@@ -186,9 +186,9 @@ func TestOmniBuildColumnTypeString(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := omniBuildColumnTypeString(tc.dt)
+			got := buildColumnTypeString(tc.dt)
 			if got != tc.want {
-				t.Errorf("omniBuildColumnTypeString = %q, want %q", got, tc.want)
+				t.Errorf("buildColumnTypeString = %q, want %q", got, tc.want)
 			}
 		})
 	}
@@ -251,7 +251,7 @@ func TestNormalizeColumnType(t *testing.T) {
 func TestTypeStringRoundTripAgainstNormalize(t *testing.T) {
 	cases := []struct {
 		name           string
-		omniDT         *ast.DataType
+		dT             *ast.DataType
 		catalogStored  string // what MySQL info_schema returns
 		shouldNoChange bool   // true when this is a no-op-modify scenario
 	}{
@@ -301,13 +301,13 @@ func TestTypeStringRoundTripAgainstNormalize(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			omniBuilt := omniBuildColumnTypeString(tc.omniDT)
-			omniNorm := normalizeColumnType(omniBuilt)
+			built := buildColumnTypeString(tc.dT)
+			norm := normalizeColumnType(built)
 			catalogNorm := normalizeColumnType(tc.catalogStored)
-			matched := omniNorm == catalogNorm
+			matched := norm == catalogNorm
 			if matched != tc.shouldNoChange {
 				t.Errorf("normalize match = %v, want %v (omni-built=%q normalized=%q vs catalog=%q normalized=%q)",
-					matched, tc.shouldNoChange, omniBuilt, omniNorm, tc.catalogStored, catalogNorm)
+					matched, tc.shouldNoChange, built, norm, tc.catalogStored, catalogNorm)
 			}
 		})
 	}

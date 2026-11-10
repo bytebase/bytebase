@@ -39,7 +39,7 @@ type WhereRequirementForUpdateDeleteAdvisor struct {
 // DML at omni's nodes that mechanical top-level type-switch ignores.
 // Recipe B with omniast.Walk handles every wrapper kind automatically.
 func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

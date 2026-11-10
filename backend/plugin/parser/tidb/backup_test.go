@@ -296,7 +296,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 		result[0].Statement,
 	)
 	// The generated backup must be valid SQL (the CTE is defined before use).
-	_, perr := ParseTiDBOmni(result[0].Statement)
+	_, perr := ParseTiDB(result[0].Statement)
 	a.NoError(perr, "generated CTE backup must re-parse as valid SQL")
 
 	// More than maxMixedDMLCount same-table statements use the UNION ALL path,
@@ -363,7 +363,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 2)
 	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
 	}
 
@@ -372,7 +372,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 2)
 	a.ElementsMatch([]string{"test", "test2"}, []string{result[0].SourceTableName, result[1].SourceTableName})
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "generated multi-target backup must re-parse as valid SQL")
 	}
 
@@ -430,14 +430,14 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 	result, err = run("DELETE a FROM (test AS a JOIN test2 AS b ON a.a = b.a) WHERE a.a = 1")
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join DELETE backup must re-parse as valid SQL")
 	}
 
@@ -447,7 +447,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "parenthesized-join-then-join UPDATE backup must re-parse as valid SQL")
 	}
 
@@ -457,7 +457,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "right-operand parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 
@@ -467,7 +467,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.NoError(err)
 	a.Len(result, 1)
 	for _, r := range result {
-		_, perr := ParseTiDBOmni(r.Statement)
+		_, perr := ParseTiDB(r.Statement)
 		a.NoError(perr, "commented parenthesized-join UPDATE backup must re-parse as valid SQL")
 	}
 

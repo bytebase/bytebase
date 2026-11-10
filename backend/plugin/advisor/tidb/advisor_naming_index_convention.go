@@ -35,7 +35,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		mismatchCode:       code.NamingIndexConventionMismatch,
 		typeNoun:           "Index",
 		internalErrorTitle: "Internal error for index naming convention rule",
-	}, func(ostmt OmniStmt) []*indexMetaData {
+	}, func(ostmt Stmt) []*indexMetaData {
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateTableStmt:
 			return collectIndexCreateTable(ostmt, n)
@@ -48,7 +48,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	})
 }
 
-func collectIndexCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaData {
+func collectIndexCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -60,7 +60,7 @@ func collectIndexCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMet
 		}
 		columnList := constraint.Columns
 		if len(columnList) == 0 {
-			columnList = omniIndexColumns(constraint.IndexColumns)
+			columnList = indexColumns(constraint.IndexColumns)
 		}
 		metaData := map[string]string{
 			advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
@@ -76,7 +76,7 @@ func collectIndexCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMet
 	return res
 }
 
-func collectIndexAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
+func collectIndexAlterTable(ostmt Stmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -98,7 +98,7 @@ func collectIndexAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetad
 			}
 			columnList := cmd.Constraint.Columns
 			if len(columnList) == 0 {
-				columnList = omniIndexColumns(cmd.Constraint.IndexColumns)
+				columnList = indexColumns(cmd.Constraint.IndexColumns)
 			}
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
@@ -140,7 +140,7 @@ func collectIndexAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetad
 	return res
 }
 
-func collectIndexCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []*indexMetaData {
+func collectIndexCreateIndex(ostmt Stmt, n *ast.CreateIndexStmt) []*indexMetaData {
 	// Preserve pingcap behavior: only exclude unique indexes. Fulltext/spatial
 	// CREATE INDEX statements were checked by the pingcap-typed advisor and
 	// remain checked here. The mysql omni rule additionally excludes Fulltext
@@ -153,7 +153,7 @@ func collectIndexCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []*indexMet
 		return nil
 	}
 	tableName := n.Table.Name
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,

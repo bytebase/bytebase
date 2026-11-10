@@ -35,9 +35,9 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, err := ParseTiDBOmni(stmt.Text)
+		list, err := ParseTiDB(stmt.Text)
 		if err != nil {
-			return nil, convertOmniParseError(err, stmt)
+			return nil, convertParseError(err, stmt)
 		}
 		if list == nil || len(list.Items) == 0 {
 			// Omni succeeded but produced no items (e.g. a comment-only
@@ -49,7 +49,7 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 		for _, node := range list.Items {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          node,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -61,12 +61,12 @@ func parseTiDBStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniParseError takes an omni parser error and produces a
+// convertParseError takes an omni parser error and produces a
 // base.SyntaxError with absolute line/column coordinates (so the customer
 // sees a position relative to the original multi-statement input, not the
 // per-statement excerpt). Returns the original error unchanged if it is not
 // an *omniparser.ParseError.
-func convertOmniParseError(err error, stmt base.Statement) error {
+func convertParseError(err error, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err
@@ -89,8 +89,8 @@ func convertOmniParseError(err error, stmt base.Statement) error {
 	}
 }
 
-// OmniAST wraps an omni/tidb AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni/tidb AST node and implements the base.AST interface.
+type AST struct {
 	// Node is the omni AST node (e.g. *ast.SelectStmt, *ast.CreateTableStmt).
 	Node ast.Node
 	// Text is the original SQL text of this statement.
@@ -100,29 +100,29 @@ type OmniAST struct {
 }
 
 // ASTStartPosition implements base.AST.
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseTiDBOmni parses SQL using omni/tidb's parser and returns an ast.List.
+// ParseTiDB parses SQL using omni/tidb's parser and returns an ast.List.
 // This is the recommended entry point for new code that needs omni/tidb AST
 // nodes. Callers that need a pre-split []base.ParsedStatement should use the
 // registered base.ParseStatements with storepb.Engine_TIDB instead.
-func ParseTiDBOmni(sql string) (*ast.List, error) {
+func ParseTiDB(sql string) (*ast.List, error) {
 	return omniparser.Parse(sql)
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-// Returns the node and true if it is an *OmniAST, nil and false otherwise.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+// Returns the node and true if it is an *AST, nil and false otherwise.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	wrapped, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return wrapped.Node, true
 }
 
 // ByteOffsetToRunePosition converts a byte offset in sql to a 1-based

@@ -75,7 +75,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 			continue
 		}
 
-		parsed, err := ParseTiDBOmni(item.Text)
+		parsed, err := ParseTiDB(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
@@ -492,7 +492,7 @@ func parseCTEs(clause string) []*ast.CommonTableExpr {
 		return nil
 	}
 	// Wrap the clause with a dummy SELECT so it parses as a complete statement.
-	parsed, err := ParseTiDBOmni(clause + " SELECT 1")
+	parsed, err := ParseTiDB(clause + " SELECT 1")
 	if err != nil || parsed == nil {
 		return nil
 	}
