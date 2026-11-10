@@ -31,17 +31,17 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	rule := &nonTransactionalRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type nonTransactionalRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*nonTransactionalRule) Name() string {

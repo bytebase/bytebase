@@ -33,7 +33,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	rule := &tableCommentConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -46,7 +46,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -70,7 +70,7 @@ type tableCommentInfo struct {
 }
 
 type tableCommentConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	payload       *storepb.SQLReviewRule_CommentConventionRulePayload
 	createdTables map[string]*tableInfo
@@ -128,10 +128,10 @@ func (r *tableCommentConventionRule) handleCommentStmt(n *ast.CommentStmt) {
 		switch len(items) {
 		case 1:
 			schemaName = "public"
-			tableName = omniStringVal(items[0])
+			tableName = stringVal(items[0])
 		case 2:
-			schemaName = omniStringVal(items[0])
-			tableName = omniStringVal(items[1])
+			schemaName = stringVal(items[0])
+			tableName = stringVal(items[1])
 		default:
 			return
 		}

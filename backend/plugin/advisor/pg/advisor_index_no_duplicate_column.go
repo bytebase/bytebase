@@ -31,17 +31,17 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &indexNoDuplicateColumnRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type indexNoDuplicateColumnRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*indexNoDuplicateColumnRule) Name() string {
@@ -63,7 +63,7 @@ func (r *indexNoDuplicateColumnRule) OnStatement(node ast.Node) {
 func (r *indexNoDuplicateColumnRule) handleIndexStmt(n *ast.IndexStmt) {
 	indexName := n.Idxname
 	tableName := omniTableName(n.Relation)
-	columns := omniIndexColumns(n)
+	columns := indexColumns(n)
 	if dupCol := findDuplicate(columns); dupCol != "" {
 		r.addDuplicateAdvice("INDEX", indexName, tableName, dupCol, r.ContentStartLine())
 	}
@@ -71,7 +71,7 @@ func (r *indexNoDuplicateColumnRule) handleIndexStmt(n *ast.IndexStmt) {
 
 func (r *indexNoDuplicateColumnRule) handleCreateStmt(n *ast.CreateStmt) {
 	tableName := omniTableName(n.Relation)
-	_, constraints := omniTableElements(n)
+	_, constraints := tableElements(n)
 	for _, c := range constraints {
 		r.checkConstraint(c, tableName)
 	}
@@ -79,7 +79,7 @@ func (r *indexNoDuplicateColumnRule) handleCreateStmt(n *ast.CreateStmt) {
 
 func (r *indexNoDuplicateColumnRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if cmd.Subtype == int(ast.AT_AddConstraint) {
 			if c, ok := cmd.Def.(*ast.Constraint); ok {
 				r.checkConstraint(c, tableName)
@@ -95,15 +95,15 @@ func (r *indexNoDuplicateColumnRule) checkConstraint(c *ast.Constraint, tableNam
 	case ast.CONSTR_PRIMARY:
 		constraintType = "PRIMARY KEY"
 		keyword = "PRIMARY KEY"
-		columns = omniConstraintColumns(c)
+		columns = constraintColumns(c)
 	case ast.CONSTR_UNIQUE:
 		constraintType = "UNIQUE KEY"
 		keyword = "UNIQUE"
-		columns = omniConstraintColumns(c)
+		columns = constraintColumns(c)
 	case ast.CONSTR_FOREIGN:
 		constraintType = "FOREIGN KEY"
 		keyword = "FOREIGN KEY"
-		columns = omniListStrings(c.FkAttrs)
+		columns = listStrings(c.FkAttrs)
 	default:
 		return
 	}

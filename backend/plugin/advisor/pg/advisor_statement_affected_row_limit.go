@@ -45,7 +45,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	}
 
 	rule := &statementAffectedRowLimitRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -55,12 +55,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		tenantMode: checkCtx.TenantMode,
 	}
 
-	adviceList := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	adviceList := RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	return rule.explains.AppendSkippedAdvice(adviceList, rule.Title, code.StatementAffectedRowExceedsLimit), nil
 }
 
 type statementAffectedRowLimitRule struct {
-	OmniBaseRule
+	BaseRule
 	maxRow     int
 	driver     *sql.DB
 	ctx        context.Context

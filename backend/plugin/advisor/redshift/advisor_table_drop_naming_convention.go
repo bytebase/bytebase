@@ -51,7 +51,7 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	for _, stmt := range checkCtx.ParsedStatements {
-		node, ok := parserredshift.GetOmniNode(stmt.AST)
+		node, ok := parserredshift.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -76,7 +76,7 @@ func (c *tableDropNamingConventionChecker) checkStmt(node redshiftast.Node, star
 	if redshiftast.ObjectType(dropStmt.RemoveType) != redshiftast.OBJECT_TABLE {
 		return
 	}
-	for _, tableName := range omniDropTableNames(dropStmt) {
+	for _, tableName := range dropTableNames(dropStmt) {
 		if tableName == "" || c.format.MatchString(tableName) {
 			continue
 		}
@@ -90,7 +90,7 @@ func (c *tableDropNamingConventionChecker) checkStmt(node redshiftast.Node, star
 	}
 }
 
-func omniDropTableNames(dropStmt *redshiftast.DropStmt) []string {
+func dropTableNames(dropStmt *redshiftast.DropStmt) []string {
 	if dropStmt.Objects == nil {
 		return nil
 	}

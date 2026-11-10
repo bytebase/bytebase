@@ -50,14 +50,14 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
 		baseLine := stmt.BaseLine()
-		if omniIsDDLStatement(node) {
-			stmtText := omniTrimmedStmtText(stmt.Text)
-			startLine := omniContentStartLine(stmt.Text)
+		if isDDLStatement(node) {
+			stmtText := trimmedStmtText(stmt.Text)
+			startLine := contentStartLine(stmt.Text)
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
@@ -76,7 +76,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 				Content: content,
 				Code:    code.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line:   int32(baseLine) + omniContentStartLine(stmt.Text),
+					Line:   int32(baseLine) + contentStartLine(stmt.Text),
 					Column: 0,
 				},
 			})
@@ -148,8 +148,8 @@ func dataModifyingCTEAdvice(node ast.Node) string {
 	}
 }
 
-// omniIsDDLStatement checks if a node is a DDL statement.
-func omniIsDDLStatement(node ast.Node) bool {
+// isDDLStatement checks if a node is a DDL statement.
+func isDDLStatement(node ast.Node) bool {
 	switch node.(type) {
 	// CREATE statements
 	case *ast.CreateStmt,
@@ -273,7 +273,7 @@ func prepareTransformation(parsedStatements []base.ParsedStatement) []statementI
 			offset++
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			offset++
 			continue
@@ -281,7 +281,7 @@ func prepareTransformation(parsedStatements []base.ParsedStatement) []statementI
 
 		switch n := node.(type) {
 		case *ast.UpdateStmt:
-			table := omniExtractTableReferenceFromRangeVar(n.Relation)
+			table := extractTableReferenceFromRangeVar(n.Relation)
 			if table != nil {
 				table.StatementType = StatementTypeUpdate
 				dmls = append(dmls, statementInfo{
@@ -292,7 +292,7 @@ func prepareTransformation(parsedStatements []base.ParsedStatement) []statementI
 			}
 		case *ast.DeleteStmt:
 			// DeleteStmt uses UsingClause for FROM but Relation for the target table
-			table := omniExtractTableReferenceFromRangeVar(n.Relation)
+			table := extractTableReferenceFromRangeVar(n.Relation)
 			if table != nil {
 				table.StatementType = StatementTypeDelete
 				dmls = append(dmls, statementInfo{
@@ -309,7 +309,7 @@ func prepareTransformation(parsedStatements []base.ParsedStatement) []statementI
 	return dmls
 }
 
-func omniExtractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
+func extractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
 	if rv == nil {
 		return nil
 	}
@@ -334,9 +334,9 @@ func omniExtractTableReferenceFromRangeVar(rv *ast.RangeVar) *TableReference {
 	return &table
 }
 
-// omniTrimmedStmtText returns the statement text with leading/trailing whitespace
+// trimmedStmtText returns the statement text with leading/trailing whitespace
 // and trailing semicolons removed.
-func omniTrimmedStmtText(text string) string {
+func trimmedStmtText(text string) string {
 	result := text
 	// Trim leading/trailing whitespace
 	for len(result) > 0 && (result[0] == ' ' || result[0] == '\t' || result[0] == '\n' || result[0] == '\r') {
@@ -353,9 +353,9 @@ func omniTrimmedStmtText(text string) string {
 	return result
 }
 
-// omniContentStartLine returns the 1-based line number of the first non-whitespace
+// contentStartLine returns the 1-based line number of the first non-whitespace
 // character in the text.
-func omniContentStartLine(text string) int32 {
+func contentStartLine(text string) int32 {
 	line := int32(1)
 	for _, c := range text {
 		if c == '\n' {

@@ -26,35 +26,35 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 
 	var allResults []StatementTypeWithPosition
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		wrapped, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for PostgreSQL")
+			return nil, errors.New("expected AST for PostgreSQL")
 		}
-		if omniAST.Node == nil {
+		if wrapped.Node == nil {
 			continue
 		}
 
-		stmtTypes := classifyStatementTypes(omniAST.Node)
+		stmtTypes := classifyStatementTypes(wrapped.Node)
 		if len(stmtTypes) == 0 {
 			continue
 		}
 
 		line := 0
-		if omniAST.StartPosition != nil {
-			line = int(omniAST.StartPosition.Line)
+		if wrapped.StartPosition != nil {
+			line = int(wrapped.StartPosition.Line)
 		}
 
 		// Compute end line from text
 		endLine := line
-		if omniAST.Text != "" {
-			endLine += strings.Count(omniAST.Text, "\n")
+		if wrapped.Text != "" {
+			endLine += strings.Count(wrapped.Text, "\n")
 		}
 
 		for _, stmtType := range stmtTypes {
 			allResults = append(allResults, StatementTypeWithPosition{
 				Type: stmtType,
 				Line: endLine,
-				Text: omniAST.Text,
+				Text: wrapped.Text,
 			})
 		}
 	}

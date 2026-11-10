@@ -30,17 +30,17 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(_ context.Context, ch
 	}
 
 	rule := &statementDisallowAddColumnWithDefaultRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDisallowAddColumnWithDefaultRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementDisallowAddColumnWithDefaultRule) Name() string {
@@ -53,7 +53,7 @@ func (r *statementDisallowAddColumnWithDefaultRule) OnStatement(node ast.Node) {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(alter) {
+	for _, cmd := range alterTableCmds(alter) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
 			continue
 		}
@@ -65,7 +65,7 @@ func (r *statementDisallowAddColumnWithDefaultRule) OnStatement(node ast.Node) {
 			r.addAdvice()
 			return
 		}
-		for _, c := range omniColumnConstraints(colDef) {
+		for _, c := range columnConstraints(colDef) {
 			if c.Contype == ast.CONSTR_DEFAULT {
 				r.addAdvice()
 				return

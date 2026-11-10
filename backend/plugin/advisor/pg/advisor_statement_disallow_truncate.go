@@ -25,13 +25,13 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	rule := &statementDisallowTruncateRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDisallowTruncateRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementDisallowTruncateRule) Name() string { return "statement_disallow_truncate" }

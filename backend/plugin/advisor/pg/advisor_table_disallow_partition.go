@@ -31,17 +31,17 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &tableDisallowPartitionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type tableDisallowPartitionRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 // Name returns the rule name.
@@ -76,7 +76,7 @@ func (r *tableDisallowPartitionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *tableDisallowPartitionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AttachPartition {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.Level,

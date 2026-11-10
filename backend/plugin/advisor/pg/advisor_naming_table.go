@@ -49,7 +49,7 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &namingTableConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -57,11 +57,11 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		maxLength: maxLength,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingTableConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	format    *regexp.Regexp
 	maxLength int

@@ -32,13 +32,13 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 
 		omniStmts, omniErr := ParsePg(stmt.Text)
 		if omniErr != nil {
-			return nil, convertOmniError(omniErr, statement, stmt)
+			return nil, convertError(omniErr, statement, stmt)
 		}
 
 		for _, os := range omniStmts {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -49,8 +49,8 @@ func parsePgStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, _ string, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, _ string, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

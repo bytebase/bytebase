@@ -28,17 +28,17 @@ func (*StatementCreateSpecifySchema) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &statementCreateSpecifySchemaRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementCreateSpecifySchemaRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementCreateSpecifySchemaRule) Name() string {

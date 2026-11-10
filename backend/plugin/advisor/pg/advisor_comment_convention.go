@@ -38,18 +38,18 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &commentConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		maxLength: int(numberPayload.Number),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type commentConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	maxLength int
 }

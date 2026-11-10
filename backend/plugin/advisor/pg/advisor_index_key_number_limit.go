@@ -38,18 +38,18 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 
 	rule := &indexKeyNumberLimitRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		max: int(numberPayload.Number),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type indexKeyNumberLimitRule struct {
-	OmniBaseRule
+	BaseRule
 
 	max int
 }
@@ -71,7 +71,7 @@ func (r *indexKeyNumberLimitRule) OnStatement(node ast.Node) {
 }
 
 func (r *indexKeyNumberLimitRule) handleIndexStmt(n *ast.IndexStmt) {
-	keyCount := len(omniIndexColumns(n))
+	keyCount := len(indexColumns(n))
 	if r.max > 0 && keyCount > r.max {
 		indexName := n.Idxname
 		tableName := omniTableName(n.Relation)
@@ -90,7 +90,7 @@ func (r *indexKeyNumberLimitRule) handleIndexStmt(n *ast.IndexStmt) {
 
 func (r *indexKeyNumberLimitRule) handleCreateStmt(n *ast.CreateStmt) {
 	tableName := omniTableName(n.Relation)
-	_, constraints := omniTableElements(n)
+	_, constraints := tableElements(n)
 	for _, c := range constraints {
 		r.checkConstraint(c, tableName)
 	}
@@ -98,7 +98,7 @@ func (r *indexKeyNumberLimitRule) handleCreateStmt(n *ast.CreateStmt) {
 
 func (r *indexKeyNumberLimitRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if cmd.Subtype == int(ast.AT_AddConstraint) {
 			if c, ok := cmd.Def.(*ast.Constraint); ok {
 				r.checkConstraint(c, tableName)
@@ -111,9 +111,9 @@ func (r *indexKeyNumberLimitRule) checkConstraint(c *ast.Constraint, tableName s
 	var keyCount int
 	switch c.Contype {
 	case ast.CONSTR_PRIMARY, ast.CONSTR_UNIQUE:
-		keyCount = len(omniConstraintColumns(c))
+		keyCount = len(constraintColumns(c))
 	case ast.CONSTR_FOREIGN:
-		keyCount = len(omniListStrings(c.FkAttrs))
+		keyCount = len(listStrings(c.FkAttrs))
 	default:
 		return
 	}

@@ -32,7 +32,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
 	rule := &columnCommentConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -43,7 +43,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -70,7 +70,7 @@ type commentInfo struct {
 }
 
 type columnCommentConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 
@@ -99,7 +99,7 @@ func (r *columnCommentConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 		return
 	}
 	tableName := n.Relation.Relname
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		r.columns = append(r.columns, columnInfo{
 			schema: "public",
@@ -115,7 +115,7 @@ func (r *columnCommentConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt
 		return
 	}
 	tableName := n.Relation.Relname
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if cmd.Subtype == int(ast.AT_AddColumn) {
 			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
 				r.columns = append(r.columns, columnInfo{
@@ -143,11 +143,11 @@ func (r *columnCommentConventionRule) handleCommentStmt(n *ast.CommentStmt) {
 	items := list.Items
 	switch len(items) {
 	case 2:
-		tableName = omniStringVal(items[0])
-		columnName = omniStringVal(items[1])
+		tableName = stringVal(items[0])
+		columnName = stringVal(items[1])
 	case 3:
-		tableName = omniStringVal(items[1])
-		columnName = omniStringVal(items[2])
+		tableName = stringVal(items[1])
+		columnName = stringVal(items[2])
 	default:
 		return
 	}
@@ -210,8 +210,8 @@ func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
 	return adviceList
 }
 
-// omniStringVal extracts a string value from a Node.
-func omniStringVal(n ast.Node) string {
+// stringVal extracts a string value from a Node.
+func stringVal(n ast.Node) string {
 	if s, ok := n.(*ast.String); ok {
 		return s.Str
 	}

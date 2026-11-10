@@ -44,18 +44,18 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	rule := &tableDropNamingConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		format: format,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type tableDropNamingConventionRule struct {
-	OmniBaseRule
+	BaseRule
 	format *regexp.Regexp
 }
 
@@ -74,7 +74,7 @@ func (r *tableDropNamingConventionRule) OnStatement(node ast.Node) {
 		return
 	}
 
-	for _, obj := range omniDropObjects(n) {
+	for _, obj := range dropObjects(n) {
 		tableName := obj[1] // [schema, name]
 		if !r.format.MatchString(tableName) {
 			r.AddAdvice(&storepb.Advice{

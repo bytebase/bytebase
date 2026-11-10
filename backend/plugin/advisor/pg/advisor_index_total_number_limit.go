@@ -47,7 +47,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -103,11 +103,11 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 		if tableName == "" {
 			return
 		}
-		schemaName := omniSchemaName(n.Relation)
-		cols, constraints := omniTableElements(n)
+		schemaName := schemaName(n.Relation)
+		cols, constraints := tableElements(n)
 		// Check column-level constraints
 		for _, col := range cols {
-			for _, c := range omniColumnConstraints(col) {
+			for _, c := range columnConstraints(col) {
 				if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
 					tl.set(schemaName, tableName, absEndLine())
 					return
@@ -127,12 +127,12 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 		if tableName == "" {
 			return
 		}
-		schemaName := omniSchemaName(n.Relation)
-		for _, cmd := range omniAlterTableCmds(n) {
+		schemaName := schemaName(n.Relation)
+		for _, cmd := range alterTableCmds(n) {
 			// ADD COLUMN with PK/UNIQUE constraint
 			if cmd.Subtype == int(ast.AT_AddColumn) {
 				if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
-					for _, c := range omniColumnConstraints(colDef) {
+					for _, c := range columnConstraints(colDef) {
 						if c.Contype == ast.CONSTR_PRIMARY || c.Contype == ast.CONSTR_UNIQUE {
 							tl.set(schemaName, tableName, absEndLine())
 							return
@@ -156,7 +156,7 @@ func handleIndexTotalStmt(node ast.Node, baseLine int, stmtText string, tl table
 		if tableName == "" {
 			return
 		}
-		schemaName := omniSchemaName(n.Relation)
+		schemaName := schemaName(n.Relation)
 		tl.set(schemaName, tableName, absEndLine())
 	default:
 	}

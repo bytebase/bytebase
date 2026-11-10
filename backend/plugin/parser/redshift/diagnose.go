@@ -28,7 +28,7 @@ func parseRedshiftStatement(statement string) *base.SyntaxError {
 		Start: &store.Position{Line: 1, Column: 1},
 	}
 	if _, err := ParseRedshift(statement); err != nil {
-		syntaxErr, ok := convertOmniError(err, stmt).(*base.SyntaxError)
+		syntaxErr, ok := convertError(err, stmt).(*base.SyntaxError)
 		if !ok {
 			return &base.SyntaxError{
 				Position: &store.Position{Line: 1, Column: 1},

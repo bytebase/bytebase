@@ -33,7 +33,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		return nil, err
 	}
 	rule := &whereDisallowFuncPgRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -52,11 +52,11 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		// references when sync hasn't populated search_path.
 		rule.searchPath = []string{"public"}
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type whereDisallowFuncPgRule struct {
-	OmniBaseRule
+	BaseRule
 	dbMetadata *model.DatabaseMetadata
 	// searchPath is the list of schemas to consult for unqualified table refs,
 	// in priority order. Mirrors PG's `search_path` GUC. Sync stores the

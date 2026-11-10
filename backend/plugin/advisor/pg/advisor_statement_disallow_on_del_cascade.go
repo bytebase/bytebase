@@ -30,17 +30,17 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 	}
 
 	rule := &statementDisallowOnDelCascadeRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDisallowOnDelCascadeRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementDisallowOnDelCascadeRule) Name() string {
@@ -58,7 +58,7 @@ func (r *statementDisallowOnDelCascadeRule) OnStatement(node ast.Node) {
 }
 
 func (r *statementDisallowOnDelCascadeRule) checkCreateStmt(create *ast.CreateStmt) {
-	_, constraints := omniTableElements(create)
+	_, constraints := tableElements(create)
 	for _, c := range constraints {
 		if c.Contype == ast.CONSTR_FOREIGN && c.FkDelaction == 'c' {
 			r.addCascadeAdvice()
@@ -66,9 +66,9 @@ func (r *statementDisallowOnDelCascadeRule) checkCreateStmt(create *ast.CreateSt
 		}
 	}
 	// Also check column-level FK constraints.
-	cols, _ := omniTableElements(create)
+	cols, _ := tableElements(create)
 	for _, col := range cols {
-		for _, c := range omniColumnConstraints(col) {
+		for _, c := range columnConstraints(col) {
 			if c.Contype == ast.CONSTR_FOREIGN && c.FkDelaction == 'c' {
 				r.addCascadeAdvice()
 				return
@@ -78,7 +78,7 @@ func (r *statementDisallowOnDelCascadeRule) checkCreateStmt(create *ast.CreateSt
 }
 
 func (r *statementDisallowOnDelCascadeRule) checkAlterTableStmt(alter *ast.AlterTableStmt) {
-	for _, cmd := range omniAlterTableCmds(alter) {
+	for _, cmd := range alterTableCmds(alter) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
 			continue
 		}

@@ -30,17 +30,17 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 	}
 
 	rule := &statementDisallowRemoveTblCascadeRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDisallowRemoveTblCascadeRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementDisallowRemoveTblCascadeRule) Name() string {
