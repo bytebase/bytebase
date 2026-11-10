@@ -305,7 +305,8 @@ vi.mock("@/utils/issue/cel", () => ({
   buildConditionExpr: (args: Record<string, unknown>) => ({ ...args }),
   convertFromExpr: (expr?: { expression?: string }) =>
     conditionByExpression.value[expr?.expression ?? ""] ?? {},
-  readableCondition: () => ({}),
+  readableCondition: (expr?: { expression?: string }) =>
+    conditionByExpression.value[expr?.expression ?? ""] ?? {},
   stringifyConditionExpression: () => "",
 }));
 
@@ -867,6 +868,26 @@ describe("MembersPage member drawer", () => {
     expect(
       container.textContent?.split("2099-01-01T00:00:00.000Z").length
     ).toBe(2);
+  });
+
+  it("shows the full CEL for a pattern scope instead of an all-resource table", async () => {
+    const expression = 'resource.table_name.contains("archive")';
+    projectIamPolicy.bindings = [
+      {
+        role: "roles/sqlEditorUser",
+        members: [member],
+        condition: { expression },
+        parsedExpr: { expression: "pattern" },
+      },
+    ];
+    conditionByExpression.value = {
+      pattern: { expiredTime: "2099-01-01T00:00:00.000Z" },
+    };
+    await openMemberDrawer();
+
+    expect(container.querySelector("pre")?.textContent).toBe(expression);
+    expect(container.querySelector('[data-testid="sheet"] table')).toBeNull();
+    expect(container.textContent).toContain("2099-01-01T00:00:00.000Z");
   });
 
   it("drops every card of a revoked role, even when the policy holds the same binding twice", async () => {

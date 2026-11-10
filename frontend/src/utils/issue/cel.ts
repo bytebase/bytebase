@@ -26,6 +26,7 @@ import {
 } from "@/utils";
 import {
   CEL_ATTRIBUTE_REQUEST_TIME,
+  CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
   CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
   CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
@@ -377,14 +378,9 @@ export const batchConvertFromCELString = async (
 };
 
 /**
- * A condition as the member drawer and the approver's card show it. The
- * environments decide the direct-execution row, whose *none* sentence is an
- * assurance, so they count only as the condition proves them: a literal
- * `resource.environment_id in […]` at the root of the `&&` chain of the
- * server's syntax tree, since a conjunct only narrows (two intersect). Any
- * other clause reads as every environment; `convertFromExpr` also finds one
- * under `||` or `!` and would read `in [] || true` as the switch off. The
- * databases and the expiry are `convertFromExpr`'s.
+ * Environment limits determine the direct-execution assurance, so only literal
+ * root conjuncts count and multiple limits intersect. Expiry is also proven
+ * independently when the resource scope must stay raw.
  */
 export const readableCondition = (
   expr: Expr | undefined
@@ -392,6 +388,7 @@ export const readableCondition = (
   expr
     ? {
         ...(convertFromExpr(expr) ?? {}),
+        expiredTime: getGuaranteedExpiration(expr)?.toISOString(),
         environments: provenEnvironments(expr),
       }
     : { databaseResources: [] };
@@ -548,6 +545,60 @@ const mergeDatabaseResources = (
   return [...merged.values()];
 };
 
+const exactResourceAttributes = new Set([
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+]);
+
+const hasSummarizableScope = (expr: Expr): boolean => {
+  if (expr.exprKind.case === "constExpr") {
+    const constant = expr.exprKind.value.constantKind;
+    return constant.case === "boolValue" && constant.value;
+  }
+  const call = callOf(expr);
+  if (!call) return false;
+  if (call.function === "_&&_" || call.function === "_||_") {
+    return call.args.length === 2 && call.args.every(hasSummarizableScope);
+  }
+
+  const attribute = factorNameOf(call.args[0]);
+  const value = call.args[1];
+  if (
+    attribute === CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL &&
+    ["_==_", "_!=_", "_<_", "_<=_", "_>_", "_>=_"].includes(call.function)
+  ) {
+    return (
+      value?.exprKind.case === "constExpr" &&
+      value.exprKind.value.constantKind.case === "int64Value"
+    );
+  }
+  if (call.function === "_==_") {
+    return (
+      exactResourceAttributes.has(attribute ?? "") &&
+      constantStringOf(value) !== undefined
+    );
+  }
+  if (call.function === "@in") {
+    const values = stringList(value);
+    return (
+      values !== undefined &&
+      (attribute === CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID ||
+        (values.length > 0 &&
+          [
+            CEL_ATTRIBUTE_RESOURCE_DATABASE,
+            CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+            CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+            CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+          ].includes(attribute ?? "")))
+    );
+  }
+  return getGuaranteedExpiration(expr) !== undefined;
+};
+
 const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
@@ -589,7 +640,9 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
           }
           case CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: {
             const databaseResource =
-              conditionExpression.databaseResources?.pop();
+              conditionExpression.databaseResources?.pop() ?? {
+                databaseFullName: "",
+              };
             if (databaseResource) {
               for (const value of values) {
                 const temp: DatabaseResource = cloneDeep(databaseResource);
@@ -601,7 +654,9 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
           }
           case CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: {
             const databaseResource =
-              conditionExpression.databaseResources?.pop();
+              conditionExpression.databaseResources?.pop() ?? {
+                databaseFullName: "",
+              };
             if (databaseResource) {
               for (const value of values) {
                 const temp: DatabaseResource = cloneDeep(databaseResource);
@@ -704,6 +759,10 @@ const convertFromSimpleExpr = (simpleExpr: SimpleExpr): ConditionExpression => {
 export const convertFromExpr = (
   expr: Expr
 ): ConditionExpression | undefined => {
+  // A partial resource summary would silently omit constraints such as contains.
+  if (!hasSummarizableScope(expr)) {
+    return undefined;
+  }
   const branches = splitOrBranches(resolveCELExpr(expr));
   // Resource summaries model one disjunction with shared conditions. Keep
   // CEL with multiple independent disjunctions raw instead of changing it.

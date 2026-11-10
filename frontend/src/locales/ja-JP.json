@@ -547,6 +547,7 @@
       "add-group": "条件グループの追加",
       "add-raw-expression": "生の式を追加",
       "add-root-condition-placeholder": "「条件を追加」または「条件グループを追加」をクリックして条件を追加します。",
+      "cannot-convert-to-selection": "この条件は手動選択では表現できません。",
       "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたイシューと一致します。",
       "group": {
         "and": {

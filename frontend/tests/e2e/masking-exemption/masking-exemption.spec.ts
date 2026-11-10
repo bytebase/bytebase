@@ -786,6 +786,50 @@ test.describe("Filtering by database keeps every exemption written for it (K2)",
 
 // ── Responsive Layout ──
 
+test.describe("String predicates in the exemption editor", () => {
+  test.beforeEach(async () => {
+    await revokeAllExemptions();
+  });
+
+  test.afterEach(async () => {
+    await revokeAllExemptions();
+  });
+
+  for (const width of [1280, 390]) {
+    test(`saves a contains predicate and displays its CEL scope at ${width}px`, async ({ page: isolatedPage }) => {
+      await isolatedPage.setViewportSize({ width, height: 900 });
+      const listPage = new MaskingExemptionPage(isolatedPage, env.baseURL);
+      await isolatedPage.goto(`${env.baseURL}/projects/${projectId}/masking-exemption`);
+      await listPage.grantExemptionButton.click();
+      await isolatedPage.getByRole("radio", { name: /use cel expression/i }).click();
+      await isolatedPage.getByRole("button", { name: enUS.cel.condition.add, exact: true }).click();
+      await isolatedPage.getByRole("combobox").filter({ hasText: "resource.database" }).click();
+      await isolatedPage.getByRole("option", { name: "resource.table_name", exact: true }).click();
+      await isolatedPage.getByRole("combobox").filter({ hasText: "=" }).click();
+      for (const operator of ["contains", "not contains", "startsWith", "endsWith", "matches"]) {
+        await expect(isolatedPage.getByRole("option", { name: operator, exact: true })).toBeVisible();
+      }
+      await isolatedPage.getByRole("option", { name: "contains", exact: true }).click();
+      await isolatedPage.getByPlaceholder("Input value", { exact: true }).fill("archive");
+      expect(await isolatedPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await isolatedPage.screenshot({ path: test.info().outputPath(`string-editor-${width}.png`), fullPage: true });
+      const grantPage = new GrantExemptionPage(isolatedPage, env.baseURL);
+      await grantPage.reasonInput.fill("String predicate regression");
+      await grantPage.selectAccount(env.adminEmail === "demo@example.com" ? "Demo" : "Admin");
+      await grantPage.submit();
+      await expect(isolatedPage).toHaveURL(new RegExp(`/projects/${projectId}/masking-exemption$`));
+
+      await listPage.selectMember(env.adminEmail);
+      const card = isolatedPage.getByTestId("exemption-grant-card");
+      await expect(card).toContainText(enUS.cel.condition.self);
+      await expect(card.locator("pre")).toContainText('resource.table_name.contains("archive")');
+      await expect(card.getByText(enUS.database.all, { exact: true })).toHaveCount(0);
+      expect(await isolatedPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await isolatedPage.screenshot({ path: test.info().outputPath(`string-predicate-${width}.png`), fullPage: true });
+    });
+  }
+});
+
 test.describe("Responsive Layout", () => {
   test.beforeAll(async () => {
     await grantExemption("Layout test grant");

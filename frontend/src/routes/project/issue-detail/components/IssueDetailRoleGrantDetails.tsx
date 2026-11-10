@@ -173,6 +173,17 @@ export function IssueDetailRoleGrantDetails() {
           </div>
         )}
 
+        {condition && condition.databaseResources === undefined && (
+          <div className="flex flex-col gap-y-2">
+            <span className="text-sm text-control-light">
+              {t("cel.condition.self")}
+            </span>
+            <pre className="whitespace-pre-wrap break-all rounded-xs border border-block-border bg-control-bg px-3 py-2 font-mono text-xs">
+              {expression}
+            </pre>
+          </div>
+        )}
+
         <div className="flex flex-col gap-y-2">
           <span className="text-sm text-control-light">
             {t("issue.role-grant.expired-at")}
