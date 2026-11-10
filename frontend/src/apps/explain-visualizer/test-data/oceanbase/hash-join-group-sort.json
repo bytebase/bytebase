@@ -1,0 +1,40 @@
+{
+  "ID": 0,
+  "OPERATOR": "SORT",
+  "NAME": "",
+  "EST.ROWS": 4,
+  "EST.TIME(us)": 6945,
+  "output": "output([c.country], [T_FUN_COUNT(*)], [T_FUN_SUM(o.total)])",
+  "CHILD_1": {
+    "ID": 1,
+    "OPERATOR": "HASH GROUP BY",
+    "NAME": "",
+    "EST.ROWS": 4,
+    "EST.TIME(us)": 6944,
+    "output": "output([T_FUN_SUM(o.total)], [c.country], [T_FUN_COUNT(*)])",
+    "CHILD_1": {
+      "ID": 2,
+      "OPERATOR": "HASH JOIN ",
+      "NAME": "",
+      "EST.ROWS": 12100,
+      "EST.TIME(us)": 5556,
+      "output": "output([c.country], [o.total])",
+      "CHILD_1": {
+        "ID": 3,
+        "OPERATOR": "TABLE FULL SCAN",
+        "NAME": "c",
+        "EST.ROWS": 5000,
+        "EST.TIME(us)": 177,
+        "output": "output([c.id], [c.country])"
+      },
+      "CHILD_2": {
+        "ID": 4,
+        "OPERATOR": "TABLE FULL SCAN",
+        "NAME": "o",
+        "EST.ROWS": 12317,
+        "EST.TIME(us)": 2864,
+        "output": "output([o.customer_id], [o.total])"
+      }
+    }
+  }
+}

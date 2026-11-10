@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 var (
@@ -178,10 +181,35 @@ func fetchJWKSFromURL(ctx context.Context, jwksURL string) (*jose.JSONWebKeySet,
 		return nil, errors.Errorf("failed to fetch JWKS: HTTP %d", resp.StatusCode)
 	}
 
-	var jwks jose.JSONWebKeySet
-	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+	var raw struct {
+		Keys []json.RawMessage `json:"keys"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return nil, errors.Wrap(err, "failed to decode JWKS")
 	}
 
-	return &jwks, nil
+	// Decode one key at a time: go-jose refuses a key whose RSA modulus exceeds
+	// jose.MaxRSAModulusBits, and decoding the set in one call would let such a
+	// key cost us the rest of it, including the one the token was signed with.
+	jwks := &jose.JSONWebKeySet{}
+	for i, rawKey := range raw.Keys {
+		var key jose.JSONWebKey
+		if err := json.Unmarshal(rawKey, &key); err != nil {
+			slog.Warn("Skipping a JWKS key go-jose cannot parse",
+				slog.String("jwksURL", jwksURL),
+				slog.Int("index", i),
+				log.BBError(err),
+			)
+			continue
+		}
+		jwks.Keys = append(jwks.Keys, key)
+	}
+	// Dropping every key an issuer published is not the same as it publishing
+	// none: erroring keeps the emptied set out of the cache, so a fixed issuer
+	// is picked up on the next call rather than after cacheDuration.
+	if len(jwks.Keys) == 0 && len(raw.Keys) > 0 {
+		return nil, errors.New("failed to decode JWKS: no key could be parsed")
+	}
+
+	return jwks, nil
 }

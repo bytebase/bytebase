@@ -1,0 +1,54 @@
+[
+  {
+    "id": "IndexHashJoin_16",
+    "estRows": "90.00",
+    "taskType": "root",
+    "operatorInfo": "inner join, inner:IndexLookUp_13, outer key:qp.customers.id, inner key:qp.orders.customer_id, equal cond:eq(qp.customers.id, qp.orders.customer_id)",
+    "subOperators": [
+      {
+        "id": "TableReader_44(Build)",
+        "estRows": "9.00",
+        "taskType": "root",
+        "operatorInfo": "data:TableRangeScan_43",
+        "subOperators": [
+          {
+            "id": "TableRangeScan_43",
+            "estRows": "9.00",
+            "taskType": "cop[tikv]",
+            "accessObject": "table:c",
+            "operatorInfo": "range:[-inf,10), keep order:false"
+          }
+        ]
+      },
+      {
+        "id": "IndexLookUp_13(Probe)",
+        "estRows": "90.00",
+        "taskType": "root",
+        "subOperators": [
+          {
+            "id": "Selection_12(Build)",
+            "estRows": "90.00",
+            "taskType": "cop[tikv]",
+            "operatorInfo": "lt(qp.orders.customer_id, 10), not(isnull(qp.orders.customer_id))",
+            "subOperators": [
+              {
+                "id": "IndexRangeScan_10",
+                "estRows": "50000.00",
+                "taskType": "cop[tikv]",
+                "accessObject": "table:o, index:orders_customer_id_idx(customer_id)",
+                "operatorInfo": "range: decided by [eq(qp.orders.customer_id, qp.customers.id)], keep order:false"
+              }
+            ]
+          },
+          {
+            "id": "TableRowIDScan_11(Probe)",
+            "estRows": "90.00",
+            "taskType": "cop[tikv]",
+            "accessObject": "table:o",
+            "operatorInfo": "keep order:false"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -81,7 +81,8 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 -- Setting
 CREATE TABLE setting (
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT, EMAIL, MCP
+    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT, EMAIL, MCP,
+    -- EXPORT
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     workspace text NOT NULL REFERENCES workspace(resource_id),
@@ -361,8 +362,8 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 CREATE TABLE issue_comment (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    -- NULL on review results, which a reviewer posts (payload.review_metadata
-    -- names it), never a person.
+    -- NULL on review results and review run completions, which a reviewer
+    -- posts (the payload names it), never a person.
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -520,6 +521,7 @@ CREATE TABLE access_grant (
 );
 
 CREATE INDEX idx_access_grant_project_creator_expire_time ON access_grant(project, creator, expire_time);
+CREATE INDEX idx_access_grant_project_creator_query_hash ON access_grant(project, creator, (payload->>'queryHash'));
 
 CREATE TABLE query_history (
     -- global unique
@@ -586,6 +588,11 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
+    -- When the sync that produced metadata and raw_dump read the live database.
+    -- A sync whose read predates this value is refused, so a slow sync cannot
+    -- revert the projection to an older schema. NULL means never stamped, which
+    -- every sync is allowed to overwrite.
+    synced_at timestamptz,
     PRIMARY KEY (instance, db_name),
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );

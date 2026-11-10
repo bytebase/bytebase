@@ -218,6 +218,9 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 6,
   },
+  fieldSectionGap: {
+    rowGap: 16,
+  },
   fieldHorizontal: {
     alignItems: "start",
     columnGap: 16,
@@ -286,9 +289,24 @@ const formStyles = stylex.create({
     },
   },
   sectionHeader: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: 8,
     textAlign: "left",
     "@media (min-width: 1024px)": {
       width: "25%",
+    },
+  },
+  sectionHeadingRow: {
+    alignItems: "center",
+    columnGap: 16,
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+    rowGap: 8,
+    width: "100%",
+    "@media (min-width: 640px)": {
+      flexWrap: "nowrap",
     },
   },
   sectionTitle: {
@@ -297,10 +315,37 @@ const formStyles = stylex.create({
     fontWeight: 700,
     lineHeight: "32px",
   },
+  sectionDescription: {
+    color: "rgb(var(--color-control-light))",
+    fontSize: 14,
+    lineHeight: "20px",
+  },
+  singleColumnSection: {
+    display: "flex",
+    flexDirection: "column",
+    paddingBlock: 24,
+    rowGap: 16,
+  },
+  singleColumnHeader: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: 8,
+    width: "100%",
+  },
+  singleColumnContent: {
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+    rowGap: 16,
+  },
 });
 
 export function formFieldStyle() {
   return formStyles.field;
+}
+
+export function formFieldSectionGapStyle() {
+  return formStyles.fieldSectionGap;
 }
 
 export function formFieldHorizontalStyle() {
@@ -352,8 +397,22 @@ export function formSectionStyle() {
   return formStyles.section;
 }
 
+const formSectionNoPaddingStyles = stylex.create({
+  root: {
+    paddingBlock: 0,
+  },
+});
+
+export function formSectionNoPaddingStyle() {
+  return formSectionNoPaddingStyles.root;
+}
+
 export function formSectionHeaderStyle() {
   return formStyles.sectionHeader;
+}
+
+export function formSectionHeadingRowStyle() {
+  return formStyles.sectionHeadingRow;
 }
 
 export function formSectionTitleStyle() {
@@ -362,6 +421,22 @@ export function formSectionTitleStyle() {
 
 export function formSectionContentStyle() {
   return formStyles.sectionContent;
+}
+
+export function formSectionDescriptionStyle() {
+  return formStyles.sectionDescription;
+}
+
+export function singleColumnFormSectionStyle() {
+  return formStyles.singleColumnSection;
+}
+
+export function singleColumnFormHeaderStyle() {
+  return formStyles.singleColumnHeader;
+}
+
+export function singleColumnFormContentStyle() {
+  return formStyles.singleColumnContent;
 }
 
 const stickyActionFooterStyles = stylex.create({
@@ -538,7 +613,12 @@ const denseFormStyles = stylex.create({
     rowGap: 16,
     paddingBlock: 16,
   },
-  header: { width: "100%" },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: 8,
+    width: "100%",
+  },
   content: { minWidth: 0 },
   title: {
     color: "rgb(var(--color-main))",

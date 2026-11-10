@@ -334,20 +334,38 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 	if vs == nil {
 		return nil
 	}
-	return &v1pb.Release_VCSSource{
-		VcsType: v1pb.VCSType(vs.VcsType),
-		Url:     vs.Url,
+	r := &v1pb.Release_VCSSource{
+		VcsType:     v1pb.VCSType(vs.VcsType),
+		Url:         vs.Url,
+		CommitSha:   vs.CommitSha,
+		Branch:      vs.Branch,
+		CommitTitle: vs.CommitTitle,
+		AuthorName:  vs.AuthorName,
+		AuthorLogin: vs.AuthorLogin,
 	}
+	if pr := vs.PullRequest; pr != nil {
+		r.PullRequest = &v1pb.Release_VCSSource_PullRequest{Url: pr.Url, Number: pr.Number, Title: pr.Title}
+	}
+	return r
 }
 
 func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload_VCSSource {
 	if vs == nil {
 		return nil
 	}
-	return &storepb.ReleasePayload_VCSSource{
-		VcsType: storepb.VCSType(vs.VcsType),
-		Url:     vs.Url,
+	r := &storepb.ReleasePayload_VCSSource{
+		VcsType:     storepb.VCSType(vs.VcsType),
+		Url:         vs.Url,
+		CommitSha:   vs.CommitSha,
+		Branch:      vs.Branch,
+		CommitTitle: vs.CommitTitle,
+		AuthorName:  vs.AuthorName,
+		AuthorLogin: vs.AuthorLogin,
 	}
+	if pr := vs.PullRequest; pr != nil {
+		r.PullRequest = &storepb.ReleasePayload_VCSSource_PullRequest{Url: pr.Url, Number: pr.Number, Title: pr.Title}
+	}
+	return r
 }
 
 // validateAndSanitizeReleaseFiles validates and sanitizes the release files

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   prepareSampleProjectInstance: vi.fn(),
   captureMetric: vi.fn(),
   pushNotification: vi.fn(),
+  openAgent: vi.fn(),
   isSaaSMode: false,
   sampleAvailable: true,
   sampleInstances: [] as { instance: string }[],
@@ -94,21 +95,39 @@ vi.mock("@/stores", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
+vi.mock("@/modules/agent/store/agent", () => ({
+  useAgentStore: {
+    getState: () => ({ open: mocks.openAgent }),
+  },
+}));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: vi.fn(),
+}));
+
 vi.mock("@/components/instance", () => ({
   InfoPanel: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
   InfoPanelContent: () => <div />,
-  InstanceFormBody: () => <div data-testid="instance-form-body" />,
+  InstanceFormBody: ({ onAskAgent }: { onAskAgent?: () => void }) => (
+    <div data-testid="instance-form-body">
+      <button type="button" onClick={() => onAskAgent?.()}>
+        instance.ask-agent
+      </button>
+    </div>
+  ),
   InstanceFormButtons: ({ className }: { className?: string }) => (
-    <button
-      type="button"
-      data-testid="instance-form-buttons"
-      className={className}
-      disabled={mocks.instanceFormContext.state.isRequesting}
-    >
-      Create
-    </button>
+    <div>
+      <button
+        type="button"
+        data-testid="instance-form-buttons"
+        className={className}
+        disabled={mocks.instanceFormContext.state.isRequesting}
+      >
+        Create
+      </button>
+    </div>
   ),
   InstanceFormProvider: ({
     children,
@@ -168,6 +187,35 @@ beforeEach(async () => {
 });
 
 describe("CreateInstanceView", () => {
+  test("opens the page-detected Agent landing from the create-instance form", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <CreateInstanceView
+          onDismiss={mocks.onDismiss}
+          onCreated={mocks.onCreated}
+        />
+      );
+    });
+
+    const askAgentButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent?.includes("instance.ask-agent"));
+    expect(askAgentButton).toBeDefined();
+
+    await act(async () => {
+      askAgentButton?.click();
+    });
+
+    expect(mocks.openAgent).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("keeps the scroll container flush with the page edge", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -536,6 +584,7 @@ describe("CreateInstanceView", () => {
       button.click();
     });
 
+    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
     expect(mocks.pushNotification).toHaveBeenCalledWith({
       module: "bytebase",
       style: "CRITICAL",

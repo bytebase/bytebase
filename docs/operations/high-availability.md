@@ -6,7 +6,7 @@ This runbook describes the current operator-facing behavior for running Bytebase
 
 - Bytebase can detect and operate with multiple active replicas that share the same metadata database.
 - HA is license-gated. The subscription API exposes this as the `ha` field on `Subscription`.
-- The bundled Helm chart in `helm-charts/bytebase` currently renders a single-replica StatefulSet (`replicas: 1`). It does not provide a multi-replica deployment switch.
+- The bundled Helm chart in `helm-charts/bytebase` currently renders a single-replica StatefulSet (`replicas: 1`). It does not provide a multi-replica deployment switch, though `bytebase.option.ha` starts the replica it manages with `--ha`.
 
 In other words: the runtime has HA awareness, but operators must still supply the multi-replica deployment mechanics outside the current Helm chart.
 
@@ -19,6 +19,7 @@ Before you keep more than one Bytebase server active at the same time, make sure
 2. **Every HA replica starts with `--ha` and the same shared metadata database.**
    - Active replicas are counted as Bytebase servers sharing the same database.
    - HA mode requires external PostgreSQL, so each replica must use the same `PG_URL` value instead of the embedded database.
+   - Under the bundled Helm chart, set `bytebase.option.ha=true` to pass the flag to the replica it manages.
 3. **All replicas use the same external URL.**
    - Start replicas with the same `--external-url` value so Bytebase reports one `externalUrl` for user access and callbacks.
 4. **Your platform provides traffic management and rollout control.**
@@ -82,16 +83,17 @@ Use this checklist when enabling or validating HA:
 
 ## Administrator recovery
 
-Stop every Bytebase replica before running the interactive administrator
-recovery command. Run `bytebase recovery` with the exact same shared `PG_URL`
-used by every replica. The command connects directly to the metadata database
-and does not start an HTTP server, scheduler, or background runner. Restart all
-replicas after recovery so they reload the updated settings and IAM policy.
+Run `bytebase recovery` beside the running replicas, with the exact same shared
+`PG_URL` used by every replica; do not stop them. The command connects directly
+to the metadata database and does not start an HTTP server, scheduler, or
+background runner. Replicas started with `--ha` read users, settings and
+policies from the metadata database on every request, so they see a recovery
+change at once and need no restart.
 
 Follow the [administrator recovery runbook](./admin-recovery.md) for backup,
-terminal, action-selection, login, and cleanup requirements. Recovery is not an
-alternative to HA licensing or replica coordination, and it does not repair the
-deployment topology.
+action-selection, Kubernetes Job, login, and cleanup requirements. Recovery is
+not an alternative to HA licensing or replica coordination, and it does not
+repair the deployment topology.
 
 ## Troubleshooting
 

@@ -13,11 +13,10 @@ func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_TRINO, explainStatement)
 }
 
-// explainStatement implements base.ExplainStatement. Trino returns one plan
-// format here whatever the caller asked for: its EXPLAIN (FORMAT JSON) is a plan
-// of its own shape that nothing downstream reads (the driver capability table
-// offers this engine the default plan only).
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
+// explainStatement implements base.ExplainStatement. Trino spells its structured
+// plan (FORMAT JSON); any other format the caller names gets the engine's own
+// text plan (the driver capability table refuses the rest).
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {
 		return "", err
@@ -34,6 +33,9 @@ func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 			// plan a plan.
 			return statement, nil
 		}
+	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN (FORMAT JSON) " + planned, nil
 	}
 	return "EXPLAIN " + planned, nil
 }

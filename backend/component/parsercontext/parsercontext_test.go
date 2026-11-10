@@ -3,6 +3,7 @@ package parsercontext
 import (
 	"context"
 	"testing"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
@@ -53,11 +54,12 @@ func TestBuildGetLinkedDatabaseMetadataFunc(t *testing.T) {
 				Metadata:     &storepb.DatabaseMetadata{},
 			})
 			require.NoError(t, err)
-			require.NoError(t, s.UpsertDBSchema(ctx, instanceID, name, &metadatapb.DatabaseSchemaMetadata{
+			_, err = s.UpsertDBSchema(ctx, instanceID, name, &metadatapb.DatabaseSchemaMetadata{
 				Name:            name,
 				Schemas:         []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "SECRET_T"}}}},
 				LinkedDatabases: links,
-			}, &storepb.DatabaseConfig{}, nil))
+			}, nil, time.Now())
+			require.NoError(t, err)
 		}
 	}
 	// The instance the statements run against; its data source reaches the loopback links.
@@ -118,4 +120,46 @@ func TestBuildGetLinkedDatabaseMetadataFunc(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, instanceID)
 	require.Nil(t, meta)
+}
+
+func TestBuildGetDatabaseMetadataFunc(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	db, s, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+	`)
+	require.NoError(t, err)
+	_, err = s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "mssql",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_MSSQL,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN, Host: "localhost", Port: "1433"}},
+		},
+	})
+	require.NoError(t, err)
+	for _, name := range []string{"synced", "unsynced"} {
+		_, err = s.UpsertDatabase(ctx, &store.DatabaseMessage{ProjectID: "project-a", InstanceID: "mssql", DatabaseName: name, Metadata: &storepb.DatabaseMetadata{}})
+		require.NoError(t, err)
+	}
+	_, err = s.UpsertDBSchema(ctx, "mssql", "synced", &metadatapb.DatabaseSchemaMetadata{
+		Name:    "synced",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "dbo", Tables: []*metadatapb.TableMetadata{{Name: "t"}}}},
+	}, nil, time.Now())
+	require.NoError(t, err)
+
+	get := BuildGetDatabaseMetadataFunc(s)
+
+	name, meta, err := get(ctx, "mssql", "synced")
+	require.NoError(t, err)
+	require.Equal(t, "synced", name)
+	require.NotNil(t, meta.GetSchemaMetadata("dbo").GetTable("t"))
+
+	for _, database := range []string{"unsynced", "untracked"} {
+		name, meta, err := get(ctx, "mssql", database)
+		require.NoError(t, err, database)
+		require.Empty(t, name, database)
+		require.Nil(t, meta, database)
+	}
 }

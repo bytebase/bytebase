@@ -158,6 +158,10 @@ func getStatementType(stmt tree.Statement) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *tree.Delete:
 		return storepb.StatementType_DELETE
+
+	// A procedure, DO block or prepared statement runs code this classifier does not look into.
+	case *tree.Call, *tree.DoBlock, *tree.Execute:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}

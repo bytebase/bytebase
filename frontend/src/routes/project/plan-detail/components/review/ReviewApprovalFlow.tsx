@@ -1,6 +1,7 @@
 import { Check, User, X } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { getAvatarColor, getInitials } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -8,24 +9,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { unknownUser } from "@/types";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { Issue_Approver_Status } from "@/types/proto-es/v1/issue_service_pb";
-import type { User as UserProto } from "@/types/proto-es/v1/user_service_pb";
+import {
+  type ApprovalCandidate,
+  useApprovalCandidates,
+} from "../../../useApprovalCandidates";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import {
   type ApprovalStepStatus,
   computeApprovalFlowLayout,
 } from "./approvalFlowLayout";
-import {
-  type ApprovalCandidate,
-  useApprovalCandidates,
-} from "./useApprovalCandidates";
 
 export interface FlowStep {
   index: number;
@@ -246,19 +246,17 @@ function FlowNode({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const roleList = useAppStore((state) => state.roleList);
-  const approverUser = useAppStore((state) =>
-    step.approver ? state.getUserByIdentifier(step.approver) : undefined
-  );
+  const approver = usePrincipal(step.approver);
   const roleName = displayRoleTitleFromList(step.role, roleList);
 
   const subtitle =
     step.status === "approved"
       ? t("plan.review.approval-flow.approved-by", {
-          user: (approverUser ?? unknownUser(step.approver ?? "")).title,
+          user: principalLabel(approver),
         })
       : step.status === "rejected"
         ? t("plan.review.approval-flow.rejected-by", {
-            user: (approverUser ?? unknownUser(step.approver ?? "")).title,
+            user: principalLabel(approver),
           })
         : undefined;
 
@@ -294,8 +292,9 @@ function FlowNode({
           )}
         </div>
         {subtitle ? (
-          <div className="mt-1 h-4 truncate text-xs leading-4 text-control-light">
-            {subtitle}
+          <div className="mt-1 flex h-4 min-w-0 items-center gap-x-1.5 text-xs leading-4 text-control-light">
+            <span className="truncate">{subtitle}</span>
+            <AccountTypeBadge compact email={approver?.email} />
           </div>
         ) : step.status === "current" || step.status === "pending" ? (
           <NodeReviewers
@@ -337,9 +336,9 @@ function NodeReviewers({
     page.plan?.lastPlanEditor ?? ""
   );
   if (candidates.length === 0) {
-    // No eligible reviewers means this stage can never be approved — surface it
-    // explicitly rather than rendering nothing (BYT-9711). Stay silent until the
-    // policy resolves so it doesn't flash during load.
+    // No principal of any type holds this step's role — say so rather than
+    // render nothing (BYT-9711). Stay silent until the policy resolves so it
+    // doesn't flash during load.
     if (!policyLoaded) return null;
     return (
       <div className="mt-1 flex h-4 items-center text-xs leading-4 text-control-placeholder">
@@ -372,7 +371,7 @@ function NodeReviewers({
                   <InitialsAvatar
                     className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
                     key={user.name}
-                    user={user}
+                    name={principalLabel(user)}
                   />
                 ))}
                 {overflow > 0 && (
@@ -389,7 +388,7 @@ function NodeReviewers({
             </div>
           }
         />
-        <PopoverContent align="start" className="w-60" side="bottom">
+        <PopoverContent align="start" className="w-72" side="bottom">
           <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
             {listed.map((candidate) => (
               <CandidateRow candidate={candidate} key={candidate.user.name} />
@@ -419,10 +418,16 @@ function CandidateRow({ candidate }: { candidate: ApprovalCandidate }) {
   const { user } = candidate;
   return (
     <div className="flex items-center gap-x-2">
-      <InitialsAvatar className="size-6 text-xs" user={user} />
+      <InitialsAvatar
+        className="size-6 shrink-0 text-xs"
+        name={principalLabel(user)}
+      />
       <div className="min-w-0">
-        <div className="truncate text-sm text-main">
-          {user.title || user.email.split("@")[0]}
+        <div className="flex items-center gap-x-1.5">
+          <span className="truncate text-sm text-main">
+            {principalLabel(user)}
+          </span>
+          <AccountTypeBadge compact email={user.email} />
         </div>
         <div className="truncate text-xs text-control-light">{user.email}</div>
         {candidate.ineligibilities.includes("last-plan-editor") && (
@@ -473,10 +478,7 @@ function ApprovedChip({ steps }: { steps: FlowStep[] }) {
 function ApprovedPopoverRow({ step }: { step: FlowStep }) {
   const { t } = useTranslation();
   const roleList = useAppStore((state) => state.roleList);
-  const approverUser = useAppStore((state) =>
-    step.approver ? state.getUserByIdentifier(step.approver) : undefined
-  );
-  const approver = approverUser ?? unknownUser(step.approver ?? "");
+  const approver = usePrincipal(step.approver);
   const roleName = displayRoleTitleFromList(step.role, roleList);
   return (
     <div className="flex items-start gap-x-2">
@@ -486,12 +488,16 @@ function ApprovedPopoverRow({ step }: { step: FlowStep }) {
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium text-main">{roleName}</div>
         <div className="mt-0.5 flex items-center gap-x-1 text-xs text-control-light">
-          <InitialsAvatar className="size-5 shrink-0 text-xs" user={approver} />
+          <InitialsAvatar
+            className="size-5 shrink-0 text-xs"
+            name={principalLabel(approver)}
+          />
           <span className="truncate">
             {t("plan.review.approval-flow.approved-by", {
-              user: approver.title,
+              user: principalLabel(approver),
             })}
           </span>
+          <AccountTypeBadge compact email={approver?.email} />
         </div>
       </div>
     </div>
@@ -502,12 +508,11 @@ function ApprovedPopoverRow({ step }: { step: FlowStep }) {
 // variant; the common geometry + color derivation lives here.
 function InitialsAvatar({
   className,
-  user,
+  name,
 }: {
   className: string;
-  user: UserProto;
+  name: string;
 }) {
-  const name = user.title || user.email.split("@")[0];
   return (
     <span
       className={cn(
@@ -522,17 +527,31 @@ function InitialsAvatar({
 }
 
 function ChipAvatars({ principals }: { principals: string[] }) {
-  const getUserByIdentifier = useAppStore((state) => state.getUserByIdentifier);
   return (
     <span className="flex items-center">
       {principals.slice(0, 3).map((principal, i) => (
-        <InitialsAvatar
+        <PrincipalAvatar
           className="-ml-1 size-5 text-xs ring-1 ring-background first:ml-0"
           key={`${principal}-${i}`}
-          user={getUserByIdentifier(principal) ?? unknownUser(principal)}
+          principal={principal}
         />
       ))}
     </span>
+  );
+}
+
+function PrincipalAvatar({
+  className,
+  principal,
+}: {
+  className: string;
+  principal: string;
+}) {
+  return (
+    <InitialsAvatar
+      className={className}
+      name={principalLabel(usePrincipal(principal))}
+    />
   );
 }
 
@@ -594,7 +613,7 @@ function PendingPopoverRow({ issue, step }: { issue: Issue; step: FlowStep }) {
                 <InitialsAvatar
                   className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
                   key={user.name}
-                  user={user}
+                  name={principalLabel(user)}
                 />
               ))}
               {overflow > 0 && (

@@ -40,6 +40,9 @@ const (
 	// is an IAM verdict about the caller from the project and ownership rules
 	// that answer the same code: only the verdict is marked for the audit log.
 	ReasonApproverRoleRequired
+	// ReasonChangedSinceConfirmed is an ErrorConflict for an action confirmed
+	// against an earlier version of the issue.
+	ReasonChangedSinceConfirmed
 )
 
 // Error is a typed review transition error.
@@ -150,6 +153,9 @@ type IssueInput struct {
 	Actor     *store.UserMessage
 	Action    Action
 	Comment   string
+	// ConfirmedUpdateTime, when set, is the issue version the actor confirmed
+	// the action against, as in an MCP client; it is refused on any other.
+	ConfirmedUpdateTime *time.Time
 }
 
 // IssueResult is the committed state and its post-commit effects.
@@ -255,6 +261,11 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 	if lockedIssue == nil {
 		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
 	}
+	// Checked on the locked row: the action above was computed from an unlocked
+	// read, which can already be newer than what the actor confirmed.
+	if input.ConfirmedUpdateTime != nil && !lockedIssue.UpdatedAt.Equal(*input.ConfirmedUpdateTime) {
+		return nil, workflowReasonError(ErrorConflict, ReasonChangedSinceConfirmed, "the issue changed after the action was confirmed")
+	}
 	plan, err := lockIssuePlan(ctx, tx, lockedIssue)
 	if err != nil {
 		return nil, err
@@ -350,7 +361,7 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			return nil, workflowReasonError(ErrorPermissionDenied, ReasonApproverRoleRequired,
 				"cannot %s because the user does not have the required permission", verb)
 		}
-		if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == input.Actor.Email {
+		if refusesSelfApproval(project, issue.CreatorEmail, input.Actor.Email) {
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because self-approval is not allowed for this project", verb)
 		}
 		if input.Action == ActionApprove && !project.Setting.GetAllowLastPlanEditorApproval() && plan != nil {
@@ -399,6 +410,12 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 	default:
 		return nil, workflowError(ErrorInvalidAction, "unsupported review action")
 	}
+}
+
+// refusesSelfApproval reports whether the project refuses the actor's review,
+// approval or rejection, of an issue the actor created.
+func refusesSelfApproval(project *store.ProjectMessage, creatorEmail, actorEmail string) bool {
+	return !project.Setting.GetAllowSelfApproval() && creatorEmail == actorEmail
 }
 
 func effectiveLastPlanEditor(plan *store.PlanMessage) string {

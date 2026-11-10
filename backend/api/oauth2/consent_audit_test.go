@@ -35,7 +35,7 @@ func TestConsentRefusal(t *testing.T) {
 			name:       "MCP turned off",
 			capability: storepb.MCPSetting_DISABLED,
 			message:    "turned MCP access off",
-			page:       []string{"<title>MCP access is turned off</title>", "turned MCP access off for this workspace", "in the workspace settings"},
+			page:       []string{"<title>MCP access is turned off</title>", "turned MCP access off for this workspace", "Access policy"},
 		},
 		{
 			name:       "a ceiling this build does not serve",

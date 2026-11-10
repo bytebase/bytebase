@@ -583,6 +583,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
+	// Keyed on the registered engine, not the server: an instance registered as MySQL
+	// keeps its MySQL sync result even when the server is MariaDB.
+	mariaDBInstance := d.dbType == storepb.Engine_MARIADB
+	var sequences []*metadatapb.SequenceMetadata
 	for tableRows.Next() {
 		var tableName, tableType, engine, collation, createOptions, comment, charset string
 		var rowCount, dataSize, indexSize, dataFree int64
@@ -612,8 +616,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 		// The partition details are fetched separately by listPartitionTables.
 
 		key := db.TableKey{Schema: "", Table: tableName}
-		switch tableType {
-		case baseTableType:
+		// A MariaDB system-versioned table is synced as a table: its hidden row_start
+		// and row_end columns are absent from information_schema.COLUMNS, and explicit
+		// ones arrive as stored generated columns whose expression is ROW START/ROW END.
+		switch {
+		case tableType == baseTableType, mariaDBInstance && tableType == mariaDBSystemVersionedTableType:
 			columns := columnMap[key]
 			tableMetadata := &metadatapb.TableMetadata{
 				Name:             tableName,
@@ -635,6 +642,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
 			}
+			if tableType == mariaDBSystemVersionedTableType {
+				// Recorded as the table option SHOW CREATE TABLE prints; the DDL writers in
+				// backend/plugin/schema/mysql look for it to keep the versioning.
+				tableMetadata.CreateOptions = strings.TrimSpace(createOptions + " WITH SYSTEM VERSIONING")
+			}
 			var indexNames []string
 			if indexes, ok := indexMap[key]; ok {
 				for indexName := range indexes {
@@ -647,10 +659,16 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 			}
 
 			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
-		case viewTableType:
+		case tableType == viewTableType:
 			if view, ok := viewMap[key]; ok {
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
+		case mariaDBInstance && tableType == mariaDBSequenceTableType:
+			sequences = append(sequences, &metadatapb.SequenceMetadata{
+				Name:     tableName,
+				DataType: mariaDBSequenceDataType(columnMap[key]),
+				Comment:  comment,
+			})
 		default:
 			// Unknown table type, skip
 		}
@@ -658,6 +676,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err := tableRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
+	if err := d.readMariaDBSequenceAttributes(ctx, d.databaseName, sequences); err != nil {
+		return nil, err
+	}
+	schemaMetadata.Sequences = sequences
 
 	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
@@ -681,6 +703,49 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	}
 
 	return databaseMetadata, err
+}
+
+var displayWidthRegexp = regexp.MustCompile(`\(\d+\)`)
+
+// mariaDBSequenceDataType derives a sequence's AS type from its start_value column:
+// with the display width removed, the column type spells the type the way
+// information_schema.SEQUENCES.DATA_TYPE does (MariaDB 11.5+), e.g. "int unsigned".
+func mariaDBSequenceDataType(columns []*metadatapb.ColumnMetadata) string {
+	for _, column := range columns {
+		if column.Name == "start_value" {
+			return displayWidthRegexp.ReplaceAllString(column.Type, "")
+		}
+	}
+	return ""
+}
+
+// readMariaDBSequenceAttributes reads each sequence's own row. information_schema.SEQUENCES
+// is no substitute: it exists only from MariaDB 11.5 and has no cache size. A sequence whose
+// row cannot be read, such as one the user has no SELECT privilege on, keeps only its name.
+func (d *Driver) readMariaDBSequenceAttributes(ctx context.Context, databaseName string, sequences []*metadatapb.SequenceMetadata) error {
+	for _, sequence := range sequences {
+		query := fmt.Sprintf(
+			"SELECT start_value, minimum_value, maximum_value, increment, cache_size, cycle_option FROM `%s`.`%s`",
+			strings.ReplaceAll(databaseName, "`", "``"),
+			strings.ReplaceAll(sequence.Name, "`", "``"),
+		)
+		var start, minValue, maxValue, increment, cacheSize string
+		var cycle bool
+		if err := d.db.QueryRowContext(ctx, query).Scan(&start, &minValue, &maxValue, &increment, &cacheSize, &cycle); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			slog.Warn("failed to read MariaDB sequence attributes", slog.String("database", databaseName), slog.String("sequence", sequence.Name), log.BBError(err))
+			continue
+		}
+		sequence.Start = start
+		sequence.MinValue = minValue
+		sequence.MaxValue = maxValue
+		sequence.Increment = increment
+		sequence.CacheSize = cacheSize
+		sequence.Cycle = cycle
+	}
+	return nil
 }
 
 func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {

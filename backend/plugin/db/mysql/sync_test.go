@@ -1,12 +1,21 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestSetColumnMetadataDefault(t *testing.T) {
@@ -901,4 +910,131 @@ func TestStripReturnsCharset(t *testing.T) {
 	for _, tc := range testCases {
 		require.Equal(t, tc.want, stripReturnsCharset(tc.def), tc.name)
 	}
+}
+
+// TestSyncMariaDBTableNamespace covers the MariaDB objects that share the table
+// namespace with base tables. A consumer can only conclude that a table name is
+// free if sync lists every one of them.
+func TestSyncMariaDBTableNamespace(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		version     string
+		newDatabase func(testing.TB) (*testcontainer.Container, string)
+	}{
+		{version: "11.8", newDatabase: testcontainer.NewMariaDBDatabase},
+		{version: "10.7", newDatabase: testcontainer.NewMariaDB107Database},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			container, database := tc.newDatabase(t)
+			driver := openTestDriver(ctx, t, storepb.Engine_MARIADB, container, container.GetUsername(), container.GetPassword(), database)
+			_, err := driver.db.ExecContext(ctx, `
+CREATE TABLE parent (id INT PRIMARY KEY);
+CREATE TABLE history (
+	id INT PRIMARY KEY,
+	amount INT,
+	parent_id INT,
+	KEY idx_amount (amount),
+	CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES parent (id),
+	CONSTRAINT chk_amount CHECK (amount > 0)
+) WITH SYSTEM VERSIONING COMMENT 'versioned';
+CREATE TRIGGER trg_history BEFORE INSERT ON history FOR EACH ROW SET NEW.amount = NEW.amount;
+CREATE TABLE explicit_period (
+	id INT,
+	valid_from TIMESTAMP(6) GENERATED ALWAYS AS ROW START,
+	valid_to TIMESTAMP(6) GENERATED ALWAYS AS ROW END,
+	PERIOD FOR SYSTEM_TIME (valid_from, valid_to)
+) WITH SYSTEM VERSIONING;
+CREATE SEQUENCE seq_default;
+CREATE SEQUENCE seq_custom START WITH 100 INCREMENT BY 5 MINVALUE 10 MAXVALUE 1000 CACHE 20 CYCLE COMMENT 'sequence comment';
+`)
+			require.NoError(t, err)
+
+			metadata, err := driver.SyncDBSchema(ctx)
+			require.NoError(t, err)
+			require.Len(t, metadata.Schemas, 1)
+			schema := metadata.Schemas[0]
+
+			tables := make(map[string]*metadatapb.TableMetadata)
+			for _, table := range schema.Tables {
+				tables[table.Name] = table
+			}
+			require.ElementsMatch(t, []string{"explicit_period", "history", "parent"}, slices.Collect(maps.Keys(tables)))
+
+			history := tables["history"]
+			require.Equal(t, []string{"id", "amount", "parent_id"}, columnNames(history.Columns))
+			var indexNames []string
+			for _, index := range history.Indexes {
+				indexNames = append(indexNames, index.Name)
+			}
+			require.Equal(t, []string{"PRIMARY", "fk_parent", "idx_amount"}, indexNames)
+			require.Equal(t, []string{"id"}, history.Indexes[0].Expressions)
+			require.Len(t, history.ForeignKeys, 1)
+			require.Equal(t, "fk_parent", history.ForeignKeys[0].Name)
+			require.Equal(t, "parent", history.ForeignKeys[0].ReferencedTable)
+			require.Empty(t, cmp.Diff([]*metadatapb.CheckConstraintMetadata{{Name: "chk_amount", Expression: "`amount` > 0"}}, history.CheckConstraints, protocmp.Transform()))
+			require.Len(t, history.Triggers, 1)
+			require.Equal(t, "trg_history", history.Triggers[0].Name)
+			require.Equal(t, "versioned", history.Comment)
+			require.Equal(t, "WITH SYSTEM VERSIONING", history.CreateOptions)
+			require.Empty(t, tables["parent"].CreateOptions)
+
+			explicitPeriod := tables["explicit_period"]
+			require.Equal(t, []string{"id", "valid_from", "valid_to"}, columnNames(explicitPeriod.Columns))
+			require.Equal(t, "WITH SYSTEM VERSIONING", explicitPeriod.CreateOptions)
+			require.Empty(t, cmp.Diff(&metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW START"}, explicitPeriod.Columns[1].Generation, protocmp.Transform()))
+			require.Empty(t, cmp.Diff(&metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW END"}, explicitPeriod.Columns[2].Generation, protocmp.Transform()))
+
+			require.Empty(t, cmp.Diff([]*metadatapb.SequenceMetadata{
+				{Name: "seq_custom", DataType: "bigint", Start: "100", MinValue: "10", MaxValue: "1000", Increment: "5", CacheSize: "20", Cycle: true, Comment: "sequence comment"},
+				{Name: "seq_default", DataType: "bigint", Start: "1", MinValue: "1", MaxValue: "9223372036854775806", Increment: "1", CacheSize: "1000"},
+			}, schema.Sequences, protocmp.Transform()))
+
+			// The same server registered as a MySQL instance keeps the MySQL sync result.
+			asMySQL := openTestDriver(ctx, t, storepb.Engine_MYSQL, container, container.GetUsername(), container.GetPassword(), database)
+			metadata, err = asMySQL.SyncDBSchema(ctx)
+			require.NoError(t, err)
+			require.Len(t, metadata.Schemas, 1)
+			require.Len(t, metadata.Schemas[0].Tables, 1)
+			require.Equal(t, "parent", metadata.Schemas[0].Tables[0].Name)
+			require.Empty(t, metadata.Schemas[0].Sequences)
+		})
+	}
+}
+
+func TestSyncMariaDBSequenceAttributes(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewMariaDBDatabase(t)
+	reader := database + "_reader"
+	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf(`
+CREATE SEQUENCE %[1]s.seq_typed AS INT UNSIGNED START WITH 7 MAXVALUE 4000000000;
+CREATE SEQUENCE %[1]s.seq_unreadable;
+CREATE USER '%[2]s'@'%%' IDENTIFIED BY 'reader-password';
+GRANT SELECT ON %[1]s.seq_typed TO '%[2]s'@'%%';
+GRANT INSERT ON %[1]s.seq_unreadable TO '%[2]s'@'%%';
+`, database, reader))
+	require.NoError(t, err)
+
+	driver := openTestDriver(ctx, t, storepb.Engine_MARIADB, container, reader, "reader-password", database)
+	metadata, err := driver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+	require.Len(t, metadata.Schemas, 1)
+	schema := metadata.Schemas[0]
+
+	require.Empty(t, schema.Tables)
+	// Without SELECT on a sequence its row is unreadable, but the name is still taken.
+	require.Empty(t, cmp.Diff([]*metadatapb.SequenceMetadata{
+		{Name: "seq_typed", DataType: "int unsigned", Start: "7", MinValue: "1", MaxValue: "4000000000", Increment: "1", CacheSize: "1000"},
+		{Name: "seq_unreadable", DataType: "bigint"},
+	}, schema.Sequences, protocmp.Transform()))
+}
+
+func columnNames(columns []*metadatapb.ColumnMetadata) []string {
+	var names []string
+	for _, column := range columns {
+		names = append(names, column.Name)
+	}
+	return names
 }

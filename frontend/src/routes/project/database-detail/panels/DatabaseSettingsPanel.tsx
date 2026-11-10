@@ -7,6 +7,7 @@ import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { LabelListEditor } from "@/components/LabelListEditor";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -116,16 +117,13 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
   return (
     <div className="divide-y">
       <div className="flex flex-col gap-y-4 pb-7">
-        <div>
-          <p className="text-lg font-medium leading-7 text-main">
-            {t("common.environment")}
-          </p>
+        <FormField title={t("common.environment")}>
           <PermissionGuard
             permissions={["bb.databases.update"]}
             project={getDatabaseProject(database)}
           >
             <EnvironmentSelect
-              className="mt-1 max-w-md"
+              className="max-w-md"
               value={database.effectiveEnvironment || ""}
               clearable={allowClearEnvironment}
               disabled={!allowUpdateDatabase}
@@ -139,7 +137,7 @@ export function DatabaseSettingsPanel({ database }: { database: Database }) {
               onChange={handleSelectEnvironment}
             />
           </PermissionGuard>
-        </div>
+        </FormField>
       </div>
       <div className="flex flex-col gap-y-4 pt-7">
         <div className="flex items-center">

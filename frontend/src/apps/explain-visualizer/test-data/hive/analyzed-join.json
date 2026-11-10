@@ -1,0 +1,186 @@
+{
+  "CBOPlan": "{\n  \"rels\": [\n    {\n      \"id\": \"0\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveTableScan\",\n      \"table\": [\n        \"default\",\n        \"customers_d\"\n      ],\n      \"table:alias\": \"c\",\n      \"inputs\": [],\n      \"rowCount\": 5.0,\n      \"avgRowSize\": 9.4,\n      \"rowType\": [\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"id\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"name\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"city\"\n        },\n        {\n          \"type\": \"BIGINT\",\n          \"nullable\": true,\n          \"name\": \"BLOCK__OFFSET__INSIDE__FILE\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"INPUT__FILE__NAME\"\n        },\n        {\n          \"fields\": [\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"writeid\"\n            },\n            {\n              \"type\": \"INTEGER\",\n              \"nullable\": true,\n              \"name\": \"bucketid\"\n            },\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"rowid\"\n            }\n          ],\n          \"name\": \"ROW__ID\"\n        },\n        {\n          \"type\": \"BOOLEAN\",\n          \"nullable\": true,\n          \"name\": \"ROW__IS__DELETED\"\n        }\n      ],\n      \"colStats\": [\n        {\n          \"name\": \"id\",\n          \"ndv\": 5,\n          \"minValue\": 1,\n          \"maxValue\": 5\n        },\n        {\n          \"name\": \"city\",\n          \"ndv\": 3\n        },\n        {\n          \"name\": \"name\",\n          \"ndv\": 5\n        }\n      ]\n    },\n    {\n      \"id\": \"1\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveFilter\",\n      \"condition\": {\n        \"op\": {\n          \"name\": \"AND\",\n          \"kind\": \"AND\",\n          \"syntax\": \"BINARY\"\n        },\n        \"operands\": [\n          {\n            \"op\": {\n              \"name\": \"=\",\n              \"kind\": \"EQUALS\",\n              \"syntax\": \"BINARY\"\n            },\n            \"operands\": [\n              {\n                \"input\": 2,\n                \"name\": \"$2\"\n              },\n              {\n                \"literal\": \"berlin\",\n                \"type\": {\n                  \"type\": \"VARCHAR\",\n                  \"nullable\": false,\n                  \"precision\": 2147483647\n                }\n              }\n            ]\n          },\n          {\n            \"op\": {\n              \"name\": \"IS NOT NULL\",\n              \"kind\": \"IS_NOT_NULL\",\n              \"syntax\": \"POSTFIX\"\n            },\n            \"operands\": [\n              {\n                \"input\": 0,\n                \"name\": \"$0\"\n              }\n            ]\n          }\n        ]\n      },\n      \"rowCount\": 1.6666666666666665\n    },\n    {\n      \"id\": \"2\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"id\"\n      ],\n      \"exprs\": [\n        {\n          \"input\": 0,\n          \"name\": \"$0\"\n        }\n      ],\n      \"rowCount\": 1.6666666666666665\n    },\n    {\n      \"id\": \"3\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveTableScan\",\n      \"table\": [\n        \"default\",\n        \"orders_d\"\n      ],\n      \"table:alias\": \"o\",\n      \"inputs\": [],\n      \"rowCount\": 6.0,\n      \"avgRowSize\": 4.0,\n      \"rowType\": [\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"id\"\n        },\n        {\n          \"type\": \"INTEGER\",\n          \"nullable\": true,\n          \"name\": \"customer_id\"\n        },\n        {\n          \"type\": \"DOUBLE\",\n          \"nullable\": true,\n          \"name\": \"total\"\n        },\n        {\n          \"type\": \"BIGINT\",\n          \"nullable\": true,\n          \"name\": \"BLOCK__OFFSET__INSIDE__FILE\"\n        },\n        {\n          \"type\": \"VARCHAR\",\n          \"nullable\": true,\n          \"precision\": 2147483647,\n          \"name\": \"INPUT__FILE__NAME\"\n        },\n        {\n          \"fields\": [\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"writeid\"\n            },\n            {\n              \"type\": \"INTEGER\",\n              \"nullable\": true,\n              \"name\": \"bucketid\"\n            },\n            {\n              \"type\": \"BIGINT\",\n              \"nullable\": true,\n              \"name\": \"rowid\"\n            }\n          ],\n          \"name\": \"ROW__ID\"\n        },\n        {\n          \"type\": \"BOOLEAN\",\n          \"nullable\": true,\n          \"name\": \"ROW__IS__DELETED\"\n        }\n      ],\n      \"colStats\": [\n        {\n          \"name\": \"customer_id\",\n          \"ndv\": 4,\n          \"minValue\": 1,\n          \"maxValue\": 4\n        },\n        {\n          \"name\": \"id\",\n          \"ndv\": 6,\n          \"minValue\": 1,\n          \"maxValue\": 6\n        },\n        {\n          \"name\": \"total\",\n          \"ndv\": 6,\n          \"minValue\": 5.25,\n          \"maxValue\": 99.9\n        }\n      ]\n    },\n    {\n      \"id\": \"4\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveFilter\",\n      \"condition\": {\n        \"op\": {\n          \"name\": \"IS NOT NULL\",\n          \"kind\": \"IS_NOT_NULL\",\n          \"syntax\": \"POSTFIX\"\n        },\n        \"operands\": [\n          {\n            \"input\": 1,\n            \"name\": \"$1\"\n          }\n        ]\n      },\n      \"rowCount\": 6.0\n    },\n    {\n      \"id\": \"5\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"customer_id\"\n      ],\n      \"exprs\": [\n        {\n          \"input\": 1,\n          \"name\": \"$1\"\n        }\n      ],\n      \"rowCount\": 6.0\n    },\n    {\n      \"id\": \"6\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveJoin\",\n      \"condition\": {\n        \"op\": {\n          \"name\": \"=\",\n          \"kind\": \"EQUALS\",\n          \"syntax\": \"BINARY\"\n        },\n        \"operands\": [\n          {\n            \"input\": 1,\n            \"name\": \"$1\"\n          },\n          {\n            \"input\": 0,\n            \"name\": \"$0\"\n          }\n        ]\n      },\n      \"joinType\": \"inner\",\n      \"algorithm\": \"none\",\n      \"cost\": \"not available\",\n      \"inputs\": [\n        \"2\",\n        \"5\"\n      ],\n      \"rowCount\": 2.0\n    },\n    {\n      \"id\": \"7\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"$f0\"\n      ],\n      \"exprs\": [\n        {\n          \"literal\": true,\n          \"type\": {\n            \"type\": \"BOOLEAN\",\n            \"nullable\": false\n          }\n        }\n      ],\n      \"rowCount\": 2.0\n    },\n    {\n      \"id\": \"8\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveAggregate\",\n      \"group\": [\n        0\n      ],\n      \"aggs\": [\n        {\n          \"agg\": {\n            \"name\": \"count\",\n            \"kind\": \"COUNT\",\n            \"syntax\": \"FUNCTION_STAR\"\n          },\n          \"type\": {\n            \"type\": \"BIGINT\",\n            \"nullable\": true\n          },\n          \"distinct\": false,\n          \"operands\": [],\n          \"name\": null\n        }\n      ],\n      \"rowCount\": 1.0\n    },\n    {\n      \"id\": \"9\",\n      \"relOp\": \"org.apache.hadoop.hive.ql.optimizer.calcite.reloperators.HiveProject\",\n      \"fields\": [\n        \"city\",\n        \"_o__c1\"\n      ],\n      \"exprs\": [\n        {\n          \"op\": {\n            \"name\": \"CAST\",\n            \"kind\": \"CAST\",\n            \"syntax\": \"SPECIAL\"\n          },\n          \"operands\": [\n            {\n              \"literal\": \"berlin\",\n              \"type\": {\n                \"type\": \"VARCHAR\",\n                \"nullable\": false,\n                \"precision\": 2147483647\n              }\n            }\n          ],\n          \"type\": {\n            \"type\": \"VARCHAR\",\n            \"nullable\": true,\n            \"precision\": 2147483647\n          }\n        },\n        {\n          \"input\": 1,\n          \"name\": \"$1\"\n        }\n      ],\n      \"rowCount\": 1.0\n    }\n  ]\n}",
+  "optimizedSQL": "SELECT CAST('berlin' AS STRING) AS `city`, COUNT(*) AS `_o__c1`\nFROM (SELECT `id`\nFROM `default`.`customers_d`\nWHERE `city` = 'berlin' AND `id` IS NOT NULL) AS `t0`\nINNER JOIN (SELECT `customer_id`\nFROM `default`.`orders_d`\nWHERE `customer_id` IS NOT NULL) AS `t2` ON `t0`.`id` = `t2`.`customer_id`\nGROUP BY TRUE",
+  "cboInfo": "Plan optimized by CBO.",
+  "STAGE DEPENDENCIES": {
+    "Stage-1": { "ROOT STAGE": "TRUE" },
+    "Stage-0": { "DEPENDENT STAGES": "Stage-1" }
+  },
+  "STAGE PLANS": {
+    "Stage-1": {
+      "Tez": {
+        "DagId:": "hive_20261027081116_6ee3d16f-5201-4d26-9dd6-70602318e5e9:8",
+        "Edges:": {
+          "Map 2": { "parent": "Map 1", "type": "BROADCAST_EDGE" },
+          "Reducer 3": { "parent": "Map 2", "type": "SIMPLE_EDGE" }
+        },
+        "DagName:": "hive_20261027081116_6ee3d16f-5201-4d26-9dd6-70602318e5e9:8",
+        "Vertices:": {
+          "Map 1": {
+            "Map Operator Tree:": [
+              {
+                "TableScan": {
+                  "alias:": "c",
+                  "columns:": ["id", "city"],
+                  "database:": "default",
+                  "filterExpr:": "((city = 'berlin') and id is not null) (type: boolean)",
+                  "Statistics:": "Num rows: 5 Data size: 465 Basic stats: COMPLETE Column stats: COMPLETE",
+                  "table:": "customers_d",
+                  "isTempTable:": "false",
+                  "OperatorId:": "TS_0",
+                  "children": {
+                    "Filter Operator": {
+                      "predicate:": "((city = 'berlin') and id is not null) (type: boolean)",
+                      "Statistics:": "Num rows: 2 Data size: 186 Basic stats: COMPLETE Column stats: COMPLETE",
+                      "OperatorId:": "FIL_22",
+                      "children": {
+                        "Select Operator": {
+                          "expressions:": "id (type: int)",
+                          "columnExprMap:": { "_col0": "id" },
+                          "outputColumnNames:": ["_col0"],
+                          "Statistics:": "Num rows: 2 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE",
+                          "OperatorId:": "SEL_23",
+                          "children": {
+                            "Reduce Output Operator": {
+                              "columnExprMap:": {
+                                "KEY.reducesinkkey0": "_col0"
+                              },
+                              "key expressions:": "_col0 (type: int)",
+                              "null sort order:": "z",
+                              "sort order:": "+",
+                              "Map-reduce partition columns:": "_col0 (type: int)",
+                              "Statistics:": "Num rows: 2 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE",
+                              "OperatorId:": "RS_24",
+                              "outputname:": "Map 2",
+                              "outputOperator:": ["TS_3"]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "Execution mode:": "vectorized"
+          },
+          "Map 2": {
+            "Map Operator Tree:": [
+              {
+                "TableScan": {
+                  "alias:": "o",
+                  "columns:": ["customer_id"],
+                  "database:": "default",
+                  "filterExpr:": "customer_id is not null (type: boolean)",
+                  "Statistics:": "Num rows: 6 Data size: 24 Basic stats: COMPLETE Column stats: COMPLETE",
+                  "table:": "orders_d",
+                  "isTempTable:": "false",
+                  "OperatorId:": "TS_3",
+                  "children": {
+                    "Filter Operator": {
+                      "predicate:": "customer_id is not null (type: boolean)",
+                      "Statistics:": "Num rows: 6 Data size: 24 Basic stats: COMPLETE Column stats: COMPLETE",
+                      "OperatorId:": "FIL_25",
+                      "children": {
+                        "Select Operator": {
+                          "expressions:": "customer_id (type: int)",
+                          "columnExprMap:": { "_col0": "customer_id" },
+                          "outputColumnNames:": ["_col0"],
+                          "Statistics:": "Num rows: 6 Data size: 24 Basic stats: COMPLETE Column stats: COMPLETE",
+                          "OperatorId:": "SEL_26",
+                          "children": {
+                            "Map Join Operator": {
+                              "condition map:": [{ "": "Inner Join 0 to 1" }],
+                              "keys:": {
+                                "0": "_col0 (type: int)",
+                                "1": "_col0 (type: int)"
+                              },
+                              "input vertices:": { "0": "Map 1" },
+                              "Statistics:": "Num rows: 4 Data size: 32 Basic stats: COMPLETE Column stats: COMPLETE",
+                              "OperatorId:": "MAPJOIN_27",
+                              "children": {
+                                "Group By Operator": {
+                                  "aggregations:": ["count()"],
+                                  "columnExprMap:": { "_col0": "true" },
+                                  "keys:": "true (type: boolean)",
+                                  "minReductionHashAggr:": "0.75",
+                                  "mode:": "hash",
+                                  "outputColumnNames:": ["_col0", "_col1"],
+                                  "Statistics:": "Num rows: 1 Data size: 12 Basic stats: COMPLETE Column stats: COMPLETE",
+                                  "OperatorId:": "GBY_28",
+                                  "children": {
+                                    "Reduce Output Operator": {
+                                      "columnExprMap:": {
+                                        "KEY._col0": "true",
+                                        "VALUE._col0": "_col1"
+                                      },
+                                      "key expressions:": "_col0 (type: boolean)",
+                                      "null sort order:": "z",
+                                      "sort order:": "+",
+                                      "Map-reduce partition columns:": "_col0 (type: boolean)",
+                                      "Statistics:": "Num rows: 1 Data size: 12 Basic stats: COMPLETE Column stats: COMPLETE",
+                                      "value expressions:": "_col1 (type: bigint)",
+                                      "OperatorId:": "RS_29",
+                                      "outputname:": "Reducer 3",
+                                      "outputOperator:": ["GBY_30"]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "Execution mode:": "vectorized"
+          },
+          "Reducer 3": {
+            "Execution mode:": "vectorized",
+            "Reduce Operator Tree:": {
+              "Group By Operator": {
+                "aggregations:": ["count(VALUE._col0)"],
+                "columnExprMap:": { "_col0": "true" },
+                "keys:": "KEY._col0 (type: boolean)",
+                "mode:": "mergepartial",
+                "outputColumnNames:": ["_col0", "_col1"],
+                "Statistics:": "Num rows: 1 Data size: 12 Basic stats: COMPLETE Column stats: COMPLETE",
+                "OperatorId:": "GBY_30",
+                "children": {
+                  "Select Operator": {
+                    "expressions:": "'berlin' (type: string), _col1 (type: bigint)",
+                    "columnExprMap:": { "_col0": "'berlin'", "_col1": "_col1" },
+                    "outputColumnNames:": ["_col0", "_col1"],
+                    "Statistics:": "Num rows: 1 Data size: 98 Basic stats: COMPLETE Column stats: COMPLETE",
+                    "OperatorId:": "SEL_31",
+                    "children": {
+                      "File Output Operator": {
+                        "compressed:": "false",
+                        "Statistics:": "Num rows: 1 Data size: 98 Basic stats: COMPLETE Column stats: COMPLETE",
+                        "table:": {
+                          "input format:": "org.apache.hadoop.mapred.SequenceFileInputFormat",
+                          "output format:": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
+                          "serde:": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe"
+                        },
+                        "OperatorId:": "FS_32"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Stage-0": {
+      "Fetch Operator": {
+        "limit:": "-1",
+        "Processor Tree:": { "ListSink": { "OperatorId:": "LIST_SINK_33" } }
+      }
+    }
+  }
+}

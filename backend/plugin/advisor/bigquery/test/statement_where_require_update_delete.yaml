@@ -1,0 +1,74 @@
+- statement: UPDATE `proj.ds.t` SET a = 1;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE `proj.ds.t` SET a = 1 WHERE b = 2;
+  changeType: 1
+- statement: UPDATE ds.t SET a = 1 WHERE TRUE;
+  changeType: 1
+- statement: DELETE FROM `proj.ds.t`;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DELETE ds.t;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DELETE FROM ds.t WHERE a = 1;
+  changeType: 1
+- statement: |-
+    SELECT 1;
+    UPDATE ds.t SET a = 1 WHERE b = 2;
+    DELETE FROM ds.t;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    MERGE ds.t AS t
+    USING ds.s AS s
+    ON t.id = s.id
+    WHEN MATCHED THEN UPDATE SET a = s.a
+    WHEN NOT MATCHED BY SOURCE THEN DELETE;
+  changeType: 1
+- statement: |-
+    BEGIN
+      UPDATE ds.t SET a = 1;
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

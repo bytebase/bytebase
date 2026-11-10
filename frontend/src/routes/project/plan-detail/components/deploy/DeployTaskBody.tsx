@@ -1,17 +1,28 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ReadonlyMonaco } from "@/components/monaco";
+import type {
+  OpenReleaseFile,
+  RevisionsLinkTarget,
+} from "@/components/task-run-log/ReleaseSpineView";
+import { useReleaseByName } from "@/hooks/useAppState";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { getTaskRunWaitingMessage } from "@/lib/taskRun";
 import { cn } from "@/lib/utils";
 import type { Engine } from "@/types/proto-es/v1/common_pb";
+import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import { relativeTimeReading } from "@/utils/datetime";
 import {
   isReleaseBasedTask,
   releaseNameOfTaskV1,
 } from "@/utils/v1/issue/rollout";
+import { useOpenReleaseFile } from "../release/ReleaseFileViewer";
 import { DeployLatestTaskRunInfo } from "./DeployLatestTaskRunInfo";
-import { DeployReleaseInfoCard } from "./DeployReleaseInfoCard";
+import { DeployTaskPlannedFiles } from "./DeployTaskPlannedFiles";
 import { DeployTaskSkippedReason } from "./DeployTaskSkippedReason";
+import { revisionsLinkOf } from "./revisionsLink";
 
 // The expanded card body: a skipped reason, a waiting note, the SQL statement
 // (or release info), and the latest task run. Only mounts when the card is
@@ -26,6 +37,8 @@ export function DeployTaskBody({
   isTruncated,
   latestTaskRun,
   onShowHistory,
+  projectId,
+  stageTitle,
   statement,
   task,
   timingDisplay,
@@ -38,6 +51,10 @@ export function DeployTaskBody({
   isTruncated: boolean;
   latestTaskRun?: TaskRun;
   onShowHistory: () => void;
+  // For the Revisions link on a release task.
+  projectId?: string;
+  // The task's stage, for the file viewer's "Failed on" header.
+  stageTitle?: string;
   statement: string;
   task: Task;
   // The latest run's duration, formatted by DeployTaskItem (single source).
@@ -46,6 +63,52 @@ export function DeployTaskBody({
   const { t } = useTranslation();
   const isReleaseTask = isReleaseBasedTask(task);
   const releaseName = releaseNameOfTaskV1(task);
+  const release = useReleaseByName(releaseName ?? "");
+  const releaseState =
+    task.payload.case === "databaseUpdate"
+      ? task.payload.value.releaseState
+      : undefined;
+  const spineFiles = useMemo(
+    () =>
+      release?.type === Release_Type.VERSIONED
+        ? release.files.map((file) => ({
+            version: file.version,
+            path: file.path,
+          }))
+        : [],
+    [release]
+  );
+  const computedAgo = useTimeReading(
+    relativeTimeReading,
+    releaseState?.computeTime
+      ? Number(releaseState.computeTime.seconds) * 1000
+      : undefined
+  );
+  const openViewer = useOpenReleaseFile();
+  const openFile = useMemo<OpenReleaseFile | undefined>(
+    () =>
+      openViewer && release
+        ? (file, context) =>
+            openViewer(
+              {
+                file: {
+                  ...file,
+                  sheet:
+                    release.files.find((f) => f.version === file.version)
+                      ?.sheet ?? "",
+                },
+                context,
+                stageTitle,
+              },
+              release.vcsSource
+            )
+        : undefined,
+    [openViewer, release, stageTitle]
+  );
+  const revisionsLink = useMemo<RevisionsLinkTarget | undefined>(() => {
+    if (!isReleaseTask || !projectId) return undefined;
+    return revisionsLinkOf(task.target, projectId);
+  }, [isReleaseTask, task.target, projectId]);
   // The one state line that matters for a waiting task.
   const waitingComment = latestTaskRun
     ? getTaskRunWaitingMessage(latestTaskRun, t)
@@ -99,8 +162,14 @@ export function DeployTaskBody({
             </div>
           )}
         </div>
-      ) : releaseName ? (
-        <DeployReleaseInfoCard releaseName={releaseName} />
+      ) : !latestTaskRun && spineFiles.length > 0 && releaseState ? (
+        <DeployTaskPlannedFiles
+          computedAgo={computedAgo}
+          files={spineFiles}
+          onOpenFile={openFile}
+          skipped={task.status === Task_Status.SKIPPED}
+          state={releaseState}
+        />
       ) : null}
 
       {latestTaskRun && (
@@ -109,7 +178,10 @@ export function DeployTaskBody({
           databaseEngine={databaseEngine}
           duration={duration}
           historyCount={historyCount}
+          onOpenFile={openFile}
           onShowHistory={onShowHistory}
+          releaseState={releaseState}
+          revisionsLink={revisionsLink}
           taskRun={latestTaskRun}
         />
       )}

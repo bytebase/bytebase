@@ -76,9 +76,7 @@ func (r *namingIdentifierNoKeywordOmniRule) checkCreateTable(n *ast.CreateTableS
 		if constraint == nil {
 			continue
 		}
-		if constraint.Name != "" {
-			r.checkIdentifierAtLine(constraint.Name, r.LocToLine(constraint.Loc))
-		}
+		r.checkConstraintNames(constraint, r.LocToLine(constraint.Loc))
 	}
 }
 
@@ -105,8 +103,8 @@ func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStm
 				r.checkIdentifierAtLine(cmd.Column.Name, r.LocToLine(n.Loc))
 			}
 		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil && cmd.Constraint.Name != "" {
-				r.checkIdentifierAtLine(cmd.Constraint.Name, r.LocToLine(n.Loc))
+			if cmd.Constraint != nil {
+				r.checkConstraintNames(cmd.Constraint, r.LocToLine(n.Loc))
 			}
 		case ast.ATRenameIndex:
 			if cmd.NewName != "" {
@@ -120,6 +118,16 @@ func (r *namingIdentifierNoKeywordOmniRule) checkAlterTable(n *ast.AlterTableStm
 func (r *namingIdentifierNoKeywordOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 	if n.IndexName != "" {
 		r.checkIdentifierAtLine(n.IndexName, r.LocToLine(n.Loc))
+	}
+}
+
+// checkConstraintNames checks the CONSTRAINT symbol and, for FOREIGN KEY, the
+// name written after FOREIGN KEY.
+func (r *namingIdentifierNoKeywordOmniRule) checkConstraintNames(c *ast.Constraint, lineNumber int32) {
+	for _, name := range []string{c.Name, c.IndexName} {
+		if name != "" {
+			r.checkIdentifierAtLine(name, lineNumber)
+		}
 	}
 }
 

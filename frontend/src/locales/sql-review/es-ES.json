@@ -1,6 +1,35 @@
 {
   "add-or-remove-rules": "Agregar o eliminar reglas",
   "add-rules": "Agregar reglas",
+  "ai-review": {
+    "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
+    "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
+    "enable": {
+      "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
+      "self": "Revisar los cambios con IA"
+    },
+    "policy": {
+      "cannot-clear": "Tu rol no puede eliminar políticas, por lo que esta política no se puede vaciar.",
+      "description": "Esta política define lo que la IA revisa al evaluar cambios en la base de datos. Se aplica a todos los proyectos del espacio de trabajo y cada proyecto puede agregar su propia política.",
+      "load-failed": "No se pudo cargar la política de revisión.",
+      "none": "No hay política de revisión.",
+      "paused": "Esta política está en pausa, por lo que la revisión con IA no la usa.",
+      "placeholder": "Por ejemplo:\nInforma sobre un cambio de esquema que bloquee las escrituras en una tabla de más de 1 millón de filas.\nToda clave foránea necesita un índice sobre sus columnas.\nLas tablas nuevas necesitan las columnas created_at y updated_at.",
+      "project-description": "Política opcional específica del proyecto. Se agrega a la política del espacio de trabajo y tiene prioridad cuando entran en conflicto.",
+      "project-none": "No hay política del proyecto.",
+      "project-placeholder": "Por ejemplo:\nNunca elimines filas de las tablas payments o ledger.\nGuarda los importes de dinero en columnas DECIMAL, nunca FLOAT ni DOUBLE.\nLas columnas nuevas de la tabla users deben admitir NULL o tener un valor por defecto.",
+      "project-self": "Política adicional del proyecto",
+      "remove-only": "Puedes eliminar esta política, pero no cambiarla. Vacía el texto para eliminarla.",
+      "self": "Política de revisión",
+      "standard-rules-hint": "La revisión con IA no repite las reglas estándar y omite las que están desactivadas. Para que compruebe alguna de todos modos, nómbrala en la política, por ejemplo: \"Todo UPDATE necesita una cláusula WHERE\".",
+      "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
+    },
+    "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",
+    "self": "Revisión con IA",
+    "set-for-workspace": "Se administra a nivel del espacio de trabajo.",
+    "turn-on-ai": "Activar la IA",
+    "view-workspace-setting": "Ver la configuración de IA del espacio de trabajo"
+  },
   "attach-resource": {
     "change-resources": "Cambiar recursos adjuntos",
     "label": "Puede aplicar la política de revisión a entornos o proyectos. Un recurso sólo puede vincular una política. La base de datos utilizará la política de revisión de SQL adjunta al proyecto; de lo contrario, recurrirá a la política de entorno.",
@@ -70,6 +99,48 @@
     "starrocks": "StarRocks",
     "tidb": "TiDB",
     "trino": "Trino"
+  },
+  "finding-code": {
+    "dc101": "Elimina una restricción",
+    "do101": "Elimina datos",
+    "do102": "Elimina una definición",
+    "do103": "Elimina un usuario, un rol o un objeto de seguridad",
+    "nu101": "La comparación con NULL nunca es verdadera",
+    "om101": "El motor no admite la migración en línea",
+    "om102": "La directiva de gh-ost no es válida",
+    "om103": "El cambio no es apto para la migración en línea",
+    "om104": "gh-ost no puede renombrar la columna",
+    "om105": "La base de datos de copia de seguridad no existe",
+    "om106": "La tabla no cumple los requisitos de gh-ost",
+    "pb101": "El motor no admite la copia de seguridad previa",
+    "pb102": "El cambio supera el límite de tamaño de la copia de seguridad",
+    "pb103": "La base de datos o el esquema de la copia de seguridad no existe",
+    "pb104": "El cambio no tiene nada que respaldar",
+    "pb105": "Las sentencias no pueden compartir una copia de seguridad",
+    "pb106": "La copia de seguridad podría leer otra tabla",
+    "pb107": "La tabla no se puede respaldar",
+    "pb108": "Esta forma de sentencia no se puede respaldar",
+    "pb109": "La copia de seguridad lee lo que crea el cambio",
+    "pk101": "Crea una tabla sin clave primaria",
+    "pk102": "Quita la clave primaria de una tabla",
+    "rn101": "Renombra una tabla, una vista o una columna",
+    "sy101": "La sentencia no se puede analizar",
+    "tr101": "Vacía datos",
+    "wh101": "UPDATE o DELETE sin cláusula WHERE",
+    "wt101": "El objeto no existe",
+    "wt201": "El nombre ya está en uso",
+    "wt301": "El objeto es de otro tipo",
+    "wt401": "La sentencia usa un nombre dos veces",
+    "wt402": "No hay ninguna base de datos ni esquema seleccionado",
+    "wt403": "El nombre es demasiado largo",
+    "wt404": "El nombre está reservado",
+    "wt405": "El esquema aún contiene objetos",
+    "wt406": "La columna del sistema no se puede modificar",
+    "wt407": "El nombre hace referencia a otra base de datos",
+    "wt408": "El motor rechaza esta forma de sentencia",
+    "wt409": "La sentencia debe iniciar su lote",
+    "wt410": "El disparador y la tabla están en esquemas distintos",
+    "wt411": "El índice pertenece a una restricción"
   },
   "input-then-press-enter": "Ingrese el valor y luego presione enter para agregar",
   "level": {
@@ -729,6 +800,72 @@
   },
   "select-all": "Seleccionar todo",
   "select-review-rules": "Seleccionar reglas de revisión de SQL",
+  "standard-rules": {
+    "codes": "Códigos",
+    "customize": {
+      "description": "Cuando está desactivado, este proyecto sigue las reglas estándar del espacio de trabajo.",
+      "self": "Personalizar para este proyecto",
+      "view-workspace-rules": "Ver las reglas del espacio de trabajo"
+    },
+    "description": "Reglas integradas que revisan el SQL de cada issue. Los proyectos que no personalizan sus reglas siguen estas.",
+    "engines": "Motores",
+    "load-failed": "No se pudieron cargar las reglas estándar.",
+    "off": "Desactivada",
+    "on": "Activada",
+    "project-description": "Reglas integradas que revisan el SQL de cada issue de este proyecto.",
+    "retry": "Reintentar",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "Informa cuando se elimina una restricción PRIMARY KEY, FOREIGN KEY, UNIQUE o CHECK.",
+        "title": "Eliminación de restricciones"
+      },
+      "disallow-drop-object": {
+        "description": "Informa cuando se elimina cualquier objeto, como una tabla, columna, vista, índice, esquema o base de datos. La eliminación de restricciones se revisa por separado.",
+        "title": "Eliminación de objetos"
+      },
+      "disallow-rename": {
+        "description": "Informa cuando se cambia el nombre de una tabla, vista o columna.",
+        "title": "Cambio de nombre"
+      },
+      "disallow-truncate": {
+        "description": "Informa sobre las sentencias TRUNCATE.",
+        "title": "Vaciado de tablas"
+      },
+      "online-migration": {
+        "description": "Informa cuando se solicita una migración en línea para un cambio que no reúne los requisitos.",
+        "title": "Idoneidad para la migración en línea"
+      },
+      "prior-backup": {
+        "description": "Informa cuando un cambio habilita una copia de seguridad previa pero no se puede realizar.",
+        "title": "Viabilidad de la copia de seguridad previa"
+      },
+      "require-is-null": {
+        "description": "Informa sobre = NULL o <> NULL en un predicado. Estas comparaciones nunca son verdaderas. Use IS NULL o IS NOT NULL en su lugar.",
+        "title": "Comparación con NULL"
+      },
+      "require-primary-key": {
+        "description": "Informa cuando un cambio crea una tabla sin clave primaria o elimina una clave primaria sin volver a agregarla.",
+        "title": "Clave primaria"
+      },
+      "require-where": {
+        "description": "Informa sobre sentencias UPDATE o DELETE sin una cláusula WHERE.",
+        "title": "Cláusula WHERE"
+      },
+      "syntax": {
+        "description": "Informa sobre las sentencias que el motor de base de datos no puede analizar. Las demás reglas solo comprueban SQL que se puede analizar, por lo que desactivar esta regla desactiva todas las reglas estándar.",
+        "title": "Sintaxis"
+      },
+      "walk-through": {
+        "description": "Informa sobre las sentencias que no son válidas con el esquema sincronizado, como referencias a tablas o columnas inexistentes, objetos duplicados o referencias no válidas.",
+        "title": "Recorrido del esquema"
+      }
+    },
+    "running": "{{on}} de {{total}} reglas habilitadas",
+    "self": "Reglas estándar",
+    "supported-engines": "Motores compatibles: {{engines}}",
+    "syntax-off": "La comprobación de sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Actívela para revisar los cambios.",
+    "workspace-rules-hidden": "No tienes permiso para ver las reglas del espacio de trabajo que sigue este proyecto."
+  },
   "template": {
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",
@@ -744,5 +881,19 @@
     "number-positive": "Ingrese un número positivo para {{rule}}.",
     "rule-required": "Seleccione al menos una regla.",
     "string-array-required": "Agregue al menos un valor para {{rule}}."
+  },
+  "version-switch": {
+    "description": "Solo en compilaciones dev. El servidor ejecuta V1 en un proyecto con todas sus reglas estándar desactivadas, y V2 en los demás. Este navegador muestra las páginas de la versión que elijas.",
+    "self": "Versión de la revisión SQL",
+    "to-v1": {
+      "confirm": "Cambiar a V1",
+      "description": "Esto desactiva todas las reglas estándar del espacio de trabajo, así que la comprobación del plan ejecuta la revisión SQL V1. Los proyectos que personalizan sus reglas estándar las conservan.",
+      "title": "¿Cambiar a la revisión SQL V1?"
+    },
+    "to-v2": {
+      "confirm": "Cambiar a V2",
+      "description": "Esto activa todas las reglas estándar del espacio de trabajo, así que la revisión de reglas estándar sustituye a la revisión SQL V1.",
+      "title": "¿Cambiar a la revisión SQL V2?"
+    }
   }
 }

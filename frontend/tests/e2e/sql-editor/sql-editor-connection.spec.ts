@@ -282,15 +282,16 @@ test.describe("SQL Editor entry from the database page connects the tab (BYT-961
     await dbPage.keyboard.press("Escape").catch(() => {});
     await dbPage.waitForTimeout(1500);
 
-    // The "SQL Editor" entry is a <dd> (text = sql-editor.self) with onClick that
-    // window.open's a new tab (DatabaseSQLEditorButton.tsx). Scope to the <dd>:
-    // DashboardHeader also renders a "SQL Editor" *button* that, on a database
-    // route, opens the SAME deep link — so a global getByText("SQL Editor")
-    // .first() resolves to the header (it precedes the page content in the DOM,
-    // confirmed: 2 exact matches, .first() = a SPAN inside a <button>), and the
-    // test would pass even if this database-page entry were disabled or its
-    // handler regressed. The <dd> locator exercises the intended entry point.
-    const entry = dbPage.locator("dd").filter({ hasText: "SQL Editor" });
+    // The database page's entry is the "Open SQL Editor" link in its action bar
+    // (DatabaseSQLEditorButton.tsx), which opens the deep link in a new tab.
+    // DashboardHeader also renders a "SQL Editor" link to the SAME deep link on
+    // a database route, so match the page entry's full name exactly: a loose
+    // "SQL Editor" match would pass even if this entry were disabled or its
+    // handler regressed.
+    const entry = dbPage.getByRole("link", {
+      name: "Open SQL Editor",
+      exact: true,
+    });
     await expect(entry).toBeVisible({ timeout: 10_000 });
 
     const [popup] = await Promise.all([

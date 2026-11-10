@@ -5,6 +5,7 @@ import { useTimeReading } from "@/hooks/useTimeReading";
 import { cn } from "@/lib/utils";
 import {
   absoluteTimeReading,
+  calendarTimeReading,
   compactTimeReading,
   type DateTimeSegments,
   dateTimeSegments,
@@ -21,13 +22,18 @@ import {
  *
  * - `queue` — freshness-first work queues and feeds: relative age, switching to
  *   an absolute date at 30 days.
- * - `compact` — history rows scanned to locate a record: date and time to the
- *   minute.
+ * - `calendar` — today or yesterday with local time, then date and time.
+ * - `compact` — local date and time to the minute, without seconds or timezone.
  * - `operational` — a future time the reader acts on, so the timezone is named
  *   in the visible string rather than left to a hover.
  * - `datetime` — a record whose time is the evidence: full precision inline.
  */
-export type TimeDisplayMode = "queue" | "compact" | "operational" | "datetime";
+export type TimeDisplayMode =
+  | "queue"
+  | "calendar"
+  | "compact"
+  | "operational"
+  | "datetime";
 
 interface HumanizeTsProps {
   /** The instant to show, in milliseconds; nothing renders without one. */
@@ -71,6 +77,7 @@ const MODES: Record<
   }
 > = {
   queue: { label: queueTimeReading, Hidden: FullDateTime, hasTime: false },
+  calendar: { label: calendarTimeReading, Hidden: FullDateTime, hasTime: true },
   compact: { label: compactTimeReading, Hidden: FullDateTime, hasTime: true },
   operational: {
     label: operationalTimeReading,

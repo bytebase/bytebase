@@ -1,4 +1,11 @@
-import { Ban, CircleCheck, CircleX, Clock3, Loader2 } from "lucide-react";
+import {
+  Ban,
+  CircleCheck,
+  CircleX,
+  Clock3,
+  Loader2,
+  MessagesSquare,
+} from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -52,7 +59,8 @@ export function ReviewReadinessFooter({
   return (
     <div
       className={
-        state.kind === "approved-checks-failed"
+        state.kind === "approved-checks-failed" ||
+        state.kind === "approved-threads-open"
           ? "flex flex-wrap items-center gap-x-2 gap-y-1 border-t px-4 py-2.5"
           : "flex flex-wrap items-center gap-x-2 gap-y-1 border-t px-4 py-2.5 text-sm text-control-placeholder"
       }
@@ -96,6 +104,21 @@ export function ReviewReadinessFooter({
               {t("plan.review.footer.errors-passed-not-created", {
                 count: checks.error,
                 passed: checks.success,
+              })}
+            </div>
+          </div>
+        </>
+      )}
+      {state.kind === "approved-threads-open" && (
+        <>
+          <MessagesSquare className="size-6 shrink-0 text-warning" />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-main">
+              {t("plan.review.footer.approved-but-threads-open")}
+            </div>
+            <div className="text-xs text-control-placeholder">
+              {t("plan.review.footer.threads-open-not-created", {
+                count: bypass.unresolvedThreads,
               })}
             </div>
           </div>

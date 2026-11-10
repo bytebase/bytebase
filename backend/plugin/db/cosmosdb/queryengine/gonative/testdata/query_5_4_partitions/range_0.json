@@ -1,0 +1,16 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "payload": {
+                "avgPop": {
+                    "item": {
+                        "sum": 20442258,
+                        "count": 5
+                    }
+                }
+            }
+        }
+    ],
+    "_count": 1
+}

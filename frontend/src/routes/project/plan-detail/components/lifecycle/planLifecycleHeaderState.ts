@@ -11,7 +11,11 @@ import {
   IssueStatus,
   State,
 } from "@/types/proto-es/v1/common_pb";
-import type { Rollout, Stage } from "@/types/proto-es/v1/rollout_service_pb";
+import {
+  type Rollout,
+  type Stage,
+  Task_Status,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanCheckSummary } from "../../utils/phaseSummary";
 import {
   getFrontierStage,
@@ -27,7 +31,8 @@ export type PlanStatusReason =
   | "checking" // approved, plan checks still running
   | "in-review" // review pending (the active gate)
   | "rejected" // review rejected
-  | "checks-failing"; // review approved, but plan checks failed
+  | "checks-failing" // review approved, but plan checks failed
+  | "threads-open"; // approved and checks passed, but threads hold the rollout
 
 export type PlanLifecycleHeaderState =
   // Nothing safe to surface (GitOps with no rollout, inconsistent backend
@@ -49,7 +54,8 @@ export type PlanLifecycleHeaderState =
   // frontier advance — it does not gate on IAM.
   | { kind: "run-stage"; stage: Stage }
   | { kind: "running-stage"; stage: Stage }
-  | { kind: "deployed" }; // terminal stamp
+  // terminal stamp; a skipped task still reads, "Deployed, 1 task skipped".
+  | { kind: "deployed"; skippedCount: number };
 
 export interface PlanLifecycleResolverInput {
   isCreating: boolean;
@@ -66,6 +72,8 @@ export interface PlanLifecycleResolverInput {
   isCurrentUserReviewCandidate: boolean;
 
   checks: PlanCheckSummary;
+  // Open threads hold the rollout under SQL Review V2; zero elsewhere.
+  unresolvedThreads: number;
 
   hasRollout: boolean;
   rollout: Rollout | undefined;
@@ -82,7 +90,10 @@ function resolveDeploy(
   }
   const frontier = getFrontierStage(rollout);
   if (!frontier) {
-    return { kind: "deployed" };
+    const skippedCount = rollout.stages
+      .flatMap((stage) => stage.tasks)
+      .filter((task) => task.status === Task_Status.SKIPPED).length;
+    return { kind: "deployed", skippedCount };
   }
   if (stageHasRunnableTasks(frontier)) {
     return { kind: "run-stage", stage: frontier };
@@ -159,6 +170,9 @@ export function resolvePlanLifecycleHeaderState(
     }
     if (input.checks.running > 0) {
       return { kind: "plan-status", reason: "checking" };
+    }
+    if (input.unresolvedThreads > 0) {
+      return { kind: "plan-status", reason: "threads-open" };
     }
     // All required gates passed; the backend auto-creates the rollout. Show a
     // transient progress state until it arrives, then resolveDeploy takes over.

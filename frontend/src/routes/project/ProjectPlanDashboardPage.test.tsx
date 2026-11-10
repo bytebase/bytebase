@@ -28,6 +28,7 @@ const plan = {
 const mocks = vi.hoisted(() => ({
   batchGetOrFetchUsers: vi.fn(async () => []),
   listUsers: vi.fn(async () => ({ users: [] })),
+  listPlans: vi.fn(async () => ({ plans: [], nextPageToken: "" })),
   listScrollRestorationKey: undefined as string | undefined,
   markListScrollRestorationEntry: vi.fn(),
   routerPush: vi.fn(),
@@ -86,6 +87,10 @@ vi.mock("@/components/ProjectPageLayout", () => ({
 
 vi.mock("@/components/TaskStatusIcon", () => ({
   TaskStatusIcon: () => null,
+}));
+
+vi.mock("@/components/TimeRangePicker", () => ({
+  TimeRangePicker: () => null,
 }));
 
 vi.mock("@/components/ui/badge", () => ({
@@ -193,7 +198,7 @@ vi.mock("@/stores/app", () => {
     useAppStore: Object.assign(useAppStore, {
       getState: () => ({
         batchGetOrFetchDatabases: vi.fn(async () => []),
-        listPlans: vi.fn(async () => ({ plans: [], nextPageToken: "" })),
+        listPlans: mocks.listPlans,
       }),
     }),
   };
@@ -374,5 +379,38 @@ describe("ProjectPlanDashboardPage scroll restoration", () => {
       (element) => element.textContent === "common.closed"
     );
     expect(closedBadges).toHaveLength(2);
+  });
+
+  test("lists only ClickOps Plans and passes the status and created scopes", async () => {
+    act(() => {
+      root.render(
+        <MemoryRouter
+          initialEntries={[
+            "/projects/foo/plans?q=state%3AACTIVE%20status%3AFAILED%20created%3A1000%2C2000",
+          ]}
+        >
+          <ProjectPlanDashboardPage projectId="foo" />
+        </MemoryRouter>
+      );
+    });
+
+    const options = mocks.usePagedData.mock.lastCall?.[0] as {
+      fetchList: (params: { pageSize: number; pageToken: string }) => unknown;
+    };
+    await options.fetchList({ pageSize: 50, pageToken: "" });
+
+    expect(mocks.listPlans).toHaveBeenCalledWith(
+      expect.objectContaining({
+        find: expect.objectContaining({
+          project: "projects/foo",
+          hasRelease: false,
+          specType: "change_database_config",
+          state: "ACTIVE",
+          taskStatuses: ["FAILED"],
+          createdTsAfter: 1000,
+          createdTsBefore: 2000,
+        }),
+      })
+    );
   });
 });

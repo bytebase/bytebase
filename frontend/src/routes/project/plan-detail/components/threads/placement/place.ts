@@ -1,4 +1,5 @@
 import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
+import { exceedsSheetPreviewLimit } from "@/utils/v1/sheet";
 import { tokenizeLines } from "./lineTokens";
 import { diffLines, type Hunk } from "./myersDiff";
 
@@ -10,16 +11,20 @@ export interface LineRange {
 }
 
 // Where an anchored comment shows for the spec's current statement. CURRENT
-// carries the range in the current sheet; the text there is byte for byte
-// what the reviewer selected. OUTDATED means the selected lines changed.
+// carries the range in the current sheet; the lines there are byte for byte
+// the lines the anchor covers. OUTDATED means those lines changed.
 // UNAVAILABLE means the inputs were missing or invalid, or a limit was hit.
 export type Placement =
   | { readonly state: "CURRENT"; readonly range: LineRange }
   | { readonly state: "OUTDATED" }
-  | { readonly state: "UNAVAILABLE" };
+  | { readonly state: "UNAVAILABLE"; readonly reason?: "SIZE_LIMIT" };
 
 export const OUTDATED: Placement = Object.freeze({ state: "OUTDATED" });
 export const UNAVAILABLE: Placement = Object.freeze({ state: "UNAVAILABLE" });
+export const UNAVAILABLE_SIZE_LIMIT: Placement = Object.freeze({
+  state: "UNAVAILABLE",
+  reason: "SIZE_LIMIT",
+});
 
 export const current = (startLine: number, endLine: number): Placement => ({
   state: "CURRENT",
@@ -35,22 +40,29 @@ export interface PairAnchor extends LineRange {
 export const anchorId = (range: LineRange): string =>
   `${range.startLine}-${range.endLine}`;
 
-// This version supports whole-line anchors only: both columns zero, one-based
-// lines, and an inclusive end at or after the start.
-export function wholeLineRange(
+// The one-based lines an anchor covers, which placement maps. A whole-line
+// anchor has zero columns and an inclusive end line. A code-point range, such
+// as a rule review finding's, is end-exclusive, so an end at column 1 of a
+// later line covers nothing on that line.
+export function anchorLineRange(
   anchor: Pick<StatementAnchor, "startPosition" | "endPosition">
 ): LineRange | undefined {
   const start = anchor.startPosition;
   const end = anchor.endPosition;
-  if (!start || !end) return undefined;
-  if (start.column !== 0 || end.column !== 0) return undefined;
-  if (start.line < 1 || end.line < start.line) return undefined;
-  return { startLine: start.line, endLine: end.line };
+  if (!start || !end || start.line < 1 || end.line < start.line) {
+    return undefined;
+  }
+  const wholeLine = start.column === 0 && end.column === 0;
+  const endLine =
+    !wholeLine && end.column === 1 && end.line > start.line
+      ? end.line - 1
+      : end.line;
+  return { startLine: start.line, endLine };
 }
 
 // The part of the placement rule that needs no diff, shared by the planner
 // and by every consumer that shows a comment before a run has settled it:
-// an unsupported anchor is UNAVAILABLE, no target (spec gone or without a
+// a malformed anchor is UNAVAILABLE, no target (spec gone or without a
 // statement) is UNAVAILABLE, and an anchor on the target sheet itself is
 // CURRENT at its own lines. Undefined means the diff has to decide.
 export function trivialPlacement(
@@ -60,7 +72,7 @@ export function trivialPlacement(
   >,
   targetSha256: string | undefined
 ): Placement | undefined {
-  const range = wholeLineRange(anchor);
+  const range = anchorLineRange(anchor);
   if (!range || !targetSha256) return UNAVAILABLE;
   if (targetSha256 === anchor.sheetSha256) {
     return current(range.startLine, range.endLine);
@@ -125,9 +137,9 @@ export interface DiffedPair {
   readonly saved: readonly string[];
   readonly current: readonly string[];
   // Undefined when the diff did not run to completion; `reason` says why.
-  // A "budget" miss is retriable with more budget, a "lines" miss is not.
+  // A work-budget miss is retriable; a size limit is not.
   readonly hunks?: readonly Hunk[];
-  readonly reason?: "budget" | "lines";
+  readonly reason?: "budget" | "size";
   readonly work: number;
 }
 
@@ -137,8 +149,7 @@ export interface DiffPairLimits {
 }
 
 // Diffs one pair once. Identical contents skip the diff. A sheet over the
-// line cap or a diff over the work budget yields no hunks, and every anchor
-// on the pair then resolves UNAVAILABLE.
+// character or line cap, or a diff over the work budget, yields no hunks.
 export function diffPair(
   saved: SheetText,
   current: SheetText,
@@ -146,10 +157,12 @@ export function diffPair(
 ): DiffedPair {
   const base = { saved: saved.lines, current: current.lines };
   if (
+    exceedsSheetPreviewLimit(saved.text) ||
+    exceedsSheetPreviewLimit(current.text) ||
     saved.lines.length > limits.maxLinesPerSheet ||
     current.lines.length > limits.maxLinesPerSheet
   ) {
-    return { ...base, reason: "lines", work: 0 };
+    return { ...base, reason: "size", work: 0 };
   }
   if (saved.text === current.text) {
     return { ...base, hunks: [], work: 0 };
@@ -161,6 +174,8 @@ export function diffPair(
 }
 
 export function placeOnPair(pair: DiffedPair, range: LineRange): Placement {
-  if (!pair.hunks) return UNAVAILABLE;
+  if (!pair.hunks) {
+    return pair.reason === "size" ? UNAVAILABLE_SIZE_LIMIT : UNAVAILABLE;
+  }
   return placeWithHunks(pair.saved, pair.current, pair.hunks, range);
 }

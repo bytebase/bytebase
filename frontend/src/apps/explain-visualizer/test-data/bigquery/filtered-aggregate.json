@@ -1,0 +1,55 @@
+[
+  {
+    "id": 0,
+    "name": "S00: Input",
+    "status": "COMPLETE",
+    "steps": [
+      {
+        "kind": "READ",
+        "substeps": [
+          "$1:city",
+          "FROM analytics.customers",
+          "WHERE equal($1, 'berlin')"
+        ]
+      },
+      {
+        "kind": "AGGREGATE",
+        "substeps": ["GROUP BY $10 := $1", "$20 := COUNT(*)"]
+      },
+      { "kind": "WRITE", "substeps": ["$10, $20", "TO __stage00_output"] }
+    ],
+    "recordsRead": 4,
+    "recordsWritten": 2,
+    "parallelInputs": 1,
+    "completedParallelInputs": 1,
+    "shuffleOutputBytes": 72,
+    "waitMsAvg": 2,
+    "waitMsMax": 3,
+    "readMsAvg": 11,
+    "readMsMax": 14,
+    "computeMsAvg": 7,
+    "computeMsMax": 9,
+    "writeMsAvg": 1,
+    "writeMsMax": 1
+  },
+  {
+    "id": 1,
+    "name": "S01: Output",
+    "status": "COMPLETE",
+    "inputStages": [0],
+    "steps": [
+      { "kind": "READ", "substeps": ["$10, $20", "FROM __stage00_output"] },
+      {
+        "kind": "AGGREGATE",
+        "substeps": ["GROUP BY $30 := $10", "$40 := SUM_OF_COUNTS($20)"]
+      },
+      { "kind": "WRITE", "substeps": ["$30, $40", "TO __stage01_output"] }
+    ],
+    "recordsRead": 2,
+    "recordsWritten": 1,
+    "parallelInputs": 1,
+    "waitMsAvg": 1,
+    "computeMsAvg": 3,
+    "computeMsMax": 3
+  }
+]

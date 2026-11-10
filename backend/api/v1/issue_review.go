@@ -3,10 +3,12 @@ package v1
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
@@ -42,12 +44,13 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 	result, err := s.reviewWorkflow.ReviewIssue(ctx, review.IssueInput{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: projectID,
-		IssueUID:  issueUID,
-		Actor:     user,
-		Action:    action,
-		Comment:   comment,
+		Workspace:           common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:           projectID,
+		IssueUID:            issueUID,
+		Actor:               user,
+		Action:              action,
+		Comment:             comment,
+		ConfirmedUpdateTime: confirmedUpdateTime(ctx),
 	})
 	if err != nil {
 		return nil, mapReviewError(ctx, err, action)
@@ -113,6 +116,16 @@ func (s *IssueService) reviewIssue(ctx context.Context, name, comment string, ac
 	return connect.NewResponse(converted), nil
 }
 
+// confirmedUpdateTime returns the issue version an MCP confirmation applies
+// to. The MCP gate has checked that it names this procedure and issue.
+func confirmedUpdateTime(ctx context.Context) *time.Time {
+	confirmed, ok := auth.MCPConfirmedDecisionFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	return &confirmed.IssueUpdateTime
+}
+
 func mapReviewError(ctx context.Context, err error, action review.Action) error {
 	var workflowErr *review.Error
 	if !errors.As(err, &workflowErr) {
@@ -135,17 +148,21 @@ func mapReviewError(ctx context.Context, err error, action review.Action) error 
 		}
 		return connect.NewError(connect.CodePermissionDenied, workflowErr)
 	case review.ErrorConflict:
-		message := "cannot request issue because approval finding is stale"
+		verb := "request issue"
 		switch action {
 		case review.ActionApprove:
-			message = "cannot approve because approval finding is stale"
+			verb = "approve"
 		case review.ActionReject:
-			message = "cannot reject because approval finding is stale"
+			verb = "reject"
 		case review.ActionRequest:
 		default:
 			return connect.NewError(connect.CodeInternal, errors.Errorf("unexpected review action %d", action))
 		}
-		return connect.NewError(connect.CodeFailedPrecondition, errors.New(message))
+		cause := "approval finding is stale"
+		if workflowErr.Reason == review.ReasonChangedSinceConfirmed {
+			cause = "the issue changed after the decision was confirmed"
+		}
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("cannot %s because %s", verb, cause))
 	default:
 		return connect.NewError(connect.CodeInternal, workflowErr)
 	}

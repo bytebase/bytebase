@@ -92,10 +92,35 @@ message AIChatRequest {
 message AIChatUsage {
   // Total tokens used by the provider call.
   int32 total_tokens = 1;
+
+  // Input tokens used by the provider call, including cached input.
+  optional int32 input_tokens = 2;
+
+  // Output tokens used by the provider call, including reasoning tokens.
+  optional int32 output_tokens = 3;
+
+  // Input tokens read from cache. This is a subset of input_tokens.
+  optional int32 cached_input_tokens = 4;
 }
 
 // Response message for AIService.Chat.
 message AIChatResponse {
+  // Why the model stopped generating a response.
+  enum StopReason {
+    // The provider did not report why the model stopped.
+    STOP_REASON_UNSPECIFIED = 0;
+    // The model completed its turn with an answer or with tool calls.
+    TURN_COMPLETED = 1;
+    // The response was truncated at a token limit and is incomplete.
+    TOKEN_LIMIT = 2;
+    // The provider blocked the request or the response, or the model refused to answer.
+    BLOCKED = 3;
+    // The model generated a tool call that the provider could not parse.
+    MALFORMED_TOOL_CALL = 4;
+    // The model stopped for a reason that no other value names.
+    OTHER = 5;
+  }
+
   // The text content of the AI response. Optional when the response only contains tool calls.
   optional string content = 1;
 
@@ -104,4 +129,7 @@ message AIChatResponse {
 
   // Token usage for this provider call, when available.
   optional AIChatUsage usage = 3;
+
+  // Why the model stopped. A truncated or blocked response can still carry content.
+  StopReason stop_reason = 4;
 }

@@ -14,11 +14,20 @@ func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_TIDB, explainStatement)
 }
 
-// explainStatement implements base.ExplainStatement. TiDB returns one plan format
-// here whatever the caller asked for: its other FORMAT values are plans of their
-// own shape that nothing downstream reads (the driver capability table offers
-// this engine the default plan only).
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
+// tidbJSONFormat is TiDB's name for the plan as a tree of JSON objects. Its
+// other JSON-ish format, plain `json`, TiDB rejects outright.
+//
+// TiDB added tidb_json in v6.5.0 (December 2022) and does not know the name
+// before it. Nothing here reads the server's version, so a server older than
+// that answers an explain request with its own error rather than a plan.
+const tidbJSONFormat = "tidb_json"
+
+// explainStatement implements base.ExplainStatement. TiDB spells its structured
+// plan FORMAT=tidb_json, unquoted so that what this builds parses again; any
+// other format the caller names gets the engine's default plan, since the rest
+// of TiDB's FORMAT values are shapes nothing downstream reads (the driver
+// capability table refuses them).
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {
 		return "", err
@@ -37,7 +46,33 @@ func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 			return statement, nil
 		}
 	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN FORMAT=" + tidbJSONFormat + " " + planned, nil
+	}
 	return "EXPLAIN " + planned, nil
+}
+
+// DescribeExplain returns the output format of an EXPLAIN statement and whether
+// it executes the statement it plans. It is not an explain at all unless it
+// plans a statement: EXPLAIN tbl_name and DESCRIBE tbl_name parse here too and
+// describe a table's columns, which is a result like any other.
+func DescribeExplain(statement string) (format string, executed bool, ok bool) {
+	node, err := singleStatement(statement)
+	if err != nil {
+		return "", false, false
+	}
+	explain, ok := node.(*omniast.ExplainStmt)
+	if !ok {
+		return "", false, false
+	}
+	if _, plans := explainedStart(explain.Stmt); !plans {
+		return "", false, false
+	}
+	if strings.EqualFold(explain.Format, tidbJSONFormat) {
+		return "json", explain.Analyze, true
+	}
+	// Every other format TiDB prints is a table or a tree of lines.
+	return "text", explain.Analyze, true
 }
 
 // singleStatement returns the one statement in text. An explain request plans one
@@ -60,8 +95,8 @@ func singleStatement(text string) (omniast.Node, error) {
 // explainedText returns the text within text of the statement explain plans, and
 // whether it could be located.
 func explainedText(explain *omniast.ExplainStmt, text string) (string, bool) {
-	// An executable comment moves every location after it, because the lexer
-	// parses the comment's body with its markers spliced out of the text.
+	// The parser reads the body of an executable comment, so a location can fall
+	// inside one and the slice would leave the comment unclosed.
 	if strings.Contains(text, "/*!") || strings.Contains(text, "/*T!") {
 		return "", false
 	}

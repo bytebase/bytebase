@@ -437,6 +437,55 @@ func TestReviewIssueConcurrentApprovalsHaveOneWinner(t *testing.T) {
 	require.Equal(t, 1, rejected)
 }
 
+func TestReviewIssueAppliesAConfirmedActionOnlyToTheConfirmedVersion(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("reviewer@example.com"),
+		Roles:     []string{"roles/projectOwner"},
+	})
+	require.NoError(t, err)
+	confirmedApproval := func(issue *store.IssueMessage) IssueInput {
+		return IssueInput{
+			Workspace:           "default",
+			ProjectID:           "project-a",
+			IssueUID:            issue.UID,
+			Actor:               &store.UserMessage{Email: "reviewer@example.com"},
+			Action:              ActionApprove,
+			ConfirmedUpdateTime: &issue.UpdatedAt,
+		}
+	}
+
+	t.Run("unchanged", func(t *testing.T) {
+		_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+		result, err := NewWorkflow(stores).ReviewIssue(ctx, confirmedApproval(issue))
+		require.NoError(t, err)
+		require.True(t, result.Approved)
+	})
+
+	t.Run("changed after the workflow read it", func(t *testing.T) {
+		_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+		workflow := NewWorkflow(stores)
+		// The edit lands between the workflow's unlocked read and its lock and
+		// leaves the approval as it was, so only the confirmed version refuses.
+		workflow.beforeCommit = func() {
+			title := "drop database"
+			_, err := stores.UpdateIssue(ctx, "project-a", issue.UID, &store.UpdateIssueMessage{Title: &title})
+			require.NoError(t, err)
+		}
+
+		_, err := workflow.ReviewIssue(ctx, confirmedApproval(issue))
+		var workflowErr *Error
+		require.True(t, errors.As(err, &workflowErr))
+		require.Equal(t, ErrorConflict, workflowErr.Code)
+		require.Equal(t, ReasonChangedSinceConfirmed, workflowErr.Reason)
+		after, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
+		require.NoError(t, err)
+		require.Empty(t, after.Payload.GetApproval().GetApprovers(), "a refused action records no approval")
+	})
+}
+
 func TestPlanUpdateMakesPendingApprovalActionStale(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)
@@ -1308,15 +1357,20 @@ func setupWorkflowStoreWithDB(ctx context.Context, t *testing.T) (*sql.DB, *stor
 
 func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stores *store.Store, roles []string) (*store.PlanMessage, *store.IssueMessage) {
 	t.Helper()
+	return createPendingDatabaseChangeApprovalBy(ctx, t, stores, "creator@example.com", roles)
+}
+
+func createPendingDatabaseChangeApprovalBy(ctx context.Context, t *testing.T, stores *store.Store, creator string, roles []string) (*store.PlanMessage, *store.IssueMessage) {
+	t.Helper()
 	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID: "project-a",
 		Name:      "change database",
 		Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
-	}, "creator@example.com")
+	}, creator)
 	require.NoError(t, err)
 	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
 		ProjectID:    "project-a",
-		CreatorEmail: "creator@example.com",
+		CreatorEmail: creator,
 		Title:        "change database",
 		Type:         storepb.Issue_DATABASE_CHANGE,
 		PlanUID:      &plan.UID,
@@ -1383,6 +1437,228 @@ func TestApproverRoleRefusalCarriesItsReason(t *testing.T) {
 	}
 }
 
+func TestFindUnapprovableStep(t *testing.T) {
+	const owner, releaser = "roles/projectOwner", "roles/projectReleaser"
+	grant := func(member, role string) func(context.Context, *testing.T, *store.Store) {
+		return func(ctx context.Context, t *testing.T, stores *store.Store) {
+			_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{role}})
+			require.NoError(t, err)
+		}
+	}
+	// grantInProject binds the role in the project policy only, so the member
+	// gets no workspace binding from it.
+	grantInProject := func(member, role string) func(context.Context, *testing.T, *store.Store) {
+		return func(ctx context.Context, t *testing.T, stores *store.Store) {
+			_, err := stores.PatchIamPolicy(ctx, "default", storepb.Policy_PROJECT, common.FormatProject("project-a"), func(policy *storepb.IamPolicy) error {
+				policy.Bindings = append(policy.Bindings, &storepb.Binding{Role: role, Members: []string{member}})
+				return nil
+			})
+			require.NoError(t, err)
+		}
+	}
+	for _, test := range []struct {
+		name  string
+		flow  []string
+		setup []func(context.Context, *testing.T, *store.Store)
+		// approved counts the steps approved before the check.
+		approved int
+		want     *UnapprovableStep
+	}{
+		{
+			name:  "only the creator holds the role, and self-approval is off",
+			flow:  []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/creator@example.com", owner)},
+			want:  &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "only the creator holds the role, and the project allows self-approval",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+						Workspace: "default", ResourceID: "project-a", Setting: &storepb.Project{AllowSelfApproval: true},
+					}))
+				},
+			},
+		},
+		{
+			name:  "another person holds the role",
+			flow:  []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/creator@example.com", owner), grant("users/reviewer@example.com", owner)},
+		},
+		{
+			name: "another person holds the role through a group",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					_, err := stores.CreateGroup(ctx, &store.GroupMessage{
+						Workspace: "default",
+						Email:     "approvers@example.com",
+						Title:     "Approvers",
+						Payload:   &storepb.GroupPayload{Members: []*storepb.GroupMember{{Member: "users/reviewer@example.com", Role: storepb.GroupMember_MEMBER}}},
+					})
+					require.NoError(t, err)
+				},
+				grant("groups/approvers@example.com", owner),
+			},
+		},
+		{
+			name: "no person holds the role",
+			flow: []string{owner},
+			want: &UnapprovableStep{Position: 1, Role: owner},
+		},
+		{
+			name:  "a later step",
+			flow:  []string{owner, releaser},
+			setup: []func(context.Context, *testing.T, *store.Store){grant("users/reviewer@example.com", owner)},
+			want:  &UnapprovableStep{Position: 2, Role: releaser},
+		},
+		{
+			name:     "an approved step is not checked",
+			flow:     []string{releaser, owner},
+			setup:    []func(context.Context, *testing.T, *store.Store){grant("users/reviewer@example.com", owner)},
+			approved: 1,
+		},
+		{
+			name: "the other holder is deactivated",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grant("users/reviewer@example.com", owner),
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					reviewer, err := stores.GetUserByEmail(ctx, "reviewer@example.com")
+					require.NoError(t, err)
+					_, err = stores.UpdateUser(ctx, reviewer, &store.UpdateUserMessage{Delete: new(true)})
+					require.NoError(t, err)
+				},
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "the other holder is bound under another principal type",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grant(common.FormatServiceAccountEmail("reviewer@example.com"), owner),
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner, CreatorHoldsRole: true},
+		},
+		{
+			name: "the other holder has a project binding and no workspace binding",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				grant("users/creator@example.com", owner),
+				grantInProject("users/reviewer@example.com", owner),
+			},
+		},
+		{
+			name: "only a service account holds the role",
+			flow: []string{owner},
+			setup: []func(context.Context, *testing.T, *store.Store){
+				func(ctx context.Context, t *testing.T, stores *store.Store) {
+					_, err := stores.GetDB().ExecContext(ctx,
+						`INSERT INTO service_account (name, email, workspace, service_key_hash) VALUES ('bot', 'bot@service.bytebase.com', 'default', 'unused')`)
+					require.NoError(t, err)
+					account, err := stores.GetAccountByEmail(ctx, "bot@service.bytebase.com")
+					require.NoError(t, err)
+					require.Equal(t, storepb.PrincipalType_SERVICE_ACCOUNT, account.Type, "the holder must resolve to an account")
+				},
+				grant(common.FormatServiceAccountEmail("bot@service.bytebase.com"), owner),
+			},
+			want: &UnapprovableStep{Position: 1, Role: owner},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			for _, setup := range test.setup {
+				setup(ctx, t, stores)
+			}
+			var approvers []*storepb.IssuePayloadApproval_Approver
+			for range test.approved {
+				approvers = append(approvers, &storepb.IssuePayloadApproval_Approver{
+					Status: storepb.IssuePayloadApproval_Approver_APPROVED, Principal: "users/reviewer2@example.com",
+				})
+			}
+			issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+				ProjectID:    "project-a",
+				CreatorEmail: "creator@example.com",
+				Title:        "access grant request",
+				Type:         storepb.Issue_ACCESS_GRANT,
+				Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+					ApprovalFindingDone: true,
+					ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: test.flow}},
+					Approvers:           approvers,
+				}},
+			})
+			require.NoError(t, err)
+
+			got, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+			require.NoError(t, err)
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+// The check counts a holder only where the approval check would let them
+// approve: a binding names a typed principal, not an email.
+func TestFindUnapprovableStepAgreesWithTheApprovalCheckOnPrincipalType(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for member, role := range map[string]string{
+		"users/creator@example.com":                              "roles/projectOwner",
+		common.FormatServiceAccountEmail("reviewer@example.com"): "roles/projectOwner",
+	} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{role}})
+		require.NoError(t, err)
+	}
+	_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	require.NoError(t, err)
+	require.Equal(t, &UnapprovableStep{Position: 1, Role: "roles/projectOwner", CreatorHoldsRole: true}, step)
+
+	reviewer, err := stores.GetUserByEmail(ctx, "reviewer@example.com")
+	require.NoError(t, err)
+	_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     reviewer,
+		Action:    ActionApprove,
+	})
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ReasonApproverRoleRequired, workflowErr.Reason, "the approval check refuses the same person")
+}
+
+// A holder the lookup cannot resolve leaves the answer unknown, so the check
+// fails instead of reporting that no one else can approve.
+func TestFindUnapprovableStepFailsWhenAHolderCannotBeResolved(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for _, member := range []string{"users/creator@example.com", "users/"} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{Workspace: "default", Member: member, Roles: []string{"roles/projectOwner"}})
+		require.NoError(t, err)
+	}
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        "access grant request",
+		Type:         storepb.Issue_ACCESS_GRANT,
+		Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		}},
+	})
+	require.NoError(t, err)
+
+	step, err := FindUnapprovableStep(ctx, stores, "default", common.FormatIssue("project-a", issue.UID))
+	require.ErrorContains(t, err, `failed to parse email from identifier users/`)
+	require.Nil(t, step)
+}
+
 func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
 	ctx := context.Background()
 	db, stores := setupWorkflowStoreWithDB(ctx, t)
@@ -1411,4 +1687,119 @@ func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
 		"a policy the store cannot read is an outage, not a verdict about the caller")
 	require.Equal(t, ReasonUnspecified, workflowErr.Reason,
 		"an outage must not be marked as a permission denial in the audit log")
+}
+
+const serviceNowApproverRole = "roles/servicenow-approver"
+
+// bindApproverRole grants the role to one policy member, in the project policy
+// or the workspace policy.
+func bindApproverRole(ctx context.Context, t *testing.T, stores *store.Store, inProject bool, member string) {
+	t.Helper()
+	resourceType, resource := storepb.Policy_WORKSPACE, common.FormatWorkspace("default")
+	if inProject {
+		resourceType, resource = storepb.Policy_PROJECT, common.FormatProject("project-a")
+	}
+	_, err := stores.PatchIamPolicy(ctx, "default", resourceType, resource, func(policy *storepb.IamPolicy) error {
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{
+			Role:    serviceNowApproverRole,
+			Members: []string{member},
+		})
+		return nil
+	})
+	require.NoError(t, err)
+}
+
+func TestNonHumanPrincipalApprovesTheStepItsRoleHolds(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		actor     *store.UserMessage
+		inProject bool
+	}{
+		{
+			name:  "workspace service account bound in the workspace policy",
+			actor: &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+		},
+		{
+			name:      "workspace service account bound in the project policy",
+			actor:     &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+			inProject: true,
+		},
+		{
+			name:      "project service account bound in the project policy",
+			actor:     &store.UserMessage{Email: "approver@project-a.service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT},
+			inProject: true,
+		},
+		{
+			name:      "workload identity bound in the project policy",
+			actor:     &store.UserMessage{Email: "deploy@project-a.workload.bytebase.com", Type: storepb.PrincipalType_WORKLOAD_IDENTITY},
+			inProject: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			bindApproverRole(ctx, t, stores, test.inProject, common.FormatPrincipalMember(test.actor.Email, test.actor.Type))
+			_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{serviceNowApproverRole})
+
+			result, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     test.actor,
+				Action:    ActionApprove,
+			})
+			require.NoError(t, err)
+			require.True(t, result.Approved)
+			approvers := result.Issue.Payload.GetApproval().GetApprovers()
+			require.Len(t, approvers, 1)
+			require.True(t, proto.Equal(&storepb.IssuePayloadApproval_Approver{
+				Status:    storepb.IssuePayloadApproval_Approver_APPROVED,
+				Principal: common.FormatUserEmail(test.actor.Email),
+			}, approvers[0]), "the approver is recorded as users/{email} whatever its type, like the issue creator")
+		})
+	}
+}
+
+func TestNonHumanApproverIsRefusedLikeAPerson(t *testing.T) {
+	serviceAccount := &store.UserMessage{Email: "integration@service.bytebase.com", Type: storepb.PrincipalType_SERVICE_ACCOUNT}
+
+	for _, test := range []struct {
+		name       string
+		member     string
+		creator    string
+		wantReason ErrorReason
+	}{
+		{
+			name:       "bound under the users/ prefix, which holds nothing for a service account",
+			member:     common.FormatUserEmail(serviceAccount.Email),
+			creator:    "creator@example.com",
+			wantReason: ReasonApproverRoleRequired,
+		},
+		{
+			name:       "created the issue it would approve",
+			member:     common.FormatPrincipalMember(serviceAccount.Email, serviceAccount.Type),
+			creator:    serviceAccount.Email,
+			wantReason: ReasonUnspecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			bindApproverRole(ctx, t, stores, true, test.member)
+			_, issue := createPendingDatabaseChangeApprovalBy(ctx, t, stores, test.creator, []string{serviceNowApproverRole})
+
+			_, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     serviceAccount,
+				Action:    ActionApprove,
+			})
+
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorPermissionDenied, workflowErr.Code)
+			require.Equal(t, test.wantReason, workflowErr.Reason)
+		})
+	}
 }

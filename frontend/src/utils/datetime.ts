@@ -147,6 +147,46 @@ function formatCompactDateTime(timestampMs: number): string {
   }).format(timestampMs);
 }
 
+function localDayBounds(nowMs: number) {
+  const today = new Date(nowMs);
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  return {
+    yesterdayStart: yesterday.getTime(),
+    todayStart: today.getTime(),
+    tomorrowStart: tomorrow.getTime(),
+  };
+}
+
+function formatCalendarDateTime(timestampMs: number): string {
+  const { yesterdayStart, todayStart, tomorrowStart } = localDayBounds(
+    Date.now()
+  );
+  const day =
+    timestampMs >= todayStart && timestampMs < tomorrowStart
+      ? 0
+      : timestampMs >= yesterdayStart && timestampMs < todayStart
+        ? -1
+        : undefined;
+  if (day === undefined) {
+    return formatCompactDateTime(timestampMs);
+  }
+
+  const locale = getActiveLocale();
+  const label = cachedFormatter(
+    "relative",
+    (language) => new Intl.RelativeTimeFormat(language, { numeric: "auto" })
+  ).format(day, "day");
+  const time = dateTimeFormatter("calendarTime", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(timestampMs);
+  return `${label.charAt(0).toLocaleUpperCase(locale)}${label.slice(1)} ${time}`;
+}
+
 function formatOperationalDateTime(timestampMs: number): string {
   return dateTimeFormatter("operational", {
     month: "short",
@@ -253,6 +293,27 @@ function nextQueueTimeChangeAt(timestampMs: number): number {
 export const queueTimeReading: TimeReading<number, string> = {
   read: formatQueueTime,
   nextChangeAt: nextQueueTimeChangeAt,
+};
+
+/** Local calendar-day labels become absolute after yesterday. */
+export const calendarTimeReading: TimeReading<number, string> = {
+  read: formatCalendarDateTime,
+  nextChangeAt: (timestampMs) => {
+    const nowMs = Date.now();
+    const { yesterdayStart, tomorrowStart } = localDayBounds(nowMs);
+    if (timestampMs < yesterdayStart) {
+      return Number.POSITIVE_INFINITY;
+    }
+    if (timestampMs < tomorrowStart) {
+      return tomorrowStart;
+    }
+    const targetDay = new Date(timestampMs);
+    targetDay.setHours(0, 0, 0, 0);
+    const startMs = targetDay.getTime();
+    return Number.isFinite(startMs) && startMs > nowMs
+      ? startMs
+      : Number.POSITIVE_INFINITY;
+  },
 };
 
 // A rendering that says the same thing however long it is on screen: a reading

@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { Info, Pencil } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import { getMaskingType } from "@/lib/sensitive-data/components-utils";
 import { cn } from "@/lib/utils";
@@ -48,10 +49,12 @@ function getSemanticTypeDescription(
 
 export function SemanticTypeOption({
   className,
+  descriptionAsTooltip = false,
   semanticType,
   showId = false,
 }: {
   className?: string;
+  descriptionAsTooltip?: boolean;
   semanticType: SemanticTypeSetting_SemanticType;
   showId?: boolean;
 }) {
@@ -60,11 +63,37 @@ export function SemanticTypeOption({
 
   return (
     <div className={cn("flex min-w-0 flex-col", className)}>
-      <span className="truncate">{semanticType.title || semanticType.id}</span>
+      {descriptionAsTooltip ? (
+        <div className="flex min-w-0 items-center gap-1">
+          <span className="min-w-0 whitespace-normal wrap-anywhere">
+            {semanticType.title || semanticType.id}
+          </span>
+          {description && (
+            <Tooltip
+              content={description}
+              render={
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  size="xs"
+                  className="shrink-0"
+                  aria-label={t("common.description")}
+                />
+              }
+            >
+              <Info className="size-3.5" />
+            </Tooltip>
+          )}
+        </div>
+      ) : (
+        <span className="truncate">
+          {semanticType.title || semanticType.id}
+        </span>
+      )}
       {showId && semanticType.title && (
         <span className="text-xs text-control">{semanticType.id}</span>
       )}
-      {description && (
+      {description && !descriptionAsTooltip && (
         <span className="whitespace-normal text-xs text-control-light">
           {description}
         </span>
@@ -74,6 +103,8 @@ export function SemanticTypeOption({
 }
 
 export function SemanticTypeSelect({
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
   "aria-label": ariaLabel,
   className,
   disabled = false,
@@ -84,6 +115,8 @@ export function SemanticTypeSelect({
   semanticTypeList,
   value,
 }: {
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean;
   "aria-label"?: string;
   className?: string;
   disabled?: boolean;
@@ -118,7 +151,13 @@ export function SemanticTypeSelect({
         );
       }}
     >
-      <SelectTrigger id={id} aria-label={ariaLabel} className={className}>
+      <SelectTrigger
+        id={id}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
+        aria-label={ariaLabel}
+        className={className}
+      >
         <SelectValue placeholder={selectPlaceholder}>
           {selectedSemanticType?.title || value || selectPlaceholder}
         </SelectValue>

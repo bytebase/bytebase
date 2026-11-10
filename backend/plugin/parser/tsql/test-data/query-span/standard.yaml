@@ -441,7 +441,17 @@
           schema: dbo
           table: MyTable2
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: dbo
+          table: MyTable1
+          column: a
+        - server: ""
+          database: db
+          schema: dbo
+          table: MyTable2
+          column: d
 - description: Table Source List
   statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
   defaultDatabase: db
@@ -775,7 +785,17 @@
           schema: dbo
           table: tt2
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: dbo
+          table: MyTable1
+          column: a
+        - server: ""
+          database: db
+          schema: dbo
+          table: MyTable2
+          column: c
 - description: Test for recursive CTE
   statement: |-
     WITH cte_01 AS (

@@ -3,7 +3,14 @@ import { Loader2, Upload } from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { planServiceClientConnect, sheetServiceClientConnect } from "@/api";
-import { MonacoEditor, ReadonlyMonaco } from "@/components/monaco";
+import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
+  type IStandaloneCodeEditor,
+  MonacoEditor,
+  ReadonlyMonaco,
+} from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -86,6 +93,10 @@ export function IssueDetailStatementSection({
   );
   const [draftStatement, setDraftStatement] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const readonlyEditorRef = useRef<IStandaloneCodeEditor | undefined>(
+    undefined
+  );
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -123,6 +134,10 @@ export function IssueDetailStatementSection({
       setDraftStatement(statement);
     }
   }, [isEditing, statement]);
+
+  useEffect(() => {
+    if (!isEditing) editAnchorRef.current = undefined;
+  }, [isEditing]);
 
   useEffect(() => {
     setEditing(editingScope, isEditing);
@@ -228,6 +243,9 @@ export function IssueDetailStatementSection({
     hasChanges;
 
   const handleBeginEdit = () => {
+    editAnchorRef.current =
+      readonlyEditorRef.current &&
+      captureEditorViewAnchor(readonlyEditorRef.current);
     setDraftStatement(statement);
     setIsEditing(true);
   };
@@ -486,12 +504,20 @@ export function IssueDetailStatementSection({
               content={draftStatement}
               language={language}
               onChange={setDraftStatement}
+              onReady={(_monaco, editor) => {
+                const anchor = editAnchorRef.current;
+                editAnchorRef.current = undefined;
+                if (anchor) focusEditorAtAnchor(editor, anchor);
+              }}
             />
           ) : (
             <ReadonlyMonaco
               className="relative h-auto max-h-[600px] min-h-[120px]"
               content={statement}
               language={language}
+              onReady={(_monaco, editor) => {
+                readonlyEditorRef.current = editor;
+              }}
             />
           )}
         </div>

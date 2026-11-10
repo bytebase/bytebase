@@ -107,9 +107,11 @@ the stream interleaves three kinds of entry:
 | `RETRY_INFO` | inside `driver.Execute`'s retry loop | **yes** — it is the boundary |
 | `DATABASE_SYNC_START` / `_END` | baseline changelog, and after `driver.Execute` | no — runs once |
 | `GHOST_MIGRATION_START` / `_END` | replaces `driver.Execute` | no — never retried |
+| `SCHEMA_DUMP_START` / `_END` | no current caller; older logs only | no — runs once |
 
 `DATABASE_SYNC` appears on both sides of the retried call, so position alone does
-not classify an entry; the type does. Prior backup's own statements run with empty
+not classify an entry; the type does, and every type the table does not mark as
+attempt material is one-time. Prior backup's own statements run with empty
 `ExecuteOptions` and log nothing, so they cannot be mistaken for attempt material.
 
 Retries are also narrower than they look: `LogRetryInfo` has exactly one caller,
@@ -139,6 +141,10 @@ produces a `RETRY_INFO`, and the gh-ost path never calls `driver.Execute` at all
 - **Empty final segment.** A marker written but the retry's entries not yet
   arrived, or the run died there, renders the umbrella with no final-attempt
   sections. The run status chip carries the state.
+- **Complete log.** The derivation reads the log as the driver wrote it. The
+  driver only warns when a log write fails, so a command whose response never
+  landed reads as running wherever it sits, as it did before this change; in the
+  final attempt of a running run, its umbrella then reads retrying.
 - **Durations.** An attempt's duration is its span; the umbrella's duration is the
   sum of its attempts' spans. One-time sections keep their own durations and are
   counted in neither.
@@ -167,15 +173,21 @@ all-green log.
 |---|---|---|
 | An error entry in the final segment | gray, collapsed | that section red, auto-expanded |
 | No error entry in the final segment | gray, collapsed | green, collapsed — reads like a clean run |
-| Scope still streaming | gray, collapsed, marked retrying | running section spins |
+| Scope still streaming, run still running | gray, collapsed, marked retrying | running section spins |
 | A one-time section failed (backup, sync) | unaffected | that section red, auto-expanded, at top level |
 | No `RETRY_INFO` anywhere | absent | unchanged rendering |
 
-Auto-expand applies to error sections outside the superseded attempts — the final
-segment and the one-time sections — which narrows today's behavior only by
-excluding superseded material. The umbrella and the attempts inside it never
-auto-expand; a superseded failed section pre-expands once the user opens its
-attempt.
+Every failed section is open by default, a superseded one included. The umbrella
+and the attempts inside it are closed by default, so superseded material stays
+out of view until the reader opens its attempt and finds the failed section
+already open; today's behavior narrows only by that fold.
+
+The retrying note is the one mark that reads the run status, because it says the
+run is still running, which the log cannot know: a run whose server stopped mid-
+attempt is failed with its last command unanswered, so that section keeps
+spinning as the log left it while the note stays off. On a narrow screen the
+note truncates before the label and duration do; the running section below still
+spins.
 
 ## Transitions
 
@@ -204,8 +216,7 @@ than leave it to be inferred: the history button reads "History (3)" today, whic
 names no level. Renaming it "Previous runs (3)" pairs it with "Previous attempts"
 so the unit word — run against attempt — states which level each one is. That is a
 locale-only change — one key, `task-run.history-with-count`, in five locale files,
-with no test or selector bound to the string — and is not otherwise part of this
-work.
+with no test or selector bound to the string — and is left for a follow-up.
 
 ### What the reader sees change
 
@@ -225,19 +236,22 @@ to error, modeling work that was abandoned. A superseded attempt is complete by
 construction — a retry followed it — so it has no running sections to force, and
 only an abandoned final segment turns red, which is what the truth table already
 says. And each run listed in the history sheet renders through the same viewer, so
-an older run shows its own umbrella derived from its own entries.
+an older run shows its own umbrella derived from its own entries. Expand all and
+Collapse all cover superseded sections like any other; after Collapse all,
+opening an attempt finds its failed section closed, still marked by its red
+glyph.
 
 ### What must survive a poll
 
-Expansion state already survives one. `TaskRunLogViewer` passes
-`datasetKey: taskRunName` into `useTaskRunLogSections`, and `resolvedDatasetKey`
-returns that before it considers the entries, so the reset fires when the viewer
-shows a different task run and not when entries are appended.
+Before this change, expansion state already survived one: `TaskRunLogViewer`
+passed `datasetKey: taskRunName` into `useTaskRunLogSections`, and the hook
+reset only when that key changed, so a different task run cleared expansion and
+an appended entry did not.
 
-Section ids are positional — `section-${index}` — while expansion is a set of
-those ids, so the regrouping a marker causes shifts indices out from under that
-set. What the reader then sees is not their section staying open but an unrelated
-one opening in its place.
+Section ids are positional — `section-${index}` — while expansion is keyed by
+those ids, so the regrouping a marker causes shifts indices out from under it.
+What the reader then sees is not their section staying open but an unrelated one
+opening in its place.
 
 Only that is worth preventing. At the instant a marker lands, the section the
 reader had open is folding into a collapsed umbrella, so whether its expansion
@@ -248,14 +262,31 @@ So the rule is to clear expansion when the set of scopes changes: pass
 `` `${taskRunName}:${markerCount}` `` as the `datasetKey` the viewer already
 supplies. The reset then fires on a marker — rare and meaningful — and never on an
 ordinary append. Nothing is expanded at the transition, so nothing opens by
-itself, and positional ids can stay as they are.
+itself, and positional ids can stay as they are. The reset also forgets what the
+reader had closed by hand: a red section outside the folding scope — an
+abandoned replica's, say — and any folded replica or file group open again on
+their own. That costs one click in a run that retried after a server restart or
+inside a versioned release; remembering the closed ids instead would suppress a
+different section once the indices shift, which is the worse error.
 
-The reset must land in the render that shows the regrouped list. The hook clears
-expansion in a passive effect today, which runs after that list has painted, so
-for one frame the stale set opens the wrong section. The reset moves into render
-instead — clear the sets when the key differs from the one they were built for —
-which removes an effect rather than adding one. A remount key would work too, but
-only the viewer sees the entries, so its parent cannot supply the marker count.
+The reset must land in the render that shows the regrouped list. Before this
+change the hook cleared expansion in a passive effect, which runs after that
+list has painted, so for one frame the stale ids opened the wrong section. The
+reset now runs in render, when the key differs from the one the expansion was
+built for, which removed an effect rather than adding one. Each section's load-
+more state is positional too, and resets by remount: the viewer keys its row
+list on the same key. Remounting the whole viewer from its parent would not do,
+because only the viewer sees the entries, so its parent cannot supply the marker
+count.
+
+Two kinds of state from the [statement unfold](task-run-log-statement-unfold.md)
+design are keyed by identity rather than position, so the reset leaves them
+alone. A reader's statement folds are keyed by the entry and held by the viewer
+against the run alone, so a row unfolded before its attempt was superseded is
+still unfolded when the reader opens that attempt. The failure mark is picked
+once per context, before the scopes are cut, because an attempt on its own has
+lost the marker that supersedes its failure: a superseded attempt never carries
+the mark, and the final attempt's failure does.
 
 The cost is bounded. Retries usually arrive faster than the five-second poll, so
 several land in one step and the intermediate state is never rendered; a reader
@@ -284,20 +315,21 @@ rule above.
 
 ## Implementation outline
 
-Implementation follows in a separate PR.
+Implemented in a separate PR.
 
 - `model.ts`: classify each entry as attempt material or one-time per the
-  inventory above, cut scopes and attempts from that classification, and add an
-  attempt-group type whose row status is superseded regardless of the errors it
-  contains, with the entries themselves untouched.
-- `useTaskRunLogSections.ts`: a third grouping layer alongside the replica and
-  release-file layers, and auto-expand restricted to error sections outside the
-  superseded attempts. Also the marker count folded into the `datasetKey` the
-  viewer passes, with the reset moved from its passive effect into render, so
-  expansion clears in the same render as the regrouping and no section opens on
-  its own.
-- `TaskRunLogViewer.tsx` and `SectionHeader.tsx`: the umbrella and nested-attempt
-  rows, plus locale keys for the labels.
+  inventory above, cut scopes and attempts from that classification, and pick
+  the failure mark over the whole context before cutting.
+- `types.ts`: an attempt-group row that carries no status of its own, beside the
+  section row; the entries inside keep their original marks.
+- `useTaskRunLogSections.ts`: every grouping builds its rows through the model,
+  so each replica and release-file group derives its own umbrellas; failed
+  sections open by default while the umbrella and attempt rows stay closed. Also
+  the marker count folded into the `datasetKey` the viewer passes, with the
+  reset moved from its passive effect into render, so expansion clears in the
+  same render as the regrouping and no section opens on its own.
+- `LogRows.tsx`, beside the viewer: the umbrella and nested-attempt rows on the
+  shared `Collapsible`, plus locale keys for the labels.
 - Tests mirror the truth table and the cutting cases: no marker, one marker,
   several markers, a marker inside a release-file group, several release-file
   groups retrying different numbers of times, replica-grouped entries, an empty

@@ -12,19 +12,19 @@ import (
 // ValidatePassword validates a password against the workspace password restrictions.
 func ValidatePassword(password string, restriction *storepb.WorkspaceProfileSetting_PasswordRestriction) error {
 	if len(password) < int(restriction.GetMinLength()) {
-		return errors.Errorf("password length should no less than %v characters", restriction.GetMinLength())
+		return errors.Errorf("password must be at least %v characters long", restriction.GetMinLength())
 	}
 	if restriction.GetRequireNumber() && !regexp.MustCompile("[0-9]+").MatchString(password) {
-		return errors.Errorf("password must contains at least 1 number")
+		return errors.Errorf("password must contain at least one number")
 	}
 	if restriction.GetRequireLetter() && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
-		return errors.Errorf("password must contains at least 1 lower case letter")
+		return errors.Errorf("password must contain at least one letter")
 	}
 	if restriction.GetRequireUppercaseLetter() && !regexp.MustCompile("[A-Z]+").MatchString(password) {
-		return errors.Errorf("password must contains at least 1 upper case letter")
+		return errors.Errorf("password must contain at least one uppercase letter")
 	}
 	if restriction.GetRequireSpecialCharacter() && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
-		return errors.Errorf("password must contains at least 1 special character")
+		return errors.Errorf("password must contain at least one special character")
 	}
 	return nil
 }

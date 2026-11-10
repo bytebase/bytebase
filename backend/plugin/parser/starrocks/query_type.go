@@ -49,8 +49,8 @@ func getQueryType(statement string, allSystems bool) base.QueryType {
 // node. On parse failure or empty input it falls back to the keyword-based
 // Classify.
 func classifyByAST(statement string) analysis.QueryType {
-	file, errs := parser.Parse(statement)
-	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+	file, err := parser.Parse(statement)
+	if err != nil || file == nil || len(file.Stmts) == 0 {
 		return analysis.Classify(statement)
 	}
 	if qt, ok := astQueryType(file.Stmts[0]); ok {

@@ -81,6 +81,7 @@ import { useProjectByName } from "@/hooks/useProjectByName";
 import { useSessionPageSize } from "@/hooks/useSessionPageSize";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
 import {
+  expandSpecTargets,
   planCheckRunListForSpec,
   transformReleaseCheckResultsToPlanCheckRuns,
 } from "@/lib/plan/check";
@@ -115,11 +116,13 @@ import {
   getInstanceResource,
   hasProjectPermissionV2,
 } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanChangeReferenceData } from "../hooks/usePlanChangeReferenceData";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { derivePlanChangeReference } from "../utils/changeReference";
 import {
@@ -207,7 +210,8 @@ export function PlanDetailChangesBranch({
   const currentUser = useCurrentUser();
   const unresolvedThreadsBySpec = usePlacedUnresolvedThreadCounts(
     page.issue?.name,
-    page.plan.specs
+    page.plan.specs,
+    `projects/${page.projectId}`
   );
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
@@ -259,6 +263,12 @@ export function PlanDetailChangesBranch({
     }
     return getSelectedSpec({ selectedSpecId, specs });
   }, [pendingNewSpec, isPendingSelected, selectedSpecId, specs]);
+  const setDisplayedSpecId = usePlanDetailStore((s) => s.setDisplayedSpecId);
+  const displayedSpecId = selectedSpec?.id;
+  useEffect(() => {
+    setDisplayedSpecId(displayedSpecId);
+    return () => setDisplayedSpecId(undefined);
+  }, [displayedSpecId, setDisplayedSpecId]);
   const canModifySpecs = useMemo(() => {
     if (page.plan.state === State.DELETED) return false;
     if (page.readonly) return false;
@@ -560,6 +570,25 @@ export function PlanDetailChangesBranch({
     () => transformReleaseCheckResultsToPlanCheckRuns(draftCheckResults ?? []),
     [draftCheckResults]
   );
+  // Check results name the databases a group matches, never the group.
+  const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
+  const specCheckRuns = useMemo(
+    () =>
+      selectedSpec
+        ? planCheckRunListForSpec(
+            page.planCheckRuns,
+            selectedSpec,
+            expandSpecTargets(selectedSpec, (target) =>
+              isValidDatabaseGroupName(target)
+                ? dbGroupsByName[target]?.matchedDatabases.map(
+                    (database) => database.name
+                  )
+                : undefined
+            )
+          )
+        : [],
+    [dbGroupsByName, page.planCheckRuns, selectedSpec]
+  );
 
   if (!selectedSpec) {
     return (
@@ -686,11 +715,7 @@ export function PlanDetailChangesBranch({
             selectedSpec={selectedSpec}
           />
           <PlanDetailStatementSection
-            planCheckRuns={
-              page.isCreating
-                ? draftCheckRuns
-                : planCheckRunListForSpec(page.planCheckRuns, selectedSpec)
-            }
+            planCheckRuns={page.isCreating ? draftCheckRuns : specCheckRuns}
             spec={selectedSpec}
             statementVersion={statementVersionBySpecId[selectedSpec.id] ?? 0}
           />
@@ -714,7 +739,10 @@ export function PlanDetailChangesBranch({
         </div>
       </div>
 
-      {!page.isCreating && !specHasRelease && <PlanDetailAggregateChecks />}
+      {/* Under SQL Review V2 the checks are reviewers in the Review section. */}
+      {!page.isCreating && !specHasRelease && !sqlReviewV2Enabled() && (
+        <PlanDetailAggregateChecks />
+      )}
 
       <TargetSelectorSheet
         currentTargets={currentTargets}

@@ -312,7 +312,7 @@ export function OAuth2ConsentPage() {
     }
     return (
       <div className="flex flex-col gap-6">
-        <div className="text-center">
+        <div className="text-center text-balance">
           <h1 className="text-xl font-semibold text-main mb-2">
             {t("oauth2.consent.title")}
           </h1>
@@ -362,13 +362,17 @@ export function OAuth2ConsentPage() {
   };
 
   return (
-    // SplashLayout's root is overflow-hidden, so this column carries its own
-    // scroll: the ceiling panel and its caution make the card taller than a
-    // short viewport, and the part that clips is Allow and Deny. The auto
-    // margins keep it centred while it still fits.
-    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-5xl px-4 py-8 md:w-3/5 lg:w-1/2 lg:px-0">
-      <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
-      <div className="rounded-sm border border-control-border bg-background p-6 mb-auto shrink-0">
+    // An interstitial centered on the whole viewport: the card keeps one width
+    // wherever it fits and narrows only on narrower screens. It stays outside
+    // SplashLayout, whose column reserves `pb-24` for an AuthFooter this page
+    // does not render and widens the gutter to 24px from sm, while the e2e
+    // spec pins a 16px gutter at every width.
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-8">
+      <BytebaseLogo />
+      <div
+        data-testid="oauth2-consent-card"
+        className="w-full max-w-2xl rounded-sm border border-control-border bg-background p-6"
+      >
         {consentBody()}
       </div>
     </div>

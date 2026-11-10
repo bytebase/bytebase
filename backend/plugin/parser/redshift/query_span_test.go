@@ -236,6 +236,18 @@ func TestRedshiftQuerySpanUsesOmniPath(t *testing.T) {
 	}, span.Results)
 }
 
+func TestRedshiftQuerySpanUnsyncedDatabase(t *testing.T) {
+	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+			return []string{"db"}, nil
+		},
+	}, base.Statement{Text: "SELECT id FROM orders"}, "db", "", false)
+	require.ErrorContains(t, err, `database metadata for database "db" not found (database not synced)`)
+}
+
 func TestRedshiftOmniQuerySpanDefaultSearchPath(t *testing.T) {
 	span, err := newOmniQuerySpanExtractor("db", nil, redshiftOmniQuerySpanContext(t)).getOmniQuerySpan(context.Background(), "SELECT id FROM orders")
 	require.NoError(t, err)

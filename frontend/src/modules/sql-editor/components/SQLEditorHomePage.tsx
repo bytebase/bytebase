@@ -38,6 +38,7 @@ import {
   useCurrentSQLEditorTab,
   useIsDisconnected,
 } from "@/modules/sql-editor/store/tab";
+import { GuideContextProvider } from "@/modules/workspace-setup-guide/GuideContextProvider";
 import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 import { useAppStore } from "@/stores/app";
 import { unknownProject } from "@/types";
@@ -271,7 +272,9 @@ export function SQLEditorHomePage() {
         </Panel>
       </PanelGroup>
 
-      <WorkspaceSetupGuide />
+      <GuideContextProvider>
+        <WorkspaceSetupGuide />
+      </GuideContextProvider>
       {projectContextReady && project && <IAMRemindDialog project={project} />}
 
       <ConnectionPanel />

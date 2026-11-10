@@ -330,9 +330,10 @@ func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckR
 		a.Equal(expectedTarget, got[i].Target, message)
 		// Verify type is STATEMENT_ADVISE (we filter for this type)
 		a.Equal(v1pb.PlanCheckRun_Result_STATEMENT_ADVISE, got[i].Type, message)
-		// Compare other fields, ignoring target and type since we checked them above
+		a.NotEmpty(got[i].SheetSha256, message)
+		// Compare other fields, ignoring those checked above
 		diff := cmp.Diff(want[i], got[i], protocmp.Transform(),
-			protocmp.IgnoreFields(&v1pb.PlanCheckRun_Result{}, "target", "type"))
+			protocmp.IgnoreFields(&v1pb.PlanCheckRun_Result{}, "target", "type", "sheet_sha256"))
 		a.Empty(diff, message)
 	}
 }

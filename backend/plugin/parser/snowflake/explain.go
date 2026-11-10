@@ -13,11 +13,10 @@ func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_SNOWFLAKE, explainStatement)
 }
 
-// explainStatement implements base.ExplainStatement. Snowflake returns one plan
-// format here whatever the caller asked for: its EXPLAIN USING JSON is a plan of
-// its own shape that nothing downstream reads (the driver capability table offers
-// this engine the default plan only).
-func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
+// explainStatement implements base.ExplainStatement. Snowflake spells its
+// structured plan EXPLAIN USING JSON; any other format the caller names gets
+// the tabular plan, which is the table Snowflake has always returned here.
+func explainStatement(statement string, format base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {
 		return "", err
@@ -32,7 +31,29 @@ func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 			return statement, nil
 		}
 	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN USING JSON " + planned, nil
+	}
 	return "EXPLAIN " + planned, nil
+}
+
+// DescribeExplain returns the output format of an EXPLAIN statement and whether
+// it executes the statement it plans. Snowflake's EXPLAIN compiles a statement
+// without running it, whichever format it names, so nothing here executes.
+func DescribeExplain(statement string) (format string, executed bool, ok bool) {
+	node, err := singleStatement(statement)
+	if err != nil {
+		return "", false, false
+	}
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok {
+		return "", false, false
+	}
+	if explain.Format == ast.ExplainJSON {
+		return "json", false, true
+	}
+	// The tabular and text formats are both tables of operations.
+	return "text", false, true
 }
 
 // singleStatement returns the one statement in text. An explain request plans one

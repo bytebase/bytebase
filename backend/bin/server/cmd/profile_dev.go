@@ -10,5 +10,6 @@ import (
 func activeProfile(dataDir string) *config.Profile {
 	p := getBaseProfile(dataDir)
 	p.Mode = common.ReleaseModeDev
+	p.SQLReviewV2 = true
 	return p
 }

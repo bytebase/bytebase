@@ -175,9 +175,12 @@ type ReviewRunPayload struct {
 	// Fatal execution error for the FAILED status, e.g. "metadata not synced:
 	// instances/prod/databases/db1, db2, db3 (+497 more)". Written by the
 	// executor or by the reaper.
-	Error         string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
+	// The plan's PlanConfig.approval_input_version when the slot was reset: the
+	// version of the plan's SQL this run reviews. Completion keeps it.
+	ApprovalInputVersion int64 `protobuf:"varint,2,opt,name=approval_input_version,json=approvalInputVersion,proto3" json:"approval_input_version,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ReviewRunPayload) Reset() {
@@ -217,6 +220,13 @@ func (x *ReviewRunPayload) GetError() string {
 	return ""
 }
 
+func (x *ReviewRunPayload) GetApprovalInputVersion() int64 {
+	if x != nil {
+		return x.ApprovalInputVersion
+	}
+	return 0
+}
+
 var File_store_review_run_proto protoreflect.FileDescriptor
 
 const file_store_review_run_proto_rawDesc = "" +
@@ -233,9 +243,10 @@ const file_store_review_run_proto_rawDesc = "" +
 	"\aRUNNING\x10\x02\x12\b\n" +
 	"\x04DONE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04\"(\n" +
+	"\x06FAILED\x10\x04\"^\n" +
 	"\x10ReviewRunPayload\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05errorB\x91\x01\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\x124\n" +
+	"\x16approval_input_version\x18\x02 \x01(\x03R\x14approvalInputVersionB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eReviewRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

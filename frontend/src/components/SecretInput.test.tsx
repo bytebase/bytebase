@@ -1,6 +1,10 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import {
+  lazyExtractDomRefSuggestions,
+  lazyExtractDomTree,
+} from "@/modules/agent/dom";
 import { SecretInput, SecretInputProvider, useHasInvalidSecretInputs } from "./SecretInput";
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 afterEach(cleanup);
@@ -8,9 +12,33 @@ function Actions() {
   const invalid = useHasInvalidSecretInputs();
   return <button disabled={invalid}>Update</button>;
 }
-function Harness({ allowEmpty = true, multiline = false }: { allowEmpty?: boolean; multiline?: boolean }) {
+function Harness({
+  allowEmpty = true,
+  multiline = false,
+  showValue = true,
+}: {
+  allowEmpty?: boolean;
+  multiline?: boolean;
+  showValue?: boolean;
+}) {
   const [value, setValue] = useState<string>();
-  return <SecretInputProvider><SecretInput aria-label="Credential" value={value} onValueChange={setValue} allowEmpty={allowEmpty} multiline={multiline} /><Actions /><output data-testid="value">{value === undefined ? "unchanged" : JSON.stringify(value)}</output></SecretInputProvider>;
+  return (
+    <SecretInputProvider>
+      <SecretInput
+        aria-label="Credential"
+        value={value}
+        onValueChange={setValue}
+        allowEmpty={allowEmpty}
+        multiline={multiline}
+      />
+      <Actions />
+      {showValue && (
+        <output data-testid="value">
+          {value === undefined ? "unchanged" : JSON.stringify(value)}
+        </output>
+      )}
+    </SecretInputProvider>
+  );
 }
 const input = () => screen.getByLabelText("Credential") as HTMLInputElement;
 const type = (value: string) => fireEvent.change(input(), { target: { value } });
@@ -61,6 +89,24 @@ describe("SecretInput", () => {
     expect(input().type).toBe("text");
     expect(input().value).toBe("replacement");
     expect(submit).not.toHaveBeenCalled();
+  });
+  test("keeps revealed secrets out of Agent DOM snapshots", async () => {
+    render(<Harness showValue={false} />);
+    type("example-secret");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "common.toggle-password-visibility",
+      })
+    );
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(input().type).toBe("text");
+    expect(tree).not.toContain("example-secret");
+    expect(suggestions.some(({ label }) => label === "Credential")).toBe(
+      false
+    );
   });
   test("form reset restores the stored mask and resets reveal state", () => {
     const field = (value: string | undefined, key: number) => <SecretInputProvider resetKey={key}><SecretInput aria-label="Credential" value={value} onValueChange={vi.fn()} /><Actions /></SecretInputProvider>;

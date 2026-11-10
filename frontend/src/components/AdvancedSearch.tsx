@@ -41,7 +41,7 @@ export interface ScopeOption {
   options?: ValueOption[];
   allowMultiple?: boolean;
   /** Server-side search callback. When provided, options are fetched dynamically instead of filtered client-side. */
-  onSearch?: (keyword: string) => Promise<ValueOption[]>;
+  onSearch?: (keyword: string, signal?: AbortSignal) => Promise<ValueOption[]>;
 }
 
 export function emptySearchParams(): SearchParams {
@@ -291,32 +291,47 @@ export function AdvancedSearch({
     }
 
     const requestID = asyncRequestRef.current;
+    const controller = new AbortController();
     setAsyncLoading(true);
     asyncSearchRef.current = setTimeout(() => {
       const fn = onSearchRef.current;
       if (!fn) {
-        if (asyncRequestRef.current !== requestID) return;
+        if (controller.signal.aborted || asyncRequestRef.current !== requestID)
+          return;
         setAsyncOptions([]);
         setAsyncLoading(false);
         return;
       }
-      fn(currentValueForScope)
+      fn(currentValueForScope, controller.signal)
         .then((results) => {
-          if (asyncRequestRef.current !== requestID) return;
+          if (
+            controller.signal.aborted ||
+            asyncRequestRef.current !== requestID
+          )
+            return;
           setAsyncOptions(results);
           setMenuIndex(0);
         })
         .catch(() => {
-          if (asyncRequestRef.current !== requestID) return;
+          if (
+            controller.signal.aborted ||
+            asyncRequestRef.current !== requestID
+          )
+            return;
           setAsyncOptions([]);
         })
         .finally(() => {
-          if (asyncRequestRef.current !== requestID) return;
+          if (
+            controller.signal.aborted ||
+            asyncRequestRef.current !== requestID
+          )
+            return;
           setAsyncLoading(false);
         });
     }, DEBOUNCE_SEARCH_DELAY);
     return () => {
       clearTimeout(asyncSearchRef.current);
+      controller.abort();
     };
   }, [currentScope, currentValueForScope]);
 

@@ -1,10 +1,15 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
-import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  INSTANCE_ROUTE_DETAIL,
+  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+} from "@/app/router/handles";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 
 const mocks = vi.hoisted(() => ({
   getOrFetchDatabaseByName: vi.fn(),
+  getOrFetchInstanceByName: vi.fn(),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -14,6 +19,7 @@ vi.mock("@/stores/app", () => ({
       loadCurrentUser: vi.fn(async () => undefined),
       getProjectByName: vi.fn(() => undefined),
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      getOrFetchInstanceByName: mocks.getOrFetchInstanceByName,
       fetchIssueByName: vi.fn(async () => undefined),
     }),
   },
@@ -38,6 +44,7 @@ const unknownDatabase = {
 describe("extractRouteContext", () => {
   beforeEach(() => {
     mocks.getOrFetchDatabaseByName.mockReset();
+    mocks.getOrFetchInstanceByName.mockReset();
   });
 
   test("resolves a workspace instance database", async () => {
@@ -93,5 +100,47 @@ describe("extractRouteContext", () => {
 
     expect(mocks.getOrFetchDatabaseByName).toHaveBeenCalledTimes(2);
     expect(context.database).toBeUndefined();
+  });
+
+  test.each([
+    {
+      route: {
+        name: INSTANCE_ROUTE_DETAIL,
+        params: { instanceId: "primary" },
+      },
+      name: "instances/primary",
+    },
+    {
+      route: {
+        name: PROJECT_V1_ROUTE_INSTANCE_DETAIL,
+        params: { projectId: "project1", instanceId: "primary" },
+      },
+      name: "projects/project1/instances/primary",
+    },
+  ])("adds a safe instance summary for $name", async ({ route, name }) => {
+    mocks.getOrFetchInstanceByName.mockResolvedValue({
+      name,
+      title: "Primary database",
+      engine: Engine.POSTGRES,
+      engineVersion: "16",
+      state: State.ACTIVE,
+      environment: "environments/prod",
+      dataSources: [{ host: "private.example.com", password: "secret" }],
+    });
+
+    const context = await extractRouteContext({
+      ...route,
+      query: {},
+    } as unknown as ReactRoute);
+
+    expect(mocks.getOrFetchInstanceByName).toHaveBeenCalledWith(name, true);
+    expect(context.instance).toEqual({
+      name,
+      title: "Primary database",
+      engine: "POSTGRES",
+      engineVersion: "16",
+      state: "ACTIVE",
+      environment: "environments/prod",
+    });
   });
 });

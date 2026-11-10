@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { AdvancedSearch, emptySearchParams } from "./AdvancedSearch";
 
@@ -22,6 +22,38 @@ globalThis.ResizeObserver =
   ResizeObserverMock as unknown as typeof ResizeObserver;
 
 describe("AdvancedSearch", () => {
+  test("cancels obsolete scope searches and aborts on unmount", async () => {
+    vi.useFakeTimers();
+    const signals: AbortSignal[] = [];
+    const onSearch = vi.fn(async (_keyword: string, signal?: AbortSignal) => {
+      signals.push(signal!);
+      return [];
+    });
+    try {
+      const view = render(
+        <AdvancedSearch
+          params={emptySearchParams()}
+          scopeOptions={[{ id: "project", title: "project", onSearch }]}
+          onParamsChange={vi.fn()}
+        />
+      );
+      fireEvent.click(screen.getByRole("textbox"));
+      fireEvent.click(screen.getByText("project"));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(signals).toHaveLength(1);
+      fireEvent.change(screen.getByRole("textbox"), {
+        target: { value: "project:new" },
+      });
+      expect(signals[0].aborted).toBe(true);
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(signals).toHaveLength(2);
+      view.unmount();
+      expect(signals[1].aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("renders a default placeholder when none is provided", () => {
     render(
       <AdvancedSearch

@@ -121,10 +121,8 @@ message IamPolicy {
 message QueryDataPolicy {
   reserved 6;
   reserved 1, 3;
-
-  // workspace-level policy
-  // Disable exporting data in the SQL editor.
-  bool disable_export = 2;
+  reserved 2;
+  reserved "disable_export";
 
   // Support both project-level and workspace-level.
   // The maximum number of rows to return in the SQL editor.
@@ -138,6 +136,12 @@ message QueryDataPolicy {
   // workspace-level policy
   // Allow using the admin data source to query in the SQL editor.
   bool allow_admin_data_source = 9;
+
+  // workspace-level policy
+  // Hide the Download export destination in the SQL Editor. Exports can still go
+  // to a configured storage destination such as SharePoint. The Export API does
+  // not check this setting.
+  bool disable_download = 10;
 
   // ================
   // Deprecate following fields.

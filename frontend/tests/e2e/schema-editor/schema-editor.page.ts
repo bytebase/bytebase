@@ -255,10 +255,9 @@ export class SchemaEditorPage {
   // Reads the Preview pane's readonly Monaco. Content extraction (not a control
   // assertion), so reading the editor's text is acceptable. Line numbers are
   // included but harmless for substring assertions.
+  // The preview's complete DDL; see monacoText for why not `.view-lines`.
   async previewText(): Promise<string> {
-    const preview = this.sheet.locator(".monaco-editor .view-lines").last();
-    await expect(preview).toBeVisible({ timeout: 10_000 });
-    return (await preview.innerText()).replace(/ /g, " ");
+    return this.monacoText(this.sheet.locator(".monaco-editor").last());
   }
 
   // ---- Insert / statement ----
@@ -267,11 +266,17 @@ export class SchemaEditorPage {
     await expect(this.sheet).toBeHidden({ timeout: 15_000 });
   }
 
-  // Reads the plan's statement Monaco editor — the COMPLETE text, not the
-  // rendered viewport. That editor VIRTUALIZES: only the lines in view exist in
-  // the DOM, so a `.view-lines` read silently truncates a multi-statement DDL
-  // (this is why a created-table PK, emitted as a trailing separate
-  // `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`, appeared "missing").
+  // The plan's statement editor's complete text.
+  async planStatementText(): Promise<string> {
+    return this.monacoText(this.page.locator(".monaco-editor").first());
+  }
+
+  // Reads a Monaco editor's COMPLETE text, not the rendered viewport. Monaco
+  // VIRTUALIZES: only the lines in view exist in the DOM, so a `.view-lines`
+  // read silently truncates a multi-statement DDL, or a long line wrapped past
+  // the bottom edge (a created-table PK, emitted as a trailing separate
+  // `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`, has appeared "missing"
+  // both ways).
   // `window.monaco` is not exposed on the production bundle, so the model is
   // read the way a user copies it: select all, then copy. Monaco's own copy
   // handler writes the full selection into the copy event's clipboardData, and
@@ -280,8 +285,7 @@ export class SchemaEditorPage {
   // does not share between a native copy and navigator.clipboard anyway. Each
   // step waits on its observable effect; the selection is collapsed afterwards
   // so the editor is left as it was found.
-  async planStatementText(): Promise<string> {
-    const editor = this.page.locator(".monaco-editor").first();
+  private async monacoText(editor: Locator): Promise<string> {
     await expect(editor.locator(".view-lines")).toBeVisible({ timeout: 10_000 });
     await this.page.evaluate(() => {
       const w = window as unknown as {

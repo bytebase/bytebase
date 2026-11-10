@@ -4,6 +4,18 @@ Bytebase is a governed database development workspace. It turns proposed databas
 
 ## Language
 
+**Export Destination**:
+Where an export goes: Download to the caller's machine, or a configured storage location such as the Project Export Destination. The SQL Editor offers Download unless the workspace query data policy disables it; the Export API does not check that setting. Configuring a storage location approves exports to it; the Export Permission decides who may export, and an export access grant never adds a destination.
+_Avoid_: Export delivery, export target, download location
+
+**Project Export Destination**:
+The single configured storage location for a project's exports, which receives them directly from Bytebase. Its readers and retention are governed by the customer's storage administrators, independently of who initiates an export.
+_Avoid_: User export folder
+
+**Download**:
+The Export Destination that returns an exported file from Bytebase to the caller's machine. It is distinct from viewing query results in SQL Editor or opening a file already sent to a Project Export Destination.
+_Avoid_: Local export, local export download, query access
+
 **Workspace**:
 The top-level collaboration boundary that contains projects, database connections, environments, users, and policies.
 _Avoid_: Project, organization
@@ -87,3 +99,11 @@ _Avoid_: Work queue, activity feed
 **Composite Type**:
 A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.
 _Avoid_: UDT, user-defined type, custom type, object type
+
+**Export Permission**:
+The permission to export query results from specific databases, schemas, or tables. It decides who may export, and on its own it lets the holder read the data it covers through export.
+_Avoid_: Exporter role, export right, export approval
+
+**Access Grant**:
+An approved, time-limited permission for one user to run one specific query on its target databases. A grant that includes export satisfies the Export Permission for that query.
+_Avoid_: JIT access, temporary role, export ticket

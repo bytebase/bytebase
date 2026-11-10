@@ -6,20 +6,27 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/ai"
 )
 
 const (
 	defaultMaxModelCalls = 20
 	defaultTimeout       = 10 * time.Minute
-	// maxInvalidReplies is how many times the model is asked to correct a
-	// final reply before the review fails.
+	// maxInvalidReplies is how many times the model is asked to try again, after
+	// an invalid final reply or a tool call the vendor could not parse, before
+	// the review fails.
 	maxInvalidReplies = 1
+	// malformedToolCallMessage answers a turn that held a tool call the vendor
+	// could not parse. That turn is not in the history, so the message has to
+	// say what happened.
+	malformedToolCallMessage = "Your last turn held a tool call that could not be parsed, so no tool ran. Call the tool again, or reply with only the JSON object from the answer format."
 )
 
 var (
@@ -27,17 +34,31 @@ var (
 	ErrCallLimit = errors.New("the review reached the model call limit")
 	// ErrDeadline means the review ran longer than its time limit.
 	ErrDeadline = errors.New("the review ran out of time")
-	// ErrInvalidReply means the final reply was still invalid after the model was asked to correct it.
+	// ErrInvalidReply means an invalid final reply, or a tool call the vendor could not parse, came when no correction round or call was left.
 	ErrInvalidReply = errors.New("the model did not return a valid review result")
 	// ErrEmptyReply means the vendor returned neither text nor tool calls.
 	ErrEmptyReply = errors.New("the model returned an empty reply")
+	// ErrTruncatedReply means the reply was truncated at a token limit, so findings may be missing.
+	ErrTruncatedReply = errors.New("the model's reply was truncated at a token limit")
+	// ErrBlockedReply means the vendor blocked the request or the reply, or the model refused to review.
+	ErrBlockedReply = errors.New("the vendor blocked the review or the model refused it")
+	// ErrUnfinishedReply means the stop reason was OTHER, such as Gemini's OTHER, or a value the loop does not know.
+	ErrUnfinishedReply = errors.New("the vendor ended the turn for a reason the review does not accept")
 )
 
 // Request is one review: one sheet against one target database.
 type Request struct {
 	WorkspacePolicy string
 	ProjectPolicy   string
-	Target          Target
+	// StandardRules is the standard review's rules that are on for the
+	// project. The prompt leaves the others unchecked unless the policy names
+	// them.
+	StandardRules []StandardRule
+	// StandardReviewRuns is true when the standard review runs on the
+	// target's engine. The prompt says so, since a rule it does not evaluate
+	// there is the model's either way.
+	StandardReviewRuns bool
+	Target             Target
 	// Statement is the sheet text. Finding lines refer to its lines.
 	Statement string
 }
@@ -55,19 +76,28 @@ type Result struct {
 	TotalTokens int
 }
 
-// Reviewer runs reviews against one model.
+// Reviewer runs reviews, merges their findings, and summarizes the merged
+// problems, against one model.
 type Reviewer struct {
-	model         Model
-	maxModelCalls int
-	timeout       time.Duration
+	model              Model
+	maxModelCalls      int
+	timeout            time.Duration
+	mergePromptBytes   int
+	summaryPromptBytes int
+	// databaseIDs returns the ids that stand for the databases of a summary.
+	// Tests replace it so that a scripted reply can name them.
+	databaseIDs func(count int, text string) []string
 }
 
 // NewReviewer creates a Reviewer.
 func NewReviewer(model Model) *Reviewer {
 	return &Reviewer{
-		model:         model,
-		maxModelCalls: defaultMaxModelCalls,
-		timeout:       defaultTimeout,
+		model:              model,
+		maxModelCalls:      defaultMaxModelCalls,
+		timeout:            defaultTimeout,
+		mergePromptBytes:   defaultMergePromptBytes,
+		summaryPromptBytes: defaultSummaryPromptBytes,
+		databaseIDs:        newDatabaseIDs,
 	}
 }
 
@@ -91,7 +121,8 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 	}
 
 	numberedStatement, lineCount := numberLines(request.Statement)
-	messages := buildMessages(request, numberedStatement, rand.Text())
+	nonce := rand.Text()
+	messages := buildMessages(request, numberedStatement, nonce, len(definitions) > 0)
 	result := &Result{}
 	invalidReplies := 0
 
@@ -105,15 +136,50 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			if ctxErr := r.contextError(parent, ctx, result.Calls); ctxErr != nil {
 				return nil, ctxErr
 			}
+			// Some deployments refuse tool definitions, such as an Azure GPT-5.6
+			// deployment on chat completions. The review then runs without
+			// tools. Any other refusal, a content filter above all, fails the
+			// review, so a blocked review cannot pass on a second try.
+			if result.Calls == 1 && len(definitions) > 0 && refusesTools(err) {
+				slog.Warn("AI review model refused the request with tools, reviewing without them", slog.String("error", err.Error()))
+				definitions, toolNames = nil, nil
+				messages = buildMessages(request, numberedStatement, nonce, false)
+				continue
+			}
 			return nil, errors.Wrapf(err, "model call %d failed", result.Calls)
 		}
 		result.TotalTokens += int(response.GetUsage().GetTotalTokens())
 
 		content := response.GetContent()
 		toolCalls := response.GetToolCalls()
-		// An empty reply is a safety block, a refusal, or a garbled tool call.
-		// ai.Chat carries no stop reason yet, so the loop cannot tell them apart,
-		// and asking again could let a blocked review pass on the second try.
+		// A truncated reply can parse as a whole answer with findings or tool
+		// arguments missing, a blocked change was never judged, and OTHER can be
+		// a block the vendor does not name. None of the three gets a correction
+		// round, which could pass a change the model did not finish judging.
+		switch response.GetStopReason() {
+		case v1pb.AIChatResponse_TURN_COMPLETED, v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED:
+			// A vendor that sends no reason, such as a compatible server without finish_reason, is judged by its reply.
+		case v1pb.AIChatResponse_TOKEN_LIMIT:
+			return nil, ErrTruncatedReply
+		case v1pb.AIChatResponse_BLOCKED:
+			return nil, ErrBlockedReply
+		case v1pb.AIChatResponse_MALFORMED_TOOL_CALL:
+			// The model meant to call a tool, so the turn is not final whatever
+			// text or tool calls came with it. None of it runs or enters the
+			// history. The turn takes a correction round from the budget of an
+			// invalid reply, and fails the review when no round or call is left.
+			if invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls {
+				return nil, errors.Wrap(ErrInvalidReply, "the vendor could not parse the model's tool call")
+			}
+			invalidReplies++
+			messages = append(messages, textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, malformedToolCallMessage))
+			continue
+		default:
+			// OTHER lands here, and so does any value added later.
+			return nil, ErrUnfinishedReply
+		}
+		// An empty reply that no stop reason explains can be a block the vendor
+		// did not name, and asking again could let a blocked review pass.
 		if strings.TrimSpace(content) == "" && len(toolCalls) == 0 {
 			return nil, ErrEmptyReply
 		}
@@ -175,6 +241,54 @@ func (r *Reviewer) contextError(parent context.Context, ctx context.Context, cal
 	return nil
 }
 
+// replyWithoutTools calls the model, which has no tools, until accept finds no
+// problem in its reply, and asks for a correction with correct up to
+// maxInvalidReplies times. It adds its calls and tokens to calls and tokens.
+func (r *Reviewer) replyWithoutTools(parent context.Context, ctx context.Context, messages []*v1pb.AIChatMessage, calls, tokens *int, accept func(string) []string, correct func([]string) string) error {
+	for invalidReplies := 0; ; invalidReplies++ {
+		if err := r.contextError(parent, ctx, *calls); err != nil {
+			return err
+		}
+		*calls++
+		response, err := r.model.Chat(ctx, &v1pb.AIChatRequest{Messages: messages})
+		if err != nil {
+			if ctxErr := r.contextError(parent, ctx, *calls); ctxErr != nil {
+				return ctxErr
+			}
+			return errors.Wrapf(err, "model call %d failed", *calls)
+		}
+		*tokens += int(response.GetUsage().GetTotalTokens())
+		switch response.GetStopReason() {
+		case v1pb.AIChatResponse_TURN_COMPLETED, v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED:
+		case v1pb.AIChatResponse_TOKEN_LIMIT:
+			return ErrTruncatedReply
+		case v1pb.AIChatResponse_BLOCKED:
+			return ErrBlockedReply
+		default:
+			return ErrUnfinishedReply
+		}
+		content := response.GetContent()
+		if len(response.GetToolCalls()) > 0 {
+			return errors.Wrap(ErrInvalidReply, "the model called a tool, and none is offered")
+		}
+		if strings.TrimSpace(content) == "" {
+			return ErrEmptyReply
+		}
+
+		problems := accept(content)
+		if len(problems) == 0 {
+			return nil
+		}
+		if invalidReplies >= maxInvalidReplies {
+			return errors.Wrap(ErrInvalidReply, strings.Join(problems, "; "))
+		}
+		messages = append(messages,
+			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT, content),
+			textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, correct(problems)),
+		)
+	}
+}
+
 func callTool(ctx context.Context, tools Tools, toolNames []string, call *v1pb.AIChatToolCall) (string, error) {
 	for _, name := range toolNames {
 		if name == call.GetName() {
@@ -195,4 +309,9 @@ func correctionMessage(problems []string) string {
 	}
 	_, _ = b.WriteString("If the review is not complete, call a tool now. Otherwise reply with only the JSON object from the answer format.")
 	return b.String()
+}
+
+func refusesTools(err error) bool {
+	var httpErr *ai.HTTPError
+	return errors.As(err, &httpErr) && httpErr.RefusesTools
 }

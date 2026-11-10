@@ -538,17 +538,15 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	a.NoError(err, "a normal session must still be able to update a data source")
 }
 
-// TestMCPCannotRewriteItsOwnCeiling covers the one method refused for what it
-// governs rather than for what it hands out.
+// TestMCPCannotRewriteItsOwnCeiling pins that a READ_WRITE session cannot change
+// the settings that bound it.
 //
 // SettingService/UpdateSetting writes value.mcp.capability, which IS the MCP
-// ceiling — the workspace switch that decides whether MCP sessions are served
-// at all, and at 1b-2 whether they are served read-only.
-// A session that can widen its own ceiling is not bounded by it, and "flip the
-// workspace MCP switch" stops being one of the three levers that contain a
-// runaway agent. The same method also keeps the stored SMTP password when
-// value.email.smtp omits it while accepting a new host, which hands over the
-// relay that carries password resets — TestEmailSetting's persisting twin.
+// ceiling. The same method keeps the stored SMTP password when value.email.smtp
+// omits it while accepting a new host, and keeps the stored AI key when the mask
+// names only the endpoint. The gate serves it only with a confirmation that
+// administer_workspace issues for the approval rules alone, and call_api cannot
+// carry one.
 //
 // The ceiling assertion is the load-bearing one: it reads the setting back
 // through the console afterwards, so this discriminates a gate that refuses
@@ -564,6 +562,7 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 	ceilingBefore, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
 
@@ -604,10 +603,10 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
-	widened := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+	rewritten := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
 		"setting": map[string]any{
 			"name":  "settings/MCP",
-			"value": map[string]any{"mcp": map[string]any{"capability": "READ_WRITE"}},
+			"value": map[string]any{"mcp": map[string]any{"capability": "DISABLED"}},
 		},
 		"updateMask": "value.mcp.capability",
 	})
@@ -635,19 +634,19 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"updateMask": "value.ai.endpoint",
 	})
 
-	t.Logf("MCP UpdateSetting{mcp_capability: READ_WRITE} → status=%d error=%q", widened.Status, widened.Error)
+	t.Logf("MCP UpdateSetting{mcp_capability: DISABLED} → status=%d error=%q", rewritten.Status, rewritten.Error)
 	t.Logf("MCP UpdateSetting{email.smtp → attacker} → status=%d error=%q", redirected.Status, redirected.Error)
 	t.Logf("MCP UpdateSetting{ai.endpoint → attacker} → status=%d error=%q", retargeted.Status, retargeted.Error)
 
 	for name, out := range map[string]mcpCallResult{
-		"ceiling":     widened,
+		"ceiling":     rewritten,
 		"smtp relay":  redirected,
 		"ai endpoint": retargeted,
 	} {
 		a.Equal(http.StatusForbidden, out.Status, "the %s write must be refused before dispatch", name)
-		a.Contains(out.Error, "not available to MCP sessions", "the %s write must be refused by the gate", name)
-		a.Contains(out.Error, "the switch meant to contain it",
-			"the %s denial must name the boundary, not a credential it did not hand out", name)
+		a.Contains(out.Error, "carries no such confirmation", "the %s write must be refused by the gate", name)
+		a.Contains(out.Error, "Change other settings signed in to the Bytebase console",
+			"the %s denial must send the user to the console", name)
 	}
 
 	after, err := ctl.getMCPCapability(ctx)
@@ -675,9 +674,6 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"a gate refusal is never stored")
 
 	// The console keeps working: the gate is on the internal MCP chain only.
-	// An explicit value rather than an echo of ceilingBefore, which the fixture
-	// leaves UNSPECIFIED — validateMCPCapability rejects writing that back, so
-	// echoing it would fail for a reason that has nothing to do with the gate.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
 		"a normal session must still be able to write workspace settings")
 
@@ -837,16 +833,16 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
-	// Browsing a service must not list a method the session can never call,
-	// and the hiding is per method: a service keeping any served method stays
-	// on the menu with that method on it.
+	// Browsing a service never offers a method the session can never call: the
+	// method is not in the served listing and its schema is never shown. It is
+	// named under "Not available over MCP" with the gate's reason, so the agent
+	// can send the user to the console instead of guessing.
 	//
 	// The positive control comes first and on the same tool: without one,
 	// NotContains over an opaque text blob passes for the wrong reason as soon
 	// as search_api returns anything that is not an endpoint listing — an
 	// error string, an empty result — and a test that cannot fail is worse
-	// here than no test, because this is the assertion standing between an
-	// agent and a menu of work it can never do.
+	// here than no test.
 	servedListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "DatabaseService"})
 	a.Contains(servedListing, "DatabaseService/ListDatabases",
 		"positive control: a service the ceiling serves must really come back as an endpoint listing")
@@ -854,7 +850,7 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	// These services host the credential mints, and since the ceiling gate
 	// refuses EXCLUDED as well as FORBIDDEN, every one of their methods is now
 	// refused — the mints outright, their read siblings as workspace
-	// administration. So they do not come back as a listing at all.
+	// administration. So they come back as unavailable, with no listing.
 	for _, row := range []struct {
 		service string
 		refused []string
@@ -862,52 +858,78 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount", "GetServiceAccount"}},
 		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}},
 		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}},
-		{"SettingService", []string{"TestEmailSetting", "GetSetting"}},
 	} {
 		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
-		a.Contains(listing, "No endpoints found for service: "+row.service,
+		a.Contains(listing, row.service+" is not available over MCP",
 			"%s serves no method under any ceiling, so it is not a menu", row.service)
+		a.NotContains(listing, "Found ", "%s offers no endpoint", row.service)
 		for _, method := range row.refused {
-			a.NotContains(listing, row.service+"/"+method,
-				"search_api must not offer %s/%s, which the session can never call", row.service, method)
+			a.Contains(listing, row.service+"/"+method,
+				"search_api names %s/%s as unavailable", row.service, method)
 		}
+	}
+
+	// servedAndUnavailable splits a mixed service's listing at the section that
+	// names what MCP cannot do.
+	servedAndUnavailable := func(service string) (string, string) {
+		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": service})
+		served, unavailable, ok := strings.Cut(listing, "## Not available over MCP")
+		a.True(ok, "%s names what MCP cannot do", service)
+		return served, unavailable
 	}
 
 	// WorkspaceService is the mixed case and the one that proves the hiding is
 	// per method rather than per service: it keeps GetWorkspace and
-	// ListWorkspaces, so it stays on the menu, and the token rotation is gone
-	// from it.
-	workspaceListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "WorkspaceService"})
-	a.Contains(workspaceListing, "WorkspaceService/ListWorkspaces",
-		"a service keeps the methods the ceiling serves")
-	a.NotContains(workspaceListing, "WorkspaceService/RotateDirectorySyncToken",
+	// ListWorkspaces, so it stays on the menu, and the token rotation is only
+	// named as unavailable.
+	served, unavailable := servedAndUnavailable("WorkspaceService")
+	a.Contains(served, "WorkspaceService/ListWorkspaces", "a service keeps the methods the ceiling serves")
+	a.NotContains(served, "WorkspaceService/RotateDirectorySyncToken",
 		"search_api must not offer the token rotation, which the session can never call")
+	a.Contains(unavailable, "WorkspaceService/RotateDirectorySyncToken")
 
 	// UserService is the second mixed case, and it moved here when
 	// GetCurrentUser stopped returning the MFA enrollment secrets. Reading who
 	// you are is the one thing an agent does on this service; creating a user,
 	// redirecting an account's email and reading somebody else's profile stay
 	// refused, and stay off the menu.
-	userListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "UserService"})
-	a.Contains(userListing, "UserService/GetCurrentUser",
+	served, unavailable = servedAndUnavailable("UserService")
+	a.Contains(served, "UserService/GetCurrentUser",
 		"the session reads its own identity, so the service is a menu with that on it")
 	for _, method := range []string{"CreateUser", "UpdateEmail", "GetUser", "ListUsers"} {
-		a.NotContains(userListing, "UserService/"+method,
+		a.NotContains(served, "UserService/"+method,
 			"search_api must not offer UserService/%s, which the session can never call", method)
+		a.Contains(unavailable, "UserService/"+method)
+	}
+
+	// SettingService hosts TestEmailSetting, a mint. It keeps GetSetting, which
+	// the gate serves for the governance settings alone, and UpdateSetting,
+	// which it serves only through administer_workspace.
+	served, unavailable = servedAndUnavailable("SettingService")
+	a.Contains(served, "SettingService/GetSetting", "the session reads the governance settings")
+	a.Contains(served, "SettingService/UpdateSetting", "the session changes the approval rules")
+	a.Contains(served, "through the administer_workspace tool", "the listing names the one way to change a setting")
+	for _, method := range []string{"TestEmailSetting", "ListSettings"} {
+		a.NotContains(served, "SettingService/"+method,
+			"search_api must not offer SettingService/%s, which the session can never call", method)
+		a.Contains(unavailable, "SettingService/"+method)
 	}
 
 	// The service list is the entry point into discovery, and a service whose
-	// every method is refused drops out of it entirely.
+	// every method is refused leaves the menu for the list of what MCP cannot do.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
+	available, unavailableServices, ok := strings.Cut(services, "## Not available over MCP")
+	a.True(ok, "the service list names what MCP cannot do")
 	for _, service := range []string{
 		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
-		"SettingService",
 	} {
-		a.NotContains(services, service, "%s serves nothing, so it must not be listed", service)
+		a.NotContains(available, service, "%s serves nothing, so it is not on the menu", service)
+		a.Contains(unavailableServices, "**"+service+"**", "%s is named as unavailable", service)
 	}
-	a.Contains(services, "DatabaseService", "positive control: services the ceiling serves stay listed")
-	a.Contains(services, "WorkspaceService", "a service keeping any served method stays listed")
-	a.Contains(services, "UserService", "and so does the one that kept only GetCurrentUser")
+	a.Contains(available, "DatabaseService", "positive control: services the ceiling serves stay listed")
+	a.Contains(available, "WorkspaceService", "a service keeping any served method stays listed")
+	a.Contains(available, "UserService", "and so does the one that kept only GetCurrentUser")
+	a.Contains(available, "SettingService", "and the one that kept only GetSetting")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{
@@ -924,6 +946,7 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		"UserService/UpdateEmail",
 	} {
 		detail := searchAPIOnSession(ctx, t, session, map[string]any{"operationId": operation})
+		a.Contains(detail, "Not available over MCP", "%s says why instead of showing a schema", operation)
 		a.NotContains(detail, "Unknown operationId",
 			"%s must stay resolvable so the denial can explain itself", operation)
 	}

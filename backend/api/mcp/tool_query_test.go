@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -11,6 +12,10 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // makeDatabase builds a database entry with an ADMIN datasource for mock responses.
@@ -44,8 +49,10 @@ func makeDatabaseWithDualDS(name, instanceName, project, engine, adminDSID, read
 	}
 }
 
-// mockListDatabases returns an HTTP handler that serves ListDatabases requests.
-// Supports both workspace-scoped (parent: "workspaces/...") and project-scoped parents.
+// mockListDatabases returns an HTTP handler that serves database listings for
+// a caller who holds bb.databases.get and bb.databases.list in every project:
+// SearchDatabases lists all databases, and ListDatabases with a project parent
+// lists that project's.
 func mockListDatabases(databases []map[string]any) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -56,10 +63,8 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 		}
 		_ = json.NewDecoder(r.Body).Decode(&reqBody)
 
-		// For workspace-scoped requests, include all databases.
-		// For project-scoped requests, filter by parent project.
 		var scoped []map[string]any
-		if strings.HasPrefix(reqBody.Parent, "workspaces/") {
+		if strings.HasSuffix(r.URL.Path, "DatabaseService/SearchDatabases") {
 			scoped = databases
 		} else {
 			for _, db := range databases {
@@ -81,7 +86,7 @@ func mockListDatabases(databases []map[string]any) http.Handler {
 }
 
 // applyMockFilter applies a simplified filter to mock databases.
-// Supports: name.contains("x"), instance == "instances/x", project == "projects/x"
+// Supports: name.contains("x"), instance == "instances/x"
 func applyMockFilter(databases []map[string]any, filter string) []map[string]any {
 	var result []map[string]any
 	for _, db := range databases {
@@ -117,17 +122,6 @@ func applyMockFilter(databases []map[string]any, filter string) []map[string]any
 			if end > 0 {
 				expected := filter[start : start+end]
 				if instanceName != expected {
-					match = false
-				}
-			}
-		}
-		// Check project == "projects/x"
-		if idx := strings.Index(filter, `project == "`); idx >= 0 {
-			start := idx + len(`project == "`)
-			end := strings.Index(filter[start:], `"`)
-			if end > 0 {
-				expected := filter[start : start+end]
-				if proj, ok := db["project"].(string); ok && proj != expected {
 					match = false
 				}
 			}
@@ -184,7 +178,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 		name     string
 		database string
 		instance string
-		project  string
 		expect   string
 	}{
 		{
@@ -199,19 +192,6 @@ func TestBuildDatabaseFilter(t *testing.T) {
 			expect:   `name.contains("employee_db") && instance == "instances/prod-pg"`,
 		},
 		{
-			name:     "with project",
-			database: "employee_db",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && project == "projects/hr-system"`,
-		},
-		{
-			name:     "with instance and project",
-			database: "employee_db",
-			instance: "prod-pg",
-			project:  "hr-system",
-			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
-		},
-		{
 			name:     "with canonical project instance",
 			database: "employee_db",
 			instance: "projects/hr-system/instances/prod-pg",
@@ -220,7 +200,7 @@ func TestBuildDatabaseFilter(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDatabaseFilter(tc.database, tc.instance, tc.project)
+			got := buildDatabaseFilter(tc.database, tc.instance)
 			require.Equal(t, tc.expect, got)
 		})
 	}
@@ -292,38 +272,6 @@ func TestQueryDatabase_NotFoundWithFilters(t *testing.T) {
 	require.ErrorAs(t, err, &te)
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 	require.Contains(t, te.Suggestion, "without instance/project filters")
-}
-
-func TestQueryDatabase_MissingWorkspaceID(t *testing.T) {
-	s := newTestServerWithMock(t, http.NotFoundHandler())
-
-	// Use context.Background() — no workspace ID set.
-	_, err := s.resolveDatabase(context.Background(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, "AUTH_ERROR", te.Code)
-}
-
-func TestQueryDatabase_WorkspacePermissionDenied(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"message": "permission denied",
-			"code":    "PERMISSION_DENIED",
-		})
-	})
-	s := newTestServerWithMock(t, handler)
-
-	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
-	require.Error(t, err)
-
-	var te *toolError
-	require.ErrorAs(t, err, &te)
-	require.Equal(t, "PERMISSION_DENIED", te.Code)
-	require.Contains(t, te.Suggestion, "bb.databases.list")
 }
 
 func TestQueryDatabase_Ambiguous(t *testing.T) {
@@ -664,10 +612,10 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 	require.Contains(t, text, "syntax error")
 }
 
-// TestQueryDatabase_PolicyDenialGetsNoRoleAdvice is the same contract on the
-// read tool. The masked-write guard refuses through SQLService/Query, and a
-// project role cannot lift a workspace setting.
-func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+// TestQueryDatabase_PolicyDenialGetsNoAccessAdvice: the masked-write guard
+// refuses through SQLService/Query, and no access grant lifts a workspace
+// setting.
+func TestQueryDatabase_PolicyDenialGetsNoAccessAdvice(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 	}
@@ -695,8 +643,7 @@ func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "******")
-	require.NotContains(t, text, "SQL Editor role",
-		"no project role lifts a workspace setting")
+	require.NotContains(t, text, "suggestion", "the refusal names its own way out")
 }
 
 func TestQueryDatabase_PermissionDenied(t *testing.T) {
@@ -726,6 +673,126 @@ func TestQueryDatabase_PermissionDenied(t *testing.T) {
 
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "permission denied")
+	require.NotContains(t, text, "suggestion", "the ACL refuses a missing bb.databases.get before any access grant applies")
+}
+
+// The SQL access check answers inside a 200 result, the shape the server
+// returns when the caller can see the database but not read its tables.
+func TestQueryDatabase_TableAccessDenialAdvisesAnAccessGrant(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("projects/hr/instances/prod-pg/databases/employee_db", "projects/hr/instances/prod-pg", "projects/hr", "POSTGRES", "ds-admin-1"),
+	}
+	const wantGrant = "in a Read-write session, request an access grant for failedStatement with request_access_grant and, " +
+		"once approved, run it by itself (the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+	for name, tt := range map[string]struct {
+		statement string
+		result    map[string]any
+		want      string
+	}{
+		"the access check refused the tables": {
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+				},
+			},
+			want: wantGrant,
+		},
+		// A grant must name a read-only statement and applies only to that exact
+		// statement, so the batch as a whole can neither be granted nor use the grant.
+		"the access check refused a read in a batch that also writes": {
+			statement: "SELECT first_name FROM employee; UPDATE employee SET first_name = 'x'",
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"statement": "SELECT first_name FROM employee;",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+				},
+			},
+			want: wantGrant,
+		},
+		"the access check refused a metadata read": {
+			result: map[string]any{
+				"error":     "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"statement": "SELECT first_name FROM employee",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.info"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/employee_db"},
+				},
+			},
+			want: wantGrant,
+		},
+		// A grant from request_access_grant targets the queried database only.
+		"the access check refused a table in another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources":           []string{"projects/hr/instances/prod-pg/databases/payroll/schemas/public/tables/salary"},
+				},
+			},
+		},
+		"the access check refused tables in this and another database": {
+			result: map[string]any{
+				"error": "permission_denied: permission denied to access resources: [two tables]",
+				"permissionDenied": map[string]any{
+					"requiredPermissions": []string{"bb.sql.select"},
+					"resources": []string{
+						"projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee",
+						"projects/hr/instances/prod-pg/databases/employee_db2/schemas/public/tables/salary",
+					},
+				},
+			},
+		},
+		// No grant lifts these: a grant's statement must be read-only, and a
+		// granted target still needs bb.sql.explain from IAM.
+		"the access check refused a write": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: [projects/hr/instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.dml"}},
+			},
+		},
+		"the access check refused an EXPLAIN": {
+			result: map[string]any{
+				"error":            "permission_denied: permission denied to access resources: projects/hr/instances/prod-pg/databases/employee_db",
+				"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.explain"}},
+			},
+		},
+		"a statement the engine rejected": {
+			result: map[string]any{"error": `syntax error at or near "SELEC"`},
+			want:   "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(map[string]any{"results": []any{tt.result}})
+					return
+				}
+				mockListDatabases(databases).ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+			statement := tt.statement
+			if statement == "" {
+				statement = "SELECT first_name FROM employee"
+			}
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: statement,
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var denial queryError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &denial))
+			require.Equal(t, tt.result["error"], denial.Message)
+			require.Equal(t, tt.want, denial.Suggestion)
+		})
+	}
 }
 
 // --- Task 6 tests: masked values and timeout ---
@@ -777,7 +844,462 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 		resourceName: "instances/prod-pg/databases/employee_db",
 		dataSourceID: "ds-admin-1",
 	}
-	_, err := s.executeQuery(ctx, resolved, "SELECT 1", 100)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "QUERY_ERROR")
+	_, err := s.executeQuery(ctx, resolved, QueryInput{Statement: "SELECT 1"}, 100, nil)
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "QUERY_ERROR", te.Code)
+	require.Equal(t, "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry", te.Suggestion)
+}
+
+// Query returns a result per statement and stops at the first failure, so the
+// failure can follow results for statements that ran. The splitter keeps the
+// whitespace before each statement after the first.
+func TestQueryDatabase_FailureReportsWhatRan(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	const (
+		ranAdvice     = "Bytebase ran the statements in ran, in a session that has since closed; check the data before you retry"
+		unknownAdvice = "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry"
+		withheld      = "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them."
+		wantGrant     = "in a Read-write session, request an access grant for failedStatement with request_access_grant and, " +
+			"once approved, run it by itself (the project must allow just-in-time access); otherwise the user requests access in the SQL Editor"
+	)
+	for name, tt := range map[string]struct {
+		statement      string
+		results        []map[string]any
+		wantMessage    string
+		wantFailed     string
+		wantRan        []string
+		wantSuggestion string
+	}{
+		"a later statement failed": {
+			statement: "INSERT INTO t VALUES (1); INSERT INTO t VALUES (2); INSERT INTO t VALUES (1), (3);",
+			results: []map[string]any{
+				{"columnNames": []string{"Affected Rows"}, "statement": "INSERT INTO t VALUES (1);"},
+				{"columnNames": []string{"Affected Rows"}, "statement": " INSERT INTO t VALUES (2);"},
+				{"error": `duplicate key value violates unique constraint "t_pkey"`, "statement": " INSERT INTO t VALUES (1), (3);"},
+			},
+			wantFailed:     "INSERT INTO t VALUES (1), (3);",
+			wantRan:        []string{"INSERT INTO t VALUES (1);", "INSERT INTO t VALUES (2);"},
+			wantSuggestion: ranAdvice,
+		},
+		"the first statement of a batch failed": {
+			statement: "UPDATE t SET a = 1; UPDATE t SET b = 2;",
+			results: []map[string]any{
+				{"error": `column "a" does not exist`, "statement": "UPDATE t SET a = 1;"},
+			},
+			wantFailed:     "UPDATE t SET a = 1;",
+			wantSuggestion: unknownAdvice,
+		},
+		"a single statement failed": {
+			statement: "UPDATE t SET a = 1",
+			results: []map[string]any{
+				{"error": `column "a" does not exist`, "statement": "UPDATE t SET a = 1"},
+			},
+			wantFailed:     "UPDATE t SET a = 1",
+			wantSuggestion: unknownAdvice,
+		},
+		"the access check refused a read after a statement ran": {
+			statement: "INSERT INTO t VALUES (1); SELECT first_name FROM employee;",
+			results: []map[string]any{
+				{"columnNames": []string{"Affected Rows"}, "statement": "INSERT INTO t VALUES (1);"},
+				{
+					"error":     "permission_denied: permission denied to access resources: [instances/prod-pg/databases/employee_db/schemas/public/tables/employee]",
+					"statement": " SELECT first_name FROM employee;",
+					"permissionDenied": map[string]any{
+						"requiredPermissions": []string{"bb.sql.select"},
+						"resources":           []string{"instances/prod-pg/databases/employee_db/schemas/public/tables/employee"},
+					},
+				},
+			},
+			wantFailed:     "SELECT first_name FROM employee;",
+			wantRan:        []string{"INSERT INTO t VALUES (1);"},
+			wantSuggestion: ranAdvice + "; " + wantGrant,
+		},
+		"the access check refused a write after a statement ran": {
+			statement: "INSERT INTO t VALUES (1); DROP TABLE t;",
+			results: []map[string]any{
+				{"columnNames": []string{"Affected Rows"}, "statement": "INSERT INTO t VALUES (1);"},
+				{
+					"error":            "permission_denied: permission denied to access resources: [instances/prod-pg/databases/employee_db/schemas/public/tables/t]",
+					"statement":        " DROP TABLE t;",
+					"permissionDenied": map[string]any{"requiredPermissions": []string{"bb.sql.ddl"}},
+				},
+			},
+			wantFailed:     "DROP TABLE t;",
+			wantRan:        []string{"INSERT INTO t VALUES (1);"},
+			wantSuggestion: ranAdvice,
+		},
+		"a read over the size limit before a failed statement": {
+			statement: "SELECT * FROM big; INSERT INTO t VALUES (1), (3);",
+			results: []map[string]any{
+				{"columnNames": []string{"id"}, "error": "Output of query exceeds max allowed output size of 10MB", "statement": "SELECT * FROM big;"},
+				{"error": `duplicate key value violates unique constraint "t_pkey"`, "statement": " INSERT INTO t VALUES (1), (3);"},
+			},
+			wantFailed:     "INSERT INTO t VALUES (1), (3);",
+			wantRan:        []string{"SELECT * FROM big;"},
+			wantSuggestion: ranAdvice,
+		},
+		"rows withheld from a write that ran": {
+			statement: "INSERT INTO t OUTPUT inserted.id VALUES (1); UPDATE t SET a = 1;",
+			results: []map[string]any{
+				{
+					"columnNames": []string{"id"},
+					"error":       "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+					"statement":   "INSERT INTO t OUTPUT inserted.id VALUES (1);",
+				},
+				{"columnNames": []string{"Affected Rows"}, "statement": " UPDATE t SET a = 1;"},
+			},
+			wantMessage:    "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+			wantFailed:     "INSERT INTO t OUTPUT inserted.id VALUES (1);",
+			wantRan:        []string{"INSERT INTO t OUTPUT inserted.id VALUES (1);", "UPDATE t SET a = 1;"},
+			wantSuggestion: ranAdvice,
+		},
+		"a procedure call that returned two result sets is named once per set": {
+			statement: "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;",
+			results: []map[string]any{
+				{"columnNames": []string{"id"}, "error": withheld, "statement": "EXEC dbo.two_sets;"},
+				{"columnNames": []string{"id"}, "error": withheld, "statement": "UPDATE dbo.t SET id = id OUTPUT inserted.id;"},
+				{"columnNames": []string{"id"}, "statement": "SELECT id FROM dbo.t WHERE id = 1;"},
+				{"columnNames": []string{"s"}, "error": withheld, "statement": "EXEC dbo.two_sets;"},
+			},
+			wantMessage: withheld,
+			wantFailed:  "EXEC dbo.two_sets;",
+			wantRan: []string{
+				"EXEC dbo.two_sets;", "UPDATE dbo.t SET id = id OUTPUT inserted.id;", "SELECT id FROM dbo.t WHERE id = 1;", "EXEC dbo.two_sets;",
+			},
+			wantSuggestion: ranAdvice,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := newTestServerWithMock(t, mockQueryServer(databases, map[string]any{"results": tt.results}))
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: tt.statement,
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var failure queryError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &failure))
+			wantMessage := tt.wantMessage
+			if wantMessage == "" {
+				wantMessage = fmt.Sprint(tt.results[len(tt.results)-1]["error"])
+			}
+			require.Equal(t, wantMessage, failure.Message)
+			require.Equal(t, tt.wantFailed, failure.FailedStatement)
+			require.Equal(t, tt.wantRan, failure.Ran)
+			require.Equal(t, tt.wantSuggestion, failure.Suggestion)
+		})
+	}
+}
+
+// Query answers some failures with an HTTP error and no result. A 5xx can
+// follow statements that ran; a 4xx refuses the request before it runs.
+func TestQueryDatabase_HTTPErrorAdvice(t *testing.T) {
+	for name, tt := range map[string]struct {
+		engine         string
+		status         int
+		body           map[string]any
+		wantSuggestion string
+	}{
+		"a SQL Server batch failed partway": {
+			engine:         "MSSQL",
+			status:         http.StatusInternalServerError,
+			body:           map[string]any{"code": "internal", "message": "Violation of PRIMARY KEY constraint 'PK_t'."},
+			wantSuggestion: "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry",
+		},
+		"a PostgreSQL request failed with no result": {
+			engine:         "POSTGRES",
+			status:         http.StatusInternalServerError,
+			body:           map[string]any{"code": "internal", "message": "failed to get database connection: connection refused"},
+			wantSuggestion: "Bytebase cannot always tell which statements of a failed request ran; if it held a write, check the data before you retry",
+		},
+		"Query refused a statement it could not parse": {
+			engine:         "POSTGRES",
+			status:         http.StatusBadRequest,
+			body:           map[string]any{"code": "invalid_argument", "message": `syntax error at or near "SELEC"`},
+			wantSuggestion: "check your SQL syntax and try again",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			databases := []map[string]any{
+				makeDatabase("instances/prod/databases/employee_db", "instances/prod", "projects/hr-system", tt.engine, "ds-admin-1"),
+			}
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(tt.status)
+					_ = json.NewEncoder(w).Encode(tt.body)
+					return
+				}
+				mockListDatabases(databases).ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "INSERT INTO t VALUES (1); INSERT INTO t VALUES (2);",
+			})
+			require.NoError(t, err)
+			require.True(t, result.IsError)
+			var failure toolError
+			require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &failure))
+			require.Equal(t, tt.body["message"], failure.Message)
+			require.Equal(t, tt.wantSuggestion, failure.Suggestion)
+		})
+	}
+}
+
+// protoQueryResponse encodes resp with protojson.MarshalOptions{}, the options
+// connect-go's JSON codec uses for the Query response.
+func protoQueryResponse(t *testing.T, resp *v1pb.QueryResponse) map[string]any {
+	t.Helper()
+	raw, err := protojson.MarshalOptions{}.Marshal(resp)
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(raw, &body))
+	return body
+}
+
+func TestMaskedColumns(t *testing.T) {
+	tests := []struct {
+		name   string
+		result string
+		want   []MaskedColumn
+	}{
+		{
+			name:   "unmasked column entry is empty",
+			result: `{"columnNames":["id","ssn"],"masked":[{},{"semanticTypeId":"ssn","semanticTypeTitle":"SSN","algorithm":"Full mask","context":"Global masking rule: PII"}]}`,
+			want:   []MaskedColumn{{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"}},
+		},
+		{
+			name:   "column from several source columns has no semantic type",
+			result: `{"columnNames":["contact"],"masked":[{"algorithm":"Full mask","context":"Multiple source columns"}]}`,
+			want:   []MaskedColumn{{Column: "contact", Index: 0, Algorithm: "Full mask", Context: "Multiple source columns"}},
+		},
+		{
+			name:   "list shorter than the columns",
+			result: `{"columnNames":["ssn","id"],"masked":[{"semanticTypeId":"ssn","semanticTypeTitle":"SSN","algorithm":"Full mask"}]}`,
+			want:   []MaskedColumn{{Column: "ssn", Index: 0, SemanticType: "SSN", Algorithm: "Full mask"}},
+		},
+		{
+			name:   "list longer than the columns",
+			result: `{"columnNames":["id"],"masked":[{},{"semanticTypeId":"ssn","algorithm":"Full mask"}]}`,
+		},
+		{
+			name:   "columns sharing a name",
+			result: `{"columnNames":["email","email"],"masked":[{},{"semanticTypeId":"email","semanticTypeTitle":"Email","algorithm":"Partial mask"}]}`,
+			want:   []MaskedColumn{{Column: "email", Index: 1, SemanticType: "Email", Algorithm: "Partial mask"}},
+		},
+		{
+			name:   "no masked field",
+			result: `{"columnNames":["id"]}`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var result queryResult
+			require.NoError(t, json.Unmarshal([]byte(tc.result), &result))
+			require.Equal(t, tc.want, maskedColumns(result.ColumnNames, result.Masked))
+		})
+	}
+}
+
+func TestQueryDatabase_MaskedColumnsNameTheirReasons(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := protoQueryResponse(t, &v1pb.QueryResponse{
+		Results: []*v1pb.QueryResult{{
+			ColumnNames:     []string{"id", "ssn", "email"},
+			ColumnTypeNames: []string{"int4", "varchar", "varchar"},
+			Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "******"}},
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "j***@example.com"}},
+			}}},
+			Masked: []*v1pb.MaskingReason{
+				nil,
+				{SemanticTypeId: "ssn", SemanticTypeTitle: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+				{SemanticTypeId: "email", SemanticTypeTitle: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
+			},
+		}},
+	})
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT id, ssn, email FROM users",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, []MaskedColumn{
+		{Column: "ssn", Index: 1, SemanticType: "SSN", Algorithm: "Full mask", Context: "Global masking rule: PII"},
+		{Column: "email", Index: 2, SemanticType: "Email", Algorithm: "Partial mask", Context: "Column-level semantic type: Email"},
+	}, output.MaskedColumns)
+	require.Empty(t, output.AppliedAccessGrant)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "Masked columns: ssn, email.\n")
+	require.Contains(t, text, `"maskedColumns":[{"column":"ssn","index":1,`)
+}
+
+func TestQueryDatabase_UnmaskedResultNamesNoMaskedColumns(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	tests := []struct {
+		name       string
+		masked     []*v1pb.MaskingReason
+		wantOnWire any
+	}{
+		{
+			name:       "masking ran and masked nothing",
+			masked:     []*v1pb.MaskingReason{nil, nil},
+			wantOnWire: []any{map[string]any{}, map[string]any{}},
+		},
+		{
+			name:       "masking did not run",
+			wantOnWire: nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			qr := protoQueryResponse(t, &v1pb.QueryResponse{
+				Results: []*v1pb.QueryResult{{
+					ColumnNames:     []string{"id", "name"},
+					ColumnTypeNames: []string{"int4", "varchar"},
+					Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+						{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+						{Kind: &v1pb.RowValue_StringValue{StringValue: "John"}},
+					}}},
+					Masked: tc.masked,
+				}},
+			})
+			results, ok := qr["results"].([]any)
+			require.True(t, ok)
+			wire, ok := results[0].(map[string]any)
+			require.True(t, ok)
+			require.Equal(t, tc.wantOnWire, wire["masked"])
+			s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+			result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "SELECT id, name FROM users",
+			})
+			require.NoError(t, err)
+			require.False(t, result.IsError)
+
+			output, ok := structured.(*QueryOutput)
+			require.True(t, ok)
+			require.Empty(t, output.MaskedColumns)
+
+			text := result.Content[0].(*mcpsdk.TextContent).Text
+			require.NotContains(t, text, "Masked columns")
+			require.NotContains(t, text, "maskedColumns")
+			require.NotContains(t, text, "appliedAccessGrant")
+		})
+	}
+}
+
+func TestQueryDatabase_AppliedAccessGrantPassesThrough(t *testing.T) {
+	const grant = "projects/hr-system/accessGrants/g1"
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := protoQueryResponse(t, &v1pb.QueryResponse{
+		Results: []*v1pb.QueryResult{{
+			ColumnNames:     []string{"ssn"},
+			ColumnTypeNames: []string{"varchar"},
+			Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+				{Kind: &v1pb.RowValue_StringValue{StringValue: "123-45-6789"}},
+			}}},
+		}},
+		AppliedAccessGrant: grant,
+	})
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT ssn FROM users",
+	})
+	require.NoError(t, err)
+	require.False(t, result.IsError)
+
+	output, ok := structured.(*QueryOutput)
+	require.True(t, ok)
+	require.Equal(t, grant, output.AppliedAccessGrant)
+	require.Empty(t, output.MaskedColumns)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, `"appliedAccessGrant":"`+grant+`"`)
+	require.NotContains(t, text, "Masked columns")
+}
+
+func TestQueryDatabase_ForwardsSchemaAndContainerOnlyWhenSet(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	tests := []struct {
+		name      string
+		schema    string
+		container string
+	}{
+		{name: "neither"},
+		{name: "schema", schema: "public"},
+		{name: "container", container: "employee"},
+		{name: "both", schema: "public", container: "employee"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// require must not run on the transport's goroutine, so the handler
+			// only records the body.
+			var queryBody []byte
+			listHandler := mockListDatabases(databases)
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.Contains(r.URL.Path, "SQLService/Query") {
+					queryBody, _ = io.ReadAll(r.Body)
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.001s"))
+					return
+				}
+				listHandler.ServeHTTP(w, r)
+			})
+			s := newTestServerWithMock(t, handler)
+
+			result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "SELECT id FROM users",
+				Schema:    tc.schema,
+				Container: tc.container,
+			})
+			require.NoError(t, err)
+			require.False(t, result.IsError)
+
+			// The server decodes the body with DiscardUnknown too, so a misnamed
+			// key would lose the value without an error.
+			var request v1pb.QueryRequest
+			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(queryBody, &request))
+			for _, field := range []struct {
+				name string
+				want string
+				got  *string
+			}{
+				{name: "schema", want: tc.schema, got: request.Schema},
+				{name: "container", want: tc.container, got: request.Container},
+			} {
+				if field.want == "" {
+					require.Nil(t, field.got, "%s must be left out when unset, not sent empty", field.name)
+					continue
+				}
+				require.NotNil(t, field.got, "%s must reach QueryRequest.%s", field.name, field.name)
+				require.Equal(t, field.want, *field.got)
+			}
+		})
+	}
 }

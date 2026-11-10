@@ -217,6 +217,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 					}
 				}
 
+				// The job that returned these rows reports the stages it ran as
+				// it goes; BigQuery has no EXPLAIN to ask for them instead.
+				result.QueryPlan = queryPlan(ctx, it.SourceJob())
 				return result, nil
 			}
 

@@ -20,8 +20,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists access grants in a project.
@@ -30,8 +29,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.accessGrants.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates an access grant.
@@ -44,8 +42,9 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // WRITE, but an MCP session is refused a request that no approval rule
+    // sends to a person (refuseUnattendedMCPAccessGrant).
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Activates a pending access grant.
@@ -58,8 +57,8 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.activate";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Revokes an active access grant.
@@ -72,8 +71,7 @@ service AccessGrantService {
     option (bytebase.v1.permission) = "bb.accessGrants.revoke";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Searches access grants created by the caller.
@@ -99,9 +97,9 @@ message AccessGrant {
   // The {access_grant} segment is a server-generated unique ID.
   string name = 1;
 
-  // The creator of the access grant.
+  // The creator of the access grant, the caller who requested it.
   // Format: users/{email}
-  string creator = 2 [(google.api.field_behavior) = REQUIRED];
+  string creator = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The status of the access grant.
   // An ACTIVE grant with `expire_time` in the past is effectively expired
@@ -154,7 +152,8 @@ message AccessGrant {
 
   string reason = 12;
 
-  // Whether export the query result.
+  // Whether the grant allows exporting the query result.
+  // An active grant with export=true grants bb.sql.export for this query until the grant expires.
   bool export = 13;
 
   // The default schema to execute the query.
@@ -195,7 +194,13 @@ message ListAccessGrantsRequest {
   // - issue: the access issue fullname, support "==" operator.
   // - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
   // - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
-  // - query: the access query, support "==" and ".contains(xx)" operator
+  // - query: the access query, support "==" and ".contains(xx)" operator.
+  //   Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
+  // - query_hash: supports "==" with a lowercase hexadecimal SHA-256 digest of
+  //   the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
+  //   remain unchanged.
+  // - schema: execution schema, supports "=="; empty matches only empty or absent values.
+  // - container: execution container, supports "=="; empty matches only empty or absent values.
   // - target: the target database fullname, support "==" operator.
   // - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
   // - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.

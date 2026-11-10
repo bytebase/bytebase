@@ -111,6 +111,10 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 	case *ast.MergeStmt:
 		return storepb.StatementType_MERGE
 
+	// A procedure, DO block or prepared statement runs code this classifier does not look into.
+	case *ast.CallStmt, *ast.DoStmt, *ast.ExecuteStmt:
+		return storepb.StatementType_EXECUTE
+
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}

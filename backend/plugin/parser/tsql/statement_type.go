@@ -65,6 +65,8 @@ func getStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_INSERT
 	case *ast.UpdateStmt:
 		return storepb.StatementType_UPDATE
+	case *ast.ExecStmt:
+		return storepb.StatementType_EXECUTE
 	default:
 	}
 	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

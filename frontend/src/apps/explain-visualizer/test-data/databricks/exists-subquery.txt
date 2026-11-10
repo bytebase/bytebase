@@ -1,0 +1,33 @@
+== Physical Plan ==
+AdaptiveSparkPlan (5)
++- BroadcastHashJoin LeftSemi BuildRight (4)
+   :- Scan parquet spark_catalog.default.customers (1)
+   +- BroadcastExchange (3)
+      +- Scan parquet spark_catalog.default.orders (2)
+
+
+(1) Scan parquet spark_catalog.default.customers
+Output [1]: [id#47]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/customers]
+ReadSchema: struct<id:int>
+
+(2) Scan parquet spark_catalog.default.orders
+Output [1]: [customer_id#60]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/orders]
+ReadSchema: struct<customer_id:int>
+
+(3) BroadcastExchange
+Input [1]: [customer_id#60]
+Arguments: HashedRelationBroadcastMode(List(cast(input[0, int, true] as bigint)),false), [plan_id=275]
+
+(4) BroadcastHashJoin
+Left keys [1]: [id#47]
+Right keys [1]: [customer_id#60]
+Join type: LeftSemi
+Join condition: None
+
+(5) AdaptiveSparkPlan
+Output [1]: [id#47]
+Arguments: isFinalPlan=false

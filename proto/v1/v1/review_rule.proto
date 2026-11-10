@@ -15,7 +15,8 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 enum ReviewRuleType {
   REVIEW_RULE_TYPE_UNSPECIFIED = 0;
 
-  // P0: the statements do not parse for the target engine.
+  // P0: the statements do not parse for the target engine. It gates the
+  // other rules (see ReviewRulePolicy).
   SYNTAX = 1;
   // P0: applying the statements to the synced schema fails: a missing
   // table or column, a duplicate object, or an invalid reference.
@@ -30,13 +31,15 @@ enum ReviewRuleType {
 
   // P1: UPDATE or DELETE without WHERE.
   REQUIRE_WHERE = 6;
-  // P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.
+  // P1: dropping any object, such as a table, column, view, index, sequence,
+  // schema, database, or function. Dropping a constraint is
+  // DISALLOW_DROP_CONSTRAINT.
   DISALLOW_DROP_OBJECT = 7;
   // P1: TRUNCATE.
   DISALLOW_TRUNCATE = 8;
   // P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.
   DISALLOW_DROP_CONSTRAINT = 9;
-  // P1: renaming a table or column.
+  // P1: renaming a table, foreign table, view, materialized view, or column.
   DISALLOW_RENAME = 10;
   // P1: the change creates a table without a primary key, or drops a
   // primary key without adding one back. A table that already lacked a

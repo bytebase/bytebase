@@ -13,6 +13,8 @@ type Props = {
   readonly size?: "sm" | "md";
   readonly type?: ComponentProps<typeof Button>["type"];
   readonly onClick?: ComponentProps<typeof Button>["onClick"];
+  readonly onExplain?: () => void;
+  readonly explainDisabledReason?: string;
 };
 
 export function RunQueryButton({
@@ -22,6 +24,8 @@ export function RunQueryButton({
   size = "sm",
   type = "button",
   onClick,
+  onExplain,
+  explainDisabledReason,
 }: Props) {
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
 
@@ -46,7 +50,13 @@ export function RunQueryButton({
           </span>
         </Button>
       </Tooltip>
-      <QueryContextSettingPopover disabled={settingsDisabled} size={size} />
+      <QueryContextSettingPopover
+        disabled={settingsDisabled}
+        size={size}
+        explainDisabled={disabled}
+        onExplain={onExplain}
+        explainDisabledReason={explainDisabledReason}
+      />
     </div>
   );
 }

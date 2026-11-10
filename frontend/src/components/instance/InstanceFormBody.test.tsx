@@ -283,6 +283,61 @@ test("uses a switch for synchronization scope", () => {
   );
 });
 
+test("places general Agent help beside the connection section heading", () => {
+  const onAskAgent = vi.fn();
+  render(
+    <InstanceFormProvider>
+      <InstanceFormBody onAskAgent={onAskAgent} />
+    </InstanceFormProvider>
+  );
+
+  const connectionTitle = screen.getByRole("heading", {
+    name: "instance.section.connection",
+  });
+  const headingRow = connectionTitle.closest(
+    '[data-slot="form-section-heading-row"]'
+  );
+  const askAgentButton = screen.getByRole("button", {
+    name: "instance.ask-agent",
+  });
+
+  expect(headingRow?.contains(askAgentButton)).toBe(true);
+  expect(connectionTitle).toHaveStyle({ width: "fit-content" });
+  expect(askAgentButton.querySelector(".lucide-bot")).not.toBeNull();
+  expect(askAgentButton).toHaveClass("h-7", "bg-transparent", "text-accent");
+  expect(askAgentButton.querySelector(".truncate")).toHaveTextContent(
+    "instance.ask-agent"
+  );
+  expect(askAgentButton).toHaveTextContent("instance.ask-agent");
+  expect(
+    screen.queryByText("instance.need-help-connecting")
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(askAgentButton);
+  expect(onAskAgent).toHaveBeenCalledOnce();
+});
+
+test("hides database-selection guidance while syncing all databases", () => {
+  render(
+    <InstanceFormProvider>
+      <SyncDatabases
+        isCreating
+        showLabel
+        allowEdit
+        disabledReason="Enter a hostname to choose which databases to sync."
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  expect(
+    screen.queryByText(
+      "Enter a hostname to choose which databases to sync."
+    )
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("switch")).not.toHaveAttribute("aria-describedby");
+});
+
 test("keeps newly loaded selections in the database preview", async () => {
   mocks.listInstanceDatabases.mockResolvedValue({ databases: ["analytics"] });
   const instance = create(InstanceSchema, {

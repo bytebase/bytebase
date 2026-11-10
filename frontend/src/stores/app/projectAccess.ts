@@ -25,6 +25,7 @@ type ProjectAccess = {
   getProjectByName: (name: string) => Project;
   batchGetOrFetchProjects: (names: string[]) => Promise<Project[]>;
   fetchProjectList: (params: {
+    signal?: AbortSignal;
     pageSize?: number;
     pageToken?: string;
     silent?: boolean;

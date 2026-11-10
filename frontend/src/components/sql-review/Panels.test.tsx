@@ -188,6 +188,7 @@ describe("AttachResourcesPanel", () => {
     render();
 
     expect(mocks.fetchProjectList).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       cache: true,
       filter: { excludeDefault: true },
     });

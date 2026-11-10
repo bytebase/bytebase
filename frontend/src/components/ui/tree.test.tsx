@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { TreeDataNode } from "./tree";
@@ -313,5 +313,64 @@ describe("Tree", () => {
     expect(container.textContent).not.toContain("amount");
     expect(container.textContent).not.toContain("audit");
     expect(container.textContent).not.toContain("log_entry");
+  });
+  describe("row identity across parent re-renders", () => {
+    const nodes = [
+      makeNode("a", "Alpha"),
+      makeNode("b", "Beta"),
+      makeNode("c", "Gamma"),
+    ];
+    let mounts: string[];
+
+    function CountedRow({ id, label }: { id: string; label: string }) {
+      useEffect(() => {
+        mounts.push(id);
+      }, [id]);
+      return <span data-testid={`row-${id}`}>{label}</span>;
+    }
+
+    // Each call builds a fresh renderNode closure, as a consumer does
+    // when it passes renderNode inline.
+    const renderTree = (suffix: string) =>
+      root.render(
+        <Tree
+          data={nodes}
+          renderNode={({ node, style }) => (
+            <div style={style}>
+              <CountedRow
+                id={node.id}
+                label={`${node.data.data.label}${suffix}`}
+              />
+            </div>
+          )}
+          height={200}
+        />
+      );
+
+    beforeEach(() => {
+      mounts = [];
+    });
+
+    test("does not remount rows when the parent re-renders", async () => {
+      await act(async () => renderTree(""));
+      expect(mounts).toEqual(["a", "b", "c"]);
+      const rowBefore = container.querySelector('[data-testid="row-a"]');
+
+      for (let i = 0; i < 5; i++) {
+        await act(async () => renderTree(""));
+      }
+
+      expect(mounts).toEqual(["a", "b", "c"]);
+      expect(container.querySelector('[data-testid="row-a"]')).toBe(rowBefore);
+    });
+
+    test("rows render the latest renderNode output", async () => {
+      await act(async () => renderTree(""));
+      await act(async () => renderTree(" (new)"));
+
+      expect(container.textContent).toContain("Alpha (new)");
+      expect(container.textContent).toContain("Gamma (new)");
+      expect(mounts).toEqual(["a", "b", "c"]);
+    });
   });
 });

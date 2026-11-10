@@ -1,17 +1,27 @@
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useCurrentRoute } from "@/app/router";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
+import {
+  consumePreparedIssueCommentDraft,
+  markIssueCommentDraftDelivered,
+  persistIssueCommentDraftBestEffort,
+  restoreIssueCommentDraft,
+} from "@/lib/issueCommentDraft";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 
-const draftKey = (issueName: string) => `bb.plan-review.draft.${issueName}`;
-
 export function ReviewCommentComposer({ issueName }: { issueName: string }) {
   const { t } = useTranslation();
+  const route = useCurrentRoute();
+  const agentDraftKey =
+    typeof route.query.agentCommentDraft === "string"
+      ? route.query.agentCommentDraft
+      : undefined;
   const currentUser = useCurrentUser();
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState("");
@@ -19,19 +29,20 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
 
   // Restore the unsent draft on mount / issue change.
   useEffect(() => {
-    const draft = localStorage.getItem(draftKey(issueName)) ?? "";
+    const draft = restoreIssueCommentDraft(issueName, agentDraftKey);
     setContent(draft);
-    setExpanded(false);
-  }, [issueName]);
+    setExpanded(Boolean(agentDraftKey && draft));
+  }, [agentDraftKey, issueName]);
+  useEffect(() => {
+    if (agentDraftKey && expanded && content) {
+      markIssueCommentDraftDelivered(agentDraftKey, issueName, content);
+    }
+  }, [agentDraftKey, content, expanded, issueName]);
 
   const persistDraft = useCallback(
     (value: string) => {
       setContent(value);
-      if (value) {
-        localStorage.setItem(draftKey(issueName), value);
-      } else {
-        localStorage.removeItem(draftKey(issueName));
-      }
+      persistIssueCommentDraftBestEffort(issueName, value);
     },
     [issueName]
   );
@@ -44,6 +55,9 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
         issueName,
         comment: content,
       });
+      if (agentDraftKey) {
+        consumePreparedIssueCommentDraft(agentDraftKey, issueName);
+      }
       persistDraft("");
       setExpanded(false);
     } catch (error) {
@@ -60,7 +74,7 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
 
   if (!expanded) {
     return (
-      <div className="flex items-center gap-x-3">
+      <div className="flex items-center gap-x-3" id="issue-comment-editor">
         <div className="shrink-0 pl-0.5">
           <UserAvatar
             colorSeed={currentUser.email}
@@ -82,7 +96,7 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
   }
 
   return (
-    <div className="flex items-start gap-x-3">
+    <div className="flex items-start gap-x-3" id="issue-comment-editor">
       <div className="shrink-0 pl-0.5 pt-1">
         <UserAvatar
           colorSeed={currentUser.email}
@@ -92,6 +106,7 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
       </div>
       <div className="min-w-0 flex-1">
         <MarkdownEditor
+          autoFocus={Boolean(agentDraftKey && content)}
           content={content}
           onChange={persistDraft}
           onSubmit={() => void post()}

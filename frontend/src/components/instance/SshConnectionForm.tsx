@@ -94,7 +94,7 @@ export function SshConnectionForm({
             <span className="text-sm">{t("data-source.ssh-connection")}</span>
           </FormControlRow>
           {sshType !== "NONE" && (
-            <ResponsiveFormLayout>
+            <ResponsiveFormLayout layout="inherit" density="compact">
               <fieldset className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2">
                 <legend className="px-1 textlabel">
                   {t("data-source.ssh-connection")}

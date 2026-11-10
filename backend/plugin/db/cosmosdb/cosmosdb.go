@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -17,6 +18,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/db/cosmosdb/queryengine/gonative"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -170,24 +173,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		}
 	}
 
-	pager := container.NewCrossPartitionQueryItemsPager(statement, queryOption)
-	var items [][]byte
-	for pager.More() {
-		response, err := pager.NextPage(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to read more items"))
-		}
-		var stop bool
-		for _, item := range response.Items {
-			items = append(items, item)
-			if queryContext.Limit > 0 && len(items) >= queryContext.Limit {
-				stop = true
-				break
-			}
-		}
-		if stop {
-			break
-		}
+	items, err := QueryEveryPartition(ctx, container, statement, queryOption, queryContext.Limit)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to read more items"))
 	}
 
 	result := &v1pb.QueryResult{
@@ -207,4 +195,62 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	result.RowsCount = int64(len(result.Rows))
 
 	return []*v1pb.QueryResult{result}, nil
+}
+
+// QueryEveryPartition runs statement across every partition of the container.
+// The gateway serves what it can on its own; an aggregate, DISTINCT, ORDER BY,
+// TOP, OFFSET/LIMIT or GROUP BY that spans partitions it refuses with a
+// BadRequest instead, and the query then runs again through the pure-Go engine,
+// which merges the per-partition streams itself.
+//
+// Only a query that has returned nothing yet can switch: once the gateway has
+// handed back a continuation token, the engine cannot resume from it.
+func QueryEveryPartition(ctx context.Context, container *azcosmos.ContainerClient, statement string, o *azcosmos.QueryOptions, limit int) ([][]byte, error) {
+	items, pages, err := drainQuery(ctx, container, statement, o, limit)
+	if err == nil || pages > 0 || !isCrossPartitionUnsupported(err) {
+		return items, err
+	}
+
+	withEngine := azcosmos.QueryOptions{}
+	if o != nil {
+		withEngine = *o
+	}
+	withEngine.QueryEngine = gonative.Default()
+	items, _, err = drainQuery(ctx, container, statement, &withEngine, limit)
+	return items, err
+}
+
+// drainQuery pages a query to exhaustion or to limit, reporting how many pages
+// it read so the caller can tell a query that failed outright from one that
+// failed partway through.
+func drainQuery(ctx context.Context, container *azcosmos.ContainerClient, statement string, o *azcosmos.QueryOptions, limit int) ([][]byte, int, error) {
+	pager := container.NewQueryItemsPager(statement, azcosmos.NewPartitionKey(), o)
+	var items [][]byte
+	pages := 0
+	for pager.More() {
+		response, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, pages, err
+		}
+		pages++
+		for _, item := range response.Items {
+			items = append(items, item)
+			if limit > 0 && len(items) >= limit {
+				return items, pages, nil
+			}
+		}
+	}
+	return items, pages, nil
+}
+
+// isCrossPartitionUnsupported reports whether err is the gateway saying it
+// cannot serve this query across partitions by itself.
+func isCrossPartitionUnsupported(err error) bool {
+	var responseErr *azcore.ResponseError
+	if !errors.As(err, &responseErr) || responseErr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "cross partition query can not be directly served by the gateway") ||
+		strings.Contains(msg, "Cross partition query only supports")
 }

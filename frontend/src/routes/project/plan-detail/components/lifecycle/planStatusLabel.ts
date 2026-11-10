@@ -9,6 +9,7 @@ export function getPlanStatusTone(reason: PlanStatusReason): PlanStatusTone {
   switch (reason) {
     case "checking":
     case "in-review":
+    case "threads-open":
       return "neutral";
     case "rejected":
     case "checks-failing":

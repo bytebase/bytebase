@@ -370,12 +370,17 @@ func (*OrgPolicyService) getDefaultRolloutPolicy(parent string) (*store.PolicyMe
 }
 
 // getDefaultReviewRulePolicy returns the review rule policy that stands in for
-// a missing row: every rule on. It is the same default the store applies when
-// neither the project nor the workspace has a policy.
+// a missing workspace row, which workspaces created before the default row
+// lack: every rule on, the default the store applies when neither the project
+// nor the workspace has a policy. A project without its own policy follows the
+// workspace's, so it has no stand-in and gets nil.
 func getDefaultReviewRulePolicy(parent string) (*store.PolicyMessage, error) {
 	resourceType, resource, err := common.GetPolicyResourceTypeAndResource(parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if resourceType != storepb.Policy_WORKSPACE {
+		return nil, nil
 	}
 
 	payloadBytes, err := protojson.Marshal(store.GetDefaultReviewRulePolicy())
@@ -677,6 +682,10 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_DATA_QUERY:
+		payload, err := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
+		if err != nil {
+			return "", err
+		}
 		// Check license for both query policy and restrict copying data features
 		if policy.GetQueryDataPolicy() != nil && policy.GetQueryDataPolicy().DisableCopyData {
 			if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_RESTRICT_COPYING_DATA); err != nil {
@@ -686,7 +695,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		if err := s.licenseService.IsFeatureEnabled(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_QUERY_POLICY); err != nil {
 			return "", connect.NewError(connect.CodePermissionDenied, err)
 		}
-		payload := convertToQueryDataPolicyPayload(policy.GetQueryDataPolicy())
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to marshal policy")

@@ -6,6 +6,8 @@
 {{- $data := .Values.bytebase.option.data -}}
 {{- $external_url := index .Values.bytebase.option "external-url" -}}
 {{- $enableJSONLogging := index .Values.bytebase.option "enable-json-logging" -}}
+{{- $ha := .Values.bytebase.option.ha -}}
+{{- $metricsRemoteAccess := index .Values.bytebase.option "metrics-remote-access" -}}
 # bytebase.option.externalPg
 {{- $externalPgURL := .Values.bytebase.option.externalPg.url -}}
 {{- $externalPgExistingPgURLSecret := .Values.bytebase.option.externalPg.existingPgURLSecret -}}
@@ -173,19 +175,28 @@ spec:
               {{- if $enableJSONLogging }}
               --enable-json-logging \
               {{- end }}
+              {{- if $ha }}
+              --ha \
+              {{- end }}
+              {{- if $metricsRemoteAccess }}
+              --metrics-remote-access \
+              {{- end }}
           ports:
             - containerPort: {{ $port }}
               name: web
           {{- if $resources }}
           resources: {{- toYaml $resources | nindent 12 }}
           {{- end }}
-          livenessProbe:
+          # Bytebase opens this port only after metadata migrations finish, which can take a long
+          # time on a large metadata database. A liveness probe would restart the pod mid-upgrade,
+          # so readiness is the only probe.
+          readinessProbe:
             httpGet:
               path: /healthz
               port: {{ $port }}
-            initialDelaySeconds: 300
-            periodSeconds: 300
-            timeoutSeconds: 60
+            {{- with .Values.bytebase.readinessProbe }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - mountPath: {{ $data }}
               {{- if $persistenceExistingClaim }}

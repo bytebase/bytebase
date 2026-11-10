@@ -20,10 +20,13 @@ message IssueCommentPayload {
     IssueUpdate issue_update = 3;
     PlanUpdate plan_update = 7;
     ReviewSubmission review_submission = 8;
+    ReviewRunCompletion review_run_completion = 11;
   }
 
   // The statement context an inline comment references. Set at creation and
-  // immutable afterward; never set together with an event.
+  // immutable afterward, except that a later run reporting a review result
+  // again moves the result to its statement in the SQL that run reviewed.
+  // Never set together with an event.
   StatementAnchor statement_anchor = 9;
 
   // Present on review results only, beside the text and never together with
@@ -50,6 +53,22 @@ message IssueCommentPayload {
   // ReviewSubmission records that an issue entered review.
   message ReviewSubmission {}
 
+  // ReviewRunCompletion records that a review run completed DONE, and what
+  // it did to the results of its reviewer. Posted with no creator, in the
+  // transaction that posts the run's results.
+  message ReviewRunCompletion {
+    ReviewRun.Type run_type = 1;
+    // The run's review_run.attempt; its new results carry the same
+    // ReviewMetadata.attempt.
+    int64 attempt = 2;
+    // Results the run posted as new threads.
+    int32 posted_count = 3;
+    // Earlier results the run reported again, which kept their threads.
+    int32 kept_count = 4;
+    // Earlier results the run no longer reports, which it superseded.
+    int32 superseded_count = 5;
+  }
+
   // PlanUpdate carries before/after snapshots of plan.config.specs,
   // emitted once per PlanService.UpdatePlan call whose specs branch
   // produces a non-cosmetic diff. The renderer computes per-spec
@@ -60,9 +79,11 @@ message IssueCommentPayload {
   }
 
   // ReviewMetadata is what a review result carries beyond its text: which
-  // reviewer posted it, what it was judged against, its priority, and the
-  // databases it applies to. Results from the same reviewer are superseded
-  // together: when a run completes, it resolves every OPEN root of its type
+  // reviewer posted it, what it was judged against, its priority, the
+  // databases it applies to, and for an AI result, its title. When a run
+  // completes, an earlier result of its type whose fingerprint the run
+  // reports again keeps its thread, and the run posts no new result for it;
+  // every other earlier root of its type is resolved and marked superseded,
   // in the transaction that posts the new results.
   message ReviewMetadata {
     // Priority says what resolving the thread means. It has no bearing on
@@ -91,6 +112,26 @@ message IssueCommentPayload {
     // renderer collapses it when it equals the spec's target set.
     // Format: instances/{instance}/databases/{database}
     repeated string targets = 4;
+    // A later run of the same reviewer has completed without reporting the
+    // result again, so the latest review does not hold it. Set by that run
+    // whatever the thread state, and never cleared.
+    bool superseded = 5;
+    // Identifies the finding across runs: equal fingerprints are the same
+    // finding on the same SQL. The rule review derives it from what it
+    // judged. The AI review starts it with a hash of its statement and ends
+    // it at random, and a later run carries it over to the finding its merge
+    // matches to the result. Unique among the results of one run. Empty on a
+    // result that predates it, and an empty fingerprint matches nothing.
+    string fingerprint = 6;
+    // The review_run.attempt of the run that posted the result. A result
+    // a later run reports again keeps its attempt.
+    int64 attempt = 7;
+    // The conditions a RULE result reports, as omni finding codes such as
+    // "WT101", one per reason. Empty for other reviewers.
+    repeated string codes = 8;
+    // The name of the problem an AI result reports, on one line; the comment
+    // holds the rest. Empty for a RULE result, which rule_type names.
+    string title = 9;
   }
 
   // StatementAnchor records the anchored statement revision and range.

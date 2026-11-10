@@ -7,6 +7,7 @@ import {
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
+  type PlanRelation,
   type PlanWarning,
   parseWithDepthLimit,
   planSelfCost,
@@ -351,8 +352,11 @@ function pairColumns(left: string[], right: string[]): string {
     .join(", ");
 }
 
+/** A diagnostic SQL Server itself reports, before its source is stamped on. */
+type EngineWarning = Omit<PlanWarning, "source">;
+
 /** Warnings SQL Server raises as a flag on `<Warnings>`, by attribute name. */
-const FLAG_WARNINGS: Record<string, PlanWarning> = {
+const FLAG_WARNINGS: Record<string, EngineWarning> = {
   NoJoinPredicate: {
     title: "No join predicate",
     detail:
@@ -374,7 +378,7 @@ function toServerWarnings(
   unmatchedIndexes: readonly string[] = []
 ): PlanWarning[] {
   if (!warnings) return [];
-  const result: PlanWarning[] = [];
+  const result: EngineWarning[] = [];
   for (const attribute of Array.from(warnings.attributes)) {
     if (!isTrue(attribute.value)) continue;
     if (attribute.name === "UnmatchedIndexes" && unmatchedIndexes.length > 0) {
@@ -423,7 +427,7 @@ function toServerWarnings(
       }
     }
   }
-  return result;
+  return result.map((warning) => ({ ...warning, source: "engine" }));
 }
 
 /**
@@ -464,6 +468,7 @@ function toMissingIndexWarnings(queryPlan: Element): PlanWarning[] {
           impact === undefined
             ? `SQL Server suggests this index: ${statement}`
             : `SQL Server estimates this index would lower the statement's cost by ${formatPlanShare(impact / 100)}: ${statement}`,
+        source: "engine",
       };
     })
   );
@@ -640,6 +645,28 @@ function toOperatorName(relop: Element, operator: Element | undefined): string {
   return `${physical} (${logical})`;
 }
 
+/**
+ * The table the operator reads, with the qualifiers SQL Server wrote on it.
+ * It names the database on every object, including the connected one, so the
+ * lookup compares rather than refusing anything qualified.
+ */
+function toOperatorRelation(
+  operator: Element | undefined
+): PlanRelation | undefined {
+  const object = firstChild(operator, "Object");
+  const table = object?.getAttribute("Table");
+  if (!object || !table) return undefined;
+  const qualifier = (name: string) => {
+    const value = object.getAttribute(name);
+    return value ? unbracket(value) : undefined;
+  };
+  return {
+    table: unbracket(table),
+    database: qualifier("Database"),
+    schema: qualifier("Schema"),
+  };
+}
+
 /** What the operator works on, for the one line a card has room for. */
 function toOperatorSubject(operator: Element | undefined): string | undefined {
   const object = firstChild(operator, "Object");
@@ -741,6 +768,44 @@ function toOperatorWarnings(
   return warnings;
 }
 
+/** A counter summed over the threads reporting it, or undefined when none do. */
+function sumThreadAttribute(
+  threads: readonly Element[],
+  name: string
+): number | undefined {
+  let total: number | undefined;
+  for (const thread of threads) {
+    const value = numberAttribute(thread, name);
+    if (value === undefined) continue;
+    total = (total ?? 0) + value;
+  }
+  return total;
+}
+
+/**
+ * What the operator really did, on an actual plan (`SET STATISTICS XML ON`).
+ *
+ * Every thread reports its own counters, so rows and executions are summed
+ * across them. Elapsed time is left out: SQL Server reports it cumulatively on
+ * a row-mode operator but per operator on a batch-mode one, and the model
+ * holds one meaning, so a plan mixing the two would be ranked by a number that
+ * is wrong for half of it. Such a plan ranks by estimated cost, which it always
+ * carries, and its estimated and actual rows still sit side by side.
+ */
+function toOperatorMeasurements(relop: Element): {
+  loops?: number;
+  actualRows?: number;
+} {
+  const threads = childElements(
+    firstChild(relop, "RunTimeInformation"),
+    "RunTimeCountersPerThread"
+  );
+  return {
+    loops: sumThreadAttribute(threads, "ActualExecutions"),
+    actualRows: sumThreadAttribute(threads, "ActualRows"),
+  };
+}
+
 function toOperatorNode(
   { element: relop, relationship }: PlanChild,
   id: string,
@@ -749,15 +814,19 @@ function toOperatorNode(
   const operator = operatorElement(relop);
   const children = operator ? toChildren(operator, id, depth) : [];
   const totalCost = numberAttribute(relop, "EstimatedTotalSubtreeCost");
+  const measured = toOperatorMeasurements(relop);
   return {
     id,
     nodeType: toOperatorName(relop, operator),
     subject: toOperatorSubject(operator),
+    relation: toOperatorRelation(operator),
     relationship,
     totalCost,
     selfCost: planSelfCost(totalCost, children),
     rows: numberAttribute(relop, "EstimateRows"),
     width: numberAttribute(relop, "AvgRowSize"),
+    loops: measured.loops,
+    actualRows: measured.actualRows,
     properties: toOperatorProperties(relop, operator),
     warnings: toOperatorWarnings(
       relop,

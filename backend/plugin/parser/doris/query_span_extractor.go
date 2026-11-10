@@ -112,8 +112,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 // without this unwrap an `EXPLAIN SELECT ... FROM t` would yield zero
 // AccessTables — table-level ACL checks need to see `t`.
 func unwrapExplainForSpan(statement string) string {
-	file, errs := parser.Parse(statement)
-	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+	file, err := parser.Parse(statement)
+	if err != nil || file == nil || len(file.Stmts) == 0 {
 		return statement
 	}
 	explain, ok := file.Stmts[0].(*ast.ExplainStmt)

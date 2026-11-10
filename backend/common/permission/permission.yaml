@@ -88,6 +88,7 @@ permissions:
   - bb.reviewConfigs.get
   - bb.reviewConfigs.list
   - bb.reviewConfigs.update
+  - bb.reviewRuns.get
   - bb.reviewRuns.run
   - bb.revisions.create
   - bb.revisions.delete
@@ -126,6 +127,7 @@ permissions:
   - bb.sheets.get
   - bb.subscription.manage
   - bb.sql.select
+  - bb.sql.export
   - bb.sql.ddl
   - bb.sql.dml
   - bb.sql.explain

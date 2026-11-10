@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
+import { QueryPlanI18nProvider } from "./plan-i18n";
 import { PLAN_FULL_TABLE_SCAN, type PlanNode } from "./plan-model";
 import { QueryPlanNodeDetails } from "./QueryPlanNodeDetails";
 
@@ -83,7 +84,11 @@ describe("QueryPlanNodeDetails", () => {
         node={node({
           warnings: [
             PLAN_FULL_TABLE_SCAN,
-            { title: "No join predicate", detail: "Every row pairs up." },
+            {
+              title: "No join predicate",
+              detail: "Every row pairs up.",
+              source: "engine",
+            },
           ],
         })}
       />
@@ -95,6 +100,38 @@ describe("QueryPlanNodeDetails", () => {
     expect(warnings[0]).toHaveTextContent(/an index on the filtered columns/);
     expect(warnings[1]).toHaveTextContent("No join predicate");
     expect(screen.getAllByRole("alert")).toEqual(warnings);
+  });
+
+  test("reads this viewer's own warning in the reader's language", () => {
+    const translate = vi.fn((key: string) => `localized:${key}`);
+    render(
+      <QueryPlanI18nProvider translate={translate}>
+        <QueryPlanNodeDetails
+          node={node({
+            warnings: [
+              PLAN_FULL_TABLE_SCAN,
+              {
+                title: "No join predicate",
+                detail: "Every row pairs up.",
+                source: "engine",
+              },
+            ],
+          })}
+        />
+      </QueryPlanI18nProvider>
+    );
+
+    const warnings = screen.getAllByTestId("plan-details-warning");
+    expect(warnings[0]).toHaveTextContent(
+      "localized:warning.full-table-scan.title"
+    );
+    expect(warnings[0]).toHaveTextContent(
+      "localized:warning.full-table-scan.detail"
+    );
+    // A warning the engine reported keeps the engine's words, as the plan's
+    // own operator names and values do.
+    expect(warnings[1]).toHaveTextContent("No join predicate");
+    expect(warnings[1]).toHaveTextContent("Every row pairs up.");
   });
 
   test("shows a warning the engine repeats as often as it reports it", () => {
@@ -156,5 +193,123 @@ describe("QueryPlanNodeDetails", () => {
     expect(screen.getByText("Split Range").nextSibling).toHaveTextContent(
       "true"
     );
+  });
+});
+
+describe("QueryPlanNodeDetails on a measured node", () => {
+  const measured = (overrides: Partial<PlanNode> = {}): PlanNode =>
+    node({
+      rows: 100,
+      actualRows: 2500,
+      actualTime: 12.5,
+      selfTime: 4,
+      loops: 5,
+      ...overrides,
+    });
+
+  test("puts what happened beside what the planner expected", () => {
+    render(<QueryPlanNodeDetails node={measured()} />);
+
+    expect(screen.getByText("Estimated rows").nextSibling).toHaveTextContent(
+      "100"
+    );
+    expect(screen.getByText("Actual rows").nextSibling).toHaveTextContent(
+      "2,500"
+    );
+    expect(screen.getByText("Loops").nextSibling).toHaveTextContent("5");
+    expect(screen.getByText("Actual time").nextSibling).toHaveTextContent(
+      "12.5 ms"
+    );
+  });
+
+  test("does the multiplication a row misestimate needs", () => {
+    // 100 rows expected on each of 5 loops is 500, and 2,500 came back.
+    render(<QueryPlanNodeDetails node={measured()} />);
+
+    expect(
+      screen.getByTestId("plan-details-row-estimate")
+    ).toHaveTextContent("Returned 5× more rows than the planner estimated.");
+  });
+
+  test("says when far fewer rows came back than were planned", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 1000, loops: 1, actualRows: 10 })}
+      />
+    );
+
+    expect(
+      screen.getByTestId("plan-details-row-estimate")
+    ).toHaveTextContent("Returned 100× fewer rows than the planner estimated.");
+  });
+
+  test("states a node that returned nothing as that, not as a multiple", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 500, loops: 1, actualRows: 0 })}
+      />
+    );
+
+    expect(screen.getByTestId("plan-details-row-estimate")).toHaveTextContent(
+      "Returned no rows, where the planner expected some."
+    );
+  });
+
+  test("stays quiet about an estimate that was close enough", () => {
+    render(
+      <QueryPlanNodeDetails
+        node={measured({ rows: 100, loops: 1, actualRows: 120 })}
+      />
+    );
+
+    expect(screen.queryByTestId("plan-details-row-estimate")).toBeNull();
+  });
+
+  test("leaves the measured rows off a node that was only planned", () => {
+    render(<QueryPlanNodeDetails node={node()} />);
+
+    expect(screen.queryByText("Actual rows")).toBeNull();
+    expect(screen.queryByText("Loops")).toBeNull();
+    expect(screen.queryByTestId("plan-details-row-estimate")).toBeNull();
+  });
+});
+
+describe("QueryPlanNodeDetails on a table Bytebase knows", () => {
+  const facts = {
+    rowCount: 9488,
+    indexes: [
+      {
+        name: "salary_pkey",
+        columns: "emp_no, from_date",
+        primary: true,
+      },
+      { name: "salary_amount_key", columns: "amount", unique: true },
+    ],
+  };
+
+  test("turns an expensive scan into a next step", () => {
+    render(<QueryPlanNodeDetails node={node()} table={facts} />);
+
+    const section = screen.getByTestId("plan-details-table");
+    expect(section).toHaveTextContent("9,488 rows at the last sync");
+    expect(section).toHaveTextContent("salary_pkey · primary");
+    expect(section).toHaveTextContent("emp_no, from_date");
+    expect(section).toHaveTextContent("salary_amount_key · unique");
+  });
+
+  test("says a table has no indexes, which is the answer worth having", () => {
+    render(
+      <QueryPlanNodeDetails node={node()} table={{ rowCount: 9488, indexes: [] }} />
+    );
+
+    expect(screen.getByTestId("plan-details-table")).toHaveTextContent(
+      "No indexes on this table."
+    );
+  });
+
+  test("leaves the section out where Bytebase knows nothing", () => {
+    render(<QueryPlanNodeDetails node={node()} />);
+
+    expect(screen.queryByTestId("plan-details-table")).toBeNull();
   });
 });

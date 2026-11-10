@@ -137,7 +137,7 @@ func (m CompletionMap) insertMetadataSchemas(c *Completer, linkedServer string, 
 	}
 
 	_, databaseMetadata, err := c.metadataGetter(c.ctx, c.instanceID, anchor)
-	if err != nil {
+	if err != nil || databaseMetadata == nil {
 		return
 	}
 
@@ -161,7 +161,7 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 
 func (m CompletionMap) insertAllColumns(c *Completer) {
 	_, databaseMeta, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
-	if err != nil {
+	if err != nil || databaseMeta == nil {
 		return
 	}
 	for _, schema := range databaseMeta.ListSchemaNames() {

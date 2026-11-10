@@ -1,6 +1,8 @@
 package db
 
 import (
+	"strings"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -32,11 +34,20 @@ func SupportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}
 	case storepb.Engine_MSSQL:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
-	case storepb.Engine_SPANNER:
+	// Elasticsearch joins these two in stating one plan format: its profile,
+	// which it answers with only for a search that ran.
+	case storepb.Engine_SPANNER, storepb.Engine_MONGODB, storepb.Engine_ELASTICSEARCH:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
-		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB, storepb.Engine_DATABRICKS,
-		storepb.Engine_ELASTICSEARCH:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_TIDB,
+		storepb.Engine_ORACLE, storepb.Engine_CLICKHOUSE, storepb.Engine_TRINO,
+		storepb.Engine_OCEANBASE, storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE,
+		storepb.Engine_HIVE:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON}
+	// These engines have no plan to ask for: CQL and the document and key-value
+	// APIs state none, and an engine listed here is refused an explain request
+	// outright, since its driver would otherwise run the statement as written.
+	case storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
+		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB:
 		return nil
 	default:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
@@ -49,14 +60,36 @@ func ExplainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainF
 	if engine == storepb.Engine_BIGQUERY {
 		return v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, false
 	}
-	if engine == storepb.Engine_MYSQL {
+	// MySQL has no text format to name: the plain EXPLAIN that every other
+	// format builds follows the session's explain_format from 8.0.32, so the
+	// JSON we ask for outright is the only answer the request settles.
+	if engine == storepb.Engine_MYSQL && format != v1pb.QueryOption_JSON {
 		return v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, true
 	}
 	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
 		return format, true
 	}
-	if engine == storepb.Engine_SPANNER {
+	if engine == storepb.Engine_SPANNER || engine == storepb.Engine_MONGODB ||
+		engine == storepb.Engine_ELASTICSEARCH {
 		return v1pb.QueryOption_JSON, true
 	}
 	return v1pb.QueryOption_TEXT, true
+}
+
+// TypedExplainPlan describes the plan a result carries because the caller's own
+// statement asked for one, from the engine parser's DescribeExplain:
+//
+//	r.QueryPlan = db.TypedExplainPlan(mysqlparser.DescribeExplain(statement))
+//
+// A format the enum does not name is left unspecified, which is the answer for
+// MySQL's omitted FORMAT: it follows the session's explain_format, so the
+// statement does not settle it, and the viewer reads unknown as text.
+func TypedExplainPlan(format string, executed, isExplain bool) *v1pb.QueryResult_QueryPlan {
+	if !isExplain {
+		return nil
+	}
+	return &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
+		Executed: executed,
+	}
 }

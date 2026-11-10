@@ -3,6 +3,7 @@
 package trino
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/bytebase/omni/trino/ast"
@@ -103,9 +104,9 @@ func parseSegment(stmt base.Statement) (*omniAST, error) {
 	if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
 		return nil, nil
 	}
-	file, errs := parser.Parse(stmt.Text)
-	if len(errs) > 0 {
-		return nil, convertParseError(stmt.Text, &errs[0], stmt.Start)
+	file, err := parser.Parse(stmt.Text)
+	if err != nil {
+		return nil, convertParseError(stmt.Text, err, stmt.Start)
 	}
 	var node ast.Node
 	if file != nil && len(file.Stmts) > 0 {
@@ -114,17 +115,21 @@ func parseSegment(stmt base.Statement) (*omniAST, error) {
 	return &omniAST{node: node, startPos: stmt.Start}, nil
 }
 
-// convertParseError converts an omni *parser.ParseError to a *base.SyntaxError
-// that sql_service.go recognises for structured error diagnostics. It converts
-// the byte offset in ParseError.Loc to 1-based line and 1-based column
-// (rune-based), matching the storepb.Position convention used across other omni
-// parser adapters.
+// convertParseError converts the first omni *parser.ParseError carried by err to
+// a *base.SyntaxError that sql_service.go recognises for structured error
+// diagnostics. It converts the byte offset in ParseError.Position to 1-based
+// line and 1-based column (rune-based), matching the storepb.Position
+// convention used across other omni parser adapters.
 //
 // If basePos is non-nil, the computed position is offset by it so that errors
 // from parsing an isolated statement segment are reported in the coordinates of
 // the original multi-statement script.
-func convertParseError(statement string, pe *parser.ParseError, basePos *storepb.Position) *base.SyntaxError {
-	pos := base.NewByteOffsetPositionMapper(statement).Position(pe.Loc.Start)
+func convertParseError(statement string, err error, basePos *storepb.Position) error {
+	var pe *parser.ParseError
+	if !errors.As(err, &pe) {
+		return err
+	}
+	pos := base.NewByteOffsetPositionMapper(statement).Position(pe.Position)
 	line, col := int(pos.Line), int(pos.Column)
 	if basePos != nil {
 		if line == 1 {
@@ -138,7 +143,7 @@ func convertParseError(statement string, pe *parser.ParseError, basePos *storepb
 			Column: int32(col),
 		},
 		Message:    pe.Error(),
-		RawMessage: pe.Msg,
+		RawMessage: pe.Message,
 	}
 }
 

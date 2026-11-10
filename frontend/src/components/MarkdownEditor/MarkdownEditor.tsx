@@ -1,6 +1,9 @@
 import DOMPurify from "dompurify";
 import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
-import MarkdownIt from "markdown-it";
+import MarkdownIt, {
+  type MarkdownIt as MarkdownItInstance,
+  type Token,
+} from "markdown-it";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -9,10 +12,114 @@ import { Textarea } from "@/components/ui/textarea";
 import "./MarkdownEditor.css";
 import { cn } from "@/lib/utils";
 
-const markdown = new MarkdownIt({
-  html: true,
-  linkify: true,
-});
+// linkify-it leaves fuzzy links off, so a bare host such as www.example.com
+// renders as plain text. Comments and descriptions are written that way, so
+// every renderer here keeps those clickable.
+function linkifyBareHosts(md: MarkdownItInstance): MarkdownItInstance {
+  md.linkify.set({ fuzzyLink: true });
+  return md;
+}
+
+const markdown = linkifyBareHosts(
+  new MarkdownIt({
+    html: true,
+    linkify: true,
+  })
+);
+
+// Displaying untrusted text must not request a remote URL: an image URL
+// derived from SQL or schema text would carry that text to another server
+// when someone merely opens the page. So it renders no raw HTML, and an image
+// becomes a link to its source, labeled with its alt text or else the source,
+// that the reader may choose to follow. Without a source, or inside a link
+// where anchors cannot nest, the label stays plain text. The page turns DNS
+// prefetching off in index.html, so no link resolves its host until clicked.
+const untrustedMarkdown = linkifyBareHosts(
+  new MarkdownIt({
+    html: false,
+    linkify: true,
+  })
+);
+untrustedMarkdown.renderer.rules.image = (tokens, idx) => {
+  const { escapeHtml } = untrustedMarkdown.utils;
+  const src = String(tokens[idx].attrGet("src") ?? "");
+  const alt = labelText(tokens[idx].children ?? []);
+  const linkDepth = tokens
+    .slice(0, idx)
+    .reduce(
+      (depth, token) =>
+        depth +
+        (token.type === "link_open" ? 1 : token.type === "link_close" ? -1 : 0),
+      0
+    );
+  const label = escapeHtml(alt || src);
+  if (!src || linkDepth > 0) return label;
+  return `<a href="${escapeHtml(src)}">${label}</a>`;
+};
+
+// A Markdown text's first line as plain text, for a one-line summary: markup
+// goes, and code spans, escapes, and entities keep their content. A comment
+// is Markdown, and so is an AI review result's title.
+export function markdownSummary(text: string): string {
+  const line = (text.split("\n", 1)[0] ?? "").replace(/^#+\s*/, "");
+  const [inline] = untrustedMarkdown.parseInline(line, {});
+  return labelText(inline?.children ?? []).trim();
+}
+
+// An image label as plain text. Unlike renderInlineAsText, it keeps code
+// spans and the decoded entities and escapes that a label's tokens carry.
+function labelText(tokens: Token[]): string {
+  return tokens
+    .map((token) => {
+      switch (token.type) {
+        case "text":
+        case "text_special":
+        case "code_inline":
+          return token.content;
+        case "image":
+          return labelText(token.children ?? []);
+        case "softbreak":
+        case "hardbreak":
+          return " ";
+        default:
+          return "";
+      }
+    })
+    .join("");
+}
+
+// Every tag and attribute untrustedMarkdown emits, minus code-language
+// classes and table alignment styles, so the sanitizer holds the same line.
+const UNTRUSTED_SANITIZE_CONFIG = {
+  ALLOWED_TAGS: [
+    "a",
+    "blockquote",
+    "br",
+    "code",
+    "em",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "li",
+    "ol",
+    "p",
+    "pre",
+    "s",
+    "strong",
+    "table",
+    "tbody",
+    "td",
+    "th",
+    "thead",
+    "tr",
+    "ul",
+  ],
+  ALLOWED_ATTR: ["href", "start", "title"],
+};
 
 const editorBoxClassName =
   "w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm";
@@ -26,6 +133,11 @@ type CommonProps = {
   maxLength?: number;
   transform?: (raw: string) => string;
   maxHeight?: number;
+  /**
+   * The text is not a workspace member's own writing, such as a review
+   * result. It renders without raw HTML or images.
+   */
+  untrusted?: boolean;
 };
 
 type EditorProps = CommonProps & {
@@ -53,6 +165,7 @@ export function MarkdownEditor({
   mode = "editor",
   transform,
   maxHeight,
+  untrusted = false,
 }: Props) {
   const { t } = useTranslation();
   const boxClassName = cn(
@@ -68,9 +181,9 @@ export function MarkdownEditor({
       return "";
     }
     const source = transform ? transform(content) : content;
-    const rendered = markdown.render(source);
-    return sanitizePreviewHtml(rendered);
-  }, [content, transform]);
+    const rendered = (untrusted ? untrustedMarkdown : markdown).render(source);
+    return sanitizePreviewHtml(rendered, untrusted);
+  }, [content, transform, untrusted]);
 
   useEffect(() => {
     setTab(mode === "preview" ? "preview" : "write");
@@ -237,8 +350,10 @@ export function MarkdownEditor({
   );
 }
 
-function sanitizePreviewHtml(html: string) {
-  const sanitized = DOMPurify.sanitize(html);
+function sanitizePreviewHtml(html: string, untrusted: boolean) {
+  const sanitized = untrusted
+    ? DOMPurify.sanitize(html, UNTRUSTED_SANITIZE_CONFIG)
+    : DOMPurify.sanitize(html);
   const template = document.createElement("template");
   template.innerHTML = sanitized;
   for (const link of template.content.querySelectorAll("a")) {

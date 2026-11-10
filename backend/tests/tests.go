@@ -3,11 +3,9 @@ package tests
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
 	_ "embed"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -17,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
-	"golang.org/x/net/http2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -180,10 +177,10 @@ func sharedServer(t *testing.T) *controller {
 // when the test writes what the workspace shares — a setting, a workspace or
 // environment policy, the license, the IAM policy, a workspace-scoped ID, the
 // demo principal's credentials — or asserts on a workspace-wide list.
-func startWorkspace(ctx context.Context, t *testing.T) (*controller, context.Context) {
+func startWorkspace(ctx context.Context, t *testing.T, configure ...func(*component.Profile)) (*controller, context.Context) {
 	t.Helper()
 	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	ctx, err := ctl.StartServerWithExternalPg(ctx, configure...)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = ctl.Close(ctx) })
 	return ctl, ctx
@@ -222,7 +219,8 @@ func startProject(ctx context.Context, t *testing.T) (*controller, context.Conte
 }
 
 // StartServerWithExternalPg starts the main server with external Postgres.
-func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.Context, error) {
+// configure adjusts the server profile before the server starts.
+func (ctl *controller) StartServerWithExternalPg(ctx context.Context, configure ...func(*component.Profile)) (context.Context, error) {
 	pgMainURL := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres", externalPgHost, externalPgPort)
 	db, err := sql.Open("pgx", pgMainURL)
 	if err != nil {
@@ -237,6 +235,9 @@ func (ctl *controller) StartServerWithExternalPg(ctx context.Context) (context.C
 	pgURL := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s", externalPgHost, externalPgPort, databaseName)
 	serverPort := getTestPort()
 	profile := getTestProfileWithExternalPg(serverPort, pgURL)
+	for _, c := range configure {
+		c(profile)
+	}
 	server, err := server.NewServer(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -336,14 +337,13 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 		}
 	}()
 
-	// initialize controller clients.
+	// initialize controller clients. The server serves HTTP/2 without TLS, so
+	// the transport carries UnencryptedHTTP2 and not HTTP1: with both set it
+	// picks HTTP/1.1 for an http:// URL, which the streaming RPCs cannot use.
+	protocols := new(http.Protocols)
+	protocols.SetUnencryptedHTTP2(true)
 	ctl.client = &http.Client{
-		Transport: &http2.Transport{
-			AllowHTTP: true,
-			DialTLSContext: func(_ context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-				return net.Dial(network, addr)
-			},
-		},
+		Transport: &http.Transport{Protocols: protocols},
 	}
 
 	ctl.newClients()

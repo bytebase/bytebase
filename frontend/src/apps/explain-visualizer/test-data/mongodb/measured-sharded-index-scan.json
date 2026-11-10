@@ -1,0 +1,317 @@
+{
+  "queryPlanner": {
+    "mongosPlannerVersion": 1,
+    "winningPlan": {
+      "stage": "SHARD_MERGE",
+      "shards": [
+        {
+          "shardName": "sh1",
+          "connectionString": "sh1/qp-sh1:27018",
+          "serverInfo": {
+            "host": "fe4c19987c05",
+            "port": 27018,
+            "version": "7.0.45",
+            "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+          },
+          "namespace": "qp.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "total": {
+              "$gt": 880
+            }
+          },
+          "queryHash": "CACA99B3",
+          "planCacheKey": "12DCEA8D",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "SHARDING_FILTER",
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        },
+        {
+          "shardName": "sh2",
+          "connectionString": "sh2/qp-sh2:27018",
+          "serverInfo": {
+            "host": "b209ed3472e1",
+            "port": 27018,
+            "version": "7.0.45",
+            "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+          },
+          "namespace": "qp.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "total": {
+              "$gt": 880
+            }
+          },
+          "queryHash": "CACA99B3",
+          "planCacheKey": "12DCEA8D",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "SHARDING_FILTER",
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        }
+      ]
+    }
+  },
+  "executionStats": {
+    "nReturned": 2785,
+    "executionTimeMillis": 7,
+    "totalKeysExamined": 2785,
+    "totalDocsExamined": 2785,
+    "executionStages": {
+      "stage": "SHARD_MERGE",
+      "nReturned": 2785,
+      "executionTimeMillis": 7,
+      "totalKeysExamined": 2785,
+      "totalDocsExamined": 2785,
+      "totalChildMillis": {
+        "high": 0,
+        "low": 12,
+        "unsigned": false
+      },
+      "shards": [
+        {
+          "shardName": "sh1",
+          "executionSuccess": true,
+          "nReturned": 1420,
+          "executionTimeMillis": 6,
+          "totalKeysExamined": 1420,
+          "totalDocsExamined": 1420,
+          "executionStages": {
+            "stage": "SHARDING_FILTER",
+            "nReturned": 1420,
+            "executionTimeMillisEstimate": 0,
+            "works": 1421,
+            "advanced": 1420,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 1,
+            "restoreState": 1,
+            "isEOF": 1,
+            "chunkSkips": 0,
+            "inputStage": {
+              "stage": "FETCH",
+              "nReturned": 1420,
+              "executionTimeMillisEstimate": 0,
+              "works": 1421,
+              "advanced": 1420,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 1,
+              "restoreState": 1,
+              "isEOF": 1,
+              "docsExamined": 1420,
+              "alreadyHasObj": 0,
+              "inputStage": {
+                "stage": "IXSCAN",
+                "nReturned": 1420,
+                "executionTimeMillisEstimate": 0,
+                "works": 1421,
+                "advanced": 1420,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 1,
+                "restoreState": 1,
+                "isEOF": 1,
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                },
+                "keysExamined": 1420,
+                "seeks": 1,
+                "dupsTested": 0,
+                "dupsDropped": 0
+              }
+            }
+          }
+        },
+        {
+          "shardName": "sh2",
+          "executionSuccess": true,
+          "nReturned": 1365,
+          "executionTimeMillis": 6,
+          "totalKeysExamined": 1365,
+          "totalDocsExamined": 1365,
+          "executionStages": {
+            "stage": "SHARDING_FILTER",
+            "nReturned": 1365,
+            "executionTimeMillisEstimate": 0,
+            "works": 1366,
+            "advanced": 1365,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 1,
+            "restoreState": 1,
+            "isEOF": 1,
+            "chunkSkips": 0,
+            "inputStage": {
+              "stage": "FETCH",
+              "nReturned": 1365,
+              "executionTimeMillisEstimate": 0,
+              "works": 1366,
+              "advanced": 1365,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 1,
+              "restoreState": 1,
+              "isEOF": 1,
+              "docsExamined": 1365,
+              "alreadyHasObj": 0,
+              "inputStage": {
+                "stage": "IXSCAN",
+                "nReturned": 1365,
+                "executionTimeMillisEstimate": 0,
+                "works": 1366,
+                "advanced": 1365,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 1,
+                "restoreState": 1,
+                "isEOF": 1,
+                "keyPattern": {
+                  "total": 1
+                },
+                "indexName": "total_1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "total": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "total": ["(880, inf.0]"]
+                },
+                "keysExamined": 1365,
+                "seeks": 1,
+                "dupsTested": 0,
+                "dupsDropped": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "serverInfo": {
+    "host": "25432bf7811b",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "command": {
+    "find": "orders",
+    "filter": {
+      "total": {
+        "$gt": 880
+      }
+    },
+    "lsid": {
+      "id": "4d375229-467a-4f9d-a622-6c7684c0a7ae"
+    },
+    "$clusterTime": {
+      "clusterTime": {
+        "$timestamp": "7701197595216969729"
+      },
+      "signature": {
+        "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "keyId": 0
+      }
+    },
+    "$db": "qp"
+  },
+  "ok": 1,
+  "$clusterTime": {
+    "clusterTime": {
+      "$timestamp": "7701197595216969729"
+    },
+    "signature": {
+      "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "keyId": {
+        "high": 0,
+        "low": 0,
+        "unsigned": false
+      }
+    }
+  },
+  "operationTime": {
+    "$timestamp": "7701197543677362487"
+  }
+}

@@ -3,13 +3,19 @@ import { type ReactElement, useState } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  lazyExtractDomRefSuggestions,
+  lazyExtractDomTree,
+} from "@/modules/agent/dom";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
+  DataSource_AWSCredentialSchema,
   DataSource_AuthenticationType,
   DataSource_CloudSQLIPType,
   DataSource_GCPCredentialSchema,
   DataSourceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { FormField, ResponsiveFormLayout } from "../ui/form";
 import {
   CredentialSourceForm,
   offeredCloudSQLIPTypes,
@@ -105,6 +111,122 @@ describe("CredentialSourceForm", () => {
     }
   );
 
+  test("hides AWS IAM credentials from Agent DOM snapshots", async () => {
+    const dataSource = makeDataSource(
+      DataSource_AuthenticationType.AWS_RDS_IAM
+    );
+    dataSource.iamExtension = {
+      case: "awsCredential",
+      value: create(DataSource_AWSCredentialSchema, {
+        accessKeyId: "AKIAEXAMPLEKEY",
+        secretAccessKey: "example-secret-access-key",
+        sessionToken: "example-session-token",
+        roleArn: "arn:aws:iam::123456789012:role/example",
+      }),
+    };
+    const { unmount } = render(
+      <CredentialSourceForm
+        dataSource={dataSource}
+        engine={Engine.POSTGRES}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(tree).not.toContain("AKIAEXAMPLEKEY");
+    expect(tree).not.toContain("example-secret-access-key");
+    expect(tree).not.toContain("example-session-token");
+    expect(tree).toContain("arn:aws:iam::123456789012:role/example");
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "AKIAEXAMPLEKEY"
+    );
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "example-secret-access-key"
+    );
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      "example-session-token"
+    );
+    expect(
+      suggestions.filter(({ label }) =>
+        ["Access Key ID", "Secret Access Key", "Session Token"].includes(
+          label
+        )
+      )
+    ).toEqual([]);
+
+    unmount();
+  });
+
+  test("hides GCP IAM credential contents from Agent DOM snapshots", async () => {
+    const dataSource = makeDataSource(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    );
+    dataSource.iamExtension = {
+      case: "gcpCredential",
+      value: create(DataSource_GCPCredentialSchema, {
+        content: '{"private_key":"example-gcp-private-key"}',
+      }),
+    };
+    const { unmount } = render(
+      <CredentialSourceForm
+        dataSource={dataSource}
+        engine={Engine.POSTGRES}
+        allowEdit={true}
+        onDataSourceChange={vi.fn()}
+      />
+    );
+
+    const { tree } = await lazyExtractDomTree();
+    const suggestions = await lazyExtractDomRefSuggestions();
+
+    expect(tree).not.toContain("example-gcp-private-key");
+    expect(suggestions.map(({ value }) => value)).not.toContain(
+      '{"private_key":"example-gcp-private-key"}'
+    );
+    expect(suggestions.some(({ tag }) => tag === "textarea")).toBe(false);
+
+    unmount();
+  });
+
+  test("keeps default credential help below the title in a compact dependent group", () => {
+    const { container, unmount } = render(
+      <ResponsiveFormLayout layout="horizontal">
+        <FormField title="Authentication">
+          <ResponsiveFormLayout layout="inherit" density="compact">
+            <CredentialSourceForm
+              dataSource={makeDataSource(
+                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+              )}
+              engine={Engine.POSTGRES}
+              allowEdit={true}
+              onDataSourceChange={vi.fn()}
+            />
+          </ResponsiveFormLayout>
+        </FormField>
+      </ResponsiveFormLayout>
+    );
+
+    const credentialSource = container.querySelectorAll(
+      '[data-slot="form-field"]'
+    )[1];
+    const description = credentialSource?.querySelector(
+      '[data-slot="form-field-description"]'
+    );
+
+    expect(
+      credentialSource?.querySelector('[data-slot="form-field-control"]')
+    ).toBeNull();
+    expect(
+      credentialSource?.querySelector('[data-slot="form-field-header"]')
+        ?.lastElementChild
+    ).toBe(description);
+
+    unmount();
+  });
+
   test("shows the Cloud SQL IP selector only for Cloud SQL MySQL/Postgres IAM", () => {
     const { GOOGLE_CLOUD_SQL_IAM, PASSWORD } = DataSource_AuthenticationType;
     expect(showsCloudSQLIPType(Engine.MYSQL, GOOGLE_CLOUD_SQL_IAM)).toBe(true);
@@ -194,6 +316,11 @@ describe("CredentialSourceForm", () => {
     expect(
       container.querySelector("textarea")?.getAttribute("placeholder")
     ).toBe("instance.type-or-paste-credentials-write-only");
+    expect(
+      container.querySelector("textarea")
+        ?.closest('[data-slot="form-field"]')
+        ?.querySelector('[data-slot="form-field-description"]')?.textContent
+    ).toContain("instance.create-gcp-credentials");
 
     unmount();
   });

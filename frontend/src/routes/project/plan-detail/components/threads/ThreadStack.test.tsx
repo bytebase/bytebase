@@ -3,7 +3,14 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { IssueCommentSchema, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
+  IssueCommentSchema,
+  IssueSchema,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
+import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { EditorThread } from "./threadModel";
 import { ThreadStack } from "./ThreadStack";
 
@@ -19,15 +26,19 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onThreadStateChanged, replyDraft, onReplyDraftChange }: {
+  CommentThreadCard: ({ thread, onClose, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
     thread: EditorThread["thread"];
+    onClose: () => void;
     onThreadStateChanged: (resolved: boolean) => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
+    spec?: { id: string };
   }) => (
-    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)}>
+    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
       <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
-      <button onClick={() => onThreadStateChanged(!thread.resolved)}>Change state</button>
+      <button onClick={onClose}>Close</button>
+      <button onClick={() => onThreadStateChanged(true)}>Resolved here</button>
+      <button onClick={() => onThreadStateChanged(false)}>Reopened here</button>
     </div>
   ),
 }));
@@ -55,6 +66,7 @@ const props = {
   expandedRoots: new Set<string>(),
   replyDrafts: {},
   onReplyDraftChange: vi.fn(),
+  spec: create(Plan_SpecSchema, { id: "spec-1" }),
 };
 const order = (container: HTMLElement) =>
   Array.from(container.querySelectorAll("[data-thread-name]")).map((el) => el.getAttribute("data-thread-name"));
@@ -82,47 +94,52 @@ describe("ThreadStack", () => {
     expect(order(container)).toEqual(["a", "b"]);
   });
 
-  test.each([
-    { current: "a", states: [false, true, false], next: "c" },
-    { current: "c", states: [false, true, false], next: "a" },
-    { current: "a", states: [false, true, true], next: undefined },
-  ])("advances after resolving $current, skipping resolved and wrapping within the stack", ({ current, states, next }) => {
-    const threads = states.map((resolved, index) => entry(["a", "b", "c"][index], resolved, index));
-    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set([current])} threads={threads} />);
-    fireEvent.click(getByText("Change state"));
-    if (next) expect(props.onExpand).toHaveBeenCalledWith(next);
-    else {
-      expect(props.onCollapse).toHaveBeenCalledWith(current);
-      expect(props.onExpand).not.toHaveBeenCalled();
-    }
+  test("keeps multiple threads expanded and closes only the chosen one", () => {
+    const threads = [entry("a", false, 1), entry("b", false, 2)];
+    const { container } = render(
+      <ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={threads} />
+    );
+    expect(container.querySelectorAll("input")).toHaveLength(2);
+    fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
+    expect(props.onCollapse).toHaveBeenCalledWith("a");
+    expect(props.onExpand).not.toHaveBeenCalled();
   });
 
-  test("reopens the current thread in place", () => {
-    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={[entry("a", true, 1), entry("b", false, 2)]} />);
-    fireEvent.click(getByText("Change state"));
-    expect(props.onExpand).toHaveBeenCalledWith("a");
+  test("collapses a thread resolved from its card and keeps a reopened one expanded", () => {
+    const threads = [entry("a", false, 1)];
+    const { getByText } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={threads} />);
+    fireEvent.click(getByText("Reopened here"));
     expect(props.onCollapse).not.toHaveBeenCalled();
+    fireEvent.click(getByText("Resolved here"));
+    expect(props.onCollapse).toHaveBeenCalledExactlyOnceWith("a");
   });
 
-  test("preserves a reply draft when advancing and returning to a collapsed thread", () => {
+  test("preserves a reply draft when another thread opens", () => {
     function Harness() {
       const [expanded, setExpanded] = useState(new Set(["a"]));
       const [drafts, setDrafts] = useState<Record<string, string>>({});
       return <ThreadStack {...props}
         threads={[entry("a", false, 1), entry("b", false, 2)]}
         expandedRoots={expanded}
-        onExpand={(name) => setExpanded(new Set([name]))}
-        onCollapse={() => setExpanded(new Set())}
+        onExpand={(name) => setExpanded((previous) => new Set(previous).add(name))}
+        onCollapse={(name) => setExpanded((previous) => {
+          const next = new Set(previous);
+          next.delete(name);
+          return next;
+        })}
         replyDrafts={drafts}
         onReplyDraftChange={(name, draft) => setDrafts((previous) => ({...previous, [name]: typeof draft === "function" ? draft(previous[name] ?? "") : draft}))}
       />;
     }
-    const { container, getByLabelText, getByText } = render(<Harness />);
-    fireEvent.change(getByLabelText("Reply draft"), { target: { value: "unfinished reply" } });
-    fireEvent.click(getByText("Change state"));
+    const { container } = render(<Harness />);
+    fireEvent.change(container.querySelector('[data-thread-name="a"] input')!, { target: { value: "unfinished reply" } });
+    fireEvent.click(container.querySelector('[data-thread-name="b"]')!);
+    expect(container.querySelectorAll("input")).toHaveLength(2);
+    expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
+    fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
     expect(container.querySelector('[data-thread-name="b"] input')).not.toBeNull();
     fireEvent.click(container.querySelector('[data-thread-name="a"]')!);
-    expect((getByLabelText("Reply draft") as HTMLInputElement).value).toBe("unfinished reply");
+    expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
   });
 
   test("shows new threads and removes missing ones without remounting retained rows", () => {
@@ -136,11 +153,50 @@ describe("ThreadStack", () => {
 });
 
 
+test("shows a collapsed review result as its reviewer with its priority", () => {
+  const review = entry("finding", false, 1);
+  review.thread.root.creator = "";
+  review.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.RULE,
+    priority: IssueComment_ReviewMetadata_Priority.P0,
+  });
+  const { container } = render(<ThreadStack {...props} threads={[review, entry("person", false, 2)]} />);
+  const rows = container.querySelectorAll("[data-testid='thread-row']");
+  expect(rows[0].textContent).toContain("sql-review.standard-rules.self");
+  expect(rows[0].querySelector("[data-testid='review-priority']")?.textContent).toBe("P0");
+  expect(rows[0].textContent).not.toContain("Aurora");
+  expect(rows[1].textContent).toContain("Aurora");
+  expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
+});
+
+test("summarizes a collapsed AI result by its title and a rule result by its text", () => {
+  const ai = entry("ai", false, 1);
+  ai.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.AI,
+    title: "Create the index `concurrently`",
+  });
+  const rule = entry("rule", false, 2);
+  rule.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    runType: ReviewRun_Type.RULE,
+  });
+  const { container } = render(<ThreadStack {...props} threads={[ai, rule]} />);
+  const rows = container.querySelectorAll("[data-testid='thread-row']");
+  expect(rows[0].textContent).toContain("Create the index concurrently");
+  expect(rows[0].textContent).not.toContain("ai summary");
+  expect(rows[1].textContent).toContain("rule summary");
+});
+
+test("hands each expanded card the spec of the statement it sits on", () => {
+  const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-spec"))).toEqual(["spec-1", "spec-1"]);
+});
+
 test("exposes the expanded card for editor reveal", () => {
   const ref = createRef<HTMLDivElement>();
   const threads = [entry("a", false, 1), entry("b", false, 2)];
-  const {rerender} = render(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a"])} expandedThreadRef={ref} />);
+  const {rerender} = render(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a"])} expandedThreadRef={ref} revealRoot="a" />);
   expect(ref.current?.querySelector('[data-thread-name="a"]')).not.toBeNull();
-  rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["b"])} expandedThreadRef={ref} />);
+  rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a", "b"])} expandedThreadRef={ref} revealRoot="b" />);
   expect(ref.current?.querySelector('[data-thread-name="b"]')).not.toBeNull();
 });

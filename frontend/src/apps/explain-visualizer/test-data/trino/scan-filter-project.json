@@ -1,0 +1,78 @@
+{
+  "0": {
+    "id": "6",
+    "name": "Output",
+    "descriptor": {
+      "columnNames": "[custkey, name]"
+    },
+    "outputs": [
+      {
+        "type": "bigint",
+        "name": "custkey"
+      },
+      {
+        "type": "varchar(25)",
+        "name": "name"
+      }
+    ],
+    "details": [],
+    "estimates": [
+      {
+        "outputRowCount": 6000.0,
+        "outputSizeInBytes": 192000.0,
+        "cpuCost": 0.0,
+        "memoryCost": 0.0,
+        "networkCost": 0.0
+      }
+    ],
+    "children": [
+      {
+        "id": "19",
+        "name": "ScanFilterProject",
+        "descriptor": {
+          "table": "tpch:sf1:customer",
+          "filterPredicate": "(nationkey = bigint '1')"
+        },
+        "outputs": [
+          {
+            "type": "bigint",
+            "name": "custkey"
+          },
+          {
+            "type": "varchar(25)",
+            "name": "name"
+          }
+        ],
+        "details": [
+          "name := tpch:name",
+          "nationkey := tpch:nationkey",
+          "custkey := tpch:custkey"
+        ],
+        "estimates": [
+          {
+            "outputRowCount": 150000.0,
+            "outputSizeInBytes": 4800000.0,
+            "cpuCost": 6150000.0,
+            "memoryCost": 0.0,
+            "networkCost": 0.0
+          },
+          {
+            "outputRowCount": 6000.0,
+            "outputSizeInBytes": 192000.0,
+            "cpuCost": 6150000.0,
+            "memoryCost": 0.0,
+            "networkCost": 0.0
+          },
+          {
+            "outputRowCount": 6000.0,
+            "outputSizeInBytes": 192000.0,
+            "cpuCost": 192000.0,
+            "memoryCost": 0.0,
+            "networkCost": 0.0
+          }
+        ],
+        "children": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,100 @@
+PLAN FRAGMENT 0
+ OUTPUT EXPRS:7: country | 4: status | 11: count
+  PARTITION: UNPARTITIONED
+
+  RESULT SINK
+
+  12:EXCHANGE
+
+PLAN FRAGMENT 1
+ OUTPUT EXPRS:
+  PARTITION: HASH_PARTITIONED: 7: country, 4: status
+
+  STREAM DATA SINK
+    EXCHANGE ID: 12
+    UNPARTITIONED
+
+  11:AGGREGATE (merge finalize)
+  |  output: count(11: count)
+  |  group by: 7: country, 4: status
+  |  
+  10:EXCHANGE
+
+PLAN FRAGMENT 2
+ OUTPUT EXPRS:
+  colocate exec groups: ExecGroup{groupId=1, nodeIds=[0, 7, 8, 9]}
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 10
+    HASH_PARTITIONED: 7: country, 4: status
+
+  9:AGGREGATE (update serialize)
+  |  STREAMING
+  |  output: count(*)
+  |  group by: 7: country, 4: status
+  |  
+  8:Project
+  |  <slot 4> : 4: status
+  |  <slot 7> : 7: country
+  |  
+  7:HASH JOIN
+  |  join op: INNER JOIN (BROADCAST)
+  |  colocate: false, reason: 
+  |  equal join conjunct: 2: customer_id = 5: id
+  |  
+  |----6:EXCHANGE
+  |    
+  0:OlapScanNode
+     TABLE: orders
+     PREAGGREGATION: ON
+     PREDICATES: 2: customer_id IS NOT NULL
+     partitions=1/1
+     rollup: orders
+     tabletRatio=2/2
+     tabletList=10015,10017
+     cardinality=4500
+     avgRowSize=2.0
+
+PLAN FRAGMENT 3
+ OUTPUT EXPRS:
+  colocate exec groups: ExecGroup{groupId=3, nodeIds=[1, 2, 3, 4, 5]}
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 06
+    UNPARTITIONED
+
+  5:Project
+  |  <slot 5> : 5: id
+  |  <slot 7> : 7: country
+  |  
+  4:HASH JOIN
+  |  join op: INNER JOIN (COLOCATE)
+  |  colocate: true
+  |  equal join conjunct: 5: id = 8: id
+  |  
+  |----3:Project
+  |    |  <slot 8> : 8: id
+  |    |  
+  |    2:OlapScanNode
+  |       TABLE: customers
+  |       PREAGGREGATION: ON
+  |       PREDICATES: 8: id IS NOT NULL, 10: country = 'JP'
+  |       partitions=1/1
+  |       rollup: customers
+  |       tabletRatio=2/2
+  |       tabletList=10007,10009
+  |       cardinality=450
+  |       avgRowSize=2.0
+  |    
+  1:OlapScanNode
+     TABLE: customers
+     PREAGGREGATION: ON
+     PREDICATES: 5: id IS NOT NULL
+     partitions=1/1
+     rollup: customers
+     tabletRatio=2/2
+     tabletList=10007,10009
+     cardinality=450
+     avgRowSize=2.0

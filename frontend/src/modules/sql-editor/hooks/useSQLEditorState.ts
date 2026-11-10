@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { useAppDatabase } from "@/hooks/useAppDatabase";
 import {
+  type EffectiveQueryDataPolicy,
+  getEffectiveQueryDataPolicy,
+} from "@/lib/queryDataPolicy";
+import {
   getSQLEditorEditorState,
   useSQLEditorEditorState,
 } from "@/modules/sql-editor/store/editor";
@@ -8,15 +12,17 @@ import { useSQLEditorTabsStore } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorConnection } from "@/types";
 import { isValidDatabaseName, isValidProjectName } from "@/types";
+import type { Permission } from "@/types/iam";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { InstanceResource } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PolicyType,
-  type QueryDataPolicy,
-} from "@/types/proto-es/v1/org_policy_service_pb";
+import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { getDatabaseEnvironment, getInstanceResource } from "@/utils";
+import {
+  getDatabaseEnvironment,
+  getInstanceResource,
+  isDatabaseV1Queryable,
+} from "@/utils";
 
 /**
  * React access to a workspace-level plan feature flag. Re-renders when
@@ -37,27 +43,6 @@ export const useSQLEditorFeature = (feature: PlanFeature): boolean => {
   return useAppStore((s) => s.hasFeature(feature));
 };
 
-// Normalize unlimited result-row values before merging workspace and project
-// policy limits.
-type FormattedQueryDataPolicy = {
-  disableCopyData: boolean;
-  disableExport: boolean;
-  allowAdminDataSource: boolean;
-  maximumResultRows: number;
-};
-
-const formatQueryDataPolicy = (
-  policy: QueryDataPolicy | undefined
-): FormattedQueryDataPolicy => {
-  const max = policy?.maximumResultRows ?? -1;
-  return {
-    disableCopyData: policy?.disableCopyData ?? false,
-    disableExport: policy?.disableExport ?? false,
-    allowAdminDataSource: policy?.allowAdminDataSource ?? false,
-    maximumResultRows: max <= 0 ? Number.MAX_VALUE : max,
-  };
-};
-
 /**
  * React access to the active project's QueryDataPolicy. Fetches the
  * workspace-level and project-level DATA_QUERY policies and merges them — the project's
@@ -65,7 +50,7 @@ const formatQueryDataPolicy = (
  */
 export const useSQLEditorQueryDataPolicy = (
   project: string
-): FormattedQueryDataPolicy => {
+): EffectiveQueryDataPolicy => {
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const workspacePolicy = useAppStore((s) =>
     workspaceResourceName
@@ -96,14 +81,10 @@ export const useSQLEditorQueryDataPolicy = (
     });
   }, [project, getOrFetchPolicyByParentAndType]);
 
-  return useMemo(() => {
-    const ws = formatQueryDataPolicy(workspacePolicy);
-    const proj = formatQueryDataPolicy(projectPolicy);
-    return {
-      ...ws,
-      maximumResultRows: Math.min(ws.maximumResultRows, proj.maximumResultRows),
-    };
-  }, [workspacePolicy, projectPolicy]);
+  return useMemo(
+    () => getEffectiveQueryDataPolicy(workspacePolicy, projectPolicy),
+    [workspacePolicy, projectPolicy]
+  );
 };
 
 /**
@@ -129,12 +110,15 @@ export const useClampResultRowsLimitToPolicy = (project: string): void => {
 };
 
 /**
- * React access to "can the current user run admin SQL against this
- * project?". Self-fetches the project + its IAM policy so the SQL editor
- * route (which doesn't preload either) gets a correct answer once both
- * resolve.
+ * React access to a project permission of the current user. Self-fetches the
+ * project + its IAM policy so the SQL editor route (which doesn't preload
+ * either) gets a correct answer once both resolve. Database-scoped binding
+ * conditions are ignored; the server makes the final decision.
  */
-export const useSQLEditorAllowAdmin = (project: string): boolean => {
+const useSQLEditorProjectPermission = (
+  project: string,
+  permission: Permission
+): boolean => {
   const fetchProject = useAppStore((s) => s.fetchProject);
   const loadProjectIamPolicy = useAppStore((s) => s.loadProjectIamPolicy);
   useEffect(() => {
@@ -143,7 +127,64 @@ export const useSQLEditorAllowAdmin = (project: string): boolean => {
     void loadProjectIamPolicy(project);
   }, [fetchProject, loadProjectIamPolicy, project]);
   return useAppStore((s) =>
-    s.hasProjectPermission(s.getProjectByName(project), "bb.sql.admin")
+    s.hasProjectPermission(s.getProjectByName(project), permission)
+  );
+};
+
+/** Whether the current user can run admin SQL against this project. */
+export const useSQLEditorAllowAdmin = (project: string): boolean =>
+  useSQLEditorProjectPermission(project, "bb.sql.admin");
+
+/**
+ * The names of `databases` the current user can export from without an access
+ * grant: bb.sql.export from a role, including database-scoped binding
+ * conditions. Schema and table conditions are checked only by the server.
+ * Self-fetches each project and its IAM policy, which the SQL editor route
+ * doesn't preload.
+ */
+export const useSQLEditorDatabasesWithExport = (
+  databases: Database[]
+): Set<string> => {
+  const fetchProject = useAppStore((s) => s.fetchProject);
+  const loadProjectIamPolicy = useAppStore((s) => s.loadProjectIamPolicy);
+  const projectsKey = [
+    ...new Set(databases.map((database) => database.project)),
+  ]
+    .filter(isValidProjectName)
+    .sort((a, b) => a.localeCompare(b))
+    .join(",");
+  useEffect(() => {
+    for (const project of projectsKey.split(",").filter(Boolean)) {
+      void fetchProject(project);
+      void loadProjectIamPolicy(project);
+    }
+  }, [fetchProject, loadProjectIamPolicy, projectsKey]);
+  // isDatabaseV1Queryable reads these through the store bridge; subscribing
+  // recomputes the answer once they load.
+  const currentUser = useAppStore((s) => s.currentUser);
+  const roles = useAppStore((s) => s.roles);
+  const roleList = useAppStore((s) => s.roleList);
+  const workspacePolicy = useAppStore((s) => s.workspacePolicy);
+  const projectsByName = useAppStore((s) => s.projectsByName);
+  const projectPoliciesByName = useAppStore((s) => s.projectPoliciesByName);
+  return useMemo(
+    () =>
+      new Set(
+        databases
+          .filter((database) =>
+            isDatabaseV1Queryable(database, ["bb.sql.export"])
+          )
+          .map((database) => database.name)
+      ),
+    [
+      databases,
+      currentUser,
+      roles,
+      roleList,
+      workspacePolicy,
+      projectsByName,
+      projectPoliciesByName,
+    ]
   );
 };
 

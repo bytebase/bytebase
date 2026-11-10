@@ -152,9 +152,14 @@ type ActuatorInfo struct {
 	// Sample setup availability and provisioned resources.
 	Sample *SampleInfo `protobuf:"bytes,29,opt,name=sample,proto3" json:"sample,omitempty"`
 	// The MCP (Model Context Protocol) setting in the current workspace.
-	McpSetting    *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	McpSetting *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
+	// Whether the workspace AI setting enables the AI agent.
+	AiEnabled bool `protobuf:"varint,31,opt,name=ai_enabled,json=aiEnabled,proto3" json:"ai_enabled,omitempty"`
+	// Whether the workspace AI setting switches the AI SQL review on. A review
+	// also needs `ai_enabled`.
+	AiSqlReviewEnabled bool `protobuf:"varint,32,opt,name=ai_sql_review_enabled,json=aiSqlReviewEnabled,proto3" json:"ai_sql_review_enabled,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -299,6 +304,20 @@ func (x *ActuatorInfo) GetMcpSetting() *MCPSetting {
 	return nil
 }
 
+func (x *ActuatorInfo) GetAiEnabled() bool {
+	if x != nil {
+		return x.AiEnabled
+	}
+	return false
+}
+
+func (x *ActuatorInfo) GetAiSqlReviewEnabled() bool {
+	if x != nil {
+		return x.AiSqlReviewEnabled
+	}
+	return false
+}
+
 // Instance describes one provisioned sample instance.
 type SampleInfo_Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -360,35 +379,38 @@ var File_v1_actuator_service_proto protoreflect.FileDescriptor
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\xfe\x01\n" +
+	"\x16GetActuatorInfoRequest\"\x82\x02\n" +
 	"\n" +
-	"SampleInfo\x12!\n" +
-	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x12C\n" +
-	"\tinstances\x18\x02 \x03(\v2 .bytebase.v1.SampleInfo.InstanceB\x03\xe0A\x03R\tinstances\x1a\x87\x01\n" +
-	"\bInstance\x129\n" +
-	"\binstance\x18\x01 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
-	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"expireTime\"\xd1\x06\n" +
-	"\fActuatorInfo\x12\x1d\n" +
-	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
+	"SampleInfo\x12\"\n" +
+	"\tavailable\x18\x01 \x01(\bB\x04\xe2A\x01\x03R\tavailable\x12D\n" +
+	"\tinstances\x18\x02 \x03(\v2 .bytebase.v1.SampleInfo.InstanceB\x04\xe2A\x01\x03R\tinstances\x1a\x89\x01\n" +
+	"\bInstance\x12:\n" +
+	"\binstance\x18\x01 \x01(\tB\x1e\xe2A\x01\x03\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\binstance\x12A\n" +
+	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"expireTime\"\xbf\a\n" +
+	"\fActuatorInfo\x12\x1e\n" +
+	"\aversion\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\aversion\x12#\n" +
 	"\n" +
-	"git_commit\x18\x02 \x01(\tB\x03\xe0A\x03R\tgitCommit\x12\x17\n" +
-	"\x04saas\x18\x04 \x01(\bB\x03\xe0A\x03R\x04saas\x12&\n" +
-	"\fexternal_url\x18\b \x01(\tB\x03\xe0A\x03R\vexternalUrl\x12I\n" +
-	"\x10last_active_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\x0elastActiveTime\x12!\n" +
-	"\tworkspace\x18\r \x01(\tB\x03\xe0A\x03R\tworkspace\x124\n" +
-	"\x13unlicensed_features\x18\x0f \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
-	"\x18activated_instance_count\x18\x14 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
-	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x128\n" +
-	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
-	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12,\n" +
-	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
-	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIam\x126\n" +
-	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x124\n" +
-	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sample\x12=\n" +
-	"\vmcp_setting\x18\x1e \x01(\v2\x17.bytebase.v1.MCPSettingB\x03\xe0A\x03R\n" +
-	"mcpSettingJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
+	"git_commit\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\tgitCommit\x12\x18\n" +
+	"\x04saas\x18\x04 \x01(\bB\x04\xe2A\x01\x03R\x04saas\x12'\n" +
+	"\fexternal_url\x18\b \x01(\tB\x04\xe2A\x01\x03R\vexternalUrl\x12J\n" +
+	"\x10last_active_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\x0elastActiveTime\x12\"\n" +
+	"\tworkspace\x18\r \x01(\tB\x04\xe2A\x01\x03R\tworkspace\x125\n" +
+	"\x13unlicensed_features\x18\x0f \x03(\tB\x04\xe2A\x01\x03R\x12unlicensedFeatures\x12>\n" +
+	"\x18activated_instance_count\x18\x14 \x01(\x05B\x04\xe2A\x01\x03R\x16activatedInstanceCount\x126\n" +
+	"\x14total_instance_count\x18\x15 \x01(\x05B\x04\xe2A\x01\x03R\x12totalInstanceCount\x129\n" +
+	"\x16external_url_from_flag\x18\x17 \x01(\bB\x04\xe2A\x01\x03R\x13externalUrlFromFlag\x12)\n" +
+	"\rreplica_count\x18\x18 \x01(\x05B\x04\xe2A\x01\x03R\freplicaCount\x12-\n" +
+	"\x0fdefault_project\x18\x1a \x01(\tB\x04\xe2A\x01\x03R\x0edefaultProject\x12/\n" +
+	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x04\xe2A\x01\x03R\x0euserCountInIam\x127\n" +
+	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x04\xe2A\x01\x03R\x12activeVcsUserCount\x125\n" +
+	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x04\xe2A\x01\x03R\x06sample\x12>\n" +
+	"\vmcp_setting\x18\x1e \x01(\v2\x17.bytebase.v1.MCPSettingB\x04\xe2A\x01\x03R\n" +
+	"mcpSetting\x12#\n" +
+	"\n" +
+	"ai_enabled\x18\x1f \x01(\bB\x04\xe2A\x01\x03R\taiEnabled\x127\n" +
+	"\x15ai_sql_review_enabled\x18  \x01(\bB\x04\xe2A\x01\x03R\x12aiSqlReviewEnabledJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x86\x01\n" +
 	"\x0fActuatorService\x12s\n" +

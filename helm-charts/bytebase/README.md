@@ -37,7 +37,7 @@ When upgrading from chart 1.1.4, move any digest configured through `bytebase.di
 
 The bundled Helm chart currently deploys Bytebase as a single-replica StatefulSet. It does not expose a Helm value for running multiple Bytebase application replicas.
 
-If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart. Each HA replica must still start with `--ha` and the same shared external PostgreSQL `PG_URL`; review the operator runbook before proceeding:
+If you are preparing an HA deployment, treat the multi-replica topology as operator-managed outside this chart. Each HA replica must still start with `--ha` and the same shared external PostgreSQL `PG_URL`. Set `bytebase.option.ha=true` so the replica this chart manages starts with the flag too; review the operator runbook before proceeding:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
@@ -80,7 +80,7 @@ helm delete --namespace <YOUR_NAMESPACE> <RELEASE_NAME>
 
 Use `helm upgrade` command to upgrade the bytebase version or configuration.
 
-For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, keep `--ha` and the shared external PostgreSQL `PG_URL` consistent on every replica and follow the operator runbook and upgrade guidance here:
+For HA-aware operations, note that this chart still renders `replicas: 1`. A `helm upgrade` does not enable a multi-replica topology by itself. If you operate multiple Bytebase servers outside this chart, keep `--ha` (`bytebase.option.ha` for the replica this chart manages) and the shared external PostgreSQL `PG_URL` consistent on every replica and follow the operator runbook and upgrade guidance here:
 
 - [High availability runbook](../../docs/operations/high-availability.md)
 - [Upgrade guidance](../../docs/operations/upgrade.md)
@@ -97,6 +97,31 @@ helm -n <YOUR_NAMESPACE> \
 upgrade bytebase-release bytebase-repo/bytebase
 ```
 
+Bytebase migrates its metadata database at startup and opens its port only after the migration finishes, which can take a long time on a large metadata database. The chart sets only a readiness probe on `/healthz`, so the pod stays unready during the migration instead of being restarted. If you pass `--wait` or `--atomic` to `helm upgrade`, set `--timeout` above the expected migration time. Helm's default is `5m`, and `--atomic` rolls the release back to the previous Bytebase version when it expires, which does not support the migrated metadata database.
+
+## Scraping /metrics
+
+Since Bytebase 3.22.0, the Prometheus endpoint at `/metrics` answers loopback clients only. An in-cluster scraper gets a 404 until the server starts with `--metrics-remote-access`:
+
+```bash
+helm -n <YOUR_NAMESPACE> \
+--set "bytebase.option.metrics-remote-access"=true \
+upgrade <RELEASE_NAME> bytebase-repo/bytebase
+```
+
+`bytebase.podAnnotations` makes the pod discoverable, and needs this value set as well. Keep `prometheus.io/port` equal to `bytebase.option.port`:
+
+```yaml
+bytebase:
+  option:
+    metrics-remote-access: true
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+```
+
+`/metrics` carries no authentication of its own. Enable it only where the port is reachable from the scraper alone, through a gateway path allowlist, a firewall, or a NetworkPolicy. An Ingress or HTTPRoute that matches `/` publishes `/metrics` to everything that reaches the route, along with the rest of the app.
+
 ## Parameters
 
 |                        Parameter                         |                                                                                                                Description                                                                                                                 |                         Default Value                          |
@@ -107,6 +132,9 @@ upgrade bytebase-release bytebase-repo/bytebase
 |                  `bytebase.option.port`                  |                                                                                                      Port where Bytebase server runs.                                                                                                      |                              8080                              |
 |                  `bytebase.option.data`                  |                                                                                                  Data directory of Bytebase data stored.                                                                                                   |                       /var/opt/bytebase                        |
 |              `bytebase.option.external-url`              |                                                The address for users to visit Bytebase, visit [our docs](https://docs.bytebase.com/get-started/self-host/external-url/) to get more details.                                                 | "<https://docs.bytebase.com/get-started/self-host/external-url>" |
+|          `bytebase.option.enable-json-logging`           |                                                                      Output Bytebase logs in JSON format, for log aggregators such as Splunk, ELK, Datadog, and Loki.                                                                      |                             false                              |
+|                   `bytebase.option.ha`                   |                                           Start the Bytebase server with `--ha`. Required on every replica once more than one server shares an external PostgreSQL; this chart still renders `replicas: 1`.                                           |                             false                              |
+|       `bytebase.option.metrics-remote-access`            |                                                       Allow non-loopback clients to scrape `/metrics`, which answers loopback only by default. See [Scraping /metrics](#scraping-metrics).                                                       |                             false                              |
 |             `bytebase.option.externalPg.url`             |                                                                                        The PostgreSQL url(DSN) for Bytebase to store the metadata.                                                                                         |                               ""                               |
 |     `bytebase.option.externalPg.existingPgURLSecret`     |                                                                           The name of Secret stores the PostgreSQL url(DSN) for Bytebase to store the metadata.                                                                            |                               ""                               |
 |   `bytebase.option.externalPg.existingPgURLSecretKey`    |                                    The key of Secret stores the PostgreSQL url(DSN) for Bytebase to store the metadata. Should be used with `bytebase.option.externalPg.existingPgURLSecret` together.                                     |                               ""                               |
@@ -129,6 +157,9 @@ upgrade bytebase-release bytebase-repo/bytebase
 |               `bytebase.extraSecretMounts`               |                                                                               Additional Bytebase secret mounts. Defined as an array of volumeMount objects.                                                                               |                               []                               |
 |                 `bytebase.extraVolumes`                  |                                                                                    Additional Bytebase volumes. Defined as an array of volume objects.                                                                                     |                               []                               |
 |                 `bytebase.podAnnotations`                 |                                                                                       Annotations added to the Bytebase pod. Useful for metrics scrapers.                                                                                       |                               {}                               |
+|        `bytebase.readinessProbe.periodSeconds`           |                                                                 How often the readiness probe calls `/healthz`. Other probe timing fields such as `initialDelaySeconds` and `successThreshold` are also accepted.                                                                 |                               10                               |
+|        `bytebase.readinessProbe.timeoutSeconds`          |                                                                                      Seconds before a single `/healthz` call times out.                                                                                       |                               10                               |
+|       `bytebase.readinessProbe.failureThreshold`         |                                                                          Consecutive failed calls before the pod is marked unready and removed from the Service.                                                                          |                               3                                |
 |                    `httpRoute.enabled`                   |                                       Enable a Gateway API `HTTPRoute` to expose Bytebase, instead of an externally-managed Ingress/LoadBalancer. Requires a Gateway API implementation in the cluster.                                       |                             false                              |
 |                  `httpRoute.annotations`                 |                                                                                                  Additional annotations for the `HTTPRoute`.                                                                                               |                               {}                               |
 |                   `httpRoute.parentRefs`                 |                                                                          Gateway API `parentRefs`; each must reference an existing `Gateway`.                                                                              |                               []                               |

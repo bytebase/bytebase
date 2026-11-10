@@ -113,9 +113,11 @@ describe("useTimeReading", () => {
   });
 
   test("waits quietly for a deadline beyond the platform timer ceiling", () => {
-    // setTimeout holds its delay in 32 bits; anything past ~24.8 days fires at
-    // once. A date waiting for the year to turn is ordinary input.
-    const deadlineMs = Date.now() + 90 * DAY_MS;
+    // setTimeout holds its delay in 32 bits, so anything past ~24.8 days fires
+    // at once. The clock walks to a deadline one resync interval at a time, so
+    // this sits a day past that ceiling rather than further out.
+    const timerCeilingMs = 2 ** 31 - 1;
+    const deadlineMs = Date.now() + timerCeilingMs + DAY_MS;
     const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
@@ -126,7 +128,7 @@ describe("useTimeReading", () => {
     expect(renders).toEqual([1]);
 
     act(() => {
-      vi.advanceTimersByTime(90 * DAY_MS);
+      vi.advanceTimersByTime(timerCeilingMs + DAY_MS);
     });
     expect(renders).toEqual([2]);
   });

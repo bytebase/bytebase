@@ -46,12 +46,13 @@ export async function createDatabaseChangePlanViaUI(
   // first-character loss), while Create only requires NON-EMPTY SQL — a damaged
   // statement would still be created and fail later, far from its cause.
   // `insertText` paints the whole string in one input event, and the editor is
-  // checked to show it before Create is pressed.
+  // checked to show it before Create is pressed. The cursor ends on the last
+  // line, which Monaco therefore renders however long the statement is.
   const editor = page.locator(".monaco-editor").first();
   await editor.click();
   await page.keyboard.insertText(opts.sql);
   await expect(editor.locator(".view-lines")).toContainText(
-    opts.sql.split("\n")[0].trim(),
+    opts.sql.trim().split("\n").pop()!.trim(),
     { timeout: 10_000 },
   );
   const createBtn = page.getByRole("button", { name: "Create", exact: true });

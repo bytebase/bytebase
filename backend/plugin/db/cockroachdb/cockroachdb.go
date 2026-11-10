@@ -2,9 +2,13 @@
 package cockroachdb
 
 import (
+	"bytes"
+	"compress/zlib"
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"regexp"
@@ -75,12 +79,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		}
 		d.sshClient = sshClient
 
-		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &util.NoDeadlineConn{Conn: conn}, nil
+		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, addr)
 		}
 	}
 
@@ -123,27 +123,22 @@ func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, 
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("host must be set")
-	}
-
-	if config.DataSource.Port == "" {
-		return nil, errors.Errorf("port must be set")
-	}
-
 	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
 		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
+	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
 	if config.DataSource.GetUseSsl() {
 		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
 	}
 
 	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
 	if routingID != "" {
-		connStr += fmt.Sprintf(" options='--cluster=%s'", routingID)
+		connStr += " options=" + util.QuotePGValue("--cluster="+routingID)
 	}
 
 	connConfig, err := pgx.ParseConfig(connStr)
@@ -622,11 +617,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL
+		planAsJSON := false
 		if queryContext.Explain {
 			explained, err := base.ExplainStatement(storepb.Engine_COCKROACHDB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
 			if err != nil {
 				return nil, err
 			}
+			planAsJSON = db.ExplainFormat(queryContext.Option.GetExplainFormat()) == base.ExplainFormatJSON
 			statement = explained
 		} else if queryContext.Limit > 0 {
 			statement = base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, queryContext.Limit, "")
@@ -653,6 +650,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
+				location := util.PgSessionLocation(conn)
 				var r *v1pb.QueryResult
 				if err := crdb.Execute(func() error {
 					rows, err := conn.QueryContext(ctx, statement)
@@ -660,7 +658,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 						return err
 					}
 					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 					if err != nil {
 						return err
 					}
@@ -668,6 +666,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return err
 				}); err != nil {
 					return nil, err
+				}
+				if planAsJSON {
+					return planDiagram(r)
 				}
 				return r, nil
 			}
@@ -704,3 +705,61 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 	return results, nil
 }
+
+// diagramLink is the line EXPLAIN (DISTSQL) prints after the text plan. What
+// follows the fragment marker is the plan itself, deflated and base64'd.
+var diagramLink = regexp.MustCompile(`https?://\S*#([A-Za-z0-9+/_=-]+)`)
+
+// planDiagram returns the physical plan EXPLAIN (DISTSQL) encodes in the link
+// it prints, as the JSON document the query-plan viewer parses.
+//
+// CockroachDB publishes no plan as a document: every EXPLAIN option of its own
+// returns text, and the one machine-readable form it has is the payload behind
+// this link, which its own diagram page decodes in the browser. Decoding it
+// here is what lets the viewer draw the plan without the browser fetching
+// anything, and it is the same move the Oracle driver makes in rendering the
+// plan table.
+func planDiagram(result *v1pb.QueryResult) (*v1pb.QueryResult, error) {
+	var payload string
+	for _, row := range result.GetRows() {
+		for _, value := range row.GetValues() {
+			if match := diagramLink.FindStringSubmatch(value.GetStringValue()); match != nil {
+				payload = match[1]
+			}
+		}
+	}
+	if payload == "" {
+		return nil, errors.New("the plan carried no diagram to read")
+	}
+	// CockroachDB encodes with the standard alphabet, but the payload rides in
+	// a URL fragment, so accept either spelling of the two bytes that differ.
+	normalized := strings.NewReplacer("-", "+", "_", "/").Replace(strings.TrimRight(payload, "="))
+	deflated, err := base64.RawStdEncoding.DecodeString(normalized)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to decode the query plan")
+	}
+	reader, err := zlib.NewReader(bytes.NewReader(deflated))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read the query plan")
+	}
+	defer reader.Close()
+	// A plan is small; the bound keeps a corrupt payload from inflating
+	// without end.
+	plan, err := io.ReadAll(io.LimitReader(reader, maxPlanBytes))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read the query plan")
+	}
+
+	return &v1pb.QueryResult{
+		ColumnNames:     []string{"plan"},
+		ColumnTypeNames: []string{"TEXT"},
+		Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
+			{Kind: &v1pb.RowValue_StringValue{StringValue: string(plan)}},
+		}}},
+	}, nil
+}
+
+// maxPlanBytes bounds the inflated plan. CockroachDB's diagrams run to a few
+// tens of kilobytes; this is far above that and far below anything that would
+// trouble the editor.
+const maxPlanBytes = 8 << 20

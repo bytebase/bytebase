@@ -1,7 +1,11 @@
 import { create } from "@bufbuild/protobuf";
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  IssueSchema,
+  ReviewRun_Status,
+  ReviewRunSchema,
+} from "@/types/proto-es/v1/issue_service_pb";
 
 const mocks = vi.hoisted(() => ({
   fetchIssueCommentThreads: vi.fn(async () => undefined),
@@ -61,6 +65,39 @@ describe("useIssueCommentThreadsSync", () => {
     hidden.mockReturnValue(false);
     document.dispatchEvent(new Event("visibilitychange"));
     expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(4);
+  });
+
+  test("re-lists once when an AI review run reaches DONE, not while it is queued, running, or failed", () => {
+    const run = (status: ReviewRun_Status, endSeconds?: number) =>
+      create(ReviewRunSchema, {
+        name: "projects/p/issues/1/reviewRuns/ai",
+        status,
+        endTime:
+          endSeconds === undefined
+            ? undefined
+            : { seconds: BigInt(endSeconds), nanos: 0 },
+      });
+    const { rerender } = renderHook(
+      ({ reviewRun }) => useIssueCommentThreadsSync(issue(1), reviewRun),
+      { initialProps: { reviewRun: run(ReviewRun_Status.AVAILABLE) } }
+    );
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
+    rerender({ reviewRun: run(ReviewRun_Status.RUNNING) });
+    rerender({ reviewRun: run(ReviewRun_Status.FAILED, 5) });
+    rerender({ reviewRun: run(ReviewRun_Status.AVAILABLE) });
+    rerender({ reviewRun: run(ReviewRun_Status.RUNNING) });
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(1);
+    rerender({ reviewRun: run(ReviewRun_Status.DONE, 10) });
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(2);
+    rerender({ reviewRun: run(ReviewRun_Status.DONE, 10) });
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(2);
+
+    // The next run queues and runs without a re-list, then finishes once.
+    rerender({ reviewRun: run(ReviewRun_Status.AVAILABLE) });
+    rerender({ reviewRun: run(ReviewRun_Status.RUNNING) });
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(2);
+    rerender({ reviewRun: run(ReviewRun_Status.DONE, 20) });
+    expect(mocks.fetchIssueCommentThreads).toHaveBeenCalledTimes(3);
   });
 
   test("does nothing without an issue and stops after unmount", () => {

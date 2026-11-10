@@ -6,17 +6,25 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampInstants } from "@/test-utils/humanizeTs";
 import {
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
 const mocks = vi.hoisted(() => ({
+  sqlReviewV2: false,
   createIssueComment: vi.fn(),
   notify: vi.fn(),
   updateIssueComment: vi.fn(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -36,7 +44,10 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   canEditIssueComment: () => true,
 }));
 
-vi.mock("@/components/MarkdownEditor", () => ({
+vi.mock("@/components/MarkdownEditor", async (importOriginal) => ({
+  markdownSummary: (
+    await importOriginal<typeof import("@/components/MarkdownEditor")>()
+  ).markdownSummary,
   MarkdownEditor: ({
     content,
     autoFocus,
@@ -69,11 +80,14 @@ vi.mock("@/components/MarkdownEditor", () => ({
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "me@example.com", title: "Me" }),
-  useUserByIdentifier: (principal: string) => ({
-    name: principal,
-    email: principal.replace(/^users\//, ""),
-    title: principal.replace(/^users\//, "").split("@")[0],
-  }),
+  useUserByIdentifier: (principal: string | undefined) =>
+    principal
+      ? {
+          name: principal,
+          email: principal.replace(/^users\//, ""),
+          title: principal.replace(/^users\//, "").split("@")[0],
+        }
+      : undefined,
 }));
 
 vi.mock("@/stores", () => ({
@@ -148,6 +162,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  mocks.sqlReviewV2 = false;
   HTMLElement.prototype.scrollIntoView = vi.fn();
   vi.clearAllMocks();
   mocks.hasPermission.mockReturnValue(true);
@@ -212,6 +227,13 @@ describe("CommentThreadCard", () => {
     expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({ issueName: ISSUE, comment: "New reply", root: rootName });
   });
 
+  test("under SQL Review V2 a draft takes replies", () => {
+    mocks.sqlReviewV2 = true;
+    const [thread] = groupThreads([comment("root", "Root question")]);
+    render(<CommentThreadCard project={project} thread={thread} issue={create(IssueSchema, { ...issue, draft: true })} />);
+    expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
+  });
+
   test("places statement context above the root author as a separate full-width region", () => {
     const [thread] = groupThreads([comment("root", "Root question")]);
     render(
@@ -219,7 +241,7 @@ describe("CommentThreadCard", () => {
         issue={issue}
         project={project}
         thread={thread}
-        context={<div data-testid="anchor-context">SELECT 1;</div>}
+        renderContext={() => <div data-testid="anchor-context">SELECT 1;</div>}
       />
     );
     const card = container.querySelector("[data-testid='comment-thread']");
@@ -264,7 +286,13 @@ describe("CommentThreadCard", () => {
       container.querySelectorAll("[data-testid='preview']")
     ).map((node) => node.textContent);
     expect(bodies).toEqual(["Root question", "First reply", "Second reply"]);
+    const comments = container.querySelectorAll("[data-testid='thread-comment']");
+    const replies = container.querySelector("[data-testid='thread-replies']");
+    expect(replies?.contains(comments[0])).toBe(false);
+    expect(replies?.contains(comments[1])).toBe(true);
+    expect(replies?.contains(comments[2])).toBe(true);
     expect(container.querySelector("[data-thread-state]")?.getAttribute("data-thread-state")).toBe("open");
+    expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
     expect(buttonByText("plan.review.thread.resolve")).toBeDefined();
     expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
   });
@@ -286,6 +314,76 @@ describe("CommentThreadCard", () => {
     ).toHaveLength(2);
     expect(buttonByText("common.reopen")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+    const states = container.querySelectorAll("[data-testid='thread-state']");
+    expect(states).toHaveLength(1);
+    expect(
+      container.querySelector("[data-testid='thread-reply-footer']")?.contains(states[0])
+    ).toBe(true);
+  });
+
+  test("a resolved thread says so in its footer when the reader can neither reply nor reopen", () => {
+    mocks.hasPermission.mockReturnValue(false);
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    render(
+      <CommentThreadCard
+        collapsible={false}
+        issue={issue}
+        project={project}
+        thread={thread}
+      />
+    );
+    const footer = container.querySelector("[data-testid='thread-reply-footer']");
+    expect(footer?.querySelector("[data-testid='thread-state']")?.textContent).toBe(
+      "plan.review.thread.resolved"
+    );
+    expect(footer?.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  test("a resolved review result summarizes as its reviewer", () => {
+    const root = comment("root", "Missing WHERE clause.", {
+      creator: "",
+      resolved: true,
+    });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.AI,
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+      title: "Add a WHERE clause",
+    });
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        thread={groupThreads([root])[0]}
+      />
+    );
+    const summary = buttonByText("plan.review.thread.resolved");
+    expect(summary?.textContent).toContain("sql-review.ai-review.self");
+    expect(summary?.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
+    expect(summary?.textContent).toContain("Add a WHERE clause");
+    expect(summary?.textContent).not.toContain("Missing WHERE clause.");
+    expect(summary?.textContent).not.toContain("common.unknown");
+  });
+
+  test("a resolved anchored thread collapses from its context header", () => {
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    render(
+      <CommentThreadCard
+        issue={issue}
+        project={project}
+        renderContext={(onCollapse) => (
+          <button data-testid="context-collapse" onClick={onCollapse} type="button">
+            Collapse context
+          </button>
+        )}
+        thread={thread}
+      />
+    );
+    click(buttonByText("plan.review.thread.resolved"));
+    expect(container.querySelector("[data-testid='context-collapse']")).not.toBeNull();
+    expect(container.querySelectorAll('button[aria-label="common.collapse"]')).toHaveLength(0);
+    click(container.querySelector("[data-testid='context-collapse']"));
+    expect(container.querySelector("[data-testid='context-collapse']")).toBeNull();
+    expect(container.querySelector("[data-testid='preview']")).toBeNull();
   });
 
   test("roots and replies share header avatars and a full-width body", () => {

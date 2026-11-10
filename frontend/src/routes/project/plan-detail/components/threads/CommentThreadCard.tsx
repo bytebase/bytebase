@@ -2,7 +2,6 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  CircleCheck,
   Loader2,
   RotateCcw,
 } from "lucide-react";
@@ -19,18 +18,21 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { MarkdownEditor, markdownSummary } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
+import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import "./CommentThreadCard.css";
+import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
+import { ThreadStateBadge } from "./ThreadStateBadge";
 import type { CommentThread } from "./threadModel";
 import {
   canReplyToThread,
@@ -44,13 +46,14 @@ const FOLD_REPLIES_ABOVE = 4;
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer. The reply composer carries a checkbox that mirrors the thread
-// state and, when toggled, settles the thread after the reply is posted.
-// Resolved threads collapse to a summary row.
+// in the footer, where a resolved thread also says so. The reply composer
+// carries a checkbox that mirrors the thread state and, when toggled, settles
+// the thread after the reply is posted. Resolved threads collapse to a
+// summary row.
 export function CommentThreadCard({
   className,
   collapsible = true,
-  context,
+  renderContext,
   issue,
   label,
   onClose,
@@ -58,13 +61,14 @@ export function CommentThreadCard({
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
   project,
+  spec,
   thread,
 }: {
   className?: string;
   // Whether a resolved thread may collapse to its summary row.
   collapsible?: boolean;
   // Full-width statement context above the root author and discussion.
-  context?: ReactNode;
+  renderContext?: (onCollapse?: () => void) => ReactNode;
   issue: Issue;
   // Extra header text after the timestamp (the anchored line range).
   label?: ReactNode;
@@ -75,6 +79,8 @@ export function CommentThreadCard({
   replyDraft?: string;
   onReplyDraftChange?: (draft: SetStateAction<string>) => void;
   project: Project | undefined;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
   thread: CommentThread;
 }) {
   const { t } = useTranslation();
@@ -210,15 +216,19 @@ export function CommentThreadCard({
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {context && (
+      {renderContext && (
         <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
-          {context}
+          {renderContext(
+            thread.resolved && collapsible
+              ? () => setCollapsed(true)
+              : undefined
+          )}
         </div>
       )}
       <ThreadComment
         actions={
           <>
-            {thread.resolved && collapsible && (
+            {thread.resolved && collapsible && !renderContext && (
               <Button
                 aria-label={t("common.collapse")}
                 onClick={() => setCollapsed(true)}
@@ -241,44 +251,43 @@ export function CommentThreadCard({
           </>
         }
         comment={thread.root}
+        label={label}
         onEdit={actions.edit}
         project={project}
-        status={
-          <>
-            {label}
-            {thread.resolved && (
-              <Badge className="gap-x-1 px-2 text-xs" variant="success">
-                <CircleCheck className="size-3" />
-                {t("plan.review.thread.resolved")}
-              </Badge>
-            )}
-          </>
-        }
+        spec={spec}
       />
-      {hiddenCount > 0 && (
-        <div className="flex justify-center border-t border-block-border bg-control-bg/50 py-1">
-          <Button
-            onClick={() => setShowAllReplies(true)}
-            size="xs"
-            appearance="link"
-          >
-            <ChevronDown className="size-3.5" />
-            {t("plan.review.thread.n-replies-hidden", { count: hiddenCount })}
-            <span className="text-control-placeholder">·</span>
-            {t("plan.review.activity.show-all")}
-          </Button>
+      {(hiddenCount > 0 || visibleReplies.length > 0) && (
+        <div
+          className="bb-thread-replies bg-control-bg/50"
+          data-testid="thread-replies"
+        >
+          {hiddenCount > 0 && (
+            <div className="flex justify-center py-1">
+              <Button
+                onClick={() => setShowAllReplies(true)}
+                size="xs"
+                appearance="link"
+              >
+                <ChevronDown className="size-3.5" />
+                {t("plan.review.thread.n-replies-hidden", {
+                  count: hiddenCount,
+                })}
+                <span className="text-control-placeholder">·</span>
+                {t("plan.review.activity.show-all")}
+              </Button>
+            </div>
+          )}
+          {visibleReplies.map((reply) => (
+            <ThreadComment
+              comment={reply}
+              key={reply.name}
+              onEdit={actions.edit}
+              project={project}
+            />
+          ))}
         </div>
       )}
-      {visibleReplies.map((reply) => (
-        <ThreadComment
-          className="border-t border-block-border"
-          comment={reply}
-          key={reply.name}
-          onEdit={actions.edit}
-          project={project}
-        />
-      ))}
-      {(allowReply || allowSettle) && (
+      {(allowReply || allowSettle || thread.resolved) && (
         <div
           className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
           ref={replyFooterRef}
@@ -359,6 +368,7 @@ export function CommentThreadCard({
             </>
           )}
           {!allowReply && <span className="flex-1" />}
+          {thread.resolved && !replyOpen && <ThreadStateBadge />}
           {allowSettle && !replyOpen && (
             <Button
               appearance="outline"
@@ -391,10 +401,10 @@ function ThreadSummary({
   onExpand: () => void;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(thread.root.creator) ??
-    unknownUser(thread.root.creator);
-  const summary = thread.root.comment.split("\n")[0] ?? "";
+  const author = useCommentAuthor(thread.root);
+  const review = thread.root.reviewMetadata;
+  // An AI result is summarized by its title, any other comment by its text.
+  const summary = markdownSummary(review?.title || thread.root.comment);
   return (
     <Button
       appearance="secondary"
@@ -402,14 +412,11 @@ function ThreadSummary({
       onClick={onExpand}
       size="md"
     >
-      <UserAvatar
-        colorSeed={creator.email}
-        size="xs"
-        title={creator.title || creator.email}
-      />
+      {author.avatar}
       <span className="max-w-24 truncate font-medium text-main">
-        {creator.title || creator.email}
+        {author.name}
       </span>
+      {review && <ReviewPriorityBadge priority={review.priority} />}
       <span className="min-w-0 flex-1 truncate text-control" title={summary}>
         {summary}
       </span>
@@ -422,10 +429,7 @@ function ThreadSummary({
         className="hidden shrink-0 text-xs text-control-light sm:inline"
         tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
       />
-      <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
-        <CircleCheck className="size-3" />
-        {t("plan.review.thread.resolved")}
-      </Badge>
+      <ThreadStateBadge />
       <ChevronDown className="size-4 shrink-0 text-control-light" />
     </Button>
   );

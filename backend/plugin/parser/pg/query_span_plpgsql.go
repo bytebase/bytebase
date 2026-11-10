@@ -13,6 +13,13 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// snapshotFunc is a function's language and body as the schema snapshot
+// defines it.
+type snapshotFunc struct {
+	language string
+	body     string
+}
+
 type funcBodyAnalysis struct {
 	sourceColumns    []base.SourceColumnSet
 	predicateColumns base.SourceColumnSet
@@ -25,13 +32,7 @@ type funcBodyAnalysis struct {
 func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
 	analysis := e.analyzeFunctionBodyForProc(proc)
 	e.mergeFunctionSourceTables(analysis.sourceColumns)
-	mergeSourceColumnSetInto(e.funcPredicateColumns, analysis.predicateColumns)
-	return analysis.sourceColumns
-}
-
-func (e *omniQuerySpanExtractor) analyzeTableFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
-	analysis := e.analyzeFunctionBodyForProc(proc)
-	e.mergeFunctionSourceTables(analysis.sourceColumns)
+	mergeSourceColumnSetInto(e.predicateColumns, analysis.predicateColumns)
 	return analysis.sourceColumns
 }
 
@@ -50,38 +51,51 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 
 	// Store nil sentinel to detect recursion.
 	e.funcBodyCache[proc.OID] = nil
-	outerPredicateColumns := e.funcPredicateColumns
+	outerPredicateColumns := e.predicateColumns
 	bodyPredicateColumns := make(base.SourceColumnSet)
-	e.funcPredicateColumns = bodyPredicateColumns
+	e.predicateColumns = bodyPredicateColumns
 	defer func() {
-		e.funcPredicateColumns = outerPredicateColumns
+		e.predicateColumns = outerPredicateColumns
 	}()
 
-	// If the function body was stubbed during catalog loading (to avoid type
-	// validation errors), use the original body from metadata instead.
-	body := proc.Body
-	if origBody, ok := e.funcOrigDefs[strings.ToLower(proc.Name)]; ok && origBody != "" {
-		body = origBody
+	// The catalog keeps each overload's own body. A function it could not
+	// install is a stand-in with a placeholder body, and the snapshot cannot
+	// tell which overload it stands for, so every overload's body is analyzed
+	// and merged.
+	defs := []snapshotFunc{{language: proc.Language, body: proc.Body}}
+	if proc.Schema != nil {
+		key := strings.ToLower(proc.Schema.Name + "." + proc.Name)
+		if e.standInFuncs[key] && len(e.snapshotFuncs[key]) > 0 {
+			defs = e.snapshotFuncs[key]
+		}
 	}
 
 	var result []base.SourceColumnSet
 	var err error
-
-	switch strings.ToLower(proc.Language) {
-	case "plpgsql":
-		result, err = e.analyzePLpgSQLBody(proc, body)
-	case "sql":
-		result, err = e.analyzeSQLBody(body)
-	default:
-		// Unsupported language (C, internal, etc.) — unknown lineage.
-		result = makeEmptySets(proc)
+	for _, def := range defs {
+		defResult, defErr := e.analyzeBodyAs(proc, def)
+		if defErr != nil {
+			err = defErr
+			continue
+		}
+		if len(defs) == 1 {
+			result = defResult
+			break
+		}
+		for i, set := range defResult {
+			if i >= len(result) {
+				result = append(result, make(base.SourceColumnSet))
+			}
+			mergeSourceColumnSetInto(result[i], set)
+		}
 	}
 
-	if err != nil {
-		// On error, cache empty sets so we don't retry.
+	if err != nil && result == nil {
+		// On error, cache empty sets so we don't retry. The conditions found
+		// before the error still run, so they stay.
 		e.funcBodyCache[proc.OID] = &funcBodyAnalysis{
 			sourceColumns:    makeEmptySets(proc),
-			predicateColumns: make(base.SourceColumnSet),
+			predicateColumns: cloneSourceColumnSet(bodyPredicateColumns),
 		}
 		return e.funcBodyCache[proc.OID]
 	}
@@ -91,6 +105,18 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 		predicateColumns: cloneSourceColumnSet(bodyPredicateColumns),
 	}
 	return e.funcBodyCache[proc.OID]
+}
+
+func (e *omniQuerySpanExtractor) analyzeBodyAs(proc *catalog.UserProc, def snapshotFunc) ([]base.SourceColumnSet, error) {
+	switch strings.ToLower(def.language) {
+	case "plpgsql":
+		return e.analyzePLpgSQLBody(proc, def.body)
+	case "sql":
+		return e.analyzeSQLBody(def.body)
+	default:
+		// Unsupported language (C, internal, etc.) — unknown lineage.
+		return makeEmptySets(proc), nil
+	}
 }
 
 func cloneSourceColumnSet(src base.SourceColumnSet) base.SourceColumnSet {
@@ -152,30 +178,64 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 		return nil, errors.Wrapf(err, "failed to parse SQL function body")
 	}
 
-	// Find the last SELECT statement (SQL functions return the result of the last statement).
-	for i := len(stmts) - 1; i >= 0; i-- {
-		selStmt, ok := stmts[i].AST.(*ast.SelectStmt)
-		if !ok {
+	// Every statement in the body runs, so each one's conditions count; the
+	// last one returns the function's result.
+	last := -1
+	for i, stmt := range stmts {
+		if stmt.AST != nil {
+			last = i
+		}
+	}
+	var result []base.SourceColumnSet
+	for i, stmt := range stmts {
+		if stmt.AST == nil {
 			continue
 		}
-		query, err := e.cat.AnalyzeSelectStmt(selStmt)
+		accesses := e.accessTablesOf(stmt.Text)
+		// The caller reads what the body reads, whether or not the result shows it.
+		mergeSourceColumnSetInto(e.funcSourceColumns, accesses)
+		selStmt, ok := stmt.AST.(*ast.SelectStmt)
+		if !ok {
+			// The analyzer reads SELECT alone, so another statement's conditions
+			// and RETURNING list are matched by name.
+			e.collectFallbackPredicateColumns(stmt.AST, accesses)
+			returning := e.returningLineage(stmt.AST, accesses)
+			if i == last {
+				result = returning
+			} else {
+				for _, set := range returning {
+					mergeSourceColumnSetInto(e.predicateColumns, set)
+				}
+			}
+			continue
+		}
+		query, err := e.analyzeSelect(selStmt)
 		if err != nil {
+			e.collectFallbackPredicateColumns(selStmt, accesses)
+			if i != last {
+				e.collectDiscardedOutputColumns(nil, selStmt, accesses)
+				continue
+			}
 			// Fall back to parse-tree extraction when analysis fails
 			// (e.g., nested function calls, parameter references).
 			fallbackResults := e.extractFallbackColumns(selStmt)
-			if len(fallbackResults) > 0 {
-				result := make([]base.SourceColumnSet, len(fallbackResults))
-				for j, fr := range fallbackResults {
-					result[j] = fr.SourceColumns
-				}
-				return result, nil
+			if len(fallbackResults) == 0 {
+				return nil, errors.Wrapf(err, "failed to analyze SQL function body")
 			}
-			return nil, errors.Wrapf(err, "failed to analyze SQL function body")
+			result = make([]base.SourceColumnSet, len(fallbackResults))
+			for j, fr := range fallbackResults {
+				result[j] = fr.SourceColumns
+			}
+			continue
 		}
-		return e.extractFuncLineage(query), nil
+		e.collectStatementPredicateColumns(query, selStmt, accesses)
+		if i == last {
+			result = e.extractFuncLineage(query)
+		} else {
+			e.collectDiscardedOutputColumns(query, selStmt, accesses)
+		}
 	}
-
-	return nil, nil
+	return result, nil
 }
 
 func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
@@ -306,9 +366,14 @@ func (a *plpgsqlAnalyzer) walkBlock(block *plpgsqlast.PLBlock) {
 	for _, decl := range block.Declarations {
 		switch d := decl.(type) {
 		case *plpgsqlast.PLDeclare:
-			a.scope.set(d.Name, make(base.SourceColumnSet))
+			sources := make(base.SourceColumnSet)
+			if d.Default != "" {
+				sources = a.analyzeEmbeddedExpr(d.Default)
+			}
+			a.scope.set(d.Name, sources)
 		case *plpgsqlast.PLCursorDecl:
-			a.scope.set(d.Name, make(base.SourceColumnSet))
+			// A cursor carries the columns of its query to what FETCH reads.
+			a.scope.set(d.Name, a.analyzeQuerySources(d.Query))
 		case *plpgsqlast.PLAliasDecl:
 			// Alias references another variable — copy its sources.
 			if sources, ok := a.scope.get(d.RefName); ok {
@@ -356,16 +421,23 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLWhile:
+		a.handleCondition(stmt.Condition)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLForI:
+		a.handleCondition(stmt.Lower)
+		a.handleCondition(stmt.Upper)
+		a.handleCondition(stmt.Step)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLForS:
 		a.handleForS(stmt)
 	case *plpgsqlast.PLForC:
+		if sources, ok := a.scope.get(stmt.CursorVar); ok {
+			a.scope.merge(stmt.Var, sources)
+		}
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
@@ -374,15 +446,121 @@ func (a *plpgsqlAnalyzer) walkStmt(node plpgsqlast.Node) {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLForEachA:
+		a.handleCondition(stmt.ArrayExpr)
 		for _, s := range stmt.Body {
 			a.walkStmt(s)
 		}
 	case *plpgsqlast.PLBlock:
 		a.walkBlock(stmt)
+	// PERFORM discards its rows but still runs, so how long it takes reveals
+	// what it reads.
+	case *plpgsqlast.PLPerform:
+		a.handleCondition(stmt.Expr)
+	case *plpgsqlast.PLDynExecute:
+		a.handleDynExecute(stmt)
+	case *plpgsqlast.PLOpen:
+		if stmt.Query != "" {
+			a.scope.merge(stmt.CursorVar, a.analyzeQuerySources(stmt.Query))
+		}
+	case *plpgsqlast.PLFetch:
+		if sources, ok := a.scope.get(stmt.CursorVar); ok {
+			for _, varName := range stmt.Into {
+				a.scope.merge(varName, sources)
+			}
+		}
+	case *plpgsqlast.PLCall:
+		a.handleCall(stmt)
+	// RAISE puts the values of its parameters in the message the caller sees.
+	case *plpgsqlast.PLRaise:
+		for _, param := range stmt.Params {
+			a.handleCondition(param)
+		}
+	case *plpgsqlast.PLExit:
+		a.handleCondition(stmt.Condition)
+	case *plpgsqlast.PLAssert:
+		a.handleCondition(stmt.Condition)
 	// Skip nodes that don't affect lineage:
-	// PLDynExecute, PLRaise, PLNull, PLCommit, PLRollback, PLPerform,
-	// PLCall, PLOpen, PLFetch, PLClose, PLGetDiag, PLAssert, PLExit
+	// PLNull, PLCommit, PLRollback, PLClose, PLGetDiag
 	default:
+	}
+}
+
+// handleCondition records the columns an expression that steers the body
+// reads, directly or through variables: it decides which statements run, and
+// so what the function returns and how long it takes.
+func (a *plpgsqlAnalyzer) handleCondition(expr string) {
+	if strings.TrimSpace(expr) == "" {
+		return
+	}
+	mergeSourceColumnSetInto(a.extractor.predicateColumns, a.analyzeEmbeddedExpr(expr))
+	stmts, err := ParsePg("SELECT " + expr)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	a.addScopeReferences(stmts[0].AST)
+}
+
+// addScopeReferences records, as predicates, the columns that the variables
+// node reads carry.
+func (a *plpgsqlAnalyzer) addScopeReferences(node ast.Node) {
+	mergeSourceColumnSetInto(a.extractor.predicateColumns, a.scopeSources(node))
+}
+
+// scopeSources returns the columns that the variables node reads carry. A
+// variable, or the record variable a qualified reference such as r.ssn names,
+// carries the columns it was assigned from.
+func (a *plpgsqlAnalyzer) scopeSources(node ast.Node) base.SourceColumnSet {
+	sources := make(base.SourceColumnSet)
+	ast.Inspect(node, func(n ast.Node) bool {
+		if ref, ok := n.(*ast.ColumnRef); ok && ref.Fields != nil && len(ref.Fields.Items) > 0 {
+			if name, ok := ref.Fields.Items[0].(*ast.String); ok {
+				if varSources, ok := a.scope.get(name.Str); ok {
+					mergeSourceColumnSetInto(sources, varSources)
+				}
+			}
+		}
+		return true
+	})
+	return sources
+}
+
+// analyzeQuerySources returns every column the output of sql reads, merged.
+func (a *plpgsqlAnalyzer) analyzeQuerySources(sql string) base.SourceColumnSet {
+	merged := make(base.SourceColumnSet)
+	if strings.TrimSpace(sql) == "" {
+		return merged
+	}
+	for _, set := range a.analyzeEmbeddedSQL(sql) {
+		mergeSourceColumnSetInto(merged, set)
+	}
+	return merged
+}
+
+// handleCall analyzes the body of the procedure CALL invokes, whatever
+// overload it is. The procedure runs for its effects, so the values passed to
+// it count as predicates.
+func (a *plpgsqlAnalyzer) handleCall(stmt *plpgsqlast.PLCall) {
+	stmts, err := ParsePg(stmt.SQLText)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	call, ok := stmts[0].AST.(*ast.CallStmt)
+	if !ok || call.Funccall == nil {
+		return
+	}
+	for _, proc := range a.extractor.userProcsNamed(astStrings(call.Funccall.Funcname)) {
+		a.extractor.analyzeFunctionBody(proc)
+	}
+	if call.Funccall.Args == nil {
+		return
+	}
+	for _, arg := range call.Funccall.Args.Items {
+		loc := ast.NodeLoc(arg)
+		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(stmt.SQLText) {
+			a.handleCondition(stmt.SQLText[loc.Start:loc.End])
+			continue
+		}
+		a.addScopeReferences(arg)
 	}
 }
 
@@ -419,15 +597,74 @@ func (a *plpgsqlAnalyzer) handleReturnNext(stmt *plpgsqlast.PLReturnNext) {
 }
 
 func (a *plpgsqlAnalyzer) handleExecSQL(stmt *plpgsqlast.PLExecSQL) {
-	if len(stmt.Into) == 0 {
+	stmts, err := ParsePg(stmt.SQLText)
+	if err != nil || len(stmts) != 1 {
 		return
 	}
-	results := a.analyzeEmbeddedSQL(stmt.SQLText)
+	var results []base.SourceColumnSet
+	if _, ok := stmts[0].AST.(*ast.SelectStmt); ok {
+		results = a.analyzeEmbeddedSQL(stmt.SQLText)
+	} else {
+		// The analyzer reads SELECT alone, so another statement, which runs for
+		// its effect, has its conditions and RETURNING list matched by name.
+		accesses := a.extractor.accessTablesOf(stmt.SQLText)
+		a.extractor.collectFallbackPredicateColumns(stmts[0].AST, accesses)
+		results = a.extractor.returningLineage(stmts[0].AST, accesses)
+	}
 	for i, varName := range stmt.Into {
 		if i < len(results) {
 			a.scope.merge(varName, results[i])
 		}
 	}
+}
+
+// handleDynExecute analyzes EXECUTE of a constant query like the statement it
+// runs. A query built at run time cannot be analyzed.
+func (a *plpgsqlAnalyzer) handleDynExecute(stmt *plpgsqlast.PLDynExecute) {
+	stmts, err := ParsePg("SELECT " + stmt.Query)
+	if err != nil || len(stmts) != 1 {
+		return
+	}
+	sel, ok := stmts[0].AST.(*ast.SelectStmt)
+	if !ok || sel.TargetList == nil || len(sel.TargetList.Items) != 1 {
+		return
+	}
+	rt, ok := sel.TargetList.Items[0].(*ast.ResTarget)
+	if !ok {
+		return
+	}
+	query, ok := constantString(rt.Val)
+	if !ok {
+		return
+	}
+	a.handleExecSQL(&plpgsqlast.PLExecSQL{SQLText: query, Into: stmt.Into})
+}
+
+// constantString returns the text of a string literal, a cast of one, or a
+// concatenation of them.
+func constantString(node ast.Node) (string, bool) {
+	switch v := node.(type) {
+	case *ast.A_Const:
+		if s, ok := v.Val.(*ast.String); ok {
+			return s.Str, true
+		}
+	case *ast.TypeCast:
+		return constantString(v.Arg)
+	case *ast.A_Expr:
+		if names := astStrings(v.Name); len(names) == 1 && names[0] == "||" {
+			left, ok := constantString(v.Lexpr)
+			if !ok {
+				return "", false
+			}
+			right, ok := constantString(v.Rexpr)
+			if !ok {
+				return "", false
+			}
+			return left + right, true
+		}
+	default:
+	}
+	return "", false
 }
 
 func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
@@ -445,11 +682,13 @@ func (a *plpgsqlAnalyzer) handleForS(stmt *plpgsqlast.PLForS) {
 }
 
 func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
+	a.handleCondition(stmt.Condition)
 	for _, s := range stmt.ThenBody {
 		a.walkStmt(s)
 	}
 	for _, elsif := range stmt.ElsIfs {
 		if ei, ok := elsif.(*plpgsqlast.PLElsIf); ok {
+			a.handleCondition(ei.Condition)
 			for _, s := range ei.Body {
 				a.walkStmt(s)
 			}
@@ -461,8 +700,10 @@ func (a *plpgsqlAnalyzer) handleIf(stmt *plpgsqlast.PLIf) {
 }
 
 func (a *plpgsqlAnalyzer) handleCase(stmt *plpgsqlast.PLCase) {
+	a.handleCondition(stmt.TestExpr)
 	for _, when := range stmt.Whens {
 		if cw, ok := when.(*plpgsqlast.PLCaseWhen); ok {
+			a.handleCondition(cw.Expr)
 			for _, s := range cw.Body {
 				a.walkStmt(s)
 			}
@@ -478,7 +719,7 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 
 	// Always collect access tables from embedded SQL for the top-level QuerySpan,
 	// regardless of whether full analysis succeeds.
-	a.collectAccessTablesFromSQL(substituted)
+	accesses := a.collectAccessTablesFromSQL(substituted)
 
 	stmts, err := ParsePg(substituted)
 	if err != nil {
@@ -493,17 +734,16 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedSQL(sql string) []base.SourceColumnSet 
 		return nil
 	}
 
-	query, err := a.extractor.cat.AnalyzeSelectStmt(selStmt)
+	query, err := a.extractor.analyzeSelect(selStmt)
 	if err != nil {
 		// When full analysis fails (e.g., type mismatches with aggregate functions),
 		// fall back to extracting column references from the parse tree and resolving
 		// them against known tables in the catalog.
+		a.extractor.collectFallbackPredicateColumns(selStmt, accesses)
 		return a.fallbackExtractLineage(sql, selStmt)
 	}
 
-	// Also collect from the analyzed query for precise column-level tracking
-	// (WHERE clause → predicate columns).
-	a.collectQueryPredicateColumns(query)
+	a.extractor.collectStatementPredicateColumns(query, selStmt, accesses)
 
 	results := a.extractor.extractFuncLineage(query)
 
@@ -586,11 +826,8 @@ func (a *plpgsqlAnalyzer) analyzeEmbeddedExpr(expr string) base.SourceColumnSet 
 		}
 	}
 	if len(merged) == 0 {
-		varName := strings.TrimSpace(expr)
-		if sources, ok := a.scope.get(varName); ok {
-			for k, v := range sources {
-				merged[k] = v
-			}
+		if stmts, err := ParsePg("SELECT " + expr); err == nil && len(stmts) == 1 {
+			mergeSourceColumnSetInto(merged, a.scopeSources(stmts[0].AST))
 		}
 	}
 	return merged
@@ -600,7 +837,7 @@ func (a *plpgsqlAnalyzer) substituteVariables(sql string) string {
 	stmts, err := ParsePg(sql)
 	if err == nil && len(stmts) > 0 {
 		if selStmt, ok := stmts[0].AST.(*ast.SelectStmt); ok {
-			if _, err := a.extractor.cat.AnalyzeSelectStmt(selStmt); err == nil {
+			if _, err := a.extractor.analyzeSelect(selStmt); err == nil {
 				return sql
 			}
 		}
@@ -659,74 +896,36 @@ func extractBaseVarName(target string) string {
 	return target
 }
 
-// collectAccessTablesFromSQL extracts all table/column references from embedded SQL
-// and adds them to the extractor's funcSourceColumns. This works even when
-// AnalyzeSelectStmt fails, because it uses the AST-level ExtractAccessTables.
-func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) {
+// collectAccessTablesFromSQL extracts all table/column references from embedded SQL,
+// adds them to the extractor's funcSourceColumns, and returns them. This works even
+// when AnalyzeSelectStmt fails, because it uses the AST-level ExtractAccessTables.
+func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) base.SourceColumnSet {
+	accesses := a.extractor.accessTablesOf(sql)
+	for resource := range accesses {
+		a.extractor.funcSourceColumns[resource] = true
+	}
+	return accesses
+}
+
+// accessTablesOf returns the tables sql reads, or none when it cannot tell.
+func (e *omniQuerySpanExtractor) accessTablesOf(sql string) base.SourceColumnSet {
+	accesses := make(base.SourceColumnSet)
 	accessTables, err := ExtractAccessTables(sql, ExtractAccessTablesOption{
-		DefaultDatabase:        a.extractor.defaultDatabase,
-		DefaultSchema:          a.extractor.searchPath[0],
-		SearchPath:             a.extractor.searchPath,
-		GetDatabaseMetadata:    a.extractor.gCtx.GetDatabaseMetadataFunc,
-		Ctx:                    a.extractor.ctx,
-		InstanceID:             a.extractor.gCtx.InstanceID,
+		DefaultDatabase:        e.defaultDatabase,
+		DefaultSchema:          e.searchPath[0],
+		SearchPath:             e.searchPath,
+		GetDatabaseMetadata:    e.gCtx.GetDatabaseMetadataFunc,
+		Ctx:                    e.ctx,
+		InstanceID:             e.gCtx.InstanceID,
 		SkipMetadataValidation: false,
 	})
 	if err != nil {
-		return
+		return accesses
 	}
 	for _, resource := range accessTables {
-		a.extractor.funcSourceColumns[resource] = true
+		accesses[resource] = true
 	}
-}
-
-// collectQueryPredicateColumns walks WHERE/HAVING clauses in an analyzed query
-// and collects predicate columns (column-level) into funcPredicateColumns.
-// Note: funcSourceColumns only stores table-level access (via collectAccessTablesFromSQL),
-// so we don't add column-level entries to it here.
-func (a *plpgsqlAnalyzer) collectQueryPredicateColumns(q *catalog.Query) {
-	a.collectQueryPredicateColumnsWithVisited(q, make(map[*catalog.Query]bool))
-}
-
-func (a *plpgsqlAnalyzer) collectQueryPredicateColumnsWithVisited(q *catalog.Query, visited map[*catalog.Query]bool) {
-	if q == nil {
-		return
-	}
-	if visited[q] {
-		return
-	}
-	visited[q] = true
-
-	// Handle set operations recursively.
-	if q.SetOp != catalog.SetOpNone {
-		a.collectQueryPredicateColumnsWithVisited(q.LArg, visited)
-		a.collectQueryPredicateColumnsWithVisited(q.RArg, visited)
-		return
-	}
-
-	// Collect from WHERE clause → predicate columns only.
-	if q.JoinTree != nil && q.JoinTree.Quals != nil {
-		a.extractor.walkExpr(q, q.JoinTree.Quals, a.extractor.funcPredicateColumns)
-	}
-
-	// Collect from HAVING clause → predicate columns only.
-	if q.HavingQual != nil {
-		a.extractor.walkExpr(q, q.HavingQual, a.extractor.funcPredicateColumns)
-	}
-
-	// Recurse into CTEs.
-	for _, cte := range q.CTEList {
-		if cte.Query != nil {
-			a.collectQueryPredicateColumnsWithVisited(cte.Query, visited)
-		}
-	}
-
-	// Recurse into subqueries in FROM clause.
-	for _, rte := range q.RangeTable {
-		if rte.Kind == catalog.RTESubquery && rte.Subquery != nil {
-			a.collectQueryPredicateColumnsWithVisited(rte.Subquery, visited)
-		}
-	}
+	return accesses
 }
 
 func (a *plpgsqlAnalyzer) mergeReturnResults(nCols int) []base.SourceColumnSet {
@@ -796,7 +995,7 @@ func (a *plpgsqlAnalyzer) fallbackExtractLineage(origSQL string, selStmt *ast.Se
 		whereColSet := make(base.SourceColumnSet)
 		a.extractColumnRefsFromExpr(selStmt.WhereClause, fromTables, whereColSet)
 		for k, v := range whereColSet {
-			a.extractor.funcPredicateColumns[k] = v
+			a.extractor.predicateColumns[k] = v
 		}
 	}
 
@@ -958,7 +1157,7 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 			filterColSet := make(base.SourceColumnSet)
 			a.extractColumnRefsFromExpr(v.AggFilter, fromTables, filterColSet)
 			for k, val := range filterColSet {
-				a.extractor.funcPredicateColumns[k] = val
+				a.extractor.predicateColumns[k] = val
 			}
 		}
 	case *ast.A_Expr:
@@ -989,7 +1188,7 @@ func (a *plpgsqlAnalyzer) extractColumnRefsFromExpr(node ast.Node, fromTables ma
 					whereColSet := make(base.SourceColumnSet)
 					a.extractColumnRefsFromExpr(subSel.WhereClause, subTables, whereColSet)
 					for k, val := range whereColSet {
-						a.extractor.funcPredicateColumns[k] = val
+						a.extractor.predicateColumns[k] = val
 					}
 				}
 			}
@@ -1211,7 +1410,7 @@ func (a *plpgsqlAnalyzer) resolveThroughCTE(cteSel *ast.SelectStmt, colName stri
 			whereColSet := make(base.SourceColumnSet)
 			a.extractColumnRefsFromExpr(cteSel.WhereClause, cteTables, whereColSet)
 			for k, v := range whereColSet {
-				a.extractor.funcPredicateColumns[k] = v
+				a.extractor.predicateColumns[k] = v
 			}
 		}
 		return

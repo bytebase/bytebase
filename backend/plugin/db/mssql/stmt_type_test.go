@@ -22,6 +22,9 @@ func TestGetStmtType(t *testing.T) {
 		{stmt: "SET NOCOUNT ON", want: stmtTypeUnknown},
 		{stmt: "SET NOEXEC ON", wantErr: "SET NOEXEC is not supported"},
 		{stmt: "set parseonly on", wantErr: "SET PARSEONLY is not supported"},
+		{stmt: "SET ANSI_NULLS, NOEXEC ON", wantErr: "SET NOEXEC is not supported"},
+		{stmt: "SET QUOTED_IDENTIFIER, parseonly ON", wantErr: "SET PARSEONLY is not supported"},
+		{stmt: "SET ANSI_NULLS, QUOTED_IDENTIFIER ON", want: stmtTypeUnknown},
 		{stmt: "IF 1 = 1 SELECT 1", wantErr: "unsupported control flow statement"},
 	} {
 		t.Run(tc.stmt, func(t *testing.T) {

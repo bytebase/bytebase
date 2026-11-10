@@ -5,20 +5,28 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"database/sql"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log/slog"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/pkg/errors"
+	goora "github.com/sijms/go-ora/v2"
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -45,8 +53,8 @@ func (c *Container) GetPassword() string { return c.password }
 // GetDB is the admin connection, nil for an engine with no database/sql driver.
 func (c *Container) GetDB() *sql.DB { return c.db }
 
-// GetTLSCAPath returns the CA certificate path for a TLS-enabled PostgreSQL
-// container.
+// GetTLSCAPath returns the path of the CA that signed the server certificate
+// of the TLS PostgreSQL or the SQL Server container.
 func (c *Container) GetTLSCAPath() string { return c.tlsCAPath }
 
 func (c *Container) Close(ctx context.Context) {
@@ -189,7 +197,7 @@ func getPg17Container(ctx context.Context) (*Container, error) {
 // connecting with sslmode=verify-full and the CA at GetTLSCAPath. The admin
 // handle stays on plaintext.
 func getTLSPgContainer(ctx context.Context) (retC *Container, retErr error) {
-	tlsDir, ca, certificate, key, err := createPostgreSQLTLSMaterial()
+	tlsDir, ca, certificate, key, err := createTLSMaterial(net.ParseIP("127.0.0.1"), net.ParseIP("::1"))
 	if err != nil {
 		return nil, err
 	}
@@ -242,14 +250,63 @@ func GetMySQLContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
-func getMSSQLContainer(ctx context.Context) (*Container, error) {
+// mariaDBStarter starts the MariaDB image, whose root password is root-password.
+func mariaDBStarter(image string) func(context.Context) (*Container, error) {
+	return func(ctx context.Context) (*Container, error) {
+		const user, password = "root", "root-password"
+		return start(ctx, testcontainers.ContainerRequest{
+			Image:      image,
+			Env:        map[string]string{"MARIADB_ROOT_PASSWORD": password},
+			WaitingFor: wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
+		}, spec{
+			port:     "3306/tcp",
+			username: user,
+			password: password,
+			driver:   "mysql",
+			dsn: func(c *Container) string {
+				return fmt.Sprintf("%s:%s@tcp(%s:%s)/?multiStatements=true", c.username, c.password, c.host, c.port)
+			},
+		})
+	}
+}
+
+// mssqlTLSConf points SQL Server at the certificate getMSSQLContainer copies in,
+// leaving encryption up to the client.
+const mssqlTLSConf = `[network]
+tlscert = /var/opt/mssql/tls/server.crt
+tlskey = /var/opt/mssql/tls/server.key
+tlsprotocols = 1.2
+forceencryption = 0
+`
+
+// getMSSQLContainer starts SQL Server with a certificate from the CA at
+// GetTLSCAPath. The certificate names localhost and no IP address, so a client
+// that verifies it through 127.0.0.1 fails the host name check. The admin
+// handle does not verify.
+func getMSSQLContainer(ctx context.Context) (retC *Container, retErr error) {
 	const user, password = "sa", "Test123!"
-	return start(ctx, testcontainers.ContainerRequest{
+	tlsDir, ca, certificate, key, err := createTLSMaterial()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			_ = os.RemoveAll(tlsDir)
+		}
+	}()
+
+	c, err := start(ctx, testcontainers.ContainerRequest{
 		Image: "mcr.microsoft.com/mssql/server:2022-latest",
 		Env: map[string]string{
 			"ACCEPT_EULA": "Y",
 			"SA_PASSWORD": password,
 			"MSSQL_PID":   "Express",
+		},
+		// Copied in as root while SQL Server runs as mssql, so the key must be world-readable.
+		Files: []testcontainers.ContainerFile{
+			{Reader: bytes.NewReader(certificate), ContainerFilePath: "/var/opt/mssql/tls/server.crt", FileMode: 0o644},
+			{Reader: bytes.NewReader(key), ContainerFilePath: "/var/opt/mssql/tls/server.key", FileMode: 0o644},
+			{Reader: strings.NewReader(mssqlTLSConf), ContainerFilePath: "/var/opt/mssql/mssql.conf", FileMode: 0o644},
 		},
 		WaitingFor: wait.ForLog("SQL Server is now ready for client connections").
 			WithStartupTimeout(3 * time.Minute),
@@ -262,10 +319,29 @@ func getMSSQLContainer(ctx context.Context) (*Container, error) {
 			return fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master", c.username, c.password, c.host, c.port)
 		},
 	})
+	if err != nil {
+		return nil, err
+	}
+	c.tlsDir, c.tlsCAPath = tlsDir, ca
+	return c, nil
 }
 
 // getTiDBContainer starts TiDB, which speaks the MySQL protocol with no
 // password on root.
+// getTrinoContainer starts Trino with its built-in memory connector, which needs
+// no catalog files. driver is left unset so this package does not link the Trino
+// client for every suite that imports it; a test opens its own connection from
+// the host, port and user.
+func getTrinoContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "trinodb/trino:482",
+		WaitingFor: wait.ForLog("SERVER STARTED").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "8080/tcp",
+		username: "bytebase",
+	})
+}
+
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
 		Image:      "pingcap/tidb:v8.5.0",
@@ -282,10 +358,16 @@ func getTiDBContainer(ctx context.Context) (*Container, error) {
 
 // getMongoDBContainer starts MongoDB, which has no database/sql driver: its
 // tests open the Mongo driver themselves from the container's credentials.
+//
+// The image is pinned to the oldest MongoDB release Bytebase supports
+// (mongodb.MinSupportedServerVersion), so that a driver upgrade which raises the
+// floor above it fails this suite instead of reaching customers. Importing that
+// constant here would invert the dependency between the harness and the plugin,
+// so the two are kept in step by hand.
 func getMongoDBContainer(ctx context.Context) (*Container, error) {
 	const user, password = "testuser", "testpass"
 	return start(ctx, testcontainers.ContainerRequest{
-		Image: "mongo:5",
+		Image: "mongo:4.4",
 		Env: map[string]string{
 			"MONGO_INITDB_ROOT_USERNAME": user,
 			"MONGO_INITDB_ROOT_PASSWORD": password,
@@ -298,8 +380,41 @@ func getMongoDBContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
-func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
-	tlsDir, err := os.MkdirTemp("", "bytebase-postgres-tls-*")
+// OracleServiceName is the pluggable database the Oracle container serves.
+// OracleServiceName is the pluggable database the Oracle container's tests
+// connect to.
+const OracleServiceName = "FREEPDB1"
+
+// getOracleContainer starts Oracle Database Free. Its admin handle signs in as
+// SYSTEM, which may create users and objects in any schema; the caller's test
+// binary must link go-ora, which registers the "oracle" driver. The connect
+// timeout makes a listener that never answers fail each ping instead of
+// hanging it.
+func getOracleContainer(ctx context.Context) (*Container, error) {
+	const password = "test-Passw0rd"
+	return start(ctx, testcontainers.ContainerRequest{
+		Image:      "gvenzl/oracle-free:23.26.3-slim-faststart",
+		Env:        map[string]string{"ORACLE_PASSWORD": password},
+		WaitingFor: wait.ForLog("DATABASE IS READY TO USE!").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "1521/tcp",
+		username: "system",
+		password: password,
+		driver:   "oracle",
+		dsn: func(c *Container) string {
+			port, err := strconv.Atoi(c.port)
+			if err != nil {
+				return ""
+			}
+			return goora.BuildUrl(c.host, port, OracleServiceName, c.username, c.password, map[string]string{"CONNECTION TIMEOUT": "10"})
+		},
+	})
+}
+
+// createTLSMaterial issues a server certificate for localhost and ips from a
+// fresh CA, and writes the CA to a temporary directory the caller removes.
+func createTLSMaterial(ips ...net.IP) (string, string, []byte, []byte, error) {
+	tlsDir, err := os.MkdirTemp("", "bytebase-tls-*")
 	if err != nil {
 		return "", "", nil, nil, err
 	}
@@ -319,7 +434,7 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 	now := time.Now()
 	caTemplate := x509.Certificate{
 		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: "Bytebase PostgreSQL Test CA"},
+		Subject:               pkix.Name{CommonName: "Bytebase Test CA"},
 		NotBefore:             now.Add(-time.Minute),
 		NotAfter:              now.Add(24 * time.Hour),
 		IsCA:                  true,
@@ -346,7 +461,7 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 		SerialNumber: serial,
 		Subject:      pkix.Name{CommonName: "localhost"},
 		DNSNames:     []string{"localhost"},
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")},
+		IPAddresses:  ips,
 		NotBefore:    now.Add(-time.Minute),
 		NotAfter:     now.Add(24 * time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
@@ -364,4 +479,132 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 		return fail(err)
 	}
 	return tlsDir, caPath, certificate, key, nil
+}
+
+// CosmosEmulatorPort is the port the Cosmos emulator serves and advertises.
+// It is published unchanged, so only one emulator can run on a machine.
+const CosmosEmulatorPort = "8081"
+
+// getCosmosContainer starts the classic Cosmos DB emulator. It is the only
+// image that reproduces the gateway refusing to serve a cross-partition query,
+// which is the error the SDK pivots to its query engine on: the vnext-preview
+// emulator answers those queries itself out of PostgreSQL and reports one
+// partition key range whatever the throughput, so a query engine never runs.
+//
+// The emulator names its own endpoint in the database account document and the
+// SDK follows that rather than the endpoint it was configured with. The address
+// override makes it advertise 127.0.0.1, which only reaches the emulator while
+// the host publishes the same port it serves — hence the fixed binding, and one
+// emulator per machine. A second concurrent start fails on that binding instead
+// of sharing the first one's databases.
+//
+// Partition count is the emulator's budget of physical partitions to hand out;
+// a container draws from it in proportion to its provisioned throughput, so 8
+// leaves room for a fixture wide enough to exercise a cross-partition merge.
+func getCosmosContainer(ctx context.Context) (*Container, error) {
+	emulatorPort, err := network.ParsePort(CosmosEmulatorPort + "/tcp")
+	if err != nil {
+		return nil, errors.Wrap(err, "parse the Cosmos emulator port")
+	}
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:2.14.28",
+		Env: map[string]string{
+			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT":         "8",
+			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE": "false",
+			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE":     "127.0.0.1",
+		},
+		// Readiness is an answer from the gateway rather than a log line: the
+		// emulator logs "Started N/M partitions" per partition before the bare
+		// "Started" that means it is up, and terminates its lines with CRLF.
+		//
+		// Bringing up the partitions takes about half a minute on an idle host and
+		// was measured at 216 s on a loaded one, so the timeout clears the longest
+		// boot seen rather than the typical one.
+		WaitingFor: wait.ForHTTP("/_explorer/emulator.pem").
+			WithPort(CosmosEmulatorPort+"/tcp").
+			WithTLS(true, &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true, //nolint:gosec // the emulator signs its certificate itself
+			}).
+			WithStartupTimeout(10 * time.Minute),
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.PortBindings = network.PortMap{emulatorPort: {{HostPort: CosmosEmulatorPort}}}
+		},
+	}, spec{port: CosmosEmulatorPort + "/tcp"})
+}
+
+// RedisClusterSlots is the number of hash slots a Redis cluster partitions keys
+// into; the single node getRedisClusterContainer starts owns all of them.
+const RedisClusterSlots = 16384
+
+// getRedisClusterContainer starts a one-node Redis cluster. Cluster clients
+// follow the addresses CLUSTER SLOTS reports, so the node is told to announce
+// the host-mapped address rather than its address inside Docker, which a test
+// outside Docker cannot reach.
+func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr error) {
+	c, err := start(ctx, testcontainers.ContainerRequest{
+		Image: "redis:7.2-alpine",
+		Cmd: []string{
+			"redis-server", "--cluster-enabled", "yes",
+			"--cluster-config-file", "/tmp/nodes.conf", "--cluster-node-timeout", "5000",
+		},
+		WaitingFor: wait.ForLog("Ready to accept connections").WithStartupTimeout(3 * time.Minute),
+	}, spec{port: "6379/tcp"})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if retErr != nil {
+			c.Close(ctx)
+		}
+	}()
+
+	if _, err := redisCLI(ctx, c, "config", "set", "cluster-announce-ip", c.host); err != nil {
+		return nil, err
+	}
+	if _, err := redisCLI(ctx, c, "config", "set", "cluster-announce-port", c.port); err != nil {
+		return nil, err
+	}
+	if _, err := redisCLI(ctx, c, "cluster", "addslotsrange", "0", strconv.Itoa(RedisClusterSlots-1)); err != nil {
+		return nil, err
+	}
+	// Owning every slot is not enough on its own: the node reports state fail
+	// until its cluster cron has taken the new slots into account.
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.After(2 * time.Minute)
+	for {
+		info, err := redisCLI(ctx, c, "cluster", "info")
+		if err != nil {
+			return nil, err
+		}
+		if strings.Contains(info, "cluster_state:ok") {
+			return c, nil
+		}
+		select {
+		case <-ticker.C:
+		case <-timeout:
+			return nil, errors.Errorf("redis cluster did not reach state ok: %s", info)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+}
+
+// redisCLI runs redis-cli inside the container, which keeps the cluster
+// bootstrap off the host and out of this package's dependencies. Exec output is
+// a multiplexed Docker stream, so Multiplexed decodes it into plain text.
+func redisCLI(ctx context.Context, c *Container, args ...string) (string, error) {
+	code, reader, err := c.container.Exec(ctx, append([]string{"redis-cli"}, args...), tcexec.Multiplexed())
+	if err != nil {
+		return "", errors.Wrapf(err, "exec redis-cli %s", strings.Join(args, " "))
+	}
+	out, err := io.ReadAll(reader)
+	if err != nil {
+		return "", errors.Wrapf(err, "read redis-cli %s output", strings.Join(args, " "))
+	}
+	if code != 0 {
+		return "", errors.Errorf("redis-cli %s exited %d: %s", strings.Join(args, " "), code, out)
+	}
+	return string(out), nil
 }

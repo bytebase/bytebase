@@ -1,4 +1,4 @@
-package mariadb
+package mariadb_test
 
 import (
 	"context"
@@ -6,7 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -28,6 +30,10 @@ var mariaDBOnlySQL = []string{
 	// application-time periods (omni #324-#328)
 	"CREATE TABLE t (s DATE, e DATE, PERIOD FOR app_time(s, e))",
 	"UPDATE t FOR PORTION OF app_time FROM '2020-01-01' TO '2021-01-01' SET id = 1",
+	// omni/mysql takes only the engine's own OR REPLACE and DROP forms (omni #487, #488)
+	"CREATE OR REPLACE TABLE t (id INT)",
+	"CREATE OR REPLACE PROCEDURE p() BEGIN SELECT 1; END",
+	"ALTER TABLE t DROP COLUMN IF EXISTS id",
 }
 
 // TestMariaDBDiagnoseKeystone is the carve-out keystone. Before the re-point,
@@ -44,9 +50,13 @@ func TestMariaDBDiagnoseKeystone(t *testing.T) {
 		require.NotEmpty(t, mysqlDiags, "omni/mysql should still (wrongly) flag %q — the false error being fixed", stmt)
 
 		// GREEN: the omni/mariadb backend accepts it (no diagnostics).
-		mariadbDiags, err := Diagnose(ctx, base.DiagnoseContext{}, stmt)
+		mariadbDiags, err := mariadb.Diagnose(ctx, base.DiagnoseContext{}, stmt)
 		require.NoError(t, err)
 		require.Empty(t, mariadbDiags, "omni/mariadb should accept %q with no diagnostic", stmt)
+
+		// Checks parse it too, through the MariaDB fallback of ParseStatements.
+		_, err = base.ParseStatements(storepb.Engine_MARIADB, stmt)
+		require.NoError(t, err, stmt)
 	}
 
 	// Inverse fidelity case: FOR UPDATE ... OF is valid MySQL but MariaDB removed
@@ -56,13 +66,13 @@ func TestMariaDBDiagnoseKeystone(t *testing.T) {
 	mysqlFU, err := mysql.Diagnose(ctx, base.DiagnoseContext{}, forUpdateOf)
 	require.NoError(t, err)
 	require.Empty(t, mysqlFU, "omni/mysql accepts FOR UPDATE OF (valid MySQL)")
-	mariadbFU, err := Diagnose(ctx, base.DiagnoseContext{}, forUpdateOf)
+	mariadbFU, err := mariadb.Diagnose(ctx, base.DiagnoseContext{}, forUpdateOf)
 	require.NoError(t, err)
 	require.NotEmpty(t, mariadbFU, "omni/mariadb must flag FOR UPDATE OF (removed in MariaDB 11.4)")
 
 	// Diagnose must still report a genuine syntax error — proving it actually
 	// validates, not just "returns empty".
-	badDiags, err := Diagnose(ctx, base.DiagnoseContext{}, "SELECT FROM WHERE )(")
+	badDiags, err := mariadb.Diagnose(ctx, base.DiagnoseContext{}, "SELECT FROM WHERE )(")
 	require.NoError(t, err)
 	require.NotEmpty(t, badDiags, "a real syntax error must still be reported")
 }

@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -455,4 +456,48 @@ func findStatementIndex(statements []string, stmtType, objectName string) int {
 		}
 	}
 	return -1
+}
+
+func TestExpressionReferencesColumn(t *testing.T) {
+	tests := []struct {
+		expression string
+		column     string
+		want       bool
+	}{
+		{expression: `"S"`, column: "S", want: true},
+		{expression: `UPPER("S")`, column: "S", want: true},
+		{expression: `S+1`, column: "S", want: true},
+		{expression: `s > 0`, column: "S", want: true},
+		{expression: `"S2"`, column: "S", want: false},
+		{expression: `S2`, column: "S", want: false},
+		{expression: `'S'`, column: "S", want: false},
+		{expression: `"s"`, column: "S", want: false},
+		{expression: `1E5`, column: "E5", want: false},
+	}
+	for _, tc := range tests {
+		require.Equal(t, tc.want, expressionReferencesColumn(tc.expression, tc.column), tc.expression)
+	}
+}
+
+func TestFindColumnDependentsMatchesKeyColumnsByName(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
+			{Name: "LOWER_PK", Expressions: []string{"v"}, Primary: true, Unique: true, IsConstraint: true},
+			{Name: "MIXED_UK", Expressions: []string{"A", "Vv"}, Unique: true, IsConstraint: true},
+			{Name: "UPPER_UK", Expressions: []string{"V"}, Unique: true, IsConstraint: true},
+			{Name: "LOWER_IX", Expressions: []string{`"v"`}},
+		},
+	}
+	require.Equal(t, []string{"LOWER_IX", "LOWER_PK"}, sortedIndexNames(findColumnDependents(table, []string{"v"}, nil)))
+	require.Equal(t, []string{"MIXED_UK"}, sortedIndexNames(findColumnDependents(table, []string{"Vv"}, nil)))
+	require.Equal(t, []string{"UPPER_UK"}, sortedIndexNames(findColumnDependents(table, []string{"V"}, nil)))
+}
+
+func sortedIndexNames(dependents columnDependents) []string {
+	var names []string
+	for _, index := range dependents.indexes {
+		names = append(names, index.Name)
+	}
+	slices.Sort(names)
+	return names
 }

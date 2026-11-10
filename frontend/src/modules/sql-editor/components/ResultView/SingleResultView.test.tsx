@@ -65,6 +65,12 @@ const {
   };
 });
 
+const { explainPermission, tabState, updateCurrentTab } = vi.hoisted(() => ({
+  explainPermission: { granted: true },
+  tabState: { resultLayout: undefined as string | undefined },
+  updateCurrentTab: vi.fn(),
+}));
+
 vi.mock("react-i18next", () => ({
   initReactI18next: {
     init: vi.fn(),
@@ -190,27 +196,56 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
   useSQLEditorTabState: (
     selector: (state: {
       currentTabId: string;
-      tabsById: Map<string, { mode: string }>;
+      tabsById: Map<string, { mode: string; resultLayout?: string }>;
+      updateCurrentTab: typeof updateCurrentTab;
     }) => unknown
   ) =>
     selector({
       currentTabId: "tab-1",
-      tabsById: new Map([["tab-1", { mode: "READ_ONLY" }]]),
+      tabsById: new Map([
+        ["tab-1", { mode: "READ_ONLY", resultLayout: tabState.resultLayout }],
+      ]),
+      updateCurrentTab,
     }),
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({}),
-  },
+vi.mock("@/utils/iam/permission", () => ({
+  hasProjectPermissionV2: () => explainPermission.granted,
 }));
+
+vi.mock("@/utils/v1/instance", () => ({
+  instanceV1AllowsExplain: (engine: Engine) =>
+    engine === Engine.POSTGRES || engine === Engine.MYSQL,
+}));
+
+vi.mock("@/stores/app", () => {
+  // Zustand's hook is called with a selector and also carries getState. The
+  // plan view reads the database's synced metadata through it; an empty
+  // catalog is what a test that has not set one up should see.
+  const state = {
+    getDatabaseMetadata: () => ({ schemas: [] }),
+    getOrFetchDatabaseMetadata: async () => undefined,
+    metadataByName: {},
+  };
+  const useAppStore = (selector?: (s: typeof state) => unknown) =>
+    selector ? selector(state) : state;
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
 
 vi.mock("@/utils/util", () => ({
   isNullOrUndefined: (value: unknown) => value === null || value === undefined,
+  // Reached through the app store, which the plan view reads the database's
+  // synced metadata from.
+  isDev: () => false,
 }));
 
 vi.mock("@/utils/v1/database", () => ({
+  getDatabaseProject: (database: Database) => ({ name: database.project }),
   getInstanceResource: (database: Database) => database.instanceResource,
+  extractDatabaseResourceName: (name: string) => ({
+    databaseName: name.split("/").pop() ?? "",
+  }),
 }));
 
 vi.mock("@/utils/v1/sql", () => ({
@@ -257,13 +292,15 @@ vi.mock("./QueryPlanResultView", () => ({
     rawPlan,
     initialPlan,
     loadPlan,
+    estimated,
     disallowCopyingData,
   }: {
     rawPlan: string;
-    initialPlan?: { source: string; statement: string };
+    initialPlan?: { source: string };
     loadPlan?: () => Promise<
-      { source: string; statement: string } | undefined
+      { source: string } | undefined
     >;
+    estimated?: boolean;
     disallowCopyingData?: boolean;
   }) => {
     const [plan, setPlan] = useState(initialPlan);
@@ -271,6 +308,7 @@ vi.mock("./QueryPlanResultView", () => ({
       <div
         data-testid="query-plan-result"
         data-copy-disabled={disallowCopyingData}
+        data-estimated={estimated ? "true" : "false"}
       >
         <span data-testid="raw-plan">{rawPlan}</span>
         {plan ? <span data-testid="inline-plan">{plan.source}</span> : null}
@@ -1038,19 +1076,17 @@ describe("SingleResultView explain visualizer", () => {
     expect(runQuery).not.toHaveBeenCalled();
   });
 
-  test("keeps multi-column explain output in the result table", () => {
+  const tabularPlan = (engine: Engine, format: QueryOption_ExplainFormat) =>
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.MYSQL, explain: true }}
-        database={databaseForEngine(Engine.MYSQL)}
+        params={{ ...params, engine, explain: true }}
+        database={databaseForEngine(engine)}
         result={create(QueryResultSchema, {
           columnNames: ["table", "type"],
           columnTypeNames: ["TEXT", "TEXT"],
           statement: "EXPLAIN SELECT * FROM t",
-          queryPlan: create(QueryResult_QueryPlanSchema, {
-            format: QueryOption_ExplainFormat.TEXT,
-          }),
+          queryPlan: create(QueryResult_QueryPlanSchema, { format }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -1068,10 +1104,30 @@ describe("SingleResultView explain visualizer", () => {
       />
     );
 
+  test("keeps multi-column explain output in the result table", () => {
+    // Databricks' plan is text and comes back in one column, which is what its
+    // parser reads; a grid of several columns is not that plan, and there is no
+    // other format to fetch, so the grid is all there is.
+    tabularPlan(Engine.DATABRICKS, QueryOption_ExplainFormat.TEXT);
+
     expect(screen.queryByTestId("query-plan-result")).toBeNull();
     expect(screen.getByTestId("result-table")).toHaveTextContent(
       "table,typet,ALL"
     );
+  });
+
+  test("offers a MySQL tabular plan the visualizer, in whatever format it came back", () => {
+    // A tabular EXPLAIN can be re-explained as FORMAT=JSON, so it opens the
+    // viewer with Visualize rather than staying a grid. An omitted FORMAT is
+    // unknown rather than text, and is worth the same offer.
+    for (const format of [
+      QueryOption_ExplainFormat.TEXT,
+      QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED,
+    ]) {
+      const { unmount } = tabularPlan(Engine.MYSQL, format);
+      expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+      unmount();
+    }
   });
 
   test("SQL Server multi-column SHOWPLAN_ALL still opens the visualizer", () => {
@@ -1105,5 +1161,147 @@ describe("SingleResultView explain visualizer", () => {
     );
 
     expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+  });
+});
+
+const rowsResult = (statement = "SELECT * FROM t") =>
+  create(QueryResultSchema, {
+    statement,
+    columnNames: ["id"],
+    columnTypeNames: ["INT"],
+    rows: [
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, { kind: { case: "stringValue", value: "1" } }),
+        ],
+      }),
+    ],
+  });
+
+describe("SingleResultView plan view", () => {
+  beforeEach(() => {
+    explainPermission.granted = true;
+    tabState.resultLayout = undefined;
+    updateCurrentTab.mockClear();
+  });
+
+  const renderRows = (
+    engine: Engine,
+    overrides: Partial<React.ComponentProps<typeof SingleResultView>> = {}
+  ) =>
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine, statement: "SELECT * FROM t" }}
+        database={databaseForEngine(engine)}
+        result={rowsResult()}
+        showExport={false}
+        {...overrides}
+      />
+    );
+
+  test("draws the plan an engine stated beside the rows, without fetching", () => {
+    // BigQuery reports the stages its job ran, so the Plan view has the plan
+    // already: nothing is explained again, and what it shows is a record of the
+    // run that returned these rows rather than an estimate made since.
+    const content = JSON.stringify([{ id: 0, name: "S00: Input" }]);
+    renderRows(Engine.BIGQUERY, {
+      result: create(QueryResultSchema, {
+        statement: "SELECT * FROM t",
+        columnNames: ["id"],
+        columnTypeNames: ["INT"],
+        rows: [
+          create(QueryRowSchema, {
+            values: [
+              create(RowValueSchema, {
+                kind: { case: "stringValue", value: "1" },
+              }),
+            ],
+          }),
+        ],
+        queryPlan: create(QueryResult_QueryPlanSchema, {
+          format: QueryOption_ExplainFormat.JSON,
+          executed: true,
+          content,
+        }),
+      }),
+    });
+
+    // The rows are the query's data, so the table is what opens.
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+
+    expect(screen.getByTestId("inline-plan")).toHaveTextContent("S00: Input");
+    expect(screen.getByTestId("query-plan-result")).toHaveAttribute(
+      "data-estimated",
+      "false"
+    );
+    // No button to load one: there is nothing left to ask the server for.
+    expect(screen.queryByRole("button", { name: "common.plan" })).toBeNull();
+    expect(runQuery).not.toHaveBeenCalled();
+  });
+
+  test("offers Plan beside Table and Vertical and shows the plan in place", () => {
+    renderRows(Engine.POSTGRES);
+
+    expect(screen.getByText("sql-editor.table-view")).toHaveClass("sr-only");
+    expect(screen.getByText("sql-editor.vertical-display")).toHaveClass(
+      "sr-only"
+    );
+    expect(screen.getByText("sql-editor.plan-view")).toHaveClass("sr-only");
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.queryByTestId("result-table")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "common.plan" })).toBeEnabled();
+    expect(updateCurrentTab).toHaveBeenCalledWith({ resultLayout: "PLAN" });
+
+    fireEvent.click(screen.getByText("sql-editor.table-view"));
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+  });
+
+  test("disables Plan when the user lacks the explain permission", () => {
+    explainPermission.granted = false;
+    renderRows(Engine.POSTGRES);
+
+    expect(
+      screen.getByRole("radio", { name: "sql-editor.plan-view" })
+    ).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(screen.getByText("sql-editor.plan-view"));
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+  });
+
+  test("offers no Plan on an engine that cannot explain", () => {
+    renderRows(Engine.REDIS);
+
+    expect(screen.getByText("sql-editor.vertical-display")).toBeInTheDocument();
+    expect(screen.queryByText("sql-editor.plan-view")).not.toBeInTheDocument();
+  });
+
+  test("offers no Plan after an earlier statement of the run", () => {
+    const setSearchPath = create(QueryResultSchema, {
+      statement: "SET search_path = tenant",
+    });
+    renderRows(Engine.POSTGRES, {
+      results: [setSearchPath, rowsResult()],
+      resultIndex: 1,
+    });
+
+    expect(screen.queryByText("sql-editor.plan-view")).not.toBeInTheDocument();
+  });
+
+  test("opens on the remembered Plan choice, falling back where nothing can be planned", () => {
+    tabState.resultLayout = "PLAN";
+    const { unmount } = renderRows(Engine.POSTGRES);
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    unmount();
+
+    renderRows(Engine.REDIS);
+    expect(screen.getByTestId("result-table")).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "sql-editor.table-view" })
+    ).toHaveAttribute("aria-checked", "true");
   });
 });

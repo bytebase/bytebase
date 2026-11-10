@@ -166,7 +166,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Go(func() { s.runTaskCompletionListener(ctx) })
 
 	// Start rollout creator component
-	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager)
+	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager, s.profile.SQLReviewV2)
 	wg.Add(3)
 	go rolloutCreator.Run(ctx, wg, s.bus.RolloutCreationChan)
 	go s.runPendingTaskRunsScheduler(ctx, wg)

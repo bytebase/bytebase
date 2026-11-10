@@ -1,0 +1,212 @@
+- statement: |-
+    CREATE TABLE t1(a INT);
+    CREATE TABLE book(id int);
+    CREATE TABLE t2(id INT, creator_id INT);
+    CREATE TABLE t3(id INT, creator_id INT, created_ts timestamp);
+    CREATE TABLE t4(id INT, creator_id INT, created_ts timestamp, updater_id INT);
+    CREATE TABLE t5(id INT, creator_id INT, created_ts timestamp, updater_id INT, updated_ts timestamp);
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `t1` requires columns: created_ts, creator_id, id, updated_ts, updater_id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: created_ts, creator_id, updated_ts, updater_id'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `t2` requires columns: created_ts, updated_ts, updater_id'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `t3` requires columns: updated_ts, updater_id'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `t4` requires columns: updated_ts'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book RENAME COLUMN creator_id TO creator;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book RENAME COLUMN creator TO creator_id;
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book CHANGE COLUMN creator_id creator int;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book CHANGE COLUMN creator creator_id int;
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book DROP COLUMN creator_id;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp,
+      content varchar(255)
+    );
+    ALTER TABLE book DROP COLUMN content;
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator_id int,
+      created_ts timestamp,
+      updated_ts timestamp
+    );
+    ALTER TABLE book ADD COLUMN content varchar(255);
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: updater_id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    ALTER TABLE book ADD COLUMN creator_id int;
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    CREATE TABLE student(
+      id int,
+      created_ts timestamp,
+      updated_ts timestamp
+    );
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `student` requires columns: creator_id, updater_id'
+      startposition:
+        line: 7
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      creator int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );
+    DROP TABLE book;
+- statement: |-
+    CREATE TABLE book(
+      id int
+    );
+    ALTER TABLE book ADD COLUMN (
+      creator_id int,
+      created_ts timestamp,
+      updater_id int,
+      updated_ts timestamp
+    );

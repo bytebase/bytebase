@@ -103,8 +103,32 @@ func TestExplainStatementNeverPlansAPlan(t *testing.T) {
 	}
 }
 
-func TestExplainStatementCockroachDBIgnoresFormat(t *testing.T) {
-	got, err := explainStatementDefaultFormat("SELECT 1", base.ExplainFormatJSON)
-	require.NoError(t, err)
-	require.Equal(t, "EXPLAIN SELECT 1", got)
+// TestCockroachExplainStatement pins CockroachDB's own option list. Its EXPLAIN
+// has no FORMAT, and DISTSQL is the one option whose output carries a plan a
+// parser can read — beside the text plan, not instead of it.
+func TestCockroachExplainStatement(t *testing.T) {
+	tests := []struct {
+		statement string
+		format    base.ExplainFormat
+		want      string
+	}{
+		{"SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
+		{"SELECT 1", base.ExplainFormatDefault, "EXPLAIN SELECT 1"},
+		// PostgreSQL's formats mean nothing here, so they get the default plan.
+		{"SELECT 1", base.ExplainFormatText, "EXPLAIN SELECT 1"},
+		{"SELECT 1", base.ExplainFormatXML, "EXPLAIN SELECT 1"},
+		// A statement that already asks for a plan is rebuilt around the
+		// statement it plans, whichever option it named.
+		{"EXPLAIN SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
+		{"EXPLAIN (VERBOSE) SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
+		{"EXPLAIN (DISTSQL) SELECT 1", base.ExplainFormatJSON, "EXPLAIN (DISTSQL) SELECT 1"},
+	}
+	for _, tc := range tests {
+		got, err := cockroachExplainStatement(tc.statement, tc.format)
+		require.NoErrorf(t, err, "%q", tc.statement)
+		require.Equalf(t, tc.want, got, "%q/%v", tc.statement, tc.format)
+	}
+	// Planning by executing is refused here as it is for PostgreSQL.
+	_, err := cockroachExplainStatement("EXPLAIN ANALYZE SELECT 1", base.ExplainFormatJSON)
+	require.ErrorIs(t, err, base.ErrExplainAnalyzeExecutes)
 }

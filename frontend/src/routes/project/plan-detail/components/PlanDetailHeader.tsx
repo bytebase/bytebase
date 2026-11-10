@@ -20,6 +20,13 @@ import {
 } from "@/lib/plan/workflow";
 import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import {
+  buildPlanReviewPrompt,
+  canReviewWithAgent,
+} from "@/modules/agent/logic/planIssueAssistance";
+import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
@@ -89,6 +96,18 @@ export function PlanDetailHeader() {
   const canUpdatePlan =
     page.plan.creator === currentUser.name ||
     hasProjectPermissionV2(project, "bb.plans.update");
+
+  const openPlanReview = () => {
+    if (!project || !page.plan.name || page.isCreating) return;
+    openAgentWithPrompt(buildPlanReviewPrompt(), [
+      {
+        kind: "plan",
+        name: page.plan.name,
+        project: project.name,
+        label: getPlanMentionLabel(page.plan),
+      },
+    ]);
+  };
 
   useEffect(() => {
     setTitle(persistedTitle);
@@ -578,8 +597,8 @@ export function PlanDetailHeader() {
 
   return (
     <div className="px-2 py-2 sm:px-4">
-      <div className="flex flex-row items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-x-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 basis-full flex-1 items-center gap-x-2 sm:basis-auto">
           {/* Terminal status (Closed / Deployed) sits at the far left, before
               the title — a state badge, not an action. */}
           <PlanLifecycleStamp state={lifecycle} />
@@ -619,7 +638,16 @@ export function PlanDetailHeader() {
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-x-2">
+        <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
+          {!page.isCreating &&
+            canReviewWithAgent(page.issue, page.plan) &&
+            !page.rollout &&
+            project &&
+            page.plan.name && (
+              <AgentHelpButton onClick={openPlanReview} size="md">
+                {t("agent.plan-assistance.review")}
+              </AgentHelpButton>
+            )}
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}

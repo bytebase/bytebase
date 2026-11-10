@@ -131,6 +131,22 @@ describe("issueDetailRedirectLoader", () => {
     }
   );
 
+  test("carries an unsent Agent comment draft into the Plan review page", async () => {
+    mocks.getIssue.mockResolvedValue(
+      makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)
+    );
+    mocks.getPlan.mockResolvedValue(makePlan(["changeDatabaseConfig"]));
+
+    const res = await run(
+      { projectId: "p1", issueId: "123" },
+      "http://localhost/projects/p1/issues/123?phase=review&agentCommentDraft=bb.agent.issue-comment-draft.test"
+    );
+
+    expect(res?.headers.get("Location")).toBe(
+      "/projects/p1/plans/456?phase=review&agentCommentDraft=bb.agent.issue-comment-draft.test"
+    );
+  });
+
   test("drops an invalid phase intent", async () => {
     mocks.getIssue.mockResolvedValue(
       makeIssue(Issue_Type.DATABASE_CHANGE, PLAN_NAME)

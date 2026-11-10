@@ -10,6 +10,7 @@ import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   type IssueComment,
   IssueComment_ThreadState,
+  ReviewRun_Type,
   type StatementAnchor,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -93,7 +94,8 @@ export function countPlacedUnresolvedBySpec(
   placementsFor: (
     specId: string,
     sheetSha256: string
-  ) => ReadonlyMap<string, Placement> | undefined
+  ) => ReadonlyMap<string, Placement> | undefined,
+  previewEndLineFor?: (specId: string) => number | undefined
 ): ReadonlyMap<string, number> {
   const counts = new Map<string, number>();
   for (const spec of specs) {
@@ -103,6 +105,8 @@ export function countPlacedUnresolvedBySpec(
       threads,
       { specId: spec.id, sheetSha256 },
       placementsFor(spec.id, sheetSha256)
+    ).filter((entry) =>
+      isEditorThreadVisible(entry, previewEndLineFor?.(spec.id))
     ).length;
     if (placed > 0) counts.set(spec.id, placed);
   }
@@ -122,24 +126,24 @@ export function resolveAnchorState(
   return trivialPlacement(anchor, targetSha256OfSpec(spec))?.state ?? "PENDING";
 }
 
-// Whole-line anchors use zero columns and an inclusive end line. A
-// code-point range is end-exclusive, so an end at column 1 of a later line
-// covers nothing on that line.
-export function anchorLineRange(
-  anchor: StatementAnchor
-): LineRange | undefined {
-  const start = anchor.startPosition;
-  const end = anchor.endPosition;
-  if (!start || !end || start.line < 1 || end.line < start.line) {
-    return undefined;
+// A truncated preview may end in the middle of a line, including the empty
+// line after a trailing newline. Only preceding lines have complete content.
+export const completePreviewLineCount = (
+  statement: string,
+  isTruncated: boolean
+): number => {
+  let completeLines = 0;
+  for (let i = 0; i < statement.length; i++) {
+    const code = statement.charCodeAt(i);
+    if (code === 13) {
+      if (statement.charCodeAt(i + 1) === 10) i++;
+      completeLines++;
+    } else if (code === 10) {
+      completeLines++;
+    }
   }
-  const wholeLine = start.column === 0 && end.column === 0;
-  const endLine =
-    !wholeLine && end.column === 1 && end.line > start.line
-      ? end.line - 1
-      : end.line;
-  return { startLine: start.line, endLine: Math.max(endLine, start.line) };
-}
+  return completeLines + (isTruncated ? 0 : 1);
+};
 
 export function buildWholeLineAnchor(input: {
   spec: string;
@@ -189,6 +193,14 @@ const compareEditorThreads = (a: EditorThread, b: EditorThread): number =>
   a.range.endLine - b.range.endLine ||
   compareByCreateTime(a.thread.root, b.thread.root);
 
+// The statement shows only the latest standard rule review. A result a later
+// run superseded stays in the timeline, unless someone reopened it, since an
+// open thread holds the rollout.
+const isSupersededRuleResult = (root: IssueComment): boolean =>
+  root.reviewMetadata?.runType === ReviewRun_Type.RULE &&
+  root.reviewMetadata.superseded &&
+  root.threadState !== IssueComment_ThreadState.OPEN;
+
 // Threads shown in the displayed statement, ordered by start line, then
 // oldest first. A computed placement decides: CURRENT threads sit at their
 // mapped range, which may differ from the anchor's when edits above shifted
@@ -206,6 +218,7 @@ export function selectEditorThreads(
     const anchor = thread.root.statementAnchor;
     if (!anchor) continue;
     if (anchor.spec !== target.specId) continue;
+    if (isSupersededRuleResult(thread.root)) continue;
     const placement =
       placements.get(thread.root.name) ??
       trivialPlacement(anchor, target.sheetSha256);
@@ -214,6 +227,53 @@ export function selectEditorThreads(
   }
   return placed.sort(compareEditorThreads);
 }
+
+// Whether the statement editor shows a thread: anchored, placed CURRENT on
+// its spec's current sheet, and inside the part of an oversized statement
+// the editor loaded. Anything else can only be read in its Activity card.
+export function isShownInEditor(
+  root: IssueComment,
+  specs: readonly Plan_Spec[],
+  placementFor: (
+    commentName: string,
+    specId: string,
+    sheetSha256: string | undefined
+  ) => Placement | undefined,
+  previewEndLineFor: (specId: string) => number | undefined
+): boolean {
+  const anchor = root.statementAnchor;
+  if (!anchor) return false;
+  const spec = specs.find((candidate) => candidate.id === anchor.spec);
+  const sheetSha256 = targetSha256OfSpec(spec);
+  const placement =
+    placementFor(root.name, anchor.spec, sheetSha256) ??
+    trivialPlacement(anchor, sheetSha256);
+  if (placement?.state !== "CURRENT") return false;
+  const previewEndLine = previewEndLineFor(anchor.spec);
+  return (
+    previewEndLine === undefined || placement.range.endLine <= previewEndLine
+  );
+}
+
+// Under SQL Review V2, a folded run shows in Activity as one line, so a
+// finding of it keeps its own card only where nothing else shows it: people
+// replied to it, or the editor cannot show it. A result a later run superseded
+// is history unless someone reopened it, since an open thread holds the
+// rollout.
+export function needsActivityCard(
+  thread: CommentThread,
+  shownInEditor: boolean
+): boolean {
+  if (thread.replies.length > 0) return true;
+  if (thread.root.reviewMetadata?.superseded && thread.resolved) return false;
+  return !shownInEditor;
+}
+
+export const isEditorThreadVisible = (
+  entry: EditorThread,
+  previewEndLine: number | undefined
+): boolean =>
+  previewEndLine === undefined || entry.range.endLine <= previewEndLine;
 
 // The placed threads still open: what the editor walker visits and what the
 // change tab counts.

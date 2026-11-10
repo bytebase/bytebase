@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
 
@@ -68,6 +69,18 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 				},
 			})
 		}
+		if content := dataModifyingCTEAdvice(node); content != "" {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Title:   title,
+				Content: content,
+				Code:    code.BuiltinPriorBackupCheck.Int32(),
+				StartPosition: &storepb.Position{
+					Line:   int32(baseLine) + omniContentStartLine(stmt.Text),
+					Column: 0,
+				},
+			})
+		}
 	}
 
 	// Check if backup schema exists
@@ -112,6 +125,27 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	return adviceList, nil
+}
+
+// dataModifyingCTEAdvice reports a statement whose WITH clause changes data.
+// The backup task rejects such an UPDATE or DELETE; any other statement runs,
+// but nothing backs up the rows its CTE changes.
+func dataModifyingCTEAdvice(node ast.Node) string {
+	names := pgparser.DataModifyingCTENames(node)
+	if len(names) == 0 {
+		return ""
+	}
+	quoted := make([]string, 0, len(names))
+	for _, name := range names {
+		quoted = append(quoted, fmt.Sprintf("%q", name))
+	}
+	cteList := strings.Join(quoted, ", ")
+	switch node.(type) {
+	case *ast.UpdateStmt, *ast.DeleteStmt:
+		return fmt.Sprintf("Prior backup does not support data-modifying WITH query %s; the task will fail unless prior backup is disabled or skipped", cteList)
+	default:
+		return fmt.Sprintf("Prior backup does not cover rows changed by data-modifying WITH query %s", cteList)
+	}
 }
 
 // omniIsDDLStatement checks if a node is a DDL statement.

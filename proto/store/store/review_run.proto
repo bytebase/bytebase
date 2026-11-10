@@ -34,4 +34,8 @@ message ReviewRunPayload {
   // instances/prod/databases/db1, db2, db3 (+497 more)". Written by the
   // executor or by the reaper.
   string error = 1;
+
+  // The plan's PlanConfig.approval_input_version when the slot was reset: the
+  // version of the plan's SQL this run reviews. Completion keeps it.
+  int64 approval_input_version = 2;
 }

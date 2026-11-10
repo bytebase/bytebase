@@ -109,11 +109,21 @@ export const getAccountTypeByFullname = (fullname: string): AccountType => {
   return AccountType.USER;
 };
 
+// Mirrors the server's IsServiceAccountEmail / IsWorkloadIdentityEmail: the
+// suffix is the whole domain, or follows a project label and a dot.
+const hasAccountDomain = (email: string, suffix: string) => {
+  const parts = email.split("@");
+  return (
+    email.endsWith(`@${suffix}`) ||
+    (parts.length === 2 && parts[1].endsWith(`.${suffix}`))
+  );
+};
+
 export const getAccountTypeByEmail = (email: string): AccountType => {
-  if (email.endsWith(serviceAccountSuffix)) {
+  if (hasAccountDomain(email, serviceAccountSuffix)) {
     return AccountType.SERVICE_ACCOUNT;
   }
-  if (email.endsWith(workloadIdentitySuffix)) {
+  if (hasAccountDomain(email, workloadIdentitySuffix)) {
     return AccountType.WORKLOAD_IDENTITY;
   }
   return AccountType.USER;

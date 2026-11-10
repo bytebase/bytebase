@@ -1,15 +1,18 @@
 package oracle
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func init() {
@@ -612,7 +615,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					if !waitsForRebuild(diff, tableDiff.SchemaName, fk) {
+						writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					}
 				}
 			}
 		}
@@ -666,7 +671,9 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 		for _, tableDiff := range tableMap {
 			if tableDiff.Action == schema.MetadataDiffActionCreate && tableDiff.NewTable != nil {
 				for _, fk := range tableDiff.NewTable.ForeignKeys {
-					writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					if !waitsForRebuild(diff, tableDiff.SchemaName, fk) {
+						writeMigrationForeignKey(buf, tableDiff.SchemaName, tableDiff.TableName, fk)
+					}
 				}
 			}
 		}
@@ -679,12 +686,7 @@ func createObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 			// Handle other ALTER operations
 
 			// Alter columns (type changes, nullability, etc.)
-			for _, colDiff := range tableDiff.ColumnChanges {
-				if colDiff.Action == schema.MetadataDiffActionAlter {
-					alterColSQL := generateAlterColumn(tableDiff.SchemaName, tableDiff.TableName, colDiff)
-					_, _ = buf.WriteString(alterColSQL)
-				}
-			}
+			writeAlterColumns(buf, diff, tableDiff)
 
 			// Add indexes
 			for _, indexDiff := range tableDiff.IndexChanges {
@@ -793,18 +795,177 @@ func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMe
 	return buf.String(), nil
 }
 
-func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff) string {
+// writeAlterColumns writes one table's column alterations. A rebuilt column
+// cannot change while an index or a constraint is on it (ORA-12991, ORA-54022,
+// ORA-54023), so those of every rebuilt column are dropped before any column
+// changes and made again once all have, each once: a constraint shared by two
+// rebuilt columns is checked only against the finished table.
+func writeAlterColumns(buf *strings.Builder, diff *schema.MetadataDiff, tableDiff *schema.TableDiff) {
+	var oldColumns, newColumns []string
+	for _, colDiff := range tableDiff.ColumnChanges {
+		if colDiff.Action == schema.MetadataDiffActionAlter && rebuildsColumn(colDiff) {
+			oldColumns = append(oldColumns, colDiff.OldColumn.Name)
+			newColumns = append(newColumns, colDiff.NewColumn.Name)
+		}
+	}
+	schemaName, tableName := tableDiff.SchemaName, tableDiff.TableName
+	created := diffObjectNames(tableDiff, schema.MetadataDiffActionCreate)
+	// Other tables' foreign keys on a rebuilt key go first, or dropping the key
+	// fails (ORA-02273), and come back after it.
+	for _, incoming := range findIncomingForeignKeys(diff, diff.OldDatabase, tableDiff, oldColumns, schema.MetadataDiffActionDrop) {
+		writeDropForeignKey(buf, schemaName, incoming.table, incoming.foreignKey.Name)
+	}
+	findColumnDependents(tableDiff.OldTable, oldColumns, diffObjectNames(tableDiff, schema.MetadataDiffActionDrop)).writeDrops(buf, schemaName, tableName)
+	for _, colDiff := range tableDiff.ColumnChanges {
+		if colDiff.Action != schema.MetadataDiffActionAlter {
+			continue
+		}
+		// A named NOT NULL went with the dependents. One the diff creates is
+		// left to it.
+		notNull := columnNotNull{dropped: notNullConstraintName(tableDiff.OldTable, colDiff.OldColumn.Name) != ""}
+		if name := notNullConstraintName(tableDiff.NewTable, colDiff.NewColumn.Name); !created[name] {
+			notNull.name = name
+		}
+		_, _ = buf.WriteString(generateAlterColumn(schemaName, tableName, colDiff, notNull))
+	}
+	findColumnDependents(tableDiff.NewTable, newColumns, created).writeCreates(buf, schemaName, tableName)
+	for _, incoming := range findIncomingForeignKeys(diff, diff.NewDatabase, tableDiff, newColumns, schema.MetadataDiffActionCreate) {
+		writeMigrationForeignKey(buf, schemaName, incoming.table, incoming.foreignKey)
+	}
+}
+
+// incomingForeignKey is another table's foreign key on a rebuilt column.
+type incomingForeignKey struct {
+	table      string
+	foreignKey *metadatapb.ForeignKeyMetadata
+}
+
+// findIncomingForeignKeys lists the foreign keys of the database's other tables
+// that reference any of the columns of tableDiff's table. It leaves out those
+// the diff handles itself: on a table it creates or drops, or that it creates
+// or drops, as action says.
+func findIncomingForeignKeys(diff *schema.MetadataDiff, database *model.DatabaseMetadata, tableDiff *schema.TableDiff, columns []string, action schema.MetadataDiffAction) []incomingForeignKey {
+	if len(columns) == 0 || database == nil {
+		return nil
+	}
+	schemaMetadata := database.GetSchemaMetadata(tableDiff.SchemaName)
+	if schemaMetadata == nil {
+		return nil
+	}
+	tableDiffs := make(map[string]*schema.TableDiff)
+	for _, other := range diff.TableChanges {
+		if other.SchemaName == tableDiff.SchemaName {
+			tableDiffs[other.TableName] = other
+		}
+	}
+	var result []incomingForeignKey
+	for _, table := range schemaMetadata.GetProto().GetTables() {
+		if table.Name == tableDiff.TableName {
+			continue
+		}
+		var handled map[string]bool
+		switch other := tableDiffs[table.Name]; {
+		case other == nil:
+		case other.Action == schema.MetadataDiffActionCreate && action == schema.MetadataDiffActionCreate:
+			// A new table's foreign keys on a rebuilt key waited for it.
+		case other.Action != schema.MetadataDiffActionAlter:
+			continue
+		default:
+			handled = diffObjectNames(other, action)
+		}
+		for _, fk := range table.GetForeignKeys() {
+			if !handled[fk.Name] && referencesColumns(fk, tableDiff.SchemaName, diff.DatabaseName, tableDiff.TableName, columns) {
+				result = append(result, incomingForeignKey{table: table.Name, foreignKey: fk})
+			}
+		}
+	}
+	return result
+}
+
+// waitsForRebuild reports whether a new table's foreign key references a column
+// the diff rebuilds. writeAlterColumns adds it after the rebuild: added with
+// the table, it would hold the key the rebuild drops (ORA-02273).
+func waitsForRebuild(diff *schema.MetadataDiff, schemaName string, fk *metadatapb.ForeignKeyMetadata) bool {
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.Action != schema.MetadataDiffActionAlter || tableDiff.SchemaName != schemaName {
+			continue
+		}
+		for _, colDiff := range tableDiff.ColumnChanges {
+			if colDiff.Action == schema.MetadataDiffActionAlter && rebuildsColumn(colDiff) &&
+				referencesColumns(fk, schemaName, diff.DatabaseName, tableDiff.TableName, []string{colDiff.NewColumn.Name}) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// referencesColumns reports whether the foreign key references any of the
+// columns of the table, which the sync names without a schema when it is the
+// foreign key's own.
+func referencesColumns(fk *metadatapb.ForeignKeyMetadata, schemaName, databaseName, tableName string, columns []string) bool {
+	if fk.ReferencedTable != tableName || (fk.ReferencedSchema != "" && fk.ReferencedSchema != schemaName && fk.ReferencedSchema != databaseName) {
+		return false
+	}
+	return slices.ContainsFunc(fk.ReferencedColumns, func(column string) bool { return slices.Contains(columns, column) })
+}
+
+// rebuildsColumn reports whether Oracle must drop and add the column again, or
+// give it a new virtual type or expression.
+func rebuildsColumn(colDiff *schema.ColumnDiff) bool {
+	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
+	if (oldGeneration == nil) != (newGeneration == nil) {
+		return true
+	}
+	return newGeneration != nil && (oldGeneration.Expression != newGeneration.Expression || colDiff.OldColumn.Type != colDiff.NewColumn.Type)
+}
+
+// columnNotNull is how a rebuilt column's NOT NULL is handled: dropped means a
+// named one was dropped with the dependents, and name is the one to restore.
+type columnNotNull struct {
+	dropped bool
+	name    string
+}
+
+func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDiff, notNull columnNotNull) string {
 	var buf strings.Builder
+
+	// Oracle cannot turn a stored column into a virtual one or back, so the
+	// column is dropped and added again, comment included.
+	oldGeneration, newGeneration := colDiff.OldColumn.Generation, colDiff.NewColumn.Generation
+	if (oldGeneration == nil) != (newGeneration == nil) {
+		writeDropColumn(&buf, schemaName, tableName, colDiff.OldColumn.Name)
+		if notNull.name == "" {
+			writeAddColumn(&buf, schemaName, tableName, colDiff.NewColumn)
+		} else {
+			// Added nullable, so that NOT NULL comes back under its name.
+			column := proto.CloneOf(colDiff.NewColumn)
+			column.Nullable = true
+			writeAddColumn(&buf, schemaName, tableName, column)
+			writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
+		}
+		if colDiff.NewColumn.Comment != "" {
+			writeColumnComment(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Comment)
+		}
+		return buf.String()
+	}
+
+	// Oracle changes a virtual column's type only with its expression
+	// (ORA-54027), and NOT NULL blocks both (ORA-54023).
+	virtualChanged := newGeneration != nil && (oldGeneration.Expression != newGeneration.Expression || colDiff.OldColumn.Type != colDiff.NewColumn.Type)
+	if virtualChanged && !colDiff.OldColumn.Nullable && !notNull.dropped {
+		writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.OldColumn.Name)
+	}
 
 	// In Oracle, we need to handle different aspects of column changes separately
 
 	// If type changed, alter the column type
-	if colDiff.OldColumn.Type != colDiff.NewColumn.Type {
+	if !virtualChanged && colDiff.OldColumn.Type != colDiff.NewColumn.Type {
 		writeAlterColumnType(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Type)
 	}
 
 	// If nullability changed
-	if colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
+	if !virtualChanged && colDiff.OldColumn.Nullable != colDiff.NewColumn.Nullable {
 		if colDiff.NewColumn.Nullable {
 			writeAlterColumnDropNotNull(&buf, schemaName, tableName, colDiff.NewColumn.Name)
 		} else {
@@ -830,7 +991,188 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 		}
 	}
 
+	if virtualChanged {
+		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, colDiff.NewColumn.Type+" AS ("+newGeneration.Expression+")")
+		writeSetNotNull(&buf, schemaName, tableName, colDiff.NewColumn, notNull.name)
+	}
+
+	if colDiff.OldColumn.IsInvisible != colDiff.NewColumn.IsInvisible {
+		visibility := "VISIBLE"
+		if colDiff.NewColumn.IsInvisible {
+			visibility = "INVISIBLE"
+		}
+		writeModifyColumn(&buf, schemaName, tableName, colDiff.NewColumn.Name, visibility)
+	}
+
 	return buf.String()
+}
+
+// writeSetNotNull restores a rebuilt column's NOT NULL, under its name when it
+// had one.
+func writeSetNotNull(out *strings.Builder, schemaName, tableName string, column *metadatapb.ColumnMetadata, name string) {
+	switch {
+	case column.Nullable:
+	case name != "":
+		writeModifyColumn(out, schemaName, tableName, column.Name, `CONSTRAINT "`+name+`" NOT NULL`)
+	default:
+		writeAlterColumnSetNotNull(out, schemaName, tableName, column.Name)
+	}
+}
+
+// notNullConstraintName returns the name of the column's named NOT NULL
+// constraint, which the sync lists as a check on "<column>" IS NOT NULL.
+func notNullConstraintName(table *metadatapb.TableMetadata, column string) string {
+	want := `"` + column + `" IS NOT NULL`
+	for _, check := range table.GetCheckConstraints() {
+		if strings.Join(strings.Fields(check.Expression), " ") == want {
+			return check.Name
+		}
+	}
+	return ""
+}
+
+// columnDependents are a table's indexes and constraints on some of its
+// columns. notNulls are named NOT NULL constraints: they are dropped with the
+// rest, but restored by the column's own MODIFY, since a CHECK does not make
+// a column NOT NULL.
+type columnDependents struct {
+	indexes     []*metadatapb.IndexMetadata
+	checks      []*metadatapb.CheckConstraintMetadata
+	notNulls    []*metadatapb.CheckConstraintMetadata
+	foreignKeys []*metadatapb.ForeignKeyMetadata
+}
+
+// findColumnDependents lists the table's indexes and constraints on any of the
+// columns, each once, less those named in skip.
+func findColumnDependents(table *metadatapb.TableMetadata, columns []string, skip map[string]bool) columnDependents {
+	var dependents columnDependents
+	if len(columns) == 0 {
+		return dependents
+	}
+	references := func(expression string) bool {
+		return slices.ContainsFunc(columns, func(column string) bool { return expressionReferencesColumn(expression, column) })
+	}
+	// A primary or unique key lists column names as Oracle stores them, not
+	// SQL, so they compare as they are.
+	isColumn := func(name string) bool { return slices.Contains(columns, strings.Trim(name, `"`)) }
+	for _, index := range table.GetIndexes() {
+		matches := references
+		if index.IsConstraint {
+			matches = isColumn
+		}
+		if !skip[index.Name] && slices.ContainsFunc(index.Expressions, matches) {
+			dependents.indexes = append(dependents.indexes, index)
+		}
+	}
+	for _, check := range table.GetCheckConstraints() {
+		switch {
+		case skip[check.Name] || !references(check.Expression):
+		case slices.ContainsFunc(columns, func(column string) bool { return notNullConstraintName(table, column) == check.Name }):
+			dependents.notNulls = append(dependents.notNulls, check)
+		default:
+			dependents.checks = append(dependents.checks, check)
+		}
+	}
+	for _, fk := range table.GetForeignKeys() {
+		onColumn := slices.ContainsFunc(fk.Columns, func(column string) bool { return slices.Contains(columns, column) })
+		// A foreign key of the table on its own rebuilt key goes with the key.
+		if !skip[fk.Name] && (onColumn || referencesColumns(fk, "", "", table.Name, columns)) {
+			dependents.foreignKeys = append(dependents.foreignKeys, fk)
+		}
+	}
+	return dependents
+}
+
+// diffObjectNames returns the names of the indexes and constraints the diff
+// drops, or creates, on the table itself.
+func diffObjectNames(tableDiff *schema.TableDiff, action schema.MetadataDiffAction) map[string]bool {
+	names := make(map[string]bool)
+	for _, indexDiff := range tableDiff.IndexChanges {
+		if indexDiff.Action == action {
+			names[cmp.Or(indexDiff.NewIndex, indexDiff.OldIndex).GetName()] = true
+		}
+	}
+	for _, checkDiff := range tableDiff.CheckConstraintChanges {
+		if checkDiff.Action == action {
+			names[cmp.Or(checkDiff.NewCheckConstraint, checkDiff.OldCheckConstraint).GetName()] = true
+		}
+	}
+	for _, fkDiff := range tableDiff.ForeignKeyChanges {
+		if fkDiff.Action == action {
+			names[cmp.Or(fkDiff.NewForeignKey, fkDiff.OldForeignKey).GetName()] = true
+		}
+	}
+	return names
+}
+
+func (d columnDependents) writeDrops(out *strings.Builder, schemaName, tableName string) {
+	for _, fk := range d.foreignKeys {
+		writeDropForeignKey(out, schemaName, tableName, fk.Name)
+	}
+	for _, check := range slices.Concat(d.checks, d.notNulls) {
+		writeDropCheckConstraint(out, schemaName, tableName, check.Name)
+	}
+	for _, index := range d.indexes {
+		if index.IsConstraint {
+			writeDropConstraint(out, schemaName, tableName, index.Name)
+		} else {
+			writeDropIndex(out, schemaName, index.Name)
+		}
+	}
+}
+
+func (d columnDependents) writeCreates(out *strings.Builder, schemaName, tableName string) {
+	for _, index := range d.indexes {
+		switch {
+		case index.Primary:
+			writeMigrationPrimaryKey(out, schemaName, tableName, index)
+		case index.IsConstraint:
+			writeMigrationUniqueKey(out, schemaName, tableName, index)
+		default:
+			writeMigrationIndex(out, schemaName, tableName, index)
+		}
+	}
+	for _, check := range d.checks {
+		writeAddCheckConstraint(out, schemaName, tableName, check)
+	}
+	for _, fk := range d.foreignKeys {
+		writeMigrationForeignKey(out, schemaName, tableName, fk)
+	}
+}
+
+// expressionReferencesColumn reports whether an index or check expression
+// names the column, quoted or as an unquoted identifier. String literals are
+// skipped.
+func expressionReferencesColumn(expression, column string) bool {
+	isIdentifierChar := func(c byte) bool {
+		return c == '_' || c == '$' || c == '#' || ('0' <= c && c <= '9') || ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z')
+	}
+	for i := 0; i < len(expression); {
+		switch c := expression[i]; {
+		case c == '\'' || c == '"':
+			end := strings.IndexByte(expression[i+1:], c)
+			if end < 0 {
+				return false
+			}
+			if c == '"' && expression[i+1:i+1+end] == column {
+				return true
+			}
+			i += end + 2
+		case isIdentifierChar(c):
+			j := i + 1
+			for j < len(expression) && isIdentifierChar(expression[j]) {
+				j++
+			}
+			// A run that starts with a digit is a number, such as 1E5.
+			if (c < '0' || c > '9') && strings.ToUpper(expression[i:j]) == column {
+				return true
+			}
+			i = j
+		default:
+			i++
+		}
+	}
+	return false
 }
 
 // hasDefaultValue checks if a column has any default value
@@ -1046,17 +1388,44 @@ func writeAddColumn(out *strings.Builder, schema, table string, column *metadata
 	_, _ = out.WriteString(column.Name)
 	_, _ = out.WriteString(`" `)
 	_, _ = out.WriteString(column.Type)
+	writeColumnAttributes(out, column)
 
-	defaultExpr := getDefaultExpression(column)
-	if defaultExpr != "" {
+	_, _ = out.WriteString(`;`)
+	_, _ = out.WriteString("\n")
+}
+
+// writeColumnAttributes writes what follows a column's type in CREATE TABLE
+// and ADD: visibility, then the virtual expression or the default, then NOT NULL.
+func writeColumnAttributes(out *strings.Builder, column *metadatapb.ColumnMetadata) {
+	if column.IsInvisible {
+		_, _ = out.WriteString(` INVISIBLE`)
+	}
+	if column.Generation != nil {
+		_, _ = out.WriteString(virtualColumnClause(column.Generation))
+	} else if defaultExpr := getDefaultExpression(column); defaultExpr != "" {
 		_, _ = out.WriteString(` DEFAULT `)
 		_, _ = out.WriteString(defaultExpr)
 	}
 	if !column.Nullable {
 		_, _ = out.WriteString(` NOT NULL`)
 	}
+}
 
-	_, _ = out.WriteString(`;`)
+// writeModifyColumn writes ALTER TABLE ... MODIFY ("column" clause).
+func writeModifyColumn(out *strings.Builder, schema, table, column, clause string) {
+	_, _ = out.WriteString(`ALTER TABLE `)
+	if schema != "" {
+		_, _ = out.WriteString(`"`)
+		_, _ = out.WriteString(schema)
+		_, _ = out.WriteString(`".`)
+	}
+	_, _ = out.WriteString(`"`)
+	_, _ = out.WriteString(table)
+	_, _ = out.WriteString(`" MODIFY ("`)
+	_, _ = out.WriteString(column)
+	_, _ = out.WriteString(`" `)
+	_, _ = out.WriteString(clause)
+	_, _ = out.WriteString(`);`)
 	_, _ = out.WriteString("\n")
 }
 
@@ -1461,16 +1830,7 @@ func writeMigrationCreateTable(out *strings.Builder, schema, table string, colum
 		_, _ = out.WriteString(col.Name)
 		_, _ = out.WriteString("\" ")
 		_, _ = out.WriteString(col.Type)
-
-		defaultExpr := getDefaultExpression(col)
-		if defaultExpr != "" {
-			_, _ = out.WriteString(" DEFAULT ")
-			_, _ = out.WriteString(defaultExpr)
-		}
-
-		if !col.Nullable {
-			_, _ = out.WriteString(" NOT NULL")
-		}
+		writeColumnAttributes(out, col)
 	}
 
 	// Write check constraints

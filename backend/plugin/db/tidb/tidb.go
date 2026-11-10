@@ -403,6 +403,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				if err := rows.Err(); err != nil {
 					return nil, err
 				}
+				if !queryContext.Explain {
+					r.QueryPlan = db.TypedExplainPlan(tidbparser.DescribeExplain(statement))
+				}
 				return r, nil
 			}
 

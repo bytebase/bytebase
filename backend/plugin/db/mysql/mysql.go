@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
@@ -40,6 +41,9 @@ import (
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
+	// MariaDB-only TABLE_TYPE values. Both kinds share the table namespace.
+	mariaDBSystemVersionedTableType = "SYSTEM VERSIONED"
+	mariaDBSequenceTableType        = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
 )
@@ -47,7 +51,6 @@ var (
 func init() {
 	db.Register(storepb.Engine_MYSQL, newDriver)
 	db.Register(storepb.Engine_MARIADB, newDriver)
-	db.Register(storepb.Engine_OCEANBASE, newDriver)
 }
 
 // validateMySQLExtraConnectionParameters validates that no dangerous parameters are present.
@@ -70,6 +73,12 @@ type Driver struct {
 	databaseName string
 	sshClient    *ssh.Client
 
+	// cloudSQLDialer refreshes its ephemeral certificate in the background until
+	// closed, so it lives and dies with the driver. It is reached through the
+	// cloudSQLProtocol network name, set with it.
+	cloudSQLDialer   *cloudsqlconn.Dialer
+	cloudSQLProtocol string
+
 	// Called upon driver.Open() finishes.
 	openCleanUp []func()
 }
@@ -80,9 +89,15 @@ func newDriver() db.Driver {
 
 // Open opens a MySQL driver.
 func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+	opened := false
 	defer func() {
 		for _, f := range d.openCleanUp {
 			f()
+		}
+		// A driver whose Open fails is discarded without a Close, so Open
+		// releases what it acquired itself.
+		if !opened {
+			_ = d.Close(ctx)
 		}
 	}()
 
@@ -90,7 +105,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	var err error
 	switch connCfg.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		dsn, err = getCloudSQLConnection(ctx, connCfg)
+		dsn, err = d.getCloudSQLConnection(ctx, connCfg)
 	case storepb.DataSource_AWS_RDS_IAM:
 		dsn, err = d.getRDSConnection(ctx, connCfg)
 	default:
@@ -112,6 +127,7 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	db.SetMaxIdleConns(15)
 	d.databaseName = connCfg.ConnectionContext.DatabaseName
 
+	opened = true
 	return d, nil
 }
 
@@ -328,29 +344,45 @@ func (d *Driver) getRDSConnection(ctx context.Context, connCfg db.ConnectionConf
 	), nil
 }
 
-func getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
-	d, err := util.GetGCPConnectionConfig(ctx, connCfg)
+func (d *Driver) getCloudSQLConnection(ctx context.Context, connCfg db.ConnectionConfig) (string, error) {
+	dialer, err := util.GetGCPConnectionConfig(ctx, connCfg)
 	if err != nil {
 		return "", errors.Wrap(err, "load gcp config failed")
 	}
+	d.cloudSQLDialer = dialer
 
-	mysql.RegisterDialContext("cloudsqlconn",
+	// The network name keys a process-wide registry, so it has to be unique per
+	// driver: a shared name would let the next Cloud SQL driver take over this
+	// driver's pool and dial its own instance instead.
+	d.cloudSQLProtocol = "cloudsqlconn-" + uuid.NewString()
+	mysql.RegisterDialContext(d.cloudSQLProtocol,
 		func(ctx context.Context, _ string) (net.Conn, error) {
-			return d.Dial(ctx, connCfg.DataSource.Host)
+			return dialer.Dial(ctx, connCfg.DataSource.Host)
 		})
 
-	return fmt.Sprintf("%s:empty@cloudsqlconn(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
-		connCfg.DataSource.Username, connCfg.ConnectionContext.DatabaseName), nil
+	return fmt.Sprintf("%s:empty@%s(localhost:3306)/%s?parseTime=true&multiStatements=true&maxAllowedPacket=0",
+		connCfg.DataSource.Username, d.cloudSQLProtocol, connCfg.ConnectionContext.DatabaseName), nil
 }
 
 // Close closes the driver.
 func (d *Driver) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, d.db.Close())
+	if d.db != nil {
+		err = multierr.Append(err, d.db.Close())
+	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
 	}
+	err = multierr.Append(err, d.closeCloudSQL())
 	return err
+}
+
+func (d *Driver) closeCloudSQL() error {
+	if d.cloudSQLDialer == nil {
+		return nil
+	}
+	mysql.DeregisterDialContext(d.cloudSQLProtocol)
+	return d.cloudSQLDialer.Close()
 }
 
 // Ping pings the database.
@@ -634,6 +666,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				}
 				if err := rows.Err(); err != nil {
 					return nil, err
+				}
+				if !queryContext.Explain {
+					r.QueryPlan = db.TypedExplainPlan(mysqlparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}

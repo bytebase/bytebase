@@ -1,6 +1,13 @@
 import { clone, create } from "@bufbuild/protobuf";
 import { Loader2, Pencil, Table, Upload } from "lucide-react";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   planServiceClientConnect,
@@ -8,17 +15,36 @@ import {
   sheetServiceClientConnect,
 } from "@/api";
 import {
+  captureEditorViewAnchor,
+  type EditorViewAnchor,
+  focusEditorAtAnchor,
   type IStandaloneCodeEditor,
+  lineViewAnchor,
   MonacoEditor,
   type MonacoModule,
   ReadonlyMonaco,
 } from "@/components/monaco";
-import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
+import {
+  AGENT_PLAN_DRAFT_EVENT,
+  type AgentPlanDraftEventDetail,
+  appendAgentPlanDraftSQL,
+} from "@/lib/plan/agentDraftHandoff";
 import { cn } from "@/lib/utils";
+import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
+import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
+import { buildPlanCreatePrompt } from "@/modules/agent/logic/planIssueAssistance";
+import { getDatabaseMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -40,16 +66,20 @@ import {
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import {
+  exceedsSheetPreviewLimit,
   extractSheetUID,
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { affectedRowsSummary } from "../utils/affectedRows";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
@@ -57,9 +87,14 @@ import {
   setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
+import { AffectedRowsStrip } from "./AffectedRowsStrip";
+import { ReleaseChangesRail } from "./changes/ReleaseChangesRail";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
-import { sheetSha256OfName } from "./threads/threadModel";
+import {
+  completePreviewLineCount,
+  sheetSha256OfName,
+} from "./threads/threadModel";
 
 // Both modes reserve the same gutter so line numbers and SQL stay aligned
 // when entering or leaving edit mode. Keep these options stable: MonacoEditor
@@ -118,6 +153,8 @@ export function PlanDetailStatementSection({
   );
   const [draftStatement, setDraftStatement] = useState("");
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
+  const [pendingAgentDraft, setPendingAgentDraft] =
+    useState<AgentPlanDraftEventDetail>();
   const inputRef = useRef<HTMLInputElement>(null);
   // The read-only editor instance, captured whenever one is created so the
   // threads layer can attach even if threads become enabled later. Editing,
@@ -130,9 +167,39 @@ export function PlanDetailStatementSection({
     editor: IStandaloneCodeEditor;
     monaco: MonacoModule;
   }>();
+  const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
+  const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
+  const threadFocus = usePlanDetailStore((state) => state.threadFocus);
+  const clearThreadFocus = usePlanDetailStore(
+    (state) => state.clearThreadFocus
+  );
   useEffect(() => {
     if (!showsReadonlyEditor) setReadonlyEditor(undefined);
   }, [showsReadonlyEditor]);
+  useEffect(() => {
+    if (isEditing) return;
+    setEditingEditor(undefined);
+    editAnchorRef.current = undefined;
+  }, [isEditing]);
+  // The edit editor lands on a pending Activity anchor, which may arrive
+  // before or after it mounts, or else on the place captured by Edit.
+  useEffect(() => {
+    if (!isEditing || !editingEditor) return;
+    const activityLine =
+      threadFocus?.specId === spec.id ? threadFocus.lineNumber : undefined;
+    const anchor = activityLine
+      ? lineViewAnchor(activityLine)
+      : editAnchorRef.current;
+    editAnchorRef.current = undefined;
+    if (!anchor) return;
+    focusEditorAtAnchor(editingEditor, anchor);
+    if (activityLine && threadFocus) {
+      // Activity lives in another phase section, so the editor may be off
+      // screen.
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      clearThreadFocus(threadFocus.nonce);
+    }
+  }, [clearThreadFocus, editingEditor, isEditing, spec.id, threadFocus]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -184,6 +251,13 @@ export function PlanDetailStatementSection({
   const isEmpty = displayedStatement.trim() === "";
   const markers = useMemo(
     () => getSQLAdviceMarkers(planCheckRuns),
+    [planCheckRuns]
+  );
+  // Under SQL Review V2 the statement report is not a check; its estimate
+  // sits under the SQL it describes.
+  const affectedRows = useMemo(
+    () =>
+      sqlReviewV2Enabled() ? affectedRowsSummary(planCheckRuns) : undefined,
     [planCheckRuns]
   );
 
@@ -274,6 +348,90 @@ export function PlanDetailStatementSection({
     };
   }, [releaseName, sheetName, statementVersion]);
 
+  const hasSingleDatabaseTarget =
+    spec.config?.case === "changeDatabaseConfig" &&
+    spec.config.value.targets?.length === 1 &&
+    isValidDatabaseName(spec.config.value.targets[0]);
+
+  const updateLocalStatement = useCallback(
+    (nextStatement: string) => {
+      if (!sheetName) return false;
+      const sheet = getLocalSheetByName(sheetName);
+      // Notifying write: the empty-statement validation subscribes to local
+      // sheets. (Previously this cloned the plan into patchState purely to
+      // force a re-render — the identity-preserving snapshot rightly ignores a
+      // content-identical clone, so the signal must be explicit.)
+      setLocalSheetStatement(sheet, nextStatement);
+      setStatement(nextStatement);
+      setDraftStatement(nextStatement);
+      setIsSheetOversize(false);
+      return true;
+    },
+    [sheetName]
+  );
+
+  const applyAgentDraft = useCallback(
+    (detail: AgentPlanDraftEventDetail, sql: string) => {
+      try {
+        if (!updateLocalStatement(sql)) return;
+      } catch {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      setPendingAgentDraft(undefined);
+      detail.onApplied?.();
+    },
+    [t, updateLocalStatement]
+  );
+
+  useEffect(() => {
+    if (!page.isCreating) return;
+    const handleAgentDraft = (event: Event) => {
+      const detail = (event as CustomEvent<AgentPlanDraftEventDetail>).detail;
+      if (
+        !detail ||
+        detail.handled ||
+        detail.project !== project?.name ||
+        !hasSingleDatabaseTarget ||
+        targetDatabaseNames[0] !== detail.database
+      ) {
+        return;
+      }
+      detail.handled = true;
+      if (!sheetName || !detail.sql.trim() || isLoading) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("agent.plan-draft.current-plan-unavailable"),
+        });
+        return;
+      }
+      if (statement.trim()) {
+        setPendingAgentDraft(detail);
+        return;
+      }
+      applyAgentDraft(detail, detail.sql);
+    };
+
+    window.addEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+    return () =>
+      window.removeEventListener(AGENT_PLAN_DRAFT_EVENT, handleAgentDraft);
+  }, [
+    hasSingleDatabaseTarget,
+    isLoading,
+    page.isCreating,
+    project?.name,
+    sheetName,
+    statement,
+    t,
+    targetDatabaseNames,
+    applyAgentDraft,
+  ]);
+
   if (isValidReleaseName(releaseName)) {
     return (
       <PlanDetailReleaseStatement
@@ -310,17 +468,25 @@ export function PlanDetailStatementSection({
     draftStatement.trim() !== "" &&
     hasChanges;
 
-  const updateLocalStatement = (nextStatement: string) => {
-    if (!sheetName) return;
-    const sheet = getLocalSheetByName(sheetName);
-    // Notifying write: the empty-statement validation subscribes to local
-    // sheets. (Previously this cloned the plan into patchState purely to
-    // force a re-render — the identity-preserving snapshot rightly ignores a
-    // content-identical clone, so the signal must be explicit.)
-    setLocalSheetStatement(sheet, nextStatement);
-    setStatement(nextStatement);
-    setDraftStatement(nextStatement);
-    setIsSheetOversize(false);
+  const selectedDatabaseName = hasSingleDatabaseTarget
+    ? targetDatabaseNames[0]
+    : undefined;
+  const selectedDatabase = selectedDatabaseName
+    ? databasesByName[selectedDatabaseName]
+    : undefined;
+  const selectedDatabaseLabel = selectedDatabase
+    ? getDatabaseMentionLabel(selectedDatabase)
+    : selectedDatabaseName?.split("/").at(-1);
+  const askAgentToDraftSQL = () => {
+    if (!project || !selectedDatabaseName || !selectedDatabaseLabel) return;
+    openAgentWithPrompt(buildPlanCreatePrompt(), [
+      {
+        kind: "database",
+        name: selectedDatabaseName,
+        project: project.name,
+        label: selectedDatabaseLabel,
+      },
+    ]);
   };
 
   const handleUploadClick = () => inputRef.current?.click();
@@ -349,6 +515,12 @@ export function PlanDetailStatementSection({
       return;
     }
     setDraftStatement(nextStatement);
+    setIsEditing(true);
+  };
+
+  const handleBeginEdit = () => {
+    editAnchorRef.current =
+      readonlyEditor && captureEditorViewAnchor(readonlyEditor.editor);
     setIsEditing(true);
   };
 
@@ -483,21 +655,40 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
-  // Inline threads anchor to the saved sheet of a persisted spec, so they
-  // need an issue, a content-addressed sheet, and the complete statement.
+  // Inline threads anchor to the saved sheet of a persisted spec. A truncated
+  // preview can still show threads on its complete lines.
   const sheetSha256 = sheetSha256OfName(sheetName);
   const issue = page.issue;
-  const threadsEnabled = Boolean(
-    issue &&
-      !page.isCreating &&
-      !isPendingDraft &&
-      sheetSha256 &&
-      !isSheetOversize
+  const showLargeSheetWarning = useMemo(
+    () =>
+      isEditing
+        ? exceedsSheetPreviewLimit(draftStatement)
+        : isSheetOversize ||
+          (!isLoading &&
+            Boolean(sheetSha256) &&
+            exceedsSheetPreviewLimit(statement)),
+    [
+      draftStatement,
+      isEditing,
+      isLoading,
+      isSheetOversize,
+      sheetSha256,
+      statement,
+    ]
   );
+  const previewEndLine = useMemo(
+    () =>
+      isSheetOversize ? completePreviewLineCount(statement, true) : undefined,
+    [isSheetOversize, statement]
+  );
+  const threadsEnabled = Boolean(
+    issue && !page.isCreating && !isPendingDraft && sheetSha256
+  );
+  const showsAffectedRows = Boolean(affectedRows) && !isEditing && !isEmpty;
 
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
@@ -515,7 +706,15 @@ export function PlanDetailStatementSection({
           type="file"
         />
         {(canModifyStatement || isEditing) && (
-          <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2">
+          <div className="ml-auto flex w-full max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
+            {page.isCreating &&
+              project &&
+              hasSingleDatabaseTarget &&
+              selectedDatabaseName && (
+                <AgentHelpButton onClick={askAgentToDraftSQL} size="xs">
+                  {t("agent.plan-assistance.ask-draft-sql")}
+                </AgentHelpButton>
+              )}
             {!isEditingExistingStatement && (
               <>
                 <Button
@@ -539,11 +738,7 @@ export function PlanDetailStatementSection({
               </>
             )}
             {!isEditing && canEdit && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                size="xs"
-                appearance="outline"
-              >
+              <Button onClick={handleBeginEdit} size="xs" appearance="outline">
                 <Pencil className="h-3.5 w-3.5" />
                 {t("common.edit")}
               </Button>
@@ -574,13 +769,17 @@ export function PlanDetailStatementSection({
           </div>
         )}
       </div>
-      {isSheetOversize && (
+      {showLargeSheetWarning && (
         <Alert
           variant="warning"
           description={
             <div className="flex items-center justify-between gap-x-4">
-              <span>{t("issue.statement-from-sheet-warning")}</span>
-              {sheetName && (
+              <span>
+                {isEditing
+                  ? t("issue.statement-exceeds-preview-limit")
+                  : t("issue.statement-from-sheet-warning")}
+              </span>
+              {!isEditing && sheetName && (
                 <Button
                   disabled={isDownloading}
                   onClick={() => void downloadSheet()}
@@ -602,50 +801,73 @@ export function PlanDetailStatementSection({
           {t("common.loading")}
         </div>
       ) : isEditing || showsReadonlyEditor ? (
-        <div className="relative overflow-hidden rounded-sm border border-control-border">
-          {isEditing ? (
-            <MonacoEditor
-              advices={page.isCreating ? markers : []}
-              autoCompleteContext={autoCompleteContext}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-              content={editorContent}
-              language={language}
-              options={STATEMENT_EDITOR_OPTIONS}
-              onChange={(nextStatement) => {
-                if (page.isCreating) {
-                  updateLocalStatement(nextStatement);
-                  return;
-                }
-                setDraftStatement(nextStatement);
-              }}
-            />
-          ) : (
-            <>
-              <ReadonlyMonaco
-                advices={markers}
+        <div className="flex flex-col">
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-sm border border-control-border",
+              showsAffectedRows && "rounded-b-none"
+            )}
+          >
+            {isEditing ? (
+              <MonacoEditor
+                advices={page.isCreating ? markers : []}
+                autoCompleteContext={autoCompleteContext}
                 className="relative h-auto max-h-[600px] min-h-[120px]"
-                content={statement}
+                content={editorContent}
                 language={language}
-                onReady={(monaco, editor) =>
-                  setReadonlyEditor({ editor, monaco })
-                }
-                options={
-                  threadsEnabled
-                    ? THREADS_EDITOR_OPTIONS
-                    : STATEMENT_EDITOR_OPTIONS
-                }
+                options={STATEMENT_EDITOR_OPTIONS}
+                onReady={(_monaco, editor) => setEditingEditor(editor)}
+                onChange={(nextStatement) => {
+                  if (page.isCreating) {
+                    updateLocalStatement(nextStatement);
+                    return;
+                  }
+                  setDraftStatement(nextStatement);
+                }}
               />
-              {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
-                <StatementThreadsLayer
-                  editor={readonlyEditor.editor}
-                  issue={issue}
-                  key={sheetSha256}
-                  monaco={readonlyEditor.monaco}
-                  sheetSha256={sheetSha256}
-                  spec={spec}
+            ) : (
+              <>
+                <ReadonlyMonaco
+                  advices={markers}
+                  className="relative h-auto max-h-[600px] min-h-[120px]"
+                  content={statement}
+                  language={language}
+                  onReady={(monaco, editor) =>
+                    setReadonlyEditor({ editor, monaco })
+                  }
+                  options={
+                    threadsEnabled
+                      ? THREADS_EDITOR_OPTIONS
+                      : STATEMENT_EDITOR_OPTIONS
+                  }
                 />
-              )}
-            </>
+                {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
+                  <StatementThreadsLayer
+                    editor={readonlyEditor.editor}
+                    issue={issue}
+                    key={sheetSha256}
+                    monaco={readonlyEditor.monaco}
+                    previewEndLine={previewEndLine}
+                    sheetSha256={sheetSha256}
+                    spec={spec}
+                  />
+                )}
+              </>
+            )}
+          </div>
+          {showsAffectedRows && affectedRows && (
+            <AffectedRowsStrip
+              onGoToLine={
+                readonlyEditor
+                  ? (line) =>
+                      focusEditorAtAnchor(
+                        readonlyEditor.editor,
+                        lineViewAnchor(line)
+                      )
+                  : undefined
+              }
+              summary={affectedRows}
+            />
           )}
         </div>
       ) : (
@@ -662,6 +884,49 @@ export function PlanDetailStatementSection({
           onInsert={handleSchemaEditorInsert}
         />
       )}
+      <AlertDialog
+        open={Boolean(pendingAgentDraft)}
+        onOpenChange={(open) => {
+          if (!open) setPendingAgentDraft(undefined);
+        }}
+      >
+        <AlertDialogContent layer="agent">
+          <AlertDialogTitle>
+            {t("agent.plan-draft.existing-sql-title")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("agent.plan-draft.existing-sql-description")}
+          </AlertDialogDescription>
+          <AlertDialogFooter className="flex-wrap gap-y-2">
+            <Button
+              appearance="secondary"
+              onClick={() => setPendingAgentDraft(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              appearance="outline"
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(
+                  pendingAgentDraft,
+                  appendAgentPlanDraftSQL(statement, pendingAgentDraft.sql)
+                );
+              }}
+            >
+              {t("agent.plan-draft.append-sql")}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!pendingAgentDraft) return;
+                applyAgentDraft(pendingAgentDraft, pendingAgentDraft.sql);
+              }}
+            >
+              {t("agent.plan-draft.replace-sql")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -677,12 +942,13 @@ function PlanDetailReleaseStatement({
   release?: Release;
   releaseName: string;
 }) {
-  return (
-    <ReleaseInfoCard
-      className={cn("h-full", className)}
-      isLoading={isLoading}
-      release={release}
-      releaseName={releaseName}
-    />
-  );
+  const { t } = useTranslation();
+  if (!release) {
+    return (
+      <div className={cn("text-sm text-control-light", className)}>
+        {isLoading ? t("common.loading") : releaseName}
+      </div>
+    );
+  }
+  return <ReleaseChangesRail className={className} release={release} />;
 }

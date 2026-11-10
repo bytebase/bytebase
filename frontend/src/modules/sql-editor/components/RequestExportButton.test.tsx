@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { RequestExportButton } from "./RequestExportButton";
 
 const mocks = vi.hoisted(() => ({
   loadSubscription: vi.fn(),
+  allowJustInTimeAccess: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -25,7 +26,7 @@ vi.mock("@/components/PermissionGuard", () => ({
 vi.mock("@/hooks/useAppProject", () => ({
   useAppProject: () => ({
     name: "projects/proj1",
-    allowJustInTimeAccess: true,
+    allowJustInTimeAccess: mocks.allowJustInTimeAccess,
   }),
 }));
 
@@ -56,6 +57,10 @@ vi.mock("./RequestDrawerHost", () => ({
 }));
 
 describe("RequestExportButton", () => {
+  beforeEach(() => {
+    mocks.allowJustInTimeAccess = true;
+  });
+
   test("labels the export action instead of the access-grant mechanism", () => {
     render(
       <RequestExportButton
@@ -70,5 +75,17 @@ describe("RequestExportButton", () => {
     expect(screen.getByRole("button")).not.toHaveTextContent(
       "sql-editor.request-access-grant"
     );
+  });
+
+  test("is hidden when the project does not allow just-in-time access", () => {
+    mocks.allowJustInTimeAccess = false;
+    const { container } = render(
+      <RequestExportButton
+        statement="SELECT * FROM t"
+        targets={["instances/i/databases/d"]}
+      />
+    );
+
+    expect(container).toBeEmptyDOMElement();
   });
 });

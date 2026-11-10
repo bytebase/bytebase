@@ -1,7 +1,12 @@
 import { debounce, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { router, useCurrentRoute, useNavigate } from "@/app/router";
+import {
+  type ReactRoute,
+  router,
+  useCurrentRoute,
+  useNavigate,
+} from "@/app/router";
 import {
   SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
@@ -23,7 +28,13 @@ import {
 import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
+import {
+  ACCESS_GRANT_DRAFT_QUERY_KEY,
+  consumeAccessGrantDraft,
+  markDeniedQueryRequestDraftDelivered,
+} from "@/modules/sql-editor/model/accessGrantDraft";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { getDefaultQueryRole } from "@/modules/sql-editor/model/requestQueryRole";
 import type { AsidePanelTab } from "@/modules/sql-editor/store";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import {
@@ -42,6 +53,7 @@ import {
   isValidProjectName,
   type SQLEditorConnection,
 } from "@/types";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   autoSQLEditorDatabaseRoute,
   extractDatabaseResourceName,
@@ -54,7 +66,9 @@ import {
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
+import { parseStringToResource } from "@/utils/v1/databaseResource";
 import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
+import { useRequestDrawerHost } from "./RequestDrawerHost";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
 // Route-name set for the unsaved-changes leave guard. `router.beforeEach`
@@ -93,6 +107,17 @@ const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
 
 const GUIDED_QUERY_ROW_LIMIT = 50;
 
+const connectionRouteKey = (route: ReactRoute) =>
+  JSON.stringify([
+    route.name,
+    route.params.project,
+    route.params.instance,
+    route.params.database,
+    route.query.parent,
+    route.query.schema,
+    route.query.table,
+  ]);
+
 /**
  * Owns the SQL Editor route bootstrap chain:
  *  - on mount, resolves the active project from URL params/query or the
@@ -111,10 +136,16 @@ export function SQLEditorRouteShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const route = useCurrentRoute();
+  const connectionKey = connectionRouteKey(route);
+  const currentConnectionKeyRef = useRef(connectionKey);
+  currentConnectionKeyRef.current = connectionKey;
+  const handledConnectionKeyRef = useRef(connectionKey);
+  const requestDrawerHost = useRequestDrawerHost();
   const guidedQueryRequested =
     route.name === SQL_EDITOR_DATABASE_MODULE &&
     route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
   const previousGuidedQueryRequestedRef = useRef(guidedQueryRequested);
+  const handledAccessGrantDraftKeyRef = useRef<string | null>(null);
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -238,7 +269,17 @@ export function SQLEditorRouteShell() {
     );
   };
 
-  const prepareConnectionParams = async () => {
+  const prepareConnectionParams = async ({
+    sameProjectUpdate = false,
+    canContinue = () => true,
+  }: {
+    sameProjectUpdate?: boolean;
+    canContinue?: () => boolean;
+  } = {}) => {
+    const targetKey = connectionRouteKey(route);
+    const isCurrent = () =>
+      canContinue() && currentConnectionKeyRef.current === targetKey;
+    if (!isCurrent()) return false;
     if (
       ![SQL_EDITOR_INSTANCE_MODULE, SQL_EDITOR_DATABASE_MODULE].includes(
         route.name as string
@@ -250,18 +291,59 @@ export function SQLEditorRouteShell() {
     if (typeof instanceId !== "string" || !instanceId) return false;
     const projectId = route.params.project;
     if (typeof projectId !== "string" || !projectId) return false;
+    // In-place route repair must not start an asynchronous project switch.
+    if (
+      sameProjectUpdate &&
+      getSQLEditorEditorState().project !== `projects/${projectId}`
+    )
+      return false;
+    if (sameProjectUpdate) {
+      const tabsState = getSQLEditorTabsState();
+      const connection = tabsState.tabsById.get(
+        tabsState.currentTabId
+      )?.connection;
+      if (
+        connection &&
+        [
+          `instances/${instanceId}`,
+          `projects/${projectId}/instances/${instanceId}`,
+        ].includes(connection.instance) &&
+        (!route.query.parent || route.query.parent === connection.instance)
+      ) {
+        if (route.name === SQL_EDITOR_INSTANCE_MODULE && !connection.database)
+          return true;
+        if (
+          route.name === SQL_EDITOR_DATABASE_MODULE &&
+          connection.database ===
+            `${connection.instance}/databases/${route.params.database}` &&
+          (connection.schema ?? "") === (route.query.schema ?? "") &&
+          (connection.table ?? "") === (route.query.table ?? "")
+        )
+          return true;
+      }
+    }
 
     if (route.name === SQL_EDITOR_INSTANCE_MODULE) {
       let instance = await useAppStore
         .getState()
         .fetchInstance(`instances/${instanceId}`);
+      if (!isCurrent()) return false;
       if (!instance || !isValidInstanceName(instance.name)) {
         instance = await useAppStore
           .getState()
           .fetchInstance(`projects/${projectId}/instances/${instanceId}`);
       }
+      if (!isCurrent()) return false;
       if (!instance || !isValidInstanceName(instance.name)) return false;
-      getSQLEditorTabsState().addTab({
+      const tabsState = getSQLEditorTabsState();
+      const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+      if (
+        sameProjectUpdate &&
+        currentTab?.connection.instance === instance.name &&
+        !currentTab.connection.database
+      )
+        return true;
+      tabsState.addTab({
         connection: {
           instance: instance.name,
           database: "",
@@ -273,25 +355,41 @@ export function SQLEditorRouteShell() {
 
     const databaseId = route.params.database;
     if (typeof databaseId !== "string" || !databaseId) return false;
+    const workspaceParent = `instances/${instanceId}`;
+    const projectParent = `projects/${projectId}/instances/${instanceId}`;
+    const workspaceDatabase = `${workspaceParent}/databases/${databaseId}`;
+    const projectDatabase = `${projectParent}/databases/${databaseId}`;
+    const parent = route.query.parent;
+    const candidateNames =
+      parent === workspaceParent
+        ? [workspaceDatabase]
+        : parent === projectParent
+          ? [projectDatabase]
+          : [workspaceDatabase, projectDatabase];
     let database = await useAppStore
       .getState()
-      .getOrFetchDatabaseByName(
-        `instances/${instanceId}/databases/${databaseId}`
-      );
-    if (!isValidDatabaseName(database.name)) {
+      .getOrFetchDatabaseByName(candidateNames[0]);
+    if (!isCurrent()) return false;
+    if (!isValidDatabaseName(database.name) && candidateNames.length > 1) {
       database = await useAppStore
         .getState()
-        .getOrFetchDatabaseByName(
-          `projects/${projectId}/instances/${instanceId}/databases/${databaseId}`
-        );
+        .getOrFetchDatabaseByName(candidateNames[1]);
     }
+    if (!isCurrent()) return false;
     if (!isValidDatabaseName(database.name)) return false;
     if (
+      sameProjectUpdate &&
+      database.project !== getSQLEditorEditorState().project
+    )
+      return false;
+    if (
       getSQLEditorEditorState().project !== database.project &&
-      !(await maybeSwitchProject(database.project))
+      !(await maybeSwitchProject(database.project)) &&
+      isCurrent()
     ) {
       getSQLEditorEditorState().setProject(database.project);
     }
+    if (!isCurrent()) return false;
     const { instance } = extractDatabaseResourceName(database.name);
     const connection: SQLEditorConnection = {
       instance,
@@ -317,6 +415,7 @@ export function SQLEditorRouteShell() {
           silent: true,
         })
         .catch(() => undefined);
+      if (!isCurrent()) return false;
       const schemaName = typeof schema === "string" ? schema : "";
       const targetExists = metadata?.schemas.some(
         (schemaMetadata) =>
@@ -338,7 +437,8 @@ export function SQLEditorRouteShell() {
     const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
     if (
       !isGuidedQuery &&
-      currentTab?.mode === "DATA_EXPLORER" &&
+      (sameProjectUpdate || currentTab?.mode === "DATA_EXPLORER") &&
+      currentTab &&
       currentTab.connection.instance === connection.instance &&
       currentTab.connection.database === connection.database &&
       (currentTab.connection.schema ?? "") === (connection.schema ?? "") &&
@@ -436,8 +536,119 @@ export function SQLEditorRouteShell() {
   const initializeConnectionFromQuery = async () => {
     if (await prepareQueryHistory()) return;
     if (await prepareSheet()) return;
-    if (await prepareConnectionParams()) return;
+    const connectionReady = await prepareConnectionParams();
+    const key = route.query[ACCESS_GRANT_DRAFT_QUERY_KEY];
+    if (route.name === SQL_EDITOR_DATABASE_MODULE && typeof key === "string") {
+      handledAccessGrantDraftKeyRef.current = key;
+      await openAccessGrantDraft(key, connectionReady);
+      clearAccessGrantDraftKey(key);
+    }
   };
+
+  const clearAccessGrantDraftKey = (key: string) => {
+    const currentRoute = router.currentRoute.value;
+    if (currentRoute.query[ACCESS_GRANT_DRAFT_QUERY_KEY] !== key) return;
+    void navigate.replace({
+      name: currentRoute.name,
+      params: currentRoute.params,
+      query: omit(currentRoute.query, ACCESS_GRANT_DRAFT_QUERY_KEY),
+    });
+  };
+
+  const openAccessGrantDraft = async (
+    key: string,
+    connectionReady: boolean
+  ) => {
+    let draft;
+    try {
+      draft = consumeAccessGrantDraft(key);
+    } catch {
+      draft = undefined;
+    }
+    const tabsState = getSQLEditorTabsState();
+    const database = tabsState.tabsById.get(tabsState.currentTabId)?.connection
+      .database;
+    if (
+      !connectionReady ||
+      !draft ||
+      draft.project !== getSQLEditorEditorState().project ||
+      draft.sourceDatabase !== database ||
+      !requestDrawerHost
+    ) {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.access-request-draft-unavailable"),
+      });
+      return;
+    }
+    let opened = false;
+    if (draft.kind === "requestRole") {
+      const project = await useAppStore
+        .getState()
+        .getOrFetchProjectByName(draft.project)
+        .catch(() => undefined);
+      const resources = draft.resources.map(parseStringToResource);
+      if (
+        project?.name === draft.project &&
+        project.allowRequestRole &&
+        !project.allowJustInTimeAccess &&
+        resources.every((resource) => resource?.databaseFullName) &&
+        router.currentRoute.value.query[ACCESS_GRANT_DRAFT_QUERY_KEY] === key
+      ) {
+        const app = useAppStore.getState();
+        opened = requestDrawerHost.openRequestRoleSheet({
+          project,
+          requiredPermissions: draft.requiredPermissions,
+          initialRole: getDefaultQueryRole(
+            app.roleList,
+            draft.requiredPermissions,
+            app.hasInstanceFeature(PlanFeature.FEATURE_CUSTOM_ROLES)
+          ),
+          initialDatabaseResources: resources as NonNullable<
+            (typeof resources)[number]
+          >[],
+        });
+      }
+    } else {
+      opened = requestDrawerHost.openAccessGrantDrawer({
+        query: draft.statement,
+        targets: draft.targets,
+        ...(draft.schema ? { schema: draft.schema } : {}),
+        ...(draft.container ? { container: draft.container } : {}),
+      });
+    }
+    if (opened) {
+      markDeniedQueryRequestDraftDelivered(key);
+    } else {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.access-request-draft-unavailable"),
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!bootstrapDone || route.name !== SQL_EDITOR_DATABASE_MODULE) return;
+    const key = route.query[ACCESS_GRANT_DRAFT_QUERY_KEY];
+    if (
+      typeof key !== "string" ||
+      key === handledAccessGrantDraftKeyRef.current
+    ) {
+      return;
+    }
+    handledAccessGrantDraftKeyRef.current = key;
+    void (async () => {
+      const connectionReady = await prepareConnectionParams();
+      if (
+        router.currentRoute.value.query[ACCESS_GRANT_DRAFT_QUERY_KEY] === key
+      ) {
+        await openAccessGrantDraft(key, connectionReady);
+        clearAccessGrantDraftKey(key);
+      }
+    })();
+  }, [bootstrapDone, route.name, route.query[ACCESS_GRANT_DRAFT_QUERY_KEY]]);
 
   useEffect(() => {
     if (!bootstrapDone) return;
@@ -446,6 +657,31 @@ export function SQLEditorRouteShell() {
     if (!guidedQueryRequested || previouslyRequested) return;
     void prepareConnectionParams();
   }, [bootstrapDone, guidedQueryRequested]);
+
+  useEffect(() => {
+    if (!bootstrapDone) return;
+    const previousKey = handledConnectionKeyRef.current;
+    handledConnectionKeyRef.current = connectionKey;
+    if (
+      previousKey === connectionKey ||
+      guidedQueryRequested ||
+      typeof route.query[ACCESS_GRANT_DRAFT_QUERY_KEY] === "string"
+    )
+      return;
+    let active = true;
+    void prepareConnectionParams({
+      sameProjectUpdate: true,
+      canContinue: () => active,
+    });
+    return () => {
+      active = false;
+    };
+  }, [
+    bootstrapDone,
+    connectionKey,
+    guidedQueryRequested,
+    route.query[ACCESS_GRANT_DRAFT_QUERY_KEY],
+  ]);
 
   // ---- URL ⇄ connection sync (reactive) --------------------------------
 
@@ -471,26 +707,36 @@ export function SQLEditorRouteShell() {
   useEffect(() => {
     // Skip until bootstrap is done — see the `bootstrapDone` declaration.
     if (!bootstrapDone) return;
-    void syncURL({
-      projName: projName ?? "",
-      sheetName: sheetName ?? undefined,
-      instanceName: instanceName ?? undefined,
-      dbName: dbName ?? undefined,
-      schema: schema ?? undefined,
-      table: table ?? undefined,
-    });
+    let active = true;
+    void syncURL(
+      {
+        projName: projName ?? "",
+        sheetName: sheetName ?? undefined,
+        instanceName: instanceName ?? undefined,
+        dbName: dbName ?? undefined,
+        schema: schema ?? undefined,
+        table: table ?? undefined,
+      },
+      () => active
+    );
+    return () => {
+      active = false;
+    };
     // The route navigation reads stores again at fire time, so capturing
     // these as deps is sufficient — we don't need full closures over them.
   }, [bootstrapDone, projName, sheetName, instanceName, dbName, schema, table]);
 
-  const syncURL = async (vals: {
-    projName: string;
-    sheetName: string | undefined;
-    instanceName: string | undefined;
-    dbName: string | undefined;
-    schema: string | undefined;
-    table: string | undefined;
-  }) => {
+  const syncURL = async (
+    vals: {
+      projName: string;
+      sheetName: string | undefined;
+      instanceName: string | undefined;
+      dbName: string | undefined;
+      schema: string | undefined;
+      table: string | undefined;
+    },
+    canContinue: () => boolean
+  ) => {
     const currentRoute = router.currentRoute.value;
     const query = omit(
       currentRoute.query,
@@ -500,7 +746,8 @@ export function SQLEditorRouteShell() {
       "schema",
       "database",
       "table",
-      "panel"
+      "panel",
+      ACCESS_GRANT_DRAFT_QUERY_KEY
     ) as Record<string, string>;
 
     const tabsState = getSQLEditorTabsState();
@@ -543,6 +790,8 @@ export function SQLEditorRouteShell() {
       const database = await useAppStore
         .getState()
         .getOrFetchDatabaseByName(vals.dbName);
+      if (!canContinue() || currentConnectionKeyRef.current !== connectionKey)
+        return;
       // The app-store getter returns the `unknownDatabase` fallback (rather
       // than throwing) when the database can't be resolved — deleted or
       // permission revoked. Skip navigation in that case so we don't rewrite

@@ -73,7 +73,12 @@
           schema: ""
           table: products
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: products
+          column: product_info
 - description: Test For json table
   statement: |-
     SELECT *
@@ -154,7 +159,12 @@
           schema: ""
           table: products
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: products
+          column: product_info
 - description: Test For alias.* with join
   statement: SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
   defaultDatabase: db
@@ -206,7 +216,12 @@
           schema: ""
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: a
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   defaultDatabase: db
@@ -635,7 +650,12 @@
           schema: ""
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: a
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: db
@@ -707,7 +727,17 @@
           schema: ""
           table: paintings
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: galleries
+          column: id
+        - server: ""
+          database: db
+          schema: ""
+          table: paintings
+          column: gallery_id
 - description: Test for functions
   statement: SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c, d) from (SELECT * FROM t) result;
   defaultDatabase: db
@@ -1025,7 +1055,12 @@
           schema: ""
           table: t
           column: ""
-    predicatecolumns: []
+    predicatecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: a
 - description: Simple CTE
   statement: WITH t1 AS (SELECT * FROM t) SELECT * FROM t1;
   defaultDatabase: db

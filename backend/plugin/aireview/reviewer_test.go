@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/ai"
 )
 
 const (
@@ -17,6 +18,14 @@ const (
 	roleUser      = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER
 	roleAssistant = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT
 	roleTool      = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL
+)
+
+const (
+	stopTurnCompleted     = v1pb.AIChatResponse_TURN_COMPLETED
+	stopTokenLimit        = v1pb.AIChatResponse_TOKEN_LIMIT
+	stopBlocked           = v1pb.AIChatResponse_BLOCKED
+	stopMalformedToolCall = v1pb.AIChatResponse_MALFORMED_TOOL_CALL
+	stopOther             = v1pb.AIChatResponse_OTHER
 )
 
 const threeLineStatement = "ALTER TABLE orders ADD COLUMN note text;\n\nDELETE FROM order_events;\n"
@@ -76,6 +85,11 @@ func finalReply(content string) modelStep {
 
 func toolCallReply(calls ...*v1pb.AIChatToolCall) modelStep {
 	return modelStep{response: &v1pb.AIChatResponse{ToolCalls: calls, Usage: &v1pb.AIChatUsage{TotalTokens: 100}}}
+}
+
+func (s modelStep) stoppedFor(reason v1pb.AIChatResponse_StopReason) modelStep {
+	s.response.StopReason = reason
+	return s
 }
 
 func TestReviewReturnsFindings(t *testing.T) {
@@ -183,12 +197,169 @@ func TestReviewExitPaths(t *testing.T) {
 			wantToolCalls: []string{"read"},
 		},
 		{
-			// A safety block, a refusal, and a garbled tool call all arrive as an
-			// empty reply. Asking again could let a blocked review pass.
 			name:         "empty reply fails without a correction round",
 			steps:        []modelStep{finalReply(" \n"), finalReply(validReply)},
 			wantErr:      ErrEmptyReply,
 			wantRequests: 1,
+		},
+		{
+			name:         "empty reply of a completed turn fails without a correction round",
+			steps:        []modelStep{finalReply("").stoppedFor(stopTurnCompleted), finalReply(validReply)},
+			wantErr:      ErrEmptyReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "empty reply with another stop reason fails without a correction round",
+			steps:        []modelStep{finalReply("").stoppedFor(stopOther), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "reply of a completed turn is parsed",
+			steps:        []modelStep{finalReply(validReply).stoppedFor(stopTurnCompleted)},
+			wantFindings: 1,
+			wantCalls:    1,
+		},
+		{
+			name:         "reply without a stop reason is parsed",
+			steps:        []modelStep{finalReply(validReply).stoppedFor(v1pb.AIChatResponse_STOP_REASON_UNSPECIFIED)},
+			wantFindings: 1,
+			wantCalls:    1,
+		},
+		{
+			name:         "reply with another stop reason fails even when it passes",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopOther), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "turn with another stop reason runs no tool",
+			steps:        []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopOther), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "reply with a stop reason added later fails",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(v1pb.AIChatResponse_StopReason(99)), finalReply(validReply)},
+			wantErr:      ErrUnfinishedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "truncated reply fails even when it parses",
+			steps:        []modelStep{finalReply(validReply).stoppedFor(stopTokenLimit), finalReply(validReply)},
+			wantErr:      ErrTruncatedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "truncated reply that does not parse gets no correction round",
+			steps:        []modelStep{finalReply(`{"findings": [{"title": "Add a WHERE`).stoppedFor(stopTokenLimit), finalReply(validReply)},
+			wantErr:      ErrTruncatedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "truncated turn with tool calls runs no tool",
+			steps:        []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopTokenLimit), finalReply(validReply)},
+			wantErr:      ErrTruncatedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "blocked reply with text gets no correction round",
+			steps:        []modelStep{finalReply("I can't help with that request.").stoppedFor(stopBlocked), finalReply(validReply)},
+			wantErr:      ErrBlockedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "blocked reply that parses still fails",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopBlocked)},
+			wantErr:      ErrBlockedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "blocked reply without text gets no correction round",
+			steps:        []modelStep{finalReply("").stoppedFor(stopBlocked), finalReply(validReply)},
+			wantErr:      ErrBlockedReply,
+			wantRequests: 1,
+		},
+		{
+			name:         "blocked turn with tool calls runs no tool",
+			steps:        []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopBlocked), finalReply(validReply)},
+			wantErr:      ErrBlockedReply,
+			wantRequests: 1,
+		},
+		{
+			name:             "tool call the vendor could not parse gets one correction round",
+			steps:            []modelStep{finalReply("").stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantFindings:     1,
+			wantCalls:        2,
+			wantLastUserText: "Call the tool again, or reply with only the JSON object",
+		},
+		{
+			name: "model calls the tool again after the vendor could not parse the call",
+			steps: []modelStep{
+				finalReply("").stoppedFor(stopMalformedToolCall),
+				toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}),
+				finalReply(validReply),
+			},
+			wantFindings:  1,
+			wantCalls:     3,
+			wantToolCalls: []string{"read"},
+		},
+		{
+			name:             "passing text beside an unparsed tool call gets a correction round, not a pass",
+			steps:            []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantFindings:     1,
+			wantCalls:        2,
+			wantLastUserText: "Call the tool again, or reply with only the JSON object",
+		},
+		{
+			name:          "tool calls beside an unparsed tool call do not run",
+			steps:         []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantFindings:  1,
+			wantCalls:     2,
+			wantToolCalls: nil,
+		},
+		{
+			name:         "second tool call the vendor could not parse fails",
+			steps:        []modelStep{finalReply("").stoppedFor(stopMalformedToolCall)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "second unparsed tool call with passing text fails",
+			steps:        []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "unparsed tool call after an invalid reply has no correction round left",
+			steps:        []modelStep{finalReply("not json"), finalReply("").stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "unparsed tool call with passing text after an invalid reply has no correction round left",
+			steps:        []modelStep{finalReply("not json"), finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall), finalReply(validReply)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the vendor could not parse the model's tool call",
+			wantRequests: 2,
+		},
+		{
+			name:         "invalid reply after an unparsed tool call has no correction round left",
+			steps:        []modelStep{finalReply("").stoppedFor(stopMalformedToolCall), finalReply("not json"), finalReply(validReply)},
+			wantErr:      ErrInvalidReply,
+			wantErrText:  "the reply is not a JSON object",
+			wantRequests: 2,
+		},
+		{
+			name:          "unparsed tool call on the last permitted call fails",
+			steps:         []modelStep{finalReply(`{"findings": []}`).stoppedFor(stopMalformedToolCall)},
+			maxModelCalls: 1,
+			wantErr:       ErrInvalidReply,
+			wantErrText:   "the vendor could not parse the model's tool call",
+			wantRequests:  1,
 		},
 		{
 			name:        "model error fails",
@@ -264,6 +435,55 @@ func TestReviewExitPaths(t *testing.T) {
 	}
 }
 
+func TestReviewStopReasonFailureOfAnEmptyReplyIsNotErrEmptyReply(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		reason  v1pb.AIChatResponse_StopReason
+		wantErr error
+	}{
+		{name: "truncated", reason: stopTokenLimit, wantErr: ErrTruncatedReply},
+		{name: "blocked", reason: stopBlocked, wantErr: ErrBlockedReply},
+		{name: "another stop reason", reason: stopOther, wantErr: ErrUnfinishedReply},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			model := &scriptedModel{steps: []modelStep{finalReply("").stoppedFor(tc.reason)}}
+			_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+			require.ErrorIs(t, err, tc.wantErr)
+			require.NotErrorIs(t, err, ErrEmptyReply)
+		})
+	}
+}
+
+func TestReviewKeepsAnUnparsedToolCallTurnOutOfTheHistory(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		step modelStep
+	}{
+		{name: "empty", step: finalReply("")},
+		{name: "with text", step: finalReply(`{"findings": []}`)},
+		{name: "with tool calls", step: toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"})},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			model := &scriptedModel{steps: []modelStep{tc.step.stoppedFor(stopMalformedToolCall), finalReply(validReply)}}
+			_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+			require.NoError(t, err)
+			history := model.requests[1].Messages
+			require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleUser}, roles(history))
+			require.Equal(t, malformedToolCallMessage, history[2].GetContent())
+		})
+	}
+}
+
 func TestReviewUnknownToolNamesTheRealTools(t *testing.T) {
 	t.Parallel()
 
@@ -335,4 +555,53 @@ func requireToolMessage(t *testing.T, message *v1pb.AIChatMessage, toolCallID st
 	require.Equal(t, toolCallID, message.GetToolCallId())
 	require.Equal(t, content, message.GetContent())
 	require.Empty(t, message.GetToolCalls())
+}
+
+func TestReviewRunsWithoutToolsWhenTheEndpointRefusesThem(t *testing.T) {
+	t.Parallel()
+
+	refused := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 400, RefusesTools: true}}
+	blocked := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 400, Body: `{"error": {"code": "content_filter"}}`}}
+	unauthorized := modelStep{err: &ai.HTTPError{Provider: "OpenAI", StatusCode: 401}}
+	search := toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "search", Arguments: `{"text": "orders"}`})
+
+	t.Run("the first call refuses tools", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{refused, finalReply(validReply)}}
+		result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.NoError(t, err)
+		require.Len(t, result.Findings, 1)
+		require.Equal(t, 2, result.Calls)
+		require.Len(t, model.requests[0].ToolDefinitions, 2)
+		require.Empty(t, model.requests[1].ToolDefinitions)
+		require.Contains(t, model.requests[1].Messages[1].GetContent(), "No tools are available in this review.")
+	})
+	t.Run("a refusal without tools is reported", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{refused}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 2 failed")
+		require.Len(t, model.requests, 2)
+	})
+	t.Run("a refusal after the tools worked is reported", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{search, refused}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 2 failed")
+		require.Len(t, model.requests, 2)
+	})
+	t.Run("a content filter is reported at once, never retried without tools", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{blocked, finalReply(`{"findings": []}`)}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 1 failed")
+		require.Len(t, model.requests, 1)
+	})
+	t.Run("another failure is reported at once", func(t *testing.T) {
+		t.Parallel()
+		model := &scriptedModel{steps: []modelStep{unauthorized}}
+		_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorContains(t, err, "model call 1 failed")
+		require.Len(t, model.requests, 1)
+	})
 }

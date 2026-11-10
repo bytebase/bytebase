@@ -11,18 +11,20 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
+import type { AutomatedReviewRow } from "./planGates";
+import { reviewSummaryPart } from "./reviewLabels";
 
 export type { PlanCheckSummary } from "@/lib/plan/check";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
-const isDatabaseGroupName = (name: string): boolean =>
+export const isDatabaseGroupName = (name: string): boolean =>
   name.includes("/databaseGroups/");
 
 // Mirrors the eligibility gates that can permanently prevent RolloutCreator
 // from materializing a rollout. Transient approval and check gates are handled
 // separately below.
-const supportsAutomaticRollout = (plan: Plan): boolean =>
+export const supportsAutomaticRollout = (plan: Plan): boolean =>
   plan.state === State.ACTIVE &&
   plan.specs.length > 0 &&
   plan.specs.every((spec) => spec.config?.case === "changeDatabaseConfig");
@@ -71,7 +73,38 @@ const targetsForSpec = (spec: Plan["specs"][number]): string[] => {
 const extractPrincipalEmail = (principal: string): string =>
   principal.replace(/^users\//, "");
 
-export const buildChangesSummary = (plan: Plan, t: T): string => {
+// Under SQL Review V2 the checks are reviewers in the Review section, so the
+// Changes summary leaves them out.
+export const buildChangesSummary = (
+  plan: Plan,
+  t: T,
+  {
+    includeChecks = true,
+    stageTitle = (stage) => stage.split("/").at(-1) ?? stage,
+  }: {
+    includeChecks?: boolean;
+    // A stage's environment title, as the Progress row shows it.
+    stageTitle?: (stage: string) => string;
+  } = {}
+): string => {
+  // A release plan's facts live in the details block; once its rollout exists
+  // the collapsed line names only the targets per stage (D10).
+  const isRelease = plan.specs.some(
+    (spec) =>
+      spec.config?.case === "changeDatabaseConfig" && spec.config.value.release
+  );
+  if (isRelease && plan.rolloutStageSummaries.length > 0) {
+    return plan.rolloutStageSummaries
+      .map((summary) => {
+        const count = summary.taskStatusCounts.reduce(
+          (sum, item) => sum + item.count,
+          0
+        );
+        return `${stageTitle(summary.stage)}: ${t("plan.summary.n-databases", { n: count })}`;
+      })
+      .join(" → ");
+  }
+
   const parts: string[] = [];
 
   parts.push(t("plan.summary.n-changes", { n: plan.specs.length }));
@@ -93,7 +126,7 @@ export const buildChangesSummary = (plan: Plan, t: T): string => {
   }
 
   const checks = getPlanCheckSummary(plan);
-  if (checks.total > 0) {
+  if (includeChecks && checks.total > 0) {
     const checkParts: string[] = [];
     if (checks.success > 0) {
       checkParts.push(t("plan.summary.n-passed", { n: checks.success }));
@@ -144,6 +177,50 @@ export const buildReviewSummary = (
     );
   }
 
+  return parts.join(" · ");
+};
+
+// The Review summary under SQL Review V2: the approval outcome, then each
+// reviewer's conclusion, so a reader can tell people resolved the findings.
+export const buildReviewSummaryV2 = (
+  issue: Issue | undefined,
+  t: T,
+  rows: readonly AutomatedReviewRow[],
+  openDiscussions: number
+): string => {
+  if (!issue) return "";
+  const parts: string[] = [];
+  const roles = issue.approvalTemplate?.flow?.roles ?? [];
+  if (!issue.draft) {
+    if (
+      issue.approvalStatus === ApprovalStatus.SKIPPED ||
+      (issue.approvalTemplate && roles.length === 0)
+    ) {
+      parts.push(t("plan.summary.no-approval-required"));
+    } else if (issue.approvalStatus === ApprovalStatus.APPROVED) {
+      const names = issue.approvers.map(
+        (approver) => extractPrincipalEmail(approver.principal).split("@")[0]
+      );
+      parts.push(t("plan.summary.approved-by", { names: names.join(", ") }));
+    } else if (issue.approvalStatus === ApprovalStatus.REJECTED) {
+      parts.push(t("plan.lifecycle.gate-review-rejected"));
+    } else if (roles.length > 0) {
+      parts.push(
+        t("plan.summary.n-of-m-approved", {
+          m: roles.length,
+          n: issue.approvers.length,
+        })
+      );
+    }
+  }
+  for (const row of rows) {
+    parts.push(reviewSummaryPart(t, row));
+  }
+  if (openDiscussions > 0) {
+    parts.push(
+      t("plan.deploy-waiting.open-discussions", { count: openDiscussions })
+    );
+  }
   return parts.join(" · ");
 };
 

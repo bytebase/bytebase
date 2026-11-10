@@ -3,6 +3,7 @@ import {
   INSTANCE_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DETAIL,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { useIntroStateByKey } from "@/hooks/useAppState";
@@ -20,6 +21,7 @@ import {
   findGuideQueryTarget,
   tableHasMarkedSensitiveData,
 } from "./queryTarget";
+import { getGuideJourney } from "./scenarios";
 import type {
   GuideContext,
   GuideRoute,
@@ -107,13 +109,15 @@ const isConcreteDatabaseRoute = (
   }
 };
 
+// The project home lists the project's databases too, so setup that ends
+// there with the sample has already shown one.
 const isPopulatedProjectDatabaseRoute = (
   name: string | undefined,
   params: Record<string, string | string[] | undefined>,
   databaseProjectName: string,
   databaseName: string
 ) =>
-  name === PROJECT_V1_ROUTE_DATABASES &&
+  (name === PROJECT_V1_ROUTE_DATABASES || name === PROJECT_V1_ROUTE_DETAIL) &&
   !!databaseName &&
   params.projectId === extractProjectResourceName(databaseProjectName);
 
@@ -314,14 +318,17 @@ export const useGuideContext = ({
       return;
     }
 
+    const controller = new AbortController();
     void (async () => {
       const store = useAppStore.getState();
       try {
         const projectResponse = await store.fetchProjectList({
+          signal: controller.signal,
           pageSize: 1,
           silent: true,
           filter: { excludeDefault: true, state: State.ACTIVE },
         });
+        if (controller.signal.aborted) return;
         const project = projectResponse.projects.find(
           ({ name }) => !!name && name !== defaultProject
         );
@@ -367,8 +374,9 @@ export const useGuideContext = ({
         const database = databases?.databases.find(
           ({ name, project }) => !!name && !!project
         );
-        const shouldPrepareQuery =
-          scenarioId === "query-data" || scenarioId === "mark-sensitive-data";
+        const shouldPrepareQuery = getGuideJourney(scenarioId).steps.some(
+          ({ stepId }) => stepId === "query-data"
+        );
         const [metadata, catalog] = database
           ? await Promise.all([
               shouldPrepareQuery
@@ -389,6 +397,7 @@ export const useGuideContext = ({
                 : undefined,
             ])
           : [];
+        if (controller.signal.aborted) return;
         const eventTarget = eventTargetRef.current;
 
         setFacts((state) => ({
@@ -416,6 +425,7 @@ export const useGuideContext = ({
           ),
         }));
       } catch {
+        if (controller.signal.aborted) return;
         setFacts((state) => ({
           ...state,
           hasExploredDatabase: databaseExplored || state.hasExploredDatabase,
@@ -426,6 +436,7 @@ export const useGuideContext = ({
       }
       setContextReady(true);
     })();
+    return () => controller.abort();
   }, [
     changeIssueCreated,
     databaseCacheSize,

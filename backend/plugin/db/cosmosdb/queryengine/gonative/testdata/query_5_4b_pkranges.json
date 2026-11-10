@@ -1,0 +1,21 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "PartitionKeyRanges": [
+        {
+            "_rid": "S9w7AIGecFsCAAAAAAAAUA==",
+            "id": "0",
+            "_etag": "\"0000d642-0000-0100-0000-69de026a0000\"",
+            "minInclusive": "",
+            "maxExclusive": "FF",
+            "ridPrefix": 0,
+            "_self": "dbs/S9w7AA==/colls/S9w7AIGecFs=/pkranges/S9w7AIGecFsCAAAAAAAAUA==/",
+            "throughputFraction": 1,
+            "status": "online",
+            "parents": [],
+            "ownedArchivalPKRangeIds": [],
+            "_ts": 1776157290,
+            "lsn": 15
+        }
+    ],
+    "_count": 1
+}

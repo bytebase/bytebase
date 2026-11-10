@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -156,4 +158,76 @@ func TestExecutePreparedStatementFlowWithCreateIndexString(t *testing.T) {
 	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
+}
+
+// TestQueryConnExplainJSON pins the structured plan the query-plan viewer draws.
+// TiDB spells it FORMAT=tidb_json and rejects a quoted format in the statement
+// Bytebase validates, so what the driver builds has to parse here as well.
+func TestQueryConnExplainJSON(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+	driver := openTestDriver(ctx, t, container)
+	defer func() { require.NoError(t, driver.Close(ctx)) }()
+
+	_, err := driver.db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %s.plan_target (id INT PRIMARY KEY, note VARCHAR(64))", database))
+	require.NoError(t, err)
+
+	conn, err := driver.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	statement := fmt.Sprintf("SELECT note FROM %s.plan_target WHERE id > 100", database)
+	explain := func(s string, option *v1pb.QueryOption, asExplain bool) *v1pb.QueryResult {
+		results, err := driver.QueryConn(ctx, conn, s, db.QueryContext{
+			Explain:              asExplain,
+			Limit:                5000,
+			MaximumSQLResultSize: 1 << 30,
+			Option:               option,
+		})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Empty(t, results[0].GetError())
+		return results[0]
+	}
+	// The root operator's id, which every node of a tidb_json plan carries.
+	rootOperator := func(result *v1pb.QueryResult) string {
+		t.Helper()
+		require.Len(t, result.GetColumnNames(), 1)
+		require.Len(t, result.GetRows(), 1)
+		var plan []struct {
+			ID string `json:"id"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &plan))
+		require.NotEmpty(t, plan)
+		return plan[0].ID
+	}
+
+	jsonOption := &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON}
+	plan := explain(statement, jsonOption, true)
+	require.Equal(t, "EXPLAIN FORMAT=tidb_json "+statement, plan.GetStatement())
+	require.NotEmpty(t, rootOperator(plan))
+
+	// The default plan stays the table TiDB has always returned.
+	text := explain(statement, nil, true)
+	require.Equal(t, "EXPLAIN "+statement, text.GetStatement())
+	require.Greater(t, len(text.GetColumnNames()), 1)
+
+	// A caller's own EXPLAIN is replanned in the format asked for rather than
+	// wrapped in a second one.
+	typed := explain("EXPLAIN FORMAT=brief "+statement, jsonOption, true)
+	require.Equal(t, "EXPLAIN FORMAT=tidb_json "+statement, typed.GetStatement())
+	require.NotEmpty(t, rootOperator(typed))
+
+	// Run on that statement reports the plan it returned, so the viewer draws it
+	// without explaining a second time.
+	ran := explain("EXPLAIN FORMAT=tidb_json "+statement, nil, false)
+	require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())
+	require.False(t, ran.GetQueryPlan().GetExecuted())
+	require.NotEmpty(t, rootOperator(ran))
+
+	// TiDB has no session setting that changes what a plain EXPLAIN returns, so
+	// its format is known to be text.
+	ranText := explain("EXPLAIN "+statement, nil, false)
+	require.Equal(t, v1pb.QueryOption_TEXT, ranText.GetQueryPlan().GetFormat())
 }

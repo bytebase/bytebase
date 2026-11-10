@@ -1,6 +1,35 @@
 {
   "add-or-remove-rules": "Thêm hoặc xóa quy tắc",
   "add-rules": "Thêm quy tắc",
+  "ai-review": {
+    "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
+    "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
+    "enable": {
+      "description": "Mỗi lần đánh giá sẽ gửi nguyên văn các câu lệnh tới nhà cung cấp AI, và có thể gửi lược đồ của các cơ sở dữ liệu đích cùng số liệu thống kê bảng của chúng. Tính năng này không đọc bất kỳ hàng dữ liệu nào trong cơ sở dữ liệu.",
+      "self": "Đánh giá thay đổi bằng AI"
+    },
+    "policy": {
+      "cannot-clear": "Vai trò của bạn không thể xóa chính sách, nên không thể để trống chính sách này.",
+      "description": "Chính sách này xác định những gì AI kiểm tra khi đánh giá thay đổi cơ sở dữ liệu. Nó áp dụng cho mọi dự án trong không gian làm việc và mỗi dự án có thể thêm chính sách riêng.",
+      "load-failed": "Không thể tải chính sách đánh giá.",
+      "none": "Chưa có chính sách đánh giá.",
+      "paused": "Chính sách này đang tạm dừng nên tính năng đánh giá bằng AI không sử dụng chính sách này.",
+      "placeholder": "Ví dụ:\nBáo cáo thay đổi lược đồ chặn ghi trên bảng có hơn 1 triệu hàng.\nMọi khóa ngoại đều cần chỉ mục trên các cột của nó.\nBảng mới cần có cột created_at và updated_at.",
+      "project-description": "Chính sách tùy chọn dành riêng cho dự án. Chính sách này được thêm vào chính sách không gian làm việc và được ưu tiên khi có xung đột.",
+      "project-none": "Chưa có chính sách dự án.",
+      "project-placeholder": "Ví dụ:\nKhông bao giờ xóa hàng khỏi bảng payments hoặc ledger.\nLưu số tiền trong cột DECIMAL, không dùng FLOAT hoặc DOUBLE.\nCột mới trên bảng users phải cho phép NULL hoặc có giá trị mặc định.",
+      "project-self": "Chính sách bổ sung của dự án",
+      "remove-only": "Bạn có thể xóa chính sách này nhưng không thể thay đổi nó. Hãy xóa hết nội dung để xóa chính sách.",
+      "self": "Chính sách đánh giá",
+      "standard-rules-hint": "Đánh giá bằng AI không lặp lại các quy tắc tiêu chuẩn và bỏ qua những quy tắc đang tắt. Để AI vẫn kiểm tra một quy tắc, hãy nêu rõ trong chính sách, ví dụ: \"Mọi câu lệnh UPDATE đều cần mệnh đề WHERE\".",
+      "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
+    },
+    "project-description": "Tính năng đánh giá bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",
+    "self": "Đánh giá bằng AI",
+    "set-for-workspace": "Được quản lý ở cấp không gian làm việc.",
+    "turn-on-ai": "Bật AI",
+    "view-workspace-setting": "Xem thiết lập AI của không gian làm việc"
+  },
   "attach-resource": {
     "change-resources": "Thay đổi tài nguyên đính kèm",
     "label": "Bạn có thể áp dụng chính sách đánh giá SQL cho môi trường hoặc dự án. Cơ sở dữ liệu sẽ sử dụng chính sách cấp dự án nếu có, hoặc quay lại chính sách cấp môi trường.",
@@ -70,6 +99,48 @@
     "starrocks": "StarRocks",
     "tidb": "TiDB",
     "trino": "Trino"
+  },
+  "finding-code": {
+    "dc101": "Xóa một ràng buộc",
+    "do101": "Xóa dữ liệu",
+    "do102": "Xóa một định nghĩa",
+    "do103": "Xóa người dùng, vai trò hoặc đối tượng bảo mật",
+    "nu101": "Phép so sánh với NULL không bao giờ đúng",
+    "om101": "Engine không hỗ trợ di chuyển trực tuyến",
+    "om102": "Chỉ thị gh-ost không hợp lệ",
+    "om103": "Thay đổi không phù hợp với di chuyển trực tuyến",
+    "om104": "gh-ost không thể đổi tên cột",
+    "om105": "Cơ sở dữ liệu sao lưu không tồn tại",
+    "om106": "Bảng không đáp ứng yêu cầu của gh-ost",
+    "pb101": "Engine không hỗ trợ sao lưu trước",
+    "pb102": "Thay đổi vượt quá giới hạn kích thước sao lưu",
+    "pb103": "Cơ sở dữ liệu hoặc schema sao lưu không tồn tại",
+    "pb104": "Thay đổi không có gì để sao lưu",
+    "pb105": "Các câu lệnh không thể dùng chung một bản sao lưu",
+    "pb106": "Bản sao lưu có thể đọc bảng khác",
+    "pb107": "Không thể sao lưu bảng",
+    "pb108": "Không thể sao lưu dạng câu lệnh này",
+    "pb109": "Bản sao lưu đọc đối tượng do thay đổi tạo ra",
+    "pk101": "Tạo bảng không có khóa chính",
+    "pk102": "Gỡ khóa chính của bảng",
+    "rn101": "Đổi tên bảng, view hoặc cột",
+    "sy101": "Câu lệnh không phân tích được",
+    "tr101": "Làm trống dữ liệu",
+    "wh101": "UPDATE hoặc DELETE không có mệnh đề WHERE",
+    "wt101": "Đối tượng không tồn tại",
+    "wt201": "Tên đã được sử dụng",
+    "wt301": "Đối tượng thuộc loại khác",
+    "wt401": "Câu lệnh dùng một tên hai lần",
+    "wt402": "Chưa chọn cơ sở dữ liệu hoặc schema",
+    "wt403": "Tên quá dài",
+    "wt404": "Tên là từ dành riêng",
+    "wt405": "Schema vẫn còn đối tượng",
+    "wt406": "Không thể thay đổi cột hệ thống",
+    "wt407": "Tên tham chiếu đến cơ sở dữ liệu khác",
+    "wt408": "Engine không chấp nhận dạng câu lệnh này",
+    "wt409": "Câu lệnh phải đứng đầu lô",
+    "wt410": "Trigger và bảng nằm ở các schema khác nhau",
+    "wt411": "Chỉ mục thuộc về một ràng buộc"
   },
   "input-then-press-enter": "Nhập giá trị sau đó nhấn enter để thêm",
   "level": {
@@ -729,6 +800,72 @@
   },
   "select-all": "Chọn tất cả",
   "select-review-rules": "Chọn quy tắc đánh giá SQL",
+  "standard-rules": {
+    "codes": "Mã",
+    "customize": {
+      "description": "Khi bị vô hiệu hóa, dự án này tuân theo các quy tắc tiêu chuẩn của không gian làm việc.",
+      "self": "Tùy chỉnh cho dự án này",
+      "view-workspace-rules": "Xem quy tắc của không gian làm việc"
+    },
+    "description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue. Các dự án không tùy chỉnh quy tắc sẽ tuân theo các quy tắc này.",
+    "engines": "Engine",
+    "load-failed": "Không thể tải các quy tắc tiêu chuẩn.",
+    "off": "Tắt",
+    "on": "Bật",
+    "project-description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue trong dự án này.",
+    "retry": "Thử lại",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "Báo cáo thao tác xóa ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE hoặc CHECK.",
+        "title": "Xóa ràng buộc"
+      },
+      "disallow-drop-object": {
+        "description": "Báo cáo thao tác xóa bất kỳ đối tượng nào, như bảng, cột, view, chỉ mục, schema hoặc cơ sở dữ liệu. Việc xóa ràng buộc được kiểm tra riêng.",
+        "title": "Xóa đối tượng"
+      },
+      "disallow-rename": {
+        "description": "Báo cáo thao tác đổi tên bảng, view hoặc cột.",
+        "title": "Đổi tên"
+      },
+      "disallow-truncate": {
+        "description": "Báo cáo các câu lệnh TRUNCATE.",
+        "title": "Làm trống bảng"
+      },
+      "online-migration": {
+        "description": "Báo cáo thay đổi yêu cầu di chuyển trực tuyến nhưng không đủ điều kiện.",
+        "title": "Điều kiện di chuyển trực tuyến"
+      },
+      "prior-backup": {
+        "description": "Báo cáo thay đổi bật sao lưu trước nhưng không thể thực hiện sao lưu.",
+        "title": "Khả năng sao lưu trước"
+      },
+      "require-is-null": {
+        "description": "Báo cáo = NULL hoặc <> NULL trong vị từ. Các so sánh này không bao giờ đúng. Hãy dùng IS NULL hoặc IS NOT NULL.",
+        "title": "So sánh NULL"
+      },
+      "require-primary-key": {
+        "description": "Báo cáo thay đổi tạo bảng không có khóa chính hoặc xóa khóa chính mà không thêm lại.",
+        "title": "Khóa chính"
+      },
+      "require-where": {
+        "description": "Báo cáo các câu lệnh UPDATE hoặc DELETE không có mệnh đề WHERE.",
+        "title": "Mệnh đề WHERE"
+      },
+      "syntax": {
+        "description": "Báo cáo các câu lệnh mà công cụ cơ sở dữ liệu không phân tích được. Các quy tắc khác chỉ kiểm tra SQL phân tích được, vì vậy tắt quy tắc này sẽ tắt mọi quy tắc tiêu chuẩn.",
+        "title": "Cú pháp"
+      },
+      "walk-through": {
+        "description": "Báo cáo các câu lệnh không hợp lệ với schema đã đồng bộ, chẳng hạn như tham chiếu đến bảng hoặc cột không tồn tại, đối tượng trùng lặp hoặc tham chiếu không hợp lệ.",
+        "title": "Mô phỏng schema"
+      }
+    },
+    "running": "Đã bật {{on}} trên {{total}} quy tắc",
+    "self": "Quy tắc tiêu chuẩn",
+    "supported-engines": "Engine được hỗ trợ: {{engines}}",
+    "syntax-off": "Tính năng kiểm tra cú pháp đang bị tắt nên không quy tắc tiêu chuẩn nào chạy. Hãy bật tính năng này để đánh giá các thay đổi.",
+    "workspace-rules-hidden": "Bạn không có quyền xem các quy tắc của không gian làm việc mà dự án này tuân theo."
+  },
   "template": {
     "bb-sql-review-dev": "Mẫu Cơ bản",
     "bb-sql-review-dev-desc": "Bảo vệ cơ bản để bảo vệ cơ sở dữ liệu khỏi những sai sót thường gặp.",
@@ -744,5 +881,19 @@
     "number-positive": "Nhập số dương cho {{rule}}.",
     "rule-required": "Chọn ít nhất một quy tắc.",
     "string-array-required": "Thêm ít nhất một giá trị cho {{rule}}."
+  },
+  "version-switch": {
+    "description": "Chỉ dành cho bản dev. Máy chủ chạy V1 cho dự án tắt toàn bộ quy tắc tiêu chuẩn, và chạy V2 cho các dự án còn lại. Trình duyệt này hiển thị các trang của phiên bản bạn chọn.",
+    "self": "Phiên bản đánh giá SQL",
+    "to-v1": {
+      "confirm": "Chuyển sang V1",
+      "description": "Thao tác này tắt mọi quy tắc tiêu chuẩn của workspace, nên kiểm tra kế hoạch sẽ chạy đánh giá SQL V1. Các dự án tùy chỉnh quy tắc tiêu chuẩn vẫn giữ nguyên.",
+      "title": "Chuyển sang đánh giá SQL V1?"
+    },
+    "to-v2": {
+      "confirm": "Chuyển sang V2",
+      "description": "Thao tác này bật mọi quy tắc tiêu chuẩn của workspace, nên đánh giá theo quy tắc tiêu chuẩn sẽ thay thế đánh giá SQL V1.",
+      "title": "Chuyển sang đánh giá SQL V2?"
+    }
   }
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/jackc/pgx/v5"
@@ -51,6 +52,9 @@ type Driver struct {
 
 	db        *sql.DB
 	sshClient *ssh.Client
+	// cloudSQLDialer refreshes its ephemeral certificate in the background until
+	// closed, so it lives and dies with the driver.
+	cloudSQLDialer *cloudsqlconn.Dialer
 	// connectionString is the connection string registered by pgx.
 	// Unregister connectionString if we don't need it.
 	connectionString string
@@ -64,12 +68,21 @@ func newDriver() db.Driver {
 
 // Open opens a Postgres driver.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	// A driver whose Open fails is discarded without a Close, so Open releases
+	// what it acquired itself.
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
+		}
+	}()
+
 	var pgxConnConfig *pgx.ConnConfig
 	var err error
 
 	switch config.DataSource.GetAuthenticationType() {
 	case storepb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
+		pgxConnConfig, err = d.getCloudSQLConnectionConfig(ctx, config)
 	case storepb.DataSource_AWS_RDS_IAM:
 		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
 	default:
@@ -94,12 +107,8 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 		d.sshClient = sshClient
 
-		pgxConnConfig.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
-			conn, err := sshClient.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			return &util.NoDeadlineConn{Conn: conn}, nil
+		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, addr)
 		}
 	}
 
@@ -131,6 +140,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 	}
 	d.connectionCtx = config.ConnectionContext
+	opened = true
 	return d, nil
 }
 
@@ -176,20 +186,15 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 		return nil, errors.Errorf("user must be set")
 	}
 
-	if config.DataSource.Host == "" {
-		return nil, errors.Errorf("host must be set")
-	}
-
-	if config.DataSource.Port == "" {
-		return nil, errors.Errorf("port must be set")
-	}
-
 	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
 		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s", config.DataSource.Host, config.DataSource.Port)
+	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
 	if config.DataSource.GetUseSsl() {
 		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
 	}
@@ -259,9 +264,11 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s",
-		conf.DataSource.Host, conf.DataSource.Port, conf.DataSource.Username, password,
-	)
+	hostPort, err := util.PGHostPort(conf.DataSource.Host, conf.DataSource.Port)
+	if err != nil {
+		return nil, err
+	}
+	dsn := fmt.Sprintf("%s user=%s password=%s", hostPort, util.QuotePGValue(conf.DataSource.Username), util.QuotePGValue(password))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -275,19 +282,20 @@ func getRDSConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx
 // refs:
 // https://cloud.google.com/sql/docs/postgres/connect-connectors
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/cloudsql/postgres/database-sql/cloudsql.go
-func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	d, err := util.GetGCPConnectionConfig(ctx, conf)
+func (d *Driver) getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) (*pgx.ConnConfig, error) {
+	dialer, err := util.GetGCPConnectionConfig(ctx, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "load gcp config failed")
 	}
+	d.cloudSQLDialer = dialer
 
-	dsn := fmt.Sprintf("user=%s", conf.DataSource.Username)
+	dsn := fmt.Sprintf("user=%s", util.QuotePGValue(conf.DataSource.Username))
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
 	config.DialFunc = func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return d.Dial(ctx, conf.DataSource.Host)
+		return dialer.Dial(ctx, conf.DataSource.Host)
 	}
 
 	config.DefaultQueryExecMode = pgx.QueryExecModeExec
@@ -299,9 +307,14 @@ func getCloudSQLConnectionConfig(ctx context.Context, conf db.ConnectionConfig) 
 func (d *Driver) Close(context.Context) error {
 	stdlib.UnregisterConnConfig(d.connectionString)
 	var err error
-	err = multierr.Append(err, d.db.Close())
+	if d.db != nil {
+		err = multierr.Append(err, d.db.Close())
+	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
+	}
+	if d.cloudSQLDialer != nil {
+		err = multierr.Append(err, d.cloudSQLDialer.Close())
 	}
 	return err
 }
@@ -829,12 +842,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
+				location := util.PgSessionLocation(conn)
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
@@ -843,7 +857,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 					return nil, err
 				}
 				if !queryContext.Explain {
-					r.QueryPlan = typedExplainPlan(statement)
+					r.QueryPlan = db.TypedExplainPlan(pgparser.DescribeExplain(statement))
 				}
 				return r, nil
 			}
@@ -876,17 +890,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
-}
-
-func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
-	format, executed, ok := pgparser.DescribeExplain(statement)
-	if !ok {
-		return nil
-	}
-	return &v1pb.QueryResult_QueryPlan{
-		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
-		Executed: executed,
-	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

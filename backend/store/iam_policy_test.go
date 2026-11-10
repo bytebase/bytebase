@@ -390,10 +390,11 @@ func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
 
 // A write must not publish what it just wrote into the cache. The advisory lock
 // ends with the commit, so two writers can commit in one order and reach the
-// cache in the other, and the loser's snapshot would then sit in a cache with no
-// expiry -- which is what permission checks read. Observed here without racing
-// goroutines: after a write, the row is changed out of band, and a read that
-// still saw the written value would prove the write had published it.
+// cache in the other, and the loser's snapshot would then sit in the cache
+// until the entry expires -- which is what permission checks read. Observed
+// here without racing goroutines: after a write, the row is changed out of
+// band, and a read that still saw the written value would prove the write had
+// published it.
 func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
 	t.Parallel()
 	const seedSQL = `

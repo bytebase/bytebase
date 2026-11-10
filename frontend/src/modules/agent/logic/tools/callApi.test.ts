@@ -1,4 +1,9 @@
+import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  PolicySchema,
+  PolicyType,
+} from "@/types/proto-es/v1/org_policy_service_pb";
 import { type SchemaInfo, schemas } from "./gen/openapi-index";
 
 const mocks = vi.hoisted(() => ({
@@ -7,6 +12,25 @@ const mocks = vi.hoisted(() => ({
   getRequestSchema: vi.fn(),
   getSchema: vi.fn(),
   refreshTokens: vi.fn(),
+  getDatabase: vi.fn(),
+  loadSubscription: vi.fn(),
+  hasFeature: vi.fn(),
+  fetchPolicyByParentAndType: vi.fn(),
+}));
+
+vi.mock("@/api", () => ({
+  databaseServiceClientConnect: { getDatabase: mocks.getDatabase },
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      workspaceResourceName: () => "workspaces/example",
+      loadSubscription: mocks.loadSubscription,
+      hasFeature: mocks.hasFeature,
+      fetchPolicyByParentAndType: mocks.fetchPolicyByParentAndType,
+    }),
+  },
 }));
 
 vi.mock("@/api/refreshToken", () => ({
@@ -19,7 +43,12 @@ vi.mock("./searchApi", () => ({
   getSchema: mocks.getSchema,
 }));
 
-import { __testOnly, callApi } from "./callApi";
+import {
+  __testOnly,
+  callApi,
+  dispatchPreparedApiCall,
+  prepareApiCall,
+} from "./callApi";
 
 const createResponse = ({
   status,
@@ -51,9 +80,337 @@ describe("callApi", () => {
     mocks.getRequestSchema.mockReset();
     mocks.getSchema.mockReset();
     mocks.refreshTokens.mockReset();
+    mocks.getDatabase.mockReset();
+    mocks.getDatabase.mockImplementation(async ({ name }) => ({
+      name,
+      project: "projects/target",
+    }));
+    mocks.loadSubscription.mockReset().mockResolvedValue({});
+    mocks.hasFeature.mockReset().mockReturnValue(true);
+    mocks.fetchPolicyByParentAndType.mockReset().mockResolvedValue(null);
     mocks.getEndpointPath.mockReturnValue("/bytebase.v1.SQLService/Query");
     mocks.getRequestSchema.mockReturnValue(undefined);
     mocks.getSchema.mockReturnValue(undefined);
+  });
+
+  test("prepares an exact canonical request without sending it", async () => {
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/UpdateProject"
+    );
+    const body = { project: { name: "projects/demo", title: "Before" } };
+
+    const result = await prepareApiCall({
+      operationId: "ProjectService/UpdateProject",
+      body,
+    });
+    body.project.title = "After";
+
+    expect(result).toEqual({
+      kind: "prepared",
+      call: {
+        operationId: "bytebase.v1.ProjectService.UpdateProject",
+        path: "/bytebase.v1.ProjectService/UpdateProject",
+        body: JSON.stringify({
+          project: { name: "projects/demo", title: "Before" },
+        }),
+      },
+    });
+    if (result.kind === "prepared") {
+      expect(Object.isFrozen(result.call)).toBe(true);
+    }
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test.each(["SQLService/Query", "bytebase.v1.SQLService.Query"])(
+    "defaults %s to 100 rows without rewriting SQL or mutating arguments",
+    async (operationId) => {
+      const body = {
+        name: "instances/example/databases/app",
+        statement: "SELECT * FROM accounts",
+      };
+
+      const result = await prepareApiCall({ operationId, body });
+
+      expect(result).toEqual({
+        kind: "prepared",
+        call: {
+          operationId: "bytebase.v1.SQLService.Query",
+          path: "/bytebase.v1.SQLService/Query",
+          body: JSON.stringify({ ...body, limit: 100 }),
+        },
+      });
+      expect(body).not.toHaveProperty("limit");
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    { limit: undefined, expected: 100 },
+    { limit: null, expected: 100 },
+    { limit: 1, expected: 1 },
+    { limit: 250, expected: 250 },
+    { limit: 0, expected: 0 },
+  ])(
+    "prepares query limit $limit as $expected",
+    async ({ limit, expected }) => {
+      const result = await prepareApiCall({
+        operationId: "SQLService/Query",
+        body: { statement: "SELECT * FROM accounts LIMIT 5", limit },
+      });
+
+      expect(result.kind).toBe("prepared");
+      if (result.kind !== "prepared") return;
+      expect(JSON.parse(result.call.body)).toEqual({
+        statement: "SELECT * FROM accounts LIMIT 5",
+        limit: expected,
+      });
+    }
+  );
+
+  test.each([
+    { workspace: 1000, project: 500, limit: undefined, expected: 500 },
+    { workspace: 30, project: 500, limit: undefined, expected: 30 },
+    { workspace: 1000, project: 30, limit: null, expected: 30 },
+    { workspace: 0, project: -1, limit: undefined, expected: 100 },
+    { workspace: 1000, project: 300, limit: 20, expected: 20 },
+    { workspace: 1000, project: 300, limit: 500, expected: 300 },
+    { workspace: 1000, project: 300, limit: 0, expected: 300 },
+    { workspace: 1000, project: 300, limit: -1, expected: 300 },
+    { workspace: 1000, project: 300, limit: "1000", expected: 300 },
+    { workspace: 1000, project: 300, limit: "0", expected: 300 },
+    { workspace: 1000, project: 300, limit: "20", expected: 20 },
+    { workspace: 0, project: -1, limit: 0, expected: 0 },
+  ])(
+    "prepares limit $limit as $expected for workspace $workspace and target project $project",
+    async ({ workspace, project, limit, expected }) => {
+      mocks.fetchPolicyByParentAndType.mockImplementation(
+        async ({ parentPath, policyType }) => {
+          if (policyType !== PolicyType.DATA_QUERY)
+            throw new Error("Wrong policy");
+          if (!["workspaces/example", "projects/target"].includes(parentPath)) {
+            throw new Error("Wrong policy scope");
+          }
+          return create(PolicySchema, {
+            policy: {
+              case: "queryDataPolicy",
+              value: {
+                maximumResultRows:
+                  parentPath === "workspaces/example" ? workspace : project,
+              },
+            },
+          });
+        }
+      );
+      const body = {
+        name: "instances/example/databases/app",
+        statement: "SELECT * FROM accounts LIMIT 5",
+        limit,
+      };
+
+      const result = await prepareApiCall({
+        operationId: "SQLService/Query",
+        body,
+      });
+
+      expect(result.kind).toBe("prepared");
+      if (result.kind !== "prepared") return;
+      expect(JSON.parse(result.call.body)).toEqual({
+        ...body,
+        limit: expected,
+      });
+      expect(body.limit).toBe(limit);
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["", "invalid", true, {}, 2147483648, 1.5])(
+    "rejects invalid query limit %j before approval",
+    async (limit) => {
+      const result = await prepareApiCall({
+        operationId: "SQLService/Query",
+        body: {
+          name: "instances/example/databases/app",
+          statement: "SELECT 1",
+          limit,
+        },
+      });
+
+      expect(result.kind).toBe("error");
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test("ignores stored policy caps when query policies are not enabled", async () => {
+    mocks.hasFeature.mockReturnValue(false);
+    mocks.fetchPolicyByParentAndType.mockRejectedValue(
+      new Error("Must not read policies")
+    );
+
+    const result = await prepareApiCall({
+      operationId: "SQLService/Query",
+      body: { name: "instances/example/databases/app", statement: "SELECT 1" },
+    });
+
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    expect(JSON.parse(result.call.body).limit).toBe(100);
+  });
+
+  test.each([
+    "instances/example/databases/app",
+    "projects/target/instances/example/databases/app",
+  ])("resolves policies for database resource %s", async (name) => {
+    mocks.fetchPolicyByParentAndType.mockResolvedValue(
+      create(PolicySchema, {
+        policy: { case: "queryDataPolicy", value: { maximumResultRows: 17 } },
+      })
+    );
+
+    const result = await prepareApiCall({
+      operationId: "SQLService/Query",
+      body: { name, statement: "SELECT 1" },
+    });
+
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    expect(JSON.parse(result.call.body)).toEqual({
+      name,
+      statement: "SELECT 1",
+      limit: 17,
+    });
+  });
+
+  test("snapshots query arguments before awaiting policy lookups", async () => {
+    let resolveSubscription!: (value: unknown) => void;
+    mocks.loadSubscription.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSubscription = resolve;
+      })
+    );
+    const body = {
+      name: "instances/example/databases/app",
+      statement: "SELECT 1",
+    };
+
+    const pending = prepareApiCall({ operationId: "SQLService/Query", body });
+    body.name = "instances/other/databases/other";
+    body.statement = "DELETE FROM accounts";
+    resolveSubscription({});
+    const result = await pending;
+
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    expect(JSON.parse(result.call.body)).toEqual({
+      name: "instances/example/databases/app",
+      statement: "SELECT 1",
+      limit: 100,
+    });
+  });
+
+  test.each(["subscription", "database", "policy"])(
+    "does not dispatch a query when its %s lookup fails",
+    async (lookup) => {
+      if (lookup === "subscription")
+        mocks.loadSubscription.mockResolvedValue(undefined);
+      if (lookup === "database")
+        mocks.getDatabase.mockRejectedValue(new Error("Unavailable"));
+      if (lookup === "policy")
+        mocks.fetchPolicyByParentAndType.mockResolvedValue(undefined);
+
+      const result = JSON.parse(
+        await callApi({
+          operationId: "SQLService/Query",
+          body: {
+            name: "instances/example/databases/app",
+            statement: "SELECT 1",
+          },
+        })
+      );
+
+      expect(result.error).toMatch(/Failed to prepare/);
+      expect(mocks.fetch).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["AdminExecute", "Export"])(
+    "does not add a query limit to SQLService/%s",
+    async (method) => {
+      mocks.getEndpointPath.mockReturnValue(
+        `/bytebase.v1.SQLService/${method}`
+      );
+      const body = { statement: "SELECT * FROM accounts" };
+
+      const result = await prepareApiCall({
+        operationId: `SQLService/${method}`,
+        body,
+      });
+
+      expect(result.kind).toBe("prepared");
+      if (result.kind !== "prepared") return;
+      expect(JSON.parse(result.call.body)).toEqual(body);
+    }
+  );
+
+  test("dispatches the prepared payload without resolving the operation again", async () => {
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/UpdateProject"
+    );
+    const result = await prepareApiCall({
+      operationId: "ProjectService/UpdateProject",
+      body: { project: { name: "projects/demo", title: "Before" } },
+    });
+    expect(result.kind).toBe("prepared");
+    if (result.kind !== "prepared") return;
+    mocks.getEndpointPath.mockReturnValue(
+      "/bytebase.v1.ProjectService/DeleteProject"
+    );
+    mocks.fetch.mockResolvedValue(createResponse({ status: 200, body: {} }));
+
+    await dispatchPreparedApiCall(result.call);
+
+    expect(mocks.getEndpointPath).toHaveBeenCalledTimes(1);
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/bytebase.v1.ProjectService/UpdateProject"),
+      expect.objectContaining({ body: result.call.body })
+    );
+  });
+
+  test("returns preparation failures as tool errors", async () => {
+    mocks.getEndpointPath.mockReturnValue(undefined);
+
+    const result = await prepareApiCall({
+      operationId: "MissingService/Write",
+    });
+
+    expect(result).toEqual({
+      kind: "error",
+      result: JSON.stringify({
+        error:
+          "Unknown operation: MissingService/Write. Use search_api to find valid operations.",
+      }),
+    });
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("rejects malformed tool arguments without calling the API", async () => {
+    const result = await prepareApiCall({ operationId: 42 as never });
+
+    expect(result.kind).toBe("error");
+    expect(mocks.getEndpointPath).not.toHaveBeenCalled();
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  test("returns request serialization errors as tool errors", async () => {
+    const body: Record<string, unknown> = {};
+    body.self = body;
+
+    const result = await prepareApiCall({
+      operationId: "SQLService/Query",
+      body,
+    });
+
+    expect(result.kind).toBe("error");
+    expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
   test("refreshes once and retries unauthenticated requests", async () => {
@@ -95,7 +452,7 @@ describe("callApi", () => {
           "Content-Type": "application/json",
           "Connect-Protocol-Version": "1",
         },
-        body: JSON.stringify({ statement: "SELECT 1" }),
+        body: JSON.stringify({ statement: "SELECT 1", limit: 100 }),
       })
     );
   });

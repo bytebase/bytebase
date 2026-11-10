@@ -38,3 +38,42 @@ func TestEngineSupportSDLExport(t *testing.T) {
 		})
 	}
 }
+
+func TestEngineSupportSQLReview(t *testing.T) {
+	tests := []struct {
+		engine storepb.Engine
+		want   bool
+	}{
+		{storepb.Engine_POSTGRES, true},
+		{storepb.Engine_MYSQL, true},
+		{storepb.Engine_BIGQUERY, true},
+		{storepb.Engine_SPANNER, false},
+		{storepb.Engine_MONGODB, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.engine.String(), func(t *testing.T) {
+			require.Equal(t, tt.want, EngineSupportSQLReview(tt.engine))
+		})
+	}
+}
+
+// The plan-check executor reports "Statement advise is not supported" and skips
+// SQL review entirely when this gate is false, so every engine with advisor
+// rules must be listed here.
+func TestEngineSupportStatementAdvise(t *testing.T) {
+	tests := []struct {
+		engine storepb.Engine
+		want   bool
+	}{
+		{storepb.Engine_POSTGRES, true},
+		{storepb.Engine_MYSQL, true},
+		{storepb.Engine_BIGQUERY, true},
+		{storepb.Engine_SPANNER, false},
+		{storepb.Engine_MONGODB, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.engine.String(), func(t *testing.T) {
+			require.Equal(t, tt.want, EngineSupportStatementAdvise(tt.engine))
+		})
+	}
+}

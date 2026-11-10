@@ -107,6 +107,18 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
+func TestGetQuerySpan_UnsyncedDatabase(t *testing.T) {
+	_, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
+		GetDatabaseMetadataFunc: func(context.Context, string, string) (string, *model.DatabaseMetadata, error) {
+			return "", nil, nil
+		},
+		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
+			return []string{"DB1"}, nil
+		},
+	}, base.Statement{Text: "SELECT * FROM T1"}, "DB1", "PUBLIC", false)
+	require.ErrorContains(t, err, `database metadata for database "DB1" not found (database not synced)`)
+}
+
 // TestGetQuerySpan_PivotFailsClosed locks the PIVOT/UNPIVOT fail-closed
 // behavior: until pivot projection lineage is implemented, GetQuerySpan must
 // return an explicit error for pivoted table sources — never silently resolve

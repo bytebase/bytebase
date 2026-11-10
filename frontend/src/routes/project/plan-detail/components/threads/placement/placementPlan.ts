@@ -8,11 +8,12 @@ import {
 import type { PlacementBudgets } from "./budgets";
 import {
   anchorId,
+  anchorLineRange,
   type PairAnchor,
   type Placement,
   trivialPlacement,
   UNAVAILABLE,
-  wholeLineRange,
+  UNAVAILABLE_SIZE_LIMIT,
 } from "./place";
 
 // One saved/current sheet pair to diff, with the anchors that map through it.
@@ -51,6 +52,8 @@ export interface PlacementPlanInput {
   readonly sizeOf: (sheetName: string) => bigint | undefined;
   // Whether the cache holds the sheet's complete content.
   readonly isComplete: (sheetName: string) => boolean;
+  // Whether the cached preview reached the API's character cutoff.
+  readonly isCappedPreview: (sheetName: string) => boolean;
   readonly budgets: Pick<
     PlacementBudgets,
     "maxSheets" | "maxBytesPerSheet" | "maxTotalBytes"
@@ -102,7 +105,7 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
       return;
     }
     // `trivialPlacement` returned undefined, so both are present.
-    const range = wholeLineRange(anchor);
+    const range = anchorLineRange(anchor);
     if (!range || !targetSha256) return;
     const key = pairKey(anchor.spec, anchor.sheetSha256, targetSha256);
     let candidate = candidates.get(key);
@@ -133,9 +136,12 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
   const unknownSizes = new Set<string>();
   const fetchSet = new Set<string>();
   let totalBytes = input.spentBytes ?? 0n;
-  const settleUnavailable = (candidate: CandidatePair) => {
+  const settleUnavailable = (
+    candidate: CandidatePair,
+    placement: Placement = UNAVAILABLE
+  ) => {
     for (const names of candidate.comments.values()) {
-      for (const name of names) settled.set(name, UNAVAILABLE);
+      for (const name of names) settled.set(name, placement);
     }
   };
 
@@ -155,7 +161,10 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
         unknown.push(name);
         continue;
       }
-      if (size > BigInt(input.budgets.maxBytesPerSheet)) {
+      if (
+        size > BigInt(input.budgets.maxBytesPerSheet) ||
+        input.isCappedPreview(name)
+      ) {
         unavailable = true;
         continue;
       }
@@ -176,7 +185,10 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
       fetchSet.size + pairFetches.length > input.budgets.maxSheets ||
       totalBytes + pairBytes > BigInt(input.budgets.maxTotalBytes)
     ) {
-      settleUnavailable(candidate);
+      settleUnavailable(
+        candidate,
+        unavailable ? UNAVAILABLE_SIZE_LIMIT : UNAVAILABLE
+      );
       continue;
     }
     for (const name of pairFetches) {

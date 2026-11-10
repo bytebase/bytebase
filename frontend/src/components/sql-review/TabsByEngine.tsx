@@ -93,7 +93,7 @@ export function TabsByEngine({
                   {engineParts(engine).subtitle}
                 </span>
               )}
-              <span className="text-xs px-1 py-0.5 rounded-full bg-control-bg-hover text-main ml-1">
+              <span className="text-xs px-1 py-0.5 rounded-xs bg-control-bg-hover text-main ml-1">
                 {ruleMap.size}
               </span>
             </div>

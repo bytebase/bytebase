@@ -52,6 +52,41 @@ func TestGetTableDefinitionWithCheckConstraint(t *testing.T) {
 	require.NotContains(t, got, `\'`)
 }
 
+func TestGetTableDefinitionWithSystemVersioning(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Name: "explicit_period",
+		Columns: []*metadatapb.ColumnMetadata{
+			{Name: "id", Type: "int", Nullable: true, Default: "NULL"},
+			{Name: "valid_from", Type: "timestamp(6)", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW START"}},
+			{Name: "valid_to", Type: "timestamp(6)", Generation: &metadatapb.GenerationMetadata{Type: metadatapb.GenerationMetadata_TYPE_STORED, Expression: "ROW END"}},
+		},
+		Engine:        "InnoDB",
+		Charset:       "utf8mb4",
+		Collation:     "utf8mb4_general_ci",
+		Comment:       "versioned",
+		CreateOptions: "WITH SYSTEM VERSIONING",
+	}
+
+	got, err := GetTableDefinition("", table, nil)
+	require.NoError(t, err)
+
+	want := "--\n" +
+		"-- Table structure for `explicit_period`\n" +
+		"--\n" +
+		"CREATE TABLE `explicit_period` (\n" +
+		"  `id` int DEFAULT NULL,\n" +
+		"  `valid_from` timestamp(6) GENERATED ALWAYS AS ROW START NOT NULL,\n" +
+		"  `valid_to` timestamp(6) GENERATED ALWAYS AS ROW END NOT NULL,\n" +
+		"  PERIOD FOR SYSTEM_TIME (`valid_from`, `valid_to`)\n" +
+		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='versioned' WITH SYSTEM VERSIONING;\n\n"
+	require.Equal(t, want, got)
+
+	// The schema-text diff path loads a dump with the omni MySQL loader. Loading the
+	// table unversioned would let the diff recreate it without history, so it must fail.
+	_, err = GetDatabaseMetadata(got)
+	require.Error(t, err)
+}
+
 func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
 	function := &metadatapb.FunctionMetadata{
 		Name: "f1",
@@ -93,6 +128,18 @@ func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
 		"END;;\n" +
 		"DELIMITER ;\n\n"
 	require.Equal(t, want, got)
+}
+
+func TestGetDatabaseDefinitionSkipsEventWithoutDefinition(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "db",
+		Schemas: []*metadatapb.SchemaMetadata{{Events: []*metadatapb.EventMetadata{{Name: "e"}}}},
+	}
+	for _, sdl := range []bool{false, true} {
+		definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: sdl}, metadata)
+		require.NoError(t, err)
+		require.Empty(t, definition, "SDLFormat=%t", sdl)
+	}
 }
 
 func TestRenderColumnDefaultBitLiteral(t *testing.T) {

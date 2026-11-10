@@ -1,0 +1,11 @@
+Limit  (cost=1096.94..1096.95 rows=1 width=11)
+  ->  Sort  (cost=1096.94..1096.95 rows=1 width=11)
+        Sort Key: (sum(o.total)) DESC
+        ->  HashAggregate  (cost=1096.92..1096.93 rows=1 width=11)
+              Group Key: c.country
+              ->  Hash Join  (cost=140.50..1088.78 rows=1629 width=7)
+                    Hash Cond: (o.customer_id = c.id)
+                    ->  Seq Scan on orders o  (cost=0.00..944.00 rows=1629 width=8)
+                          Filter: (total > 880)
+                    ->  Hash  (cost=78.00..78.00 rows=5000 width=7)
+                          ->  Seq Scan on customers c  (cost=0.00..78.00 rows=5000 width=7)

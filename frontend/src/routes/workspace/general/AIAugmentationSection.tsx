@@ -80,9 +80,9 @@ export const AIAugmentationSection = forwardRef<
   AIAugmentationSectionProps
 >(function AIAugmentationSection({ title, onDirtyChange }, ref) {
   const { t } = useTranslation();
-  const containerRef = useRef<HTMLElement>(null);
 
   const { isSaaSMode } = useServerState();
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const canEdit = hasWorkspacePermissionV2("bb.settings.set") && !isSaaSMode;
 
   const settingsByName = useAppStore((s) => s.settingsByName);
@@ -128,13 +128,6 @@ export const AIAugmentationSection = forwardRef<
       .getOrFetchSettingByName(Setting_SettingName.AI, true);
   }, []);
 
-  // Scroll into view on mount.
-  useEffect(() => {
-    if (location.hash === "#ai-assistant" && containerRef.current) {
-      containerRef.current.scrollIntoView({ block: "nearest" });
-    }
-  }, []);
-
   useProductIntro({
     id: AI_ASSISTANT_PRODUCT_INTRO,
     title: t("settings.general.workspace.ai-assistant.self"),
@@ -165,7 +158,8 @@ export const AIAugmentationSection = forwardRef<
     const init = getInitialState();
     const paths: string[] = [];
     if (state.enabled !== init.enabled) paths.push("value.ai.enabled");
-    if (state.provider !== init.provider) paths.push("value.ai.provider");
+    if (!aiSetting || state.provider !== init.provider)
+      paths.push("value.ai.provider");
     if (state.endpoint !== init.endpoint) paths.push("value.ai.endpoint");
     if (state.model !== init.model) paths.push("value.ai.model");
     if (state.apiKey || state.provider !== init.provider)
@@ -275,8 +269,7 @@ export const AIAugmentationSection = forwardRef<
 
   return (
     <FormSection
-      id="ai"
-      ref={containerRef}
+      id={AI_ASSISTANT_PRODUCT_INTRO}
       title={title}
       data-product-intro-target={AI_ASSISTANT_PRODUCT_INTRO}
     >
@@ -284,12 +277,20 @@ export const AIAugmentationSection = forwardRef<
         <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <FormFieldGroup>
             {isSaaSMode ? (
-              <Alert
-                variant="info"
-                description={t(
-                  "settings.general.workspace.ai-assistant.enabled-in-saas"
-                )}
-              />
+              aiEnabled !== undefined && (
+                <Alert
+                  variant="info"
+                  description={
+                    aiEnabled
+                      ? t(
+                          "settings.general.workspace.ai-assistant.available-in-saas"
+                        )
+                      : t(
+                          "settings.general.workspace.ai-assistant.unavailable-in-saas"
+                        )
+                  }
+                />
+              )
             ) : (
               <>
                 {/* Enable toggle */}
@@ -309,10 +310,7 @@ export const AIAugmentationSection = forwardRef<
                   description={
                     <>
                       {t("settings.general.workspace.ai-assistant.description")}{" "}
-                      <LearnMoreLink
-                        href="https://docs.bytebase.com/ai-assistant?source=console"
-                        className="text-accent text-sm ml-1"
-                      />
+                      <LearnMoreLink href="https://docs.bytebase.com/ai-assistant?source=console" />
                     </>
                   }
                 />

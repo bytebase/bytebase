@@ -1,0 +1,19 @@
+== Physical Plan ==
+* Project (3)
++- * ColumnarToRow (2)
+   +- Scan parquet spark_catalog.default.events (1)
+
+
+(1) Scan parquet spark_catalog.default.events
+Output [3]: [id#91, kind#92, day#93]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/events/day=2026-10-27]
+PartitionFilters: [isnotnull(day#93), (day#93 = 2026-10-27)]
+ReadSchema: struct<id:int,kind:string>
+
+(2) ColumnarToRow [codegen id : 1]
+Input [3]: [id#91, kind#92, day#93]
+
+(3) Project [codegen id : 1]
+Output [2]: [id#91, kind#92]
+Input [3]: [id#91, kind#92, day#93]

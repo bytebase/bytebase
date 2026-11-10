@@ -94,26 +94,21 @@ test.describe("Vertical display preserves the admin-mode dark theme", () => {
       "SELECT emp_no, first_name, last_name FROM employee LIMIT 3;",
     );
 
-    // Wait for the result panel to render (a "Vertical display" toggle
-    // only appears once a result is on screen).
-    await page
-      .getByText("Vertical display", { exact: true })
-      .first()
-      .waitFor({ timeout: 15_000 });
-
-    // Find the Vertical display switch in the result panel header.
-    // The Switch primitive (Base UI) renders as `role="switch"` — we
-    // scope to the row containing the "Vertical display" label so we
-    // don't accidentally toggle the noSQL "table-view" switch above it.
-    const verticalRow = page
-      .locator("div.flex.items-center.gap-x-1")
-      .filter({ hasText: "Vertical display" })
+    // The result toolbar's view switch (Table / Vertical display / Plan,
+    // #21646) appears once a result is on screen. Each option is a label
+    // wrapping a visually hidden radio, so click the label.
+    const viewSwitch = page
+      .getByRole("radiogroup", { name: "Result view mode" })
       .first();
-    await expect(verticalRow).toBeVisible({ timeout: 10_000 });
-    const verticalSwitch = verticalRow.getByRole("switch");
-    await expect(verticalSwitch).toBeVisible({ timeout: 5000 });
-    await verticalSwitch.click();
-    await page.waitForTimeout(500);
+    await expect(viewSwitch).toBeVisible({ timeout: 15_000 });
+    const verticalOption = viewSwitch
+      .locator("label")
+      .filter({ hasText: "Vertical display" });
+    await verticalOption.click();
+    await expect(verticalOption.getByRole("radio")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
 
     // After toggle, the result body switches from VirtualDataTable to
     // VirtualDataBlock. Each VirtualDataBlock row is wrapped in a

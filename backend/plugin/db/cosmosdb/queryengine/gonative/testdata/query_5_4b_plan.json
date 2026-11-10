@@ -1,0 +1,30 @@
+{
+    "partitionedQueryExecutionInfoVersion": 2,
+    "queryInfo": {
+        "distinctType": "None",
+        "top": null,
+        "offset": null,
+        "limit": null,
+        "orderBy": [],
+        "orderByExpressions": [],
+        "groupByExpressions": [],
+        "groupByAliases": [],
+        "aggregates": [
+            "Average"
+        ],
+        "groupByAliasToAggregateType": {},
+        "rewrittenQuery": "SELECT VALUE [{\"item\": {\"sum\": SUM(StringToNumber(c.population)), \"count\": COUNT(StringToNumber(c.population))}}]\nFROM c",
+        "hasSelectValue": true,
+        "dCountInfo": null,
+        "hasNonStreamingOrderBy": false
+    },
+    "queryRanges": [
+        {
+            "min": "",
+            "max": "FF",
+            "isMinInclusive": true,
+            "isMaxInclusive": false
+        }
+    ],
+    "hybridSearchQueryInfo": null
+}

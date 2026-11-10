@@ -39,7 +39,7 @@ func classifyQueryType(node ast.Node, allSystems bool) base.QueryType {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt,
 		*ast.BulkInsertStmt, *ast.InsertBulkStmt, *ast.CopyIntoStmt,
 		*ast.ReadtextStmt, *ast.WritetextStmt, *ast.UpdatetextStmt,
-		*ast.ExecStmt, *ast.ReceiveStmt, *ast.PredictStmt:
+		*ast.ExecStmt, *ast.ReceiveStmt:
 		return base.DML
 
 	// DDL statements.

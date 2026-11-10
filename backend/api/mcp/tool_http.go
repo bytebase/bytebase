@@ -51,7 +51,7 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 	// Per-request bound via the context (not http.Client.Timeout, whose cancel
 	// machinery only reaches the standard transport; the in-memory transport
 	// honors context cancellation).
-	ctx, cancel := context.WithTimeout(ctx, internalAPITimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.internalAPICallTimeout())
 	defer cancel()
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, internalAPIBaseURL+path, bytes.NewReader(bodyBytes))
@@ -104,6 +104,14 @@ func (s *Server) apiRequest(ctx context.Context, path string, body any) (*apiRes
 // internalAPITimeout bounds one internal API call, matching the 30s
 // http.Client timeout of the retired loopback transport.
 const internalAPITimeout = 30 * time.Second
+
+// internalAPICallTimeout returns the effective bound, allowing tests to override.
+func (s *Server) internalAPICallTimeout() time.Duration {
+	if s.internalAPITimeoutOverride > 0 {
+		return s.internalAPITimeoutOverride
+	}
+	return internalAPITimeout
+}
 
 // newInternalAPIClient builds the HTTP client for the private transport. Its
 // RoundTripper dispatches directly to the internal handler chain in memory, so

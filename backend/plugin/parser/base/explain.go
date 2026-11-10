@@ -93,6 +93,16 @@ var ErrExplainAnalyzeExecutes = errors.New("EXPLAIN ANALYZE executes the stateme
 // ignoring leading comments and whitespace. It stands in for an AST check on an
 // engine whose parser cannot answer, which is enough to keep such an engine from
 // planning a plan.
+//
+// A block comment holding another one is read as no keyword at all, because
+// which statement follows it depends on the engine and this function has none
+// to ask. PostgreSQL, SQL Server, Snowflake and Spark nest them, so in
+// `/* /* */ EXPLAIN */ SELECT ssn FROM t` the EXPLAIN is still inside the
+// comment and the statement is the SELECT. MySQL and Oracle end the comment at
+// the first `*/`, so in `/* /* */ SELECT '*/ EXPLAIN', ssn FROM t` the
+// statement is that SELECT and the EXPLAIN is inside a string. Either reading
+// hands the other dialect a statement that returns rows, and callers stand work
+// down for a plan — masking is one — so neither is safe to guess.
 func StartsWithExplain(statement string) bool {
 	s := statement
 	for {
@@ -105,8 +115,8 @@ func StartsWithExplain(statement string) bool {
 			}
 			s = rest
 		case strings.HasPrefix(s, "/*"):
-			_, rest, found := strings.Cut(s[2:], "*/")
-			if !found {
+			rest, closed := pastBlockComment(s)
+			if !closed {
 				return false
 			}
 			s = rest
@@ -124,4 +134,24 @@ func StartsWithExplain(statement string) bool {
 			return c != '_' && c != '$' && (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c < 0x80
 		}
 	}
+}
+
+// pastBlockComment returns what follows the block comment opening s, and
+// reports whether it could be read at all. A comment left open cannot be, and
+// neither can one holding another `/*`: see StartsWithExplain for why that is
+// a question about the engine rather than about the text.
+//
+// Whichever delimiter comes first decides, one position at a time, because the
+// two can overlap: the second `/*` of `/*/*/` ends where the first `*/` begins,
+// so searching for the closer and then looking back for an opener finds none.
+func pastBlockComment(s string) (string, bool) {
+	for at := len("/*"); at < len(s); at++ {
+		switch {
+		case strings.HasPrefix(s[at:], "/*"):
+			return "", false
+		case strings.HasPrefix(s[at:], "*/"):
+			return s[at+len("*/"):], true
+		}
+	}
+	return "", false
 }

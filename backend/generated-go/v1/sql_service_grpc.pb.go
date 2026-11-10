@@ -58,7 +58,8 @@ type SQLServiceClient interface {
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(ctx context.Context, in *GetQueryHistoryRequest, opts ...grpc.CallOption) (*QueryHistory, error)
 	// Exports query results to a file format.
-	// Permissions required: bb.databases.get
+	// Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+	// An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 }
 
@@ -167,7 +168,8 @@ type SQLServiceServer interface {
 	// Permissions required: None (only returns the caller's own query history)
 	GetQueryHistory(context.Context, *GetQueryHistoryRequest) (*QueryHistory, error)
 	// Exports query results to a file format.
-	// Permissions required: bb.databases.get
+	// Permissions required: bb.databases.get, and bb.sql.export on the data the statement reads.
+	// An active access grant with export=true for the statement satisfies bb.sql.export on its target databases.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
 }

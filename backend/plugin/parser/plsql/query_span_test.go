@@ -219,6 +219,43 @@ func TestGetQuerySpanRefusesSystemTableWithLink(t *testing.T) {
 	require.Equal(t, base.Select, span.Type)
 }
 
+func TestGetQuerySpanParenthesizedQuery(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name:    "PUBLIC",
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "T", Columns: []*metadatapb.ColumnMetadata{{Name: "A"}, {Name: "B"}}}}}},
+	}
+	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+	gCtx := base.GetQuerySpanContext{
+		InstanceID:                    instanceIDA,
+		GetDatabaseMetadataFunc:       databaseMetadataGetter,
+		ListDatabaseNamesFunc:         databaseNamesLister,
+		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
+	}
+	columnA := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "A"}
+	columnB := base.ColumnResource{Database: "PUBLIC", Table: "T", Column: "B"}
+	tests := []struct {
+		statement string
+		want      base.SourceColumnSet
+	}{
+		{statement: "(SELECT a FROM t)", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) ORDER BY a", want: base.SourceColumnSet{columnA: true}},
+		{statement: "((SELECT a FROM t)) ORDER BY 1", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) FETCH FIRST 5 ROWS ONLY", want: base.SourceColumnSet{columnA: true}},
+		{statement: "WITH w AS (SELECT a FROM t) (SELECT a FROM w)", want: base.SourceColumnSet{columnA: true}},
+		{statement: "(SELECT a FROM t) UNION (SELECT b FROM t) ORDER BY 1", want: base.SourceColumnSet{columnA: true, columnB: true}},
+		{statement: "SELECT a FROM t EXCEPT SELECT b FROM t", want: base.SourceColumnSet{columnA: true, columnB: true}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			span, err := GetQuerySpan(context.TODO(), gCtx, base.Statement{Text: tc.statement}, "PUBLIC", "", false)
+			require.NoError(t, err)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, "A", span.Results[0].Name)
+			require.Equal(t, tc.want, span.Results[0].SourceColumns)
+		})
+	}
+}
+
 func TestGetAccessTables(t *testing.T) {
 	tests := []struct {
 		statement string

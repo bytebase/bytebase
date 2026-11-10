@@ -30,10 +30,8 @@ func init() {
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diags := diagnostics.Analyze(statement)
 	out := make([]base.Diagnostic, 0, len(diags))
-	// Re-derive line:column from the byte offset so the column is rune-based
-	// (the position that base.ConvertSyntaxErrorToDiagnostic expects). omni's
-	// own Range.Column is byte-based, so we deliberately use Offset instead to
-	// keep multibyte input positions correct — mirroring the Trino diagnose.go.
+	// Re-derive line:column from the byte offset so the position matches what
+	// base.ConvertSyntaxErrorToDiagnostic expects, mirroring the Trino diagnose.go.
 	mapper := base.NewByteOffsetPositionMapper(statement)
 	for _, d := range diags {
 		syntaxErr := &base.SyntaxError{

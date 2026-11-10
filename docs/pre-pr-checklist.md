@@ -263,4 +263,5 @@ Before running `gh pr create`:
 - [ ] All checks above passed or were correctly skipped
 - [ ] PR description clearly describes what changed and why
 - [ ] Breaking changes are labeled and documented (if applicable)
+- [ ] Diff, commit messages, and PR text contain no [customer information](../AGENTS.md#customer-information)
 - [ ] No unrelated files are staged

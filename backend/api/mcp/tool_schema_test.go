@@ -221,7 +221,12 @@ func TestGetSchema_Summary(t *testing.T) {
 	require.Equal(t, "users", section.Tables[1].Name)
 	// Summary mode has no column details but includes column count.
 	require.Equal(t, 2, section.Tables[0].ColumnCount)
-	require.Equal(t, int64(182394), section.Tables[0].RowCount)
+	require.Equal(t, int64(182394), section.Tables[0].RowCountEstimate)
+	// Claude Code reads the structured result alone, so the key says it is an estimate.
+	serialized, err := json.Marshal(structured)
+	require.NoError(t, err)
+	require.Contains(t, string(serialized), `"rowCountEstimate":182394`)
+	require.NotContains(t, string(serialized), `"rowCount"`)
 	require.Empty(t, section.Tables[0].Columns)
 	// Views sorted alphabetically.
 	require.Equal(t, []string{"active_users", "recent_orders"}, section.Views)
@@ -381,6 +386,7 @@ func TestGetSchema_TableImpliesDetails(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.False(t, result.IsError)
+	require.Contains(t, result.Content[0].(*mcpsdk.TextContent).Text, "Table: orders (row count estimate 182394, ")
 
 	output, ok := structured.(*SchemaOutput)
 	require.True(t, ok)
@@ -723,7 +729,7 @@ func TestGetSchema_PermissionDenied(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"message": "permission denied",
+				"message": `user does not have permission "bb.databases.getSchema"`,
 				"code":    "PERMISSION_DENIED",
 			})
 			return
@@ -741,6 +747,7 @@ func TestGetSchema_PermissionDenied(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.databases.getSchema")
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 func TestGetSchema_InvalidIncludeValue(t *testing.T) {

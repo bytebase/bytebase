@@ -359,7 +359,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 // - Otherwise, creates a new workspace with the user as admin.
 func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.SignupRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
-	email := normalizeEmail(request.Email)
+	email := common.NormalizeEmail(request.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email must be set"))
 	}
@@ -641,7 +641,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	email := normalizeEmail(request.Email)
+	email := common.NormalizeEmail(request.Email)
 	// An invalid-syntax email can never be an account; reject it before the
 	// claim with the same error a wrong password gets.
 	if !common.IsValidEmail(email) {
@@ -1318,11 +1318,12 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 		settings = append(settings, store.AdditionalSetting{
 			Name: storepb.SettingName_AI,
 			Payload: &storepb.AISetting{
-				Enabled:  true,
-				Provider: storepb.AISetting_GEMINI,
-				ApiKey:   geminiAPIKey,
-				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
-				Model:    "gemini-3.7-flash",
+				Enabled:          true,
+				Provider:         storepb.AISetting_GEMINI,
+				ApiKey:           geminiAPIKey,
+				Endpoint:         "https://generativelanguage.googleapis.com/v1beta",
+				Model:            "gemini-3.7-flash",
+				SqlReviewEnabled: true,
 			},
 		})
 	}

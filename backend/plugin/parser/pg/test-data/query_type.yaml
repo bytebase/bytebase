@@ -129,7 +129,7 @@
     sourcecolumns: []
     predicatecolumns: []
 - description: Explain
-  statement: EXPLAIN SELECT * FROM t;
+  statement: EXPLAIN SELECT * FROM t1;
   defaultDatabase: db
   metadata: |-
     {
@@ -185,7 +185,12 @@
   querySpan:
     type: 2
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
     predicatecolumns: []
 - description: Explain Analyze
   statement: EXPLAIN ANALYZE SELECT * FROM t1;
@@ -275,7 +280,12 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
     predicatecolumns: []
 - description: DELETE statement
   statement: DELETE FROM t WHERE id > 100;
@@ -300,7 +310,12 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
     predicatecolumns: []
 - description: MERGE statement
   statement: MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.value = source.value;
@@ -625,7 +640,12 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
     predicatecolumns: []
 - description: EXPLAIN ANALYZE executes MERGE
   statement: EXPLAIN ANALYZE MERGE INTO t1 USING t2 ON t1.a = t2.a WHEN NOT MATCHED THEN INSERT (a) VALUES (t2.a);
@@ -662,7 +682,17 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
     predicatecolumns: []
 - description: EXPLAIN ANALYZE executes a data-modifying CTE
   statement: EXPLAIN ANALYZE WITH i AS (INSERT INTO t1 (a) VALUES ('1') RETURNING a) SELECT count(*) FROM i;
@@ -699,5 +729,10 @@
   querySpan:
     type: 5
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
     predicatecolumns: []

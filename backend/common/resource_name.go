@@ -4,6 +4,7 @@ package common
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,15 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+var resourceIDPattern = regexp.MustCompile("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")
+
+// IsValidResourceID reports whether resourceID can name a new resource, such
+// as an instance or a project: 1 to 63 lowercase letters, digits and dashes,
+// starting with a letter and not ending with a dash.
+func IsValidResourceID(resourceID string) bool {
+	return resourceIDPattern.MatchString(resourceID)
+}
 
 // nolint:revive
 const (

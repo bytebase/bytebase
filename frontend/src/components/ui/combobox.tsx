@@ -341,6 +341,8 @@ export function Combobox(props: ComboboxProps) {
       <button
         key={option.value}
         type="button"
+        role="option"
+        aria-selected={isSelected}
         disabled={option.disabled}
         data-selected={isSelected || undefined}
         className={cn(
@@ -414,26 +416,39 @@ export function Combobox(props: ComboboxProps) {
         className="h-7"
       />
       <div className="px-2 pb-2">
-        {filteredGroups.every((g) => g.options.length === 0) ? (
-          noResultsContent !== undefined ? (
-            <div className="p-3">{noResultsContent}</div>
+        <div
+          role="listbox"
+          aria-label={placeholder || undefined}
+          aria-multiselectable={multiple || undefined}
+        >
+          {filteredGroups.every((g) => g.options.length === 0) ? (
+            noResultsContent !== undefined ? (
+              <div className="p-3">{noResultsContent}</div>
+            ) : (
+              <div className="px-3 py-6 text-sm text-control-placeholder text-center">
+                {noResultsText ?? "—"}
+              </div>
+            )
           ) : (
-            <div className="px-3 py-6 text-sm text-control-placeholder text-center">
-              {noResultsText ?? "—"}
-            </div>
-          )
-        ) : (
-          filteredGroups.map((group) => (
-            <div key={group.label}>
-              {group.label && (
-                <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg">
-                  {group.label}
-                </div>
-              )}
-              {group.options.map(renderOptionRow)}
-            </div>
-          ))
-        )}
+            filteredGroups.map((group) => (
+              <div
+                key={group.label}
+                role={group.label ? "group" : undefined}
+                aria-label={group.label || undefined}
+              >
+                {group.label && (
+                  <div
+                    role="presentation"
+                    className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg"
+                  >
+                    {group.label}
+                  </div>
+                )}
+                {group.options.map(renderOptionRow)}
+              </div>
+            ))
+          )}
+        </div>
         {hasMore && onLoadMore && (
           <Button
             type="button"

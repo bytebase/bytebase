@@ -1,0 +1,79 @@
+[
+  {
+    "id": "HashAgg_11",
+    "estRows": "1744.44",
+    "taskType": "root",
+    "operatorInfo": "group by:Column#9, funcs:firstrow(Column#9)->Column#9",
+    "subOperators": [
+      {
+        "id": "Union_12",
+        "estRows": "1744.44",
+        "taskType": "root",
+        "subOperators": [
+          {
+            "id": "TableReader_20",
+            "estRows": "494.44",
+            "taskType": "root",
+            "operatorInfo": "data:Projection_14",
+            "subOperators": [
+              {
+                "id": "Projection_14",
+                "estRows": "494.44",
+                "taskType": "cop[tikv]",
+                "operatorInfo": "qp.orders.id->Column#9",
+                "subOperators": [
+                  {
+                    "id": "Selection_19",
+                    "estRows": "494.44",
+                    "taskType": "cop[tikv]",
+                    "operatorInfo": "gt(qp.orders.total, 900)",
+                    "subOperators": [
+                      {
+                        "id": "TableFullScan_18",
+                        "estRows": "50000.00",
+                        "taskType": "cop[tikv]",
+                        "accessObject": "table:orders",
+                        "operatorInfo": "keep order:false"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "TableReader_28",
+            "estRows": "1250.00",
+            "taskType": "root",
+            "operatorInfo": "data:Projection_22",
+            "subOperators": [
+              {
+                "id": "Projection_22",
+                "estRows": "1250.00",
+                "taskType": "cop[tikv]",
+                "operatorInfo": "qp.customers.id->Column#9",
+                "subOperators": [
+                  {
+                    "id": "Selection_27",
+                    "estRows": "1250.00",
+                    "taskType": "cop[tikv]",
+                    "operatorInfo": "eq(qp.customers.country, \"JP\")",
+                    "subOperators": [
+                      {
+                        "id": "TableFullScan_26",
+                        "estRows": "5000.00",
+                        "taskType": "cop[tikv]",
+                        "accessObject": "table:customers",
+                        "operatorInfo": "keep order:false"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

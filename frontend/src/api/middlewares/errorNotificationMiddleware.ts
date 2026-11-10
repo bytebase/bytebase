@@ -1,7 +1,11 @@
 import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
 import i18n from "@/lib/i18n";
 import { pushNotification } from "@/stores";
-import { ignoredCodesContextKey, silentContextKey } from "../context-key";
+import {
+  ignoredCodesContextKey,
+  silentContextKey,
+  skipErrorNotificationContextKey,
+} from "../context-key";
 
 export type SilentRequestOptions = {
   /**
@@ -23,8 +27,12 @@ export const errorNotificationInterceptor: Interceptor =
       return resp;
     } catch (error) {
       const maybePushNotification = (title: string, description?: string) => {
-        const silent = req.contextValues.get(silentContextKey);
-        if (silent) return;
+        if (
+          req.contextValues.get(silentContextKey) ||
+          req.contextValues.get(skipErrorNotificationContextKey)
+        ) {
+          return;
+        }
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",

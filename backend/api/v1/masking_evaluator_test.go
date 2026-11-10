@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/store"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -56,7 +58,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	defaultSemanticType := &storepb.SemanticTypeSetting{
 		Types: []*storepb.SemanticTypeSetting_SemanticType{
 			{
-				Id:    defaultSemanticTypeID,
+				Id:    masker.DefaultSemanticTypeID,
 				Title: "Default",
 				Algorithm: &storepb.Algorithm{
 					Mask: &storepb.Algorithm_FullMask_{
@@ -65,7 +67,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				},
 			},
 			{
-				Id:    defaultPartialSemanticTypeID,
+				Id:    masker.DefaultPartialSemanticTypeID,
 				Title: "Default Partial",
 				Algorithm: &storepb.Algorithm{
 					Mask: &storepb.Algorithm_RangeMask_{
@@ -139,7 +141,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
 					{
 						Condition:    &expr.Expr{Expression: "true"},
-						SemanticType: defaultSemanticTypeID,
+						SemanticType: masker.DefaultSemanticTypeID,
 					},
 				},
 			},
@@ -147,7 +149,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultSemanticTypeID,
+			want:          masker.DefaultSemanticTypeID,
 			wantTitle:     "Default",
 			wantAlgorithm: "Full mask",
 		},
@@ -181,6 +183,68 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
 			want: "",
+		},
+		{
+			description:     "Respect An Exception That Lists The Column",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `(resource.instance_id == "neon-host" && resource.database_name == "bb" && resource.schema_name == "hiring" && resource.table_name == "employees" && resource.column_name in ["bonus", "salary"])`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: "",
+		},
+		{
+			description:     "An Exception That Lists Other Columns",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				Classification: "1-1-1",
+			},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: `resource.classification_level == 2`},
+						SemanticType: "default",
+					},
+				},
+			},
+			filteredMaskingExemptions: []*storepb.MaskingExemptionPolicy_Exemption{
+				{
+					Condition: &expr.Expr{
+						Expression: `(resource.instance_id == "neon-host" && resource.database_name == "bb" && resource.schema_name == "hiring" && resource.table_name == "employees" && resource.column_name in ["bonus", "commission"])`,
+					},
+					Members: []string{"users/1234"},
+				},
+			},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want:           "default",
+			wantAlgorithm:  "Full mask",
+			wantClassLevel: 2,
 		},
 		{
 			description:     "Exemption By Classification Level",
@@ -267,13 +331,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				SemanticType: defaultSemanticTypeID,
+				SemanticType: masker.DefaultSemanticTypeID,
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultSemanticTypeID,
+			want:          masker.DefaultSemanticTypeID,
 			wantTitle:     "Default",
 			wantAlgorithm: "Full mask",
 		},
@@ -284,13 +348,13 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			tableName:       "employees",
 			columnName:      "salary",
 			columnCatalog: &storepb.ColumnCatalog{
-				SemanticType: defaultPartialSemanticTypeID,
+				SemanticType: masker.DefaultPartialSemanticTypeID,
 			},
 			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want:          defaultPartialSemanticTypeID,
+			want:          masker.DefaultPartialSemanticTypeID,
 			wantTitle:     "Default Partial",
 			wantAlgorithm: "Partial mask",
 		},
@@ -320,5 +384,46 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 				a.Equal(tc.wantClassLevel, result.ClassificationLevel, tc.description)
 			}
 		}
+	}
+}
+
+func TestEvaluateExemptionOfColumnStringOperators(t *testing.T) {
+	t.Parallel()
+
+	operators := []struct {
+		name       string
+		expression string
+		wantMatch  bool
+	}{
+		{"equals", `resource.table_name == "orders_archive"`, true},
+		{"not equals", `resource.table_name != "orders_archive"`, false},
+		{"in", `resource.table_name in ["orders_archive", "audit_log"]`, true},
+		{"not in", `!(resource.table_name in ["orders_archive", "audit_log"])`, false},
+		{"contains", `resource.table_name.contains("archive")`, true},
+		{"not contains", `!resource.table_name.contains("archive")`, false},
+		{"starts with", `resource.table_name.startsWith("orders_")`, true},
+		{"ends with", `resource.table_name.endsWith("_archive")`, true},
+		{"matches", `resource.table_name.matches("^orders_[a-z]+$")`, true},
+	}
+	for _, operator := range operators {
+		t.Run(operator.name, func(t *testing.T) {
+			t.Parallel()
+			condition := &expr.Expr{Expression: operator.expression}
+			_, err := common.ValidateMaskingExemptionCELExpr(condition)
+			require.NoError(t, err)
+			exemptions := []*storepb.MaskingExemptionPolicy_Exemption{{Condition: condition}}
+			database := &store.DatabaseMessage{InstanceID: "example-instance", DatabaseName: "example-database"}
+			for _, input := range []struct {
+				table string
+				want  bool
+			}{
+				{"orders_archive", operator.wantMatch},
+				{"customers", !operator.wantMatch},
+			} {
+				allowed, err := evaluateExemptionOfColumn(database, "public", input.table, "email", 0, exemptions)
+				require.NoError(t, err, input.table)
+				require.Equal(t, input.want, allowed, input.table)
+			}
+		})
 	}
 }

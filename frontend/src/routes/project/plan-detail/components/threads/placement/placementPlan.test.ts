@@ -10,7 +10,12 @@ import {
   Plan_ChangeDatabaseConfigSchema,
   Plan_SpecSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { current, OUTDATED, UNAVAILABLE, wholeLineRange } from "./place";
+import {
+  current,
+  OUTDATED,
+  UNAVAILABLE,
+  UNAVAILABLE_SIZE_LIMIT,
+} from "./place";
 import {
   type PlacementPlanInput,
   pairKey,
@@ -70,41 +75,23 @@ const plan = (
   overrides: Partial<PlacementPlanInput> & {
     sizes?: Record<string, number>;
     complete?: string[];
+    capped?: string[];
   }
 ) => {
   const sizes = overrides.sizes ?? {};
   const complete = new Set(overrides.complete ?? []);
+  const capped = new Set(overrides.capped ?? []);
   return planPlacements({
     comments: [],
     specs: [spec("spec-1", SHA_B)],
     projectName: PROJECT,
     sizeOf: (name) => (name in sizes ? BigInt(sizes[name]) : undefined),
     isComplete: (name) => complete.has(name),
+    isCappedPreview: (name) => capped.has(name),
     budgets,
     ...overrides,
   });
 };
-
-describe("wholeLineRange", () => {
-  test("accepts zero-column ranges and rejects anything else", () => {
-    expect(wholeLineRange(anchor(SHA_A, 2, 4))).toEqual({
-      startLine: 2,
-      endLine: 4,
-    });
-    expect(wholeLineRange(anchor(SHA_A, 2))).toEqual({
-      startLine: 2,
-      endLine: 2,
-    });
-    expect(
-      wholeLineRange(anchor(SHA_A, 2, 4, { columns: [1, 1] }))
-    ).toBeUndefined();
-    expect(
-      wholeLineRange(anchor(SHA_A, 2, 4, { columns: [0, 3] }))
-    ).toBeUndefined();
-    expect(wholeLineRange(anchor(SHA_A, 0, 1))).toBeUndefined();
-    expect(wholeLineRange(anchor(SHA_A, 3, 2))).toBeUndefined();
-  });
-});
 
 describe("planPlacements", () => {
   test("ignores unanchored comments and settles trivial cases without fetching", () => {
@@ -112,17 +99,29 @@ describe("planPlacements", () => {
       comments: [
         comment("plain"),
         comment("same", anchor(SHA_B, 3, 5)),
-        comment("columns", anchor(SHA_A, 1, 1, { columns: [1, 4] })),
+        comment("columns", anchor(SHA_B, 2, 3, { columns: [5, 1] })),
         comment("no-spec", anchor(SHA_A, 1, 1, { spec: "gone" })),
       ],
       specs: [spec("spec-1", SHA_B), spec("other", SHA_C)],
     });
     expect(result.settled.has(nameOf("plain"))).toBe(false);
     expect(result.settled.get(nameOf("same"))).toEqual(current(3, 5));
-    expect(result.settled.get(nameOf("columns"))).toEqual(UNAVAILABLE);
+    expect(result.settled.get(nameOf("columns"))).toEqual(current(2, 2));
     expect(result.settled.get(nameOf("no-spec"))).toEqual(UNAVAILABLE);
     expect(result.pairs).toEqual([]);
     expect(result.fetches).toEqual([]);
+  });
+
+  test("diffs a code-point anchor on an earlier sheet by its covered lines", () => {
+    const result = plan({
+      comments: [comment("finding", anchor(SHA_A, 2, 2, { columns: [1, 21] }))],
+      sizes: { [sheet(SHA_A)]: 100, [sheet(SHA_B)]: 200 },
+    });
+    expect(result.settled.size).toBe(0);
+    expect(result.pairs).toHaveLength(1);
+    expect(result.pairs[0].anchors).toEqual([
+      { id: "2-2", startLine: 2, endLine: 2 },
+    ]);
   });
 
   test("settles UNAVAILABLE when the spec has no statement", () => {
@@ -186,7 +185,9 @@ describe("planPlacements", () => {
       specs: [spec("spec-1", SHA_B), spec("spec-2", SHA_D)],
       sizes: { [sheet(SHA_B)]: 5000 },
     });
-    expect(result.settled.get(nameOf("doomed"))).toEqual(UNAVAILABLE);
+    expect(result.settled.get(nameOf("doomed"))).toEqual(
+      UNAVAILABLE_SIZE_LIMIT
+    );
     // Only the viable pair's sheets are worth a probe.
     expect(result.unknownSizes).toEqual([sheet(SHA_C), sheet(SHA_D)]);
   });
@@ -204,7 +205,7 @@ describe("planPlacements", () => {
       sizes: { [sheet(SHA_B)]: 5000 },
       settleUnknownSizes: false,
     });
-    expect(oversize.settled.get(nameOf("c"))).toEqual(UNAVAILABLE);
+    expect(oversize.settled.get(nameOf("c"))).toEqual(UNAVAILABLE_SIZE_LIMIT);
   });
 
   test("enforces the per-sheet byte cap inclusively", () => {
@@ -212,12 +213,22 @@ describe("planPlacements", () => {
       comments: [comment("c", anchor(SHA_A, 1))],
       sizes: { [sheet(SHA_A)]: 1001, [sheet(SHA_B)]: 10 },
     });
-    expect(over.settled.get(nameOf("c"))).toEqual(UNAVAILABLE);
+    expect(over.settled.get(nameOf("c"))).toEqual(UNAVAILABLE_SIZE_LIMIT);
     const at = plan({
       comments: [comment("c", anchor(SHA_A, 1))],
       sizes: { [sheet(SHA_A)]: 1000, [sheet(SHA_B)]: 10 },
     });
     expect(at.pairs).toHaveLength(1);
+  });
+
+  test("settles a capped API preview without requesting raw content", () => {
+    const result = plan({
+      comments: [comment("c", anchor(SHA_A, 1))],
+      sizes: { [sheet(SHA_A)]: 300, [sheet(SHA_B)]: 200 },
+      capped: [sheet(SHA_A)],
+    });
+    expect(result.settled.get(nameOf("c"))).toEqual(UNAVAILABLE_SIZE_LIMIT);
+    expect(result.fetches).toEqual([]);
   });
 
   test("applies the per-sheet cap even to a sheet that is already cached", () => {
@@ -226,7 +237,7 @@ describe("planPlacements", () => {
       sizes: { [sheet(SHA_A)]: 10, [sheet(SHA_B)]: 5000 },
       complete: [sheet(SHA_B)],
     });
-    expect(result.settled.get(nameOf("c"))).toEqual(UNAVAILABLE);
+    expect(result.settled.get(nameOf("c"))).toEqual(UNAVAILABLE_SIZE_LIMIT);
   });
 
   test("keeps earlier pairs and drops later ones past the sheet-count cap", () => {
@@ -288,7 +299,7 @@ describe("planPlacements", () => {
       ],
       sizes: { [sheet(SHA_A)]: 2000, [sheet(SHA_B)]: 10, [sheet(SHA_C)]: 10 },
     });
-    expect(result.settled.get(nameOf("big"))).toEqual(UNAVAILABLE);
+    expect(result.settled.get(nameOf("big"))).toEqual(UNAVAILABLE_SIZE_LIMIT);
     expect(result.pairs.map((pair) => pair.sourceSha256)).toEqual([SHA_C]);
     expect(result.fetches).toEqual([sheet(SHA_C), sheet(SHA_B)]);
   });

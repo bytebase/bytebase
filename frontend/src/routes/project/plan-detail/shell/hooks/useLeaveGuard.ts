@@ -26,6 +26,11 @@ export function useLeaveGuard() {
       const target = confirmed ? state.pendingLeaveTarget : null;
       setPendingLeaveTarget(null);
       setPendingLeaveConfirm(false);
+      // A thread focus still pending was waiting on the cancelled navigation;
+      // left in place, it would fire whenever that spec is next shown.
+      if (!confirmed && state.threadFocus) {
+        state.clearThreadFocus(state.threadFocus.nonce);
+      }
       if (target) {
         state.bypassLeaveGuardOnce();
         // Replace (not push) so a confirmed-discard navigation doesn't leave

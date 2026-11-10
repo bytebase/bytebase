@@ -16,6 +16,7 @@ import {
   usePermissionCheck,
 } from "@/components/PermissionGuard";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { usePlanFeature, useWorkspace } from "@/hooks/useAppState";
@@ -177,7 +178,14 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
           <FormFieldGroup>
             {/* Workspace ID */}
             <FormField title={t("settings.general.workspace.id")}>
-              <Input value={workspaceID} disabled />
+              <div className="flex items-center gap-2">
+                <Input
+                  className="min-w-0 flex-1"
+                  value={workspaceID}
+                  disabled
+                />
+                <CopyButton content={workspaceID} />
+              </div>
             </FormField>
 
             {/* Workspace Title */}

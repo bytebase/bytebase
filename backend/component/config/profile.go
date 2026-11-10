@@ -12,6 +12,9 @@ import (
 type Profile struct {
 	// Mode can be "prod" or "dev"
 	Mode common.ReleaseMode
+	// SQLReviewV2 replaces the plan check's SQL review (V1) with the review
+	// runs (V2). Only a dev build turns it on.
+	SQLReviewV2 bool
 	// ExternalURL is the URL user visits Bytebase.
 	ExternalURL string
 	// DatastorePort is the binding port for database instance for storing Bytebase metadata.

@@ -137,6 +137,7 @@ export function HoverPanel({
   const panel = (
     <div
       ref={popoverRef}
+      data-testid="schema-hover-panel"
       className={cn(
         "fixed border border-block-border rounded-sm bg-background p-2 shadow-sm transition-[top] text-sm",
         LAYER_SURFACE_CLASS,

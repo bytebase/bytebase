@@ -20,7 +20,7 @@ import { ListRolesRequestSchema } from "@/types/proto-es/v1/role_service_pb";
 import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types/v1/user";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils/v1/iam";
 import type { AppSliceCreator, IamSlice } from "./types";
-import { bindingMatchesUser, projectWideBindings } from "./utils";
+import { bindingMatchesUser, callOptions, projectWideBindings } from "./utils";
 
 // Merge a member's role set into a policy clone: drop the member from roles it
 // no longer holds, add it to roles it gained, and append bindings for brand-new
@@ -146,7 +146,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     await Promise.all([rolesRequest, policyRequest]);
   },
 
-  loadProjectIamPolicy: async (project) => {
+  loadProjectIamPolicy: async (project, silent = false) => {
     const existing = get().projectPoliciesByName[project];
     if (existing) return existing;
     const pending = get().projectPolicyRequests[project];
@@ -156,7 +156,10 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
 
     const request = projectServiceClientConnect
       .getIamPolicy(
-        createProto(GetIamPolicyRequestSchema, { resource: project })
+        createProto(GetIamPolicyRequestSchema, { resource: project }),
+        silent
+          ? { contextValues: createContextValues().set(silentContextKey, true) }
+          : undefined
       )
       .then(async (policy) => {
         set((state) => {
@@ -216,7 +219,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     );
   },
 
-  updateProjectIamPolicy: async (project, policy) => {
+  updateProjectIamPolicy: async (project, policy, report) => {
     // Dedupe members within each binding before the write.
     const deduped = cloneDeep(policy);
     for (const binding of deduped.bindings) {
@@ -233,7 +236,8 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
           resource: project,
           policy: deduped,
           etag: deduped.etag,
-        })
+        }),
+        callOptions(report)
       )
       .catch(async (error) => {
         await recoverFromIamPolicyConflict(error, async () => {
@@ -277,7 +281,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     return updated;
   },
 
-  fetchWorkspaceIamPolicy: async (silent = false) => {
+  fetchWorkspaceIamPolicy: async (silent = false, report) => {
     const resource =
       get().serverInfo?.workspace ||
       get().workspace?.name ||
@@ -285,7 +289,9 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       `${workspaceNamePrefix}-`;
     const policy = await workspaceServiceClientConnect.getIamPolicy(
       createProto(GetIamPolicyRequestSchema, { resource }),
-      { contextValues: createContextValues().set(silentContextKey, silent) }
+      callOptions(report) ?? {
+        contextValues: createContextValues().set(silentContextKey, silent),
+      }
     );
     // Prefetch groups referenced by the policy so the derived role/user maps
     // can expand group members from the same app-store cache.
@@ -301,7 +307,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     return policy;
   },
 
-  patchWorkspaceIamPolicy: async (batchPatch) => {
+  patchWorkspaceIamPolicy: async (batchPatch, report) => {
     if (batchPatch.length === 0) {
       return;
     }
@@ -322,7 +328,8 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
           resource,
           policy,
           etag: policy.etag,
-        })
+        }),
+        callOptions(report)
       )
       .catch(async (error) => {
         await recoverFromIamPolicyConflict(error, () =>

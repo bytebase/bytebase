@@ -1,4 +1,5 @@
 import { authServiceClientConnect } from "@/api";
+import { refreshTokensInWorker } from "./refreshTokenSharedWorker";
 
 const LOCK_NAME = "bb_token_refresh";
 const CHANNEL_NAME = "bb_token_refresh";
@@ -8,7 +9,7 @@ let localPromise: Promise<void> | null = null;
 
 /**
  * Refresh the access token using the refresh token cookie.
- * Uses Web Lock API for cross-tab coordination.
+ * Uses Web Locks for cross-tab coordination, or a SharedWorker on HTTP.
  * Only one tab performs the refresh; others wait for completion.
  */
 export async function refreshTokens(): Promise<void> {
@@ -39,6 +40,10 @@ async function doRefresh(): Promise<void> {
 }
 
 async function tryAcquireAndRefresh(): Promise<boolean> {
+  if (!navigator.locks) {
+    await refreshTokensInWorker();
+    return true;
+  }
   return navigator.locks.request(
     LOCK_NAME,
     { ifAvailable: true },

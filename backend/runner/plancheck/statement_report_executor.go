@@ -17,6 +17,7 @@ import (
 	cockroachdbdriver "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	mssqldriver "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	oceanbasedriver "github.com/bytebase/bytebase/backend/plugin/db/oceanbase"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
@@ -196,12 +197,19 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		explainCalculator = cd.CountAffectedRows
 		// Empty so the extractor resolves names with the database's synced search_path, as for PostgreSQL.
 		defaultSchema = ""
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
 			return nil, "", errors.Errorf("invalid mysql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
+		defaultSchema = ""
+	case storepb.Engine_OCEANBASE:
+		od, ok := driver.(*oceanbasedriver.Driver)
+		if !ok {
+			return nil, "", errors.Errorf("invalid oceanbase driver type")
+		}
+		explainCalculator = od.CountAffectedRows
 		defaultSchema = ""
 	case storepb.Engine_TIDB:
 		md, ok := driver.(*tidbdriver.Driver)
@@ -241,13 +249,23 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, instance.Metadata.GetEngine(), changeSummary, explainCalculator)
+	report, warning := buildSQLSummaryReport(ctx, instance.Metadata.GetEngine(), sqlTypes, changeSummary, explainCalculator)
+	return report, warning, nil
+}
 
+// buildSQLSummaryReport returns the report of changeSummary and a warning about what it could not
+// estimate. It returns no report when the extractor skipped a statement: that statement's rows and
+// resources are unknown, and approval rules would read the undercount as statement.affected_rows.
+func buildSQLSummaryReport(ctx context.Context, engine storepb.Engine, sqlTypes []storepb.StatementType, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, string) {
+	if changeSummary.SkippedStatements > 0 {
+		return nil, fmt.Sprintf("Affected rows and changed resources are not reported because %d of the statements could not be read.", changeSummary.SkippedStatements)
+	}
+	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, engine, changeSummary, explainCalculator)
 	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 		StatementTypes:   sqlTypes,
 		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
-	}, estimateWarning, nil
+	}, estimateWarning
 }
 
 // SummaryStatementTypes classifies a summary report's statements through the

@@ -1,0 +1,24 @@
+{
+    "_rid": "S9w7AIGecFs=",
+    "Documents": [
+        {
+            "country": "AD"
+        },
+        {
+            "country": "AE"
+        },
+        {
+            "country": "DE"
+        },
+        {
+            "country": "GB"
+        },
+        {
+            "country": "JP"
+        },
+        {
+            "country": "US"
+        }
+    ],
+    "_count": 6
+}

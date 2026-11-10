@@ -141,8 +141,10 @@ describe("PlanTargetDisplay", () => {
     expect(rootElement?.getAttribute("title")).toBeNull();
     expect(environment?.className).toContain("max-w-24");
     expect(instance?.className).toContain("max-w-40");
-    expect(database?.className).toContain("flex-1");
-    expect(database?.className).toContain("min-w-12");
+    expect(database?.className).toContain("flex-auto");
+    expect(database?.className).toContain("min-w-0");
+    // A fixed basis wider than a short name squeezes the instance and environment.
+    expect(database?.className).not.toMatch(/\bbasis-/);
   });
 
   it("can hide optional database metadata", () => {
@@ -182,7 +184,7 @@ describe("PlanTargetDisplay", () => {
 
     expect(rootElement?.className).toContain("text-base");
     expect(engineIcon?.className).toContain("h-5");
-    expect(database?.className).toContain("min-w-16");
+    expect(database?.className).toContain("min-w-0");
   });
 
   it("falls back to the raw target when the target is not a database", () => {

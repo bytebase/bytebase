@@ -1,11 +1,13 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useTimeReading } from "@/hooks/useTimeReading";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -41,6 +43,33 @@ export function AccessGrantItem({
   onRequest,
 }: Props) {
   const { t } = useTranslation();
+  const batchGetOrFetchDatabases = useAppStore(
+    (state) => state.batchGetOrFetchDatabases
+  );
+  const statementRef = useRef<HTMLParagraphElement>(null);
+  const hydratedRemainingTargets = useRef<string | undefined>(undefined);
+  const [isStatementExpanded, setIsStatementExpanded] = useState(false);
+  const [isStatementTruncated, setIsStatementTruncated] = useState(false);
+
+  useLayoutEffect(() => {
+    setIsStatementExpanded(false);
+  }, [grant.query]);
+
+  useLayoutEffect(() => {
+    if (isStatementExpanded) return;
+    const statement = statementRef.current;
+    if (!statement) return;
+
+    const check = () => {
+      setIsStatementTruncated(statement.scrollHeight > statement.clientHeight);
+    };
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(check);
+    observer.observe(statement);
+    return () => observer.disconnect();
+  }, [grant.query, isStatementExpanded]);
 
   // Two readings, each on its own boundary. The countdown's last step lands on
   // the deadline, the same instant the status turns expired, so the status
@@ -85,6 +114,18 @@ export function AccessGrantItem({
 
   const visibleTargets = grant.targets.slice(0, 2);
   const remainingTargetCount = grant.targets.length - visibleTargets.length;
+  const remainingTargets = grant.targets.slice(visibleTargets.length);
+  const handleTargetTooltipOpen = (open: boolean) => {
+    if (!open || remainingTargets.length === 0) return;
+    const targetKey = remainingTargets.join("\u0000");
+    if (hydratedRemainingTargets.current === targetKey) return;
+    hydratedRemainingTargets.current = targetKey;
+    void batchGetOrFetchDatabases(remainingTargets, true).catch(() => {
+      if (hydratedRemainingTargets.current === targetKey) {
+        hydratedRemainingTargets.current = undefined;
+      }
+    });
+  };
   const databaseTargets = (
     <div className="flex w-full min-w-0 flex-col gap-y-1">
       {visibleTargets.map((target, index) => (
@@ -109,7 +150,6 @@ export function AccessGrantItem({
       ? grant.issue
       : `/${grant.issue}`
     : "";
-
   return (
     <div
       className={cn(
@@ -123,8 +163,8 @@ export function AccessGrantItem({
        * `flex-wrap` + `justify-between` keeps the original "badges left,
        * expiration right" layout when both fit on the row, but lets the
        * row wrap when the panel is narrow. Pairing it with `shrink-0`
-       * on the badges container preserves each pill at its natural size
-       * so the label never wraps inside the pill (`脱敏豁免` → "脱敏豁
+       * on the badges container preserves each label at its natural size
+       * so the label never wraps inside the badge (`脱敏豁免` → "脱敏豁
        * \n免"). When the expiration wraps to a second row it falls back
        * to the row's start alignment (justify-between has no effect on
        * a single-item row), so it reads naturally left-to-right under
@@ -132,27 +172,14 @@ export function AccessGrantItem({
        */}
       <div className="w-full flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex items-center gap-x-1 shrink-0">
-          <Badge
-            variant={badgeVariant}
-            className="text-xs px-1.5 py-0 rounded-full"
-          >
+          <Badge variant={badgeVariant} className="px-1.5 py-0.5">
             {statusLabel}
           </Badge>
           {grant.unmask && (
-            <Badge
-              variant="default"
-              className="text-xs px-1.5 py-0 rounded-full"
-            >
-              {t("sql-editor.grant-type-unmask")}
-            </Badge>
+            <Badge variant="default">{t("sql-editor.grant-type-unmask")}</Badge>
           )}
           {grant.export && (
-            <Badge
-              variant="default"
-              className="text-xs px-1.5 py-0 rounded-full"
-            >
-              {t("sql-editor.grant-type-export")}
-            </Badge>
+            <Badge variant="default">{t("sql-editor.grant-type-export")}</Badge>
           )}
         </div>
         {expiration && (
@@ -166,24 +193,29 @@ export function AccessGrantItem({
         )}
       </div>
 
-      <Tooltip
-        content={
-          <pre className="max-w-lg whitespace-pre-wrap text-xs">
-            {grant.query}
-          </pre>
-        }
-        side="right"
-      >
+      <div className="w-full min-w-0">
         <p
+          ref={statementRef}
           className={cn(
-            "w-full min-w-0 text-xs wrap-anywhere whitespace-pre-wrap font-mono line-clamp-2",
+            "w-full min-w-0 text-xs wrap-anywhere whitespace-pre-wrap font-mono",
+            !isStatementExpanded && "line-clamp-2",
             (isExpired || isRejectedOrCanceled) &&
               "line-through text-control-placeholder"
           )}
         >
           {grant.query}
         </p>
-      </Tooltip>
+        {isStatementTruncated && (
+          <Button
+            appearance="link"
+            size="xs"
+            className="h-auto px-0"
+            onClick={() => setIsStatementExpanded((expanded) => !expanded)}
+          >
+            {isStatementExpanded ? t("common.hide") : t("common.show-more")}
+          </Button>
+        )}
+      </div>
 
       <div className="w-full flex flex-col gap-y-2">
         {remainingTargetCount === 0 ? (
@@ -202,6 +234,7 @@ export function AccessGrantItem({
               </div>
             }
             side="right"
+            onOpenChange={handleTargetTooltipOpen}
           >
             {databaseTargets}
           </Tooltip>
@@ -228,6 +261,7 @@ export function AccessGrantItem({
               <Button
                 appearance="secondary"
                 size="xs"
+                className="hover:!bg-control-bg-hover"
                 data-re-request-btn
                 onClick={(e) => {
                   e.stopPropagation();
@@ -243,7 +277,11 @@ export function AccessGrantItem({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center h-6 text-xs px-2 rounded-xs hover:bg-control-bg text-control"
+                className={buttonVariants({
+                  appearance: "secondary",
+                  size: "xs",
+                  className: "hover:!bg-control-bg-hover",
+                })}
               >
                 {t("sql-editor.view-issue")}
               </RouterLink>

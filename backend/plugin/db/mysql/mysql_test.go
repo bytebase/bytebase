@@ -8,6 +8,8 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"database/sql"
+	"encoding/json"
 	"encoding/pem"
 	"math/big"
 	"net/http"
@@ -18,10 +20,15 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/cloudsqlconn"
+	"github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -494,4 +501,196 @@ func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		require.Fail(t, "waiter never completed after leader cancellation")
 	}
+}
+
+// TestQueryConnExplainJSON pins the structured plan the query-plan viewer draws,
+// on the oldest MariaDB release Bytebase supports as well as the newest, since
+// FORMAT=JSON is the one plan format they share and a plan the viewer cannot
+// read loses the picture silently rather than failing.
+func TestQueryConnExplainJSON(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		version     string
+		newDatabase func(testing.TB) (*testcontainer.Container, string)
+	}{
+		{version: "11.8", newDatabase: testcontainer.NewMariaDBDatabase},
+		{version: "10.7", newDatabase: testcontainer.NewMariaDB107Database},
+	} {
+		t.Run(tc.version, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			container, database := tc.newDatabase(t)
+			driver := openTestDriver(ctx, t, storepb.Engine_MARIADB, container, container.GetUsername(), container.GetPassword(), database)
+			_, err := driver.db.ExecContext(ctx, "CREATE TABLE plan_target (id INT PRIMARY KEY, note VARCHAR(64))")
+			require.NoError(t, err)
+
+			conn, err := driver.GetDB().Conn(ctx)
+			require.NoError(t, err)
+			defer conn.Close()
+
+			const statement = "SELECT note FROM plan_target WHERE id > 100"
+			explain := func(s string, option *v1pb.QueryOption, asExplain bool) *v1pb.QueryResult {
+				results, err := driver.QueryConn(ctx, conn, s, db.QueryContext{
+					Explain:              asExplain,
+					Limit:                5000,
+					MaximumSQLResultSize: 1 << 30,
+					Option:               option,
+				})
+				require.NoError(t, err)
+				require.Len(t, results, 1)
+				require.Empty(t, results[0].GetError())
+				return results[0]
+			}
+
+			jsonOption := &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON}
+			plan := explain(statement, jsonOption, true)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+statement, plan.GetStatement())
+			require.Equal(t, "query_block", planRoot(t, plan))
+
+			// The default plan stays the table MariaDB has always returned.
+			text := explain(statement, nil, true)
+			require.Equal(t, "EXPLAIN "+statement, text.GetStatement())
+			require.Greater(t, len(text.GetColumnNames()), 1)
+
+			// A caller's own EXPLAIN is replanned in the format asked for rather
+			// than wrapped in a second one, which would not parse.
+			typed := explain("EXPLAIN FORMAT=JSON "+statement, jsonOption, true)
+			require.Equal(t, "EXPLAIN FORMAT=JSON "+statement, typed.GetStatement())
+			require.Equal(t, "query_block", planRoot(t, typed))
+
+			// Run on that same statement reports the plan it returned, so the
+			// viewer draws it without explaining a second time.
+			ran := explain("EXPLAIN FORMAT=JSON "+statement, nil, false)
+			require.Equal(t, v1pb.QueryOption_JSON, ran.GetQueryPlan().GetFormat())
+			require.False(t, ran.GetQueryPlan().GetExecuted())
+			require.Equal(t, "query_block", planRoot(t, ran))
+
+			// A plain EXPLAIN says nothing about its format: from MySQL 8.0.32 an
+			// omitted FORMAT follows the session's explain_format.
+			ranText := explain("EXPLAIN "+statement, nil, false)
+			require.Equal(t, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, ranText.GetQueryPlan().GetFormat())
+			require.NotNil(t, ranText.GetQueryPlan())
+		})
+	}
+}
+
+// planRoot returns the one key at the top of a one-column JSON plan.
+func planRoot(t *testing.T, result *v1pb.QueryResult) string {
+	t.Helper()
+	require.Len(t, result.GetColumnNames(), 1)
+	require.Len(t, result.GetRows(), 1)
+	require.Len(t, result.GetRows()[0].GetValues(), 1)
+	var plan map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(result.GetRows()[0].GetValues()[0].GetStringValue()), &plan))
+	require.Len(t, plan, 1)
+	for key := range plan {
+		return key
+	}
+	return ""
+}
+
+// cloudSQLIAMConnectionConfig returns a Google Cloud SQL IAM data source that
+// cloudsqlconn accepts offline. The credential is an authorized_user document so
+// that building the connector needs neither a key nor a network round trip; it
+// is never good enough to dial with.
+const cloudSQLTestInstance = "example-project:us-central1:example-instance"
+
+func cloudSQLIAMConnectionConfig(instance string) db.ConnectionConfig {
+	return db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:               storepb.DataSourceType_ADMIN,
+			Host:               instance,
+			Username:           "bytebase@example-project.iam",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{
+					Content: `{"type":"authorized_user","client_id":"not-a-real-client","client_secret":"not-a-real-secret","refresh_token":"not-a-real-token"}`,
+				},
+			},
+		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "example"},
+	}
+}
+
+func TestCloudSQLIAMDialerClosesWithDriver(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	opened, err := driver.Open(ctx, storepb.Engine_MYSQL, cloudSQLIAMConnectionConfig(cloudSQLTestInstance))
+	require.NoError(t, err)
+	require.Same(t, driver, opened)
+	require.NotNil(t, driver.cloudSQLDialer)
+	require.NotEmpty(t, driver.cloudSQLProtocol)
+
+	dialer := driver.cloudSQLDialer
+	require.NoError(t, driver.Close(ctx))
+
+	// The connector keeps refreshing its ephemeral certificate until it is
+	// closed, so a driver that leaves it open leaks it for the life of the
+	// process, once per connection opened.
+	_, err = dialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestCloudSQLIAMDialerClosesWhenOpenFails(t *testing.T) {
+	ctx := context.Background()
+
+	config := cloudSQLIAMConnectionConfig(cloudSQLTestInstance)
+	// A database name that does not survive the DSN fails Open after the
+	// connector has been built.
+	config.ConnectionContext.DatabaseName = "example/db"
+
+	driver := &Driver{}
+	_, err := driver.Open(ctx, storepb.Engine_MYSQL, config)
+	require.Error(t, err)
+
+	// A driver whose Open fails is discarded without a Close, so Open has to have
+	// closed the connector itself.
+	require.NotNil(t, driver.cloudSQLDialer)
+	_, err = driver.cloudSQLDialer.Dial(ctx, cloudSQLTestInstance)
+	require.ErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
+}
+
+func TestCloudSQLIAMNetworkNameIsPerDriver(t *testing.T) {
+	ctx := context.Background()
+
+	first := &Driver{}
+	firstDSN, err := first.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig("example-project:us-central1:first"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, first.closeCloudSQL()) }()
+
+	second := &Driver{}
+	secondDSN, err := second.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig("example-project:us-central1:second"))
+	require.NoError(t, err)
+	defer func() { require.NoError(t, second.closeCloudSQL()) }()
+
+	// The network name keys a process-wide registry. Sharing one name let the
+	// second driver take over the first driver's pool and dial its own instance.
+	require.NotEqual(t, first.cloudSQLProtocol, second.cloudSQLProtocol)
+
+	firstConfig, err := mysql.ParseDSN(firstDSN)
+	require.NoError(t, err)
+	require.Equal(t, first.cloudSQLProtocol, firstConfig.Net)
+
+	secondConfig, err := mysql.ParseDSN(secondDSN)
+	require.NoError(t, err)
+	require.Equal(t, second.cloudSQLProtocol, secondConfig.Net)
+}
+
+func TestCloudSQLIAMNetworkNameDeregisteredOnClose(t *testing.T) {
+	ctx := context.Background()
+
+	driver := &Driver{}
+	dsn, err := driver.getCloudSQLConnection(ctx, cloudSQLIAMConnectionConfig(cloudSQLTestInstance))
+	require.NoError(t, err)
+	require.NoError(t, driver.closeCloudSQL())
+
+	// The registration would otherwise pin the closed connector in the MySQL
+	// driver's process-wide map, one entry per driver ever opened.
+	pool, err := sql.Open("mysql", dsn)
+	require.NoError(t, err)
+	defer pool.Close()
+	err = pool.PingContext(ctx)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, cloudsqlconn.ErrDialerClosed)
 }

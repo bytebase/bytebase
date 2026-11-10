@@ -19,10 +19,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/review"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -43,9 +47,23 @@ type Server struct {
 
 	revokedAccessTokens sync.Map // map[string]struct{}
 
+	// findUnapprovableStep needs the concrete store, which serverStore hides,
+	// so NewServer binds it and tests replace it.
+	findUnapprovableStep func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error)
+
+	// maskingSkipsUnactivated reports whether the plan has masking but
+	// LicenseService.IsFeatureEnabledForInstance would refuse it to an instance
+	// that is not activated. It needs the license service, which
+	// newServerWithStore does not take, so NewServer binds it and tests replace it.
+	maskingSkipsUnactivated func(ctx context.Context, workspace string) bool
+
 	// planCheckPollBudgetOverride lets tests shorten the plan-check poll budget.
 	// Zero means use the default (planCheckPollBudget).
 	planCheckPollBudgetOverride time.Duration
+
+	// internalAPITimeoutOverride lets tests shorten the bound on one internal
+	// API call. Zero means use the default (internalAPITimeout).
+	internalAPITimeoutOverride time.Duration
 }
 
 type serverStore interface {
@@ -68,18 +86,39 @@ type serverStore interface {
 // holding a nil pointer, which no later nil test catches, so without this the
 // failure moves from a returned error here to a nil-receiver panic on the first
 // ceiling read inside authMiddleware.
-func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler, licenses *enterprise.LicenseService) (*Server, error) {
 	if stores == nil {
 		return nil, errors.New("store is required")
 	}
-	return newServerWithStore(stores, profile, secret, internalAPI)
+	s, err := newServerWithStore(stores, profile, secret, internalAPI)
+	if err != nil {
+		return nil, err
+	}
+	s.findUnapprovableStep = func(ctx context.Context, workspace, issueName string) (*review.UnapprovableStep, error) {
+		return review.FindUnapprovableStep(ctx, stores, workspace, issueName)
+	}
+	s.maskingSkipsUnactivated = maskingSkipsUnactivatedUnder(licenses)
+	return s, nil
+}
+
+// instanceLicense is what the instance entry reads of a workspace's license.
+type instanceLicense interface {
+	IsFeatureEnabled(ctx context.Context, workspaceID string, f v1pb.PlanFeature) error
+	IsUnifiedInstanceLicense(ctx context.Context, workspaceID string) bool
+}
+
+func maskingSkipsUnactivatedUnder(licenses instanceLicense) func(ctx context.Context, workspace string) bool {
+	return func(ctx context.Context, workspace string) bool {
+		return licenses.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_DATA_MASKING) == nil &&
+			!licenses.IsUnifiedInstanceLicense(ctx, workspace)
+	}
 }
 
 func newServerWithStore(stores serverStore, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	mcpServer := mcp.NewServer(&mcp.Implementation{
 		Name:    "bytebase",
 		Version: profile.Version,
-	}, nil)
+	}, &mcp.ServerOptions{Instructions: serverInstructions})
 
 	// Load OpenAPI index for API discovery and execution (embedded)
 	openAPIIndex, err := NewOpenAPIIndex()
@@ -94,6 +133,9 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 		secret:         secret,
 		openAPIIndex:   openAPIIndex,
 		internalClient: newInternalAPIClient(internalAPI),
+		// Until NewServer binds the license, the form warns whenever an
+		// instance is not activated.
+		maskingSkipsUnactivated: func(context.Context, string) bool { return true },
 	}
 	s.registerTools()
 
@@ -141,6 +183,8 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// principal.
 	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
+	mcpServer.AddReceivingMiddleware(nameSignedInAccount)
+	mcpServer.AddReceivingMiddleware(askInChatWithoutForm)
 
 	// Pin each session to the identity it was opened with. The SDK captures
 	// TokenInfo.UserID when a session is created and rejects later requests
@@ -193,6 +237,39 @@ func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
 	}
 }
 
+// nameSignedInAccount opens the initialize instructions with the session's
+// Bytebase account and workspace: clients also show the model other accounts,
+// such as their own sign-in, and an agent that needs a workspace name should
+// not have to guess one. It goes first, so a client that cuts long
+// instructions keeps it.
+func nameSignedInAccount(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+		// The SDK refuses a second initialize on a session with a nil result,
+		// and a panic here would end the process.
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil {
+			account := fmt.Sprintf(`In %s, this session acts as the Bytebase account %s, with its permissions. "You" in tool results means it, not another account such as the client's sign-in.`,
+				common.FormatWorkspace(getWorkspaceID(ctx)), getUserEmail(ctx))
+			initialized.Instructions = account + "\n\n" + initialized.Instructions
+		}
+		return result, err
+	}
+}
+
+// askInChatWithoutForm ends the instructions of a session whose client declared
+// no form with askInChatInstructions: query_database then runs a write without
+// asking the user (canShowConfirmation).
+func askInChatWithoutForm(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		result, err := next(ctx, method, req)
+		params, isInitialize := req.GetParams().(*mcp.InitializeParams)
+		if initialized, ok := result.(*mcp.InitializeResult); ok && initialized != nil && isInitialize && !declaresFormElicitation(params) {
+			initialized.Instructions += "\n\n" + askInChatInstructions
+		}
+		return result, err
+	}
+}
+
 // refuseSessionlessProtocol rejects requests announcing that revision or newer.
 //
 // The SDK refuses it for every method but server/discover, and answers discover
@@ -231,12 +308,46 @@ func refuseSessionlessProtocol(next http.Handler) http.Handler {
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
-	s.registerSkillTool()
 	s.registerQueryTool()
 	s.registerSchemaTool()
 	s.registerChangeTool()
+	s.registerDecideIssueTool()
+	s.registerSetJustInTimeAccessTool()
+	s.registerAdministerWorkspaceTool()
+	s.registerMaskingExemptionTools()
+	s.registerRequestAccessGrantTool()
 	s.registerReauthorizeTool()
 }
+
+// requiresUserInteraction marks a tool whose every call Claude Code shows its
+// user in a permission prompt, even in auto and bypassPermissions modes and
+// despite allow rules. In dontAsk mode, and through --permission-prompt-tool,
+// Claude Code denies the call instead
+// (https://code.claude.com/docs/en/mcp#require-approval-for-a-specific-tool).
+// Other clients ignore the key.
+func requiresUserInteraction() mcp.Meta {
+	return mcp.Meta{"anthropic/requiresUserInteraction": true}
+}
+
+// serverInstructions route an agent to the right tool. A client may add them
+// to the model's prompt for the whole session (MCP InitializeResult
+// instructions). One server serves every workspace, and an admin can change a
+// workspace's MCP access policy at any time, so they name no workspace and
+// assume no mode.
+const serverInstructions = `Bytebase governs access to databases and changes to them. Every call is also limited by the workspace's MCP access policy.
+
+Choose the tool by task:
+- Find a database: call_api(operationId="DatabaseService/SearchDatabases") lists the databases you can view.
+- Read data: query_database. Before you write SQL for a database, read its schema with get_schema.
+- Inspect a schema: get_schema.
+- Change a database: propose_database_change, the easiest way into the governed workflow. It creates the plan and the issue and runs the plan checks; approval and rollout follow the project's policy. ` + singleDatabaseLimit + `
+- Anything else: a tool whose description covers the task; failing that, search_api to find the operation and its request schema, then call_api.
+
+When the workspace's MCP access policy is Read-write, query_database can also run DML and DDL, as far as the engine and the account's permissions allow; call_api refuses them. They take effect at once, without an issue or approval. Use propose_database_change for any change that should be reviewed, or when a write fails on a read-only data source.
+
+When Bytebase refuses a call, the error states the reason and may name a next step, such as a tool to use.`
+
+const askInChatInstructions = `This client cannot show Bytebase's confirmation form, so under Read-write query_database runs any statement that may write without asking. Before you run one, show the user the exact statement, say it runs at once with no issue or approval, and ask them to confirm.`
 
 // authMiddleware validates OAuth2 bearer tokens for MCP requests.
 //

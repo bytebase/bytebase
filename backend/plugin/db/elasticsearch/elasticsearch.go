@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
-	opensearch "github.com/opensearch-project/opensearch-go/v4"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
-	"github.com/opensearch-project/opensearch-go/v4/signer/awsv2"
+	opensearch "github.com/opensearch-project/opensearch-go/v5"
+	"github.com/opensearch-project/opensearch-go/v5/opensearchapi"
+	"github.com/opensearch-project/opensearch-go/v5/signer/awsv2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -234,6 +234,13 @@ func openWithOpenSearchClient(ctx context.Context, config db.ConnectionConfig, a
 	osConfig := opensearch.Config{
 		Addresses: []string{address},
 		Transport: baseTransport,
+		// A managed domain fronts its nodes behind one endpoint, so the
+		// addresses the cluster publishes are not reachable from here and
+		// SigV4 is bound to the host we were configured with. Left to its
+		// default the client discovers nodes and routes to those published
+		// addresses instead, abandoning the endpoint.
+		DiscoverNodesOnStart:  new(false),
+		DiscoverNodesInterval: -1,
 	}
 
 	// Configure authentication
@@ -393,7 +400,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	return 0, nil
 }
 
-func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	parseResult, err := parser.ParseElasticsearchREST(statement)
 	if err != nil {
 		return nil, err
@@ -407,6 +414,16 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 
 	var results []*v1pb.QueryResult
 	for _, request := range parseResult.Requests {
+		if queryContext.Explain {
+			// The plan is what the search did, so the search runs with
+			// profiling on; anything that is not a search is refused rather
+			// than run.
+			profiled, err := profiledSearch(request)
+			if err != nil {
+				return nil, err
+			}
+			request = profiled
+		}
 		if err := func() error {
 			startTime := time.Now()
 			// send HTTP request.
@@ -486,6 +503,20 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 				// Handle based on the actual type
 				switch v := data.(type) {
 				case map[string]any:
+					if queryContext.Explain {
+						// The search ran so that it could be profiled; its hits
+						// are not what an explain asked for, and they leave
+						// here rather than reaching a caller that masking no
+						// longer covers.
+						profile, err := profileOnly(v)
+						if err != nil {
+							return err
+						}
+						result.ColumnNames = append(result.ColumnNames, profileField)
+						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: profile}})
+						result.QueryPlan = explainQueryPlan()
+						break
+					}
 					// Object response: create one column per key
 					for key, val := range v {
 						result.ColumnNames = append(result.ColumnNames, key)
@@ -496,6 +527,9 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 						row.Values = append(row.Values, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(bytes)}})
 					}
 				case []any:
+					if queryContext.Explain {
+						return errors.Errorf("the profiled search answered with a list, which is not a search response")
+					}
 					// Array response (e.g., _cat APIs with format=json): create a single column with array data
 					result.ColumnNames = append(result.ColumnNames, "result")
 					bytes, err := json.Marshal(v)

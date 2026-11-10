@@ -373,6 +373,7 @@ func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		var lastErr error
 		interval := ui.initialInterval
+		reauthenticated := false
 
 		for attempt := 0; attempt < ui.maxAttempts; attempt++ {
 			if attempt > 0 {
@@ -412,8 +413,14 @@ func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			lastErr = err
 			code := connect.CodeOf(err)
 
-			// Handle authentication errors
+			// Handle authentication errors. A token the server rejects right after
+			// a refresh will keep being rejected, such as a static access token, so
+			// refresh at most once per request.
 			if code == connect.CodeUnauthenticated && ui.tokenRefresher != nil {
+				if reauthenticated {
+					return nil, err
+				}
+				reauthenticated = true
 				refreshErr := ui.reauthenticateOnce(ctx)
 				if refreshErr != nil {
 					return nil, errors.Wrap(refreshErr, "failed to login")

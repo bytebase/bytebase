@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -302,7 +303,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		}))
 		ra.NoError(err)
 		policy := policyResp.Msg
-		policy.Bindings = append(append([]*v1pb.Binding{}, baselineBindings...), extra...)
+		policy.Bindings = slices.Concat(baselineBindings, extra)
 		_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
 			Resource: ctl.project.Name,
 			Policy:   policy,

@@ -1,7 +1,6 @@
 import { Plus, Trash2, Undo2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CreateWorkloadIdentitySheet } from "@/components/CreateWorkloadIdentitySheet";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
   ProjectPageLayout,
@@ -21,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip } from "@/components/ui/tooltip";
+import { WorkloadIdentityDialog } from "@/components/WorkloadIdentityFlow/WorkloadIdentityDialog";
 import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
@@ -456,7 +456,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
         )}
       </div>
 
-      <CreateWorkloadIdentitySheet
+      <WorkloadIdentityDialog
         open={showDrawer}
         workloadIdentity={editingWI}
         project={projectName}

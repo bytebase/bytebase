@@ -22,6 +22,7 @@ import (
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -330,7 +331,7 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 	stores := setupIssueServiceTestStore(ctx, t)
 	b, err := bus.New()
 	require.NoError(t, err)
-	service := apiv1.NewIssueService(stores, nil, b, nil, nil)
+	service := apiv1.NewIssueService(stores, nil, b, nil, nil, &config.Profile{})
 
 	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 		ProjectID: "project-a",
@@ -550,7 +551,7 @@ func newIssueServiceForTest(t *testing.T, stores *store.Store) (*apiv1.IssueServ
 	require.NoError(t, err)
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
-	return apiv1.NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, iamManager), b
+	return apiv1.NewIssueService(stores, webhook.NewManager(stores, nil), b, nil, iamManager, &config.Profile{}), b
 }
 
 func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *store.Store) (*store.PlanMessage, *store.IssueMessage) {

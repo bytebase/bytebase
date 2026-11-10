@@ -4,10 +4,11 @@
  * Engine adapters map their own EXPLAIN output onto this model and the viewer
  * components read nothing else, so adding an engine means adding a parser.
  *
- * Bytebase plans without executing, so every number here is an optimizer
- * estimate: there is no actual timing, loop, buffer, or worker data to model.
- * Engines differ in which estimates they report at all, so each one is
- * optional and a surface shows only what the plan carries.
+ * Most plans are estimates: Bytebase explains without executing, so there is
+ * no timing or loop data to model. A plan the statement produced by running —
+ * a typed `EXPLAIN ANALYZE`, SQL Server's actual plan — also carries what each
+ * operator really did. Engines differ in which numbers they report at all, so
+ * each one is optional and a surface shows only what the plan carries.
  */
 
 /** One free-form attribute the engine reported for a node. */
@@ -16,10 +17,32 @@ export interface PlanProperty {
   readonly value: string;
 }
 
-/** Something about a node worth a reader's attention, and what it means. */
+/** Where a warning came from, which decides whether relevance can hide it. */
+export type PlanWarningSource = "engine" | "heuristic";
+
+/** A warning this viewer raises itself, named by the words it shows for it. */
+export type PlanWarningKey =
+  | "full-table-scan"
+  | "full-index-scan"
+  | "data-redistribution";
+
+/**
+ * Something about a node worth a reader's attention, and what it means.
+ *
+ * This viewer's own advice names a key and the viewer holds its words, so they
+ * are read in the reader's language. A warning the engine itself reported
+ * carries the engine's words, as the plan's own operator names do.
+ */
 export interface PlanWarning {
-  readonly title: string;
-  readonly detail: string;
+  readonly source: PlanWarningSource;
+  readonly key?: PlanWarningKey;
+  readonly title?: string;
+  readonly detail?: string;
+}
+
+/** What one warning is, for grouping and for telling two of them apart. */
+export function planWarningIdentity(warning: PlanWarning): string {
+  return warning.key ?? warning.title ?? "";
 }
 
 export interface PlanNode {
@@ -29,6 +52,13 @@ export interface PlanNode {
   readonly nodeType: string;
   /** Table or index the operation reads, when the engine names one. */
   readonly subject?: string;
+  /**
+   * The table this operator reads, where it reads one. Narrower than
+   * `subject`, which is whatever is worth printing on a card: a join
+   * condition, an index, a sort key. This is what a lookup of Bytebase's own
+   * metadata can be keyed on.
+   */
+  readonly relation?: PlanRelation;
   /** How the parent consumes this node, such as "Inner" or "InitPlan 1". */
   readonly relationship?: string;
   /** Cost before the node returns its first row, including its subtree. */
@@ -41,6 +71,14 @@ export interface PlanNode {
   readonly rows?: number;
   /** Estimated size of one returned row, in bytes. */
   readonly width?: number;
+  /** How many times the node ran, on a measured plan. */
+  readonly loops?: number;
+  /** Rows the node really returned, over all its runs together. */
+  readonly actualRows?: number;
+  /** Milliseconds the node and its subtree really took, over all its runs. */
+  readonly actualTime?: number;
+  /** What the node adds on top of its children's time; see `planSelfTime`. */
+  readonly selfTime?: number;
   readonly properties: readonly PlanProperty[];
   readonly warnings: readonly PlanWarning[];
   readonly children: readonly PlanNode[];
@@ -54,25 +92,40 @@ export interface PlanEstimates {
   readonly width: boolean;
 }
 
+/**
+ * What a plan measured, where it ran at all.
+ *
+ * Separate from `PlanEstimates` because the two answer different questions: an
+ * estimate says what the planner expected, a measurement what happened, and a
+ * surface that shows both has to say which is which.
+ */
+export interface PlanMeasurements {
+  readonly time: boolean;
+  readonly rows: boolean;
+}
+
 export interface PlanTree {
   readonly root: PlanNode;
   /** Every node in depth-first order, root first. */
   readonly nodes: readonly PlanNode[];
   readonly estimates: PlanEstimates;
+  readonly measured: PlanMeasurements;
   readonly maxSelfCost: number;
+  readonly maxSelfTime: number;
   readonly maxRows: number;
   /**
-   * The whole plan's cost: the denominator of every cost share and the maximum
-   * of the summary timeline's axis.
+   * The whole plan's cost: the denominator of every cost share.
    *
    * Normally this is the root's total cost, which by construction equals the
    * sum of every node's self cost. A node that stops its children early —
    * `Limit` is the common one — reports a total below its children's, and
    * `selfCost` clamps that difference at zero, so the self costs can add up to
    * more than the root reports. Taking the larger of the two keeps every share
-   * at or below 100% and every timeline bar inside the axis.
+   * at or below 100%.
    */
   readonly costBasis: number;
+  /** The whole plan's measured time, on the same rule as `costBasis`. */
+  readonly timeBasis: number;
 }
 
 export type PlanParseResult =
@@ -101,13 +154,51 @@ export function checkPlanDepth(depth: number) {
   if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
 }
 
-/** A parser's tree from `build`, or the depth message when it went too deep. */
+/**
+ * Past this many operators the diagram is unreadable and its layout slow, so
+ * the plan is shown as text instead. SSMS degrades the same way, at 2 MB.
+ */
+const PLAN_MAX_NODES = 1000;
+
+export const PLAN_TOO_MANY_NODES_MESSAGE = `The query plan has more than ${PLAN_MAX_NODES} operators, which is more than this visualizer draws.`;
+
+/** Raised by a size budget and caught by `parseWithDepthLimit` alone. */
+const PLAN_TOO_MANY_NODES = new Error(PLAN_TOO_MANY_NODES_MESSAGE);
+
+/**
+ * A budget for a parser that expands a graph into a tree. A node that several
+ * paths reach is drawn under each of them, so the copies multiply with the
+ * paths — a flow of 35 processors in two-way stages expands into 262,143 of
+ * them. Counting the finished tree would mean building every copy first, so a
+ * parser that splices calls this for each node it draws and stops there.
+ */
+export function planSizeBudget(): () => void {
+  let drawn = 0;
+  return () => {
+    drawn += 1;
+    if (drawn > PLAN_MAX_NODES) throw PLAN_TOO_MANY_NODES;
+  };
+}
+
+/**
+ * A parser's tree from `build`, or the depth message when it went too deep or
+ * the node-cap message when it is too large to draw.
+ */
 export function parseWithDepthLimit(build: () => PlanNode): PlanParseResult {
   try {
-    return { ok: true, tree: buildPlanTree(build()) };
+    const tree = buildPlanTree(build());
+    if (tree.nodes.length > PLAN_MAX_NODES) {
+      return { ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE };
+    }
+    return { ok: true, tree };
   } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    if (error === PLAN_TOO_DEEP) {
+      return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+    }
+    if (error === PLAN_TOO_MANY_NODES) {
+      return { ok: false, message: PLAN_TOO_MANY_NODES_MESSAGE };
+    }
+    throw error;
   }
 }
 
@@ -138,6 +229,17 @@ export function addPlanProperty(
   }
 }
 
+/** A cumulative number of a node's own, with its children's share removed. */
+function planSelfValue(
+  total: number | undefined,
+  children: readonly PlanNode[],
+  of: (child: PlanNode) => number | undefined
+): number | undefined {
+  if (total === undefined) return undefined;
+  const childTotal = children.reduce((sum, child) => sum + (of(child) ?? 0), 0);
+  return Math.max(0, total - childTotal);
+}
+
 /**
  * A node's total cost minus its children's, clamped at zero, or undefined when
  * the node has no total cost. `PlanTree.costBasis` says when the clamp bites.
@@ -146,30 +248,114 @@ export function planSelfCost(
   totalCost: number | undefined,
   children: readonly PlanNode[]
 ): number | undefined {
-  if (totalCost === undefined) return undefined;
-  const childCost = children.reduce(
-    (sum, child) => sum + (child.totalCost ?? 0),
-    0
-  );
-  return Math.max(0, totalCost - childCost);
+  return planSelfValue(totalCost, children, (child) => child.totalCost);
+}
+
+/**
+ * What an operator that states no cost of its own carries: its children's.
+ *
+ * Engines leave the cost off an operator that adds none — MySQL states one on
+ * the query block and on each table and nothing in between, Oracle leaves it
+ * off a step like `STATISTICS COLLECTOR` — and without this the operator above
+ * would keep that subtree's cost as its own and rank ahead of the operator
+ * that really spends it. Undefined when no child states a cost either, which
+ * is a plan with no costs rather than a plan that costs nothing.
+ */
+export function planSubtreeCost(
+  children: readonly PlanNode[]
+): number | undefined {
+  const costs = children
+    .map((child) => child.totalCost)
+    .filter((cost): cost is number => cost !== undefined);
+  return costs.length ? costs.reduce((sum, cost) => sum + cost, 0) : undefined;
+}
+
+/**
+ * A node's measured time minus its children's, on the same rule as
+ * `planSelfCost`: the time the operator itself spent, which is what a reader
+ * can act on. Ranking the cumulative number would only ever find the root.
+ */
+export function planSelfTime(
+  actualTime: number | undefined,
+  children: readonly PlanNode[]
+): number | undefined {
+  return planSelfValue(actualTime, children, (child) => child.actualTime);
+}
+
+/**
+ * A key from an engine's plan as a label: `access_predicates` and `taskType`
+ * both read "Access predicates" and "Task type". Engines that already report
+ * their keys as prose, such as PostgreSQL's "Node Type", need none of this.
+ */
+export function planLabel(key: string): string {
+  const words = key
+    .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  if (!words) return key;
+  return words[0].toUpperCase() + words.slice(1).toLowerCase();
 }
 
 /** Warning for a read of a whole table, attached by each engine's parser. */
 export const PLAN_FULL_TABLE_SCAN: PlanWarning = {
-  title: "Full table scan",
-  detail:
-    "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+  key: "full-table-scan",
+  source: "heuristic",
 };
 
 /** Warning for a read of a whole index, attached by each engine's parser. */
 export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
-  title: "Full index scan",
-  detail:
-    "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+  key: "full-index-scan",
+  source: "heuristic",
 };
 
-/** Which estimate, if any, shades the diagram's node cards. */
-export type PlanHighlightMode = "off" | "cost" | "rows";
+/**
+ * A table an operator reads, as the plan names it.
+ *
+ * The qualifiers matter as much as the name: SQL Server writes the database on
+ * every object it reads, and a plan that reads `archive.dbo.orders` must not be
+ * answered with the connected database's own `orders`.
+ */
+export interface PlanRelation {
+  readonly table: string;
+  readonly database?: string;
+  readonly schema?: string;
+  /**
+   * The name is the one the statement used, which is the alias where it gave
+   * one, and the engine did not resolve it to the table it read. It names the
+   * read for a reader, but nothing is looked up by it: a stored table that
+   * happens to share an alias would answer with the wrong table's facts.
+   */
+  readonly unresolved?: boolean;
+}
+
+/** One index on a table an operator reads, as Bytebase last synced it. */
+export interface PlanTableIndex {
+  readonly name: string;
+  /** The indexed columns or expressions, in order, as one line. */
+  readonly columns: string;
+  readonly unique?: boolean;
+  readonly primary?: boolean;
+}
+
+/**
+ * What Bytebase already knows about a table an operator reads.
+ *
+ * No standalone plan viewer can show this: pev2 and its kind are handed a
+ * pasted file with no catalog behind it. It is what turns "this scan is
+ * expensive" into a next step.
+ */
+export interface PlanTableFacts {
+  readonly rowCount?: number;
+  readonly indexes: readonly PlanTableIndex[];
+}
+
+/** Answers what Bytebase knows about a relation, where it knows anything. */
+export type PlanTableLookup = (
+  relation: PlanRelation
+) => PlanTableFacts | undefined;
+
+/** Which number, if any, shades the diagram's node cards. */
+export type PlanHighlightMode = "off" | "cost" | "time" | "rows";
 
 export function flattenPlan(root: PlanNode): PlanNode[] {
   const nodes: PlanNode[] = [];
@@ -184,32 +370,43 @@ export function flattenPlan(root: PlanNode): PlanNode[] {
 export function buildPlanTree(root: PlanNode): PlanTree {
   const nodes = flattenPlan(root);
   let maxSelfCost = 0;
+  let maxSelfTime = 0;
   let maxRows = 0;
   let selfCostTotal = 0;
+  let selfTimeTotal = 0;
   const estimates = {
     cost: false,
     startupCost: false,
     rows: false,
     width: false,
   };
+  const measured = { time: false, rows: false };
   for (const node of nodes) {
     const selfCost = node.selfCost ?? 0;
+    const selfTime = node.selfTime ?? 0;
     const rows = node.rows ?? 0;
     if (selfCost > maxSelfCost) maxSelfCost = selfCost;
+    if (selfTime > maxSelfTime) maxSelfTime = selfTime;
     if (rows > maxRows) maxRows = rows;
     selfCostTotal += selfCost;
+    selfTimeTotal += selfTime;
     estimates.cost ||= node.totalCost !== undefined;
     estimates.startupCost ||= node.startupCost !== undefined;
     estimates.rows ||= node.rows !== undefined;
     estimates.width ||= node.width !== undefined;
+    measured.time ||= node.actualTime !== undefined;
+    measured.rows ||= node.actualRows !== undefined;
   }
   return {
     root,
     nodes,
     estimates,
+    measured,
     maxSelfCost,
+    maxSelfTime,
     maxRows,
     costBasis: Math.max(root.totalCost ?? 0, selfCostTotal),
+    timeBasis: Math.max(root.actualTime ?? 0, selfTimeTotal),
   };
 }
 
@@ -313,38 +510,8 @@ export function planRevealNode(
   return next;
 }
 
-/**
- * The URL fragment naming a plan node, which is what makes one shareable.
- *
- * Ids come from a parser rather than from the user, but they are not promised
- * to stay bare digits and dots, so they are escaped both ways.
- */
-const NODE_FRAGMENT_PREFIX = "node-";
-
-export function planNodeFragment(id: string): string {
-  return `#${NODE_FRAGMENT_PREFIX}${encodeURIComponent(id)}`;
-}
-
-/** The node id a fragment names, or undefined when it names something else. */
-export function planNodeIdFromFragment(
-  fragment: string | undefined
-): string | undefined {
-  if (!fragment) return undefined;
-  const body = fragment.startsWith("#") ? fragment.slice(1) : fragment;
-  if (!body.startsWith(NODE_FRAGMENT_PREFIX)) return undefined;
-  const id = body.slice(NODE_FRAGMENT_PREFIX.length);
-  if (!id) return undefined;
-  try {
-    return decodeURIComponent(id);
-  } catch {
-    // A hand-edited fragment can hold a stray percent sign, which is a bad
-    // fragment rather than a reason to fail the page.
-    return undefined;
-  }
-}
-
-// The standalone visualizer entry never initializes i18n, so number formatting
-// is pinned to one locale rather than following the workspace language.
+// Number formatting is pinned to one locale: the viewer's text arrives through
+// a translate function, and its numbers stay comparable across plans.
 const costFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
@@ -372,6 +539,17 @@ export function formatPlanCount(value: number | undefined): string {
   return value === undefined ? PLAN_NO_ESTIMATE : countFormat.format(value);
 }
 
+// Milliseconds, as PostgreSQL reports them; an operator can run in a few
+// microseconds, so sub-millisecond times keep their digits. The unit is in the
+// label beside the number, which comes through the viewer's translate.
+const durationFormat = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 3,
+});
+
+export function formatPlanDuration(value: number | undefined): string {
+  return value === undefined ? PLAN_NO_ESTIMATE : durationFormat.format(value);
+}
+
 const shareFormat = new Intl.NumberFormat("en-US", {
   style: "percent",
   maximumFractionDigits: 1,
@@ -384,6 +562,11 @@ export function formatPlanShare(value: number): string {
   return shareFormat.format(value);
 }
 
+function planShare(value: number | undefined, basis: number): number {
+  if (basis <= 0) return 0;
+  return Math.min(1, Math.max(0, (value ?? 0) / basis));
+}
+
 /**
  * A node's self cost as a fraction of the whole plan's cost, from 0 to 1.
  *
@@ -391,8 +574,68 @@ export function formatPlanShare(value: number): string {
  * this length is read as a quantity, so it has to be one.
  */
 export function planSelfCostShare(node: PlanNode, tree: PlanTree): number {
-  if (tree.costBasis <= 0) return 0;
-  return Math.min(1, Math.max(0, (node.selfCost ?? 0) / tree.costBasis));
+  return planShare(node.selfCost, tree.costBasis);
+}
+
+/**
+ * Which number the ranking and its shares go by.
+ *
+ * Measured time wins wherever the plan has it: planner costs are arbitrary
+ * units, and they are wrong in exactly the cases worth investigating, so
+ * ranking a measured plan by estimate would point at the wrong operator
+ * precisely when it matters.
+ */
+export type PlanRankMetric = "time" | "cost";
+
+export function planRankMetric(tree: PlanTree): PlanRankMetric {
+  return tree.measured.time ? "time" : "cost";
+}
+
+/** A node's share of the plan by whichever number it is ranked on, 0 to 1. */
+export function planSelfShare(node: PlanNode, tree: PlanTree): number {
+  return planRankMetric(tree) === "time"
+    ? planShare(node.selfTime, tree.timeBasis)
+    : planShare(node.selfCost, tree.costBasis);
+}
+
+/**
+ * Below this multiple the planner's row estimate was close enough that saying
+ * so would be noise; the two row counts are on the node either way.
+ */
+export const PLAN_ROW_ESTIMATE_NOTABLE_FACTOR = 2;
+
+/**
+ * How far out the planner's row estimate was, as a multiple of it: above 1 the
+ * node returned more rows than planned, below 1 fewer.
+ *
+ * The estimate is per execution and the measurement is a total, so the
+ * executions are multiplied back in — the comparison a reader would otherwise
+ * have to do by hand, and the one that explains a bad plan that cost alone
+ * does not. Undefined when the node was not measured, or when the planner
+ * expected no rows at all and there is no multiple to state.
+ */
+export function planRowEstimateFactor(node: PlanNode): number | undefined {
+  if (node.actualRows === undefined || node.rows === undefined)
+    return undefined;
+  const expected = node.rows * (node.loops ?? 1);
+  if (expected <= 0) return undefined;
+  return node.actualRows / expected;
+}
+
+/**
+ * Whether the plan reports what each operator added of its own, so a surface
+ * can give it a column and a bar. Says nothing about the numbers being above
+ * zero; `planShareIsMeaningful` answers that.
+ */
+export function planHasSelfMetric(tree: PlanTree): boolean {
+  return tree.measured.time || tree.estimates.cost;
+}
+
+/** Whether the plan's total is above zero, so a share of it means something. */
+function planShareIsMeaningful(tree: PlanTree): boolean {
+  return planRankMetric(tree) === "time"
+    ? tree.timeBasis > 0
+    : tree.costBasis > 0;
 }
 
 /** Narrowest and widest stroke a diagram edge is drawn with, in pixels. */
@@ -420,90 +663,100 @@ export function planEdgeWidth(
   return Math.round(width * 100) / 100;
 }
 
-export interface PlanTimelineRow extends PlanRow {
-  /** Where the node's first row is ready, as a fraction of the plan's cost. */
-  readonly start: number;
-  /** Where the node's last row is ready, as a fraction of the plan's cost. */
-  readonly end: number;
-  /** The node's self cost as a fraction of the plan's cost. */
-  readonly share: number;
+/** How many operators the side panel ranks before it stops being a summary. */
+export const PLAN_COSTLIEST_LIMIT = 3;
+
+function planOwnValue(tree: PlanTree): (node: PlanNode) => number {
+  return planRankMetric(tree) === "time"
+    ? (node) => node.selfTime ?? 0
+    : (node) => node.selfCost ?? 0;
 }
 
 /**
- * Every node as a span from its startup cost to its total cost.
- *
- * Both costs include the node's whole subtree, so a span says how much of the
- * plan's cost a node accounts for and how much of that is paid before its first
- * row. It is not a schedule: siblings each start from their own subtree's cost,
- * so two inputs of a join overlap on this axis while actually running one after
- * the other.
- */
-export function planTimeline(tree: PlanTree): PlanTimelineRow[] {
-  const fraction = (value = 0) =>
-    tree.costBasis <= 0 ? 0 : Math.min(1, Math.max(0, value / tree.costBasis));
-  return planRows(tree.root).map((row) => {
-    const start = fraction(row.node.startupCost);
-    return {
-      ...row,
-      start,
-      end: Math.max(start, fraction(row.node.totalCost)),
-      share: planSelfCostShare(row.node, tree),
-    };
-  });
-}
-
-/** How many operators the summary names before it stops being a summary. */
-export const PLAN_COSTLIEST_LIMIT = 5;
-
-/**
- * The nodes that own the most cost, largest first. A node that adds nothing on
- * top of its children is not a cost the reader can go after, so it is left out.
+ * The nodes that own the most of the plan — measured time where it has it,
+ * estimated cost otherwise — largest first. A node that adds nothing on top of
+ * its children is not a cost the reader can go after, so it is left out.
  */
 export function planCostliestNodes(
   tree: PlanTree,
   limit: number = PLAN_COSTLIEST_LIMIT
 ): PlanNode[] {
+  const own = planOwnValue(tree);
   return tree.nodes
-    .filter((node) => (node.selfCost ?? 0) > 0)
-    .sort((a, b) => (b.selfCost ?? 0) - (a.selfCost ?? 0))
+    .filter((node) => own(node) > 0)
+    .sort((a, b) => own(b) - own(a))
     .slice(0, limit);
 }
 
-export interface PlanOperationCost {
-  readonly nodeType: string;
-  readonly count: number;
-  readonly selfCost: number;
-  readonly share: number;
+/**
+ * Share of the plan below which one of our own scan heuristics stays off the
+ * summary panel.
+ *
+ * A full scan of a small lookup table is the correct plan, and warning about
+ * every scan teaches readers to ignore the warnings that matter. It applies to
+ * Bytebase's heuristics alone: a diagnostic the engine itself reports always
+ * reaches the panel, because "columns with no statistics" is the explanation
+ * for a node that a cost threshold would call cheap.
+ */
+export const PLAN_WARNING_RELEVANT_SHARE = 0.1;
+
+/** One warning and the nodes reporting it, worst first. */
+export interface PlanWarningGroup {
+  readonly warning: PlanWarning;
+  readonly nodes: readonly PlanNode[];
 }
 
-/** Each node type in the plan with what it costs in total, largest first. */
-export function planCostByOperation(tree: PlanTree): PlanOperationCost[] {
-  const totals = new Map<string, { count: number; selfCost: number }>();
+/**
+ * The warnings worth the summary panel, grouped by warning so one heuristic
+ * firing on eight nodes is one line and not eight. Groups come in plan order;
+ * node details still show every warning a node carries, relevant or not.
+ */
+export function planWarningGroups(tree: PlanTree): PlanWarningGroup[] {
+  // With no cost and no measurement there is nothing to judge relevance by, so
+  // every warning stands rather than being dropped for want of a number.
+  const ranked = planShareIsMeaningful(tree);
+  const own = planOwnValue(tree);
+  const groups = new Map<string, { warning: PlanWarning; nodes: PlanNode[] }>();
   for (const node of tree.nodes) {
-    const entry = totals.get(node.nodeType) ?? { count: 0, selfCost: 0 };
-    entry.count += 1;
-    entry.selfCost += node.selfCost ?? 0;
-    totals.set(node.nodeType, entry);
+    for (const warning of node.warnings) {
+      if (
+        warning.source === "heuristic" &&
+        ranked &&
+        planSelfShare(node, tree) < PLAN_WARNING_RELEVANT_SHARE
+      ) {
+        continue;
+      }
+      const identity = planWarningIdentity(warning);
+      const group = groups.get(identity);
+      if (group) group.nodes.push(node);
+      else groups.set(identity, { warning, nodes: [node] });
+    }
   }
-  return [...totals]
-    .map(([nodeType, entry]) => ({
-      nodeType,
-      count: entry.count,
-      selfCost: entry.selfCost,
-      share:
-        tree.costBasis <= 0 ? 0 : Math.min(1, entry.selfCost / tree.costBasis),
-    }))
-    .sort(
-      (a, b) => b.selfCost - a.selfCost || a.nodeType.localeCompare(b.nodeType)
-    );
+  return [...groups.values()].map(({ warning, nodes }) => ({
+    warning,
+    nodes: nodes.sort((a, b) => own(b) - own(a)),
+  }));
 }
+
+/** What each shading mode reads off a node, and the plan's largest of it. */
+const PLAN_HIGHLIGHT_VALUES: Record<
+  Exclude<PlanHighlightMode, "off">,
+  {
+    readonly of: (node: PlanNode) => number | undefined;
+    readonly max: (tree: PlanTree) => number;
+  }
+> = {
+  cost: { of: (node) => node.selfCost, max: (tree) => tree.maxSelfCost },
+  time: { of: (node) => node.selfTime, max: (tree) => tree.maxSelfTime },
+  rows: { of: (node) => node.rows, max: (tree) => tree.maxRows },
+};
 
 /**
  * How strongly a node should be shaded, from 0 (no shading) to 1.
  *
- * Costs and row counts span orders of magnitude within one plan, so a linear
- * ramp leaves everything but the single worst node invisible. The square root
- * keeps the extremes ordered while giving mid-range nodes a readable tint.
+ * Costs, times and row counts span orders of magnitude within one plan, so a
+ * linear ramp leaves everything but the single worst node invisible. The square
+ * root keeps the extremes ordered while giving mid-range nodes a readable tint.
  */
 export function planHighlightIntensity(
   node: PlanNode,
@@ -511,8 +764,9 @@ export function planHighlightIntensity(
   mode: PlanHighlightMode
 ): number {
   if (mode === "off") return 0;
-  const value = (mode === "cost" ? node.selfCost : node.rows) ?? 0;
-  const max = mode === "cost" ? tree.maxSelfCost : tree.maxRows;
+  const { of, max: maxOf } = PLAN_HIGHLIGHT_VALUES[mode];
+  const value = of(node) ?? 0;
+  const max = maxOf(tree);
   if (max <= 0 || value <= 0) return 0;
   return Math.sqrt(Math.min(value, max) / max);
 }

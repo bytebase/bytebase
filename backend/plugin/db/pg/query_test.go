@@ -1,11 +1,16 @@
 package pg
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 func TestBuildTimestamptzRowValue(t *testing.T) {
@@ -145,4 +150,85 @@ func TestPadZeroes(t *testing.T) {
 		got := padZeroes(test.rawStr, test.acc)
 		require.Equal(t, test.expected, got)
 	}
+}
+
+// TestConvertValueTimestampFromDriver reads timestamps through the driver rather than
+// from a constructed time.Time, exercising the session time zone the way QueryConn does:
+// read once per statement, then applied to every timestamptz in the result. It also
+// covers ColumnType.DecimalSize reporting the column's fractional-second scale, which
+// Bytebase's pgx fork adds and upstream does not, so a pgx upgrade that loses that patch
+// fails here instead of silently changing query results.
+func TestConvertValueTimestampFromDriver(t *testing.T) {
+	const (
+		sessionZone   = "Asia/Shanghai"
+		sessionOffset = 8 * 60 * 60
+	)
+
+	ctx := context.Background()
+	_, db := testcontainer.NewPgDatabase(t)
+
+	// SET applies to one session, so hold a single connection for the query.
+	conn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.Close()) }()
+	_, err = conn.ExecContext(ctx, "SET TimeZone TO '"+sessionZone+"'")
+	require.NoError(t, err)
+
+	// QueryConn reads the zone once per statement, after any preceding SET.
+	location := util.PgSessionLocation(conn)
+	require.Equal(t, sessionZone, location.String())
+
+	rows, err := conn.QueryContext(ctx, `SELECT
+		'2026-03-04 05:06:07.891234+00'::timestamptz    AS tz_default,
+		'2026-03-04 05:06:07.891234+00'::timestamptz(3) AS tz_scale3,
+		'2026-03-04 05:06:07.891234'::timestamp         AS ts_default,
+		'10000-01-01 00:00:00+00'::timestamptz          AS tz_out_of_range,
+		'10000-01-01 00:00:00'::timestamp               AS ts_out_of_range`)
+	require.NoError(t, err)
+	defer rows.Close()
+
+	columnTypes, err := rows.ColumnTypes()
+	require.NoError(t, err)
+	require.Len(t, columnTypes, 5)
+
+	require.True(t, rows.Next())
+	dest := make([]any, len(columnTypes))
+	for i, columnType := range columnTypes {
+		dest[i] = makeValueByTypeName(columnType.DatabaseTypeName(), columnType)
+	}
+	require.NoError(t, rows.Scan(dest...))
+	require.NoError(t, rows.Err())
+
+	values := make(map[string]*v1pb.RowValue, len(columnTypes))
+	for i, columnType := range columnTypes {
+		values[columnType.Name()] = convertValue(columnType.DatabaseTypeName(), columnType, dest[i], location)
+	}
+
+	tzDefault := values["tz_default"].GetTimestampTzValue()
+	require.NotNil(t, tzDefault)
+	require.Equal(t, "CST", tzDefault.Zone)
+	require.EqualValues(t, sessionOffset, tzDefault.Offset)
+	require.EqualValues(t, 6, tzDefault.Accuracy)
+	require.Equal(t, "2026-03-04T05:06:07.891234Z", tzDefault.GoogleTimestamp.AsTime().Format(time.RFC3339Nano))
+
+	// Postgres rounds the fixture's .891234 to .891 for timestamptz(3).
+	tzScale3 := values["tz_scale3"].GetTimestampTzValue()
+	require.NotNil(t, tzScale3)
+	require.Equal(t, "CST", tzScale3.Zone)
+	require.EqualValues(t, sessionOffset, tzScale3.Offset)
+	require.EqualValues(t, 3, tzScale3.Accuracy)
+	require.Equal(t, "2026-03-04T05:06:07.891Z", tzScale3.GoogleTimestamp.AsTime().Format(time.RFC3339Nano))
+
+	// timestamp without time zone carries no zone, so it is not shifted.
+	tsDefault := values["ts_default"].GetTimestampValue()
+	require.NotNil(t, tsDefault)
+	require.EqualValues(t, 6, tsDefault.Accuracy)
+	require.Equal(t, "2026-03-04T05:06:07.891234Z", tsDefault.GoogleTimestamp.AsTime().Format(time.RFC3339Nano))
+
+	// A date past the protobuf timestamp range falls back to a formatted string built
+	// from wall-clock fields, which is the one path where converting the location moves
+	// the value instead of relabeling it. timestamptz renders in the session zone; a
+	// zone-less timestamp keeps the stored wall clock and gains no offset.
+	require.Equal(t, "10000-01-01 08:00:00+08:00", values["tz_out_of_range"].GetStringValue())
+	require.Equal(t, "10000-01-01 00:00:00", values["ts_out_of_range"].GetStringValue())
 }

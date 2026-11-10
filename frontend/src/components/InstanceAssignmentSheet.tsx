@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
@@ -229,14 +230,11 @@ export function InstanceAssignmentSheet({
         </SheetHeader>
         <SheetBody className="gap-y-6">
           <div>
-            <div className="flex gap-x-2 text-control-light">
+            <div className="flex gap-x-2 text-sm text-control-light">
               <span>
                 {t("subscription.instance-assignment.used-and-total-license")}
               </span>
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/license?source=console"
-                className="text-sm"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/license?source=console" />
             </div>
             <div className="mt-1 flex items-center gap-x-2 text-4xl">
               <span>{activatedInstanceCount}</span>
@@ -244,6 +242,10 @@ export function InstanceAssignmentSheet({
               <span>{totalLicenseCount}</span>
             </div>
           </div>
+
+          <Alert variant="info" role="note">
+            {t("subscription.instance-assignment.project-instance-hint")}
+          </Alert>
 
           <div className="overflow-x-auto rounded-sm border border-control-border">
             <Table className="min-w-[36rem]">

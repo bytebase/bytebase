@@ -28,7 +28,11 @@ import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 import { createSubmittedDatabaseChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
-import { resolveIssueName, waitForPlanChecksDone } from "./plan-helpers";
+import {
+  authorMayApprove,
+  resolveIssueName,
+  waitForPlanChecksDone,
+} from "./plan-helpers";
 
 test.setTimeout(180_000);
 
@@ -42,6 +46,7 @@ let originalProjectSettings: {
   requireIssueApproval?: boolean;
   requirePlanCheckNoError?: boolean;
   allowSelfApproval?: boolean;
+  allowLastPlanEditorApproval?: boolean;
 } = {};
 let originalApprovalSetting: unknown = null;
 let createdReviewConfigs: string[] = [];
@@ -49,8 +54,9 @@ let createdReviewConfigs: string[] = [];
 // Workspace approval rule used by the approval-gated tests. Single-step
 // workspaceAdmin approval matched against `CHANGE_DATABASE` plans (the
 // enum value covers DDL/DML — see proto `setting_service.proto`). The
-// admin who created the issue (env.adminEmail) can self-approve, which
-// is sufficient to verify the state transition without a second user.
+// admin who created the plan (env.adminEmail) approves it under
+// authorMayApprove, which is enough to verify the state transition without
+// a second user.
 const APPROVAL_RULE = {
   source: "CHANGE_DATABASE",
   condition: { expression: "true" },
@@ -71,6 +77,7 @@ test.beforeAll(async ({ browser }) => {
     requireIssueApproval: !!project.requireIssueApproval,
     requirePlanCheckNoError: !!project.requirePlanCheckNoError,
     allowSelfApproval: !!project.allowSelfApproval,
+    allowLastPlanEditorApproval: !!project.allowLastPlanEditorApproval,
   };
 
   // Snapshot WORKSPACE_APPROVAL so per-test mutations can be restored.
@@ -168,10 +175,7 @@ test.describe("Approval required, no plan-check gate", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: true,
       requirePlanCheckNoError: false,
-      // Default with license is false → demo@ (issue creator) gets a
-      // 403 trying to approve their own issue. We're doing single-
-      // admin approval for test simplicity; flip on.
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -231,7 +235,7 @@ test.describe("Approval + plan-check gate with ERROR-level SQL review", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: true,
       requirePlanCheckNoError: true,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",

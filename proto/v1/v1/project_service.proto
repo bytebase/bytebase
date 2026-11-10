@@ -89,8 +89,9 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    // An MCP session reaches it only through the set_just_in_time_access tool,
+    // after the user confirms the change in the MCP client.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes (soft-delete or purge) a project.
@@ -139,8 +140,7 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Sets the IAM policy for a project.
@@ -466,8 +466,9 @@ message Project {
     int32 maximum_retries = 1;
   }
 
-  // The maximum number of database rows to sample during CI data validation.
-  // Without specification, sampling is disabled, resulting in full validation.
+  // The maximum number of databases to sample during CI data validation and
+  // AI review. Without specification, sampling is disabled, resulting in full
+  // validation.
   int32 ci_sampling_size = 16;
 
   // The maximum number of parallel tasks allowed during rollout execution.
@@ -494,6 +495,15 @@ message Project {
 
   // Whether to allow the last Plan editor to approve a database change issue.
   bool allow_last_plan_editor_approval = 24;
+
+  // Export configuration for this project.
+  ExportSetting export_setting = 25;
+
+  // Destinations offered for this project's exports, at most one per provider.
+  message ExportSetting {
+    // Unset when the project has no SharePoint destination.
+    SharePointDestination sharepoint = 1;
+  }
 }
 
 message AddWebhookRequest {
@@ -544,6 +554,13 @@ message TestWebhookRequest {
 message TestWebhookResponse {
   // The result of the test, empty if the test is successful.
   string error = 1;
+}
+
+// A SharePoint document library root or folder that receives exports.
+message SharePointDestination {
+  // The URL of the library root or folder. Normalized to its canonical form
+  // and resolved with the workspace credentials on save.
+  string url = 1;
 }
 
 message Webhook {

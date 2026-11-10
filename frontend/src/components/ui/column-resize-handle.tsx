@@ -7,7 +7,8 @@ interface ColumnResizeHandleProps {
 
 /**
  * Drag affordance for resizing a table column. Designed to be absolutely
- * positioned inside a `relative` `<th>`.
+ * positioned inside a `relative` `<th>`. It has no z-index: inline popups such
+ * as the AdvancedSearch menu share the page's stacking context and must cover it.
  */
 export function ColumnResizeHandle({
   onMouseDown,
@@ -16,7 +17,7 @@ export function ColumnResizeHandle({
   return (
     <div
       className={cn(
-        "group absolute right-0 top-0 z-10 h-full w-3 cursor-col-resize",
+        "group absolute right-0 top-0 h-full w-3 cursor-col-resize",
         className
       )}
       onMouseDown={onMouseDown}

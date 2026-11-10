@@ -87,7 +87,7 @@ type AccessGrant struct {
 	// Format: projects/{project}/accessGrants/{access_grant}
 	// The {access_grant} segment is a server-generated unique ID.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// The creator of the access grant.
+	// The creator of the access grant, the caller who requested it.
 	// Format: users/{email}
 	Creator string `protobuf:"bytes,2,opt,name=creator,proto3" json:"creator,omitempty"`
 	// The status of the access grant.
@@ -118,7 +118,8 @@ type AccessGrant struct {
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
 	Reason     string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
-	// Whether export the query result.
+	// Whether the grant allows exporting the query result.
+	// An active grant with export=true grants bb.sql.export for this query until the grant expires.
 	Export bool `protobuf:"varint,13,opt,name=export,proto3" json:"export,omitempty"`
 	// The default schema to execute the query.
 	Schema string `protobuf:"bytes,14,opt,name=schema,proto3" json:"schema,omitempty"`
@@ -350,16 +351,22 @@ type ListAccessGrantsRequest struct {
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter expression using AIP-160 syntax.
 	// Supported fields:
-	// - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.
-	// - creator: the creator name in "users/{email}" format, support "==" operator.
-	// - status: the access status, support "==" and "in" operator.
-	// - issue: the access issue fullname, support "==" operator.
-	// - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
-	// - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
-	// - query: the access query, support "==" and ".contains(xx)" operator
-	// - target: the target database fullname, support "==" operator.
-	// - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
-	// - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
+	//   - name: the fullname in "projects/{project}/accessGrants/{access_grant}" format, support "==" operator.
+	//   - creator: the creator name in "users/{email}" format, support "==" operator.
+	//   - status: the access status, support "==" and "in" operator.
+	//   - issue: the access issue fullname, support "==" operator.
+	//   - expire_time: the access expire time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	//   - create_time: the access creation time in "2006-01-02T15:04:05Z07:00" format, support ">=", ">", "<=" and "<" operator.
+	//   - query: the access query, support "==" and ".contains(xx)" operator.
+	//     Equality trims only boundary ASCII space, tab, LF, CR, vertical tab, and form feed.
+	//   - query_hash: supports "==" with a lowercase hexadecimal SHA-256 digest of
+	//     the UTF-8 query after the same boundary trim. Internal whitespace and Unicode
+	//     remain unchanged.
+	//   - schema: execution schema, supports "=="; empty matches only empty or absent values.
+	//   - container: execution container, supports "=="; empty matches only empty or absent values.
+	//   - target: the target database fullname, support "==" operator.
+	//   - unmask: whether the grant allows unmasking sensitive data, support "==" operator with a boolean literal.
+	//   - export: whether the grant allows exporting the query result, support "==" operator with a boolean literal.
 	//
 	// Examples:
 	// - creator == "users/dev@example.com"
@@ -791,22 +798,22 @@ var File_v1_access_grant_service_proto protoreflect.FileDescriptor
 
 const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xe8\x05\n" +
+	"\x1dv1/access_grant_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\xef\x05\n" +
 	"\vAccessGrant\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
-	"\acreator\x18\x02 \x01(\tB\x03\xe0A\x02R\acreator\x12<\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x03\xe0A\x03R\x06status\x12=\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1e\n" +
+	"\acreator\x18\x02 \x01(\tB\x04\xe2A\x01\x03R\acreator\x12=\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1f.bytebase.v1.AccessGrant.StatusB\x04\xe2A\x01\x03R\x06status\x12=\n" +
 	"\vexpire_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\n" +
-	"expireTime\x122\n" +
-	"\x03ttl\x18\v \x01(\v2\x19.google.protobuf.DurationB\x03\xe0A\x04H\x00R\x03ttl\x12\x19\n" +
-	"\x05issue\x18\x05 \x01(\tB\x03\xe0A\x03R\x05issue\x12\x1d\n" +
-	"\atargets\x18\x06 \x03(\tB\x03\xe0A\x02R\atargets\x12\x14\n" +
+	"expireTime\x123\n" +
+	"\x03ttl\x18\v \x01(\v2\x19.google.protobuf.DurationB\x04\xe2A\x01\x04H\x00R\x03ttl\x12\x1a\n" +
+	"\x05issue\x18\x05 \x01(\tB\x04\xe2A\x01\x03R\x05issue\x12\x1e\n" +
+	"\atargets\x18\x06 \x03(\tB\x04\xe2A\x01\x02R\atargets\x12\x14\n" +
 	"\x05query\x18\a \x01(\tR\x05query\x12\x16\n" +
-	"\x06unmask\x18\b \x01(\bR\x06unmask\x12@\n" +
-	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12@\n" +
+	"\x06unmask\x18\b \x01(\bR\x06unmask\x12A\n" +
+	"\vcreate_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"createTime\x12A\n" +
 	"\vupdate_time\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"updateTime\x12\x16\n" +
 	"\x06reason\x18\f \x01(\tR\x06reason\x12\x16\n" +
 	"\x06export\x18\r \x01(\bR\x06export\x12\x16\n" +
@@ -820,12 +827,12 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\aREVOKED\x10\x03:M\xeaAJ\n" +
 	"\x18bytebase.com/AccessGrant\x12.projects/{project}/accessGrants/{access_grant}B\f\n" +
 	"\n" +
-	"expiration\"M\n" +
-	"\x15GetAccessGrantRequest\x124\n" +
-	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name\"\xbe\x01\n" +
-	"\x17ListAccessGrantsRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"expiration\"N\n" +
+	"\x15GetAccessGrantRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe2A\x01\x02\xfaA\x1a\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"\xbf\x01\n" +
+	"\x17ListAccessGrantsRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -834,19 +841,19 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x81\x01\n" +
 	"\x18ListAccessGrantsResponse\x12=\n" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x92\x01\n" +
-	"\x18CreateAccessGrantRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12@\n" +
-	"\faccess_grant\x18\x02 \x01(\v2\x18.bytebase.v1.AccessGrantB\x03\xe0A\x02R\vaccessGrant\"R\n" +
-	"\x1aActivateAccessGrantRequest\x124\n" +
-	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name\"P\n" +
-	"\x18RevokeAccessGrantRequest\x124\n" +
-	"\x04name\x18\x01 \x01(\tB \xe0A\x02\xfaA\x1a\n" +
-	"\x18bytebase.com/AccessGrantR\x04name\"\xc2\x01\n" +
-	"\x1bSearchMyAccessGrantsRequest\x124\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x94\x01\n" +
+	"\x18CreateAccessGrantRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x12A\n" +
+	"\faccess_grant\x18\x02 \x01(\v2\x18.bytebase.v1.AccessGrantB\x04\xe2A\x01\x02R\vaccessGrant\"S\n" +
+	"\x1aActivateAccessGrantRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe2A\x01\x02\xfaA\x1a\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"Q\n" +
+	"\x18RevokeAccessGrantRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe2A\x01\x02\xfaA\x1a\n" +
+	"\x18bytebase.com/AccessGrantR\x04name\"\xc3\x01\n" +
+	"\x1bSearchMyAccessGrantsRequest\x125\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1d\xe2A\x01\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -855,13 +862,13 @@ const file_v1_access_grant_service_proto_rawDesc = "" +
 	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x85\x01\n" +
 	"\x1cSearchMyAccessGrantsResponse\x12=\n" +
 	"\raccess_grants\x18\x01 \x03(\v2\x18.bytebase.v1.AccessGrantR\faccessGrants\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\x9c\t\n" +
-	"\x12AccessGrantService\x12\xa6\x01\n" +
-	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"V\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xba\x01\n" +
-	"\x10ListAccessGrants\x12$.bytebase.v1.ListAccessGrantsRequest\x1a%.bytebase.v1.ListAccessGrantsResponse\"Y\xdaA\x06parent\x8a\xea0\x14bb.accessGrants.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/accessGrants\x12\xd0\x01\n" +
-	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"z\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xc5\x01\n" +
-	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"k\xdaA\x04name\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xbd\x01\n" +
-	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"g\xdaA\x04name\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revoke\x12\xc4\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\x8c\t\n" +
+	"\x12AccessGrantService\x12\xa2\x01\n" +
+	"\x0eGetAccessGrant\x12\".bytebase.v1.GetAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"R\xdaA\x04name\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/accessGrants/*}\x12\xb6\x01\n" +
+	"\x10ListAccessGrants\x12$.bytebase.v1.ListAccessGrantsRequest\x1a%.bytebase.v1.ListAccessGrantsResponse\"U\xdaA\x06parent\x8a\xea0\x14bb.accessGrants.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/accessGrants\x12\xcc\x01\n" +
+	"\x11CreateAccessGrant\x12%.bytebase.v1.CreateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"v\xdaA\x13parent,access_grant\x8a\xea0\x16bb.accessGrants.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\faccess_grant\"$/v1/{parent=projects/*}/accessGrants\x12\xc5\x01\n" +
+	"\x13ActivateAccessGrant\x12'.bytebase.v1.ActivateAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"k\xdaA\x04name\x8a\xea0\x18bb.accessGrants.activate\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{name=projects/*/accessGrants/*}:activate\x12\xb9\x01\n" +
+	"\x11RevokeAccessGrant\x12%.bytebase.v1.RevokeAccessGrantRequest\x1a\x18.bytebase.v1.AccessGrant\"c\xdaA\x04name\x8a\xea0\x16bb.accessGrants.revoke\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/accessGrants/*}:revoke\x12\xc4\x01\n" +
 	"\x14SearchMyAccessGrants\x12(.bytebase.v1.SearchMyAccessGrantsRequest\x1a).bytebase.v1.SearchMyAccessGrantsResponse\"W\x8a\xea0\x13bb.accessGrants.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/accessGrants:searchMyB\xad\x01\n" +
 	"\x0fcom.bytebase.v1B\x17AccessGrantServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

@@ -102,7 +102,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if queryType != base.Select {
 		return &base.QuerySpan{
 			Type:          queryType,
-			SourceColumns: base.SourceColumnSet{},
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -1045,6 +1045,9 @@ func (q *querySpanExtractor) findTableSchema(objectName *ast.ObjectName, normali
 		_, database, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, normalizedDatabaseName)
 		if err != nil {
 			return "", nil, errors.Wrapf(err, "failed to get database %s", normalizedDatabaseName)
+		}
+		if database == nil {
+			return "", nil, errors.Errorf("database metadata for database %q not found (database not synced)", normalizedDatabaseName)
 		}
 		allSchemaNames := database.ListSchemaNames()
 		for _, schemaSchema := range allSchemaNames {

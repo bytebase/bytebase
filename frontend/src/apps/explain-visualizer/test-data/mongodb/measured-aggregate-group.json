@@ -1,0 +1,110 @@
+{
+  "explainVersion": "1",
+  "stages": [
+    {
+      "$cursor": {
+        "queryPlanner": {
+          "namespace": "qp.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {},
+          "queryHash": "8AD89786",
+          "planCacheKey": "8AD89786",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "PROJECTION_SIMPLE",
+            "transformBy": { "customerId": 1, "total": 1, "_id": 0 },
+            "inputStage": { "stage": "COLLSCAN", "direction": "forward" }
+          },
+          "rejectedPlans": []
+        },
+        "executionStats": {
+          "executionSuccess": true,
+          "nReturned": 5000,
+          "executionTimeMillis": 6,
+          "totalKeysExamined": 0,
+          "totalDocsExamined": 5000,
+          "executionStages": {
+            "stage": "PROJECTION_SIMPLE",
+            "nReturned": 5000,
+            "executionTimeMillisEstimate": 0,
+            "works": 5001,
+            "advanced": 5000,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 6,
+            "restoreState": 6,
+            "isEOF": 1,
+            "transformBy": { "customerId": 1, "total": 1, "_id": 0 },
+            "inputStage": {
+              "stage": "COLLSCAN",
+              "nReturned": 5000,
+              "executionTimeMillisEstimate": 0,
+              "works": 5001,
+              "advanced": 5000,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 6,
+              "restoreState": 6,
+              "isEOF": 1,
+              "direction": "forward",
+              "docsExamined": 5000
+            }
+          }
+        }
+      },
+      "nReturned": 5000,
+      "executionTimeMillisEstimate": 4
+    },
+    {
+      "$group": { "_id": "$customerId", "n": { "$sum": "$total" } },
+      "maxAccumulatorMemoryUsageBytes": { "n": 48000 },
+      "totalOutputDataSizeBytes": 122500,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "numBytesSpilledEstimate": 0,
+      "spilledRecords": 0,
+      "nReturned": 500,
+      "executionTimeMillisEstimate": 4
+    },
+    {
+      "$sort": { "sortKey": { "n": -1 } },
+      "totalDataSizeSortedBytesEstimate": 126500,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "nReturned": 500,
+      "executionTimeMillisEstimate": 4
+    }
+  ],
+  "serverInfo": {
+    "host": "d1186ea972c8",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "command": {
+    "aggregate": "orders",
+    "pipeline": [
+      { "$group": { "_id": "$customerId", "n": { "$sum": "$total" } } },
+      { "$sort": { "n": -1 } }
+    ],
+    "cursor": {},
+    "$db": "qp"
+  },
+  "ok": 1
+}

@@ -1,0 +1,8 @@
+{
+  "ID": 0,
+  "OPERATOR": "TABLE FULL SCAN",
+  "NAME": "orders",
+  "EST.ROWS": 5000,
+  "EST.TIME(us)": 2382,
+  "output": "output([orders.id], [orders.customer_id], [orders.total], [orders.status])"
+}

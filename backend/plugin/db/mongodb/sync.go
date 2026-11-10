@@ -263,7 +263,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	var commandResult bson.M
 	command := bson.D{{Key: "buildInfo", Value: 1}}
 	if err := database.RunCommand(ctx, command).Decode(&commandResult); err != nil {
-		return "", errors.Wrap(err, "cannot run buildInfo command")
+		return "", errors.Wrap(annotateUnsupportedServerVersion(err), "cannot run buildInfo command")
 	}
 	version, ok := commandResult["version"]
 	if !ok {

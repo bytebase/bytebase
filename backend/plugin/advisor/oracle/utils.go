@@ -2,6 +2,7 @@ package oracle
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -145,6 +146,11 @@ func omniColumnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
 	return false
 }
 
+// omniIdentifiers returns the names a statement defines: created objects and
+// their columns, constraints, and partitions; aliases and CTEs; rename targets;
+// and PL/SQL declarations. References are excluded because the author did not
+// choose those names, including built-ins such as COUNT, coll.COUNT,
+// SQL%ROWCOUNT, and SQLCODE.
 func omniIdentifiers(node ast.Node) []omniIdentifier {
 	var result []omniIdentifier
 	seen := make(map[string]bool)
@@ -159,34 +165,125 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 		seen[key] = true
 		result = append(result, omniIdentifier{name: name, loc: loc})
 	}
+	addObject := func(name *ast.ObjectName) {
+		if name != nil {
+			add(name.Name, name.Loc)
+		}
+	}
+	addStrings := func(list *ast.List, loc ast.Loc) {
+		for _, name := range omniListStrings(list) {
+			add(name, loc)
+		}
+	}
+	// A TableConstraint node also names the target of DROP CONSTRAINT, so
+	// constraint names are taken from the statements that define them.
+	addTableConstraints := func(list *ast.List) {
+		for _, c := range omniTableConstraints(list) {
+			add(c.Name, c.Loc)
+		}
+	}
 	omniWalk(node, func(n ast.Node) {
+		add(omniCreatedName(n))
 		switch x := n.(type) {
-		case *ast.ObjectName:
-			add(x.Schema, x.Loc)
-			add(x.Name, x.Loc)
+		case *ast.CreateTableStmt:
+			addTableConstraints(x.Constraints)
+		case *ast.CreateViewStmt:
+			addStrings(x.Columns, x.Loc)
+			addTableConstraints(x.Constraints)
+			add(x.ConstraintName, x.Loc)
+		case *ast.AdminDDLStmt:
+			if x.Action == "CREATE" {
+				addObject(x.Name)
+			}
+		case *ast.RenameStmt:
+			addObject(x.NewName)
+		case *ast.AlterTableCmd:
+			switch x.Action {
+			case ast.AT_ADD_CONSTRAINT:
+				if x.Constraint != nil {
+					add(x.Constraint.Name, x.Constraint.Loc)
+				}
+			case ast.AT_RENAME, ast.AT_RENAME_COLUMN, ast.AT_RENAME_CONSTRAINT, ast.AT_RENAME_PARTITION:
+				add(x.NewName, x.Loc)
+			default:
+			}
+		case *ast.AlterIndexStmt:
+			add(x.NewName, x.Loc)
+		case *ast.AlterTriggerStmt:
+			add(x.NewName, x.Loc)
 		case *ast.ColumnDef:
-			add(x.Name, x.Loc)
-		case *ast.ColumnRef:
-			add(x.Schema, x.Loc)
-			add(x.Table, x.Loc)
-			add(x.Column, x.Loc)
-		case *ast.Alias:
 			add(x.Name, x.Loc)
 		case *ast.ColumnConstraint:
 			add(x.Name, x.Loc)
-		case *ast.TableConstraint:
+		case *ast.PartitionDef:
 			add(x.Name, x.Loc)
-			for _, name := range omniListStrings(x.Columns) {
-				add(name, x.Loc)
-			}
+		case *ast.ResTarget:
+			add(x.Name, x.Loc)
+		case *ast.Alias:
+			add(x.Name, x.Loc)
+			addStrings(x.Cols, x.Loc)
 		case *ast.CTE:
 			add(x.Name, x.Loc)
-		case *ast.CommentStmt:
-			add(x.Column, x.Loc)
+			addStrings(x.Columns, x.Loc)
+		case *ast.Parameter:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLVarDecl:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLCursorDecl:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLTypeDecl:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLSubtypeDecl:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLLoop:
+			// Loops with an Iteration declare their variables as PLSQLIterand nodes.
+			if x.Iteration == nil {
+				add(x.Iterator, x.Loc)
+			}
+		case *ast.PLSQLIterand:
+			add(x.Name, x.Loc)
+		case *ast.PLSQLForall:
+			add(x.Index, x.Loc)
 		default:
 		}
 	})
 	return result
+}
+
+// omniCreatedName returns the Name field of any omni Create*Stmt node, so
+// CREATE statements omni adds later are checked without being listed here.
+func omniCreatedName(node ast.Node) (string, ast.Loc) {
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return "", ast.Loc{}
+	}
+	elem := value.Elem()
+	if elem.Kind() != reflect.Struct {
+		return "", ast.Loc{}
+	}
+	typeName := elem.Type().Name()
+	if !strings.HasPrefix(typeName, "Create") || !strings.HasSuffix(typeName, "Stmt") {
+		return "", ast.Loc{}
+	}
+	nameField := elem.FieldByName("Name")
+	if !nameField.IsValid() {
+		return "", ast.Loc{}
+	}
+	switch name := nameField.Interface().(type) {
+	case *ast.ObjectName:
+		if name != nil {
+			return name.Name, name.Loc
+		}
+	case string:
+		if locField := elem.FieldByName("Loc"); locField.IsValid() {
+			if loc, ok := locField.Interface().(ast.Loc); ok {
+				return name, loc
+			}
+		}
+		return name, ast.Loc{}
+	default:
+	}
+	return "", ast.Loc{}
 }
 
 func omniWalk(node ast.Node, visit func(ast.Node)) {

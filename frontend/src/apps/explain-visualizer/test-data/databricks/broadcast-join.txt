@@ -1,0 +1,71 @@
+== Physical Plan ==
+AdaptiveSparkPlan (11)
++- HashAggregate (10)
+   +- Exchange (9)
+      +- HashAggregate (8)
+         +- Project (7)
+            +- BroadcastHashJoin Inner BuildLeft (6)
+               :- BroadcastExchange (3)
+               :  +- Filter (2)
+               :     +- Scan parquet spark_catalog.default.customers (1)
+               +- Filter (5)
+                  +- Scan parquet spark_catalog.default.orders (4)
+
+
+(1) Scan parquet spark_catalog.default.customers
+Output [2]: [id#47, city#49]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/customers]
+PushedFilters: [IsNotNull(city), EqualTo(city,berlin), IsNotNull(id)]
+ReadSchema: struct<id:int,city:string>
+
+(2) Filter
+Input [2]: [id#47, city#49]
+Condition : ((isnotnull(city#49) AND (city#49 = berlin)) AND isnotnull(id#47))
+
+(3) BroadcastExchange
+Input [2]: [id#47, city#49]
+Arguments: HashedRelationBroadcastMode(List(cast(input[0, int, false] as bigint)),false), [plan_id=151]
+
+(4) Scan parquet spark_catalog.default.orders
+Output [1]: [customer_id#60]
+Batched: true
+Location: InMemoryFileIndex [file:/tmp/warehouse2/orders]
+PushedFilters: [IsNotNull(customer_id)]
+ReadSchema: struct<customer_id:int>
+
+(5) Filter
+Input [1]: [customer_id#60]
+Condition : isnotnull(customer_id#60)
+
+(6) BroadcastHashJoin
+Left keys [1]: [id#47]
+Right keys [1]: [customer_id#60]
+Join type: Inner
+Join condition: None
+
+(7) Project
+Output [1]: [city#49]
+Input [3]: [id#47, city#49, customer_id#60]
+
+(8) HashAggregate
+Input [1]: [city#49]
+Keys [1]: [city#49]
+Functions [1]: [partial_count(1)]
+Aggregate Attributes [1]: [count#64L]
+Results [2]: [city#49, count#65L]
+
+(9) Exchange
+Input [2]: [city#49, count#65L]
+Arguments: hashpartitioning(city#49, 200), ENSURE_REQUIREMENTS, [plan_id=156]
+
+(10) HashAggregate
+Input [2]: [city#49, count#65L]
+Keys [1]: [city#49]
+Functions [1]: [count(1)]
+Aggregate Attributes [1]: [count(1)#58L]
+Results [2]: [city#49, count(1)#58L AS count(1)#62L]
+
+(11) AdaptiveSparkPlan
+Output [2]: [city#49, count(1)#62L]
+Arguments: isFinalPlan=false

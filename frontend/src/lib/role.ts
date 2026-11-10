@@ -9,6 +9,7 @@ const PresetRoleType = {
   PROJECT_DEVELOPER: "roles/projectDeveloper",
   SQL_EDITOR_USER: "roles/sqlEditorUser",
   SQL_EDITOR_READ_USER: "roles/sqlEditorReadUser",
+  SQL_EDITOR_EXPORTER: "roles/sqlEditorExporter",
   PROJECT_RELEASER: "roles/projectReleaser",
   GITOPS_SERVICE_AGENT: "roles/gitopsServiceAgent",
   PROJECT_VIEWER: "roles/projectViewer",
@@ -25,6 +26,7 @@ const PRESET_ROLE_TITLE_KEYS: Record<string, string> = {
   [PresetRoleType.PROJECT_RELEASER]: "role.project-releaser.self",
   [PresetRoleType.SQL_EDITOR_USER]: "role.sql-editor-user.self",
   [PresetRoleType.SQL_EDITOR_READ_USER]: "role.sql-editor-read-user.self",
+  [PresetRoleType.SQL_EDITOR_EXPORTER]: "role.sql-editor-exporter.self",
   [PresetRoleType.GITOPS_SERVICE_AGENT]: "role.gitops-service-agent.self",
   [PresetRoleType.PROJECT_VIEWER]: "role.project-viewer.self",
 };
@@ -39,6 +41,7 @@ const PRESET_ROLE_DESCRIPTION_KEYS: Record<string, string> = {
   [PresetRoleType.SQL_EDITOR_USER]: "role.sql-editor-user.description",
   [PresetRoleType.SQL_EDITOR_READ_USER]:
     "role.sql-editor-read-user.description",
+  [PresetRoleType.SQL_EDITOR_EXPORTER]: "role.sql-editor-exporter.description",
   [PresetRoleType.GITOPS_SERVICE_AGENT]:
     "role.gitops-service-agent.description",
   [PresetRoleType.PROJECT_VIEWER]: "role.project-viewer.description",

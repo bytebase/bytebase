@@ -1,6 +1,4 @@
 import { hierarchy, tree } from "d3-hierarchy";
-// Deep import: `@/utils` (the barrel) transitively pulls in Monaco, which this
-// standalone entry never loads. `minmax` itself is a leaf math helper.
 import { minmax } from "@/utils/math";
 import type { PlanNode } from "./plan-model";
 
@@ -16,30 +14,30 @@ export const PLAN_NODE_WIDTH = 216;
 export const PLAN_NODE_HEIGHT = 96;
 
 /**
- * Indent per nesting level for the surfaces that list the plan as rows, capped
- * so a ten-deep plan still leaves the node column readable at phone width.
- * Callers expose the uncapped depth through `aria-level`.
+ * Indent per nesting level for the surfaces that list the plan as rows. Every
+ * level of a plan indents by the same step, so a row's tree guides line up
+ * with its ancestors' at any depth. A plan too deep for the full step within
+ * `PLAN_MAX_INDENT` gets a narrower one, which leaves the node column room
+ * for the names.
  */
 export const PLAN_INDENT_STEP = 12;
-const MAX_INDENT_LEVELS = 6;
+const PLAN_MAX_INDENT = 144;
+const PLAN_MIN_INDENT_STEP = 2;
 
-export function planIndentPixels(depth: number): number {
-  return Math.min(Math.max(depth, 0), MAX_INDENT_LEVELS) * PLAN_INDENT_STEP;
+/** The indent step for a plan whose deepest row is `maxDepth` levels down. */
+export function planIndentStep(maxDepth: number): number {
+  if (maxDepth <= 0) return PLAN_INDENT_STEP;
+  return Math.max(
+    PLAN_MIN_INDENT_STEP,
+    Math.min(PLAN_INDENT_STEP, Math.floor(PLAN_MAX_INDENT / maxDepth))
+  );
 }
 
-/**
- * The connector levels a row has room to draw, one per `PLAN_INDENT_STEP` of
- * its indent.
- *
- * Past the indent cap there is no column left to draw in, so the deepest levels
- * are kept: those are the ones that tie the row to its own parent, which is
- * what a reader traces. Mirrors `planIndentPixels`, and each entry says whether
- * that level's branch carries on below the row.
- */
-export function planGuideLevels(
-  branchContinues: readonly boolean[]
-): readonly boolean[] {
-  return branchContinues.slice(-MAX_INDENT_LEVELS);
+export function planIndentPixels(
+  depth: number,
+  step: number = PLAN_INDENT_STEP
+): number {
+  return Math.max(depth, 0) * step;
 }
 
 const COLUMN_GAP = 32;
@@ -188,13 +186,14 @@ export function planFitViewport(
 
 /**
  * The view the diagram opens on: the whole plan when its cards are readable at
- * the scale that shows all of it, and otherwise the readable scale from the
- * root down, centered on the root as far as the plan's edges allow. The
- * mini-map then offers the rest.
+ * the scale that shows all of it, and otherwise the readable scale centered on
+ * the focus node, or the root when there is none, as far as the plan's edges
+ * allow. The mini-map then offers the rest.
  */
 export function planOpeningViewport(
   layout: PlanLayout,
-  size: PlanViewportSize
+  size: PlanViewportSize,
+  focusId?: string
 ): PlanViewport {
   const fit = planFitViewport(layout, size);
   if (size.width <= 0 || size.height <= 0) return fit;
@@ -202,15 +201,19 @@ export function planOpeningViewport(
   const scale = PLAN_READABLE_SCALE;
   const width = layout.width * scale;
   const height = layout.height * scale;
-  const [root] = layout.nodes;
-  const rootX = root ? planNodeCenter(root).x * scale : width / 2;
+  const focus =
+    layout.nodes.find((entry) => entry.node.id === focusId) ?? layout.nodes[0];
+  const center = focus ? planNodeCenter(focus) : { x: layout.width / 2, y: 0 };
   return {
     scale,
     x:
       width <= size.width
         ? (size.width - width) / 2
-        : minmax(size.width / 2 - rootX, size.width - width, 0),
-    y: height <= size.height ? (size.height - height) / 2 : 0,
+        : minmax(size.width / 2 - center.x * scale, size.width - width, 0),
+    y:
+      height <= size.height
+        ? (size.height - height) / 2
+        : minmax(size.height / 2 - center.y * scale, size.height - height, 0),
   };
 }
 
@@ -234,8 +237,8 @@ export function planNodeCenter(placed: PlanLayoutNode): {
 
 /**
  * The viewport that puts a content-space point in the middle of the screen,
- * at the zoom already in use. Both the mini-map and a deep link land on a node
- * this way.
+ * at the zoom already in use. Both the mini-map and the ranking beside the
+ * diagram land on a node this way.
  */
 export function planViewportCenteredOn(
   point: { x: number; y: number },

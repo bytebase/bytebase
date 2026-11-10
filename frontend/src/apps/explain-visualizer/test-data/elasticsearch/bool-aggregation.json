@@ -1,0 +1,231 @@
+{
+  "took": 102,
+  "profile": {
+    "shards": [
+      {
+        "id": "[xBvstVRMRUOqYLT8Rvlu8w][customers][0]",
+        "node_id": "xBvstVRMRUOqYLT8Rvlu8w",
+        "shard_id": 0,
+        "index": "customers",
+        "cluster": "(local)",
+        "searches": [
+          {
+            "query": [
+              {
+                "type": "BooleanQuery",
+                "description": "+city:berlin #IndexOrDocValuesQuery(indexQuery=spend:[100.0 TO Infinity], dvQuery=spend:[4636737291354636288 TO 9218868437227405312])",
+                "time_in_nanos": 16279942,
+                "breakdown": {
+                  "set_min_competitive_score_count": 0,
+                  "match_count": 0,
+                  "shallow_advance_count": 0,
+                  "set_min_competitive_score": 0,
+                  "next_doc": 66149,
+                  "match": 0,
+                  "next_doc_count": 17,
+                  "score_count": 16,
+                  "compute_max_score_count": 0,
+                  "compute_max_score": 0,
+                  "advance": 0,
+                  "advance_count": 0,
+                  "score": 30222,
+                  "count_weight_count": 0,
+                  "build_scorer_count": 2,
+                  "create_weight": 7141283,
+                  "shallow_advance": 0,
+                  "count_weight": 0,
+                  "create_weight_count": 1,
+                  "build_scorer": 9042288
+                },
+                "children": [
+                  {
+                    "type": "TermQuery",
+                    "description": "city:berlin",
+                    "time_in_nanos": 5147482,
+                    "breakdown": {
+                      "set_min_competitive_score_count": 0,
+                      "match_count": 0,
+                      "shallow_advance_count": 0,
+                      "set_min_competitive_score": 0,
+                      "next_doc": 17081,
+                      "match": 0,
+                      "next_doc_count": 17,
+                      "score_count": 16,
+                      "compute_max_score_count": 0,
+                      "compute_max_score": 0,
+                      "advance": 1186,
+                      "advance_count": 1,
+                      "score": 19019,
+                      "count_weight_count": 0,
+                      "build_scorer_count": 3,
+                      "create_weight": 3289675,
+                      "shallow_advance": 0,
+                      "count_weight": 0,
+                      "create_weight_count": 1,
+                      "build_scorer": 1820521
+                    }
+                  },
+                  {
+                    "type": "IndexOrDocValuesQuery",
+                    "description": "IndexOrDocValuesQuery(indexQuery=spend:[100.0 TO Infinity], dvQuery=spend:[4636737291354636288 TO 9218868437227405312])",
+                    "time_in_nanos": 4734745,
+                    "breakdown": {
+                      "set_min_competitive_score_count": 0,
+                      "match_count": 0,
+                      "shallow_advance_count": 0,
+                      "set_min_competitive_score": 0,
+                      "next_doc": 0,
+                      "match": 0,
+                      "next_doc_count": 0,
+                      "score_count": 0,
+                      "compute_max_score_count": 0,
+                      "compute_max_score": 0,
+                      "advance": 14657,
+                      "advance_count": 17,
+                      "score": 0,
+                      "count_weight_count": 0,
+                      "build_scorer_count": 3,
+                      "create_weight": 817003,
+                      "shallow_advance": 0,
+                      "count_weight": 0,
+                      "create_weight_count": 1,
+                      "build_scorer": 3903085
+                    }
+                  }
+                ]
+              }
+            ],
+            "rewrite_time": 661026,
+            "collector": [
+              {
+                "name": "QueryPhaseCollector",
+                "reason": "search_query_phase",
+                "time_in_nanos": 5390569,
+                "children": [
+                  {
+                    "name": "SimpleTopScoreDocCollector",
+                    "reason": "search_top_hits",
+                    "time_in_nanos": 515217
+                  },
+                  {
+                    "name": "AggregatorCollector: [by_city]",
+                    "reason": "aggregation",
+                    "time_in_nanos": 4217933
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "aggregations": [
+          {
+            "type": "GlobalOrdinalsStringTermsAggregator",
+            "description": "by_city",
+            "time_in_nanos": 6681915,
+            "breakdown": {
+              "reduce": 0,
+              "build_aggregation_count": 1,
+              "post_collection": 3956,
+              "initialize_count": 1,
+              "reduce_count": 0,
+              "collect_count": 16,
+              "post_collection_count": 1,
+              "build_leaf_collector": 3332578,
+              "build_aggregation": 2589837,
+              "build_leaf_collector_count": 1,
+              "initialize": 48283,
+              "collect": 707261
+            },
+            "debug": {
+              "segments_with_multi_valued_ords": 0,
+              "collection_strategy": "remap using single bucket ords",
+              "segments_with_single_valued_ords": 1,
+              "total_buckets": 1,
+              "built_buckets": 1,
+              "result_strategy": "terms",
+              "has_filter": false
+            },
+            "children": [
+              {
+                "type": "AvgAggregator",
+                "description": "avg_spend",
+                "time_in_nanos": 3441966,
+                "breakdown": {
+                  "reduce": 0,
+                  "build_aggregation_count": 1,
+                  "post_collection": 877,
+                  "initialize_count": 1,
+                  "reduce_count": 0,
+                  "collect_count": 16,
+                  "post_collection_count": 1,
+                  "build_leaf_collector": 3072272,
+                  "build_aggregation": 47327,
+                  "build_leaf_collector_count": 1,
+                  "initialize": 2854,
+                  "collect": 318636
+                },
+                "debug": {
+                  "built_buckets": 1
+                }
+              }
+            ]
+          }
+        ],
+        "fetch": {
+          "type": "fetch",
+          "description": "",
+          "time_in_nanos": 16203549,
+          "breakdown": {
+            "load_stored_fields": 1364975,
+            "load_source": 323452,
+            "load_stored_fields_count": 2,
+            "next_reader_count": 1,
+            "load_source_count": 2,
+            "next_reader": 3619659
+          },
+          "debug": {
+            "stored_fields": ["_id", "_routing", "_source"]
+          },
+          "children": [
+            {
+              "type": "FetchFieldsPhase",
+              "description": "",
+              "time_in_nanos": 1880086,
+              "breakdown": {
+                "process_count": 2,
+                "process": 109995,
+                "next_reader": 1770091,
+                "next_reader_count": 1
+              }
+            },
+            {
+              "type": "FetchSourcePhase",
+              "description": "",
+              "time_in_nanos": 35485,
+              "breakdown": {
+                "process_count": 2,
+                "process": 34721,
+                "next_reader": 764,
+                "next_reader_count": 1
+              },
+              "debug": {
+                "fast_path": 2
+              }
+            },
+            {
+              "type": "StoredFieldsPhase",
+              "description": "",
+              "time_in_nanos": 11442,
+              "breakdown": {
+                "process_count": 2,
+                "process": 9764,
+                "next_reader": 1678,
+                "next_reader_count": 1
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

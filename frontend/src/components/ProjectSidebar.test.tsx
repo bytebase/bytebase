@@ -13,9 +13,12 @@ const mocks = vi.hoisted(() => ({
     fullPath: "/projects/sample/masking-exemption",
     params: {
       projectId: "sample",
-    },
+    } as Record<string, string>,
     query: {},
   },
+  viewedPlan: undefined as
+    | { name: string; isReleaseBacked: boolean }
+    | undefined,
   defaultProject: "",
   dev: true,
   getOrFetchProjectByName: vi.fn(),
@@ -38,6 +41,7 @@ const t = vi.hoisted(
       "common.database": "Database",
       "common.databases": "Databases",
       "common.groups": "Groups",
+      "common.home": "Home",
       "common.issues": "Issues",
       "common.instances": "Instances",
       "common.manage": "Manage",
@@ -87,6 +91,7 @@ vi.mock("@/stores/app", () => {
     selector: (state: {
       getOrFetchProjectByName: typeof mocks.getOrFetchProjectByName;
       serverInfo: { defaultProject: string };
+      viewedPlan: typeof mocks.viewedPlan;
     }) => unknown
   ) =>
     selector({
@@ -94,6 +99,7 @@ vi.mock("@/stores/app", () => {
       serverInfo: {
         defaultProject: mocks.defaultProject,
       },
+      viewedPlan: mocks.viewedPlan,
     });
   useAppStore.getState = () => ({
     getOrFetchProjectByName: mocks.getOrFetchProjectByName,
@@ -135,10 +141,28 @@ beforeEach(async () => {
   };
   mocks.defaultProject = "";
   mocks.dev = true;
+  mocks.viewedPlan = undefined;
   ({ ProjectSidebar } = await import("./ProjectSidebar"));
 });
 
 describe("ProjectSidebar", () => {
+  test("shows Home as the active root route, including for the default project", () => {
+    mocks.defaultProject = "projects/sample";
+    mocks.currentRoute.name = "workspace.project.detail";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProjectSidebar />
+    );
+    render();
+
+    const home = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.trim() === "Home"
+    );
+    expect(home?.className).toContain("router-link-active");
+    expect(home?.getAttribute("href")).toContain("workspace.project.detail");
+
+    unmount();
+  });
+
   test("renders project instances before databases", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProjectSidebar />
@@ -222,5 +246,93 @@ describe("ProjectSidebar", () => {
     ).toContain("pt-3");
 
     unmount();
+  });
+
+  describe("CI/CD entries", () => {
+    const activeLabels = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll("a"))
+        .filter((link) => link.className.includes("router-link-active"))
+        .map((link) => link.textContent?.trim());
+
+    const renderAt = (name: string, params: Record<string, string> = {}) => {
+      mocks.currentRoute.name = name;
+      mocks.currentRoute.params = { projectId: "sample", ...params };
+      const view = renderIntoContainer(<ProjectSidebar />);
+      view.render();
+      return view;
+    };
+
+    test("lists Plans and Releases without a GitOps entry", () => {
+      const { container, unmount } = renderAt("workspace.project.plan");
+
+      const labels = Array.from(container.querySelectorAll("a")).map((link) =>
+        link.textContent?.trim()
+      );
+      expect(labels).toEqual(expect.arrayContaining(["Plans", "Releases"]));
+      expect(labels).not.toContain("GitOps");
+
+      unmount();
+    });
+
+    test("highlights Releases on the GitOps setup page", () => {
+      const { container, unmount } = renderAt("workspace.project.gitops");
+
+      expect(activeLabels(container)).toEqual(["Releases"]);
+
+      unmount();
+    });
+
+    test("highlights Releases on a GitOps Plan's detail page", () => {
+      mocks.viewedPlan = {
+        name: "projects/sample/plans/7",
+        isReleaseBacked: true,
+      };
+      const { container, unmount } = renderAt(
+        "workspace.project.plan.detail.rollout",
+        { planId: "7" }
+      );
+
+      expect(activeLabels(container)).toEqual(["Releases"]);
+
+      unmount();
+    });
+
+    test("highlights Plans on a ClickOps Plan's detail page", () => {
+      mocks.viewedPlan = {
+        name: "projects/sample/plans/7",
+        isReleaseBacked: false,
+      };
+      const { container, unmount } = renderAt("workspace.project.plan.detail", {
+        planId: "7",
+      });
+
+      expect(activeLabels(container)).toEqual(["Plans"]);
+
+      unmount();
+    });
+
+    test("ignores a GitOps Plan viewed before the current one", () => {
+      mocks.viewedPlan = {
+        name: "projects/sample/plans/6",
+        isReleaseBacked: true,
+      };
+      const { container, unmount } = renderAt("workspace.project.plan.detail", {
+        planId: "7",
+      });
+
+      expect(activeLabels(container)).toEqual(["Plans"]);
+
+      unmount();
+    });
+
+    test("hides CI/CD for the default project", () => {
+      mocks.defaultProject = "projects/sample";
+      const { container, unmount } = renderAt("workspace.project.detail");
+
+      expect(container.textContent).not.toContain("Plans");
+      expect(container.textContent).not.toContain("Releases");
+
+      unmount();
+    });
   });
 });

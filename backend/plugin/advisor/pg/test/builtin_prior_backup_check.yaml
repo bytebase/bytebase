@@ -41,3 +41,52 @@
       endposition: null
 - statement: SET ROLE role1;DELETE FROM tech_book WHERE a > 1;
   changeType: 2
+- statement: WITH cte AS (SELECT id FROM orders) UPDATE tech_book SET name = 'x' FROM cte WHERE tech_book.id = cte.id;
+  changeType: 2
+- statement: |-
+    UPDATE orders SET id = 1 WHERE id = 1;
+    WITH d AS (DELETE FROM orders WHERE id > 1 RETURNING id)
+    UPDATE tech_book SET name = 'x' WHERE id IN (SELECT id FROM d);
+  changeType: 2
+  want:
+    - status: 2
+      code: 2001
+      title: BUILTIN_PRIOR_BACKUP_CHECK
+      content: Prior backup does not support data-modifying WITH query "d"; the task will fail unless prior backup is disabled or skipped
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: WITH s AS (SELECT 1), i AS (INSERT INTO orders VALUES (1) RETURNING id), u AS (UPDATE orders SET id = 2 RETURNING id) DELETE FROM tech_book WHERE id IN (SELECT id FROM i);
+  changeType: 2
+  want:
+    - status: 2
+      code: 2001
+      title: BUILTIN_PRIOR_BACKUP_CHECK
+      content: Prior backup does not support data-modifying WITH query "i", "u"; the task will fail unless prior backup is disabled or skipped
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: WITH d AS (DELETE FROM orders RETURNING id) INSERT INTO tech_book (id) SELECT id FROM d;
+  changeType: 2
+  want:
+    - status: 2
+      code: 2001
+      title: BUILTIN_PRIOR_BACKUP_CHECK
+      content: Prior backup does not cover rows changed by data-modifying WITH query "d"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: WITH d AS (DELETE FROM orders RETURNING id) SELECT id FROM d;
+  changeType: 2
+  want:
+    - status: 2
+      code: 2001
+      title: BUILTIN_PRIOR_BACKUP_CHECK
+      content: Prior backup does not cover rows changed by data-modifying WITH query "d"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

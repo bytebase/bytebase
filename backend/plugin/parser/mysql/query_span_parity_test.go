@@ -43,9 +43,6 @@ func TestMySQLOmniQuerySpanGoldenHarness(t *testing.T) {
 	total := 0
 	for _, testDataPath := range mysqlOmniProbeFixturePaths {
 		engine := storepb.Engine_MYSQL
-		if strings.Contains(testDataPath, "starrocks") {
-			engine = storepb.Engine_STARROCKS
-		}
 
 		yamlFile, err := os.Open(testDataPath)
 		if err != nil {

@@ -1,0 +1,68 @@
+PLAN FRAGMENT 0
+  OUTPUT EXPRS:
+    customer_id[#8]
+    sum(total)[#9]
+  PARTITION: UNPARTITIONED
+
+  HAS_COLO_PLAN_NODE: false
+
+  VRESULT SINK
+     MYSQL_PROTOCAL
+
+  4:VEXCHANGE
+     offset: 0
+     distribute expr lists: customer_id[#8]
+
+PLAN FRAGMENT 1
+
+  PARTITION: HASH_PARTITIONED: customer_id[#6]
+
+  HAS_COLO_PLAN_NODE: true
+
+  STREAM DATA SINK
+    EXCHANGE ID: 04
+    UNPARTITIONED
+
+  3:VAGGREGATE (merge finalize)(237)
+  |  output: sum(partial_sum(total)[#7])[#9]
+  |  group by: customer_id[#6]
+  |  sortByGroupKey:false
+  |  cardinality=0
+  |  distribute expr lists: customer_id[#6]
+  |  
+  2:VEXCHANGE
+     offset: 0
+     distribute expr lists: 
+
+PLAN FRAGMENT 2
+
+  PARTITION: HASH_PARTITIONED: id[#0]
+
+  HAS_COLO_PLAN_NODE: false
+
+  STREAM DATA SINK
+    EXCHANGE ID: 02
+    HASH_PARTITIONED: customer_id[#6]
+
+  1:VAGGREGATE (update serialize)(227)
+  |  STREAMING
+  |  output: partial_sum(total[#5])[#7]
+  |  group by: customer_id[#4]
+  |  sortByGroupKey:false
+  |  cardinality=0
+  |  distribute expr lists: 
+  |  
+  0:VOlapScanNode(212)
+     TABLE: qp.orders(orders), PREAGGREGATION: ON
+     PREDICATES: (total[#2] > 880)
+     partitions=1/1 (orders)
+     tablets=2/2, tabletList=1793041799804,1793041799806
+     cardinality=1, avgRowSize=0.0, numNodes=1
+     pushAggOp=NONE
+     final projections: customer_id[#1], total[#2]
+     final project output tuple id: 1
+
+
+
+========== STATISTICS ==========
+planed with unknown column statistics

@@ -7,12 +7,26 @@ vi.mock("@/lib/i18n", () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         "database.all": "All databases",
+        "database.columns": "Columns",
         "common.schema": "Schema",
         "common.table": "Table",
+        "cel.condition.self": "Condition",
         "project.masking-exemption.level": "level",
       };
       if (key === "common.n-more" && params?.n !== undefined)
         return `+${params.n} more`;
+      if (
+        key === "project.masking-exemption.n-exemptions" &&
+        params?.n !== undefined
+      ) {
+        return `${params.n} exemption${params.n === 1 ? "" : "s"}`;
+      }
+      if (
+        key === "project.masking-exemption.n-databases" &&
+        params?.n !== undefined
+      ) {
+        return `${params.n} database${params.n === 1 ? "" : "s"}`;
+      }
       return map[key] ?? key;
     },
   },
@@ -24,7 +38,6 @@ import {
   groupByMember,
   parseClassificationLevel,
   parseExpirationTimestamp,
-  rewriteResourceDatabase,
 } from "./exemptionDataUtils";
 import type { AccessUser, ExemptionGrant } from "./types";
 
@@ -171,6 +184,7 @@ describe("groupByMember", () => {
     member: "user:test@bytebase.com",
     rawExpression: "",
     description: "",
+    databaseResources: [],
     conditionExpression: "",
     ...overrides,
   });
@@ -295,6 +309,18 @@ describe("groupByMember", () => {
     const result = groupByMember(users);
     // Empty sentinel indicates "all databases" (grant has no specific resources)
     expect(result[0].databaseNames).toEqual([""]);
+  });
+
+  test("does not summarize an unknown condition as all databases", () => {
+    const result = groupByMember([
+      makeAccessUser({
+        databaseResources: undefined,
+        conditionExpression:
+          '(resource.database_name in ["a", "b"]) && (resource.column_name in ["email", "phone"])',
+      }),
+    ]);
+
+    expect(result[0].databaseNames).toEqual([]);
   });
 
   test("extracts unique database names from resources", () => {
@@ -571,11 +597,18 @@ describe("generateGrantTitle", () => {
     id: "test",
     description: "",
     rawExpression: "",
+    databaseResources: [],
     conditionExpression: "",
     ...overrides,
   });
 
   // --- No databases ---
+
+  test("unknown condition → Condition", () => {
+    expect(
+      generateGrantTitle(makeGrant({ databaseResources: undefined }))
+    ).toBe("Condition");
+  });
 
   test("no resources, no level → All databases", () => {
     expect(generateGrantTitle(makeGrant({}))).toBe("All databases");
@@ -589,6 +622,30 @@ describe("generateGrantTitle", () => {
     ).toBe("All databases, level ≤ 3");
   });
 
+  test("no database, with columns", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", columns: ["email", "phone"] },
+          ],
+        })
+      )
+    ).toBe("All databases (columns: email, phone)");
+  });
+
+  test("keeps the global scope visible beside database-specific resources", () => {
+    expect(
+      generateGrantTitle(
+        makeGrant({
+          databaseResources: [
+            { databaseFullName: "", columns: ["email"] },
+            { databaseFullName: "instances/a/databases/hr_prod" },
+          ],
+        })
+      )
+    ).toBe("All databases (columns: email); hr_prod");
+  });
   // --- Multiple databases ---
 
   test("2 databases", () => {
@@ -981,41 +1038,6 @@ describe("generateGrantTitle", () => {
         })
       )
     ).toBe("hr_prod (public: audit, dept), level = 1");
-  });
-});
-
-describe("rewriteResourceDatabase", () => {
-  test("rewrites single resource.database condition", () => {
-    const input =
-      'resource.database == "instances/prod-instance/databases/hr_prod"';
-    expect(rewriteResourceDatabase(input)).toBe(
-      'resource.instance_id == "prod-instance" && resource.database_name == "hr_prod"'
-    );
-  });
-
-  test("rewrites multiple resource.database conditions", () => {
-    const input =
-      '(resource.database == "instances/a/databases/db1") || (resource.database == "instances/b/databases/db2")';
-    expect(rewriteResourceDatabase(input)).toBe(
-      '(resource.instance_id == "a" && resource.database_name == "db1") || (resource.instance_id == "b" && resource.database_name == "db2")'
-    );
-  });
-
-  test("preserves expressions without resource.database", () => {
-    const input = "resource.classification_level <= 3";
-    expect(rewriteResourceDatabase(input)).toBe(input);
-  });
-
-  test("handles mixed conditions", () => {
-    const input =
-      'resource.database == "instances/prod/databases/users" && resource.classification_level <= 2';
-    expect(rewriteResourceDatabase(input)).toBe(
-      'resource.instance_id == "prod" && resource.database_name == "users" && resource.classification_level <= 2'
-    );
-  });
-
-  test("handles empty string", () => {
-    expect(rewriteResourceDatabase("")).toBe("");
   });
 });
 

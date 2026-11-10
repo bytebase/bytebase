@@ -129,7 +129,7 @@ export function LabelListEditor({
                     <Input
                       value={kv.key}
                       placeholder={t("setting.label.key-placeholder")}
-                      className={errors.key.length > 0 ? "border-error" : ""}
+                      aria-invalid={errors.key.length > 0 || undefined}
                       onChange={(event) => updateKey(index, event.target.value)}
                     />
                   )}
@@ -151,9 +151,7 @@ export function LabelListEditor({
                       <Input
                         value={kv.value}
                         placeholder={t("setting.label.value-placeholder")}
-                        className={
-                          errors.value.length > 0 ? "border-error" : ""
-                        }
+                        aria-invalid={errors.value.length > 0 || undefined}
                         onChange={(event) =>
                           updateValue(index, event.target.value)
                         }

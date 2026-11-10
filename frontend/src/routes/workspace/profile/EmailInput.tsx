@@ -126,11 +126,8 @@ export function EmailInput({
             value={localPart}
             onChange={handleLocalPartChange}
             disabled={disabled}
-            className={
-              hasEmailError
-                ? "rounded-r-none border-error focus:ring-error"
-                : "rounded-r-none"
-            }
+            aria-invalid={hasEmailError || undefined}
+            className="rounded-r-none"
           />
           <span className="flex items-center px-2 h-9 border-y border-control-border bg-control-bg text-sm text-control-light">
             @
@@ -163,7 +160,7 @@ export function EmailInput({
         value={fullValue}
         onChange={handleFullChange}
         disabled={disabled}
-        className={hasEmailError ? "border-error focus:ring-error" : ""}
+        aria-invalid={hasEmailError || undefined}
       />
       {hasEmailError && (
         <span className="text-error text-sm mt-1">

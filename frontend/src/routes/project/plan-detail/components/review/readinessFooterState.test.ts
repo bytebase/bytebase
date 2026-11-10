@@ -18,6 +18,7 @@ const base = {
   hasRollout: false,
   issueStatus: IssueStatus.OPEN,
   checks: checks(),
+  unresolvedThreads: 0,
 };
 
 describe("computeReadinessFooterState", () => {
@@ -78,6 +79,27 @@ describe("computeReadinessFooterState", () => {
     ).toBe("approved-checks-failed");
   });
 
+  test("approved with open threads -> approved-threads-open", () => {
+    expect(
+      computeReadinessFooterState({
+        ...base,
+        approvalStatus: ApprovalStatus.APPROVED,
+        unresolvedThreads: 3,
+      }).kind
+    ).toBe("approved-threads-open");
+  });
+
+  test("failed checks outrank open threads", () => {
+    expect(
+      computeReadinessFooterState({
+        ...base,
+        approvalStatus: ApprovalStatus.APPROVED,
+        checks: checks(1),
+        unresolvedThreads: 3,
+      }).kind
+    ).toBe("approved-checks-failed");
+  });
+
   test("rejected -> rejected", () => {
     expect(
       computeReadinessFooterState({
@@ -93,6 +115,12 @@ describe("computeBypassActionWeight", () => {
     canCreateRollout: true,
     requireIssueApproval: false,
   };
+
+  test("muted link when review passed but threads are open", () => {
+    expect(
+      computeBypassActionWeight({ ...allowed, state: "approved-threads-open" })
+    ).toBe("link");
+  });
 
   test("primary button when review passed but checks failed", () => {
     expect(

@@ -1,5 +1,15 @@
 import { UNKNOWN_ID } from "@/types/const";
-import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+
+export const shouldRedirectToIssueDetail = (plan: Plan, issue?: Issue) => {
+  if (!issue?.name || issue.draft || !plan.specs?.length) {
+    return false;
+  }
+  return plan.specs.every(
+    (spec) => spec.config?.case === "createDatabaseConfig"
+  );
+};
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
   if (spec.config?.case === "changeDatabaseConfig") {

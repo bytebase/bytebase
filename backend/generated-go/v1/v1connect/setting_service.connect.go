@@ -53,7 +53,7 @@ type SettingServiceClient interface {
 	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
 	// Retrieves a workspace setting by name.
-	// Permissions required: bb.settings.get
+	// Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
 	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set
@@ -135,7 +135,7 @@ type SettingServiceHandler interface {
 	// Permissions required: bb.settings.list
 	ListSettings(context.Context, *connect.Request[v1.ListSettingsRequest]) (*connect.Response[v1.ListSettingsResponse], error)
 	// Retrieves a workspace setting by name.
-	// Permissions required: bb.settings.get
+	// Permissions required: bb.settings.getEnvironment for settings/ENVIRONMENT, bb.settings.getWorkspaceProfile for settings/WORKSPACE_PROFILE, bb.settings.get for the others
 	GetSetting(context.Context, *connect.Request[v1.GetSettingRequest]) (*connect.Response[v1.Setting], error)
 	// Updates a workspace setting.
 	// Permissions required: bb.settings.set

@@ -95,6 +95,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
   getEnvironmentListKey,
   resolveSelectedEnvironmentId,
@@ -763,11 +764,8 @@ function EnvironmentDetail({
             }
             description={
               <>
-                {t("policy.environment-tier.description", { newline: "\n" })}
-                <LearnMoreLink
-                  href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-                  className="ml-1 text-accent"
-                />
+                {t("policy.environment-tier.description", { newline: "\n" })}{" "}
+                <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier" />
               </>
             }
           >
@@ -805,11 +803,8 @@ function EnvironmentDetail({
                 <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
-                  })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-                    className="ml-1 text-accent"
-                  />
+                  })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console" />
                 </>
               }
             >
@@ -820,12 +815,14 @@ function EnvironmentDetail({
             </FormField>
           )}
 
-          {/* SQL Review section */}
-          <SQLReviewSection
-            ref={sqlReviewRef}
-            environmentId={environment.id}
-            onDirtyChange={setSqlReviewDirty}
-          />
+          {/* The v1 review policy goes away with SQL Review V2. */}
+          {!sqlReviewV2Enabled() && (
+            <SQLReviewSection
+              ref={sqlReviewRef}
+              environmentId={environment.id}
+              onDirtyChange={setSqlReviewDirty}
+            />
+          )}
 
           {/* Delete section */}
           {allowDelete && (
@@ -1068,11 +1065,8 @@ function CreateSheet({
               }
               description={
                 <>
-                  {t("policy.environment-tier.description", { newline: "\n" })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier"
-                    className="ml-1 text-accent"
-                  />
+                  {t("policy.environment-tier.description", { newline: "\n" })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/overview/?source=console#environment-tier" />
                 </>
               }
             >
@@ -1099,11 +1093,8 @@ function CreateSheet({
                 <>
                   {t("policy.rollout.info", {
                     permission: "bb.taskRuns.create",
-                  })}
-                  <LearnMoreLink
-                    href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console"
-                    className="ml-1 text-accent"
-                  />
+                  })}{" "}
+                  <LearnMoreLink href="https://docs.bytebase.com/change-database/environment-policy/rollout-policy/?source=console" />
                 </>
               }
             >

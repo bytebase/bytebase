@@ -11,7 +11,7 @@ import (
 )
 
 // Plan checks are CI validation and honor the project's CI sampling limit;
-// a review run's DONE means every (spec, target) unit was evaluated, so
+// a rule review run's DONE means every (spec, target) unit was evaluated, so
 // review derivation must not sample.
 func TestDeriveReviewTargetsSkipsCISampling(t *testing.T) {
 	ctx := context.Background()
@@ -42,7 +42,7 @@ func TestDeriveReviewTargetsSkipsCISampling(t *testing.T) {
 
 	full, err := DeriveReviewTargets(ctx, nil, project, plan, nil)
 	require.NoError(t, err)
-	require.Len(t, full, 3, "review must evaluate every target regardless of CI sampling")
+	require.Len(t, full, 3, "the rule review evaluates every target regardless of CI sampling")
 	for _, target := range full {
 		require.Equal(t, "spec-1", target.SpecID, "a review result anchors on its spec")
 	}

@@ -91,6 +91,14 @@ const ACTION_LIKE_HEADERS = new Set([
   "menu",
 ]);
 
+function shouldSkipAgentDomNode(node: Element): boolean {
+  return (
+    SKIP_TAGS.has(node.tagName) ||
+    node.hasAttribute("data-agent-window") ||
+    node.hasAttribute("data-agent-sensitive")
+  );
+}
+
 const MAIN_CONTENT_SELECTOR = [
   "main",
   '[role="main"]',
@@ -434,6 +442,7 @@ function extractValue(el: Element): string | undefined {
     if (el.type === "checkbox" || el.type === "radio") {
       return el.checked ? "checked" : "unchecked";
     }
+    if (el.type === "password") return undefined;
     const value = normalizeTextContent(el.value);
     return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
@@ -636,8 +645,7 @@ function collectSemanticTextSegments(node: Node, segments: string[]): void {
   }
 
   if (!(node instanceof Element)) return;
-  if (SKIP_TAGS.has(node.tagName)) return;
-  if (node.hasAttribute("data-agent-window")) return;
+  if (shouldSkipAgentDomNode(node)) return;
   if (!isPerceivable(node)) return;
 
   if (node instanceof HTMLInputElement) {
@@ -691,8 +699,7 @@ function collectNonInteractiveTextSegments(
   }
 
   if (!(node instanceof Element)) return;
-  if (SKIP_TAGS.has(node.tagName)) return;
-  if (node.hasAttribute("data-agent-window")) return;
+  if (shouldSkipAgentDomNode(node)) return;
   if (!isPerceivable(node)) return;
   if (!isRoot && getInteractiveReason(node)) return;
 
@@ -739,8 +746,7 @@ function walkTableActionableDescendants(
   path: string
 ): void {
   if (!(node instanceof Element)) return;
-  if (SKIP_TAGS.has(node.tagName)) return;
-  if (node.hasAttribute("data-agent-window")) return;
+  if (shouldSkipAgentDomNode(node)) return;
   if (!isPerceivable(node)) return;
   if (
     TABLE_SECTION_TAGS.has(node.tagName) ||
@@ -953,8 +959,7 @@ function walkDomNode(
   }
 
   if (!(node instanceof Element)) return;
-  if (SKIP_TAGS.has(node.tagName)) return;
-  if (node.hasAttribute("data-agent-window")) return;
+  if (shouldSkipAgentDomNode(node)) return;
   if (!isPerceivable(node)) return;
 
   if (node.tagName === "TABLE") {

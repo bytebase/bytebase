@@ -1,5 +1,6 @@
+import { Send, Square } from "lucide-react";
 import {
-  type CSSProperties,
+  type RefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -7,140 +8,689 @@ import {
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
-import { Textarea } from "@/components/ui/textarea";
-import type { DomRefSuggestion } from "../dom";
-import { lazyExtractDomRefSuggestions } from "../dom";
-import { runAgentLoop } from "../logic/agentLoop";
-import { isAgentAIConfigurationError } from "../logic/aiConfiguration";
-import { buildOutboundHistory } from "../logic/outboundHistory";
-import { buildSystemPrompt } from "../logic/prompt";
-import { createToolExecutor, getToolDefinitions } from "../logic/tools";
-import type { AgentAskUserOption, Message } from "../logic/types";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { projectNamePrefix } from "@/lib/resourceName";
+import { useAppStore } from "@/stores/app";
 import {
+  getNameParentTokens,
+  issueNamePrefix,
+  planNamePrefix,
+} from "@/stores/modules/v1/common";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
+import { runAgentLoop } from "../logic/agentLoop";
+import {
+  getAgentAIConfigurationEnabled,
+  isAgentAIConfigurationError,
+} from "../logic/aiConfiguration";
+import {
+  getCurrentAgentPageResource,
+  getCurrentChatContext,
+  isAgentMaskingPageResource,
+} from "../logic/chatContext";
+import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
+import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
+import {
+  getLandingStarterIdForText,
+  type LandingStarterId,
+} from "../logic/landingStarters";
+import { getMaskingResumeArgs } from "../logic/maskingResume";
+import {
+  getMaskingSectionsForPage,
+  getMaskingSectionsForTurn,
+} from "../logic/maskingSkillContext";
+import {
+  buildOutboundHistory,
+  getHistoricalMaskingDatabase,
+} from "../logic/outboundHistory";
+import { buildSystemPrompt } from "../logic/prompt";
+import {
+  canAddResourceMention,
+  formatResourceMention,
+  getCurrentTurnResourceReferences,
+  getDatabaseMentionLabel,
+  getDraftResourceMentions,
+  getMentionTriggerRange,
+  getPlanMentionLabel,
+  hasUnboundResourceMention,
+  insertResourceMention,
+  normalizeAgentResourceMentions,
+  normalizeAgentResourceReference,
+  normalizeAgentResourceReferences,
+  removeMentionTrigger,
+  updateDraftResourceMentions,
+} from "../logic/resourceMention";
+import { acceptAgentResponseActions } from "../logic/responseActions";
+import { isAgentSendShortcut } from "../logic/sendShortcut";
+import {
+  getMaskingSkillGuidance,
+  type MaskingSkillSection,
+} from "../logic/skills";
+import { createToolExecutor, getToolDefinitions } from "../logic/tools";
+import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
+import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
+import { resolveInstanceNameFromPagePath } from "../logic/tools/instanceOverview";
+import { extractIssueOverviewEvidence } from "../logic/tools/issueOverview";
+import {
+  getPendingApiCallPreview,
+  resolvePendingApiCall,
+} from "../logic/tools/pendingApiCall";
+import { extractPlanOverviewEvidence } from "../logic/tools/planOverview";
+import { createProjectOpenIssuesTool } from "../logic/tools/projectOpenIssues";
+import { extractProjectOverviewEvidence } from "../logic/tools/projectOverview";
+import { getRecentActivity } from "../logic/tools/recentActivity";
+import { getEndpointPath } from "../logic/tools/searchApi";
+import { createWorkspaceAttentionTool } from "../logic/tools/workspaceAttention";
+import { extractWorkspaceOverviewEvidence } from "../logic/tools/workspaceOverview";
+import type {
+  AgentAnswerEvidence,
+  AgentDraft,
+  AgentEvidence,
+  AgentHandoff,
+  AgentMessage,
+  AgentModelCallUsage,
+  AgentResourceReference,
+  AgentRunMode,
+  Message,
+  ToolExecutionResult,
+} from "../logic/types";
+import {
+  type AgentState,
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectCurrentPendingAsk,
   selectLoading,
   useAgentStore,
 } from "../store/agent";
+import { AgentComposer } from "./AgentComposer";
+import { AgentContextPicker } from "./AgentContextPicker";
+import { AgentMentionTextarea } from "./AgentMentionTextarea";
+import { AgentResourcePicker } from "./AgentResourcePicker";
+import { AgentTokenUsage } from "./AgentTokenUsage";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
+const maskingHandoffKinds = new Set<AgentHandoff["kind"]>([
+  "open-global-masking",
+  "open-semantic-types",
+  "open-data-classification",
+  "open-project-masking-exemptions",
+  "open-database-catalog",
+]);
 
-// Module-level request token for dom ref suggestion loading.
-let domRefRequestToken = 0;
+const isCurrentChatScope = (
+  scope: Pick<AgentState, "workspaceName" | "userEmail">,
+  chatId: string
+) => {
+  const current = useAgentStore.getState();
+  return (
+    current.workspaceName === scope.workspaceName &&
+    current.userEmail === scope.userEmail &&
+    current.getChat(chatId) !== null
+  );
+};
 
-const tokenFormatter = new Intl.NumberFormat();
+const formatPermissionTime = (expiresAt: number): string => {
+  const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+};
+
+const isSuccessfulDatabaseSchemaRead = (
+  args: Record<string, unknown>,
+  result: ToolExecutionResult,
+  databaseName: string
+): boolean => {
+  if (
+    typeof args.operationId !== "string" ||
+    getEndpointPath(args.operationId) !==
+      "/bytebase.v1.DatabaseService/GetDatabaseSchema" ||
+    typeof args.body !== "object" ||
+    args.body === null ||
+    Array.isArray(args.body) ||
+    (args.body as Record<string, unknown>).name !== `${databaseName}/schema` ||
+    result.kind !== "tool_result"
+  ) {
+    return false;
+  }
+  try {
+    const response = JSON.parse(result.result) as {
+      status?: unknown;
+      error?: unknown;
+      response?: unknown;
+    };
+    return (
+      typeof response.status === "number" &&
+      response.status >= 200 &&
+      response.status < 300 &&
+      !response.error &&
+      typeof response.response === "object" &&
+      response.response !== null &&
+      !Array.isArray(response.response)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const invalidatesPlanDraftEvidence = (
+  name: string,
+  args: Record<string, unknown>
+): boolean =>
+  (name === "call_api" &&
+    (typeof args.operationId !== "string" ||
+      apiCallNeedsConfirmation(args.operationId))) ||
+  (name === "dom_action" && args.type !== "read" && args.type !== "scroll");
+
+const hasCurrentTurnDatabaseSchemaRead = (
+  messages: AgentMessage[],
+  databaseName: string
+): boolean => {
+  const lastUserIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (lastUserIndex < 0) return false;
+
+  let mutation = 0;
+  let schemaRead = false;
+  const calls = new Map<
+    string,
+    { name: string; args: Record<string, unknown>; mutation: number }
+  >();
+  for (const message of messages.slice(lastUserIndex + 1)) {
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        let args: Record<string, unknown> = {};
+        try {
+          const parsed: unknown = JSON.parse(call.arguments);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            args = parsed as Record<string, unknown>;
+          }
+        } catch {
+          // Malformed calls cannot establish schema-read evidence.
+        }
+        if (invalidatesPlanDraftEvidence(call.name, args)) {
+          mutation++;
+          schemaRead = false;
+        }
+        calls.set(call.id, { name: call.name, args, mutation });
+      }
+    } else if (message.role === "tool" && message.toolCallId) {
+      const call = calls.get(message.toolCallId);
+      if (
+        call?.name === "call_api" &&
+        call.mutation === mutation &&
+        isSuccessfulDatabaseSchemaRead(
+          call.args,
+          { kind: "tool_result", result: message.content ?? "" },
+          databaseName
+        )
+      ) {
+        schemaRead = true;
+      }
+    }
+  }
+  return schemaRead;
+};
+
+const getCurrentTurnQueryCalls = (
+  messages: AgentMessage[]
+): { args: Record<string, unknown>; result?: string }[] => {
+  const lastUserIndex = messages.findLastIndex(
+    (message) => message.role === "user"
+  );
+  if (lastUserIndex < 0) return [];
+
+  const queryCalls: { args: Record<string, unknown>; result?: string }[] = [];
+  const callsById = new Map<string, (typeof queryCalls)[number]>();
+  for (const message of messages.slice(lastUserIndex + 1)) {
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (call.name !== "call_api") continue;
+        let args: Record<string, unknown>;
+        try {
+          const parsed: unknown = JSON.parse(call.arguments);
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            continue;
+          }
+          args = parsed as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+        if (
+          args.operationId !== "SQLService/Query" &&
+          args.operationId !== "bytebase.v1.SQLService.Query"
+        ) {
+          continue;
+        }
+        const queryCall: (typeof queryCalls)[number] = { args };
+        queryCalls.push(queryCall);
+        callsById.set(call.id, queryCall);
+      }
+    } else if (message.role === "tool" && message.toolCallId) {
+      const queryCall = callsById.get(message.toolCallId);
+      if (queryCall) queryCall.result = message.content;
+    }
+  }
+  return queryCalls;
+};
 
 // ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
-
-const normalizeSearchText = (value?: string) =>
-  value?.toLowerCase().trim() ?? "";
-
-const matchDomRefSuggestion = (suggestion: DomRefSuggestion, query: string) => {
-  if (!query) return true;
-  const normalizedQuery = normalizeSearchText(query);
-  return [
-    suggestion.ref,
-    suggestion.tag,
-    suggestion.role,
-    suggestion.label,
-    suggestion.value,
-  ].some((value) => normalizeSearchText(value).includes(normalizedQuery));
-};
-
-const getDomRefQuery = (
-  text: string,
-  start: number,
-  end: number
-): { query: string; start: number; end: number } | null => {
-  if (start !== end) return null;
-  const prefix = text.slice(0, start);
-  const matches = prefix.match(/(^|\s)@([^\s@]*)$/);
-  if (!matches) return null;
-  return {
-    query: matches[2] ?? "",
-    start: start - matches[2].length - 1,
-    end,
-  };
-};
-
-const formatDomRefSuggestionMeta = (suggestion: DomRefSuggestion) =>
-  [suggestion.tag.toLowerCase(), suggestion.role]
-    .filter((value): value is string => Boolean(value))
-    .join(" · ");
 
 const getCurrentPageSnapshot = () => ({
   path: router.currentRoute.value.fullPath,
   title: document.title,
 });
 
-const buildMentionListStyle = (rect: DOMRect): CSSProperties => ({
-  left: rect.left,
-  top: rect.top - 4,
-  transform: "translateY(-100%)",
-  width: rect.width,
-});
+interface RecentActivityEvent {
+  actor: string;
+  action: string;
+  resource: string;
+  occurredAt?: string;
+}
 
-const getMentionListStyleKey = (rect: DOMRect) =>
-  `${rect.left}:${rect.top}:${rect.width}`;
+interface RecentActivityResult {
+  events: RecentActivityEvent[];
+  partial: boolean;
+  error?: string;
+}
+
+interface AttentionResult {
+  issues: {
+    name: string;
+    title: string;
+    relation: "review" | "created";
+  }[];
+  partial: boolean;
+  error?: string;
+}
+
+const parseRecentActivityResult = (value: string): RecentActivityResult => {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (typeof parsed.error === "string") {
+      return { events: [], partial: false, error: parsed.error };
+    }
+    const events = Array.isArray(parsed.events)
+      ? parsed.events.flatMap((event) => {
+          if (
+            typeof event !== "object" ||
+            event === null ||
+            typeof event.actor !== "string" ||
+            typeof event.action !== "string" ||
+            typeof event.resource !== "string"
+          ) {
+            return [];
+          }
+          return [
+            {
+              actor: event.actor,
+              action: event.action,
+              resource: event.resource,
+              ...(typeof event.occurredAt === "string"
+                ? { occurredAt: event.occurredAt }
+                : {}),
+            },
+          ];
+        })
+      : [];
+    return { events, partial: parsed.partial === true };
+  } catch {
+    return { events: [], partial: false, error: "invalid result" };
+  }
+};
+
+const parseAttentionResult = (value: string): AttentionResult => {
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    if (typeof parsed.error === "string") {
+      return { issues: [], partial: false, error: parsed.error };
+    }
+    const issues = Array.isArray(parsed.issues)
+      ? parsed.issues.flatMap((issue) => {
+          if (
+            typeof issue !== "object" ||
+            issue === null ||
+            typeof issue.name !== "string" ||
+            typeof issue.title !== "string"
+          ) {
+            return [];
+          }
+          return [
+            {
+              name: issue.name,
+              title: issue.title,
+              relation:
+                issue.relation === "created"
+                  ? ("created" as const)
+                  : ("review" as const),
+            },
+          ];
+        })
+      : [];
+    return { issues, partial: parsed.partial === true };
+  } catch {
+    return { issues: [], partial: false, error: "invalid result" };
+  }
+};
+
+const mergeOverviewEvidence = (
+  current: AgentAnswerEvidence | undefined,
+  next: AgentEvidence | undefined
+): AgentAnswerEvidence | undefined => {
+  if (!next || next.references.length === 0) return current;
+  if (!current) return next;
+
+  const groups = Array.isArray(current) ? current : [current];
+  const matchingIndex = groups.findIndex(
+    (group) =>
+      group.project === next.project && group.workspace === next.workspace
+  );
+  if (matchingIndex < 0) return [...groups, next];
+
+  const existing = groups[matchingIndex];
+  const seen = new Set(
+    existing.references.map(
+      (reference) => `${reference.kind}:${reference.name}`
+    )
+  );
+  const references = [...existing.references];
+  for (const reference of next.references) {
+    const key = `${reference.kind}:${reference.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    references.push(reference);
+  }
+  const merged = { ...existing, references };
+  if (!Array.isArray(current)) return merged;
+  return groups.map((group, index) =>
+    index === matchingIndex ? merged : group
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-interface DomRefMentionOption {
-  label: string;
-  value: string;
-  suggestion: DomRefSuggestion;
-}
-
-export function AgentInput() {
-  const { t } = useTranslation();
-
+export function AgentInput({
+  retryActionRef,
+  resendActionRef,
+  focusActionRef,
+}: {
+  retryActionRef?: RefObject<(() => void) | null>;
+  resendActionRef?: RefObject<((messageId: string) => void) | null>;
+  focusActionRef?: RefObject<((atEnd?: boolean) => void) | null>;
+}) {
+  const { t, i18n } = useTranslation();
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
+  const remoteBusy = useAgentStore((state) =>
+    Boolean(state.currentChatId && state.remoteBusyChatIds[state.currentChatId])
+  );
   const isAIConfigurationBlocked = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const workspaceName = useAgentStore((s) => s.workspaceName);
+  const userEmail = useAgentStore((s) => s.userEmail);
+  const sendWithEnter = useAgentStore((s) => s.preferences.sendWithEnter);
+  const currentDraft = useAgentStore((s) =>
+    currentChatId ? s.draftsByChatId[currentChatId] : undefined
+  );
+  const queuedUserMessagesByChatId = useAgentStore(
+    (s) => s.queuedUserMessagesByChatId
+  );
+  const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
+  const currentUserName = useAppStore((s) => s.currentUser?.name ?? "");
+  const context = currentChat?.context;
+  const projectContext = context?.startsWith(projectNamePrefix)
+    ? context
+    : undefined;
+  const currentTurnProject = useAgentStore((s) =>
+    currentChatId
+      ? getCurrentTurnResourceReferences(
+          s.messagesByChatId[currentChatId] ?? []
+        ).at(-1)?.project
+      : undefined
+  );
+  const askProject = currentTurnProject ?? projectContext;
+  const contextProject = useAppStore((s) =>
+    projectContext ? s.projectsByName[projectContext] : undefined
+  );
+  const workspace = useAppStore((s) => s.workspace);
+  const getOrFetchProjectByName = useAppStore((s) => s.getOrFetchProjectByName);
+  const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
 
-  // Local state
-  const [input, setInput] = useState("");
-  const [selectionStart, setSelectionStart] = useState(0);
-  const [selectionEnd, setSelectionEnd] = useState(0);
-  const [domRefSuggestions, setDomRefSuggestions] = useState<
-    DomRefSuggestion[]
-  >([]);
-  const [isMentionOpen, setIsMentionOpen] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(0);
-  const [mentionListStyle, setMentionListStyle] =
-    useState<CSSProperties | null>(null);
+  const formatRecentActivity = useCallback(
+    (result: string) => {
+      const payload = parseRecentActivityResult(result);
+      if (payload.error) {
+        return t("agent.recent-activity.unavailable");
+      }
+      if (payload.events.length === 0) {
+        return t("agent.recent-activity.empty");
+      }
 
+      const formatTime = (value: string | undefined) => {
+        if (!value) return t("agent.recent-activity.unknown-time");
+        const timestamp = Date.parse(value);
+        if (Number.isNaN(timestamp)) {
+          return t("agent.recent-activity.unknown-time");
+        }
+        return new Intl.DateTimeFormat(i18n.language, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(timestamp);
+      };
+
+      return [
+        t("agent.recent-activity.summary"),
+        ...payload.events.map(
+          (event) =>
+            `- ${t("agent.recent-activity.event", {
+              actor: event.actor,
+              action: event.action,
+              resource: event.resource,
+              time: formatTime(event.occurredAt),
+            })}`
+        ),
+        ...(payload.partial ? [t("agent.recent-activity.more")] : []),
+      ].join("\n");
+    },
+    [i18n.language, t]
+  );
+
+  const formatWorkspaceAttention = useCallback(
+    (result: string) => {
+      const payload = parseAttentionResult(result);
+      if (payload.error) {
+        return t("agent.workspace-attention.unavailable");
+      }
+      if (payload.issues.length === 0 && payload.partial) {
+        return t("agent.workspace-attention.partial");
+      }
+      if (payload.issues.length === 0) {
+        return t("agent.workspace-attention.empty");
+      }
+      return [
+        t("agent.workspace-attention.summary"),
+        ...payload.issues.map((issue) =>
+          t(`agent.workspace-attention.issue-${issue.relation}`, {
+            title: issue.title,
+          })
+        ),
+        ...(payload.partial ? [t("agent.workspace-attention.more")] : []),
+      ].join("\n");
+    },
+    [t]
+  );
+
+  const formatProjectAttention = useCallback(
+    (result: string) => {
+      const payload = parseAttentionResult(result);
+      if (payload.error) {
+        return t("agent.project-attention.unavailable");
+      }
+      if (payload.issues.length === 0 && payload.partial) {
+        return t("agent.project-attention.partial");
+      }
+      if (payload.issues.length === 0) {
+        return t("agent.project-attention.empty");
+      }
+      return [
+        t("agent.project-attention.summary"),
+        ...payload.issues.map((issue) =>
+          t(`agent.project-attention.issue-${issue.relation}`, {
+            title: issue.title,
+          })
+        ),
+        ...(payload.partial ? [t("agent.project-attention.more")] : []),
+      ].join("\n");
+    },
+    [t]
+  );
+
+  const [askDraft, setAskDraft] = useState<AgentDraft>({ text: "" });
+  const [choiceSelection, setChoiceSelection] = useState<{
+    chatId: string;
+    toolCallId: string;
+    value: string;
+  } | null>(null);
+  const [, setPermissionTick] = useState(0);
+  const [resourcePickerOpen, setResourcePickerOpen] = useState(false);
+  const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
+  const selectedMentionCaretRef = useRef<number | null>(null);
+  const previousChatIdRef = useRef<string | null>(null);
+  const confirmationInFlightRef = useRef(false);
+  const messageActionInFlightRef = useRef<symbol | null>(null);
+  useEffect(() => {
+    return () => {
+      messageActionInFlightRef.current = null;
+    };
+  }, [currentChatId, workspaceName, userEmail]);
+
+  const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mentionListRef = useRef<HTMLDivElement>(null);
-  const mentionListStyleKeyRef = useRef<string | null>(null);
+  const handledAskFocusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!focusActionRef) return;
+    const focus = (atEnd = false) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      if (atEnd) {
+        textarea.setSelectionRange(
+          textarea.value.length,
+          textarea.value.length
+        );
+      }
+    };
+    focusActionRef.current = focus;
+    return () => {
+      if (focusActionRef.current === focus) focusActionRef.current = null;
+    };
+  }, [focusActionRef]);
 
   // Derived values
-  const isInterrupted = Boolean(currentChat?.interrupted);
-  const isCurrentChatRunning = currentChat?.status === "running";
+  const isCurrentChatRunning = loading;
   const chooseOptions =
     currentPendingAsk?.kind === "choose"
       ? (currentPendingAsk.options ?? [])
       : [];
   const isAwaitingConfirm = currentPendingAsk?.kind === "confirm";
+  const apiPermission = currentPendingAsk?.apiPermission;
+  const canCancelPendingRequest =
+    currentChat?.status === "awaiting_user" &&
+    Boolean(currentPendingAsk) &&
+    !apiPermission &&
+    !remoteBusy;
+  const apiPermissionPreview =
+    apiPermission && currentChat && currentUserName
+      ? getPendingApiCallPreview({
+          actionId: apiPermission.actionId,
+          chatId: currentChat.id,
+          toolCallId: currentPendingAsk.toolCallId,
+          userName: currentUserName,
+        })
+      : undefined;
+  useEffect(() => {
+    if (!apiPermissionPreview) return;
+    const timer = window.setInterval(
+      () => setPermissionTick((tick) => tick + 1),
+      1000
+    );
+    return () => window.clearInterval(timer);
+  }, [apiPermissionPreview?.expiresAt]);
   const isAwaitingChoose =
     currentPendingAsk?.kind === "choose" && chooseOptions.length > 0;
+  const selectedChoice =
+    choiceSelection?.chatId === currentChatId &&
+    choiceSelection?.toolCallId === currentPendingAsk?.toolCallId
+      ? chooseOptions.find((option) => option.value === choiceSelection.value)
+      : undefined;
+  const composerDraft = currentPendingAsk ? askDraft : currentDraft;
+  const input = composerDraft?.text ?? "";
+  const setInput = useCallback(
+    (value: string) => {
+      if (currentPendingAsk) {
+        setAskDraft((draft) => ({
+          text: value,
+          mentions: updateDraftResourceMentions(
+            draft.text,
+            value,
+            getDraftResourceMentions(draft)
+          ),
+        }));
+        return;
+      }
+      const store = useAgentStore.getState();
+      const chatId =
+        store.currentChatId ??
+        store.ensureCurrentChat(
+          getCurrentPageSnapshot(),
+          getCurrentChatContext(),
+          workspace?.name
+        ).id;
+      const draft = store.getDraft(chatId);
+      const mentions = updateDraftResourceMentions(
+        draft.text,
+        value,
+        getDraftResourceMentions(draft)
+      );
+      store.setDraft(chatId, {
+        text: value,
+        ...(mentions.length > 0 ? { mentions } : {}),
+      });
+    },
+    [currentPendingAsk, workspace?.name]
+  );
+  const handleResourcePickerOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setResourcePickerOpen(nextOpen);
+      if (nextOpen) return;
+      const trigger = mentionRangeRef.current;
+      mentionRangeRef.current = null;
+      const removed = removeMentionTrigger(input, trigger);
+      if (!removed) return;
+      selectedMentionCaretRef.current = removed.caret;
+      setInput(removed.text);
+    },
+    [input, setInput]
+  );
   const sendLabel = currentPendingAsk ? t("agent.reply") : t("agent.send");
   const inputPlaceholder =
     currentPendingAsk?.kind === "input"
@@ -148,140 +698,314 @@ export function AgentInput() {
       : currentPendingAsk?.kind === "choose"
         ? currentPendingAsk.prompt
         : t("agent.input-placeholder");
-  const confirmLabel = currentPendingAsk?.confirmLabel ?? t("agent.confirm");
-  const cancelLabel = currentPendingAsk?.cancelLabel ?? t("agent.cancel");
+  const confirmLabel =
+    currentPendingAsk?.confirmLabel?.trim() || t("agent.confirm");
+  const cancelLabel =
+    currentPendingAsk?.cancelLabel?.trim() || t("agent.cancel");
+  const draftMentions = composerDraft
+    ? getDraftResourceMentions(composerDraft)
+    : [];
+  const selectedProjectMention = draftMentions.find(
+    ({ resource }) => resource.kind === "project"
+  );
+  const hasAdditionalMention =
+    draftMentions.length > 0 && hasUnboundResourceMention(input, draftMentions);
   const isSendDisabled =
+    currentChat?.archived ||
     isCurrentChatRunning ||
     isAwaitingConfirm ||
     isAwaitingChoose ||
     isAIConfigurationBlocked ||
+    hasAdditionalMention ||
     !input.trim();
-  const currentChatTokenUsageLabel = useMemo(
-    () =>
-      t("agent.chat-total-tokens", {
-        count: tokenFormatter.format(currentChat?.totalTokensUsed ?? 0),
+  const contextTitle = projectContext
+    ? contextProject?.title || projectContext.slice(projectNamePrefix.length)
+    : context === workspace?.name
+      ? workspace?.title || context
+      : context;
+  const canMentionResource = Boolean(
+    workspace?.name &&
+      (!currentPendingAsk ||
+        (currentPendingAsk.kind === "input" && !apiPermission))
+  );
+
+  const selectContext = useCallback(
+    (resource: string) => {
+      const store = useAgentStore.getState();
+      const selected = store.selectOrCreateChatForContext(
+        resource,
+        getCurrentPageSnapshot(),
+        workspace?.name
+      );
+      if (!selected) return false;
+      setResourcePickerOpen(false);
+      mentionRangeRef.current = null;
+      return true;
+    },
+    [workspace?.name]
+  );
+
+  const selectMentionResource = useCallback(
+    (resource: AgentResourceReference) => {
+      const store = useAgentStore.getState();
+      if (
+        currentPendingAsk &&
+        (store.currentChatId !== currentChatId ||
+          store.getPendingAsk(currentChatId)?.toolCallId !==
+            currentPendingAsk.toolCallId)
+      ) {
+        return;
+      }
+      const chatId =
+        store.currentChatId ??
+        store.ensureCurrentChat(
+          getCurrentPageSnapshot(),
+          getCurrentChatContext(),
+          workspace?.name
+        ).id;
+      const draft = currentPendingAsk ? askDraft : store.getDraft(chatId);
+      const mentions = getDraftResourceMentions(draft);
+      if (!canAddResourceMention(mentions, resource)) return;
+      const range = mentionRangeRef.current;
+      const label = resource.label;
+      const insertion = insertResourceMention(draft.text, range, label);
+      if (!insertion) return;
+      selectedMentionCaretRef.current = insertion.caret;
+      const nextDraft: AgentDraft = {
+        text: insertion.text,
+        mentions: [
+          ...updateDraftResourceMentions(draft.text, insertion.text, mentions),
+          { resource, range: insertion.mention },
+        ],
+      };
+      if (currentPendingAsk) setAskDraft(nextDraft);
+      else store.setDraft(chatId, nextDraft);
+      mentionRangeRef.current = null;
+    },
+    [askDraft, currentChatId, currentPendingAsk, workspace?.name]
+  );
+
+  const selectMentionProject = useCallback(
+    (project: Project) =>
+      selectMentionResource({
+        kind: "project",
+        name: project.name,
+        project: project.name,
+        label: project.title || project.name,
       }),
-    [currentChat?.totalTokensUsed, t]
+    [selectMentionResource]
   );
 
-  // @-mention autocomplete
-  const activeDomRefQuery = useMemo(
-    () => getDomRefQuery(input, selectionStart, selectionEnd),
-    [input, selectionStart, selectionEnd]
+  const selectMentionDatabase = useCallback(
+    (database: Database) =>
+      selectMentionResource({
+        kind: "database",
+        name: database.name,
+        project: database.project,
+        label: getDatabaseMentionLabel(database),
+      }),
+    [selectMentionResource]
   );
 
-  const filteredSuggestions = useMemo(() => {
-    const query = activeDomRefQuery?.query ?? "";
-    return domRefSuggestions.filter((s) => matchDomRefSuggestion(s, query));
-  }, [domRefSuggestions, activeDomRefQuery]);
-
-  const mentionOptions = useMemo<DomRefMentionOption[]>(
-    () =>
-      filteredSuggestions.map((suggestion) => ({
-        label: `[${suggestion.ref}] ${suggestion.label}`,
-        value: `[${suggestion.ref}]`,
-        suggestion,
-      })),
-    [filteredSuggestions]
+  const selectMentionIssue = useCallback(
+    (issue: Issue) => {
+      const [projectId] = getNameParentTokens(issue.name, [
+        projectNamePrefix,
+        issueNamePrefix,
+      ]);
+      if (!projectId) return;
+      selectMentionResource({
+        kind: "issue",
+        name: issue.name,
+        project: `${projectNamePrefix}${projectId}`,
+        label: issue.title || issue.name,
+      });
+    },
+    [selectMentionResource]
   );
 
-  // Show/hide mention popover
-  const showMention = isMentionOpen && mentionOptions.length > 0;
+  const selectMentionPlan = useCallback(
+    (plan: Plan) => {
+      const [projectId, planId] = getNameParentTokens(plan.name, [
+        projectNamePrefix,
+        planNamePrefix,
+      ]);
+      if (!projectId || !planId) return;
+      selectMentionResource({
+        kind: "plan",
+        name: plan.name,
+        project: `${projectNamePrefix}${projectId}`,
+        label: getPlanMentionLabel(plan),
+      });
+    },
+    [selectMentionResource]
+  );
 
-  useLayoutEffect(() => {
-    if (!showMention) {
-      mentionListStyleKeyRef.current = null;
-      setMentionListStyle(null);
+  useEffect(() => {
+    if (projectContext && !contextProject) {
+      void getOrFetchProjectByName(projectContext, true);
+    }
+  }, [contextProject, getOrFetchProjectByName, projectContext]);
+
+  const blockWhenAIIsNotConfigured = useCallback(
+    async (chatId: string) => {
+      const scope = useAgentStore.getState();
+      const setting = await getOrFetchSettingByName(
+        Setting_SettingName.AI,
+        true
+      );
+      if (!isCurrentChatScope(scope, chatId)) return true;
+      if (getAgentAIConfigurationEnabled(setting) !== false) return false;
+
+      useAgentStore.getState().setChatStatus(chatId, "error", {
+        requiresAIConfiguration: true,
+      });
+      return true;
+    },
+    [getOrFetchSettingByName]
+  );
+
+  useEffect(() => {
+    const chat = useAgentStore.getState().getChat(currentChatId);
+    if (!chat) return;
+
+    if (aiEnabled === false) {
+      useAgentStore.getState().setChatStatus(chat.id, "error", {
+        requiresAIConfiguration: true,
+      });
       return;
     }
 
-    let isCancelled = false;
-    let frameId = 0;
-
-    const updateMentionListPosition = () => {
-      const rect = textareaRef.current?.getBoundingClientRect();
-      if (!rect) {
-        if (mentionListStyleKeyRef.current !== null) {
-          mentionListStyleKeyRef.current = null;
-          setMentionListStyle(null);
-        }
-      } else {
-        const nextStyleKey = getMentionListStyleKey(rect);
-        if (nextStyleKey !== mentionListStyleKeyRef.current) {
-          mentionListStyleKeyRef.current = nextStyleKey;
-          setMentionListStyle(buildMentionListStyle(rect));
-        }
-      }
-
-      if (!isCancelled) {
-        frameId = requestAnimationFrame(updateMentionListPosition);
-      }
-    };
-
-    updateMentionListPosition();
-
-    return () => {
-      isCancelled = true;
-      cancelAnimationFrame(frameId);
-    };
-  }, [showMention]);
-
-  // Reset highlight when options change
-  useEffect(() => {
-    setHighlightIndex(0);
-  }, [mentionOptions.length]);
-
-  // Close mention menu when chat starts running
-  useEffect(() => {
-    if (isCurrentChatRunning) {
-      setIsMentionOpen(false);
+    if (aiEnabled === true && chat.requiresAIConfiguration) {
+      useAgentStore.getState().clearError(chat.id);
     }
-  }, [isCurrentChatRunning]);
+  }, [aiEnabled, currentChatId]);
 
-  // Reset input when chat/pendingAsk changes
   useEffect(() => {
+    const chat = useAgentStore.getState().getChat(currentChatId);
+    if (!chat) return;
+    void blockWhenAIIsNotConfigured(chat.id);
+  }, [blockWhenAIIsNotConfigured, currentChatId]);
+
+  const defaultAskDraft = useMemo<AgentDraft>(() => {
+    const text = currentPendingAsk?.defaultValue ?? "";
+    const resource = normalizeAgentResourceReference(
+      currentPendingAsk?.defaultResource
+    );
+    if (
+      currentPendingAsk?.kind !== "input" ||
+      resource?.kind !== "database" ||
+      resource.name !== text ||
+      (askProject && resource.project !== askProject)
+    ) {
+      return { text };
+    }
+    const insertion = insertResourceMention(
+      "@",
+      { start: 0, end: 1 },
+      resource.label
+    );
+    return insertion
+      ? {
+          text: insertion.text,
+          mentions: [{ resource, range: insertion.mention }],
+        }
+      : { text };
+  }, [
+    currentPendingAsk?.defaultValue,
+    currentPendingAsk?.defaultResource,
+    currentPendingAsk?.kind,
+    askProject,
+  ]);
+
+  // Pending-ask answers are separate from the saved question draft.
+  useEffect(() => {
+    setChoiceSelection(null);
+    setResourcePickerOpen(false);
+    mentionRangeRef.current = null;
+    selectedMentionCaretRef.current = null;
     if (
       currentPendingAsk?.kind === "input" ||
       currentPendingAsk?.kind === "choose"
     ) {
-      setInput(currentPendingAsk.defaultValue ?? "");
+      setAskDraft(defaultAskDraft);
       return;
     }
-    setInput("");
+    setAskDraft({ text: "" });
   }, [
     currentChatId,
+    workspaceName,
+    userEmail,
     currentPendingAsk?.toolCallId,
     currentPendingAsk?.kind,
-    currentPendingAsk?.defaultValue,
+    defaultAskDraft,
   ]);
 
-  // Load dom ref suggestions when @ query is active
-  useEffect(() => {
-    if (!activeDomRefQuery) {
-      setDomRefSuggestions([]);
-      setIsMentionOpen(false);
+  useLayoutEffect(() => {
+    const askKey =
+      currentChatId &&
+      currentPendingAsk?.kind === "input" &&
+      !currentPendingAsk.apiPermission
+        ? `${workspaceName}:${userEmail}:${currentChatId}:${currentPendingAsk.toolCallId}`
+        : null;
+    if (!askKey) {
+      handledAskFocusRef.current = null;
       return;
     }
-    setIsMentionOpen(true);
+    if (
+      handledAskFocusRef.current === askKey ||
+      input !== defaultAskDraft.text
+    ) {
+      return;
+    }
+    handledAskFocusRef.current = askKey;
+    const store = useAgentStore.getState();
+    const textarea = textareaRef.current;
+    if (
+      !store.visible ||
+      store.minimized ||
+      store.currentChatId !== currentChatId ||
+      currentChat?.status !== "awaiting_user" ||
+      !textarea ||
+      textarea.disabled ||
+      textarea.closest(
+        '[hidden], [inert], [aria-hidden="true"], [data-base-ui-inert]'
+      )
+    ) {
+      return;
+    }
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }, [
+    currentChatId,
+    currentChat?.status,
+    currentPendingAsk,
+    defaultAskDraft.text,
+    input,
+    workspaceName,
+    userEmail,
+  ]);
 
-    // Only load once (when suggestions are empty)
-    if (domRefSuggestions.length > 0) return;
+  useEffect(() => {
+    if (
+      previousChatIdRef.current &&
+      previousChatIdRef.current !== currentChatId
+    ) {
+      setResourcePickerOpen(false);
+      mentionRangeRef.current = null;
+      selectedMentionCaretRef.current = null;
+    }
+    previousChatIdRef.current = currentChatId;
+  }, [currentChatId]);
 
-    const requestToken = ++domRefRequestToken;
-    void lazyExtractDomRefSuggestions().then((suggestions) => {
-      if (requestToken !== domRefRequestToken) return;
-      // Verify @ query is still active before updating suggestions
-      const currentQuery = getDomRefQuery(
-        textareaRef.current?.value ?? "",
-        textareaRef.current?.selectionStart ?? 0,
-        textareaRef.current?.selectionEnd ?? 0
-      );
-      if (!currentQuery) return;
-      setDomRefSuggestions(suggestions);
-    });
-  }, [input, selectionStart, selectionEnd]);
+  useLayoutEffect(() => {
+    const caret = selectedMentionCaretRef.current;
+    if (caret === null) return;
+    selectedMentionCaretRef.current = null;
+    textareaRef.current?.focus();
+    textareaRef.current?.setSelectionRange(caret, caret);
+  }, [input]);
 
-  // Auto-resize textarea
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -291,63 +1015,38 @@ export function AgentInput() {
     const styles = window.getComputedStyle(el);
     const minHeight =
       Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
-    const maxHeight =
-      Number.parseFloat(styles.maxHeight) || Number.POSITIVE_INFINITY;
     const borderHeight = el.offsetHeight - el.clientHeight;
-    const contentHeight = el.scrollHeight + borderHeight;
-    const nextHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
+    const desiredHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    const composerChrome = composer
+      ? Math.max(0, composer.offsetHeight - el.offsetHeight)
+      : 0;
+    const availableHeight = parent ? parent.clientHeight - composerChrome : 0;
+    const maxHeight =
+      availableHeight > 0
+        ? Math.max(minHeight, availableHeight)
+        : desiredHeight;
+    const nextHeight = Math.min(desiredHeight, maxHeight);
 
     el.style.height = `${nextHeight}px`;
-    el.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+    el.style.overflowY = desiredHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
     autoResize();
   }, [input, autoResize]);
 
-  // Selection tracking
-  const updateSelection = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    setSelectionStart(el.selectionStart ?? 0);
-    setSelectionEnd(el.selectionEnd ?? 0);
-  }, []);
+  useEffect(() => {
+    const composer = composerRef.current;
+    const parent = composer?.parentElement;
+    if (!composer || !parent || typeof ResizeObserver === "undefined") return;
 
-  // Select a mention option
-  const selectMention = useCallback(
-    (option: DomRefMentionOption) => {
-      if (!activeDomRefQuery) return;
-      const before = input.slice(0, activeDomRefQuery.start);
-      const after = input.slice(activeDomRefQuery.end);
-      const newValue = `${before}${option.value} ${after}`;
-      setInput(newValue);
-      setIsMentionOpen(false);
-      setDomRefSuggestions([]);
-
-      // Set cursor after the inserted mention
-      const cursorPos = before.length + option.value.length + 1;
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (el) {
-          el.focus();
-          el.setSelectionRange(cursorPos, cursorPos);
-          setSelectionStart(cursorPos);
-          setSelectionEnd(cursorPos);
-        }
-      });
-    },
-    [activeDomRefQuery, input]
-  );
-
-  // Scroll highlighted item into view
-  const scrollHighlightedIntoView = useCallback((index: number) => {
-    requestAnimationFrame(() => {
-      const container = mentionListRef.current;
-      if (!container) return;
-      const items = container.querySelectorAll("[data-mention-option]");
-      items[index]?.scrollIntoView({ block: "nearest" });
-    });
-  }, []);
+    const observer = new ResizeObserver(autoResize);
+    observer.observe(composer);
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [autoResize]);
 
   // ---------------------------------------------------------------------------
   // Agent loop execution
@@ -357,19 +1056,15 @@ export function AgentInput() {
     (chatId: string, systemPrompt: string): Message[] => {
       return buildOutboundHistory(
         systemPrompt,
-        useAgentStore.getState().getMessages(chatId)
+        useAgentStore.getState().getMessages(chatId),
+        useAgentStore.getState().getChat(chatId)?.context
       );
     },
     []
   );
 
   const handleOutcome = useCallback(
-    (
-      chatId: string,
-      page: { path: string; title: string },
-      errorPrefix: string,
-      outcome: Awaited<ReturnType<typeof runAgentLoop>>
-    ) => {
+    (chatId: string, outcome: Awaited<ReturnType<typeof runAgentLoop>>) => {
       const store = useAgentStore.getState();
       switch (outcome.kind) {
         case "completed":
@@ -382,19 +1077,7 @@ export function AgentInput() {
           store.interruptChatRun(chatId, getCurrentPageSnapshot());
           return;
         case "error": {
-          if (!isAgentAIConfigurationError(outcome.error)) {
-            store.addMessage({
-              chatId,
-              role: "assistant",
-              content: `${errorPrefix}${outcome.error.message}`,
-              metadata: {
-                route: page.path,
-                error: outcome.error.message,
-              },
-            });
-          }
-          store.finishChatRun(chatId, {
-            status: "error",
+          store.setChatStatus(chatId, "error", {
             lastError: outcome.error.message,
             requiresAIConfiguration: isAgentAIConfigurationError(outcome.error),
           });
@@ -409,32 +1092,546 @@ export function AgentInput() {
     async (
       chatId: string,
       page: { path: string; title: string },
-      runId: string
+      runId: string,
+      runMode: AgentRunMode,
+      skipReferencePreflight = false
     ) => {
       const store = useAgentStore.getState();
+      const maxTotalTokens = store.preferences.tokenLimitPerRun;
+      const references = getCurrentTurnResourceReferences(
+        store.getMessages(chatId)
+      );
+      const projectReference = references.find(
+        (reference) => reference.kind === "project"
+      );
+      const databaseReference = references.find(
+        (reference) => reference.kind === "database"
+      );
+      const issueReference = references.find(
+        (reference) => reference.kind === "issue"
+      );
+      const planReference = references.find(
+        (reference) => reference.kind === "plan"
+      );
+      const referencedProject =
+        projectReference?.name ??
+        databaseReference?.project ??
+        issueReference?.project ??
+        planReference?.project;
+      const referencedDatabase = databaseReference?.name;
+      const referencedIssue = issueReference?.name;
+      const referencedPlan = planReference?.name;
+      const currentPageResource = getCurrentAgentPageResource();
+      const maskingPage = isAgentMaskingPageResource(currentPageResource)
+        ? currentPageResource
+        : undefined;
+      const instanceName = referencedProject
+        ? undefined
+        : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
+      const recordUsage = (usage: AgentModelCallUsage) => {
+        if (isCurrentChatScope(store, chatId)) {
+          store.recordChatModelCallUsage(chatId, runId, usage);
+        }
+      };
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
 
-      const systemPrompt = buildSystemPrompt(page);
-      const tools = getToolDefinitions();
+      const systemPrompt = buildSystemPrompt({
+        ...page,
+        context: store.getChat(chatId)?.context,
+        referencedProject,
+        referencedDatabase,
+        referencedIssue,
+        referencedPlan,
+        instanceName,
+        maskingPage,
+        runMode,
+      });
+      const messages = store.getMessages(chatId);
+      const maskingResumeArgs = getMaskingResumeArgs(messages);
+      const maskingSections = new Set<MaskingSkillSection>([
+        ...getMaskingSectionsForPage(maskingPage),
+        ...getMaskingSectionsForTurn(messages),
+      ]);
+      const toolOptions = {
+        runMode,
+        referencedProject,
+        instanceName,
+        maskingPage,
+      };
+      const resolveRequestContext = () => ({
+        tools: getToolDefinitions({
+          ...toolOptions,
+          maskingSections: [...maskingSections],
+        }),
+        systemGuidance: getMaskingSkillGuidance([...maskingSections]),
+      });
+      const tools = resolveRequestContext().tools;
       const executor = createToolExecutor(router, {
         chatId,
+        userName: useAppStore.getState().currentUser?.name,
+        context: store.getChat(chatId)?.context,
+        workspaceName: workspace?.name,
+        referencedProject,
+        pagePath: page.path,
+        referencedDatabase,
+        databaseChoiceProject: maskingResumeArgs?.project,
+        historicalDatabase: getHistoricalMaskingDatabase(
+          store.getMessages(chatId),
+          store.getChat(chatId)?.context
+        ),
+        referencedIssue,
+        referencedPlan,
+        maskingPage,
+        runMode,
+        onSkillLoaded: (load) => {
+          if (load.name === "data-masking" && load.section) {
+            maskingSections.add(load.section);
+          }
+        },
+        canUseCurrentPage: () =>
+          isCurrentChatScope(store, chatId) &&
+          useAgentStore.getState().currentChatId === chatId,
         onNavigate: () => {
           useAgentStore
             .getState()
             .updateChatPage(chatId, getCurrentPageSnapshot());
         },
       });
+      const toolNamesByCallId = new Map<string, string>();
+      let overviewEvidence: AgentAnswerEvidence | undefined;
+      let verifiedDatabase: { name: string; project: string } | undefined;
+      let readDatabaseSchema = referencedDatabase
+        ? hasCurrentTurnDatabaseSchemaRead(
+            store.getMessages(chatId),
+            referencedDatabase
+          )
+        : false;
+      const handoffCandidates: AgentHandoff[] = [];
+      const maskingDraftIds: string[] = [];
+      const exemptionDraftIds: string[] = [];
+      const semanticTypeDraftIds: string[] = [];
+      const chatContext = store.getChat(chatId)?.context;
+      const handoffScope = {
+        workspaceName: chatContext?.startsWith("workspaces/")
+          ? chatContext
+          : workspace?.name,
+        projectName:
+          referencedProject ??
+          (chatContext?.startsWith(projectNamePrefix)
+            ? chatContext
+            : undefined),
+      };
+      const observeHandoffs = (name: string, result: string) => {
+        if (
+          name === "prepare_masking_rule_draft" ||
+          name === "prepare_masking_rule_drafts" ||
+          name === "prepare_masking_exemption_draft" ||
+          name === "prepare_semantic_type_draft"
+        ) {
+          maskingDraftIds.length = 0;
+          exemptionDraftIds.length = 0;
+          semanticTypeDraftIds.length = 0;
+          try {
+            const prepared = JSON.parse(result);
+            if (!prepared.error && typeof prepared.draftId === "string")
+              (name === "prepare_semantic_type_draft"
+                ? semanticTypeDraftIds
+                : name === "prepare_masking_exemption_draft"
+                  ? exemptionDraftIds
+                  : maskingDraftIds
+              ).push(prepared.draftId);
+          } catch {
+            // Only successfully prepared structured drafts can become actions.
+          }
+        }
+        if (name === "get_masking_overview") {
+          for (let index = handoffCandidates.length - 1; index >= 0; index--) {
+            if (maskingHandoffKinds.has(handoffCandidates[index].kind)) {
+              handoffCandidates.splice(index, 1);
+            }
+          }
+        }
+        handoffCandidates.push(
+          ...collectAgentHandoffs(name, result, handoffScope)
+        );
+      };
 
       try {
+        const history = buildChatHistory(chatId, systemPrompt);
+        if (maskingResumeArgs) {
+          const toolCallId = uuidv4();
+          const toolCall = {
+            id: toolCallId,
+            name: "get_masking_overview",
+            arguments: JSON.stringify(maskingResumeArgs),
+          };
+          let result: string;
+          try {
+            const refreshed = await executor(
+              toolCall.name,
+              { ...maskingResumeArgs },
+              toolCallId
+            );
+            result =
+              refreshed.kind === "tool_result"
+                ? refreshed.result
+                : JSON.stringify({
+                    error:
+                      "The masking overview could not be refreshed. Current configuration and permissions remain unverified.",
+                  });
+          } catch {
+            result = JSON.stringify({
+              error:
+                "The masking overview could not be refreshed. Current configuration and permissions remain unverified.",
+            });
+          }
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !isCurrentChatScope(store, chatId)
+          )
+            return;
+          observeHandoffs(toolCall.name, result);
+          useAgentStore.getState().addMessage({
+            chatId,
+            role: "assistant",
+            toolCalls: [toolCall],
+            metadata: { route: page.path, runId },
+          });
+          useAgentStore.getState().addMessage({
+            chatId,
+            role: "tool",
+            toolCallId,
+            content: result,
+            metadata: { route: page.path, runId },
+          });
+          history.push(
+            { role: "assistant", toolCalls: [toolCall] },
+            { role: "tool", toolCallId, content: result }
+          );
+        }
+        let prefetchedProjectOverview: string | undefined;
+        if (
+          !skipReferencePreflight &&
+          projectReference &&
+          !databaseReference &&
+          !issueReference &&
+          !planReference &&
+          referencedProject
+        ) {
+          const preflightCallId = uuidv4();
+          const result = await executor(
+            "get_project_overview",
+            {},
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !isCurrentChatScope(store, chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                error?: unknown;
+              };
+              valid = overview.project === referencedProject && !overview.error;
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.project-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          prefetchedProjectOverview = overviewResult;
+          observeHandoffs("get_project_overview", overviewResult);
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_project_overview",
+                  arguments: "{}",
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (
+          !skipReferencePreflight &&
+          referencedPlan &&
+          referencedProject
+        ) {
+          const preflightCallId = uuidv4();
+          const args = { planName: referencedPlan };
+          const result = await executor(
+            "get_plan_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !isCurrentChatScope(store, chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                plan?: { status?: unknown; name?: unknown; state?: unknown };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.plan?.status === "available" &&
+                overview.plan.name === referencedPlan &&
+                overview.plan.state === "ACTIVE";
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.plan-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractPlanOverviewEvidence(overviewResult)
+          );
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_plan_overview",
+                  arguments: JSON.stringify(args),
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (
+          !skipReferencePreflight &&
+          referencedIssue &&
+          referencedProject
+        ) {
+          const preflightCallId = uuidv4();
+          const args = { issueName: referencedIssue };
+          const result = await executor(
+            "get_issue_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !isCurrentChatScope(store, chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                issue?: { status?: unknown; name?: unknown };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.issue?.status === "available" &&
+                overview.issue.name === referencedIssue;
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.issue-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractIssueOverviewEvidence(overviewResult)
+          );
+          observeHandoffs("get_issue_overview", overviewResult);
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_issue_overview",
+                  arguments: JSON.stringify(args),
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        } else if (
+          !skipReferencePreflight &&
+          referencedDatabase &&
+          referencedProject
+        ) {
+          const preflightCallId = uuidv4();
+          const args = { databaseName: referencedDatabase };
+          const result = await executor(
+            "get_database_overview",
+            args,
+            preflightCallId
+          ).catch(() => undefined);
+          if (
+            controller.signal.aborted ||
+            runToken !== runTokens.get(chatId) ||
+            !isCurrentChatScope(store, chatId)
+          ) {
+            return;
+          }
+          const overviewResult =
+            result?.kind === "tool_result" ? result.result : undefined;
+          let valid = false;
+          if (overviewResult) {
+            try {
+              const overview = JSON.parse(overviewResult) as {
+                project?: unknown;
+                database?: {
+                  status?: unknown;
+                  name?: unknown;
+                  state?: unknown;
+                };
+              };
+              valid =
+                overview.project === referencedProject &&
+                overview.database?.status === "available" &&
+                overview.database.name === referencedDatabase &&
+                overview.database.state === "ACTIVE";
+            } catch {
+              valid = false;
+            }
+          }
+          if (!valid || !overviewResult) {
+            useAgentStore.getState().addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.database-reference-unavailable"),
+              metadata: { route: page.path, runId },
+            });
+            useAgentStore.getState().finishChatRun(chatId);
+            return;
+          }
+          verifiedDatabase = {
+            name: referencedDatabase,
+            project: referencedProject,
+          };
+          overviewEvidence = mergeOverviewEvidence(
+            overviewEvidence,
+            extractDatabaseOverviewEvidence(overviewResult)
+          );
+          history.push(
+            {
+              role: "assistant",
+              toolCalls: [
+                {
+                  id: preflightCallId,
+                  name: "get_database_overview",
+                  arguments: JSON.stringify(args),
+                },
+              ],
+            },
+            {
+              role: "tool",
+              toolCallId: preflightCallId,
+              content: overviewResult,
+            }
+          );
+        }
+        let finalText: string | undefined;
+        let finalHandoffProposal: AgentHandoff | undefined;
         const outcome = await runAgentLoop(
-          buildChatHistory(chatId, systemPrompt),
+          history,
           tools,
-          executor,
+          (name, args, toolCallId) => {
+            if (invalidatesPlanDraftEvidence(name, args)) {
+              handoffCandidates.length = 0;
+              prefetchedProjectOverview = undefined;
+              overviewEvidence = undefined;
+              verifiedDatabase = undefined;
+              readDatabaseSchema = false;
+            }
+            const execution =
+              name === "get_project_overview" && prefetchedProjectOverview
+                ? Promise.resolve({
+                    kind: "tool_result" as const,
+                    result: prefetchedProjectOverview,
+                  })
+                : executor(name, args, toolCallId);
+            return execution.then((result) => {
+              if (
+                name === "call_api" &&
+                verifiedDatabase &&
+                isSuccessfulDatabaseSchemaRead(
+                  args,
+                  result,
+                  verifiedDatabase.name
+                )
+              ) {
+                readDatabaseSchema = true;
+              }
+              return result;
+            });
+          },
           {
+            onUsage: recordUsage,
             onAssistantMessage: (message) => {
+              for (const toolCall of message.toolCalls ?? []) {
+                toolNamesByCallId.set(toolCall.id, toolCall.name);
+              }
               if (!message.content && !message.toolCalls?.length) return;
               useAgentStore.getState().addMessage({
                 chatId,
@@ -445,6 +1642,34 @@ export function AgentInput() {
               });
             },
             onToolResult: (toolCallId, result) => {
+              const toolName = toolNamesByCallId.get(toolCallId);
+              if (toolName) observeHandoffs(toolName, result);
+              if (toolName === "get_project_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractProjectOverviewEvidence(result)
+                );
+              } else if (toolName === "get_issue_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractIssueOverviewEvidence(result)
+                );
+              } else if (toolName === "get_plan_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractPlanOverviewEvidence(result)
+                );
+              } else if (toolName === "get_database_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractDatabaseOverviewEvidence(result)
+                );
+              } else if (toolName === "get_workspace_overview") {
+                overviewEvidence = mergeOverviewEvidence(
+                  overviewEvidence,
+                  extractWorkspaceOverviewEvidence(result)
+                );
+              }
               useAgentStore.getState().addMessage({
                 chatId,
                 role: "tool",
@@ -453,26 +1678,84 @@ export function AgentInput() {
                 metadata: { route: page.path, runId },
               });
             },
-            onText: (text) => {
+            onText: (text, proposedHandoff) => {
               if (!text) return;
-              useAgentStore.getState().addMessage({
-                chatId,
-                role: "assistant",
-                content: text,
-                metadata: { route: page.path, runId },
-              });
+              finalText = text;
+              finalHandoffProposal = proposedHandoff;
             },
           },
-          controller.signal
+          controller.signal,
+          {
+            allowPlainTextCompletion: runMode === "read-only",
+            maxTotalTokens,
+            resolveRequestContext,
+          }
         );
 
-        useAgentStore
-          .getState()
-          .incrementChatTotalTokens(chatId, outcome.totalTokensUsed ?? 0);
+        if (
+          controller.signal.aborted ||
+          runToken !== runTokens.get(chatId) ||
+          !isCurrentChatScope(store, chatId)
+        ) {
+          return;
+        }
+        const queryCalls = getCurrentTurnQueryCalls(
+          useAgentStore.getState().getMessages(chatId)
+        );
+        const accessRequestDraft =
+          outcome.kind === "completed" &&
+          !outcome.success &&
+          queryCalls.length === 1 &&
+          queryCalls[0].result !== undefined
+            ? await resolveDeniedQueryAccessDraft(
+                queryCalls[0].args,
+                queryCalls[0].result
+              ).catch(() => undefined)
+            : undefined;
+        if (
+          controller.signal.aborted ||
+          runToken !== runTokens.get(chatId) ||
+          !isCurrentChatScope(store, chatId)
+        ) {
+          return;
+        }
 
-        if (runToken !== runTokens.get(chatId)) return;
+        if (finalText && outcome.kind === "completed") {
+          const handoff = outcome.success
+            ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
+            : undefined;
+          const actions = outcome.success
+            ? acceptAgentResponseActions(
+                outcome.actions,
+                handoffCandidates,
+                verifiedDatabase && readDatabaseSchema
+                  ? { verifiedDatabase, answer: finalText }
+                  : undefined,
+                maskingDraftIds,
+                exemptionDraftIds,
+                semanticTypeDraftIds
+              )
+            : [];
+          useAgentStore.getState().addMessage({
+            chatId,
+            role: "assistant",
+            content: finalText,
+            metadata: {
+              route: page.path,
+              runId,
+              ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
+              ...(handoff ? { handoff } : {}),
+              ...(actions.length > 0 ? { actions } : {}),
+              ...(accessRequestDraft ? { accessRequestDraft } : {}),
+              ...(actions.some((action) => action.kind === "continue") &&
+              references.length > 0
+                ? { resourceReferences: references }
+                : {}),
+            },
+          });
+        }
 
-        handleOutcome(chatId, page, "Error: ", outcome);
+        handleOutcome(chatId, outcome);
       } finally {
         if (
           useAgentStore.getState().getAbortController(chatId) === controller
@@ -481,85 +1764,593 @@ export function AgentInput() {
         }
       }
     },
-    [buildChatHistory, handleOutcome]
+    [buildChatHistory, handleOutcome, t, workspace?.name]
+  );
+
+  const runRecentActivityStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string,
+      parent: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.recent-activity.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await getRecentActivity(parent);
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatRecentActivity(result),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.recent-activity.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatRecentActivity, t]
+  );
+
+  const runWorkspaceAttentionStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.workspace-attention.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await createWorkspaceAttentionTool({
+          workspaceName: store.getChat(chatId)?.context,
+        })();
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatWorkspaceAttention(result),
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_workspace_attention", result, {
+              workspaceName: store.getChat(chatId)?.context,
+            })[0],
+          },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.workspace-attention.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatWorkspaceAttention, t]
+  );
+
+  const runProjectAttentionStarter = useCallback(
+    async (
+      chatId: string,
+      page: { path: string; title: string },
+      runId: string
+    ) => {
+      const store = useAgentStore.getState();
+      const controller = new AbortController();
+      const runToken = (runTokens.get(chatId) ?? 0) + 1;
+      runTokens.set(chatId, runToken);
+      store.setAbortController(chatId, controller);
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        content: t("agent.project-attention.checking"),
+        metadata: { route: page.path, runId, pending: true },
+      });
+
+      try {
+        const result = await createProjectOpenIssuesTool({
+          projectName: store.getChat(chatId)?.context,
+        })();
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: formatProjectAttention(result),
+          metadata: {
+            route: page.path,
+            runId,
+            handoff: collectAgentHandoffs("get_project_open_issues", result, {
+              projectName: store.getChat(chatId)?.context,
+            })[0],
+          },
+        });
+        store.finishChatRun(chatId);
+      } catch {
+        if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
+          store.removeMessagesByRunId(chatId, runId);
+          return;
+        }
+        store.removeMessagesByRunId(chatId, runId);
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: t("agent.project-attention.unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+      } finally {
+        if (store.getAbortController(chatId) === controller) {
+          store.setAbortController(chatId, null);
+        }
+      }
+    },
+    [formatProjectAttention, t]
   );
 
   const startChatRun = useCallback(
-    async (chatId: string, currentPage: { path: string; title: string }) => {
+    async (
+      chatId: string,
+      currentPage: { path: string; title: string },
+      runMode: AgentRunMode = "default",
+      starterId?: LandingStarterId,
+      skipReferencePreflight = false
+    ) => {
       const runId = uuidv4();
       const store = useAgentStore.getState();
+      store.syncState();
+      const currentStore = useAgentStore.getState();
+      if (
+        currentStore.getChat(chatId)?.archived ||
+        currentStore.remoteBusyChatIds[chatId]
+      ) {
+        return;
+      }
+      const references = getCurrentTurnResourceReferences(
+        store.getMessages(chatId)
+      );
+      const hasResourceReference = references.some(
+        (reference) =>
+          reference.kind === "project" ||
+          reference.kind === "database" ||
+          reference.kind === "issue" ||
+          reference.kind === "plan"
+      );
+      const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
       store.updateChatPage(chatId, currentPage);
-      store.startChatRun(chatId, currentPage, { runId });
-      await runChat(chatId, currentPage, runId);
+      store.startChatRun(chatId, currentPage, {
+        runId,
+        runMode: effectiveRunMode,
+      });
+      if (!hasResourceReference && starterId === "workspace-recent") {
+        await runRecentActivityStarter(
+          chatId,
+          currentPage,
+          runId,
+          "projects/-"
+        );
+        return;
+      }
+      if (!hasResourceReference && starterId === "project-open-recent") {
+        const projectName = store.getChat(chatId)?.context;
+        if (projectName?.startsWith(projectNamePrefix)) {
+          await runRecentActivityStarter(
+            chatId,
+            currentPage,
+            runId,
+            projectName
+          );
+          return;
+        }
+      }
+      if (!hasResourceReference && starterId === "workspace-attention") {
+        await runWorkspaceAttentionStarter(chatId, currentPage, runId);
+        return;
+      }
+      if (!hasResourceReference && starterId === "project-open-blockers") {
+        const projectName = store.getChat(chatId)?.context;
+        if (projectName?.startsWith(projectNamePrefix)) {
+          await runProjectAttentionStarter(chatId, currentPage, runId);
+          return;
+        }
+      }
+      await runChat(
+        chatId,
+        currentPage,
+        runId,
+        effectiveRunMode,
+        skipReferencePreflight
+      );
     },
-    [runChat]
+    [
+      runChat,
+      runProjectAttentionStarter,
+      runRecentActivityStarter,
+      runWorkspaceAttentionStarter,
+    ]
   );
+
+  useEffect(() => {
+    const store = useAgentStore.getState();
+    for (const chatId of Object.keys(queuedUserMessagesByChatId)) {
+      const message = store.takeQueuedUserMessage(chatId);
+      if (!message) continue;
+
+      void (async () => {
+        const restoreQueuedText = () => {
+          const draft = store.getDraft(message.chatId);
+          if (!draft.text && !draft.project && !draft.resource) {
+            const references = normalizeAgentResourceReferences(
+              message.resourceReferences,
+              message.resourceReference
+            );
+            let offset = 0;
+            const mentions = references.map((resource) => {
+              const start = offset;
+              const end = start + formatResourceMention(resource.label).length;
+              offset = end + 1;
+              return { resource, range: { start, end } };
+            });
+            const hasReferencePrefix =
+              normalizeAgentResourceMentions(message.text, mentions).length ===
+              references.length;
+            const prefix = references
+              .map((resource) => formatResourceMention(resource.label))
+              .join(" ");
+            const text =
+              references.length > 0 && !hasReferencePrefix
+                ? `${prefix}${message.text ? ` ${message.text}` : " "}`
+                : message.text;
+            store.setDraft(message.chatId, {
+              text,
+              ...(references.length > 0
+                ? message.resourceReferences
+                  ? { mentions }
+                  : {
+                      resource: references[0],
+                      mention: mentions[0]?.range,
+                    }
+                : {}),
+            });
+          }
+        };
+        if (store.getChat(message.chatId)?.archived) {
+          restoreQueuedText();
+          store.finishQueuedUserMessage(message.chatId);
+          return;
+        }
+        let isBlocked: boolean;
+        try {
+          isBlocked = await blockWhenAIIsNotConfigured(message.chatId);
+        } catch {
+          if (!isCurrentChatScope(store, message.chatId)) return;
+          if (
+            store.queuedUserMessagesByChatId[message.chatId]?.id === message.id
+          ) {
+            restoreQueuedText();
+            store.finishQueuedUserMessage(message.chatId);
+          }
+          return;
+        }
+        if (!isCurrentChatScope(store, message.chatId)) return;
+        if (isBlocked || store.getChat(message.chatId)?.archived) {
+          restoreQueuedText();
+          store.finishQueuedUserMessage(message.chatId);
+          return;
+        }
+        const committed = store.commitQueuedUserMessage(message.chatId);
+        if (!committed) return;
+        store.clearError(message.chatId);
+        await startChatRun(
+          message.chatId,
+          message.page,
+          message.runMode ?? "default",
+          message.starterId
+        );
+      })();
+    }
+  }, [blockWhenAIIsNotConfigured, queuedUserMessagesByChatId, startChatRun]);
 
   const send = useCallback(async () => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
-    if (store.isChatRunning(chat?.id)) return;
+    if (chat?.archived || store.isChatRunning(chat?.id)) return;
 
     const currentPage = getCurrentPageSnapshot();
-    const thread = store.ensureCurrentChat(currentPage);
-    const chatId = thread.id;
-    store.clearError(chatId);
+    const sourceThread = store.ensureCurrentChat(
+      currentPage,
+      getCurrentChatContext(),
+      workspace?.name
+    );
+    const sourceChatId = sourceThread.id;
+    const submittedDraft = store.getDraft(sourceChatId);
+    const pendingAskBeforeConfig = store.getPendingAsk(sourceChatId);
+    if (await blockWhenAIIsNotConfigured(sourceChatId)) return;
+    if (!isCurrentChatScope(store, sourceChatId)) return;
+    const currentStore = useAgentStore.getState();
+    if (
+      currentStore.getChat(sourceChatId)?.archived ||
+      currentStore.isChatRunning(sourceChatId)
+    ) {
+      return;
+    }
+    const pendingAsk = currentStore.getPendingAsk(sourceChatId);
+    if (pendingAsk?.toolCallId !== pendingAskBeforeConfig?.toolCallId) return;
+    if (
+      pendingAsk &&
+      currentStore.getChat(sourceChatId)?.status !== "awaiting_user"
+    ) {
+      return;
+    }
+    currentStore.clearError(sourceChatId);
 
-    const pendingAsk = selectCurrentPendingAsk(store);
     if (pendingAsk) {
       const answer = input.trim();
       if (!answer) return;
-      setInput("");
-
-      if (pendingAsk.kind === "choose") {
-        store.answerPendingAsk(
-          chatId,
-          { kind: "choose", answer, value: answer },
-          { route: currentPage.path }
+      let answered;
+      if (pendingAsk.kind === "input") {
+        const mentions = getDraftResourceMentions(askDraft);
+        if (
+          mentions.length > 0 &&
+          hasUnboundResourceMention(askDraft.text, mentions)
+        ) {
+          return;
+        }
+        const references = normalizeAgentResourceReferences(
+          mentions.map(({ resource }) => resource)
         );
-      } else if (pendingAsk.kind === "input") {
-        store.answerPendingAsk(
-          chatId,
+        answered = currentStore.answerPendingAsk(
+          sourceChatId,
           { kind: "input", answer },
-          { route: currentPage.path }
+          {
+            route: currentPage.path,
+            ...(references[0] ? { resourceReference: references[0] } : {}),
+            ...(references.length > 1
+              ? { resourceReferences: references }
+              : {}),
+          }
         );
       } else {
         return;
       }
-      await startChatRun(chatId, currentPage);
+      if (!answered) return;
+      setAskDraft({ text: "" });
+      await startChatRun(
+        sourceChatId,
+        currentPage,
+        currentStore.getChat(sourceChatId)?.runMode ?? "default"
+      );
       return;
     }
 
-    const text = input.trim();
+    const text = submittedDraft.text.trim();
     if (!text) return;
-    setInput("");
-    store.addMessage({
+    const mentions = getDraftResourceMentions(submittedDraft);
+    if (
+      mentions.length > 0 &&
+      hasUnboundResourceMention(submittedDraft.text, mentions)
+    )
+      return;
+    const references = normalizeAgentResourceReferences(
+      mentions.map(({ resource }) => resource)
+    );
+    const stagedReference = references[0];
+    const thread =
+      stagedReference &&
+      !sourceThread.context &&
+      currentStore.currentChatId === sourceChatId
+        ? store.selectOrCreateChatForContext(
+            stagedReference.project,
+            currentPage,
+            workspace?.name
+          )
+        : sourceThread;
+    if (!thread) return;
+    const chatId = thread.id;
+    const submittedMessage = store.addMessage({
       chatId,
       role: "user",
       content: text,
-      metadata: { route: currentPage.path },
+      metadata: {
+        route: currentPage.path,
+        ...(stagedReference ? { resourceReference: stagedReference } : {}),
+        ...(references.length > 1 ? { resourceReferences: references } : {}),
+      },
     });
-    await startChatRun(chatId, currentPage);
-  }, [input, startChatRun]);
+    if (!submittedMessage) return;
+    if (store.getDraft(sourceChatId) === submittedDraft) {
+      store.clearDraft(sourceChatId);
+    }
+    setResourcePickerOpen(false);
+    mentionRangeRef.current = null;
+    const starterId = getLandingStarterIdForText({
+      context: thread.context,
+      text,
+      translate: t,
+    });
+    await startChatRun(chatId, currentPage, "default", starterId);
+  }, [
+    askDraft,
+    blockWhenAIIsNotConfigured,
+    input,
+    startChatRun,
+    t,
+    workspace?.name,
+  ]);
 
-  const retryLastTurn = useCallback(async () => {
+  const runMessageAction = useCallback(
+    async (messageId?: string) => {
+      const store = useAgentStore.getState();
+      const chat = selectCurrentChat(store);
+      if (
+        !chat ||
+        chat.archived ||
+        (chat.status !== "idle" && chat.status !== "error") ||
+        store.getPendingAsk(chat.id) ||
+        store.queuedUserMessagesByChatId[chat.id] ||
+        store.queuedUserMessageInFlightByChatId[chat.id] ||
+        messageActionInFlightRef.current
+      ) {
+        return;
+      }
+      const messages = store.getMessages(chat.id);
+      const message = messageId
+        ? messages.find((candidate) => candidate.id === messageId)
+        : messages.findLast((candidate) => candidate.role === "user");
+      if (
+        message?.role !== "user" ||
+        !message.content?.trim() ||
+        (!messageId && chat.status !== "error" && !chat.interrupted)
+      ) {
+        return;
+      }
+
+      const action = Symbol();
+      messageActionInFlightRef.current = action;
+      const currentPage = getCurrentPageSnapshot();
+      try {
+        if (await blockWhenAIIsNotConfigured(chat.id)) return;
+        const current = useAgentStore.getState();
+        const currentChat = current.getChat(chat.id);
+        if (
+          messageActionInFlightRef.current !== action ||
+          !isCurrentChatScope(store, chat.id) ||
+          current.currentChatId !== chat.id ||
+          currentChat?.archived ||
+          currentChat?.status !== chat.status ||
+          currentChat.runId !== chat.runId ||
+          currentChat.lastError !== chat.lastError ||
+          currentChat.interrupted !== chat.interrupted ||
+          current.getMessages(chat.id) !== messages ||
+          current.getPendingAsk(chat.id) ||
+          current.queuedUserMessagesByChatId[chat.id] ||
+          current.queuedUserMessageInFlightByChatId[chat.id] ||
+          getCurrentPageSnapshot().path !== currentPage.path
+        ) {
+          return;
+        }
+        current.clearError(chat.id);
+        let starterId: LandingStarterId | undefined;
+        if (messageId) {
+          const references = normalizeAgentResourceReferences(
+            message.metadata?.resourceReferences,
+            message.metadata?.resourceReference
+          );
+          const submittedMessage = current.addMessage({
+            chatId: chat.id,
+            role: "user",
+            content: message.content,
+            metadata: {
+              route: currentPage.path,
+              ...(references[0] ? { resourceReference: references[0] } : {}),
+              ...(references.length > 1
+                ? { resourceReferences: references }
+                : {}),
+            },
+          });
+          if (!submittedMessage) return;
+          starterId = getLandingStarterIdForText({
+            context: chat.context,
+            text: message.content,
+            translate: t,
+          });
+        }
+        return startChatRun(
+          chat.id,
+          currentPage,
+          messageId ? "default" : (chat.runMode ?? "default"),
+          starterId
+        );
+      } finally {
+        if (messageActionInFlightRef.current === action) {
+          messageActionInFlightRef.current = null;
+        }
+      }
+    },
+    [blockWhenAIIsNotConfigured, startChatRun, t]
+  );
+
+  useEffect(() => {
+    if (!retryActionRef) return;
+    const retry = () => void runMessageAction();
+    retryActionRef.current = retry;
+    return () => {
+      if (retryActionRef.current === retry) retryActionRef.current = null;
+    };
+  }, [retryActionRef, runMessageAction]);
+
+  useEffect(() => {
+    if (!resendActionRef) return;
+    const resend = (messageId: string) => void runMessageAction(messageId);
+    resendActionRef.current = resend;
+    return () => {
+      if (resendActionRef.current === resend) resendActionRef.current = null;
+    };
+  }, [resendActionRef, runMessageAction]);
+
+  const cancelPendingRequest = useCallback(() => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
-    if (store.isChatRunning(chat?.id) || !chat?.interrupted) return;
-
-    const chatId = chat.id;
-    const currentPage = getCurrentPageSnapshot();
-    store.removeMessagesByRunId(chatId, chat.runId);
-    store.clearError(chatId);
-    await startChatRun(chatId, currentPage);
-  }, [startChatRun]);
-
-  const dismissInterrupted = useCallback(() => {
-    const store = useAgentStore.getState();
-    const chat = selectCurrentChat(store);
-    if (!chat) return;
-    store.removeMessagesByRunId(chat.id, chat.runId);
-    store.clearError(chat.id);
+    if (!store.cancelPendingAsk(chat?.id)) return;
+    setAskDraft({ text: "" });
   }, []);
 
   const submitConfirmation = useCallback(
@@ -568,10 +2359,106 @@ export function AgentInput() {
       const pendingAsk = selectCurrentPendingAsk(store);
       const chat = selectCurrentChat(store);
       if (
+        chat?.archived ||
         !pendingAsk ||
         pendingAsk.kind !== "confirm" ||
+        confirmationInFlightRef.current ||
         store.isChatRunning(chat?.id)
       ) {
+        return;
+      }
+
+      if (pendingAsk.apiPermission && chat) {
+        confirmationInFlightRef.current = true;
+        let approvalController: AbortController | undefined;
+        try {
+          const chatId = chat.id;
+          const currentPage = getCurrentPageSnapshot();
+          const permissionArgs = {
+            actionId: pendingAsk.apiPermission.actionId,
+            chatId,
+            toolCallId: pendingAsk.toolCallId,
+            userName: useAppStore.getState().currentUser?.name ?? "",
+          };
+          const requestAvailable = Boolean(
+            getPendingApiCallPreview(permissionArgs)
+          );
+          if (requestAvailable && (await blockWhenAIIsNotConfigured(chatId))) {
+            return;
+          }
+
+          const currentStore = useAgentStore.getState();
+          if (
+            currentStore.getChat(chatId)?.archived ||
+            currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
+              pendingAsk.apiPermission.actionId ||
+            currentStore.isChatRunning(chatId)
+          ) {
+            return;
+          }
+
+          const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
+          currentStore.setChatStatus(chatId, "running");
+          approvalController = new AbortController();
+          currentStore.setAbortController(chatId, approvalController);
+          const result = await resolvePendingApiCall({
+            ...permissionArgs,
+            approved: confirmed && requestAvailable,
+            signal: approvalController.signal,
+          });
+          const currentChat = currentStore.getChat(chatId);
+          if (
+            approvalController.signal.aborted ||
+            !currentChat ||
+            currentChat.status !== "running" ||
+            currentChat.runId !== chat.runId
+          ) {
+            return;
+          }
+          currentStore.addMessage({
+            chatId,
+            role: "tool",
+            toolCallId: pendingAsk.toolCallId,
+            content: result,
+            metadata: {
+              route: currentPage.path,
+              runId: chat.runId ?? undefined,
+            },
+          });
+          if (
+            !requestAvailable ||
+            result === '{"error":"Permission request expired."}' ||
+            result ===
+              '{"error":"Permission request not found or already used."}'
+          ) {
+            currentStore.addMessage({
+              chatId,
+              role: "assistant",
+              content: t("agent.api-permission-expired"),
+              metadata: {
+                route: currentPage.path,
+                runId: chat.runId ?? undefined,
+              },
+            });
+            currentStore.finishChatRun(chatId);
+            return;
+          }
+          if (currentChat.archived) {
+            currentStore.finishChatRun(chatId);
+            return;
+          }
+          // An approved write can make the selected resource unavailable.
+          // Resume from its recorded result; the executor still checks further access.
+          await startChatRun(chatId, currentPage, runMode, undefined, true);
+        } finally {
+          if (
+            approvalController &&
+            store.getAbortController(chat.id) === approvalController
+          ) {
+            store.setAbortController(chat.id, null);
+          }
+          confirmationInFlightRef.current = false;
+        }
         return;
       }
 
@@ -580,95 +2467,125 @@ export function AgentInput() {
       const chatId = thread.id;
       const answer = confirmed ? confirmLabel : cancelLabel;
 
-      store.clearError(chatId);
-      store.answerPendingAsk(
+      if (await blockWhenAIIsNotConfigured(chatId)) return;
+      const currentStore = useAgentStore.getState();
+      if (
+        currentStore.getChat(chatId)?.archived ||
+        currentStore.getChat(chatId)?.status !== "awaiting_user" ||
+        currentStore.getPendingAsk(chatId)?.toolCallId !== pendingAsk.toolCallId
+      ) {
+        return;
+      }
+      currentStore.clearError(chatId);
+      const answered = currentStore.answerPendingAsk(
         chatId,
         { kind: "confirm", answer, confirmed },
         { route: currentPage.path }
       );
-      await startChatRun(chatId, currentPage);
-    },
-    [confirmLabel, cancelLabel, startChatRun]
-  );
-
-  const submitChoice = useCallback(
-    async (option: AgentAskUserOption) => {
-      const store = useAgentStore.getState();
-      const pendingAsk = selectCurrentPendingAsk(store);
-      const chat = selectCurrentChat(store);
-      if (
-        !pendingAsk ||
-        pendingAsk.kind !== "choose" ||
-        store.isChatRunning(chat?.id)
-      ) {
-        return;
-      }
-
-      const currentPage = getCurrentPageSnapshot();
-      const thread = store.ensureCurrentChat(currentPage);
-      const chatId = thread.id;
-
-      store.clearError(chatId);
-      store.answerPendingAsk(
+      if (!answered) return;
+      await startChatRun(
         chatId,
-        { kind: "choose", answer: option.label, value: option.value },
-        { route: currentPage.path }
+        currentPage,
+        currentStore.getChat(chatId)?.runMode ?? "default"
       );
-      await startChatRun(chatId, currentPage);
     },
-    [startChatRun]
+    [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun, t]
   );
 
-  // Textarea keydown handler
+  const submitChoice = useCallback(async () => {
+    const store = useAgentStore.getState();
+    const pendingAsk = selectCurrentPendingAsk(store);
+    const chat = selectCurrentChat(store);
+    if (
+      !chat ||
+      chat.archived ||
+      !selectedChoice ||
+      !choiceSelection ||
+      choiceSelection.chatId !== chat.id ||
+      choiceSelection.toolCallId !== pendingAsk?.toolCallId ||
+      !pendingAsk ||
+      pendingAsk.kind !== "choose" ||
+      store.isChatRunning(chat?.id)
+    ) {
+      return;
+    }
+
+    const currentPage = getCurrentPageSnapshot();
+    const chatId = chat.id;
+
+    if (await blockWhenAIIsNotConfigured(chatId)) return;
+    const currentStore = useAgentStore.getState();
+    if (
+      !isCurrentChatScope(store, chatId) ||
+      currentStore.currentChatId !== chatId ||
+      currentStore.getChat(chatId)?.archived ||
+      currentStore.getChat(chatId)?.status !== "awaiting_user" ||
+      currentStore.getPendingAsk(chatId) !== pendingAsk
+    ) {
+      return;
+    }
+    currentStore.clearError(chatId);
+    const answered = currentStore.answerPendingAsk(
+      chatId,
+      {
+        kind: "choose",
+        answer: selectedChoice.label,
+        value: selectedChoice.value,
+      },
+      { route: currentPage.path }
+    );
+    if (!answered) return;
+    setChoiceSelection(null);
+    await startChatRun(
+      chatId,
+      currentPage,
+      currentStore.getChat(chatId)?.runMode ?? "default"
+    );
+  }, [
+    blockWhenAIIsNotConfigured,
+    choiceSelection,
+    selectedChoice,
+    startChatRun,
+  ]);
+
   const handleTextareaKeydown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (showMention) {
-        if (event.key === "ArrowDown") {
+      if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)
+        return;
+      if (resourcePickerOpen && canMentionResource) {
+        const range = getMentionTriggerRange(
+          input,
+          event.currentTarget.selectionStart
+        );
+        if (!range) {
+          setResourcePickerOpen(false);
+          mentionRangeRef.current = null;
+        } else if (event.key === "Escape") {
           event.preventDefault();
-          const next = Math.min(highlightIndex + 1, mentionOptions.length - 1);
-          setHighlightIndex(next);
-          scrollHighlightedIntoView(next);
-          return;
-        }
-        if (event.key === "ArrowUp") {
+          handleResourcePickerOpenChange(false);
+        } else if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey
+        ) {
           event.preventDefault();
-          const prev = Math.max(highlightIndex - 1, 0);
-          setHighlightIndex(prev);
-          scrollHighlightedIntoView(prev);
-          return;
         }
-        if (event.key === "Enter") {
-          event.preventDefault();
-          if (mentionOptions[highlightIndex]) {
-            selectMention(mentionOptions[highlightIndex]);
-          }
-          return;
-        }
-        if (event.key === "Escape") {
-          event.preventDefault();
-          setIsMentionOpen(false);
-          return;
-        }
+        if (range) return;
       }
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey &&
-        !event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey
-      ) {
+      if (isAgentSendShortcut(event.nativeEvent, sendWithEnter)) {
         event.preventDefault();
         void send();
       }
     },
     [
-      showMention,
-      highlightIndex,
-      mentionOptions,
-      selectMention,
-      scrollHighlightedIntoView,
+      canMentionResource,
+      handleResourcePickerOpenChange,
+      input,
+      resourcePickerOpen,
       send,
+      sendWithEnter,
     ]
   );
 
@@ -676,201 +2593,310 @@ export function AgentInput() {
   // Render
   // ---------------------------------------------------------------------------
 
+  const issueDecisionPermissionText = (impact: IssueDecisionImpact["kind"]) => {
+    switch (impact) {
+      case "reject":
+        return t("agent.permission.issue-rejection");
+      case "final-approval-with-rollout":
+        return t("agent.permission.issue-approval-rollout");
+      case "final-approval-with-access-grant":
+        return t("agent.permission.issue-approval-access-grant");
+      case "final-approval-with-role-grant":
+        return t("agent.permission.issue-approval-role-grant");
+      case "final-approval":
+        return t("agent.permission.issue-approval-final");
+      default:
+        return t("agent.permission.issue-approval");
+    }
+  };
+
+  const inputFooter = (
+    <div
+      className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 text-xs text-control-light"
+      data-agent-input-footer
+    >
+      <AgentContextPicker
+        context={context}
+        contextTitle={contextTitle}
+        workspace={workspace}
+        disabled={loading || Boolean(currentPendingAsk)}
+        onSelect={selectContext}
+      />
+      <AgentTokenUsage key={currentChat?.id} chat={currentChat} />
+    </div>
+  );
+
   return (
-    <div className="border-t p-3">
+    <div ref={composerRef} className="border-t p-3">
       {/* Pending ask banner */}
       {currentPendingAsk && (
         <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
-          <div className="font-medium">{currentPendingAsk.prompt}</div>
-          <div className="mt-1">
-            {currentPendingAsk.kind === "confirm"
-              ? t("agent.pending-confirm-hint")
-              : currentPendingAsk.kind === "choose"
-                ? t("agent.pending-choose-hint")
-                : t("agent.pending-input-hint")}
-          </div>
+          {apiPermission ? (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-medium">
+                  {apiPermissionPreview
+                    ? t("agent.api-permission-title")
+                    : t("agent.api-permission-expired-title")}
+                </div>
+                {apiPermissionPreview && (
+                  <span role="timer" className="tabular-nums">
+                    {t("agent.api-permission-expires-in", {
+                      time: formatPermissionTime(
+                        apiPermissionPreview.expiresAt
+                      ),
+                    })}
+                  </span>
+                )}
+              </div>
+              {apiPermissionPreview ? (
+                <>
+                  <div className="mt-1">
+                    {t("agent.api-permission-request")}
+                  </div>
+                  <div className="mt-2 font-mono break-all">
+                    {apiPermissionPreview.operationId}
+                  </div>
+                  {apiPermissionPreview.issueDecision && (
+                    <div className="mt-2 border-l-2 border-warning pl-2">
+                      <div className="font-medium">
+                        {apiPermissionPreview.issueDecision.issueTitle}
+                      </div>
+                      <div className="font-mono break-all text-control-light">
+                        {apiPermissionPreview.issueDecision.issueName}
+                      </div>
+                      <div className="mt-1">
+                        {issueDecisionPermissionText(
+                          apiPermissionPreview.issueDecision.impact
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
+                    {JSON.stringify(
+                      JSON.parse(apiPermissionPreview.body),
+                      null,
+                      2
+                    )}
+                  </pre>
+                </>
+              ) : (
+                <div className="mt-1">{t("agent.api-permission-expired")}</div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="font-medium">{currentPendingAsk.prompt}</div>
+              <div className="mt-1">
+                {currentPendingAsk.kind === "confirm"
+                  ? t("agent.pending-confirm-hint")
+                  : currentPendingAsk.kind === "choose"
+                    ? t("agent.pending-choose-hint")
+                    : t("agent.pending-input-hint")}
+              </div>
+              {canCancelPendingRequest && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    appearance="secondary"
+                    size="sm"
+                    className="rounded-xs border text-control hover:bg-control-bg"
+                    onClick={cancelPendingRequest}
+                  >
+                    {t("agent.cancel-request")}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 
-      {/* Interrupted banner */}
-      {isInterrupted && (
-        <div className="mb-3 rounded-xs bg-error/10 px-3 py-2 text-xs text-error">
-          <div className="font-medium">{t("agent.interrupted")}</div>
-          <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
-          <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
-            <Button
-              appearance="secondary"
-              size="md"
-              className="rounded-xs bg-error px-3 py-2 text-sm text-accent-text hover:bg-error/90 disabled:opacity-50"
-              disabled={isCurrentChatRunning}
-              onClick={retryLastTurn}
-            >
-              {t("agent.retry-last-chat-turn")}
-            </Button>
-            <Button
-              appearance="secondary"
-              size="md"
-              className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
-              disabled={isCurrentChatRunning}
-              onClick={dismissInterrupted}
-            >
-              {t("common.dismiss")}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div
-        className="mb-1 flex justify-end text-xs text-control-light"
-        data-agent-input-footer
-      >
-        {currentChatTokenUsageLabel}
-      </div>
+      {isAwaitingConfirm && <div className="mb-1">{inputFooter}</div>}
 
       {/* Confirm buttons */}
       {isAwaitingConfirm ? (
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
-            disabled={isCurrentChatRunning}
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
+            disabled={
+              isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
+            }
             onClick={() => submitConfirmation(true)}
           >
-            {confirmLabel}
+            {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
           </Button>
           <Button
             appearance="secondary"
-            size="md"
-            className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
+            size={apiPermission ? "sm" : "md"}
+            className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
-            {cancelLabel}
+            {apiPermission
+              ? apiPermissionPreview
+                ? t("agent.api-permission-deny")
+                : t("agent.api-permission-dismiss")
+              : cancelLabel}
           </Button>
         </div>
       ) : isAwaitingChoose ? (
         /* Choose options */
-        <div className="flex flex-col gap-y-2">
-          {chooseOptions.map((option) => (
+        <div className="flex min-w-0 flex-col gap-3">
+          <RadioGroup
+            aria-label={currentPendingAsk.prompt}
+            className="max-h-48 flex-col items-stretch gap-2 overflow-y-auto"
+            value={selectedChoice?.value ?? null}
+            disabled={isCurrentChatRunning || isAIConfigurationBlocked}
+            onValueChange={(value) => {
+              if (currentChatId && typeof value === "string") {
+                setChoiceSelection({
+                  chatId: currentChatId,
+                  toolCallId: currentPendingAsk.toolCallId,
+                  value,
+                });
+              }
+            }}
+          >
+            {chooseOptions.map((option) => (
+              <RadioGroupItem
+                key={option.value}
+                value={option.value}
+                className="items-start rounded-xs p-2 hover:bg-control-bg"
+                contentClassName="min-w-0 break-words"
+                radioClassName="mt-0.5"
+              >
+                <div className="font-medium text-main">{option.label}</div>
+                {option.description && (
+                  <div className="text-xs text-control-light">
+                    {option.description}
+                  </div>
+                )}
+              </RadioGroupItem>
+            ))}
+          </RadioGroup>
+          <div className="flex min-w-0 items-center gap-2">
+            {inputFooter}
             <Button
-              appearance="secondary"
-              size="md"
-              key={option.value}
-              className="h-auto w-full flex-col items-start justify-start rounded-xs border px-3 py-2 text-left text-sm whitespace-normal hover:bg-control-bg disabled:opacity-50"
-              disabled={isCurrentChatRunning}
-              onClick={() => submitChoice(option)}
+              size="sm"
+              className="shrink-0"
+              disabled={
+                !selectedChoice ||
+                isCurrentChatRunning ||
+                isAIConfigurationBlocked
+              }
+              onClick={() => void submitChoice()}
             >
-              <div className="w-full min-w-0 break-words font-medium text-main">
-                {option.label}
-              </div>
-              {option.description && (
-                <div className="mt-1 w-full min-w-0 break-words text-xs text-control-light">
-                  {option.description}
-                </div>
-              )}
+              <Send className="size-4" />
+              {t("agent.reply")}
             </Button>
-          ))}
+          </div>
         </div>
       ) : (
-        /* Input row with @-mention autocomplete */
-        <div className="relative flex items-end gap-x-2" data-agent-input-row>
-          <div className="relative w-full">
-            {!input && (
-              <div
-                className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
-                data-agent-input-placeholder
-              >
-                {inputPlaceholder}
-              </div>
-            )}
-            <Textarea
-              size="md"
-              ref={textareaRef}
-              value={input}
-              rows={1}
-              className="block h-9 min-h-9 max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-              aria-label={inputPlaceholder}
-              disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-              onChange={(e) => {
-                setInput(e.target.value);
-                updateSelection();
-              }}
-              onClick={updateSelection}
-              onKeyUp={updateSelection}
-              onSelect={updateSelection}
-              onKeyDown={handleTextareaKeydown}
-            />
-
-            {/* Mention popover */}
-            {showMention &&
-              mentionListStyle &&
-              createPortal(
-                <div
-                  ref={mentionListRef}
-                  data-agent-mention-list
-                  className={`fixed ${LAYER_SURFACE_CLASS} max-h-80 overflow-y-auto rounded-xs border bg-background shadow-lg`}
-                  style={mentionListStyle}
+        <div data-agent-input-row>
+          <AgentComposer
+            footer={inputFooter}
+            action={
+              loading ? (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0 whitespace-nowrap"
+                  disabled={remoteBusy}
+                  onClick={() =>
+                    useAgentStore.getState().cancel(currentChat?.id, "user")
+                  }
                 >
-                  {mentionOptions.map((option, index) => {
-                    const meta = formatDomRefSuggestionMeta(option.suggestion);
-                    return (
-                      <div
-                        key={option.value}
-                        data-mention-option
-                        className={`cursor-pointer px-3 py-2 ${
-                          index === highlightIndex
-                            ? "bg-accent/10"
-                            : "hover:bg-control-bg"
-                        }`}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectMention(option);
-                        }}
-                        onMouseEnter={() => setHighlightIndex(index)}
-                      >
-                        <div className="flex flex-col text-sm">
-                          <div className="flex items-center gap-x-2 text-main">
-                            <span className="font-medium">
-                              [{option.suggestion.ref}]
-                            </span>
-                            <span className="truncate">
-                              {option.suggestion.label}
-                            </span>
-                          </div>
-                          {meta && (
-                            <div className="mt-1 text-xs text-control-light">
-                              {meta}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>,
-                getLayerRoot("agent")
+                  <Square className="size-4" />
+                  {t("agent.stop")}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  className="shrink-0 whitespace-nowrap"
+                  data-agent-send
+                  disabled={isSendDisabled}
+                  onClick={() => void send()}
+                >
+                  <Send className="size-4" />
+                  {sendLabel}
+                </Button>
+              )
+            }
+          >
+            <div className="relative w-full">
+              {!input && (
+                <div
+                  className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
+                  data-agent-input-placeholder
+                >
+                  {isCurrentChatRunning ? (
+                    t("agent.input-processing-placeholder")
+                  ) : (
+                    <>
+                      {inputPlaceholder} ·{" "}
+                      {sendWithEnter
+                        ? t("agent.input-keyboard-hint")
+                        : t("agent.input-keyboard-hint-newline")}
+                    </>
+                  )}
+                </div>
               )}
-          </div>
-
-          {loading ? (
-            <Button
-              variant="destructive"
-              size="md"
-              className="shrink-0 self-end whitespace-nowrap"
-              onClick={() => useAgentStore.getState().cancel(currentChat?.id)}
-            >
-              {t("agent.stop")}
-            </Button>
-          ) : (
-            <Button
-              size="md"
-              className="shrink-0 self-end whitespace-nowrap"
-              disabled={isSendDisabled}
-              onClick={() => void send()}
-            >
-              {sendLabel}
-            </Button>
-          )}
+              <AgentMentionTextarea
+                size="md"
+                textareaRef={textareaRef}
+                value={input}
+                mentions={draftMentions.map(({ resource, range }) => ({
+                  range,
+                  label: resource.label,
+                }))}
+                onDeleteMention={({ text, caret }) => {
+                  selectedMentionCaretRef.current = caret;
+                  mentionRangeRef.current = null;
+                  setResourcePickerOpen(false);
+                  setInput(text);
+                }}
+                rows={1}
+                className="block h-9 min-h-9 w-full resize-none overflow-y-hidden border-0 focus:border-0 focus:ring-0 disabled:bg-transparent"
+                aria-label={inputPlaceholder}
+                disabled={isCurrentChatRunning || isAIConfigurationBlocked}
+                onChange={(event) => {
+                  setInput(event.target.value);
+                  if (!canMentionResource) {
+                    mentionRangeRef.current = null;
+                    setResourcePickerOpen(false);
+                    return;
+                  }
+                  const range = getMentionTriggerRange(
+                    event.target.value,
+                    event.target.selectionStart
+                  );
+                  mentionRangeRef.current = range;
+                  setResourcePickerOpen(Boolean(range));
+                }}
+                onKeyDown={handleTextareaKeydown}
+              />
+              {canMentionResource && workspace?.name ? (
+                <AgentResourcePicker
+                  open={resourcePickerOpen}
+                  onOpenChange={handleResourcePickerOpenChange}
+                  anchorRef={textareaRef}
+                  workspaceName={workspace.name}
+                  projectName={projectContext}
+                  selectedProjectName={selectedProjectMention?.resource.name}
+                  hasSelectedReference={
+                    draftMentions.length > 1 ||
+                    (draftMentions.length === 1 && !selectedProjectMention)
+                  }
+                  onSelectProject={selectMentionProject}
+                  onSelectDatabase={selectMentionDatabase}
+                  onSelectIssue={selectMentionIssue}
+                  onSelectPlan={selectMentionPlan}
+                />
+              ) : null}
+            </div>
+          </AgentComposer>
         </div>
       )}
     </div>

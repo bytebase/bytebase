@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface Page<T> {
   items: T[];
@@ -6,7 +6,11 @@ interface Page<T> {
 }
 
 interface UsePaginatedSelectOptions<T> {
-  fetchPage: (query: string, pageToken: string) => Promise<Page<T>>;
+  fetchPage: (
+    query: string,
+    pageToken: string,
+    signal: AbortSignal
+  ) => Promise<Page<T>>;
 }
 
 export function usePaginatedSelect<T extends { name: string }>({
@@ -17,16 +21,25 @@ export function usePaginatedSelect<T extends { name: string }>({
   const [loadingMore, setLoadingMore] = useState(false);
   const queryRef = useRef("");
   const requestGenerationRef = useRef(0);
+  const controllerRef = useRef<AbortController | null>(null);
+  useEffect(() => () => controllerRef.current?.abort(), []);
 
   const search = useCallback(
     async (query: string) => {
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
       const generation = ++requestGenerationRef.current;
       queryRef.current = query;
       setNextPageToken("");
       setLoadingMore(false);
       try {
-        const response = await fetchPage(query, "");
-        if (generation !== requestGenerationRef.current) return;
+        const response = await fetchPage(query, "", controller.signal);
+        if (
+          controller.signal.aborted ||
+          generation !== requestGenerationRef.current
+        )
+          return;
         setItems(response.items);
         setNextPageToken(response.nextPageToken ?? "");
       } catch {
@@ -38,11 +51,22 @@ export function usePaginatedSelect<T extends { name: string }>({
 
   const loadMore = useCallback(async () => {
     if (!nextPageToken || loadingMore) return;
+    controllerRef.current?.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     const generation = requestGenerationRef.current;
     setLoadingMore(true);
     try {
-      const response = await fetchPage(queryRef.current, nextPageToken);
-      if (generation !== requestGenerationRef.current) return;
+      const response = await fetchPage(
+        queryRef.current,
+        nextPageToken,
+        controller.signal
+      );
+      if (
+        controller.signal.aborted ||
+        generation !== requestGenerationRef.current
+      )
+        return;
       setItems((previous) => {
         const names = new Set(previous.map((item) => item.name));
         return [
@@ -54,7 +78,10 @@ export function usePaginatedSelect<T extends { name: string }>({
     } catch {
       // Keep the current page and token so the request can be retried.
     } finally {
-      if (generation === requestGenerationRef.current) {
+      if (
+        !controller.signal.aborted &&
+        generation === requestGenerationRef.current
+      ) {
         setLoadingMore(false);
       }
     }

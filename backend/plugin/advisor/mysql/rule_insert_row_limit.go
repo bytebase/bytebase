@@ -22,7 +22,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
 }
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit.
@@ -65,7 +64,8 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		position := base.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
 
 		// INSERT ... SELECT and INSERT ... TABLE: use EXPLAIN to count rows.
-		if ins.Select != nil || ins.TableSource != nil {
+		// Both carry their source as a SelectStmt now.
+		if ins.Select != nil {
 			if driver == nil {
 				continue
 			}

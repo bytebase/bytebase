@@ -1,6 +1,7 @@
 import { ExpandIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { PlainCellValue } from "@/components/PlainCellValue";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
@@ -13,7 +14,6 @@ import {
   useSelectionContext,
   useSQLResultViewContext,
 } from "./context";
-import { PlainCellValue } from "./PlainCellValue";
 
 interface TableCellProps {
   value: RowValue;

@@ -83,6 +83,11 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 			}
 			continue
 		}
+		if columnsMisalignedWithSpan(spans[i], results[i]) && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
+			return errors.Errorf(
+				"masking cannot be applied: the query returned %d columns but Bytebase resolved %d from the synced schema, so the query was not returned",
+				len(results[i].ColumnNames), len(spans[i].Results))
+		}
 		maskers, reasons, err := s.getMaskersForQuerySpan(ctx, m, instance, user, spans[i])
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")
@@ -100,6 +105,18 @@ func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *sto
 		return false
 	}
 	return common.EngineSupportMasking(instance.Metadata.GetEngine())
+}
+
+// columnsMisalignedWithSpan reports whether doMaskResult, which applies the
+// span's maskers by position, would put a value beside the wrong masker or past
+// the last one. A DML or DDL result reports on the command (Affected Rows)
+// rather than projecting span.Results. A result without rows has no values to
+// misplace, and BigQuery returns no column names for one.
+func columnsMisalignedWithSpan(span *parserbase.QuerySpan, result *v1pb.QueryResult) bool {
+	if span.Type == parserbase.DML || span.Type == parserbase.DDL {
+		return false
+	}
+	return len(result.Rows) > 0 && len(result.ColumnNames) != len(span.Results)
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
@@ -149,24 +166,6 @@ func (s *QueryResultMasker) spanTouchesMaskedColumns(ctx context.Context, m *mas
 	return false
 }
 
-func getAlgorithmName(m masker.Masker) string {
-	switch m.(type) {
-	case *masker.NoneMasker:
-		return "None"
-	case *masker.FullMasker:
-		return "Full mask"
-	case *masker.RangeMasker, *masker.DefaultRangeMasker:
-		return "Partial mask"
-	case *masker.MD5Masker:
-		return "Hash (MD5)"
-	case *masker.InnerOuterMasker:
-		// Check the actual type by examining the mask result
-		return "Inner/Outer mask"
-	default:
-		return "Unknown"
-	}
-}
-
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
 	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
@@ -174,17 +173,9 @@ func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map
 	}
 	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		var m masker.Masker
-		switch semanticType.GetId() {
-		case defaultSemanticTypeID:
-			m = masker.NewDefaultFullMasker()
-		case defaultPartialSemanticTypeID:
-			m = masker.NewDefaultRangeMasker()
-		default:
-			m, err = getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-			if err != nil {
-				return nil, err
-			}
+		m, err := masker.ForSemanticType(semanticType)
+		if err != nil {
+			return nil, err
 		}
 		// Only add semantic types that have actual masking configured (not NoneMasker)
 		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {
@@ -507,38 +498,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	evaluation.Algorithm = getAlgorithmName(result)
 	return result, evaluation, nil
-}
-
-func getMaskerByMaskingAlgorithmAndLevel(algorithm *storepb.Algorithm) (masker.Masker, error) {
-	if algorithm == nil {
-		return masker.NewNoneMasker(), nil
-	}
-
-	switch m := algorithm.Mask.(type) {
-	case *storepb.Algorithm_FullMask_:
-		return masker.NewFullMasker(m.FullMask.Substitution), nil
-	case *storepb.Algorithm_RangeMask_:
-		return masker.NewRangeMasker(convertRangeMaskSlices(m.RangeMask.Slices)), nil
-	case *storepb.Algorithm_Md5Mask:
-		return masker.NewMD5Masker(m.Md5Mask.Salt), nil
-	case *storepb.Algorithm_InnerOuterMask_:
-		return masker.NewInnerOuterMasker(m.InnerOuterMask.Type, m.InnerOuterMask.PrefixLen, m.InnerOuterMask.SuffixLen, m.InnerOuterMask.Substitution)
-	}
-	return masker.NewNoneMasker(), nil
-}
-
-func convertRangeMaskSlices(slices []*storepb.Algorithm_RangeMask_Slice) []*masker.MaskRangeSlice {
-	var result []*masker.MaskRangeSlice
-	for _, slice := range slices {
-		result = append(result, &masker.MaskRangeSlice{
-			Start:        slice.Start,
-			End:          slice.End,
-			Substitution: slice.Substitution,
-		})
-	}
-	return result
 }
 
 func doMaskResult(maskers []masker.Masker, reasons []*v1pb.MaskingReason, result *v1pb.QueryResult) {

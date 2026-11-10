@@ -38,41 +38,27 @@ func NewRuleExecutor(s *store.Store) *RuleExecutor {
 // attempted, failures aggregate into one message, and the findings are
 // returned only when every unit was evaluated.
 func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
-	issue, err := e.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
+	plan, project, err := loadReviewPlan(ctx, e.store, projectID, issueUID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get issue")
-	}
-	if issue == nil {
-		return nil, errors.Errorf("issue %d not found in project %s", issueUID, projectID)
-	}
-	if issue.PlanUID == nil {
-		return nil, errors.Errorf("issue %d has no plan", issueUID)
-	}
-	plan, err := e.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: issue.PlanUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get plan")
-	}
-	if plan == nil {
-		return nil, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID)
-	}
-	project, err := e.store.GetProjectByResourceID(ctx, projectID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project")
-	}
-	if project == nil {
-		return nil, errors.Errorf("project %s not found", projectID)
+		return nil, err
 	}
 	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	}
+	// An empty policy is review switched off: the run completes with no
+	// findings, which resolves those of earlier runs. omni evaluates SYNTAX
+	// whether or not it is listed, so it is not asked at all.
+	if len(policy.GetRules()) == 0 {
+		return nil, nil
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: review must evaluate every
-	// (spec, target) unit, so the CI sampling limit does not apply.
+	// DeriveReviewTargets, not DeriveCheckTargets: the rule review evaluates
+	// every (spec, target) unit, so the CI sampling limit does not apply.
 	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
@@ -85,12 +71,16 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 			return nil, err
 		}
 		target, err := e.resolveReviewTarget(ctx, project, checkTarget)
+		if errors.Is(err, errNoRuleReviewer) {
+			continue
+		}
 		if err != nil {
 			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
 			continue
 		}
 		targets = append(targets, target)
 	}
+	markOtherSpecs(targets)
 
 	var comments []*store.IssueCommentMessage
 	sheets := make(map[string]string)
@@ -138,6 +128,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
+	sortReviewResults(plan.Config.GetSpecs(), comments)
 	return comments, nil
 }
 
@@ -151,15 +142,22 @@ func (u *reviewUnit) failures(err error) []error {
 	return errs
 }
 
+// errNoRuleReviewer marks a target whose engine has no standard rule review.
+var errNoRuleReviewer = errors.New("the engine has no standard rule reviewer")
+
 // resolveReviewTarget gathers the inputs the engine cannot derive from the
 // SQL: the synced schema, and the instance facts the review contract lists.
-// A database whose schema is not synced cannot be reviewed.
+// A database whose schema is not synced cannot be reviewed. A target on an
+// engine with no reviewer returns errNoRuleReviewer before its schema is read.
 func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.ProjectMessage, checkTarget *plancheck.CheckTarget) (*reviewTarget, error) {
 	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
 	if err != nil {
 		return nil, err
 	}
 	engine := instance.Metadata.GetEngine()
+	if _, ok := e.reviewFuncs[engine]; !ok {
+		return nil, errNoRuleReviewer
+	}
 	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
 		InstanceID:   database.InstanceID,
@@ -186,6 +184,7 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 			BackupDatabaseExists: backupDatabaseExists,
 			SessionUser:          sessionUser(project, instance, schema.GetOwner()),
 			LowerCaseTableNames:  int(instance.Metadata.GetMysqlLowerCaseTableNames()),
+			DefaultSchema:        schema.GetDefaultSchema(),
 		},
 	}, nil
 }

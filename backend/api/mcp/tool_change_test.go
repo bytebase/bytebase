@@ -108,7 +108,8 @@ func (m *changeMock) handler() http.Handler {
 			w.WriteHeader(m.rolloutStatus)
 			_ = json.NewEncoder(w).Encode(m.rolloutResponse)
 
-		case strings.Contains(r.URL.Path, "DatabaseService/ListDatabases"):
+		case strings.Contains(r.URL.Path, "DatabaseService/ListDatabases"),
+			strings.Contains(r.URL.Path, "DatabaseService/SearchDatabases"):
 			listHandler.ServeHTTP(w, r)
 
 		default:
@@ -912,7 +913,7 @@ func TestChange_IssueCreateFailed(t *testing.T) {
 	require.Contains(t, text, "plans/2002")  // partialRefs
 }
 
-func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
+func TestChange_IssueCreateFailed_LabelsRequired(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.planCheckRunResponse = map[string]any{
 		"status": "DONE",
@@ -921,7 +922,7 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 		},
 	}
 	mock.issueStatus = http.StatusBadRequest
-	mock.issueResponse = map[string]any{"message": "enforceSqlReview: checks failed"}
+	mock.issueResponse = map[string]any{"message": "require issue labels"}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -932,14 +933,11 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, result.IsError)
 
-	text := result.Content[0].(*mcpsdk.TextContent).Text
-	require.Contains(t, text, "ISSUE_CREATE_FAILED")
-	require.Contains(t, text, "plan checks must pass")
-	// Verify the output is valid JSON (guidance folded into suggestion, not appended as raw text).
 	var parsed changeError
-	require.NoError(t, json.Unmarshal([]byte(text), &parsed))
+	require.NoError(t, json.Unmarshal([]byte(result.Content[0].(*mcpsdk.TextContent).Text), &parsed))
 	require.Equal(t, "ISSUE_CREATE_FAILED", parsed.Code)
-	require.Contains(t, parsed.Suggestion, "plan checks must pass")
+	require.Contains(t, parsed.Message, "require issue labels")
+	require.Equal(t, "check the error and retry", parsed.Suggestion, "CreateIssue refuses no issue for its plan checks")
 }
 
 // --- Permission tests ---
@@ -947,7 +945,7 @@ func TestChange_IssueCreateFailed_SqlReview(t *testing.T) {
 func TestChange_PermissionDenied_Sheet(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.sheetStatus = http.StatusForbidden
-	mock.sheetResponse = map[string]any{"message": "permission denied"}
+	mock.sheetResponse = map[string]any{"message": `user does not have permission "bb.sheets.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -961,12 +959,11 @@ func TestChange_PermissionDenied_Sheet(t *testing.T) {
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.sheets.create")
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
-// TestChange_PolicyDenialKeepsItsOwnRemedy is the other half of
-// checkAPIResponse. An MCP policy refusal already says what to do, and no grant
-// lifts a workspace setting, so appending the permission advice would send the
-// agent at a dead end.
+// TestChange_PolicyDenialKeepsItsOwnRemedy: an MCP policy refusal already says
+// what to do, so it reaches the agent unchanged.
 func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.sheetStatus = http.StatusForbidden
@@ -993,7 +990,7 @@ func TestChange_PolicyDenialKeepsItsOwnRemedy(t *testing.T) {
 func TestChange_PermissionDenied_Plan(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.planStatus = http.StatusForbidden
-	mock.planResponse = map[string]any{"message": "permission denied"}
+	mock.planResponse = map[string]any{"message": `user does not have permission "bb.plans.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -1008,12 +1005,13 @@ func TestChange_PermissionDenied_Plan(t *testing.T) {
 	require.Contains(t, text, "PERMISSION_DENIED")
 	require.Contains(t, text, "bb.plans.create")
 	require.Contains(t, text, "sheets/1001") // partialRefs
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 func TestChange_PermissionDenied_Issue(t *testing.T) {
 	mock := newChangeMock(employeeDB())
 	mock.issueStatus = http.StatusForbidden
-	mock.issueResponse = map[string]any{"message": "permission denied"}
+	mock.issueResponse = map[string]any{"message": `user does not have permission "bb.issues.create"`}
 	s := newChangeTestServer(t, mock)
 
 	result, _, err := s.handleChange(testContext(), nil, ChangeInput{
@@ -1029,6 +1027,7 @@ func TestChange_PermissionDenied_Issue(t *testing.T) {
 	require.Contains(t, text, "bb.issues.create")
 	require.Contains(t, text, "sheets/1001") // partialRefs
 	require.Contains(t, text, "plans/2002")  // partialRefs
+	require.NotContains(t, text, "suggestion", "the server's message is the whole answer")
 }
 
 // --- Link construction tests ---

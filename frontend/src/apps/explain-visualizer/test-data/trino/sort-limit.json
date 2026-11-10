@@ -1,0 +1,297 @@
+{
+  "0": {
+    "id": "8",
+    "name": "Output",
+    "descriptor": {
+      "columnNames": "[orderkey, totalprice]"
+    },
+    "outputs": [
+      {
+        "type": "bigint",
+        "name": "orderkey"
+      },
+      {
+        "type": "double",
+        "name": "totalprice"
+      }
+    ],
+    "details": [],
+    "estimates": [
+      {
+        "outputRowCount": 10.0,
+        "outputSizeInBytes": 180.0,
+        "cpuCost": 0.0,
+        "memoryCost": 0.0,
+        "networkCost": 0.0
+      }
+    ],
+    "children": [
+      {
+        "id": "105",
+        "name": "TopN",
+        "descriptor": {
+          "count": "10",
+          "orderBy": "[totalprice DESC NULLS LAST]"
+        },
+        "outputs": [
+          {
+            "type": "bigint",
+            "name": "orderkey"
+          },
+          {
+            "type": "double",
+            "name": "totalprice"
+          }
+        ],
+        "details": [],
+        "estimates": [
+          {
+            "outputRowCount": 10.0,
+            "outputSizeInBytes": 180.0,
+            "cpuCost": "NaN",
+            "memoryCost": "NaN",
+            "networkCost": "NaN"
+          }
+        ],
+        "children": [
+          {
+            "id": "152",
+            "name": "LocalExchange",
+            "descriptor": {
+              "partitioning": "SINGLE",
+              "isReplicateNullsAndAny": "",
+              "arguments": "[]"
+            },
+            "outputs": [
+              {
+                "type": "bigint",
+                "name": "orderkey"
+              },
+              {
+                "type": "double",
+                "name": "totalprice"
+              }
+            ],
+            "details": [],
+            "estimates": [
+              {
+                "outputRowCount": 10.0,
+                "outputSizeInBytes": 180.0,
+                "cpuCost": 0.0,
+                "memoryCost": 0.0,
+                "networkCost": 0.0
+              }
+            ],
+            "children": [
+              {
+                "id": "123",
+                "name": "RemoteSource",
+                "descriptor": {
+                  "sourceFragmentIds": "[1]"
+                },
+                "outputs": [
+                  {
+                    "type": "bigint",
+                    "name": "orderkey"
+                  },
+                  {
+                    "type": "double",
+                    "name": "totalprice"
+                  }
+                ],
+                "details": [],
+                "estimates": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "1": {
+    "id": "160",
+    "name": "TopNPartial",
+    "descriptor": {
+      "count": "10",
+      "orderBy": "[totalprice DESC NULLS LAST]"
+    },
+    "outputs": [
+      {
+        "type": "bigint",
+        "name": "orderkey"
+      },
+      {
+        "type": "double",
+        "name": "totalprice"
+      }
+    ],
+    "details": [],
+    "estimates": [
+      {
+        "outputRowCount": 10.0,
+        "outputSizeInBytes": 180.0,
+        "cpuCost": "NaN",
+        "memoryCost": "NaN",
+        "networkCost": "NaN"
+      }
+    ],
+    "children": [
+      {
+        "id": "161",
+        "name": "LocalExchange",
+        "descriptor": {
+          "partitioning": "SINGLE",
+          "isReplicateNullsAndAny": "",
+          "arguments": "[]"
+        },
+        "outputs": [
+          {
+            "type": "bigint",
+            "name": "orderkey"
+          },
+          {
+            "type": "double",
+            "name": "totalprice"
+          }
+        ],
+        "details": [],
+        "estimates": [
+          {
+            "outputRowCount": 10.0,
+            "outputSizeInBytes": 180.0,
+            "cpuCost": 0.0,
+            "memoryCost": 0.0,
+            "networkCost": 0.0
+          }
+        ],
+        "children": [
+          {
+            "id": "158",
+            "name": "TopNPartial",
+            "descriptor": {
+              "count": "10",
+              "orderBy": "[totalprice DESC NULLS LAST]"
+            },
+            "outputs": [
+              {
+                "type": "bigint",
+                "name": "orderkey"
+              },
+              {
+                "type": "double",
+                "name": "totalprice"
+              }
+            ],
+            "details": [],
+            "estimates": [
+              {
+                "outputRowCount": 10.0,
+                "outputSizeInBytes": 180.0,
+                "cpuCost": "NaN",
+                "memoryCost": "NaN",
+                "networkCost": "NaN"
+              }
+            ],
+            "children": [
+              {
+                "id": "159",
+                "name": "LocalExchange",
+                "descriptor": {
+                  "partitioning": "ROUND_ROBIN",
+                  "isReplicateNullsAndAny": "",
+                  "arguments": "[]"
+                },
+                "outputs": [
+                  {
+                    "type": "bigint",
+                    "name": "orderkey"
+                  },
+                  {
+                    "type": "double",
+                    "name": "totalprice"
+                  }
+                ],
+                "details": [],
+                "estimates": [
+                  {
+                    "outputRowCount": 15.0,
+                    "outputSizeInBytes": 270.0,
+                    "cpuCost": 270.0,
+                    "memoryCost": 0.0,
+                    "networkCost": 0.0
+                  }
+                ],
+                "children": [
+                  {
+                    "id": "104",
+                    "name": "TopNPartial",
+                    "descriptor": {
+                      "count": "10",
+                      "orderBy": "[totalprice DESC NULLS LAST]"
+                    },
+                    "outputs": [
+                      {
+                        "type": "bigint",
+                        "name": "orderkey"
+                      },
+                      {
+                        "type": "double",
+                        "name": "totalprice"
+                      }
+                    ],
+                    "details": [],
+                    "estimates": [
+                      {
+                        "outputRowCount": 15.0,
+                        "outputSizeInBytes": 270.0,
+                        "cpuCost": "NaN",
+                        "memoryCost": "NaN",
+                        "networkCost": "NaN"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "0",
+                        "name": "TableScan",
+                        "descriptor": {
+                          "table": "tpch:sf1:orders"
+                        },
+                        "outputs": [
+                          {
+                            "type": "bigint",
+                            "name": "orderkey"
+                          },
+                          {
+                            "type": "double",
+                            "name": "totalprice"
+                          }
+                        ],
+                        "details": [
+                          "totalprice := tpch:totalprice",
+                          "orderkey := tpch:orderkey",
+                          "tpch:orderstatus",
+                          "    :: [[F], [O], [P]]"
+                        ],
+                        "estimates": [
+                          {
+                            "outputRowCount": 1500000.0,
+                            "outputSizeInBytes": 2.7e7,
+                            "cpuCost": 2.7e7,
+                            "memoryCost": 0.0,
+                            "networkCost": 0.0
+                          }
+                        ],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

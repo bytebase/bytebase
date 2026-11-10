@@ -9,11 +9,17 @@ import { FeatureAttention } from "@/components/FeatureAttention";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   WorkspacePageInfo,
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import classificationExample from "@/lib/sensitive-data/classification-example.json";
+import { AgentPageHelpButton } from "@/modules/agent/components/AgentPageHelpButton";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -298,88 +304,93 @@ export function DataClassificationPage() {
         description={
           <>
             {t("database.classification.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/security/data-masking/data-classification?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/security/data-masking/data-classification?source=console" />
           </>
         }
       />
 
-      {allowEdit && (
-        <WorkspacePageToolbar align="end">
-          <div className="flex items-center justify-end gap-x-2 shrink-0">
-            {editing ? (
-              <>
-                <Button
-                  appearance="outline"
-                  disabled={!editorDirty}
-                  onClick={onRevert}
-                >
-                  <Undo2 className="w-4 h-4 mr-1" />
-                  {t("common.revert")}
-                </Button>
-                <Button appearance="outline" onClick={onCancelEdit}>
-                  <X className="w-4 h-4 mr-1" />
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  disabled={
-                    (!editorDirty && !emptyConfig) || !hasClassificationFeature
-                  }
-                  onClick={onSave}
-                >
-                  {t("common.save")}
-                </Button>
-              </>
-            ) : (
-              <>
-                {!emptyConfig && (
-                  <div className="relative">
-                    {showClearConfirm ? (
-                      <div className="flex items-center gap-x-2">
-                        <span className="text-sm text-control">
-                          {t("bbkit.confirm-button.sure-to-delete")}
-                        </span>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={onClear}
-                        >
-                          {t("common.clear")}
-                        </Button>
-                        <Button
-                          appearance="outline"
-                          size="sm"
-                          onClick={() => setShowClearConfirm(false)}
-                        >
-                          {t("common.cancel")}
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        appearance="outline"
+      <WorkspacePageToolbar align="end">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+          <AgentPageHelpButton />
+          {allowEdit && (
+            <>
+              {editing ? (
+                <>
+                  <Button
+                    appearance="outline"
+                    disabled={!editorDirty}
+                    onClick={onRevert}
+                  >
+                    <Undo2 className="w-4 h-4 mr-1" />
+                    {t("common.revert")}
+                  </Button>
+                  <Button appearance="outline" onClick={onCancelEdit}>
+                    <X className="w-4 h-4 mr-1" />
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    disabled={
+                      (!editorDirty && !emptyConfig) ||
+                      !hasClassificationFeature
+                    }
+                    onClick={onSave}
+                  >
+                    {t("common.save")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {!emptyConfig && (
+                    <Popover
+                      open={showClearConfirm}
+                      onOpenChange={setShowClearConfirm}
+                    >
+                      <PopoverTrigger
+                        render={<Button appearance="outline" />}
                         disabled={!hasClassificationFeature}
-                        onClick={() => setShowClearConfirm(true)}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
                         {t("common.clear")}
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <Button
-                  disabled={!hasClassificationFeature}
-                  onClick={() => setEditing(true)}
-                >
-                  <Pencil className="w-4 h-4 mr-1" />
-                  {t("common.edit")}
-                </Button>
-              </>
-            )}
-          </div>
-        </WorkspacePageToolbar>
-      )}
+                      </PopoverTrigger>
+                      <PopoverContent
+                        aria-label={t("common.clear")}
+                        className="w-max max-w-[calc(100vw-2rem)]"
+                      >
+                        <p className="text-sm mb-2">
+                          {t("bbkit.confirm-button.sure-to-delete")}
+                        </p>
+                        <div className="flex justify-end gap-x-2">
+                          <Button
+                            appearance="outline"
+                            size="sm"
+                            onClick={() => setShowClearConfirm(false)}
+                          >
+                            {t("common.cancel")}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={onClear}
+                          >
+                            {t("common.clear")}
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Button
+                    disabled={!hasClassificationFeature}
+                    onClick={() => setEditing(true)}
+                  >
+                    <Pencil className="w-4 h-4 mr-1" />
+                    {t("common.edit")}
+                  </Button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </WorkspacePageToolbar>
 
       {editing && (
         <>

@@ -266,8 +266,12 @@ func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *met
 		if n.TypeName == nil && n.Domain == nil {
 			column.Type = "NUMBER"
 		}
-		column.Default = e.exprText(n.Virtual)
+		column.Generation = &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
+			Expression: e.exprText(n.Virtual),
+		}
 	}
+	column.IsInvisible = n.Invisible
 	column.DefaultOnNull = n.DefaultOnNull
 	if n.Collation != "" {
 		column.Collation = n.Collation

@@ -23,8 +23,7 @@ service GroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.get";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Gets multiple groups in a single request.
@@ -36,8 +35,7 @@ service GroupService {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
     option (bytebase.v1.permission) = "bb.groups.get";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists all groups in the workspace.
@@ -47,8 +45,7 @@ service GroupService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.groups.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new group.

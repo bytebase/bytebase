@@ -70,6 +70,31 @@ func (x *IssueCommentPayload_ReviewSubmission) Equal(y *IssueCommentPayload_Revi
 	return true
 }
 
+func (x *IssueCommentPayload_ReviewRunCompletion) Equal(y *IssueCommentPayload_ReviewRunCompletion) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.RunType != y.RunType {
+		return false
+	}
+	if x.Attempt != y.Attempt {
+		return false
+	}
+	if x.PostedCount != y.PostedCount {
+		return false
+	}
+	if x.KeptCount != y.KeptCount {
+		return false
+	}
+	if x.SupersededCount != y.SupersededCount {
+		return false
+	}
+	return true
+}
+
 func (x *IssueCommentPayload_PlanUpdate) Equal(y *IssueCommentPayload_PlanUpdate) bool {
 	if x == y {
 		return true
@@ -120,6 +145,26 @@ func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_Review
 			return false
 		}
 	}
+	if x.Superseded != y.Superseded {
+		return false
+	}
+	if x.Fingerprint != y.Fingerprint {
+		return false
+	}
+	if x.Attempt != y.Attempt {
+		return false
+	}
+	if len(x.Codes) != len(y.Codes) {
+		return false
+	}
+	for i := 0; i < len(x.Codes); i++ {
+		if x.Codes[i] != y.Codes[i] {
+			return false
+		}
+	}
+	if x.Title != y.Title {
+		return false
+	}
 	return true
 }
 
@@ -165,6 +210,9 @@ func (x *IssueCommentPayload) Equal(y *IssueCommentPayload) bool {
 		return false
 	}
 	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
+		return false
+	}
+	if !x.GetReviewRunCompletion().Equal(y.GetReviewRunCompletion()) {
 		return false
 	}
 	if !x.StatementAnchor.Equal(y.StatementAnchor) {

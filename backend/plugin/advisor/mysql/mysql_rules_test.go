@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -242,11 +241,6 @@ const (
 		{"table":{"update":true,"table_name":"big","access_type":"ALL","rows_examined_per_scan":11330,"rows_produced_per_join":11330,"filtered":"100.00"}},
 		{"table":{"table_name":"s","access_type":"eq_ref","rows_examined_per_scan":1,"rows_produced_per_join":1133,"filtered":"10.00"}}
 	]}}`
-	// MariaDB does not flag a multi-table DELETE target.
-	testMariaDBDeleteJoinPlan = `{"query_block":{"select_id":1,"nested_loop":[
-		{"table":{"table_name":"s","access_type":"ALL","loops":1,"rows":100,"filtered":10}},
-		{"table":{"table_name":"big","access_type":"ref","loops":10,"rows":100,"filtered":100}}
-	]}}`
 	// The plan of the SELECT that a single-table UPDATE of td is explained as.
 	testMySQLSingleTableUpdatePlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}}`
 	testMySQLInsertSelectPlan      = `{"query_block":{"select_id":1,
@@ -282,16 +276,6 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			plan:        testMySQLUpdateTargetFirstPlan,
 			statement:   "UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;",
 			wantContent: `"UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;" affected 1133 rows (estimated). The count exceeds 5.`,
-			wantCode:    code.StatementAffectedRowExceedsLimit,
-		},
-		{
-			name:        "MariaDB multi-table delete without explain_json_format_version",
-			engine:      storepb.Engine_MARIADB,
-			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			plan:        testMariaDBDeleteJoinPlan,
-			setErr:      &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
-			statement:   "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;",
-			wantContent: `"DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
 			wantCode:    code.StatementAffectedRowExceedsLimit,
 		},
 		{
@@ -429,25 +413,6 @@ func countTestExplainQueries() int {
 		}
 	}
 	return count
-}
-
-func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
-	sm := sheet.NewManager()
-
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t(id INT);\nUPDATE test SET c1 = 1 WHERE b1 = 1;", nil, advisor.Context{
-		DBType:            storepb.Engine_MARIADB,
-		DBSchema:          advisor.MockMySQLDatabase,
-		EnablePriorBackup: true,
-		InstanceID:        "instance",
-		ListDatabaseNamesFunc: func(context.Context, string) ([]string, error) {
-			return []string{"bbdataarchive"}, nil
-		},
-	})
-
-	require.NoError(t, err)
-	require.NotEmpty(t, adviceList)
-	require.Equal(t, storepb.SQLReviewRule_BUILTIN_PRIOR_BACKUP_CHECK.String(), adviceList[0].Title)
-	require.Contains(t, adviceList[0].Content, "mixed DDL and DML")
 }
 
 func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {

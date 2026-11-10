@@ -1,0 +1,160 @@
+import { create } from "@bufbuild/protobuf";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { StandardRuleSwitches } from "@/components/sql-review/StandardRuleSwitches";
+import {
+  effectiveWorkspaceRules,
+  sameStandardRules,
+} from "@/components/sql-review/standardRules";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form";
+import { useWorkspaceResourceName } from "@/hooks/useAppState";
+import { useAppStore } from "@/stores/app";
+import {
+  PolicyResourceType,
+  PolicyType,
+  ReviewRulePolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import type { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { hasWorkspacePermissionV2 } from "@/utils";
+
+export interface WorkspaceStandardRules {
+  // The rules in force; undefined until read, or when the read failed.
+  rules: ReviewRuleType[] | undefined;
+  readFailed: boolean;
+  reload: () => void;
+  // Whether this user may save. Every workspace gets a review rule policy
+  // row by default, so a save is an update.
+  canEdit: boolean;
+  setRules: (rules: ReviewRuleType[]) => void;
+  isDirty: boolean;
+  saving: boolean;
+  revert: () => void;
+  // Resolves whether the rules saved. The page reports the update; a failure
+  // is reported by the response middleware and keeps the draft.
+  save: () => Promise<boolean>;
+}
+
+// The page owns the draft so its sticky footer can sit at the end of the page,
+// below the SQL review policy list.
+export function useWorkspaceStandardRules(
+  enabled: boolean
+): WorkspaceStandardRules {
+  const workspace = useWorkspaceResourceName();
+  const policy = useAppStore((state) =>
+    state.getPolicyByParentAndType({
+      parentPath: workspace,
+      policyType: PolicyType.REVIEW_RULE,
+    })
+  );
+  const [attempt, setAttempt] = useState(0);
+  const [readFailed, setReadFailed] = useState(false);
+  const [draft, setDraft] = useState<ReviewRuleType[]>();
+  useEffect(() => {
+    if (!enabled || !workspace) return;
+    let active = true;
+    setDraft(undefined);
+    setReadFailed(false);
+    void useAppStore
+      .getState()
+      .fetchPolicyByParentAndType({
+        parentPath: workspace,
+        policyType: PolicyType.REVIEW_RULE,
+        refresh: attempt > 0,
+      })
+      .then((policy) => {
+        if (active && policy === undefined) setReadFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [enabled, workspace, attempt]);
+
+  const stored = effectiveWorkspaceRules(policy);
+  const [saving, setSaving] = useState(false);
+  const isDirty =
+    draft !== undefined &&
+    stored !== undefined &&
+    !sameStandardRules(draft, stored);
+
+  const save = async () => {
+    if (!draft) return true;
+    setSaving(true);
+    try {
+      await useAppStore.getState().upsertPolicy({
+        parentPath: workspace,
+        policy: {
+          type: PolicyType.REVIEW_RULE,
+          resourceType: PolicyResourceType.WORKSPACE,
+          enforce: true,
+          policy: {
+            case: "reviewRulePolicy",
+            value: create(ReviewRulePolicySchema, { rules: draft }),
+          },
+        },
+      });
+      setDraft(undefined);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return {
+    rules: draft ?? stored,
+    readFailed,
+    reload: () => setAttempt((n) => n + 1),
+    canEdit: hasWorkspacePermissionV2("bb.policies.update"),
+    setRules: setDraft,
+    isDirty,
+    saving,
+    revert: () => setDraft(undefined),
+    save,
+  };
+}
+
+export function SQLReviewStandardRulesSection({
+  standardRules,
+}: {
+  standardRules: WorkspaceStandardRules;
+}) {
+  const { t } = useTranslation();
+  const workspace = useWorkspaceResourceName();
+
+  return (
+    <FormSection
+      layout="single-column"
+      padding="none"
+      title={t("sql-review.standard-rules.self")}
+      description={t("sql-review.standard-rules.description")}
+    >
+      {standardRules.readFailed && (
+        <Alert
+          variant="error"
+          description={t("sql-review.standard-rules.load-failed")}
+        >
+          <Button
+            className="mt-3"
+            appearance="outline"
+            size="sm"
+            onClick={standardRules.reload}
+          >
+            {t("sql-review.standard-rules.retry")}
+          </Button>
+        </Alert>
+      )}
+      {standardRules.rules && (
+        <StandardRuleSwitches
+          // The rules remembered while SYNTAX is off belong to one workspace.
+          key={workspace}
+          rules={standardRules.rules}
+          onChange={standardRules.setRules}
+          disabled={!standardRules.canEdit || standardRules.saving}
+        />
+      )}
+    </FormSection>
+  );
+}

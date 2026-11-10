@@ -2,7 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@/app/router";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   ResourceIdField,
   type ResourceIdFieldRef,
@@ -24,10 +24,6 @@ import {
   useNotify,
   useWorkspacePermission,
 } from "@/hooks/useAppState";
-import {
-  CONNECT_DATABASE_PRODUCT_INTRO,
-  PRODUCT_INTRO_QUERY_KEY,
-} from "@/lib/productIntro";
 import { projectNamePrefix } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -115,11 +111,10 @@ export function ProjectCreateDialog({
       } else {
         setRecentProject(createdProject.name);
         void navigate.push({
-          name: PROJECT_V1_ROUTE_DATABASES,
+          name: PROJECT_V1_ROUTE_DETAIL,
           params: {
             projectId: extractProjectResourceName(createdProject.name),
           },
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
         });
       }
 

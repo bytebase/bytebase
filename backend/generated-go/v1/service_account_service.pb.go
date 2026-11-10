@@ -550,24 +550,24 @@ var File_v1_service_account_service_proto protoreflect.FileDescriptor
 
 const file_v1_service_account_service_proto_rawDesc = "" +
 	"\n" +
-	" v1/service_account_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xb5\x02\n" +
-	"\x0eServiceAccount\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
-	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
-	"\x05email\x18\x03 \x01(\tB\x03\xe0A\x03R\x05email\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12(\n" +
-	"\vservice_key\x18\x05 \x01(\tB\a\xe0A\x03\xd0\xea0\x01R\n" +
-	"serviceKey\x12@\n" +
-	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	" v1/service_account_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xb9\x02\n" +
+	"\x0eServiceAccount\x12\x18\n" +
+	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12(\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1a\n" +
+	"\x05email\x18\x03 \x01(\tB\x04\xe2A\x01\x03R\x05email\x12\x1e\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12)\n" +
+	"\vservice_key\x18\x05 \x01(\tB\b\xe2A\x01\x03\xd0\xea0\x01R\n" +
+	"serviceKey\x12A\n" +
+	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"createTime:9\xeaA6\n" +
-	"\x1bbytebase.com/ServiceAccount\x12\x17serviceAccounts/{email}\"\xce\x01\n" +
+	"\x1bbytebase.com/ServiceAccount\x12\x17serviceAccounts/{email}\"\xd0\x01\n" +
 	"\x1bCreateServiceAccountRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x121\n" +
-	"\x12service_account_id\x18\x02 \x01(\tB\x03\xe0A\x02R\x10serviceAccountId\x12I\n" +
-	"\x0fservice_account\x18\x03 \x01(\v2\x1b.bytebase.v1.ServiceAccountB\x03\xe0A\x02R\x0eserviceAccount\"S\n" +
-	"\x18GetServiceAccountRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
+	"\x12service_account_id\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\x10serviceAccountId\x12J\n" +
+	"\x0fservice_account\x18\x03 \x01(\v2\x1b.bytebase.v1.ServiceAccountB\x04\xe2A\x01\x02R\x0eserviceAccount\"T\n" +
+	"\x18GetServiceAccountRequest\x128\n" +
+	"\x04name\x18\x01 \x01(\tB$\xe2A\x01\x02\xfaA\x1d\n" +
 	"\x1bbytebase.com/ServiceAccountR\x04name\"\xc6\x01\n" +
 	"\x1aListServiceAccountsRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
@@ -579,16 +579,16 @@ const file_v1_service_account_service_proto_rawDesc = "" +
 	"\x06filter\x18\x05 \x01(\tR\x06filter\"\x8d\x01\n" +
 	"\x1bListServiceAccountsResponse\x12F\n" +
 	"\x10service_accounts\x18\x01 \x03(\v2\x1b.bytebase.v1.ServiceAccountR\x0fserviceAccounts\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa5\x01\n" +
-	"\x1bUpdateServiceAccountRequest\x12I\n" +
-	"\x0fservice_account\x18\x01 \x01(\v2\x1b.bytebase.v1.ServiceAccountB\x03\xe0A\x02R\x0eserviceAccount\x12;\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa6\x01\n" +
+	"\x1bUpdateServiceAccountRequest\x12J\n" +
+	"\x0fservice_account\x18\x01 \x01(\v2\x1b.bytebase.v1.ServiceAccountB\x04\xe2A\x01\x02R\x0eserviceAccount\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"V\n" +
-	"\x1bDeleteServiceAccountRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
-	"\x1bbytebase.com/ServiceAccountR\x04name\"X\n" +
-	"\x1dUndeleteServiceAccountRequest\x127\n" +
-	"\x04name\x18\x01 \x01(\tB#\xe0A\x02\xfaA\x1d\n" +
+	"updateMask\"W\n" +
+	"\x1bDeleteServiceAccountRequest\x128\n" +
+	"\x04name\x18\x01 \x01(\tB$\xe2A\x01\x02\xfaA\x1d\n" +
+	"\x1bbytebase.com/ServiceAccountR\x04name\"Y\n" +
+	"\x1dUndeleteServiceAccountRequest\x128\n" +
+	"\x04name\x18\x01 \x01(\tB$\xe2A\x01\x02\xfaA\x1d\n" +
 	"\x1bbytebase.com/ServiceAccountR\x04name2\xe5\n" +
 	"\n" +
 	"\x15ServiceAccountService\x12\xb7\x02\n" +

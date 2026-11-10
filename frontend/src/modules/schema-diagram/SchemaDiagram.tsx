@@ -147,7 +147,7 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
     mergeTableRects(rects);
     setInitialized(true);
     requestAnimationFrame(() => {
-      void events.emit("fit-view");
+      void events.emit("fit-view", { geometries: [...rects.values()] });
       void events.emit("render");
     });
   }, [runLayout, mergeTableRects, setFocusedTables, events]);

@@ -14,6 +14,7 @@ import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
 import { appStoreUtilBridge } from "@/utils/app-store-bridge";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";
 import { refreshTokens } from "../refreshToken";
+import { WorkerStartupError } from "../refreshTokenSharedWorker";
 
 const extractPermissionDeniedDetail = (error: unknown) => {
   if (error instanceof ConnectError) {
@@ -92,6 +93,12 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
         try {
           await refreshTokens();
         } catch (e) {
+          if (e instanceof WorkerStartupError) {
+            throw new ConnectError(
+              "Session refresh temporarily unavailable",
+              Code.Unavailable
+            );
+          }
           console.error(e);
           handleUnauthenticatedFailure({
             silent,

@@ -7,6 +7,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <!-- Links in untrusted text, such as review results, must not resolve
+         their hosts before a click: a hostname can carry that text. -->
+    <meta http-equiv="x-dns-prefetch-control" content="off" />
     <title>Bytebase</title>
     <meta name="color-scheme" content="light only" />
   </head>

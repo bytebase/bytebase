@@ -1,13 +1,16 @@
 package command
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/action/world"
@@ -211,6 +214,36 @@ func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	require.Equal(t, "", client.serviceAccount)
 	require.Equal(t, "", client.serviceAccountSecret)
 	require.Equal(t, 120*time.Second, client.httpClient.Timeout)
+}
+
+func TestRejectedAccessTokenFailsAfterOneReauthentication(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int32
+	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		requests.Add(1)
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader("unauthorized")),
+			Request:    req,
+		}, nil
+	})
+
+	opts := defaultClientOptions()
+	opts.httpClient = &http.Client{Transport: transport}
+	opts.retryConfig = &retryConfig{maxAttempts: 3, initialInterval: time.Millisecond, maxInterval: time.Millisecond}
+	client, err := newClient("https://example.com", "null", "", "", opts)
+	require.NoError(t, err)
+	t.Cleanup(client.close)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = client.getActuatorInfo(ctx)
+	require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+	require.NoError(t, ctx.Err())
+	// The first request carries no token; the refresh loads it, and the retry is rejected.
+	require.Equal(t, int32(2), requests.Load())
 }
 
 func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {

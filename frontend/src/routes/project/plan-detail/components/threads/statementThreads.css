@@ -6,6 +6,15 @@
   background: rgb(var(--color-control-bg) / 0.65);
 }
 
+/* Open findings: P0 says the SQL is wrong, the rest need a person's call. */
+.monaco-editor .bb-thread-line--blocking {
+  background: rgb(var(--color-error) / 0.08);
+}
+
+.monaco-editor .bb-thread-line--attention {
+  background: rgb(var(--color-warning) / 0.1);
+}
+
 .monaco-editor .bb-thread-line {
   background: rgb(var(--color-accent) / 0.12);
 }

@@ -4,36 +4,41 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { canEditIssueComment } from "@/components/issue-activity/IssueCommentActivity";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
-import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
-import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ReviewHeading, ReviewTargets, useCommentAuthor } from "./ReviewResult";
 
 // Roots and replies share one layout: author identity in the header, with
 // the body aligned to the comment region rather than indented below the name.
+// A review result follows the header with its targets, then its priority and
+// rule, then its text.
 export function ThreadComment({
   actions,
   className,
   comment,
+  label,
   onEdit,
   project,
-  status,
+  spec,
 }: {
   // Header actions after the edit button (thread collapse or close).
   actions?: ReactNode;
   className?: string;
   comment: IssueComment;
+  // Extra header text after the timestamp (the anchored line range).
+  label?: ReactNode;
   onEdit: (issueCommentName: string, comment: string) => Promise<unknown>;
   project: Project | undefined;
-  // Thread status shown after the timestamp (resolved).
-  status?: ReactNode;
+  // The plan spec the thread sits on, when the owner knows it.
+  spec?: Plan_Spec;
 }) {
   const { t } = useTranslation();
-  const creator =
-    useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
+  const author = useCommentAuthor(comment);
+  const review = comment.reviewMetadata;
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
   const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited = createdTs !== updatedTs;
@@ -74,17 +79,13 @@ export function ThreadComment({
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
             <div className="flex min-w-0 max-w-full items-center gap-x-2">
               <div className="shrink-0" data-testid="comment-avatar">
-                <UserAvatar
-                  colorSeed={creator.email}
-                  size="xs"
-                  title={creator.title || creator.email}
-                />
+                {author.avatar}
               </div>
               <span
                 className="min-w-0 truncate text-sm font-medium text-main"
-                title={creator.title || creator.email}
+                title={author.name}
               >
-                {creator.title || creator.email}
+                {author.name}
               </span>
             </div>
             <HumanizeTs
@@ -96,7 +97,7 @@ export function ThreadComment({
                 ({t("common.edited")})
               </span>
             )}
-            {status}
+            {label}
           </div>
           <div className="flex shrink-0 items-center gap-x-1">
             {allowEdit && !isEditing && (
@@ -115,12 +116,26 @@ export function ThreadComment({
             {actions}
           </div>
         </div>
+        {review && (
+          <>
+            <ReviewTargets
+              spec={
+                spec && comment.statementAnchor?.spec === spec.id
+                  ? spec
+                  : undefined
+              }
+              targets={review.targets}
+            />
+            <ReviewHeading review={review} />
+          </>
+        )}
         {isEditing ? (
           <div className="flex flex-col gap-y-2">
             <MarkdownEditor
               content={draft}
               onChange={setDraft}
               onSubmit={() => void save()}
+              untrusted={Boolean(review)}
             />
             <div className="flex items-center justify-end gap-x-2">
               <Button
@@ -147,7 +162,11 @@ export function ThreadComment({
         ) : (
           comment.comment && (
             <div className="wrap-break-word text-sm text-control">
-              <MarkdownEditor content={comment.comment} mode="preview" />
+              <MarkdownEditor
+                content={comment.comment}
+                mode="preview"
+                untrusted={Boolean(review)}
+              />
             </div>
           )
         )}

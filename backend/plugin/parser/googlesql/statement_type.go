@@ -34,8 +34,8 @@ func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, erro
 
 	var result []base.ParsedStatement
 	for _, stmt := range stmts {
-		file, errs := parser.Parse(stmt.Text)
-		if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+		file, err := parser.Parse(stmt.Text)
+		if err != nil || file == nil || len(file.Stmts) == 0 {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
 				AST:       &AST{StartPosition: stmt.Start},
@@ -69,14 +69,18 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 
 // statementType maps one omni GoogleSQL node to a storepb.StatementType.
 //
+// CALL and EXECUTE IMMEDIATE report EXECUTE: what they change is decided by
+// the procedure body or the run-time SQL string, which the statement does not
+// show.
+//
 // Deferral: every GoogleSQL statement the enum has no value for reports
 // UNSPECIFIED, so a rule selecting DML skips it. The gap includes statements
 // that do write rows — LOAD DATA INTO, CLONE DATA INTO, scripting bodies
-// (BEGIN…END, CALL, FOR, WHILE, each of which parses as one statement), and
-// EXECUTE IMMEDIATE, whose text is only known at run time. It also includes
-// ALTER SCHEMA, row access policies, generic entities, and the Spanner-only
-// DDL set (change streams, roles, GRANT / REVOKE, proto bundles), which do
-// not write rows.
+// (BEGIN…END, IF, FOR, WHILE, each of which parses as one statement, so a
+// CALL or EXECUTE IMMEDIATE nested in one is not seen either). It also
+// includes ALTER SCHEMA, row access policies, generic entities, and the
+// Spanner-only DDL set (change streams, roles, GRANT / REVOKE, proto bundles),
+// which do not write rows.
 //
 // A new row-writing statement needs its own enum value before it lands here.
 // analysis.ClassifySQL returns Unknown for these too, so it cannot gate the list.
@@ -131,6 +135,9 @@ func statementType(node ast.Node) storepb.StatementType {
 
 	case *ast.RenameStmt:
 		return storepb.StatementType_RENAME
+
+	case *ast.CallStmt, *ast.ExecuteImmediateStmt:
+		return storepb.StatementType_EXECUTE
 
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

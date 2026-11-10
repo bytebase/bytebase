@@ -3,11 +3,9 @@ package tidb
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
-	tidbdriver "github.com/pingcap/tidb/pkg/types/parser_driver"
+	omniast "github.com/bytebase/omni/tidb/ast"
+	omnideparse "github.com/bytebase/omni/tidb/deparse"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -31,57 +29,36 @@ func statementWithResultLimit(statement string, limit int, _ string) string {
 }
 
 func statementWithResultLimitInline(statement string, limit int) (string, error) {
-	stmtList, err := ParseTiDB(statement, "", "")
+	list, err := ParseTiDBOmni(statement)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", statement)
 	}
-	if len(stmtList) != 1 {
+	if list == nil || len(list.Items) != 1 {
 		return "", errors.Errorf("expect one single statement in the query, %s", statement)
 	}
-	restoreFlags := format.DefaultRestoreFlags | format.RestoreStringWithoutDefaultCharset
-	stmt := stmtList[0]
-	switch stmt := stmt.(type) {
-	case *tidbast.SelectStmt:
-		if stmt.Limit != nil && stmt.Limit.Count != nil {
-			if v, ok := stmt.Limit.Count.(*tidbdriver.ValueExpr); ok {
-				userLimit := int(v.GetInt64())
-				if limit < userLimit {
-					userLimit = limit
-				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(userLimit), "", "")
-			}
-		} else {
-			stmt.Limit = &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limit), "", ""),
-			}
-		}
-		var buffer strings.Builder
-		ctx := format.NewRestoreCtx(restoreFlags, &buffer)
-		if err := stmt.Restore(ctx); err != nil {
-			return "", err
-		}
-		return buffer.String(), nil
-	case *tidbast.SetOprStmt:
-		if stmt.Limit != nil && stmt.Limit.Count != nil {
-			if v, ok := stmt.Limit.Count.(*tidbdriver.ValueExpr); ok {
-				userLimit := int(v.GetInt64())
-				if limit < userLimit {
-					userLimit = limit
-				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(userLimit), "", "")
-			}
-		} else {
-			stmt.Limit = &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limit), "", ""),
-			}
-		}
-		var buffer strings.Builder
-		ctx := format.NewRestoreCtx(restoreFlags, &buffer)
-		if err := stmt.Restore(ctx); err != nil {
-			return "", err
-		}
-		return buffer.String(), nil
-	default:
+	// omni folds UNION/INTERSECT/EXCEPT into SelectStmt, so a single case covers
+	// both a plain SELECT and a set operation; the trailing LIMIT lives on the
+	// outermost SelectStmt either way.
+	stmt, ok := list.Items[0].(*omniast.SelectStmt)
+	if !ok {
+		return statement, nil
 	}
-	return statement, nil
+	if stmt.Limit != nil && stmt.Limit.Count != nil {
+		if v, ok := stmt.Limit.Count.(*omniast.IntLit); ok {
+			userLimit := int(v.Value)
+			if limit < userLimit {
+				userLimit = limit
+			}
+			stmt.Limit.Count = &omniast.IntLit{Value: int64(userLimit)}
+		}
+	} else {
+		stmt.Limit = &omniast.Limit{
+			Count: &omniast.IntLit{Value: int64(limit)},
+		}
+	}
+	// RestoreStringWithoutCharset mirrors pingcap's RestoreStringWithoutDefaultCharset:
+	// string literals keep no _UTF8MB4 introducer. The remaining omni defaults
+	// (uppercase keywords, backtick names, single-quoted strings) match the
+	// previous pingcap DefaultRestoreFlags output.
+	return omnideparse.RestoreSelectWith(stmt, omnideparse.RestoreStringWithoutCharset), nil
 }

@@ -1,0 +1,104 @@
+PLAN FRAGMENT 0
+  OUTPUT EXPRS:
+    country[#19]
+    sum(o.total)[#20]
+  PARTITION: UNPARTITIONED
+
+  HAS_COLO_PLAN_NODE: false
+
+  VRESULT SINK
+     MYSQL_PROTOCAL
+
+  7:VEXCHANGE
+     offset: 0
+     distribute expr lists: country[#19]
+
+PLAN FRAGMENT 1
+
+  PARTITION: HASH_PARTITIONED: country[#17]
+
+  HAS_COLO_PLAN_NODE: true
+
+  STREAM DATA SINK
+    EXCHANGE ID: 07
+    UNPARTITIONED
+
+  6:VAGGREGATE (merge finalize)(425)
+  |  output: sum(partial_sum(total)[#18])[#20]
+  |  group by: country[#17]
+  |  sortByGroupKey:false
+  |  cardinality=1
+  |  distribute expr lists: country[#17]
+  |  
+  5:VEXCHANGE
+     offset: 0
+     distribute expr lists: 
+
+PLAN FRAGMENT 2
+
+  PARTITION: HASH_PARTITIONED: id[#5]
+
+  HAS_COLO_PLAN_NODE: false
+
+  STREAM DATA SINK
+    EXCHANGE ID: 05
+    HASH_PARTITIONED: country[#17]
+
+  4:VAGGREGATE (update serialize)(415)
+  |  STREAMING
+  |  output: partial_sum(total[#16])[#18]
+  |  group by: country[#15]
+  |  sortByGroupKey:false
+  |  cardinality=1
+  |  distribute expr lists: 
+  |  
+  3:VHASH JOIN(405)
+  |  join op: INNER JOIN(BROADCAST)[]
+  |  equal join conjunct: (customer_id[#9] = id[#3])
+  |  cardinality=1
+  |  vec output tuple id: 5
+  |  output tuple id: 5
+  |  vIntermediate tuple ids: 4 
+  |  hash output slot ids: 4 10 
+  |  final projections: country[#14], total[#12]
+  |  final project output tuple id: 5
+  |  distribute expr lists: 
+  |  distribute expr lists: 
+  |  
+  |----1:VEXCHANGE
+  |       offset: 0
+  |       distribute expr lists: id[#3]
+  |    
+  2:VOlapScanNode(379)
+     TABLE: qp.orders(orders), PREAGGREGATION: ON
+     PREDICATES: (total[#7] > 880)
+     partitions=1/1 (orders)
+     tablets=2/2, tabletList=1793041799804,1793041799806
+     cardinality=1, avgRowSize=0.0, numNodes=1
+     pushAggOp=NONE
+     final projections: customer_id[#6], total[#7]
+     final project output tuple id: 3
+
+PLAN FRAGMENT 3
+
+  PARTITION: HASH_PARTITIONED: id[#0]
+
+  HAS_COLO_PLAN_NODE: false
+
+  STREAM DATA SINK
+    EXCHANGE ID: 01
+    UNPARTITIONED
+
+  0:VOlapScanNode(390)
+     TABLE: qp.customers(customers), PREAGGREGATION: ON
+     partitions=1/1 (customers)
+     tablets=2/2, tabletList=1793041799797,1793041799799
+     cardinality=1, avgRowSize=0.0, numNodes=1
+     pushAggOp=NONE
+     final projections: id[#0], country[#2]
+     final project output tuple id: 1
+
+
+
+========== STATISTICS ==========
+planed with unknown column statistics

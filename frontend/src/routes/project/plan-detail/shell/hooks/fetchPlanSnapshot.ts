@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import {
   issueServiceClientConnect,
   planServiceClientConnect,
@@ -9,10 +9,13 @@ import {
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { listAllTaskRuns } from "@/api/taskRun";
+import { useAppStore } from "@/stores/app";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
+  GetReviewRunRequestSchema,
   type Issue,
+  type ReviewRun,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
@@ -31,6 +34,11 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { getRolloutFromPlan, hasProjectPermissionV2 } from "@/utils";
+import {
+  aiReviewRunName,
+  loadedMatchedDatabaseCount,
+  readsAIReviewRun,
+} from "../../utils/aiReviewRun";
 import { createPlanSkeleton } from "../../utils/createPlan";
 import { PROJECT_NAME_PREFIX } from "../constants";
 
@@ -46,7 +54,21 @@ export interface PlanDetailFetchPatch {
   rollout?: Rollout | undefined;
   planCheckRuns?: PlanCheckRun[];
   taskRuns?: TaskRun[];
+  aiReviewRun?: ReviewRun | null;
 }
+
+// A slot that has never run is NOT_FOUND, which reads as null. Always silent,
+// even on the first load: a failed read leaves the last known run in place.
+const requestAIReviewRun = (issueName: string) =>
+  issueServiceClientConnect
+    .getReviewRun(
+      create(GetReviewRunRequestSchema, { name: aiReviewRunName(issueName) }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    )
+    .catch((error: unknown) => {
+      if (ConnectError.from(error).code === Code.NotFound) return null;
+      throw error;
+    });
 
 // Keep the rollout and task-run request shape in one place. They are applied as
 // one consistency group below: if either request fails, neither field is
@@ -71,6 +93,24 @@ const requestRolloutState = async (rolloutName: string) => {
     requestRolloutTaskRuns(rolloutName),
   ]);
   return { rollout, taskRuns };
+};
+
+// The run read alongside the issue was gated before the issue's status was
+// known. A closed issue shows no AI review, so its run is dropped rather than
+// left to hold the page on the active polling cadence.
+const aiReviewRunPatch = (
+  issueResult: PromiseSettledResult<Issue | undefined>,
+  aiReviewRunResult: PromiseSettledResult<ReviewRun | null | undefined>
+): Pick<PlanDetailFetchPatch, "aiReviewRun"> => {
+  if (
+    issueResult.status === "fulfilled" &&
+    issueResult.value?.status !== IssueStatus.OPEN
+  ) {
+    return { aiReviewRun: undefined };
+  }
+  return aiReviewRunResult.status === "fulfilled"
+    ? { aiReviewRun: aiReviewRunResult.value }
+    : {};
 };
 
 const convertRouteQuery = (query: Record<string, unknown>) => {
@@ -150,26 +190,38 @@ export const fetchPlanSnapshot = async (
   // The rollout name is derived from the plan name, so task runs can load in
   // parallel with the rollout instead of being serialized behind it.
   let rolloutName = plan.hasRollout ? getRolloutFromPlan(plan.name) : "";
-  const [issueResult, planCheckRunsResult, rolloutStateResult] =
-    await Promise.allSettled([
-      plan.issue
-        ? issueServiceClientConnect.getIssue(
-            create(GetIssueRequestSchema, { name: plan.issue }),
-            silentCtx
-          )
-        : Promise.resolve(undefined),
-      planServiceClientConnect
-        .getPlanCheckRun(
-          create(GetPlanCheckRunRequestSchema, {
-            name: `${plan.name}/planCheckRun`,
-          }),
+  const appState = useAppStore.getState();
+  const readsAIReview = readsAIReviewRun({
+    plan,
+    project,
+    serverInfo: appState.serverInfo,
+    matchedDatabaseCount: loadedMatchedDatabaseCount(appState),
+  });
+  const [
+    issueResult,
+    planCheckRunsResult,
+    rolloutStateResult,
+    aiReviewRunResult,
+  ] = await Promise.allSettled([
+    plan.issue
+      ? issueServiceClientConnect.getIssue(
+          create(GetIssueRequestSchema, { name: plan.issue }),
           silentCtx
         )
-        .then((run) => [run] as PlanCheckRun[]),
-      rolloutName
-        ? requestRolloutState(rolloutName)
-        : Promise.resolve({ rollout: undefined, taskRuns: [] as TaskRun[] }),
-    ]);
+      : Promise.resolve(undefined),
+    planServiceClientConnect
+      .getPlanCheckRun(
+        create(GetPlanCheckRunRequestSchema, {
+          name: `${plan.name}/planCheckRun`,
+        }),
+        silentCtx
+      )
+      .then((run) => [run] as PlanCheckRun[]),
+    rolloutName
+      ? requestRolloutState(rolloutName)
+      : Promise.resolve({ rollout: undefined, taskRuns: [] as TaskRun[] }),
+    readsAIReview ? requestAIReviewRun(plan.issue) : Promise.resolve(undefined),
+  ]);
 
   // Rollout creation commits plan.hasRollout before marking the issue DONE. If
   // those two RPCs straddle that commit, refresh the older plan half once so a
@@ -215,5 +267,6 @@ export const fetchPlanSnapshot = async (
       ? { planCheckRuns: planCheckRunsResult.value }
       : {}),
     ...(rolloutState ? rolloutState : {}),
+    ...aiReviewRunPatch(issueResult, aiReviewRunResult),
   };
 };

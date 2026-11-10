@@ -11,6 +11,7 @@ import { DashboardBodyShell } from "@/components/DashboardBodyShell";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { RoutePermissionGuardShell } from "@/components/RoutePermissionGuardShell";
+import { GuideContextProvider } from "@/modules/workspace-setup-guide/GuideContextProvider";
 import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 
 // Mounts the workspace `DashboardBodyShell` (header + sidebar slot + body slot)
@@ -72,7 +73,7 @@ export function BodyLayout() {
   const sidebarTargets = [targets.desktopSidebar, targets.mobileSidebar];
 
   return (
-    <>
+    <GuideContextProvider>
       <DashboardBodyShell
         variant={variant}
         isRootPath={isRootPath}
@@ -109,6 +110,6 @@ export function BodyLayout() {
       {targets.quickstart
         ? createPortal(<WorkspaceSetupGuide />, targets.quickstart)
         : null}
-    </>
+    </GuideContextProvider>
   );
 }

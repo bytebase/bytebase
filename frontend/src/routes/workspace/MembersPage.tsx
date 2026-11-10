@@ -22,8 +22,8 @@ import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { WORKSPACE_ROUTE_GROUPS } from "@/app/router";
 import { AccountMultiSelect } from "@/components/AccountMultiSelect";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/components/DatabaseResourceSelector";
-import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureBadge } from "@/components/FeatureBadge";
 import { HumanizeTs } from "@/components/HumanizeTs";
@@ -35,7 +35,9 @@ import {
   ProjectPageToolbar,
 } from "@/components/ProjectPageLayout";
 import { RoleSelect } from "@/components/RoleSelect";
-import { DDLWarningCallout } from "@/components/role-grant/DDLWarningCallout";
+import { DirectExecutionCallout } from "@/components/role-grant/DirectExecutionCallout";
+import { DirectExecutionField } from "@/components/role-grant/DirectExecutionField";
+import { RoleDescription } from "@/components/role-grant/RoleDescription";
 import { UserCell } from "@/components/UserCell";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +71,11 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
-import { useCurrentUser } from "@/hooks/useAppState";
+import {
+  useCurrentUser,
+  useEnvironmentList,
+  usePlanFeature,
+} from "@/hooks/useAppState";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import {
@@ -81,7 +87,15 @@ import {
   useProductIntro,
 } from "@/lib/productIntro";
 import {
+  type DirectExecutionValue,
+  directExecutionEnvironments,
+  directExecutionOf,
+  EMPTY_DIRECT_EXECUTION,
+  isDirectExecutionValid,
+} from "@/lib/project-member/directExecution";
+import {
   getRoleEnvironmentLimitationKind,
+  getRolesEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/lib/role";
@@ -92,7 +106,7 @@ import {
   REQUEST_ROLE_REQUIRED_PERMISSIONS,
 } from "@/modules/access-control/requestRoleButton";
 import type { DatabaseMode } from "@/modules/access-control/types";
-import type { ConditionGroupExpr, Factor, Operator } from "@/modules/cel";
+import type { ConditionGroupExpr, Factor } from "@/modules/cel";
 import {
   buildCELExpr,
   emptySimpleExpr,
@@ -117,7 +131,6 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import type { GroupBinding, MemberBinding } from "@/types/v1/member";
-import { AccountType, getAccountTypeByEmail } from "@/types/v1/user";
 import {
   batchConvertParsedExprToCELString,
   formatAbsoluteDateTime,
@@ -135,15 +148,40 @@ import {
 } from "@/utils/cel-attributes";
 import {
   buildConditionExpr,
-  convertFromExpr,
+  readableCondition,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
-import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
+import { MemberBindingResourceTable } from "./MemberBindingResourceTable";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
-import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
 
 const EMPTY_ROLE_SET = new Set<string>();
+
+function RolePermissionPreview({
+  permissions,
+}: {
+  permissions: readonly string[];
+}) {
+  const { t } = useTranslation();
+
+  if (permissions.length === 0) return null;
+
+  return (
+    <FormField title={<>{t("common.permissions")}</>}>
+      <div className="max-h-32 overflow-auto rounded-sm border border-control-border bg-control-bg p-2">
+        <div className="flex flex-wrap gap-1">
+          {permissions.map((permission) => (
+            <Badge
+              key={permission}
+              className="bg-control-bg-hover text-control-light"
+            >
+              {permission}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </FormField>
+  );
+}
 
 // ============================================================
 // MemberTable (view by members)
@@ -454,22 +492,9 @@ function MemberTable({
                               {t("settings.members.pending-invite")}
                             </Badge>
                           )}
-                          {mb.type === "users" &&
-                            mb.user?.email &&
-                            getAccountTypeByEmail(mb.user.email) ===
-                              AccountType.SERVICE_ACCOUNT && (
-                              <Badge variant="secondary" className="text-xs">
-                                {t("settings.members.service-account")}
-                              </Badge>
-                            )}
-                          {mb.type === "users" &&
-                            mb.user?.email &&
-                            getAccountTypeByEmail(mb.user.email) ===
-                              AccountType.WORKLOAD_IDENTITY && (
-                              <Badge variant="secondary" className="text-xs">
-                                {t("settings.members.workload-identity")}
-                              </Badge>
-                            )}
+                          {mb.type === "users" && (
+                            <AccountTypeBadge email={mb.user?.email} />
+                          )}
                           {mb.group && (
                             <span className="text-control-light text-xs">
                               ({mb.group.members.length}{" "}
@@ -506,6 +531,7 @@ function MemberTable({
                         <Button
                           appearance="secondary"
                           size="sm"
+                          aria-label={t("common.edit")}
                           onClick={() => onUpdateBinding(mb)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -756,28 +782,9 @@ function MemberTableByRole({
                                     {t("settings.members.pending-invite")}
                                   </Badge>
                                 )}
-                              {mb.type === "users" &&
-                                mb.user?.email &&
-                                getAccountTypeByEmail(mb.user.email) ===
-                                  AccountType.SERVICE_ACCOUNT && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {t("settings.members.service-account")}
-                                  </Badge>
-                                )}
-                              {mb.type === "users" &&
-                                mb.user?.email &&
-                                getAccountTypeByEmail(mb.user.email) ===
-                                  AccountType.WORKLOAD_IDENTITY && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {t("settings.members.workload-identity")}
-                                  </Badge>
-                                )}
+                              {mb.type === "users" && (
+                                <AccountTypeBadge email={mb.user?.email} />
+                              )}
                               {mb.group?.deleted && (
                                 <Badge
                                   variant="destructive"
@@ -797,6 +804,7 @@ function MemberTableByRole({
                             <Button
                               appearance="secondary"
                               size="sm"
+                              aria-label={t("common.edit")}
                               onClick={() => onUpdateBinding(mb)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -903,7 +911,7 @@ function ExpirationChip({
       className={cn(
         "px-2.5 py-1 text-xs rounded-sm border transition-colors",
         selected
-          ? "bg-accent text-accent-text border-accent"
+          ? "bg-accent text-accent-text border-accent hover:bg-accent-hover"
           : "bg-background text-control border-control-border hover:bg-control-bg"
       )}
       onClick={onClick}
@@ -928,7 +936,7 @@ interface RoleBindingFormState {
   databaseMode: DatabaseMode;
   databaseResources: DatabaseResource[];
   exprGroup: ConditionGroupExpr;
-  environments: string[];
+  directExecution: DirectExecutionValue;
 }
 
 // ============================================================
@@ -945,7 +953,6 @@ function DatabaseResourceSection({
   onExprGroupChange,
   factorList,
   factorOptionConfigMap,
-  factorOperatorOverrideMap,
 }: {
   projectName: string;
   mode: DatabaseMode;
@@ -956,7 +963,6 @@ function DatabaseResourceSection({
   onExprGroupChange: (expr: ConditionGroupExpr) => void;
   factorList: Factor[];
   factorOptionConfigMap: Map<Factor, OptionConfig>;
-  factorOperatorOverrideMap: Map<Factor, Operator[]>;
 }) {
   const { t } = useTranslation();
 
@@ -992,7 +998,6 @@ function DatabaseResourceSection({
           expr={exprGroup}
           factorList={factorList}
           optionConfigMap={factorOptionConfigMap}
-          factorOperatorOverrideMap={factorOperatorOverrideMap}
           onUpdate={onExprGroupChange}
         />
       )}
@@ -1060,15 +1065,6 @@ function ProjectRoleBindingForm({
     ],
     []
   );
-  const factorOperatorOverrideMap = useMemo(
-    () =>
-      new Map<Factor, Operator[]>([
-        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-        [CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME, ["_==_"]],
-        [CEL_ATTRIBUTE_RESOURCE_TABLE_NAME, ["_==_", "@in"]],
-      ]),
-    []
-  );
   const factorOptionConfigMap = useMemo(
     () =>
       factorList.reduce((map, factor) => {
@@ -1095,10 +1091,10 @@ function ProjectRoleBindingForm({
     () => form.role && roleHasDatabaseLimitation(form.role),
     [form.role]
   );
-  const envKind = useMemo(
-    () => (form.role ? getRoleEnvironmentLimitationKind(form.role) : undefined),
-    [form.role]
-  );
+  // Not memoized: the role store may fill in after the form mounts.
+  const envKind = form.role
+    ? getRoleEnvironmentLimitationKind(form.role)
+    : undefined;
 
   const handleRoleChange = (role: string) => {
     onChange({
@@ -1107,7 +1103,7 @@ function ProjectRoleBindingForm({
       databaseMode: "ALL",
       databaseResources: [],
       exprGroup: wrapAsGroup(emptySimpleExpr()),
-      environments: [],
+      directExecution: EMPTY_DIRECT_EXECUTION,
     });
   };
 
@@ -1171,25 +1167,10 @@ function ProjectRoleBindingForm({
           multiple={false}
           scope="project"
         />
+        <RoleDescription role={form.role} roleList={roleList} />
       </FormField>
 
-      {/* Permissions display */}
-      {permissions.length > 0 && (
-        <FormField title={<>{t("common.permissions")}</>}>
-          <div className="max-h-32 overflow-auto border rounded-sm bg-control-bg p-2">
-            <div className="flex flex-wrap gap-1">
-              {permissions.map((perm) => (
-                <span
-                  key={perm}
-                  className="inline-block rounded-xs bg-control-bg-hover px-1.5 py-0.5 text-xs text-control-light"
-                >
-                  {perm}
-                </span>
-              ))}
-            </div>
-          </div>
-        </FormField>
-      )}
+      <RolePermissionPreview permissions={permissions} />
 
       {/* Reason */}
       <FormField
@@ -1234,21 +1215,16 @@ function ProjectRoleBindingForm({
           }
           factorList={factorList}
           factorOptionConfigMap={factorOptionConfigMap}
-          factorOperatorOverrideMap={factorOperatorOverrideMap}
         />
       )}
 
-      {/* Environments (conditional on role) */}
       {envKind && (
-        <FormField title={<>{t("common.environments")}</>}>
-          <DDLWarningCallout type="drawer" kind={envKind} />
-          <EnvironmentSelect
-            multiple
-            portal
-            value={form.environments}
-            onChange={(envs) => onChange({ ...form, environments: envs })}
-          />
-        </FormField>
+        <DirectExecutionField
+          kind={envKind}
+          lead="grant"
+          value={form.directExecution}
+          onChange={(next) => onChange({ ...form, directExecution: next })}
+        />
       )}
 
       {/* Expiration */}
@@ -1346,6 +1322,10 @@ function EditMemberRoleDrawer({
   initialBindings?: string[];
 }) {
   const { t } = useTranslation();
+  const environmentList = useEnvironmentList();
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
   const patchWorkspaceIamPolicy = useAppStore(
     (state) => state.patchWorkspaceIamPolicy
   );
@@ -1415,6 +1395,17 @@ function EditMemberRoleDrawer({
     if (projectName) return member.projectRoleBindings.map((b) => b.role);
     return [...member.workspaceLevelRoles];
   });
+  const selectedRolePermissions = useMemo(
+    () => [
+      ...new Set(
+        selectedRoles.flatMap(
+          (role) =>
+            roleList.find(({ name }) => name === role)?.permissions ?? []
+        )
+      ),
+    ],
+    [roleList, selectedRoles]
+  );
   const [isRequesting, setIsRequesting] = useState(false);
   const [showNestedGrant, setShowNestedGrant] = useState(false);
 
@@ -1428,7 +1419,7 @@ function EditMemberRoleDrawer({
     databaseMode: "ALL",
     databaseResources: [],
     exprGroup: wrapAsGroup(emptySimpleExpr()),
-    environments: [],
+    directExecution: EMPTY_DIRECT_EXECUTION,
   }));
 
   useEscapeKey(true, onClose);
@@ -1445,28 +1436,21 @@ function EditMemberRoleDrawer({
   }, [workspaceProfile, form.role]);
 
   // Helpers for project edit mode
-  const getSingleBindingRows = useCallback(
+  const getBindingScope = useCallback(
     (
       binding: Binding
     ): {
-      databaseResource?: DatabaseResource;
+      databaseResources?: DatabaseResource[];
       expiration?: Date;
-    }[] => {
-      if (!binding.parsedExpr) return [{}];
-      const conditionExpr = convertFromExpr(binding.parsedExpr);
-      const base: { expiration?: Date } = {};
-      if (conditionExpr.expiredTime)
-        base.expiration = new Date(conditionExpr.expiredTime);
-      if (
-        conditionExpr.databaseResources &&
-        conditionExpr.databaseResources.length > 0
-      ) {
-        return conditionExpr.databaseResources.map((r) => ({
-          ...base,
-          databaseResource: r,
-        }));
-      }
-      return [base];
+    } => {
+      if (!binding.parsedExpr) return { databaseResources: [] };
+      const conditionExpr = readableCondition(binding.parsedExpr);
+      return {
+        databaseResources: conditionExpr.databaseResources,
+        expiration: conditionExpr.expiredTime
+          ? new Date(conditionExpr.expiredTime)
+          : undefined,
+      };
     },
     []
   );
@@ -1556,7 +1540,7 @@ function EditMemberRoleDrawer({
             const environments =
               form.role &&
               getRoleEnvironmentLimitationKind(form.role) !== undefined
-                ? form.environments
+                ? directExecutionEnvironments(form.directExecution)
                 : undefined;
             const hasCondition =
               form.expirationTimestampInMS !== undefined ||
@@ -1744,6 +1728,11 @@ function EditMemberRoleDrawer({
     }
   };
 
+  // The simple role picker writes bindings without an environment clause, so a
+  // DDL/DML role granted here runs everywhere; say so before it is saved.
+  const unscopedDirectExecutionKind =
+    getRolesEnvironmentLimitationKind(selectedRoles);
+
   const allowConfirm = isProjectCreateMode
     ? selectedBindings.length > 0 &&
       !!form.role &&
@@ -1757,7 +1746,8 @@ function EditMemberRoleDrawer({
         roleHasDatabaseLimitation(form.role) &&
         form.databaseMode === "EXPRESSION" &&
         !validateSimpleExpr(form.exprGroup)
-      )
+      ) &&
+      isDirectExecutionValid(form.directExecution)
     : isEditMode
       ? selectedRoles.length > 0
       : selectedBindings.length > 0 && selectedRoles.length > 0;
@@ -1768,7 +1758,7 @@ function EditMemberRoleDrawer({
     return (
       <>
         <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-          <SheetContent width="medium">
+          <SheetContent width="wide">
             <SheetHeader>
               <div className="flex min-w-0 items-center justify-between gap-x-2">
                 <SheetTitle className="truncate">
@@ -1794,28 +1784,39 @@ function EditMemberRoleDrawer({
                     {t("common.no-data")}
                   </div>
                 )}
-                {liveProjectRoleBindings.map((binding, idx) => {
-                  const rows = getSingleBindingRows(binding);
-                  const envLimitation =
-                    getProjectRoleBindingEnvironmentLimitationState(binding);
-                  const bindingKind = getRoleEnvironmentLimitationKind(
-                    binding.role
+                {liveProjectRoleBindings.map((binding, index) => {
+                  // Keyed by role and condition so each card keeps its column
+                  // widths when another card goes; the API can store the same
+                  // pair twice, so repeats are numbered.
+                  const identity = `${binding.role}-${binding.condition?.expression ?? ""}`;
+                  const repeat = liveProjectRoleBindings
+                    .slice(0, index)
+                    .filter(
+                      (b) =>
+                        `${b.role}-${b.condition?.expression ?? ""}` ===
+                        identity
+                    ).length;
+                  const { databaseResources, expiration } =
+                    getBindingScope(binding);
+                  const directExecution = directExecutionOf(
+                    binding.role,
+                    readableCondition(binding.parsedExpr)
                   );
                   const isExpired = isBindingPolicyExpired(binding);
                   return (
                     <div
-                      key={`${binding.role}-${idx}`}
+                      key={`${identity}-${repeat}`}
                       className={cn(
                         "border rounded-sm",
                         isExpired && "opacity-60"
                       )}
                     >
                       {/* Role header */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-control-bg border-b">
-                        <div className="flex items-center gap-x-2">
+                      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 bg-control-bg border-b">
+                        <div className="flex min-w-0 items-center gap-x-2">
                           <span
                             className={cn(
-                              "font-medium text-sm",
+                              "truncate font-medium text-sm",
                               isExpired && "line-through"
                             )}
                           >
@@ -1827,15 +1828,24 @@ function EditMemberRoleDrawer({
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-x-1">
-                          <Button
-                            appearance="secondary"
-                            size="sm"
-                            title={t("common.edit")}
-                            onClick={() => setShowNestedGrant(true)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                        <div className="flex items-center gap-x-4 text-sm">
+                          <div className="flex items-center gap-x-2">
+                            <span className="text-control-light">
+                              {t("common.expiration")}
+                            </span>
+                            <span className="text-main">
+                              {expiration ? (
+                                <HumanizeTs
+                                  mode="operational"
+                                  tsMs={expiration.getTime()}
+                                />
+                              ) : (
+                                t("project.members.never-expires")
+                              )}
+                            </span>
+                          </div>
+                          {/* Delete only: the grant form adds a role, so a
+                              pencil here would read as editing this one. */}
                           <Button
                             appearance="secondary"
                             size="sm"
@@ -1848,55 +1858,34 @@ function EditMemberRoleDrawer({
                         </div>
                       </div>
 
-                      {/* Environment info banner */}
-                      {envLimitation && bindingKind && (
+                      {directExecution && (
                         <div className="mx-4 mt-3">
-                          <MemberBindingEnvironmentBanner
-                            envLimitation={envLimitation}
-                            bindingKind={bindingKind}
+                          <DirectExecutionCallout
+                            kind={directExecution.kind}
+                            lead="binding"
+                            scope={directExecution.scope}
+                            environmentList={environmentList}
+                            hasEnvTierFeature={hasEnvTierFeature}
                           />
                         </div>
                       )}
 
                       {/* Database resources table */}
                       <div className="p-4">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t("common.database")}</TableHead>
-                              <TableHead>{t("common.schema")}</TableHead>
-                              <TableHead>{t("common.table")}</TableHead>
-                              <TableHead>{t("common.expiration")}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {rows.map((row, rowIdx) => (
-                              <TableRow key={rowIdx}>
-                                <TableCell>
-                                  <MemberDatabaseResourceName
-                                    resource={row.databaseResource}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  {row.databaseResource?.schema ?? "*"}
-                                </TableCell>
-                                <TableCell>
-                                  {row.databaseResource?.table ?? "*"}
-                                </TableCell>
-                                <TableCell>
-                                  {row.expiration ? (
-                                    <HumanizeTs
-                                      mode="operational"
-                                      tsMs={row.expiration.getTime()}
-                                    />
-                                  ) : (
-                                    t("project.members.never-expires")
-                                  )}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        {databaseResources ? (
+                          <MemberBindingResourceTable
+                            resources={databaseResources}
+                          />
+                        ) : (
+                          <div className="flex flex-col gap-y-2">
+                            <span className="text-sm text-control-light">
+                              {t("cel.condition.self")}
+                            </span>
+                            <pre className="whitespace-pre-wrap break-all text-sm">
+                              {binding.condition?.expression}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1982,15 +1971,31 @@ function EditMemberRoleDrawer({
                 />
               </div>
             ) : (
-              <FormField
-                title={<>{t("settings.members.select-role", { count: 2 })}</>}
-              >
-                <RoleSelect
-                  value={selectedRoles}
-                  onChange={setSelectedRoles}
-                  scope={projectName ? "project" : undefined}
-                />
-              </FormField>
+              <>
+                <FormField
+                  title={<>{t("settings.members.select-role", { count: 2 })}</>}
+                >
+                  <RoleSelect
+                    value={selectedRoles}
+                    onChange={setSelectedRoles}
+                    scope={projectName ? "project" : undefined}
+                  />
+                  {unscopedDirectExecutionKind && (
+                    <DirectExecutionCallout
+                      kind={unscopedDirectExecutionKind}
+                      lead="binding"
+                      scope={{ type: "all" }}
+                      environmentList={environmentList}
+                      hasEnvTierFeature={hasEnvTierFeature}
+                    />
+                  )}
+                </FormField>
+                {!projectName && (
+                  <RolePermissionPreview
+                    permissions={selectedRolePermissions}
+                  />
+                )}
+              </>
             )}
           </div>
         </SheetBody>
@@ -2270,10 +2275,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           description={
             <>
               {t("project.members.description")}{" "}
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-                className="text-accent"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/roles/?source=console#project-roles" />
             </>
           }
         />

@@ -1,0 +1,46 @@
+PLAN FRAGMENT 0
+ OUTPUT EXPRS:2: customer_id | 5: sum
+  PARTITION: UNPARTITIONED
+
+  RESULT SINK
+
+  4:EXCHANGE
+
+PLAN FRAGMENT 1
+ OUTPUT EXPRS:
+  PARTITION: HASH_PARTITIONED: 2: customer_id
+
+  STREAM DATA SINK
+    EXCHANGE ID: 04
+    UNPARTITIONED
+
+  3:AGGREGATE (merge finalize)
+  |  output: sum(5: sum)
+  |  group by: 2: customer_id
+  |  
+  2:EXCHANGE
+
+PLAN FRAGMENT 2
+ OUTPUT EXPRS:
+  colocate exec groups: ExecGroup{groupId=1, nodeIds=[0, 1]}
+  PARTITION: RANDOM
+
+  STREAM DATA SINK
+    EXCHANGE ID: 02
+    HASH_PARTITIONED: 2: customer_id
+
+  1:AGGREGATE (update serialize)
+  |  STREAMING
+  |  output: sum(3: total)
+  |  group by: 2: customer_id
+  |  
+  0:OlapScanNode
+     TABLE: orders
+     PREAGGREGATION: ON
+     PREDICATES: 3: total > 880
+     partitions=1/1
+     rollup: orders
+     tabletRatio=2/2
+     tabletList=10015,10017
+     cardinality=2500
+     avgRowSize=2.0

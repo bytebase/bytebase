@@ -8,8 +8,8 @@ import {
   PLAN_READABLE_SCALE,
   planFitsViewport,
   planFitViewport,
-  planGuideLevels,
   planIndentPixels,
+  planIndentStep,
   planMiniMap,
   planNodeCenter,
   planNodeOnScreen,
@@ -184,25 +184,25 @@ describe("layoutPlan with collapsed subtrees", () => {
 });
 
 describe("planIndentPixels", () => {
-  test("steps with depth and then stops, so deep rows stay readable", () => {
-    expect([0, 1, 2, 6, 7, 30].map(planIndentPixels)).toEqual([
-      0, 12, 24, 72, 72, 72,
-    ]);
+  test("steps with depth at every level", () => {
+    expect([0, 1, 2, 6, 7, 30].map((depth) => planIndentPixels(depth))).toEqual(
+      [0, 12, 24, 72, 84, 360]
+    );
+    expect(planIndentPixels(30, 4)).toBe(120);
   });
 });
 
-describe("planGuideLevels", () => {
-  test("draws one level per indent step the row actually has", () => {
-    expect(planGuideLevels([])).toEqual([]);
-    expect(planGuideLevels([true, false])).toEqual([true, false]);
+describe("planIndentStep", () => {
+  test("keeps the full step while the plan's indent fits", () => {
+    expect([0, 1, 7, 12].map(planIndentStep)).toEqual([12, 12, 12, 12]);
   });
 
-  test("keeps the levels nearest the row once the indent stops growing", () => {
-    const deep = [true, true, false, true, false, true, false, true];
-    // Eight levels of nesting, six columns of indent: the six closest to the
-    // row survive, so the connector into its own parent is always drawn.
-    expect(planGuideLevels(deep)).toEqual(deep.slice(2));
-    expect(planGuideLevels(deep)).toHaveLength(planIndentPixels(8) / 12);
+  test("narrows the step so a deep plan's indent stays bounded", () => {
+    expect(planIndentStep(13)).toBe(11);
+    expect(planIndentStep(30)).toBe(4);
+    expect(30 * planIndentStep(30)).toBeLessThanOrEqual(144);
+    // Past the narrowest step the guides still line up; the indent grows.
+    expect(planIndentStep(500)).toBe(2);
   });
 });
 
@@ -333,6 +333,29 @@ describe("planOpeningViewport", () => {
       6
     );
     expect(planFitsViewport(layout, size, view)).toBe(false);
+  });
+
+  test("centers the focus node when it is given", () => {
+    const tree = parseFixture(hashJoinAggregateSort);
+    const layout = layoutPlan(tree.root);
+    const size = { width: 800, height: 300 };
+    // The orders scan sits at the bottom of the plan, below what opens on the
+    // root.
+    const focus = layout.nodes.find((entry) => entry.node.id === "0.0.0.0");
+    if (!focus) throw new Error("the fixture's orders scan is missing");
+    const view = planOpeningViewport(layout, size, focus.node.id);
+    const center = planNodeCenter(focus);
+
+    expect(view.scale).toBe(PLAN_READABLE_SCALE);
+    expect(view.y).toBeLessThan(0);
+    // Centered, unless that would scroll past the plan's bottom edge.
+    expect(view.y + center.y * view.scale).toBeCloseTo(
+      Math.max(
+        size.height / 2,
+        center.y * view.scale + size.height - layout.height * view.scale
+      ),
+      6
+    );
   });
 
   test("centers the root across a plan wider than the screen", () => {

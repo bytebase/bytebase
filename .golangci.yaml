@@ -22,7 +22,7 @@ linters:
         - (*database/sql.Tx).Rollback
         - (github.com/jackc/pgx/v5.Tx).Rollback
     exhaustive:
-      explicit-exhaustive-switch: true
+      explicit-exhaustive: true
     forbidigo:
       forbid:
         - pattern: fmt\.Errorf
@@ -57,6 +57,8 @@ linters:
     revive:
       enable-all-rules: true
       rules:
+        - name: multiline-if-init
+          disabled: true
         - name: file-header
           disabled: true
         - name: line-length-limit

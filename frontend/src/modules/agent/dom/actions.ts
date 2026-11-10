@@ -18,6 +18,23 @@ export interface DomActionResult {
   message: string;
 }
 
+export const BACKGROUND_PAGE_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message:
+    "This chat is not selected. Return to it before using the current page.",
+};
+const PASSWORD_FIELD_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message: "Password fields are hidden from the agent.",
+};
+const SENSITIVE_FIELD_ACTION_RESULT: DomActionResult = {
+  success: false,
+  message: "Sensitive content is hidden from the agent.",
+};
+
+const isAgentSensitive = (element: Element): boolean =>
+  element.closest("[data-agent-sensitive]") !== null;
+
 function getCenter(el: Element): { x: number; y: number } {
   const rect = el.getBoundingClientRect();
   return {
@@ -126,10 +143,13 @@ async function handleClick(el: Element): Promise<DomActionResult> {
 
 async function handleInput(
   el: Element,
-  value: string
+  value: string,
+  canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
   // Monaco editor
   const monacoEditor = await findMonacoEditor(el);
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(el)) return SENSITIVE_FIELD_ACTION_RESULT;
   if (monacoEditor) {
     const normalizedValue = normalizeMultilineValue(value);
     monacoEditor.setValue(normalizedValue);
@@ -152,6 +172,10 @@ async function handleInput(
       success: false,
       message: `No input element found within [${el.tagName.toLowerCase()}]`,
     };
+  }
+  if (isAgentSensitive(target)) return SENSITIVE_FIELD_ACTION_RESULT;
+  if (target instanceof HTMLInputElement && target.type === "password") {
+    return PASSWORD_FIELD_ACTION_RESULT;
   }
 
   target.focus();
@@ -180,20 +204,33 @@ async function handleSelect(
   };
 }
 
-async function handleRead(el: Element): Promise<DomActionResult> {
+async function handleRead(
+  el: Element,
+  canUseCurrentPage?: () => boolean
+): Promise<DomActionResult> {
   // Monaco editor — read full content via API
   const monacoEditor = await findMonacoEditor(el);
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(el) || el.querySelector("[data-agent-sensitive]")) {
+    return SENSITIVE_FIELD_ACTION_RESULT;
+  }
   if (monacoEditor) {
     return { success: true, message: monacoEditor.getValue() };
   }
 
   // Standard inputs
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    if (el instanceof HTMLInputElement && el.type === "password") {
+      return PASSWORD_FIELD_ACTION_RESULT;
+    }
     return { success: true, message: el.value };
   }
 
   const inner = findInnerInput(el);
   if (inner) {
+    if (inner instanceof HTMLInputElement && inner.type === "password") {
+      return PASSWORD_FIELD_ACTION_RESULT;
+    }
     return { success: true, message: inner.value };
   }
 
@@ -208,17 +245,20 @@ async function handleScroll(el: Element): Promise<DomActionResult> {
 
 export async function executeDomAction(
   params: DomActionParams,
-  element: Element
+  element: Element,
+  canUseCurrentPage?: () => boolean
 ): Promise<DomActionResult> {
+  if (canUseCurrentPage?.() === false) return BACKGROUND_PAGE_ACTION_RESULT;
+  if (isAgentSensitive(element)) return SENSITIVE_FIELD_ACTION_RESULT;
   switch (params.type) {
     case "click":
       return handleClick(element);
     case "input":
-      return handleInput(element, params.value ?? "");
+      return handleInput(element, params.value ?? "", canUseCurrentPage);
     case "select":
       return handleSelect(element, params.value ?? "");
     case "read":
-      return handleRead(element);
+      return handleRead(element, canUseCurrentPage);
     case "scroll":
       return handleScroll(element);
     default:

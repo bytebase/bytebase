@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  getCellDisplayText,
+  PlainCellValue,
+} from "@/components/PlainCellValue";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -42,7 +46,6 @@ import {
   renderRowFieldsWithSearchMatches,
   renderTextWithSearchMatches,
 } from "./detail-panel-search";
-import { getCellDisplayText, PlainCellValue } from "./PlainCellValue";
 import { PrettyJSON } from "./PrettyJSON";
 import { RowDataBlock } from "./RowDataBlock";
 import { TextSearchControl } from "./TextSearchControl";

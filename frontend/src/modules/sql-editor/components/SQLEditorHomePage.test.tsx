@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { useSharedGuideContext } from "@/modules/workspace-setup-guide/GuideContextProvider";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -42,6 +43,7 @@ vi.mock("react-resizable-panels", () => ({
 }));
 
 vi.mock("@/app/router", () => ({
+  useCurrentRoute: () => ({ name: "workspace.sql-editor", params: {} }),
   useNavigate: () => ({
     resolve: vi.fn(() => ({ fullPath: "/plans/create" })),
   }),
@@ -52,7 +54,23 @@ vi.mock("@/components/IAMRemindDialog", () => ({
 }));
 
 vi.mock("@/modules/workspace-setup-guide/WorkspaceSetupGuide", () => ({
-  WorkspaceSetupGuide: () => <div>unified-guide</div>,
+  WorkspaceSetupGuide: () => {
+    const { contextReady } = useSharedGuideContext();
+    return <div>{contextReady ? "unified-guide" : "loading-guide"}</div>;
+  },
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useIntroStateByKey: () => false,
+}));
+
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  readGuideWorkspaceUsage: () => undefined,
+  readSelectedGuideScenarioId: () => undefined,
+}));
+
+vi.mock("@/modules/workspace-setup-guide/useGuideContext", () => ({
+  useGuideContext: () => ({ context: {}, contextReady: true }),
 }));
 
 vi.mock("@/components/ui/layer", () => ({
@@ -128,7 +146,8 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
-    (selector: (state: unknown) => unknown) => selector({}),
+    (selector: (state: unknown) => unknown) =>
+      selector({ workspaceSetupGuideEnabled: () => true }),
     { getState: vi.fn() }
   ),
 }));

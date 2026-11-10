@@ -273,6 +273,19 @@ func (x *Project_ExecutionRetryPolicy) Equal(y *Project_ExecutionRetryPolicy) bo
 	return true
 }
 
+func (x *Project_ExportSetting) Equal(y *Project_ExportSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.Sharepoint.Equal(y.Sharepoint) {
+		return false
+	}
+	return true
+}
+
 func (x *Project) Equal(y *Project) bool {
 	if x == y {
 		return true
@@ -359,6 +372,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
 		return false
 	}
+	if !x.ExportSetting.Equal(y.ExportSetting) {
+		return false
+	}
 	return true
 }
 
@@ -438,6 +454,19 @@ func (x *TestWebhookResponse) Equal(y *TestWebhookResponse) bool {
 		return x == nil && y == nil
 	}
 	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
+func (x *SharePointDestination) Equal(y *SharePointDestination) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Url != y.Url {
 		return false
 	}
 	return true

@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, redirect } from "react-router";
+import { type RouteObject, redirect } from "react-router";
 import { BodyLayout } from "@/app/layouts/BodyLayout";
 import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/app/RouteErrorPage";
@@ -43,6 +43,7 @@ import {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_SQL_REVIEW,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
@@ -57,6 +58,7 @@ import {
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
   WORKSPACE_ROUTE_GLOBAL_MASKING,
   WORKSPACE_ROUTE_GROUPS,
   WORKSPACE_ROUTE_IDENTITY_PROVIDER_DETAIL,
@@ -80,7 +82,9 @@ import { issueDetailRedirectLoader } from "@/app/router/issueDetailRedirect";
 import { lazyPage } from "@/app/router/lazyPage";
 import { ProjectRouteGate } from "@/app/router/ProjectRouteGate";
 import { RouteGroupOutlet } from "@/app/router/RouteGroupOutlet";
+import { releaseDetailRedirectLoader } from "@/app/router/releaseDetailRedirect";
 import type { Permission } from "@/types";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // Workspace and project routes nested under the dashboard layouts. Leaf route
 // modules are lazy-loaded from their owner under src/routes.
@@ -182,43 +186,49 @@ const workspaceLevelRoutes: RouteObject[] = [
         index: true,
         handle: {
           name: WORKSPACE_ROUTE_SQL_REVIEW,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.list",
-            "bb.policies.get",
-          ],
+          // The V2 page reads the review rule policy only.
+          requiredPermissionList: (): Permission[] =>
+            sqlReviewV2Enabled()
+              ? ["bb.policies.get"]
+              : ["bb.reviewConfigs.list", "bb.policies.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/SQLReviewPage"),
           (m) => m.SQLReviewPage
         ),
       },
-      {
-        path: "new",
-        handle: {
-          name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.create",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/SQLReviewCreatePage"),
-          (m) => m.SQLReviewCreatePage
-        ),
-      },
-      {
-        path: ":sqlReviewPolicySlug",
-        handle: {
-          name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.get",
-            "bb.policies.get",
-          ],
-        },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/SQLReviewDetailPage"),
-          (m) => m.SQLReviewDetailPage
-        ),
-      },
+      // The v1 review policy pages go away with SQL Review V2.
+      ...(sqlReviewV2Enabled()
+        ? []
+        : [
+            {
+              path: "new",
+              handle: {
+                name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+                requiredPermissionList: (): Permission[] => [
+                  "bb.reviewConfigs.create",
+                ],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/workspace/SQLReviewCreatePage"),
+                (m) => m.SQLReviewCreatePage
+              ),
+            },
+            {
+              path: ":sqlReviewPolicySlug",
+              handle: {
+                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                requiredPermissionList: (): Permission[] => [
+                  "bb.reviewConfigs.get",
+                  "bb.policies.get",
+                ],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/workspace/SQLReviewDetailPage"),
+                (m) => m.SQLReviewDetailPage
+              ),
+            },
+          ]),
     ],
   },
   // /idps — SettingRouteShell layout. The parent carries the route permission
@@ -422,6 +432,20 @@ const workspaceLevelRoutes: RouteObject[] = [
           (m) => m.MCPPage
         ),
       },
+      {
+        path: "export-destinations",
+        handle: {
+          name: WORKSPACE_ROUTE_EXPORT_DESTINATIONS,
+          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
+        },
+        lazy: lazyPage(
+          () =>
+            import(
+              "@/routes/workspace/export-destinations/ExportDestinationsPage"
+            ),
+          (m) => m.ExportDestinationsPage
+        ),
+      },
     ],
   },
 ];
@@ -565,9 +589,10 @@ const projectV1Routes: RouteObject[] = [
       {
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
-        // The project root has no page of its own — redirect to the Issues
-        // tab. `issues` is relative to the parent `projects/:projectId`.
-        element: <Navigate to="issues" replace />,
+        lazy: lazyPage(
+          () => import("@/routes/project/ProjectHomePage"),
+          (m) => m.ProjectHomePage
+        ),
       },
       {
         path: "instances/new",
@@ -829,6 +854,23 @@ const projectV1Routes: RouteObject[] = [
           (m) => m.WorkloadIdentitiesPage
         ),
       },
+      // Dark-launched with SQL Review V2: the route exists only where the
+      // sidebar entry that leads to it does.
+      ...(sqlReviewV2Enabled()
+        ? [
+            {
+              path: "sql-review",
+              handle: {
+                name: PROJECT_V1_ROUTE_SQL_REVIEW,
+                requiredPermissionList: (): Permission[] => ["bb.policies.get"],
+              },
+              lazy: lazyPage(
+                () => import("@/routes/project/ProjectSQLReviewPage"),
+                (m) => m.ProjectSQLReviewPage
+              ),
+            },
+          ]
+        : []),
       {
         path: "settings",
         handle: { name: PROJECT_V1_ROUTE_SETTINGS },
@@ -880,7 +922,7 @@ const projectV1Routes: RouteObject[] = [
             index: true,
             handle: {
               name: PROJECT_V1_ROUTE_RELEASES,
-              requiredPermissionList: (): Permission[] => ["bb.releases.list"],
+              requiredPermissionList: (): Permission[] => ["bb.plans.list"],
             },
             lazy: lazyPage(
               () => import("@/routes/project/ProjectReleaseDashboardPage"),
@@ -891,12 +933,9 @@ const projectV1Routes: RouteObject[] = [
             path: ":releaseId",
             handle: {
               name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
-              requiredPermissionList: (): Permission[] => ["bb.releases.get"],
+              requiredPermissionList: (): Permission[] => ["bb.plans.list"],
             },
-            lazy: lazyPage(
-              () => import("@/routes/project/ProjectReleaseDetailPage"),
-              (m) => m.ProjectReleaseDetailPage
-            ),
+            loader: releaseDetailRedirectLoader,
           },
         ],
       },

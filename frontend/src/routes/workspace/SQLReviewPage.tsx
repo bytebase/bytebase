@@ -12,6 +12,7 @@ import { ResourceLink } from "@/components/sql-review/ResourceLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -27,10 +28,22 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useSQLReviewStore } from "@/stores/sqlReview";
 import type { SQLReviewPolicy } from "@/types";
-import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { hasWorkspacePermissionV2, isDev, sqlReviewPolicySlug } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import {
+  SQLReviewAIReviewSection,
+  useWorkspaceAIReview,
+  useWorkspaceReviewAIPolicy,
+} from "./SQLReviewAIReviewSection";
+import {
+  SQLReviewStandardRulesSection,
+  useWorkspaceStandardRules,
+} from "./SQLReviewStandardRulesSection";
+import { SQLReviewVersionSwitch } from "./SQLReviewVersionSwitch";
 
 // ============================================================
 // PolicyTable
@@ -249,10 +262,27 @@ export function SQLReviewPage() {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const [searchText, setSearchText] = useState("");
+  // With SQL Review V2 the standard rules replace the v1 review policies.
+  const sqlReviewV2 = sqlReviewV2Enabled();
+  const standardRules = useWorkspaceStandardRules(sqlReviewV2);
+  const aiReview = useWorkspaceAIReview();
+  const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
+  const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
+  const formParts = [standardRules, aiReview, aiReviewPolicy];
+  const saveParts = [
+    standardRules,
+    aiReview,
+    ...(aiReviewPolicyVisible ? [aiReviewPolicy] : []),
+  ];
+  const isDirty = formParts.some((part) => part.isDirty);
+  const saving = formParts.some((part) => part.saving);
+  const hasSaveableChanges = saveParts.some((part) => part.isDirty);
+  useUnsavedChangesGuard(isDirty);
 
   useEffect(() => {
+    if (sqlReviewV2) return;
     useSQLReviewStore.getState().fetchReviewPolicyList();
-  }, []);
+  }, [sqlReviewV2]);
 
   const policyList = sqlReviewStore.reviewPolicyList;
 
@@ -284,50 +314,96 @@ export function SQLReviewPage() {
 
   return (
     <WorkspacePageLayout className="gap-y-4">
-      <WorkspacePageInfo
-        description={
-          <>
-            {t("sql-review.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-              className="text-accent"
-            />
-          </>
-        }
-      />
-
-      <WorkspacePageToolbar align="end">
-        <SearchInput
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder={t("common.filter-by-name")}
-          autoFocus
-          wrapperClassName="max-w-full"
-        />
-        {hasCreatePermission && (
-          <Button onClick={navigateToCreate}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t("common.create")}
-          </Button>
-        )}
-      </WorkspacePageToolbar>
-
-      {policyList.length > 0 ? (
-        <PolicyTable
-          policies={filteredList}
-          searchText={searchText}
-          onDelete={handleDelete}
-        />
+      {isDev() && <SQLReviewVersionSwitch />}
+      {sqlReviewV2 ? (
+        <>
+          <SQLReviewStandardRulesSection standardRules={standardRules} />
+          <SQLReviewAIReviewSection
+            aiReview={aiReview}
+            policy={aiReviewPolicy}
+          />
+        </>
       ) : (
-        <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
-          <span>{t("common.no-data")}</span>
-          {hasCreatePermission && (
-            <Button size="sm" onClick={navigateToCreate}>
-              <Plus className="w-4 h-4 mr-1" />
-              {t("common.create")}
-            </Button>
+        <>
+          <WorkspacePageInfo
+            description={
+              <>
+                {t("sql-review.description")}{" "}
+                <LearnMoreLink href="https://docs.bytebase.com/sql-review/review-rules?source=console" />
+              </>
+            }
+          />
+
+          <WorkspacePageToolbar align="end">
+            <SearchInput
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder={t("common.filter-by-name")}
+              autoFocus
+              wrapperClassName="max-w-full"
+            />
+            {hasCreatePermission && (
+              <Button onClick={navigateToCreate}>
+                <Plus className="w-4 h-4 mr-1" />
+                {t("common.create")}
+              </Button>
+            )}
+          </WorkspacePageToolbar>
+
+          {policyList.length > 0 ? (
+            <PolicyTable
+              policies={filteredList}
+              searchText={searchText}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
+              <span>{t("common.no-data")}</span>
+            </div>
           )}
-        </div>
+        </>
+      )}
+
+      {isDirty && (
+        <StickyActionFooter
+          contentPadding={false}
+          left={
+            <Button
+              appearance="outline"
+              disabled={saving}
+              onClick={() => {
+                for (const part of formParts) part.revert();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+          }
+          right={
+            <Button
+              disabled={
+                saving ||
+                !hasSaveableChanges ||
+                (aiReviewPolicyVisible && aiReviewPolicy.error !== undefined)
+              }
+              onClick={async () => {
+                const saves = saveParts
+                  .filter((part) => part.isDirty)
+                  .map((part) => part.save());
+                // One click reports one update, and only when every changed
+                // part saved.
+                if ((await Promise.all(saves)).every(Boolean)) {
+                  pushNotification({
+                    module: "bytebase",
+                    style: "SUCCESS",
+                    title: t("common.updated"),
+                  });
+                }
+              }}
+            >
+              {t("common.update")}
+            </Button>
+          }
+        />
       )}
     </WorkspacePageLayout>
   );

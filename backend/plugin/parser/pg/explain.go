@@ -14,27 +14,40 @@ func init() {
 	base.RegisterExplainStatementFunc(storepb.Engine_POSTGRES, explainStatement)
 	// CockroachDB parses through the PostgreSQL grammar here as it does for the
 	// read-only gate (see query.go).
-	base.RegisterExplainStatementFunc(storepb.Engine_COCKROACHDB, explainStatementDefaultFormat)
+	base.RegisterExplainStatementFunc(storepb.Engine_COCKROACHDB, cockroachExplainStatement)
+}
+
+// plannedStatement returns the statement an EXPLAIN should be built around, and
+// whether one can be: a statement that already asks for a plan is rebuilt around
+// the statement it plans, and one whose planned statement cannot be located runs
+// as the caller wrote it rather than becoming the plan of a plan.
+func plannedStatement(statement string) (planned string, rebuild bool, err error) {
+	node, err := singleStatement(statement)
+	if err != nil {
+		return "", false, err
+	}
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok {
+		return statement, true, nil
+	}
+	if isExplainAnalyzeOmni(explain) {
+		return "", false, base.ErrExplainAnalyzeExecutes
+	}
+	inner, ok := explainedText(explain, statement)
+	if !ok {
+		return statement, false, nil
+	}
+	return inner, true, nil
 }
 
 // explainStatement implements base.ExplainStatement for PostgreSQL.
 func explainStatement(statement string, format base.ExplainFormat) (string, error) {
-	node, err := singleStatement(statement)
+	planned, rebuild, err := plannedStatement(statement)
 	if err != nil {
 		return "", err
 	}
-	planned := statement
-	if explain, ok := node.(*ast.ExplainStmt); ok {
-		if isExplainAnalyzeOmni(explain) {
-			return "", base.ErrExplainAnalyzeExecutes
-		}
-		inner, ok := explainedText(explain, statement)
-		if !ok {
-			// Nothing to rebuild around: run what the caller wrote rather than
-			// plan a plan.
-			return statement, nil
-		}
-		planned = inner
+	if !rebuild {
+		return planned, nil
 	}
 	switch format {
 	case base.ExplainFormatJSON:
@@ -80,12 +93,26 @@ func explainFormat(explain *ast.ExplainStmt) string {
 	return format
 }
 
-// explainStatementDefaultFormat plans in the engine's default format whatever the
-// request asked for. CockroachDB's EXPLAIN takes its own option list rather than
-// PostgreSQL's FORMAT, so it offers only the default plan (the driver capability
-// table refuses any other format before a request gets here).
-func explainStatementDefaultFormat(statement string, _ base.ExplainFormat) (string, error) {
-	return explainStatement(statement, base.ExplainFormatDefault)
+// cockroachExplainStatement implements base.ExplainStatement for CockroachDB,
+// whose EXPLAIN takes its own option list rather than PostgreSQL's FORMAT and
+// has no option that returns a plan as a document.
+//
+// What it does have is DISTSQL, which returns the text plan as always and a
+// link to a diagram of the physical flow beside it; the payload in that link is
+// the one machine-readable plan CockroachDB publishes, and the driver decodes
+// it. The statement does not execute, as EXPLAIN ANALYZE (DISTSQL) would.
+func cockroachExplainStatement(statement string, format base.ExplainFormat) (string, error) {
+	planned, rebuild, err := plannedStatement(statement)
+	if err != nil {
+		return "", err
+	}
+	if !rebuild {
+		return planned, nil
+	}
+	if format == base.ExplainFormatJSON {
+		return "EXPLAIN (DISTSQL) " + planned, nil
+	}
+	return "EXPLAIN " + planned, nil
 }
 
 // singleStatement returns the one statement in text. An explain request plans one

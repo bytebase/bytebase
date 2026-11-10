@@ -1,7 +1,7 @@
 package tidb
 
 import (
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	omniast "github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,11 +11,10 @@ import (
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, ast := range asts {
-		tidbAST, ok := GetTiDBAST(ast)
+		node, ok := GetOmniNode(ast)
 		if !ok {
 			return nil, errors.New("expected TiDB AST")
 		}
-		node := tidbAST.Node
 		t := getStatementType(node)
 		sqlTypeSet[t] = true
 	}
@@ -27,45 +26,49 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 }
 
 // getStatementType returns the type of statement.
-func getStatementType(stmt tidbast.StmtNode) storepb.StatementType {
-	switch v := stmt.(type) {
+func getStatementType(stmt omniast.Node) storepb.StatementType {
+	switch stmt.(type) {
 	// DDL statements
-	case *tidbast.CreateDatabaseStmt:
+	case *omniast.CreateDatabaseStmt:
 		return storepb.StatementType_CREATE_DATABASE
-	case *tidbast.CreateTableStmt:
+	case *omniast.CreateTableStmt:
 		return storepb.StatementType_CREATE_TABLE
-	case *tidbast.CreateViewStmt:
+	case *omniast.CreateViewStmt:
 		return storepb.StatementType_CREATE_VIEW
-	case *tidbast.CreateIndexStmt:
+	case *omniast.CreateIndexStmt:
 		return storepb.StatementType_CREATE_INDEX
 
-	case *tidbast.DropDatabaseStmt:
+	case *omniast.DropDatabaseStmt:
 		return storepb.StatementType_DROP_DATABASE
-	case *tidbast.DropTableStmt:
-		if v.IsView {
-			return storepb.StatementType_DROP_VIEW
-		}
+	case *omniast.DropTableStmt:
 		return storepb.StatementType_DROP_TABLE
-	case *tidbast.DropIndexStmt:
+	case *omniast.DropViewStmt:
+		return storepb.StatementType_DROP_VIEW
+	case *omniast.DropIndexStmt:
 		return storepb.StatementType_DROP_INDEX
 
-	case *tidbast.AlterDatabaseStmt:
+	case *omniast.AlterDatabaseStmt:
 		return storepb.StatementType_ALTER_DATABASE
-	case *tidbast.AlterTableStmt:
+	case *omniast.AlterTableStmt:
 		return storepb.StatementType_ALTER_TABLE
 
-	case *tidbast.TruncateTableStmt:
+	case *omniast.TruncateStmt:
 		return storepb.StatementType_TRUNCATE
-	case *tidbast.RenameTableStmt:
+	case *omniast.RenameTableStmt:
 		return storepb.StatementType_RENAME
 
 	// DML statements
-	case *tidbast.DeleteStmt:
+	case *omniast.DeleteStmt:
 		return storepb.StatementType_DELETE
-	case *tidbast.InsertStmt:
+	case *omniast.InsertStmt:
 		return storepb.StatementType_INSERT
-	case *tidbast.UpdateStmt:
+	case *omniast.UpdateStmt:
 		return storepb.StatementType_UPDATE
+
+	// A procedure call or a prepared statement runs code the statement text does
+	// not show. PREPARE only defines the statement, so it stays unclassified.
+	case *omniast.CallStmt, *omniast.ExecuteStmt:
+		return storepb.StatementType_EXECUTE
 	}
 
 	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

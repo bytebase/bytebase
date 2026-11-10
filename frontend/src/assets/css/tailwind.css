@@ -2,6 +2,17 @@
 
 @theme {
   --radius-full: 9999px;
+  --animate-progress-indeterminate: progress-indeterminate 1.2s ease-in-out
+    infinite;
+
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
 }
 
 /*

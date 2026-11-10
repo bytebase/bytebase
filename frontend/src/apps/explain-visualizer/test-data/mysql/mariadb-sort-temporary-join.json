@@ -1,0 +1,40 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost": 53.47180584,
+    "filesort": {
+      "sort_key": "sum(o.total) desc",
+      "temporary_table": {
+        "nested_loop": [
+          {
+            "table": {
+              "table_name": "o",
+              "access_type": "ALL",
+              "possible_keys": ["orders_customer_id_idx"],
+              "loops": 1,
+              "rows": 50416,
+              "cost": 8.3654308,
+              "filtered": 100,
+              "attached_condition": "o.`status` = 'open' and o.customer_id is not null"
+            }
+          },
+          {
+            "table": {
+              "table_name": "c",
+              "access_type": "eq_ref",
+              "possible_keys": ["PRIMARY"],
+              "key": "PRIMARY",
+              "key_length": "4",
+              "used_key_parts": ["id"],
+              "ref": ["qp.o.customer_id"],
+              "loops": 50416,
+              "rows": 1,
+              "cost": 45.10637504,
+              "filtered": 100
+            }
+          }
+        ]
+      }
+    }
+  }
+}

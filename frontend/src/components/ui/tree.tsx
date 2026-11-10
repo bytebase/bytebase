@@ -1,9 +1,10 @@
 import type { CSSProperties, ElementType, ReactNode } from "react";
-import { useLayoutEffect, useRef } from "react";
+import { createContext, useContext, useLayoutEffect, useRef } from "react";
 import type {
   CursorProps,
   MoveHandler,
   NodeApi,
+  NodeRendererProps,
   TreeApi,
 } from "react-arborist";
 import { Tree as ArboristTree } from "react-arborist";
@@ -52,6 +53,22 @@ export interface TreeProps<T> {
       }) => boolean);
 
   readonly className?: string;
+}
+
+type RenderNode = TreeProps<unknown>["renderNode"];
+
+const RenderNodeContext = createContext<RenderNode | null>(null);
+
+// react-arborist uses its `children` prop as the row component type, so it
+// must keep one identity for the Tree's lifetime: a new function per render
+// remounts every row. The per-render `renderNode` reaches rows via context.
+function TreeRow({
+  node,
+  style,
+  dragHandle,
+}: NodeRendererProps<TreeDataNode<unknown>>) {
+  const renderNode = useContext(RenderNodeContext);
+  return renderNode?.({ node, style, dragHandle }) ?? null;
 }
 
 export function Tree<T>({
@@ -193,31 +210,31 @@ export function Tree<T>({
           console.error("[Tree] failed to render tree data:", error);
         }}
       >
-        <ArboristTree<TreeDataNode<T>>
-          ref={treeRef}
-          data={data as TreeDataNode<T>[]}
-          idAccessor="id"
-          childrenAccessor="children"
-          selection={selectedIds?.[0]}
-          onSelect={handleSelect}
-          onToggle={handleArboristToggle}
-          onMove={onMove}
-          searchTerm={searchTerm}
-          searchMatch={resolvedSearchMatch}
-          openByDefault={false}
-          disableDrag={disableDrag}
-          disableDrop={disableDrop}
-          disableEdit
-          height={height}
-          rowHeight={rowHeight}
-          indent={indent}
-          width="100%"
-          renderCursor={renderCursor}
-        >
-          {({ node, style, dragHandle }) =>
-            renderNode({ node, style, dragHandle })
-          }
-        </ArboristTree>
+        <RenderNodeContext.Provider value={renderNode as RenderNode}>
+          <ArboristTree<TreeDataNode<T>>
+            ref={treeRef}
+            data={data as TreeDataNode<T>[]}
+            idAccessor="id"
+            childrenAccessor="children"
+            selection={selectedIds?.[0]}
+            onSelect={handleSelect}
+            onToggle={handleArboristToggle}
+            onMove={onMove}
+            searchTerm={searchTerm}
+            searchMatch={resolvedSearchMatch}
+            openByDefault={false}
+            disableDrag={disableDrag}
+            disableDrop={disableDrop}
+            disableEdit
+            height={height}
+            rowHeight={rowHeight}
+            indent={indent}
+            width="100%"
+            renderCursor={renderCursor}
+          >
+            {TreeRow as ElementType<NodeRendererProps<TreeDataNode<T>>>}
+          </ArboristTree>
+        </RenderNodeContext.Provider>
       </ErrorBoundary>
     </div>
   );

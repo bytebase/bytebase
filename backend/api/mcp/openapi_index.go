@@ -56,6 +56,9 @@ type EndpointInfo struct {
 	RequestSchemaRef string `json:"requestSchemaRef,omitempty"`
 	// ResponseSchemaRef is the reference to the response schema.
 	ResponseSchemaRef string `json:"responseSchemaRef,omitempty"`
+	// Refusal is why no MCP session can call this endpoint, in the gate's words.
+	// It is empty for an endpoint a ceiling serves.
+	Refusal string `json:"refusal,omitempty"`
 }
 
 // PropertyInfo describes a property in a schema.
@@ -72,16 +75,15 @@ type OpenAPIIndex struct {
 	// endpoints holds every endpoint an MCP session may be offered. Discovery
 	// walks this slice, so anything in it is advertisable by construction.
 	endpoints []EndpointInfo
-	// hiddenEndpoints holds every endpoint no MCP capability ceiling serves —
-	// FORBIDDEN and EXCLUDED alike — resolvable through byOperation so a
-	// direct call still gets the gate's actionable denial, but reachable by no
-	// discovery path. That is 114 of the 211 classified RPCs, and 13 services
-	// whose every method is refused leave Services() entirely.
-	hiddenEndpoints []EndpointInfo
-	byOperation     map[string]*EndpointInfo
-	byService       map[string][]*EndpointInfo
-	services        []string
-	keywords        map[string][]*EndpointInfo
+	// unavailableEndpoints holds every endpoint no MCP capability ceiling
+	// serves; parseSpec says how discovery treats them.
+	unavailableEndpoints []EndpointInfo
+	unavailableByService map[string][]*EndpointInfo
+	byOperation          map[string]*EndpointInfo
+	byService            map[string][]*EndpointInfo
+	services             []string
+	serviceDescriptions  map[string]string
+	keywords             map[string][]*EndpointInfo
 }
 
 // NewOpenAPIIndex creates a new OpenAPI index from the embedded spec.
@@ -97,10 +99,12 @@ func NewOpenAPIIndex() (*OpenAPIIndex, error) {
 	}
 
 	idx := &OpenAPIIndex{
-		doc:         model,
-		byOperation: make(map[string]*EndpointInfo),
-		byService:   make(map[string][]*EndpointInfo),
-		keywords:    make(map[string][]*EndpointInfo),
+		doc:                  model,
+		unavailableByService: make(map[string][]*EndpointInfo),
+		byOperation:          make(map[string]*EndpointInfo),
+		byService:            make(map[string][]*EndpointInfo),
+		serviceDescriptions:  make(map[string]string),
+		keywords:             make(map[string][]*EndpointInfo),
 	}
 
 	idx.parseSpec()
@@ -168,20 +172,26 @@ func (idx *OpenAPIIndex) parseSpec() {
 			}
 		}
 
-		// An endpoint an MCP session can never call is not advertised: it stays
-		// out of search results, service listings and the keyword index, so the
-		// agent is not offered work that will only ever come back refused. It
-		// lands in hiddenEndpoints rather than endpoints — every discovery path
+		// An endpoint an MCP session can never call is not offered: it stays
+		// out of the served listings and the keyword index, so the agent is not
+		// offered work that will only ever come back refused. It lands in
+		// unavailableEndpoints rather than endpoints — every path that offers work
 		// walks the latter, so keeping it out of that slice is what makes this
-		// hold for search paths added later, not just today's.
+		// hold for search paths added later, not just today's. Discovery still
+		// names it with the gate's reason, in the service listings and in
+		// detail mode, never with its schema, so the agent sends the user to
+		// the console instead of guessing.
 		//
 		// It stays resolvable by operation ID on purpose: an agent that calls it
 		// anyway (from memory, or from a skill written before the
 		// classification) should meet the gate's actionable denial rather than
 		// "unknown operation".
-		if refusedToMCP(path) {
-			idx.hiddenEndpoints = append(idx.hiddenEndpoints, endpoint)
-			idx.byOperation[endpoint.OperationID] = &idx.hiddenEndpoints[len(idx.hiddenEndpoints)-1]
+		if refusal, refused := mcpRefusal(path); refused {
+			endpoint.Refusal = refusal
+			idx.unavailableEndpoints = append(idx.unavailableEndpoints, endpoint)
+			ptr := &idx.unavailableEndpoints[len(idx.unavailableEndpoints)-1]
+			idx.byOperation[endpoint.OperationID] = ptr
+			idx.unavailableByService[service] = append(idx.unavailableByService[service], ptr)
 			continue
 		}
 
@@ -200,24 +210,28 @@ func (idx *OpenAPIIndex) parseSpec() {
 		idx.services = append(idx.services, s)
 	}
 	slices.Sort(idx.services)
+
+	for _, tag := range idx.doc.Model.Tags {
+		idx.serviceDescriptions[strings.TrimPrefix(tag.Name, "bytebase.v1.")] = tag.Description
+	}
 }
 
-// refusedToMCP reports whether the RPC behind a connect path is served by no
-// MCP capability ceiling — FORBIDDEN and EXCLUDED alike, since the ceiling gate
-// refuses both whatever the workspace is set to. It keys on that predicate
-// rather than on one class, so a class the ceiling stops serving stops being
-// advertised in the same change.
+// mcpRefusal reports whether the RPC behind a connect path is served by no MCP
+// capability ceiling — FORBIDDEN and EXCLUDED alike, since the ceiling gate
+// refuses both whatever the workspace is set to — and if so, the reason the
+// gate gives. It keys on that predicate rather than on one class, so a class
+// the ceiling stops serving stops being advertised in the same change.
 //
 // A path whose descriptor cannot be resolved is treated as not refused: this
 // decides only what to advertise, and hiding a legitimate endpoint because a
 // lookup failed would be the worse failure — enforcement is the interceptor's
 // job and reads the annotation itself.
-func refusedToMCP(path string) bool {
-	class, err := auth.MCPMethodClassOfProcedure(path)
-	if err != nil {
-		return false
+func mcpRefusal(path string) (string, bool) {
+	class, reason, err := auth.MCPAnnotationsOfProcedure(path)
+	if err != nil || !auth.MCPClassIsRefused(class) {
+		return "", false
 	}
-	return auth.MCPClassIsRefused(class)
+	return auth.MCPDenialSentence(class, reason), true
 }
 
 func extractPermissions(description string) []string {
@@ -369,6 +383,30 @@ func (idx *OpenAPIIndex) GetEndpoint(operationID string) (*EndpointInfo, bool) {
 // GetServiceEndpoints returns all endpoints for the given service.
 func (idx *OpenAPIIndex) GetServiceEndpoints(service string) []*EndpointInfo {
 	return idx.byService[service]
+}
+
+// GetUnavailableEndpoints returns the endpoints of a service that no MCP
+// session can call.
+func (idx *OpenAPIIndex) GetUnavailableEndpoints(service string) []*EndpointInfo {
+	return idx.unavailableByService[service]
+}
+
+// UnavailableServices returns the services no MCP session can call any
+// endpoint of, sorted by name.
+func (idx *OpenAPIIndex) UnavailableServices() []string {
+	var services []string
+	for service := range idx.unavailableByService {
+		if len(idx.byService[service]) == 0 {
+			services = append(services, service)
+		}
+	}
+	slices.Sort(services)
+	return services
+}
+
+// ServiceDescription returns the service's one-line description from the spec.
+func (idx *OpenAPIIndex) ServiceDescription(service string) string {
+	return idx.serviceDescriptions[service]
 }
 
 // Search searches for endpoints matching the query.
@@ -523,6 +561,10 @@ func extractPropertyTypeAndDesc(prop *v3base.SchemaProxy) (string, string) {
 
 	if propSchema != nil && len(propSchema.Type) > 0 {
 		propType = propSchema.Type[0]
+		// A proto bytes field: protojson reads it only as base64.
+		if propType == "string" && propSchema.Format == "byte" {
+			propType = "string (base64-encoded bytes)"
+		}
 
 		// For arrays, get the item type
 		if propType == "array" && propSchema.Items != nil && propSchema.Items.A != nil {

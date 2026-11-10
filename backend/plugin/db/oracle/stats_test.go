@@ -179,7 +179,9 @@ func TestWithDynamicSamplingHint(t *testing.T) {
 // fakePlanConnector returns the plan rows for every query and records each statement with the
 // number of the connection that ran it.
 type fakePlanConnector struct {
-	plan    [][]driver.Value
+	plan [][]driver.Value
+	// columns names the plan columns; empty means the four CountAffectedRows reads.
+	columns []string
 	opened  int
 	queries []fakePlanQuery
 }
@@ -222,14 +224,18 @@ func (c *fakePlanConn) ExecContext(_ context.Context, query string, _ []driver.N
 
 func (c *fakePlanConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	c.connector.queries = append(c.connector.queries, fakePlanQuery{conn: c.id, text: query})
-	return &fakePlanRows{rows: c.connector.plan}, nil
+	return &fakePlanRows{rows: c.connector.plan, columns: c.connector.columns}, nil
 }
 
 type fakePlanRows struct {
-	rows [][]driver.Value
+	rows    [][]driver.Value
+	columns []string
 }
 
-func (*fakePlanRows) Columns() []string {
+func (r *fakePlanRows) Columns() []string {
+	if len(r.columns) > 0 {
+		return r.columns
+	}
 	return []string{"ID", "PARENT_ID", "OPERATION", "CARDINALITY"}
 }
 

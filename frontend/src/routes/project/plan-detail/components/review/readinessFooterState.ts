@@ -11,6 +11,7 @@ export type ReadinessFooterStateKind =
   | "waiting-review"
   | "all-gates-passed"
   | "approved-checks-failed"
+  | "approved-threads-open"
   | "rejected";
 
 export interface ReadinessFooterState {
@@ -23,6 +24,8 @@ export function computeReadinessFooterState(input: {
   issueStatus: IssueStatus | undefined;
   approvalStatus: ApprovalStatus;
   checks: PlanCheckSummary;
+  // Open threads hold the rollout under SQL Review V2; zero elsewhere.
+  unresolvedThreads: number;
 }): ReadinessFooterState {
   const { checks } = input;
   if (input.hasRollout || input.issueStatus !== IssueStatus.OPEN) {
@@ -35,10 +38,13 @@ export function computeReadinessFooterState(input: {
     input.approvalStatus === ApprovalStatus.APPROVED ||
     input.approvalStatus === ApprovalStatus.SKIPPED
   ) {
-    return {
-      kind: checks.error > 0 ? "approved-checks-failed" : "all-gates-passed",
-      checks,
-    };
+    if (checks.error > 0) {
+      return { kind: "approved-checks-failed", checks };
+    }
+    if (input.unresolvedThreads > 0) {
+      return { kind: "approved-threads-open", checks };
+    }
+    return { kind: "all-gates-passed", checks };
   }
   return { kind: "waiting-review", checks };
 }
@@ -67,6 +73,10 @@ export function computeBypassActionWeight(input: {
   // a mandatory-approval project must not be bypassed before a decision.
   if (input.state === "waiting-review") {
     return input.requireIssueApproval ? "none" : "link";
+  }
+  // Open threads are meant to be resolved, so the override stays a muted link.
+  if (input.state === "approved-threads-open") {
+    return "link";
   }
   // Review passed (approved/skipped): always offer a manual deploy when the user
   // can create a rollout, regardless of plan-check state. Prominent button when

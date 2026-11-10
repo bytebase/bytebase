@@ -166,6 +166,38 @@ func TestSetIamPolicyMaximumRoleExpiration(t *testing.T) {
 	}))
 	a.Error(err, "direct role grant expiration should respect the role expiration cap")
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// The 30-day binding was stored before the cap. Sent back as it was, it
+	// still saves; a member added to it meets the cap.
+	policyResp, err = ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policyResp.Msg,
+	}))
+	a.NoError(err, "a policy sent back as it was stored should save")
+
+	policyResp, err = ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ctl.project.Name,
+	}))
+	a.NoError(err)
+	policy = policyResp.Msg
+	grown := false
+	for _, binding := range policy.Bindings {
+		if binding.Role == "roles/projectDeveloper" && binding.GetCondition().GetExpression() != "" && len(binding.Members) == 1 && binding.Members[0] == "user:demo@example.com" {
+			binding.Members = append(binding.Members, "user:another@example.com")
+			grown = true
+		}
+	}
+	a.True(grown)
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ctl.project.Name,
+		Policy:   policy,
+	}))
+	a.Error(err, "a member added to a stored binding should respect the role expiration cap")
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
 // TestAccessGrantMaximumExpiration verifies that creating an access grant is
@@ -194,6 +226,7 @@ func TestAccessGrantMaximumExpiration(t *testing.T) {
 	dbName := generateRandomString("db")
 	a.NoError(ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, ""))
 	target := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
+	a.NoError(ctl.allowJustInTimeAccess(ctx, ctl.project))
 
 	// Cap role expiration to 7 days.
 	a.NoError(ctl.setMaximumRequestExpiration(ctx, durationpb.New(7*24*time.Hour)))

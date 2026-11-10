@@ -13,8 +13,10 @@ import {
   buildChangesSummary,
   buildDeploySummary,
   buildReviewSummary,
+  buildReviewSummaryV2,
   isRolloutExpected,
 } from "./phaseSummary";
+import { emptyFindings, ruleReviewRow } from "./planGates";
 
 const templates: Record<string, string> = {
   "common.and": "and",
@@ -22,12 +24,20 @@ const templates: Record<string, string> = {
   "plan.summary.n-changes": "{{n}} changes",
   "plan.summary.n-database-groups": "{{n}} database groups",
   "plan.summary.n-databases": "{{n}} databases",
-  "plan.summary.n-error": "{{n}} error",
+  "plan.summary.n-error": "Errors: {{n}}",
   "plan.summary.n-of-m-approved": "{{n}} of {{m}} approved",
   "plan.summary.n-of-m-tasks": "{{n}}/{{m}} tasks",
   "plan.summary.n-passed": "{{n}} passed",
   "plan.summary.n-unresolved-threads": "{{count}} unresolved threads",
-  "plan.summary.n-warning": "{{n}} warning",
+  "plan.summary.n-warning": "Warnings: {{n}}",
+  "plan.summary.approved-by": "Approved by {{names}}",
+  "plan.summary.no-approval-required": "No approval required",
+  "plan.findings.n-resolved": "{{count}} resolved",
+  "plan.findings.n-overridden": "{{count}} P0 resolved without a change",
+  "plan.findings.separator": ", ",
+  "plan.automated-review.summary-part": "{{reviewer}}: {{status}}",
+  "plan.deploy-waiting.open-discussions": "{{count}} open discussions",
+  "sql-review.standard-rules.self": "Standard rules",
 };
 
 const t = (key: string, options?: Record<string, unknown>) => {
@@ -71,8 +81,47 @@ describe("plan detail phase summaries", () => {
     } as unknown as Plan;
 
     expect(buildChangesSummary(plan, t)).toBe(
-      "2 changes · 2 databases and 1 database groups · 2 passed, 1 warning, 1 error"
+      "2 changes · 2 databases and 1 database groups · 2 passed, Warnings: 1, Errors: 1"
     );
+  });
+
+  test("a release plan's collapsed Changes line names only the targets per stage", () => {
+    const plan = {
+      specs: [
+        {
+          config: {
+            case: "changeDatabaseConfig",
+            value: {
+              release: "projects/p1/releases/r1",
+              targets: ["instances/i/databases/a"],
+            },
+          },
+        },
+      ],
+      planCheckRunStatusCount: { SUCCESS: 2 },
+      rolloutStageSummaries: [
+        {
+          stage: "projects/p1/plans/1/rollout/stages/test",
+          taskStatusCounts: [{ status: 4, count: 2 }],
+        },
+        {
+          stage: "projects/p1/plans/1/rollout/stages/prod",
+          taskStatusCounts: [
+            { status: 1, count: 1 },
+            { status: 5, count: 2 },
+          ],
+        },
+      ],
+    } as unknown as Plan;
+    expect(buildChangesSummary(plan, t)).toBe(
+      "test: 2 databases → prod: 3 databases"
+    );
+    const titles: Record<string, string> = { test: "Test", prod: "Production" };
+    expect(
+      buildChangesSummary(plan, t, {
+        stageTitle: (stage) => titles[stage.split("/").at(-1) ?? ""],
+      })
+    ).toBe("Test: 2 databases → Production: 3 databases");
   });
 
   test("summarizes review approval progress and last approver", () => {
@@ -327,5 +376,58 @@ describe("isRolloutExpected", () => {
     } as unknown as Plan;
 
     expect(isRolloutExpected({ issue: approvedIssue, plan })).toBe(true);
+  });
+});
+
+describe("SQL Review V2 summaries", () => {
+  const resolvedRule = ruleReviewRow({
+    run: null,
+    stale: false,
+    loadFailed: false,
+    findings: { ...emptyFindings(), resolved: 2, overridden: 1 },
+  });
+
+  test("names the approvers and each reviewer's conclusion", () => {
+    const issue = {
+      draft: false,
+      approvalStatus: ApprovalStatus.APPROVED,
+      approvalTemplate: { flow: { roles: ["roles/a", "roles/b"] } },
+      approvers: [
+        { principal: "users/alex@example.com" },
+        { principal: "users/dana@example.com" },
+      ],
+    } as unknown as Issue;
+    expect(
+      buildReviewSummaryV2(
+        issue,
+        t,
+        [{ ...resolvedRule, conclusion: "resolved" }],
+        0
+      )
+    ).toBe(
+      "Approved by alex, dana · Standard rules: 2 resolved, 1 P0 resolved without a change"
+    );
+  });
+
+  test("says no approval is required and counts open discussions", () => {
+    const issue = {
+      draft: false,
+      approvalStatus: ApprovalStatus.SKIPPED,
+      approvers: [],
+    } as unknown as Issue;
+    expect(buildReviewSummaryV2(issue, t, [], 2)).toBe(
+      "No approval required · 2 open discussions"
+    );
+  });
+
+  test("leaves the checks out of the Changes summary on request", () => {
+    const plan = {
+      planCheckRunStatusCount: { SUCCESS: 2 },
+      specs: [],
+    } as unknown as Plan;
+    expect(buildChangesSummary(plan, t)).toContain("2 passed");
+    expect(
+      buildChangesSummary(plan, t, { includeChecks: false })
+    ).not.toContain("passed");
   });
 });

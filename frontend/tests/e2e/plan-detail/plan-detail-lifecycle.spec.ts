@@ -56,9 +56,12 @@ import {
 import { signInBrowserAs } from "../framework/sign-in";
 import { PlanDetailPage } from "./plan-detail.page";
 import {
+  authorMayApprove,
   seedDraftPlan,
   seedReviewPlan,
+  setPermissiveGates,
   waitForApprovalStatus,
+  waitForRollout,
 } from "./plan-helpers";
 import {
   createDatabaseChangePlanViaUI,
@@ -98,6 +101,7 @@ let originalProjectSettings: {
   requireIssueApproval?: boolean;
   requirePlanCheckNoError?: boolean;
   allowSelfApproval?: boolean;
+  allowLastPlanEditorApproval?: boolean;
   enforceSqlReview?: boolean;
   forceIssueLabels?: boolean;
   issueLabels?: IssueLabelSetting[];
@@ -134,15 +138,15 @@ const ADMIN_RULE = {
   },
 };
 
-// Mandatory single-step admin approval. allowSelfApproval decides whether the
-// admin creator is a candidate (true → "Review" action) or an observer
+// Mandatory single-step admin approval. `authorApproves` decides whether the
+// admin author is a candidate (true → "Review" action) or an observer
 // (false → "Under review" pill).
-async function setApproval(allowSelfApproval: boolean): Promise<void> {
+async function setApproval(authorApproves: boolean): Promise<void> {
   await env.api.deletePolicy(env.project, "tag").catch(() => {});
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: true,
     requirePlanCheckNoError: false,
-    allowSelfApproval,
+    ...authorMayApprove(authorApproves),
     enforceSqlReview: false,
     forceIssueLabels: false,
   });
@@ -151,37 +155,6 @@ async function setApproval(allowSelfApproval: boolean): Promise<void> {
     { workspaceApproval: { rules: [ADMIN_RULE] } },
     "value.workspace_approval",
   );
-}
-
-async function setPermissive(): Promise<void> {
-  await env.api.deletePolicy(env.project, "tag").catch(() => {});
-  await env.api.updateProjectSettings(env.project, {
-    requireIssueApproval: false,
-    requirePlanCheckNoError: false,
-    enforceSqlReview: false,
-    forceIssueLabels: false,
-  });
-  // Clear any approval rule a prior describe left in WORKSPACE_APPROVAL —
-  // otherwise a leftover rule still forces a pending review (blocking the
-  // auto-rollout) even with requireIssueApproval=false. (Each describe must
-  // reset its arrival state; the page is shared.)
-  await env.api.upsertSetting(
-    "WORKSPACE_APPROVAL",
-    { workspaceApproval: { rules: [] } },
-    "value.workspace_approval",
-  );
-}
-
-// Wait (via API) for the backend to auto-create the rollout, so the deploy
-// tests navigate to a page that already shows the frontier Run advance rather
-// than racing the async rollout creation.
-async function waitForRollout(planName: string, timeoutMs = 30_000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if ((await env.api.getPlan(planName)).hasRollout) return;
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  throw new Error(`rollout was not auto-created for ${planName} in ${timeoutMs}ms`);
 }
 
 // Attach a single ERROR-level COLUMN_NO_NULL rule so a nullable column trips it.
@@ -222,6 +195,7 @@ test.beforeAll(async ({ browser }) => {
     requireIssueApproval: !!project.requireIssueApproval,
     requirePlanCheckNoError: !!project.requirePlanCheckNoError,
     allowSelfApproval: !!project.allowSelfApproval,
+    allowLastPlanEditorApproval: !!project.allowLastPlanEditorApproval,
     enforceSqlReview: !!project.enforceSqlReview,
     forceIssueLabels: !!project.forceIssueLabels,
     issueLabels: Array.isArray(project.issueLabels)
@@ -524,6 +498,12 @@ test.describe("Forced labels stay in metadata and block only submission (S3)", (
         exact: true,
       }),
     ).toBeVisible();
+    // A row of chips lines up with a row of text.
+    const rowHeights = await page
+      .locator('[data-testid="plan-detail-row"] > dt')
+      .evaluateAll((labels) => labels.map((label) => label.getBoundingClientRect().height));
+    expect(rowHeights.length).toBeGreaterThan(2);
+    expect(new Set(rowHeights).size, `row heights ${rowHeights.join(", ")}`).toBe(1);
 
     await planPage.headerReadyForReviewButton.click();
     await waitForIssueDraft(seeded.issueName, false);
@@ -617,7 +597,7 @@ test.describe("Review advance is persona-scoped (R1/R2)", () => {
   let planId = "";
 
   test.beforeAll(async () => {
-    // allowSelfApproval → admin (creator) IS the candidate.
+    // The author may approve → admin (creator) IS the candidate.
     await setApproval(true);
     const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr R1R2",
@@ -733,7 +713,7 @@ test.describe("Running the frontier stage from the header reaches the Deployed s
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr D1",
@@ -741,7 +721,7 @@ test.describe("Running the frontier stage from the header reaches the Deployed s
       runChecks: true,
     });
     planId = seeded.planId;
-    await waitForRollout(seeded.planName);
+    await waitForRollout(env.api, seeded.planName);
   });
 
   test("header Run·<stage> runs the frontier, then the slot becomes the Deployed stamp", async () => {
@@ -765,7 +745,7 @@ test.describe("A failed task surfaces Rerun in the header slot (D2)", () => {
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     // A nonexistent target makes the task fail at execution.
     const seeded = await seedReviewPlan(env, page, {
@@ -774,7 +754,7 @@ test.describe("A failed task surfaces Rerun in the header slot (D2)", () => {
       runChecks: false,
     });
     planId = seeded.planId;
-    await waitForRollout(seeded.planName);
+    await waitForRollout(env.api, seeded.planName);
   });
 
   test("after the task fails, the header advance reads Rerun·<stage>", async () => {
@@ -795,7 +775,7 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
   let planId = "";
 
   test.beforeAll(async () => {
-    await setPermissive();
+    await setPermissiveGates(env.api, env.project);
     const ts = Date.now();
     const testDb = await env.api.findDatabaseByShortName("hr_test", env.project);
     const prodDb = await env.api.findDatabaseByShortName("hr_prod", env.project);
@@ -812,7 +792,7 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
       title: `E2E Hdr D3 ${ts}`,
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_d3_${ts} TEXT;`,
     }));
-    await waitForRollout(`${env.project}/plans/${planId}`);
+    await waitForRollout(env.api, `${env.project}/plans/${planId}`);
   });
 
   test("the header Run advance walks each stage until the plan is Deployed", async () => {

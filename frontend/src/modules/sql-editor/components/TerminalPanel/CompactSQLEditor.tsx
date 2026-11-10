@@ -2,6 +2,7 @@ import { debounce } from "lodash-es";
 import type { IDisposable } from "monaco-editor";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/components/monaco/MonacoEditor";
 import type {
   IStandaloneCodeEditor,
@@ -16,6 +17,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { languageOfEngineV1 } from "@/types/sqlEditor/editor";
 import { instanceV1AllowsExplain } from "@/utils";
+import { explainQueryOption } from "@/utils/queryPlanEngines";
 import { monacoThemeName } from "../theme/derive";
 import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import {
@@ -54,6 +56,7 @@ export function CompactSQLEditor({
   onHistory,
   onClearScreen,
 }: CompactSQLEditorProps) {
+  const { t } = useTranslation();
   const { connection, instance, database } =
     useConnectionOfCurrentSQLEditorTab();
 
@@ -266,7 +269,9 @@ export function CompactSQLEditor({
     if (!allows) return;
 
     const isBigQuery = engine === Engine.BIGQUERY;
-    const label = isBigQuery ? "Dry Run Query" : "Explain Query";
+    const label = isBigQuery
+      ? t("sql-editor.dry-run")
+      : t("sql-editor.explain");
 
     const action = editor.addAction({
       id: "ExplainQuery",
@@ -282,6 +287,7 @@ export function CompactSQLEditor({
           statement: propsRef.current.content,
           engine,
           explain: true,
+          queryOption: explainQueryOption(engine),
           selection: null,
         });
       },
@@ -289,7 +295,7 @@ export function CompactSQLEditor({
     return () => {
       action.dispose();
     };
-  }, [engine, editorState]);
+  }, [engine, editorState, t]);
 
   // Format-content event from `sqlEditorEvents`.
   useEffect(() => {

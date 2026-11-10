@@ -632,16 +632,12 @@ func TestIsUltimatelyPlainColumnStopsOnCyclicSubquery(t *testing.T) {
 	})
 }
 
-func TestCollectQueryPredicateColumnsStopsOnCyclicQuery(t *testing.T) {
+func TestCollectPredicateColumnsStopsOnCyclicQuery(t *testing.T) {
 	mustNotOverflow(t, func() {
 		q := &catalog.Query{}
 		q.CTEList = []*catalog.CommonTableExprQ{{Query: q}}
 		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
-		analyzer := &plpgsqlAnalyzer{
-			extractor: extractor,
-			scope:     newVariableScope(nil),
-		}
-		analyzer.collectQueryPredicateColumns(q)
+		extractor.collectPredicateColumns(q)
 	})
 }
 

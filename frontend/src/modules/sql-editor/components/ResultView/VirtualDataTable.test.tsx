@@ -106,6 +106,29 @@ function DetailProbe() {
 }
 
 describe("VirtualDataTable row detail action", () => {
+  test("keeps the copy context menu available on the shared result grid", async () => {
+    const { container } = render(
+      <SQLResultViewProvider
+        engine={Engine.POSTGRES}
+        rows={rows}
+        columns={columns}
+      >
+        <VirtualDataTable
+          rows={rows}
+          columns={columns}
+          activeRowIndex={-1}
+          database={database}
+          search={{ query: "", scopes: [] }}
+          onToggleSort={() => undefined}
+        />
+      </SQLResultViewProvider>
+    );
+
+    fireEvent.contextMenu(container.querySelector("[data-query-result-table-grid]")!);
+
+    expect(await screen.findByText("common.copy-all")).toBeInTheDocument();
+  });
+
   test("replaces the hovered row number with a View detail action", () => {
     const { container } = render(
       <SQLResultViewProvider

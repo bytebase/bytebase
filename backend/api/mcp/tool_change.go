@@ -29,9 +29,6 @@ const (
 
 // nextAction enum constants.
 const (
-	// The agent waits; it does not approve. ApproveIssue is FORBIDDEN to MCP
-	// sessions, so naming it here would send the agent at a call that is
-	// refused. The issue link in the output is what a human follows instead.
 	nextActionAwaitApproval  = "AWAIT_HUMAN_APPROVAL"
 	nextActionCreateRollout  = "CREATE_ROLLOUT"
 	nextActionMonitorRollout = "MONITOR_ROLLOUT"
@@ -124,6 +121,11 @@ func (e *changeError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
 
+// singleDatabaseLimit is shared with the server instructions, so the two
+// cannot state different limits.
+const singleDatabaseLimit = "It changes one database per call. For several databases in one plan, " +
+	"ask the user to use the Bytebase console or GitOps."
+
 // proposeChangeDescription is the description for the propose_database_change tool.
 const proposeChangeDescription = `Run DDL/DML changes (ALTER TABLE, CREATE TABLE, INSERT, UPDATE, migrations) against a Bytebase database.
 
@@ -147,10 +149,11 @@ propose_database_change(database="app", sql="ALTER TABLE users ADD COLUMN status
 propose_database_change(database="app", sql="UPDATE orders SET status='shipped' WHERE id=42", title="Ship order 42", createRollout=true)
 
 **Notes:**
-- v1 supports single database targets only. For batch changes across multiple databases, use get_skill("database-change").
+- ` + singleDatabaseLimit + `
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
 - If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.
+- nextAction AWAIT_HUMAN_APPROVAL means the issue waits for its approvers. If the user is one of them, decide_issue asks them to confirm in this client and then approves; otherwise share links.issue with an approver.
 - Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds. Any change containing it is refused, because writing it back would overwrite the real value. Ask a human to make the change in the Bytebase console instead.
 `
 
@@ -203,32 +206,12 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	// When input.Project is set, the resolver already filtered by it.
 	project := resolved.project
 
-	// Step 4: Create sheet.
-	sheetName, err := s.createSheet(ctx, project, input.SQL)
-	if err != nil {
-		return formatChangeStepError(err, "SHEET_CREATE_FAILED", nil), nil, nil
+	// Steps 4-7: Create the sheet, the plan and the issue.
+	filed, failed := s.fileChange(ctx, project, resolved.resourceName, input.SQL, input.Title, reason)
+	if failed != nil {
+		return failed, nil, nil
 	}
-
-	// Step 5: Create plan.
-	planName, err := s.createPlan(ctx, project, input.Title, resolved.resourceName, sheetName)
-	if err != nil {
-		return formatChangeStepError(err, "PLAN_CREATE_FAILED", map[string]string{"sheet": sheetName}), nil, nil
-	}
-
-	// Step 6: Run plan checks (hybrid async, 10s budget).
-	planChecks := s.runPlanChecks(ctx, planName)
-
-	// Step 7: Create issue.
-	issueName, approvalStatus, err := s.createIssue(ctx, project, input.Title, planName, reason)
-	if err != nil {
-		partialRefs := map[string]string{"sheet": sheetName, "plan": planName}
-		// If plan checks had errors, enforceSqlReview may have blocked issue creation.
-		suggestion := ""
-		if planChecks != nil && planChecks.Status == planCheckDone && planChecks.Summary != nil && planChecks.Summary.Error > 0 {
-			suggestion = "plan checks must pass before issue creation; fix SQL and retry"
-		}
-		return formatChangeStepErrorWithHint(err, "ISSUE_CREATE_FAILED", partialRefs, suggestion), nil, nil
-	}
+	sheetName, planName, planChecks, issueName, approvalStatus := filed.sheet, filed.plan, filed.planChecks, filed.issue, filed.approvalStatus
 
 	// Step 8: Determine nextAction from approvalStatus.
 	nextAction := deriveNextAction(approvalStatus)
@@ -238,6 +221,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	rolloutName := ""
 	rolloutDeferredReason := ""
 
+	var err error
 	switch {
 	case !input.CreateRollout:
 		rolloutDeferredReason = rolloutNotRequested
@@ -293,6 +277,34 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, output, nil
+}
+
+type filedChange struct {
+	sheet          string
+	plan           string
+	planChecks     *PlanCheckInfo
+	issue          string
+	approvalStatus string
+}
+
+// fileChange files sql against database as a change issue: a sheet, a plan
+// whose checks run within the poll budget, and the issue. A step that fails
+// returns its error result, which names what the steps before it created.
+func (s *Server) fileChange(ctx context.Context, project, database, sql, title, reason string) (*filedChange, *mcp.CallToolResult) {
+	sheetName, err := s.createSheet(ctx, project, sql)
+	if err != nil {
+		return nil, formatChangeStepError(err, "SHEET_CREATE_FAILED", nil)
+	}
+	planName, err := s.createPlan(ctx, project, title, database, sheetName)
+	if err != nil {
+		return nil, formatChangeStepError(err, "PLAN_CREATE_FAILED", map[string]string{"sheet": sheetName})
+	}
+	planChecks := s.runPlanChecks(ctx, planName)
+	issueName, approvalStatus, err := s.createIssue(ctx, project, title, planName, reason)
+	if err != nil {
+		return nil, formatChangeStepError(err, "ISSUE_CREATE_FAILED", map[string]string{"sheet": sheetName, "plan": planName})
+	}
+	return &filedChange{sheet: sheetName, plan: planName, planChecks: planChecks, issue: issueName, approvalStatus: approvalStatus}, nil
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.
@@ -489,6 +501,13 @@ func planChecksHaveErrors(info *PlanCheckInfo) bool {
 	return false
 }
 
+// consoleLink returns the console URL of a resource, under the workspace's
+// external URL.
+func (s *Server) consoleLink(ctx context.Context, resourceName string) string {
+	externalURL, _ := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, getWorkspaceID(ctx))
+	return buildResourceURL(externalURL, resourceName)
+}
+
 // buildResourceURL constructs a URL from externalURL and resource name.
 func buildResourceURL(externalURL, resourceName string) string {
 	if externalURL == "" {
@@ -546,22 +565,14 @@ func (s *Server) callAPI(ctx context.Context, path, operation, permission string
 // Returns nil if the response is OK, or a structured error otherwise.
 func checkAPIResponse(resp *apiResponse, operation, permission string) error {
 	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-		// A 403 here is not always a missing permission: the MCP enforcement
-		// chain answers the same status for the method class, the ceiling, the
-		// request's own shape and the masked-write guard. No grant lifts a
-		// workspace setting, so those keep their own remedy and get no advice.
+		// The server's message goes alone. A 403 is not always a missing
+		// permission (a plan feature, the MCP ceiling, the request's own shape),
+		// and the ACL refusal names the permission itself.
 		message := parseError(resp.Body)
-		if IsPolicyRefusal(message) {
-			return &toolError{Code: "PERMISSION_DENIED", Message: message}
-		}
 		if message == "" {
-			message = fmt.Sprintf("you don't have permission to %s", operation)
+			message = fmt.Sprintf("you don't have permission to %s, which requires %s", operation, permission)
 		}
-		return &toolError{
-			Code:       "PERMISSION_DENIED",
-			Message:    message,
-			Suggestion: fmt.Sprintf("ask your workspace admin to grant you the %s permission", permission),
-		}
+		return &toolError{Code: "PERMISSION_DENIED", Message: message}
 	}
 	if resp.Status >= 400 {
 		return errors.Errorf("%s failed: HTTP %d: %s", operation, resp.Status, parseError(resp.Body))
@@ -581,31 +592,18 @@ func formatChangeError(err *changeError) *mcp.CallToolResult {
 // formatChangeStepError formats a step failure into an MCP error result.
 // It detects permission errors and wraps them appropriately.
 func formatChangeStepError(err error, defaultCode string, partialRefs map[string]string) *mcp.CallToolResult {
-	return formatChangeStepErrorWithHint(err, defaultCode, partialRefs, "")
-}
-
-// formatChangeStepErrorWithHint is like formatChangeStepError but replaces the
-// default suggestion with hint when non-empty, keeping the JSON shape intact.
-func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
-		// Passed through rather than re-derived: re-deriving overwrote a policy
-		// denial's own remedy with the permission advice.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
-			Suggestion:  te.Suggestion,
 			PartialRefs: partialRefs,
 		})
-	}
-	suggestion := "check the error and retry"
-	if hint != "" {
-		suggestion = hint
 	}
 	return formatChangeError(&changeError{
 		Code:        defaultCode,
 		Message:     err.Error(),
-		Suggestion:  suggestion,
+		Suggestion:  "check the error and retry",
 		PartialRefs: partialRefs,
 	})
 }

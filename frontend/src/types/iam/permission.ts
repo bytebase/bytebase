@@ -5,6 +5,7 @@ export type { Permission };
 export type QueryPermission = Extract<
   Permission,
   | "bb.sql.select"
+  | "bb.sql.export"
   | "bb.sql.info"
   | "bb.sql.explain"
   | "bb.sql.ddl"

@@ -40,18 +40,19 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 	if loc.Start < 0 || loc.Start > table.Loc.Start || table.Loc.End > clausesStart || clausesStart > loc.End || loc.End > len(statement) {
 		return statement
 	}
-	// omni positions the text after an executable comment as if the comment's markers were removed, so
-	// no SELECT is cut from a statement with one. The SELECT would also leave out an optimizer hint
-	// before the table, which can change the plan.
-	if strings.Contains(statement, "/*!") || strings.Contains(statement, "/*M!") || strings.Contains(statement[loc.Start:table.Loc.Start], "/*+") {
+	keywordStart := dmlKeywordStart(statement, loc)
+	// The parser reads the body of an executable comment, so a cut could leave one unclosed; no SELECT
+	// is cut from a statement with one. The SELECT would also leave out an optimizer hint before the
+	// table, which can change the plan.
+	if strings.Contains(statement, "/*!") || strings.Contains(statement, "/*M!") || strings.Contains(statement[keywordStart:table.Loc.Start], "/*+") {
 		return statement
 	}
 	clauses := strings.TrimSpace(statement[clausesStart:loc.End])
 	if rest := trimLeadingComments(clauses); rest != "" && !startsWithKeyword(rest, "WHERE", "ORDER", "LIMIT") {
 		return statement
 	}
-	// The text before the statement holds its WITH clause.
-	query := statement[:loc.Start] + "SELECT 1 FROM " + statement[table.Loc.Start:table.Loc.End]
+	// The text before the UPDATE or DELETE keyword holds the statement's WITH clause.
+	query := statement[:keywordStart] + "SELECT 1 FROM " + statement[table.Loc.Start:table.Loc.End]
 	if clauses != "" {
 		query += " " + clauses
 	}
@@ -152,10 +153,10 @@ func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
 	var limit *ast.Limit
 	switch s := stmt.(type) {
 	case *ast.InsertStmt:
+		// INSERT ... SELECT and INSERT ... TABLE both carry their source as a
+		// SelectStmt now; its wrapper holds any trailing LIMIT.
 		if s.Select != nil {
 			limit = s.Select.Limit
-		} else if s.TableSource != nil {
-			limit = s.TableSource.Limit
 		}
 	case *ast.UpdateStmt:
 		limit = s.Limit
@@ -168,47 +169,6 @@ func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
 		return limitRows
 	}
 	return count
-}
-
-// EstimateAffectedRowsFromOceanBaseExplainJSON returns the EST.ROWS estimate from OceanBase
-// `EXPLAIN FORMAT=JSON` output: the root operator's, or the largest child operator's when the
-// root has no operator.
-func EstimateAffectedRowsFromOceanBaseExplainJSON(plan string) (int64, error) {
-	var root map[string]any
-	if err := json.Unmarshal([]byte(plan), &root); err != nil {
-		return 0, errors.Wrap(err, "failed to parse EXPLAIN FORMAT=JSON output")
-	}
-	if operator, ok := root["OPERATOR"].(string); ok && operator != "" {
-		rows, ok := planNumber(root["EST.ROWS"])
-		if !ok {
-			return 0, errors.Errorf("operator %q has no EST.ROWS", operator)
-		}
-		return common.RoundRows(rows), nil
-	}
-	var maxRows float64
-	found := false
-	for key, value := range root {
-		child, ok := value.(map[string]any)
-		if !ok || !strings.HasPrefix(key, "CHILD_") {
-			continue
-		}
-		operator, ok := child["OPERATOR"].(string)
-		if !ok || operator == "" {
-			continue
-		}
-		rows, ok := planNumber(child["EST.ROWS"])
-		if !ok {
-			return 0, errors.Errorf("operator %q has no EST.ROWS", operator)
-		}
-		if !found || rows > maxRows {
-			maxRows = rows
-			found = true
-		}
-	}
-	if !found {
-		return 0, errors.New("the plan has no operator")
-	}
-	return common.RoundRows(maxRows), nil
 }
 
 // queryBlockRows returns the planner's estimate of the rows a query block produces. A UNION sums its

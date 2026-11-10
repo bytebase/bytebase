@@ -34,6 +34,12 @@ type World struct {
 	FilePattern          string
 	// Whether to use declarative mode.
 	Declarative bool
+	// What the pipeline knows about the commit, for a CI the action does not
+	// detect.
+	SourceTitle  string
+	SourceURL    string
+	SourceAuthor string
+	SourceRef    string
 
 	// bytebase-action check flags
 	// An enum to determine should we fail on warning or error.

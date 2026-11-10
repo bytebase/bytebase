@@ -120,3 +120,14 @@
       UPDATE SET t."C1" = b."C1"
     WHEN NOT MATCHED THEN
      INSERT ("A", "B", "C") VALUES (b."A", b."B", b."C");
+- input: DELETE FROM T_HIDDEN WHERE a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_T_HIDDEN
+  originaldatabase: DB
+  originaltable: T_HIDDEN
+  result: |-
+    /*
+    Original SQL:
+    DELETE FROM T_HIDDEN WHERE a = 1
+    */
+    INSERT INTO "DB"."T_HIDDEN" ("A", "B") SELECT "A", "B" FROM "bbarchive"."prefix_T_HIDDEN";

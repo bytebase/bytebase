@@ -1,7 +1,7 @@
 // Structural type for the createBrowserRouter instance (avoids depending on
 // @remix-run/router's exported name across react-router versions).
 export type RouterMatch = {
-  handle?: unknown;
+  route: { handle?: unknown };
   params: Record<string, string | undefined>;
 };
 export type RouterLocation = { pathname: string; search: string; hash: string };

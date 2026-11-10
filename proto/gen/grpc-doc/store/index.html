@@ -716,6 +716,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion"><span class="badge">M</span>IssueCommentPayload.ReviewRunCompletion</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
@@ -892,7 +896,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.Project.ExportSetting"><span class="badge">M</span>Project.ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.Project.LabelsEntry"><span class="badge">M</span>Project.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Project.SharePointDestination"><span class="badge">M</span>Project.SharePointDestination</a>
                 </li>
               
               
@@ -954,6 +966,10 @@
               
                 <li>
                   <a href="#bytebase.store.ReleasePayload.VCSSource"><span class="badge">M</span>ReleasePayload.VCSSource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReleasePayload.VCSSource.PullRequest"><span class="badge">M</span>ReleasePayload.VCSSource.PullRequest</a>
                 </li>
               
               
@@ -1210,6 +1226,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ExportSetting"><span class="badge">M</span>ExportSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPSetting"><span class="badge">M</span>MCPSetting</a>
                 </li>
               
@@ -1227,6 +1247,10 @@
               
                 <li>
                   <a href="#bytebase.store.SemanticTypeSetting.SemanticType"><span class="badge">M</span>SemanticTypeSetting.SemanticType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SharePointSetting"><span class="badge">M</span>SharePointSetting</a>
                 </li>
               
                 <li>
@@ -1352,6 +1376,18 @@
               
                 <li>
                   <a href="#bytebase.store.Task"><span class="badge">M</span>Task</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState"><span class="badge">M</span>Task.ReleaseState</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState.DeletedRevision"><span class="badge">M</span>Task.ReleaseState.DeletedRevision</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.Task.ReleaseState.Range"><span class="badge">M</span>Task.ReleaseState.Range</a>
                 </li>
               
               
@@ -1648,6 +1684,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The container name to execute the query against, used for CosmosDB only. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>query_hash</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Lowercase hex SHA-256 of query after trimming boundary space, tab, LF, CR,
+vertical tab, and form feed. Derived by the store for grant matching. </p></td>
                 </tr>
               
             </tbody>
@@ -2343,6 +2387,15 @@ Examples:
                 <td>MERGE</td>
                 <td>63</td>
                 <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXECUTE</td>
+                <td>70</td>
+                <td><p>A statement that runs procedural or dynamic code: a procedure call (CALL,
+T-SQL EXEC), a prepared or dynamic statement (EXECUTE, EXECUTE IMMEDIATE,
+EXEC of a SQL string), or an anonymous block (PostgreSQL DO, Oracle
+BEGIN ... END).</p></td>
               </tr>
             
           </tbody>
@@ -5792,7 +5845,7 @@ Missing from persisted payloads means false. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The role being requested for the user.
-Format: roles/EXPORTER. </p></td>
+Format: roles/{role}. </p></td>
                 </tr>
               
                 <tr>
@@ -6246,6 +6299,14 @@ instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
 executor or by the reaper. </p></td>
                 </tr>
               
+                <tr>
+                  <td>approval_input_version</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the
+version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6384,11 +6445,20 @@ model.</p></td>
                 </tr>
               
                 <tr>
+                  <td>review_run_completion</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>statement_anchor</td>
                   <td><a href="#bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</a></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
-immutable afterward; never set together with an event. </p></td>
+immutable afterward, except that a later run reporting a review result
+again moves the result to its statement in the SQL that run reviewed.
+Never set together with an event. </p></td>
                 </tr>
               
                 <tr>
@@ -6537,7 +6607,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, the</p><p>databases it applies to, and for an AI result, its title. When a run</p><p>completes, an earlier result of its type whose fingerprint the run</p><p>reports again keeps its thread, and the run posts no new result for it;</p><p>every other earlier root of its type is resolved and marked superseded,</p><p>in the transaction that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6576,6 +6646,104 @@ them. </p></td>
                   <td><p>Every database the result applies to, sorted. Always complete; the
 renderer collapses it when it equals the spec&#39;s target set.
 Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>A later run of the same reviewer has completed without reporting the
+result again, so the latest review does not hold it. Set by that run
+whatever the thread state, and never cleared. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>fingerprint</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Identifies the finding across runs: equal fingerprints are the same
+finding on the same SQL. The rule review derives it from what it
+judged. The AI review starts it with a hash of its statement and ends
+it at random, and a later run carries it over to the finding its merge
+matches to the result. Unique among the results of one run. Empty on a
+result that predates it, and an empty fingerprint matches nothing. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The review_run.attempt of the run that posted the result. A result
+a later run reports again keeps its attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The conditions a RULE result reports, as omni finding codes such as
+&#34;WT101&#34;, one per reason. Empty for other reviewers. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the problem an AI result reports, on one line; the comment
+holds the rest. Empty for a RULE result, which rule_type names. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</h3>
+        <p>ReviewRunCompletion records that a review run completed DONE, and what</p><p>it did to the results of its reviewer. Posted with no creator, in the</p><p>transaction that posts the run's results.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>attempt</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The run&#39;s review_run.attempt; its new results carry the same
+ReviewMetadata.attempt. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>posted_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Results the run posted as new threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>kept_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run reported again, which kept their threads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>superseded_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Earlier results the run no longer reports, which it superseded. </p></td>
                 </tr>
               
             </tbody>
@@ -7416,14 +7584,6 @@ resource.instance_id == &#34;local&#34; &amp;&amp; resource.database_name == &#3
             <tbody>
               
                 <tr>
-                  <td>disable_export</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>workspace-level policy
-Disable exporting data in the SQL editor. </p></td>
-                </tr>
-              
-                <tr>
                   <td>maximum_result_rows</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -7446,6 +7606,16 @@ Disable copying data. </p></td>
                   <td></td>
                   <td><p>workspace-level policy
 Allow using the admin data source to query in the SQL editor. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>disable_download</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>workspace-level policy
+Hide the Download export destination in the SQL Editor. Exports can still go
+to a configured storage destination such as SharePoint. The Export API does
+not check this setting. </p></td>
                 </tr>
               
                 <tr>
@@ -7815,8 +7985,9 @@ If enabled, the issue will be created with the prepend &#34;set role &lt;db_owne
                   <td>ci_sampling_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>The maximum number of databases to sample during CI data validation.
-If not specified, sampling is disabled, resulting in a full validation. </p></td>
+                  <td><p>The maximum number of databases to sample during CI data validation and
+AI review. If not specified, sampling is disabled, resulting in a full
+validation. </p></td>
                 </tr>
               
                 <tr>
@@ -7884,6 +8055,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
+                <tr>
+                  <td>export_setting</td>
+                  <td><a href="#bytebase.store.Project.ExportSetting">Project.ExportSetting</a></td>
+                  <td></td>
+                  <td><p>Destinations offered for this project&#39;s exports. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7915,6 +8093,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
 
         
       
+        <h3 id="bytebase.store.Project.ExportSetting">Project.ExportSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.Project.SharePointDestination">Project.SharePointDestination</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.Project.LabelsEntry">Project.LabelsEntry</h3>
         <p></p>
 
@@ -7937,6 +8139,30 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Project.SharePointDestination">Project.SharePointDestination</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The canonical URL of a SharePoint document library root or folder. </p></td>
                 </tr>
               
             </tbody>
@@ -8228,6 +8454,86 @@ IM integration setting should be set for this function to work. </p></td>
               
                 <tr>
                   <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_sha</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>commit_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>author_login</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request</td>
+                  <td><a href="#bytebase.store.ReleasePayload.VCSSource.PullRequest">ReleasePayload.VCSSource.PullRequest</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ReleasePayload.VCSSource.PullRequest">ReleasePayload.VCSSource.PullRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>number</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -9687,6 +9993,15 @@ is deleted or transferred, degrading to &#34;no database&#34; in the UI. </p></t
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>sql_review_enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the AI SQL review may run. It is a consent of its own beside
+`enabled`, because a review sends the statements of a change to the
+provider and can send the schema of its target databases. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -10573,6 +10888,30 @@ are /[a-z][0-9]-/. </p></td>
 
         
       
+        <h3 id="bytebase.store.ExportSetting">ExportSetting</h3>
+        <p>ExportSetting holds each export destination provider's credentials.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sharepoint</td>
+                  <td><a href="#bytebase.store.SharePointSetting">SharePointSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.MCPSetting">MCPSetting</h3>
         <p>MCPSetting is what an MCP (Model Context Protocol) session may do in this</p><p>workspace. It is its own setting rather than a field of the workspace profile</p><p>because the set grows, and because the /mcp kill switch reads it on every</p><p>request and should not share a row — or a parse failure — with branding and</p><p>sign-in configuration.</p>
 
@@ -10745,6 +11084,44 @@ it only reads. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>icon is the icon for semantic type, it can be emoji or base64 encoded image. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SharePointSetting">SharePointSetting</h3>
+        <p>SharePointSetting is the Microsoft Entra application that uploads exports to</p><p>SharePoint.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>tenant_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>client_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -11118,49 +11495,49 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
                   <td>min_length</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
-                  <td><p>min_length is the minimum length for password, should be no less than 8. </p></td>
+                  <td><p>min_length is the minimum password length. It must be at least 8. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_number</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_number requires the password must contain at least one number. </p></td>
+                  <td><p>require_number requires the password to contain at least one number. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_letter requires the password must contain at least one letter, regardless of upper case or lower case </p></td>
+                  <td><p>require_letter requires the password to contain at least one letter, either uppercase or lowercase. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_uppercase_letter</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_uppercase_letter requires the password must contain at least one upper case letter. </p></td>
+                  <td><p>require_uppercase_letter requires the password to contain at least one uppercase letter. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_special_character</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_special_character requires the password must contain at least one special character. </p></td>
+                  <td><p>require_special_character requires the password to contain at least one special character. </p></td>
                 </tr>
               
                 <tr>
                   <td>require_reset_password_for_first_login</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
+                  <td><p>require_reset_password_for_first_login requires users to change their password after their first login. </p></td>
                 </tr>
               
                 <tr>
                   <td>password_rotation</td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
-                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
+                  <td><p>password_rotation requires users to change their password after the duration. </p></td>
                 </tr>
               
             </tbody>
@@ -11447,6 +11824,12 @@ frontend-only concept that seeds these colors; the store only holds them. </p></
               <tr>
                 <td>MCP</td>
                 <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EXPORT</td>
+                <td>11</td>
                 <td><p></p></td>
               </tr>
             
@@ -11869,6 +12252,144 @@ Used for GitOps release-based tasks that execute multiple files. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether to create an automatic backup before applying changes. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skipper</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email of the user who skipped the task. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the task was skipped. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release_state</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState">Task.ReleaseState</a></td>
+                  <td></td>
+                  <td><p>The release&#39;s file state on the task&#39;s database when the task was
+created. Set only for tasks of a versioned release. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState">Task.ReleaseState</h3>
+        <p>A preview: the run reads the database's revisions again when it starts.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>pending_ranges</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState.Range">Task.ReleaseState.Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The release&#39;s files the task will apply, as half-open ranges of
+positions in the release&#39;s file list, ascending. Every other file&#39;s
+version was applied: the database had a live VERSIONED revision with it. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>applied_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The number of the release&#39;s versions already applied. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>compute_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the state was computed. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleted_revisions</td>
+                  <td><a href="#bytebase.store.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</a></td>
+                  <td>repeated</td>
+                  <td><p>The versions to apply that had a deleted revision, in release order. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState.DeletedRevision">Task.ReleaseState.DeletedRevision</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>delete_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The newest deletion&#39;s time and the deleter&#39;s email. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>deleter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Task.ReleaseState.Range">Task.ReleaseState.Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>

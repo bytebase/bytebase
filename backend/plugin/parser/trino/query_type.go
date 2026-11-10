@@ -71,8 +71,8 @@ func getQueryType(node ast.Node) (base.QueryType, bool) {
 //
 // On parse failure or empty/multi input it returns base.QueryTypeUnknown.
 func queryTypeFromText(statement string) base.QueryType {
-	file, errs := parser.Parse(statement)
-	if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
+	file, err := parser.Parse(statement)
+	if err != nil || file == nil || len(file.Stmts) == 0 {
 		return base.QueryTypeUnknown
 	}
 	qt, _ := getQueryType(file.Stmts[0])

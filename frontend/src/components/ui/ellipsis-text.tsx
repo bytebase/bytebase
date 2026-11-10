@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import type { LayerFamily } from "@/components/ui/layer";
 import { BlockTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +8,7 @@ interface EllipsisTextProps {
   readonly text: string;
   readonly className?: string;
   readonly children?: ReactNode;
+  readonly tooltipLayer?: LayerFamily;
 }
 
 /**
@@ -17,7 +19,12 @@ interface EllipsisTextProps {
  * content and the tooltip body. Pass `children` to render a richer node
  * (e.g. <HighlightLabelText>) while still tooltip-ing the plain text.
  */
-export function EllipsisText({ text, className, children }: EllipsisTextProps) {
+export function EllipsisText({
+  text,
+  className,
+  children,
+  tooltipLayer,
+}: EllipsisTextProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const [isTruncated, setIsTruncated] = useState(false);
   const [open, setOpen] = useState(false);
@@ -37,6 +44,7 @@ export function EllipsisText({ text, className, children }: EllipsisTextProps) {
   return (
     <BlockTooltip
       content={text}
+      layer={tooltipLayer}
       delayDuration={300}
       open={isTruncated && open}
       onOpenChange={setOpen}

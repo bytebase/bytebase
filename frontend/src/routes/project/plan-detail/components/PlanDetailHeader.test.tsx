@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   type ButtonHTMLAttributes,
@@ -8,7 +9,8 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
+import { ApprovalStatus, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
+import { RolloutSchema } from "@/types/proto-es/v1/rollout_service_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
 import { PlanDetailHeader } from "./PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./PlanDetailHeaderDetails";
@@ -24,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   patchState: vi.fn(),
   permissions: new Set<string>(),
   pushNotification: vi.fn(),
+  openAgentWithPrompt: vi.fn(),
   replaceRoute: vi.fn(),
   setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
@@ -31,6 +34,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -70,7 +74,16 @@ vi.mock("@/components/ui/button", () => ({
     appearance?: string;
     size?: string;
     variant?: string;
-  }) => <button {...props}>{children}</button>,
+  }) => (
+    <button
+      {...props}
+      data-button-size={_size}
+      data-button-appearance={_appearance}
+      data-button-variant={_variant}
+    >
+      {children}
+    </button>
+  ),
 }));
 
 vi.mock("@/components/ui/textarea", () => ({
@@ -116,6 +129,10 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 vi.mock("@/lib/projectPagedDataCache", () => ({
   invalidateProjectPlansPagedDataCache:
     mocks.invalidateProjectPlansPagedDataCache,
+}));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
 
 vi.mock("@/lib/utils", () => ({
@@ -180,11 +197,13 @@ function deferred<T>() {
 }
 
 const makePage = ({
+  approvalStatus = ApprovalStatus.PENDING,
   draft = true,
   issueStatus = IssueStatus.OPEN,
   planState = State.ACTIVE,
   creating = false,
 }: {
+  approvalStatus?: ApprovalStatus;
   draft?: boolean;
   issueStatus?: IssueStatus;
   planState?: State;
@@ -203,6 +222,7 @@ const makePage = ({
     issue: creating
       ? undefined
       : {
+          approvalStatus,
           description: "Stale issue description",
           draft,
           labels: [],
@@ -263,6 +283,93 @@ beforeEach(() => {
 });
 
 describe("PlanDetailHeader draft ownership", () => {
+  test("opens the Agent with the Plan as the selected resource for review", async () => {
+    mocks.page = makePage({ draft: false });
+    render(<PlanDetailHeader />);
+
+    const reviewButton = screen.getByRole("button", {
+      name: "agent.plan-assistance.review",
+    });
+    expect(reviewButton).toHaveAttribute("data-button-size", "md");
+    expect(reviewButton).toHaveAttribute("data-button-appearance", "ghost");
+    expect(reviewButton.querySelector(".lucide-bot")).not.toBeNull();
+    expect(reviewButton).not.toHaveClass("whitespace-normal", "h-auto");
+    expect(reviewButton.parentElement).toHaveClass(
+      "w-full",
+      "flex-wrap",
+      "gap-y-2"
+    );
+    expect(reviewButton.parentElement?.parentElement).toHaveClass("flex-wrap");
+    fireEvent.click(reviewButton);
+
+    expect(mocks.openAgentWithPrompt).toHaveBeenCalledWith(
+      expect.stringContaining("Review this Plan"),
+      [
+        {
+          kind: "plan",
+          name: "projects/p1/plans/123",
+          project: "projects/p1",
+          label: "Plan title (#123)",
+        },
+      ]
+    );
+  });
+
+  test("does not offer Agent review for a closed Plan", () => {
+    mocks.page = makePage({ draft: false, planState: State.DELETED });
+    render(<PlanDetailHeader />);
+
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
+  });
+
+  test.each([
+    { draft: true },
+    { approvalStatus: ApprovalStatus.APPROVAL_STATUS_UNSPECIFIED },
+    { approvalStatus: ApprovalStatus.CHECKING },
+    { approvalStatus: ApprovalStatus.APPROVED },
+    { approvalStatus: ApprovalStatus.REJECTED },
+    { approvalStatus: ApprovalStatus.SKIPPED },
+    { issueStatus: IssueStatus.CANCELED },
+    { issueStatus: IssueStatus.DONE },
+    { creating: true },
+  ])("does not offer Agent review outside pending review: %j", (state) => {
+    mocks.page = makePage({ draft: false, ...state });
+    render(<PlanDetailHeader />);
+
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
+  });
+
+  test("hides Agent review when rollout begins without changing approval status", () => {
+    mocks.page = makePage({ draft: false });
+    const { rerender } = render(<PlanDetailHeader />);
+    expect(
+      screen.getByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeInTheDocument();
+
+    mocks.page.plan.hasRollout = true;
+    rerender(<PlanDetailHeader />);
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
+  });
+
+  test("does not offer Agent review when a rollout is already loaded", () => {
+    mocks.page = makePage({ draft: false });
+    mocks.page.rollout = create(RolloutSchema, {
+      name: "projects/p1/plans/123/rollout",
+      stages: [],
+    });
+    render(<PlanDetailHeader />);
+
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
+  });
+
   test("edits draft title and description through UpdatePlan with plan permission only", async () => {
     render(
       <>

@@ -193,7 +193,6 @@ export const AnnouncementSection = forwardRef<
         <FormFieldGroup>
           {/* Theme selector */}
           <FormField
-            className="gap-y-3"
             title={t("settings.general.workspace.announcement-theme.self")}
             description={t(
               "settings.general.workspace.announcement-theme.description"

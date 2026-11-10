@@ -7,49 +7,15 @@ import { Button } from "@/components/ui/button";
 import { useAppProject } from "@/hooks/useAppProject";
 import { cn } from "@/lib/utils";
 import { RequestRoleSheet } from "@/modules/access-control/RequestRoleSheet";
+import { getDefaultQueryRole } from "@/modules/sql-editor/model/requestQueryRole";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource, Permission } from "@/types";
-import { PRESET_ROLES, PresetRoleType } from "@/types";
 import type { PermissionDeniedDetail } from "@/types/proto-es/v1/common_pb";
-import type { Role } from "@/types/proto-es/v1/role_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { parseStringToResource } from "@/utils/v1/databaseResource";
 import { AccessGrantRequestDrawer } from "./AccessGrantRequestDrawer";
 import { useRequestDrawerHost } from "./RequestDrawerHost";
-
-const SQL_SELECT_PERMISSION = "bb.sql.select";
-
-const getDefaultQueryRole = (
-  roles: readonly Pick<Role, "name" | "permissions">[],
-  requiredPermissions: readonly string[],
-  hasCustomRoleFeature: boolean
-) => {
-  const permissions =
-    requiredPermissions.length > 0
-      ? requiredPermissions
-      : [SQL_SELECT_PERMISSION];
-  const candidates = [...roles]
-    .filter((role) => hasCustomRoleFeature || PRESET_ROLES.includes(role.name))
-    .filter((role) =>
-      permissions.every((permission) => role.permissions.includes(permission))
-    )
-    .sort((a, b) => {
-      const permissionCountDelta = a.permissions.length - b.permissions.length;
-      if (permissionCountDelta !== 0) {
-        return permissionCountDelta;
-      }
-      if (a.name === PresetRoleType.SQL_EDITOR_READ_USER) {
-        return -1;
-      }
-      if (b.name === PresetRoleType.SQL_EDITOR_READ_USER) {
-        return 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
-
-  return candidates[0]?.name ?? PresetRoleType.SQL_EDITOR_USER;
-};
 
 interface Props {
   readonly size?: "sm" | "default";

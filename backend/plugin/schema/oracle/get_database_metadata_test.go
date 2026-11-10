@@ -64,6 +64,25 @@ func TestGetDatabaseMetadataObjectKinds(t *testing.T) {
 		verify func(*testing.T, *metadatapb.DatabaseSchemaMetadata)
 	}{
 		{
+			name: "invisible_and_virtual_columns",
+			ddl: `
+CREATE TABLE T (
+    A NUMBER,
+    H NUMBER INVISIBLE DEFAULT 7,
+    IHV INVISIBLE AS (A * 2) VIRTUAL
+);
+`,
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
+				table := requireTable(t, requireSingleSchema(t, metadata), "T")
+				require.Len(t, table.Columns, 3)
+				require.False(t, table.Columns[0].IsInvisible)
+				require.True(t, table.Columns[1].IsInvisible)
+				require.Equal(t, "7", table.Columns[1].Default)
+				require.True(t, table.Columns[2].IsInvisible)
+				require.Equal(t, "A*2", table.Columns[2].GetGeneration().GetExpression())
+			},
+		},
+		{
 			name: "table_constraints_indexes_view_sequence",
 			ddl: `
 CREATE TABLE DEPARTMENTS (
@@ -334,7 +353,9 @@ CREATE TABLE ORDER_ITEMS (
 				require.Len(t, orderItems.Columns, 3)
 				require.Equal(t, "TOTAL", orderItems.Columns[2].Name)
 				require.Equal(t, "NUMBER", orderItems.Columns[2].Type)
-				require.Equal(t, "QTY*PRICE", orderItems.Columns[2].Default)
+				require.Empty(t, orderItems.Columns[2].Default)
+				require.Equal(t, metadatapb.GenerationMetadata_TYPE_VIRTUAL, orderItems.Columns[2].GetGeneration().GetType())
+				require.Equal(t, "QTY*PRICE", orderItems.Columns[2].GetGeneration().GetExpression())
 			},
 		},
 		{
@@ -349,7 +370,7 @@ CREATE TABLE AUTHORS (
 			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				authors := requireTable(t, requireSingleSchema(t, metadata), "AUTHORS")
 				require.Len(t, authors.Columns, 2)
-				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].Default)
+				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].GetGeneration().GetExpression())
 				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME<>'O''Reilly'")
 			},
 		},

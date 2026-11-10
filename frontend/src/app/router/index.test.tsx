@@ -4,6 +4,7 @@ import { createMemoryRouter, Outlet } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
@@ -82,7 +83,7 @@ const registerRouterOnWebhooksPage = () => {
       },
       matches: [
         {
-          handle: { name: PROJECT_V1_ROUTE_WEBHOOKS },
+          route: { handle: { name: PROJECT_V1_ROUTE_WEBHOOKS } },
           params: { projectId: "project-sample" },
         },
       ],
@@ -191,6 +192,24 @@ describe("useCurrentRoute with real router context", () => {
 // changes; this test fails if that memoization regresses.
 describe("router.currentRoute snapshot stability", () => {
   beforeEach(registerRouterOnWebhooksPage);
+
+  test("reads the named index route from data-router matches", () => {
+    const memoryRouter = createMemoryRouter(
+      [
+        {
+          path: "/projects/:projectId",
+          children: [{ index: true, handle: { name: PROJECT_V1_ROUTE_DETAIL } }],
+        },
+      ],
+      { initialEntries: ["/projects/project-sample"] }
+    );
+    setAppRouter(memoryRouter);
+
+    expect(router.currentRoute.value).toMatchObject({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: { projectId: "project-sample" },
+    });
+  });
 
   test("returns a referentially stable object across reads without navigation", () => {
     const a = router.currentRoute.value;

@@ -1,0 +1,23 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "4829.75"
+    },
+    "table": {
+      "table_name": "orders",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 47895,
+      "rows_produced_per_join": 15963,
+      "filtered": "33.33",
+      "cost_info": {
+        "read_cost": "3233.41",
+        "eval_cost": "1596.34",
+        "prefix_cost": "4829.75",
+        "data_read_per_join": "1M"
+      },
+      "used_columns": ["id", "customer_id", "total", "status", "placed_on"],
+      "attached_condition": "(`qp`.`orders`.`total` > 880)"
+    }
+  }
+}

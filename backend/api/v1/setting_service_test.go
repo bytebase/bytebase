@@ -348,3 +348,151 @@ func TestMergeAppIMSetting(t *testing.T) {
 		require.Equal(t, "feishu-secret", feishuSecret(before))
 	})
 }
+
+func TestMergeAISetting(t *testing.T) {
+	stored := func() *storepb.AISetting {
+		return &storepb.AISetting{
+			Enabled:  true,
+			Provider: storepb.AISetting_OPEN_AI,
+			Endpoint: "https://api.openai.com/v1",
+			ApiKey:   "stored-key",
+			Model:    "gpt-4o",
+		}
+	}
+
+	t.Run("a masked field changes and the rest stay", func(t *testing.T) {
+		before := stored()
+		merged, err := mergeAISetting(before, &storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.sql_review_enabled"})
+		require.NoError(t, err)
+		want := stored()
+		want.SqlReviewEnabled = true
+		require.Equal(t, want.String(), merged.String())
+		require.False(t, before.SqlReviewEnabled)
+	})
+
+	t.Run("an enabled setting needs its endpoint, model and key", func(t *testing.T) {
+		_, err := mergeAISetting(stored(), &storepb.AISetting{}, []string{"value.ai.api_key"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		_, err = mergeAISetting(&storepb.AISetting{}, &storepb.AISetting{Enabled: true}, []string{"value.ai.enabled"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("an unknown path is refused", func(t *testing.T) {
+		_, err := mergeAISetting(stored(), &storepb.AISetting{}, []string{"value.ai.version"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("a missing payload clears the masked fields", func(t *testing.T) {
+		merged, err := mergeAISetting(stored(), nil, []string{"value.ai.enabled", "value.ai.sql_review_enabled"})
+		require.NoError(t, err)
+		require.False(t, merged.Enabled)
+		require.Equal(t, "stored-key", merged.ApiKey)
+	})
+}
+
+func TestMergeExportSetting(t *testing.T) {
+	t.Parallel()
+	stored := func() *storepb.ExportSetting {
+		return &storepb.ExportSetting{Sharepoint: &storepb.SharePointSetting{TenantId: "tenant", ClientId: "client", ClientSecret: "stored-secret"}}
+	}
+	sharePoint := func(tenantID, clientID, clientSecret string) *storepb.ExportSetting {
+		return &storepb.ExportSetting{Sharepoint: &storepb.SharePointSetting{TenantId: tenantID, ClientId: clientID, ClientSecret: clientSecret}}
+	}
+	allPaths := []string{"value.export.sharepoint.tenant_id", "value.export.sharepoint.client_id", "value.export.sharepoint.client_secret"}
+
+	t.Run("an empty secret keeps the stored one", func(t *testing.T) {
+		t.Parallel()
+		before := stored()
+		merged, err := mergeExportSetting(before, sharePoint("new-tenant", "client", ""), allPaths)
+		require.NoError(t, err)
+		require.Equal(t, "new-tenant", merged.Sharepoint.TenantId)
+		require.Equal(t, "stored-secret", merged.Sharepoint.ClientSecret)
+		require.Equal(t, "tenant", before.Sharepoint.TenantId)
+	})
+
+	t.Run("a new secret replaces the stored one", func(t *testing.T) {
+		t.Parallel()
+		merged, err := mergeExportSetting(stored(), sharePoint("", "", "rotated"), []string{"value.export.sharepoint.client_secret"})
+		require.NoError(t, err)
+		require.Equal(t, "rotated", merged.Sharepoint.ClientSecret)
+		require.Equal(t, "client", merged.Sharepoint.ClientId)
+	})
+
+	t.Run("a first save needs every field", func(t *testing.T) {
+		t.Parallel()
+		_, err := mergeExportSetting(&storepb.ExportSetting{}, sharePoint("tenant", "client", ""), allPaths)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		merged, err := mergeExportSetting(&storepb.ExportSetting{}, sharePoint(" tenant ", "client", "secret"), allPaths)
+		require.NoError(t, err)
+		require.Equal(t, "tenant", merged.Sharepoint.TenantId)
+	})
+
+	t.Run("clearing one ID is refused", func(t *testing.T) {
+		t.Parallel()
+		_, err := mergeExportSetting(stored(), &storepb.ExportSetting{}, []string{"value.export.sharepoint.client_id"})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+
+	t.Run("clearing both IDs removes SharePoint, secret included", func(t *testing.T) {
+		t.Parallel()
+		merged, err := mergeExportSetting(stored(), &storepb.ExportSetting{}, allPaths)
+		require.NoError(t, err)
+		require.Nil(t, merged.Sharepoint)
+	})
+
+	t.Run("unknown and pre-EXPORT paths are refused", func(t *testing.T) {
+		t.Parallel()
+		for _, path := range []string{"value.export.sharepoint.client_secret_set", "value.sharepoint.tenant_id", "value.export.sharepoint"} {
+			_, err := mergeExportSetting(stored(), &storepb.ExportSetting{}, []string{path})
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), path)
+		}
+	})
+}
+
+func TestUpdateExportSettingRejectedInSaaS(t *testing.T) {
+	t.Parallel()
+	saas := &SettingService{profile: &config.Profile{SaaS: true}}
+	_, err := saas.updateExportSetting(context.Background(), connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting:    &v1pb.Setting{Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Export{Export: &v1pb.ExportSetting{Sharepoint: &v1pb.SharePointSetting{}}}}},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.export.sharepoint.tenant_id"}},
+	}), "ws")
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
+func TestCanUpdateAISettingInSaaS(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name  string
+		paths []string
+		want  bool
+	}{
+		{
+			name:  "allows the AI SQL review switch",
+			paths: []string{"value.ai.sql_review_enabled"},
+			want:  true,
+		},
+		{
+			name:  "rejects enabling the AI assistant",
+			paths: []string{"value.ai.enabled"},
+		},
+		{
+			name:  "rejects provider credentials",
+			paths: []string{"value.ai.api_key"},
+		},
+		{
+			name:  "rejects a mixed update",
+			paths: []string{"value.ai.sql_review_enabled", "value.ai.model"},
+		},
+		{
+			name: "rejects an empty update",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, canUpdateAISettingInSaaS(tc.paths))
+		})
+	}
+}

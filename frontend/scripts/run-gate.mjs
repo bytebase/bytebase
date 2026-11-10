@@ -5,11 +5,13 @@
 // other three are largely single-core, so overlapping them costs little and
 // takes the gate from ~92s to ~70s.
 //
-// Each stage's output is buffered and printed in a fixed order once every stage
-// has finished, so a failure reads the same as it did serially -- interleaved
-// live output from four concurrent stages would not.
+// Each stage's output is buffered and printed once every stage has finished, so
+// a failure reads the same as it did serially -- interleaved live output from
+// four concurrent stages would not.
 import { spawn } from "node:child_process";
 import { readdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // Every scripts/check-*.mjs runs, so a new check cannot be left out of the gate.
 const GUARDS = readdirSync(new URL(".", import.meta.url))
@@ -62,24 +64,36 @@ function run({ name, argv, env }) {
   });
 }
 
-// Every stage reads the generated sources copied from the backend, so this one
-// runs first and on its own.
-const prepare = await run({ name: "prepare", argv: ["pnpm", "run", "prepare"] });
-if (prepare.code !== 0) {
-  process.stdout.write(prepare.output);
-  process.exit(prepare.code);
+// Prints passing stages, then failing ones, then the failure summary, so the
+// failure sits at the end of the log where CI viewers and truncation keep it.
+// Sets `process.exitCode` rather than calling `process.exit()`: stdout is a
+// pipe on CI, its writes are asynchronous, and exiting early drops their tail.
+export function finish(results) {
+  const failed = results.filter((r) => r.code !== 0);
+  const passed = results.filter((r) => r.code === 0);
+  for (const { name, output } of [...passed, ...failed]) {
+    process.stdout.write(`\n${"=".repeat(60)}\n${name}\n${"=".repeat(60)}\n${output}`);
+  }
+
+  // Each stage already reported itself as it finished, so only restate things
+  // when something failed and the list is worth having next to the exit.
+  if (failed.length > 0) {
+    process.stdout.write(`\n${failed.length} stage(s) failed: ${failed.map((r) => r.name).join(", ")}\n`);
+    process.exitCode = 1;
+  }
 }
 
-const results = await Promise.all(STAGES.map(run));
-
-for (const { name, output } of results) {
-  process.stdout.write(`\n${"=".repeat(60)}\n${name}\n${"=".repeat(60)}\n${output}`);
+async function main() {
+  // Every stage reads the generated sources copied from the backend, so this one
+  // runs first and on its own.
+  const prepare = await run({ name: "prepare", argv: ["pnpm", "run", "prepare"] });
+  if (prepare.code !== 0) {
+    finish([prepare]);
+    return;
+  }
+  finish(await Promise.all(STAGES.map(run)));
 }
 
-// Each stage already reported itself as it finished, so only restate things
-// when something failed and the list is worth having next to the exit.
-const failed = results.filter((r) => r.code !== 0);
-if (failed.length > 0) {
-  process.stdout.write(`\n${failed.length} stage(s) failed: ${failed.map((r) => r.name).join(", ")}\n`);
-  process.exit(1);
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
 }

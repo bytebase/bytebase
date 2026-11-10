@@ -17,12 +17,14 @@ vi.mock("@/components/InstanceSelect", () => ({
     onChange: (name: string, instance: unknown) => void;
     disabled?: boolean;
     portal?: boolean;
+    project?: string;
     value: string;
   }) =>
     createElement("input", {
       "data-testid": "instance-select",
       disabled: props.disabled,
       "data-portal": String(Boolean(props.portal)),
+      "data-project": props.project ?? "",
       value: props.value,
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
         props.onChange(e.target.value, mocks.instancesByName[e.target.value]),
@@ -422,6 +424,15 @@ describe("CreateDatabaseSheet — enforceIssueTitle (BYT-9310)", () => {
 
     expect(projectSelect.dataset.portal).toBe("true");
     expect(instanceSelect.dataset.portal).toBe("true");
+  });
+
+  it("offers the fixed project's instances in the instance select", async () => {
+    await renderSheet(false);
+
+    const instanceSelect = container.querySelector(
+      "[data-testid='instance-select']"
+    ) as HTMLInputElement;
+    expect(instanceSelect.dataset.project).toBe("projects/foo");
   });
 
   it("selects and locks the owner project for a project-owned instance", async () => {

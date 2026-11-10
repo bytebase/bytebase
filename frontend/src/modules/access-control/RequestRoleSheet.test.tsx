@@ -6,6 +6,7 @@ import type {
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExprEditorProps } from "@/components/ExprEditor";
 import type { Permission } from "@/types";
 
 (
@@ -17,10 +18,13 @@ import type { Permission } from "@/types";
 // from the app store, which is not worth wiring up for these tests.
 // ---------------------------------------------------------------------------
 
-vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () =>
-    createElement("div", { "data-testid": "env-multi-select" }),
-}));
+vi.mock("@/components/EnvironmentSelect", async () =>
+  (await import("@/test-utils/environmentSelectStub")).environmentSelectStub()
+);
+
+vi.mock("@/components/EnvironmentLabel", async () =>
+  (await import("@/test-utils/environmentSelectStub")).environmentBadgeStub()
+);
 
 // ---------------------------------------------------------------------------
 // UI primitive mocks — mirror the Task 7/8 test harness so the sheet renders
@@ -86,9 +90,22 @@ vi.mock("@/components/DatabaseResourceSelector", () => ({
   DatabaseResourceSelector: () => null,
 }));
 
-vi.mock("@/components/ExprEditor", () => ({
-  ExprEditor: () => null,
-}));
+vi.mock("@/components/ExprEditor", async () => {
+  const { buildSelectorCapabilities } = await import(
+    "@/modules/cel/logic/agentPrompt"
+  );
+  return {
+    ExprEditor: ({
+      factorList,
+      factorOperatorOverrideMap,
+    }: Pick<ExprEditorProps, "factorList" | "factorOperatorOverrideMap">) =>
+      createElement(
+        "pre",
+        { "data-testid": "expression-capabilities" },
+        buildSelectorCapabilities(factorList, factorOperatorOverrideMap)
+      ),
+  };
+});
 
 // RoleSelect: test-only stub that exposes a plain <select> so tests can pick a
 // role by setting value. We drive role selection via a hidden input bound to
@@ -111,10 +128,9 @@ vi.mock("@/components/RoleSelect", () => ({
     }),
 }));
 
-vi.mock("react-i18next", () => ({
-  initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+vi.mock("react-i18next", async () =>
+  (await import("@/test-utils/i18n")).reactI18nextStub()
+);
 
 // ---------------------------------------------------------------------------
 // Infra / cross-module mocks
@@ -143,6 +159,9 @@ vi.mock("@/types/proto-es/v1/issue_service_pb", () => ({
 }));
 
 vi.mock("@/types/proto-es/v1/project_service_pb", () => ({}));
+vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
+  PlanFeature: { FEATURE_ENVIRONMENT_TIERS: "FEATURE_ENVIRONMENT_TIERS" },
+}));
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
@@ -167,12 +186,6 @@ vi.mock("@/modules/cel", () => ({
   wrapAsGroup: (e: unknown) => e,
 }));
 
-vi.mock("@/utils/cel-attributes", () => ({
-  CEL_ATTRIBUTE_RESOURCE_DATABASE: "resource.database",
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: "resource.schema_name",
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: "resource.table_name",
-}));
-
 vi.mock("@/utils/issue/cel", () => ({
   buildConditionExpr: (args: Record<string, unknown>) => ({ ...args }),
   stringifyConditionExpression: () => "",
@@ -194,6 +207,13 @@ vi.mock("@/types", () => ({
   },
 }));
 
+// `@/types/v1/environment` reaches `setting_service_pb`, whose descriptor
+// needs the real `@bufbuild/protobuf/wkt` this file stubs.
+vi.mock("@/types/proto-es/v1/setting_service_pb", () => ({
+  EnvironmentSetting_EnvironmentSchema: {},
+  Setting_SettingName: { EMAIL: 1 },
+}));
+
 // ---------------------------------------------------------------------------
 // Store / connect mocks — stable singletons.
 // ---------------------------------------------------------------------------
@@ -213,16 +233,23 @@ vi.mock("@/api", () => ({
 }));
 
 vi.mock("@/stores", () => ({
+  environmentNamePrefix: "environments/",
   pushNotification: (...args: unknown[]) => mocks.pushNotification(...args),
 }));
 
-vi.mock("@/hooks/useAppState", () => ({
-  useCurrentUser: () => mocks.currentUser,
-}));
+vi.mock("@/hooks/useAppState", async () => {
+  const { STUB_ENVIRONMENTS } = await import(
+    "@/test-utils/environmentSelectStub"
+  );
+  return {
+    useCurrentUser: () => mocks.currentUser,
+    useEnvironmentList: () => STUB_ENVIRONMENTS,
+    usePlanFeature: () => true,
+  };
+});
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
+vi.mock("@/stores/app", () => {
+  const state = {
       roleList: [],
       getRoleByName: (name: string) => ({
         name,
@@ -241,13 +268,20 @@ vi.mock("@/stores/app", () => ({
             ? undefined
             : { seconds: BigInt(mocks.maximumRequestExpirationSeconds) },
       }),
-    }),
-}));
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (state: unknown) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import SUT after mocks are registered.
 // ---------------------------------------------------------------------------
 
+import { directExecutionDriver } from "@/test-utils/directExecutionDriver";
 import { nativeChange } from "@/test-utils/nativeChange";
 import { RequestRoleSheet } from "./RequestRoleSheet";
 
@@ -339,8 +373,9 @@ async function typeReason(text: string): Promise<void> {
 // Stub window.open — production handler opens the created issue in a new tab.
 beforeEach(async () => {
   vi.spyOn(window, "open").mockImplementation(() => null);
-  // Reset env-kind mock between tests so per-test overrides don't leak.
+  // Reset role-scope mocks between tests so per-test overrides don't leak.
   const utilsMock = await import("@/lib/project-member/utils");
+  vi.mocked(utilsMock.roleHasDatabaseLimitation).mockReturnValue(false);
   vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockReturnValue(
     undefined
   );
@@ -424,7 +459,7 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     };
     // formatIssueTitle sentinel: mock wraps in FMT(...) so if the production
     // code drops the formatIssueTitle() call, this assertion fails.
-    expect(req.issue.title).toBe("FMT(issue.title.request-specific-role)");
+    expect(req.issue.title).toMatch(/^FMT\(issue\.title\.request-specific-role /);
   });
 
   it("blocks stale role submissions when the selected role misses required permissions", async () => {
@@ -440,27 +475,188 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getSubmitButton().disabled).toBe(false);
   });
 
-  it("renders DDL/DML warning under env multiselect when role has env limitation", async () => {
-    // Override default helper mock for this case so the env section appears.
+  it("offers unified database and object-name string predicates", async () => {
     const utilsMock = await import("@/lib/project-member/utils");
-    vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
-      () => "DDL/DML"
-    );
-
+    vi.mocked(utilsMock.roleHasDatabaseLimitation).mockReturnValue(true);
     await renderSheet(false);
     await selectRole("roles/sqlEditorUser");
-    await flush();
+    const expressionMode = [...container.querySelectorAll("label")].find(
+      (label) => label.textContent === "issue.role-grant.use-cel"
+    );
+    expect(expressionMode).toBeDefined();
+    await act(async () => {
+      expressionMode!.click();
+    });
+    const capabilities = container.querySelector(
+      '[data-testid="expression-capabilities"]'
+    );
+    expect(capabilities).not.toBeNull();
+    const { fields } = JSON.parse(capabilities!.textContent!) as {
+      fields: { name: string; templates: string[] }[];
+    };
 
-    expect(container.textContent).toContain("project.members.ddl-warning");
+    expect(
+      fields.find((field) => field.name === "resource.database")?.templates
+    ).toEqual([
+      'resource.database == "value"',
+      'resource.database != "value"',
+      'resource.database in ["value"]',
+      '!(resource.database in ["value"])',
+      'resource.database.contains("value")',
+      '!(resource.database.contains("value"))',
+      'resource.database.matches("value")',
+      'resource.database.startsWith("value")',
+      'resource.database.endsWith("value")',
+    ]);
+    for (const factor of ["resource.table_name", "resource.schema_name"]) {
+      expect(fields.find((field) => field.name === factor)?.templates).toEqual(
+        expect.arrayContaining([
+          `${factor}.contains("value")`,
+          `!(${factor}.contains("value"))`,
+          `${factor}.startsWith("value")`,
+          `${factor}.endsWith("value")`,
+          `${factor}.matches("value")`,
+        ])
+      );
+    }
   });
 
-  it("does not render DDL warning when role has no env limitation", async () => {
-    // Default mock returns undefined — no override needed. Confirms the
-    // warning is gated by envKind, not always-rendered.
-    await renderSheet(false);
-    await selectRole("roles/projectOwner");
-    await flush();
+  describe("direct DDL/DML execution", () => {
+    async function useDdlRole(): Promise<void> {
+      const utilsMock = await import("@/lib/project-member/utils");
+      vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
+        (role: string) => (role === "roles/sqlEditorUser" ? "DDL/DML" : undefined)
+      );
+    }
+    beforeEach(useDdlRole);
+    const field = directExecutionDriver(flush);
+    function submittedRequest(): {
+      issue: {
+        title: string;
+        roleGrant: { condition: { environments?: string[] } };
+      };
+    } {
+      expect(mocks.createIssue).toHaveBeenCalledTimes(1);
+      return mocks.createIssue.mock.calls[0][0] as never;
+    }
 
-    expect(container.textContent).not.toContain("project.members.ddl-warning");
+    it("is off by default: caption, no picker, and the empty clause on submit", async () => {
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await flush();
+
+      expect(field.getSwitch().getAttribute("aria-checked")).toBe("false");
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.none"
+      );
+      expect(
+        container.querySelector("[data-testid='env-multi-select']")
+      ).toBeNull();
+      expect(getSubmitButton().disabled).toBe(false);
+
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
+
+      const req = submittedRequest();
+      expect(req.issue.roleGrant.condition.environments).toEqual([]);
+      expect(req.issue.title).not.toContain("direct-execution-suffix");
+    });
+
+    it("blocks submit while on with nothing picked, with the error beside the picker", async () => {
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await field.toggle();
+
+      expect(field.getSwitch().getAttribute("aria-checked")).toBe("true");
+      expect(
+        container.querySelector("[data-testid='env-multi-select']")
+      ).not.toBeNull();
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.environment-required"
+      );
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.lead-request"
+      );
+      expect(getSubmitButton().disabled).toBe(true);
+    });
+
+    it("submits the picked list, shows the requester's lead, and suffixes the title", async () => {
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await field.toggle();
+      await field.pickStaging();
+
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.lead-request"
+      );
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.environment-required"
+      );
+      expect(getSubmitButton().disabled).toBe(false);
+
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
+
+      const req = submittedRequest();
+      expect(req.issue.roleGrant.condition.environments).toEqual([
+        "environments/staging",
+      ]);
+      // The suffix carries the environment's title, not its name: D9.
+      expect(req.issue.title).toMatch(
+        /^FMT\(issue\.title\.request-specific-role .* · issue\.role-grant\.direct-execution-suffix \{"kind":"DDL\/DML","environments":"Staging"\}\)$/
+      );
+    });
+
+    it("suffixes an enforced title too", async () => {
+      await renderSheet(true);
+      await selectRole("roles/sqlEditorUser");
+      await typeReason("fix the backfill");
+      await field.toggle();
+      await field.pickStaging();
+
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
+
+      expect(submittedRequest().issue.title).toBe(
+        '[issue.title.request-role] fix the backfill · issue.role-grant.direct-execution-suffix {"kind":"DDL/DML","environments":"Staging"}'
+      );
+    });
+
+    it("a role change turns the switch off and clears the error", async () => {
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await field.toggle();
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.environment-required"
+      );
+
+      await selectRole("roles/projectOwner");
+      await flush();
+      expect(field.getSwitch()).toBeNull();
+
+      await selectRole("roles/sqlEditorUser");
+      await flush();
+      expect(field.getSwitch().getAttribute("aria-checked")).toBe("false");
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.environment-required"
+      );
+    });
+
+    it("renders no field for a role without DDL/DML", async () => {
+      await renderSheet(false);
+      await selectRole("roles/projectOwner");
+      await flush();
+
+      expect(field.getSwitch()).toBeNull();
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution"
+      );
+    });
   });
 });

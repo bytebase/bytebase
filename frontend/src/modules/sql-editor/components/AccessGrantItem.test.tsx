@@ -14,6 +14,12 @@ const mocks = vi.hoisted(() => ({
   readStatus: vi.fn(),
   getAccessGrantDisplayStatusText: vi.fn(),
   getAccessGrantStatusTagType: vi.fn(),
+  batchGetOrFetchDatabases: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (selector: (state: unknown) => unknown) =>
+    selector({ batchGetOrFetchDatabases: mocks.batchGetOrFetchDatabases }),
 }));
 
 vi.mock("@/components/DatabaseTargetDisplay", () => ({
@@ -71,17 +77,31 @@ vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({
     children,
     content,
+    onOpenChange,
   }: {
     children: React.ReactNode;
     content?: React.ReactNode;
+    onOpenChange?: (open: boolean) => void;
   }) => (
     <span data-testid="tooltip" data-has-content={Boolean(content)}>
       {children}
+      {onOpenChange && (
+        <button data-open-tooltip onClick={() => onOpenChange(true)} />
+      )}
     </span>
   ),
 }));
 
 vi.mock("@/components/ui/button", () => ({
+  buttonVariants: ({
+    appearance,
+    size,
+    className,
+  }: {
+    appearance?: string;
+    size?: string;
+    className?: string;
+  }) => `button-${appearance}-${size} ${className ?? ""}`,
   Button: ({
     children,
     onClick,
@@ -163,6 +183,7 @@ beforeEach(async () => {
   mocks.readStatus.mockReturnValue("ACTIVE");
   mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
   mocks.getAccessGrantStatusTagType.mockReturnValue("success");
+  mocks.batchGetOrFetchDatabases.mockResolvedValue([]);
 
   ({ AccessGrantItem } = await import("./AccessGrantItem"));
 });
@@ -210,6 +231,67 @@ describe("AccessGrantItem", () => {
     unmount();
   });
 
+  test("hydrates remaining targets when their tooltip opens", () => {
+    const grant = makeGrant({
+      targets: [
+        "instances/inst1/databases/db1",
+        "instances/inst2/databases/db2",
+        "instances/inst3/databases/db3",
+      ],
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={grant as never}
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    act(() => {
+      container.querySelector<HTMLButtonElement>("[data-open-tooltip]")?.click();
+    });
+
+    expect(mocks.batchGetOrFetchDatabases).toHaveBeenCalledWith(
+      ["instances/inst3/databases/db3"],
+      true
+    );
+    unmount();
+  });
+
+  test("retries remaining target hydration after a failed request", async () => {
+    mocks.batchGetOrFetchDatabases
+      .mockRejectedValueOnce(new Error("temporary failure"))
+      .mockResolvedValueOnce([]);
+    const grant = makeGrant({
+      targets: [
+        "instances/inst1/databases/db1",
+        "instances/inst2/databases/db2",
+        "instances/inst3/databases/db3",
+      ],
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={grant as never}
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    const tooltipTrigger = container.querySelector<HTMLButtonElement>(
+      "[data-open-tooltip]"
+    );
+    act(() => tooltipTrigger?.click());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => tooltipTrigger?.click());
+
+    expect(mocks.batchGetOrFetchDatabases).toHaveBeenCalledTimes(2);
+    unmount();
+  });
+
   test("renders status badge with correct label for ACTIVE status", () => {
     mocks.readStatus.mockReturnValue("ACTIVE");
     mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
@@ -251,6 +333,88 @@ describe("AccessGrantItem", () => {
     expect(query?.className).toContain("min-w-0");
     expect(query?.className).toContain("wrap-anywhere");
     expect(query?.className).toContain("line-clamp-2");
+    unmount();
+  });
+
+  test("expands and hides a visually clamped statement", () => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) =>
+        ({ "common.show-more": "Show more", "common.hide": "Hide" })[
+          key
+        ] ?? key,
+    });
+    const scrollHeight = vi
+      .spyOn(HTMLElement.prototype, "scrollHeight", "get")
+      .mockReturnValue(48);
+    const clientHeight = vi
+      .spyOn(HTMLElement.prototype, "clientHeight", "get")
+      .mockReturnValue(32);
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={
+          makeGrant({
+            query: `SELECT /*\n${"x".repeat(200)}`,
+          }) as never
+        }
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    const statement = container.querySelector("p");
+    const toggle = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Show more"
+    );
+    expect(toggle).toBeDefined();
+    expect(statement?.className).toContain("line-clamp-2");
+
+    act(() => toggle?.click());
+    expect(toggle?.textContent).toBe("Hide");
+    expect(statement?.className).not.toContain("line-clamp-2");
+
+    act(() => toggle?.click());
+    expect(toggle?.textContent).toBe("Show more");
+    expect(statement?.className).toContain("line-clamp-2");
+    unmount();
+    scrollHeight.mockRestore();
+    clientHeight.mockRestore();
+  });
+
+  test("uses secondary button styling for View issue", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={makeGrant({ issue: "projects/proj1/issues/issue1" }) as never}
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    const issueLink = container.querySelector("a");
+    expect(issueLink?.className).toContain("button-secondary-xs");
+    unmount();
+  });
+
+  test("keeps action hover visible when the item is hovered", () => {
+    mocks.readStatus.mockReturnValue("REJECTED");
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={
+          makeGrant({ issue: "projects/proj1/issues/issue1" }) as never
+        }
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    expect(
+      container.querySelector("[data-re-request-btn]")?.className
+    ).toContain("hover:!bg-control-bg-hover");
+    expect(container.querySelector("a")?.className).toContain(
+      "hover:!bg-control-bg-hover"
+    );
     unmount();
   });
 
