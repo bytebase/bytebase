@@ -475,7 +475,7 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getSubmitButton().disabled).toBe(false);
   });
 
-  it("keeps approval database targets positive without restricting name string predicates", async () => {
+  it("offers unified database and object-name string predicates", async () => {
     const utilsMock = await import("@/lib/project-member/utils");
     vi.mocked(utilsMock.roleHasDatabaseLimitation).mockReturnValue(true);
     await renderSheet(false);
@@ -499,7 +499,14 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
       fields.find((field) => field.name === "resource.database")?.templates
     ).toEqual([
       'resource.database == "value"',
+      'resource.database != "value"',
       'resource.database in ["value"]',
+      '!(resource.database in ["value"])',
+      'resource.database.contains("value")',
+      '!(resource.database.contains("value"))',
+      'resource.database.matches("value")',
+      'resource.database.startsWith("value")',
+      'resource.database.endsWith("value")',
     ]);
     for (const factor of ["resource.table_name", "resource.schema_name"]) {
       expect(fields.find((field) => field.name === factor)?.templates).toEqual(

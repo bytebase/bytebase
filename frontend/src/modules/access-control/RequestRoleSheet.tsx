@@ -39,7 +39,7 @@ import {
   roleHasDatabaseLimitation,
 } from "@/lib/project-member/utils";
 import { displayRoleTitleFromList } from "@/lib/role";
-import type { ConditionGroupExpr, Factor, Operator } from "@/modules/cel";
+import type { ConditionGroupExpr, Factor } from "@/modules/cel";
 import {
   buildCELExpr,
   emptySimpleExpr,
@@ -248,14 +248,6 @@ function RequestRoleForm({
       CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
       CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
     ],
-    []
-  );
-  // Approval routing extracts positive database targets, not general CEL predicates.
-  const factorOperatorOverrideMap = useMemo(
-    () =>
-      new Map<Factor, Operator[]>([
-        [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["_==_", "@in"]],
-      ]),
     []
   );
   const factorOptionConfigMap = useMemo(
@@ -600,7 +592,6 @@ function RequestRoleForm({
                   expr={exprGroup}
                   factorList={factorList}
                   optionConfigMap={factorOptionConfigMap}
-                  factorOperatorOverrideMap={factorOperatorOverrideMap}
                   onUpdate={setExprGroup}
                 />
               )}
