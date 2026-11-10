@@ -451,6 +451,8 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 			_, _ = buf.WriteString(col.Collation)
 		}
 
+		writeColumnGeneration(buf, col)
+
 		if !col.Nullable {
 			_, _ = buf.WriteString(" NOT NULL")
 		}
@@ -642,6 +644,30 @@ func writePartitionClause(buf *strings.Builder, partitions []*metadatapb.TablePa
 	return nil
 }
 
+// writeColumnGeneration writes a generated column's GENERATED ALWAYS AS clause.
+// TiDB places it after the column type and before NOT NULL.
+func writeColumnGeneration(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
+	if column.Generation == nil || column.Generation.Expression == "" {
+		return
+	}
+	_, _ = buf.WriteString(" GENERATED ALWAYS AS ")
+	// The omni catalog already parenthesizes the whole expression; the clause
+	// requires exactly one outer pair, so wrap only when it is not already one.
+	expr := column.Generation.Expression
+	if strings.HasPrefix(expr, "(") && strings.HasSuffix(expr, ")") {
+		_, _ = buf.WriteString(expr)
+	} else {
+		_, _ = buf.WriteString("(")
+		_, _ = buf.WriteString(expr)
+		_, _ = buf.WriteString(")")
+	}
+	if column.Generation.Type == metadatapb.GenerationMetadata_TYPE_STORED {
+		_, _ = buf.WriteString(" STORED")
+	} else {
+		_, _ = buf.WriteString(" VIRTUAL")
+	}
+}
+
 func writeAddColumn(buf *strings.Builder, table string, column *metadatapb.ColumnMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
@@ -658,6 +684,8 @@ func writeAddColumn(buf *strings.Builder, table string, column *metadatapb.Colum
 		_, _ = buf.WriteString(" COLLATE ")
 		_, _ = buf.WriteString(column.Collation)
 	}
+
+	writeColumnGeneration(buf, column)
 
 	if !column.Nullable {
 		_, _ = buf.WriteString(" NOT NULL")
@@ -707,6 +735,8 @@ func writeModifyColumn(buf *strings.Builder, table string, column *metadatapb.Co
 		_, _ = buf.WriteString(" COLLATE ")
 		_, _ = buf.WriteString(column.Collation)
 	}
+
+	writeColumnGeneration(buf, column)
 
 	if !column.Nullable {
 		_, _ = buf.WriteString(" NOT NULL")
