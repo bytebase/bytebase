@@ -39,20 +39,20 @@ var BlockedFeatureNames = base.ElasticsearchBlockedFeatureNames
 // AnalyzeRequest combines URL classification with body analysis for an ES request.
 // Body analysis is only performed for search and explain APIs.
 func AnalyzeRequest(method, url, body string) *RequestAnalysis {
-	omniResult := analysis.AnalyzeRequest(method, url, body)
-	return convertAnalysis(omniResult)
+	result := analysis.AnalyzeRequest(method, url, body)
+	return convertAnalysis(result)
 }
 
 // classifyMaskableAPI determines the MaskableAPI type and target index for an ES request.
 func classifyMaskableAPI(method, url string) (MaskableAPI, string) {
-	omniAPI, index := analysis.ClassifyMaskableAPI(method, url)
-	return convertMaskableAPI(omniAPI), index
+	api, index := analysis.ClassifyMaskableAPI(method, url)
+	return convertMaskableAPI(api), index
 }
 
 // analyzeRequestBody parses the JSON body and extracts fields and blocked features.
 // This is an internal adapter kept for test compatibility.
 func analyzeRequestBody(body string) *RequestAnalysis {
 	// To match the omni behavior exactly, we use a search endpoint to trigger body analysis.
-	omniResult := analysis.AnalyzeRequest("POST", "test/_search", body)
-	return convertAnalysis(omniResult)
+	result := analysis.AnalyzeRequest("POST", "test/_search", body)
+	return convertAnalysis(result)
 }
