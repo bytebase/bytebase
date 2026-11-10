@@ -937,3 +937,67 @@ func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
 	require.Equal(t, "note", remoteOrders.Columns[1].Name)
 	require.Equal(t, "character varying(30)", remoteOrders.Columns[1].Type)
 }
+
+// TestSyncIdentitySequenceOwnerWithDroppedColumns verifies that an identity column's
+// owning sequence resolves to that column even when an earlier column was dropped.
+// pg_depend.refobjsubid is the owning column's attnum, which is stable across drops;
+// treating it as a position among the table's remaining visible columns instead picks
+// whichever column happens to sit at that offset.
+func TestSyncIdentitySequenceOwnerWithDroppedColumns(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
+
+	setupSQL := `
+CREATE TABLE t (a int, b int);
+ALTER TABLE t DROP COLUMN a;
+ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;
+ALTER TABLE t ADD COLUMN z int;
+`
+	_, err := pgDB.Exec(setupSQL)
+	require.NoError(t, err)
+
+	driver := &Driver{}
+	config := db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Type:     storepb.DataSourceType_ADMIN,
+			Username: "postgres",
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
+			Database: dbName,
+		},
+		Password: "root-password",
+		ConnectionContext: db.ConnectionContext{
+			EngineVersion: "16.0",
+			DatabaseName:  dbName,
+		},
+	}
+
+	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, openedDriver.Close(ctx)) })
+
+	pgDriver, ok := openedDriver.(*Driver)
+	require.True(t, ok)
+
+	metadata, err := pgDriver.SyncDBSchema(ctx)
+	require.NoError(t, err)
+
+	var publicSchema *metadatapb.SchemaMetadata
+	for _, schema := range metadata.Schemas {
+		if schema.Name == "public" {
+			publicSchema = schema
+			break
+		}
+	}
+	require.NotNil(t, publicSchema, "public schema not found in synced metadata")
+	require.Len(t, publicSchema.Sequences, 1, "expected exactly one identity sequence")
+
+	seq := publicSchema.Sequences[0]
+	require.Equal(t, "t", seq.OwnerTable)
+	// Before the fix this resolved to "z": the owning attnum (3, for "id") was used as
+	// a 1-based index into the visible columns [b, id, z], landing on "z" instead.
+	require.Equal(t, "id", seq.OwnerColumn)
+}
