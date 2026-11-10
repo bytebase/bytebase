@@ -142,7 +142,8 @@ httpRoute:
   enabled: false
   # -- Additional HTTPRoute annotations
   annotations: {}
-  # -- Gateway API parentRefs. Must reference an existing Gateway.
+  # -- Gateway API parentRefs. Required when enabled: each entry names an
+  # existing Gateway, which must allow routes from the Bytebase namespace.
   # @default -- `[]` (See [values.yaml])
   parentRefs: []
   # - name: public
@@ -151,7 +152,8 @@ httpRoute:
   # -- Hostnames for the HTTPRoute
   hostnames: []
   # - bytebase.example.com
-  # -- HTTPRoute rules. Defaults to a single catch-all rule if not set.
+  # -- HTTPRoute rules. Defaults to a single catch-all rule if not set, which
+  # also publishes /metrics when bytebase.option.metrics-remote-access is on.
   # Each rule's backendRef is wired to the bytebase-entrypoint Service automatically.
   rules: []
   # - matches:

@@ -1,4 +1,7 @@
 {{- if .Values.httpRoute.enabled -}}
+{{- if not .Values.httpRoute.parentRefs -}}
+{{- fail "httpRoute.parentRefs is required when httpRoute.enabled is true: name the Gateway the route attaches to" -}}
+{{- end -}}
 {{- $svcName := "bytebase-entrypoint" -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -12,10 +15,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- with .Values.httpRoute.parentRefs }}
   parentRefs:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- toYaml .Values.httpRoute.parentRefs | nindent 4 }}
   {{- with .Values.httpRoute.hostnames }}
   hostnames:
     {{- toYaml . | nindent 4 }}

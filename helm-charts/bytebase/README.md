@@ -99,6 +99,28 @@ upgrade bytebase-release bytebase-repo/bytebase
 
 Bytebase migrates its metadata database at startup and opens its port only after the migration finishes, which can take a long time on a large metadata database. The chart sets only a readiness probe on `/healthz`, so the pod stays unready during the migration instead of being restarted. If you pass `--wait` or `--atomic` to `helm upgrade`, set `--timeout` above the expected migration time. Helm's default is `5m`, and `--atomic` rolls the release back to the previous Bytebase version when it expires, which does not support the migrated metadata database.
 
+## Exposing Bytebase with Gateway API
+
+The chart creates a `ClusterIP` Service named `bytebase-entrypoint`, which is reachable only from inside the cluster. On a cluster that runs a [Gateway API](https://gateway-api.sigs.k8s.io/) implementation, set `httpRoute.enabled` and the chart also creates an `HTTPRoute` that sends traffic from an existing `Gateway` to that Service:
+
+```yaml
+bytebase:
+  option:
+    external-url: "https://bytebase.example.com"
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: public
+      namespace: kube-system
+      sectionName: https
+  hostnames:
+    - bytebase.example.com
+```
+
+- `httpRoute.parentRefs` is required. It names the `Gateway` the route attaches to, and that `Gateway` must allow routes from the Bytebase namespace through `allowedRoutes`.
+- Keep `bytebase.option.external-url` equal to the address users reach through the `Gateway`. SSO and SCIM depend on it.
+- The default rule matches every path. With `bytebase.option.metrics-remote-access` on, that includes the unauthenticated `/metrics` endpoint; see [Scraping /metrics](#scraping-metrics).
+
 ## Scraping /metrics
 
 Since Bytebase 3.22.0, the Prometheus endpoint at `/metrics` answers loopback clients only. An in-cluster scraper gets a 404 until the server starts with `--metrics-remote-access`:
@@ -162,9 +184,9 @@ bytebase:
 |       `bytebase.readinessProbe.failureThreshold`         |                                                                          Consecutive failed calls before the pod is marked unready and removed from the Service.                                                                          |                               3                                |
 |                    `httpRoute.enabled`                   |                                       Enable a Gateway API `HTTPRoute` to expose Bytebase, instead of an externally-managed Ingress/LoadBalancer. Requires a Gateway API implementation in the cluster.                                       |                             false                              |
 |                  `httpRoute.annotations`                 |                                                                                                  Additional annotations for the `HTTPRoute`.                                                                                               |                               {}                               |
-|                   `httpRoute.parentRefs`                 |                                                                          Gateway API `parentRefs`; each must reference an existing `Gateway`.                                                                              |                               []                               |
+|                   `httpRoute.parentRefs`                 |                                             Gateway API `parentRefs`. Required when `httpRoute.enabled` is true; each must reference an existing `Gateway` that allows routes from the Bytebase namespace.                                              |                               []                               |
 |                    `httpRoute.hostnames`                 |                                                                                                   Hostnames the `HTTPRoute` matches.                                                                                                       |                               []                               |
-|                      `httpRoute.rules`                   |                                  `HTTPRoute` rules. When unset, defaults to a single catch-all `PathPrefix /` rule wired to the `bytebase-entrypoint` Service. Set explicitly for path/header routing.                                  |                               []                               |
+|                      `httpRoute.rules`                   |       `HTTPRoute` rules. When unset, defaults to a single catch-all `PathPrefix /` rule wired to the `bytebase-entrypoint` Service, which also covers `/metrics`. Set explicitly for path/header routing.        |                               []                               |
 
 **If you enable bytebase persistence, you should provide storageClass and storage to bytebase to request a PVC, or provide the already existed PVC by existingClaim.**
 
