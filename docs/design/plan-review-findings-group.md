@@ -76,9 +76,10 @@ the group only changes where they are drawn:
 - A run is open by default while one of its findings is still current, meaning no later run has
   superseded it. Show and Hide override the default.
 - An open run shows the card of every finding it posted.
-- A hidden run shows only the findings that would otherwise be nowhere (`needsActivityCard` in
-  `threadModel.ts`): ones people replied to, and ones the Changes section cannot show. A finding
-  that a later run superseded and that is resolved gets no card.
+- A hidden run shows only the findings `needsActivityCard` in `threadModel.ts` keeps. It checks
+  in this order: a finding people replied to keeps its card; otherwise a finding that a later run
+  superseded and that is resolved gets none; otherwise a finding keeps its card only when the
+  Changes section cannot show it.
 
 So a hidden review can still have a group, holding only those cards, and a review with no cards to
 show is a plain line, as today.
