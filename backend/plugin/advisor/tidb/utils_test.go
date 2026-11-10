@@ -60,9 +60,7 @@ func TestGetTiDBOmniNodesCachesAcrossRules(t *testing.T) {
 // TestGetTiDBOmniNodesSkipsPingcapFallbackAST pins the Phase 1.5 soft-fail
 // invariant at the post-flip layer: when the dispatcher fell back to
 // pingcap for a statement (omni rejected it), getTiDBOmniNodes silently
-// skips the *AST arm — migrated advisors emit no advice for omni-rejected
-// SQL, but un-migrated advisors using getTiDBNodes still see the pingcap
-// AST.
+// skips the *AST arm — advisors emit no advice for omni-rejected SQL.
 //
 // Pre-flip this responsibility lived in getTiDBOmniNodes itself (which
 // re-parsed each statement and soft-failed on omni grammar gaps). Post-
@@ -116,55 +114,6 @@ func TestGetTiDBOmniNodesSkipsPingcapFallbackAST(t *testing.T) {
 	require.NoError(t, err, "soft-fail invariant: pingcap-fallback AST must not propagate as an error")
 	require.Len(t, got, 2,
 		"expected only the two omni-accepted statements; the *AST arm must be skipped")
-}
-
-// TestGetTiDBNodesSoftFailsOnBridgeMiss pins the post-flip soft-fail
-// contract on the un-migrated-advisor side: when an OmniAST's
-// AsPingCapAST() returns (nil, false) — i.e. omni accepted the statement
-// but pingcap rejected the same text — getTiDBNodes must SKIP that
-// statement, not abort the rule with "AST type mismatch".
-//
-// Codex caught this on PR #20179: without the soft-fail, post-flip every
-// un-migrated advisor emits "Rule check failed: AST type mismatch" for
-// statements omni accepts but pingcap doesn't, breaking the migration
-// continuity the bridge is meant to preserve.
-func TestGetTiDBNodesSoftFailsOnBridgeMiss(t *testing.T) {
-	// Pingcap rejects this; omni doesn't matter for this test — what
-	// matters is that the bridge returns (nil, false) and getTiDBNodes
-	// must skip rather than error.
-	bridgeMiss := &tidbparser.OmniAST{
-		Text:          "SELECT FROM WHERE;", // pingcap-invalid
-		StartPosition: &storepb.Position{Line: 1},
-	}
-	bridgeHit := &tidbparser.OmniAST{
-		Text:          "SELECT 1",
-		StartPosition: &storepb.Position{Line: 2},
-	}
-
-	ctx := advisor.Context{
-		ParsedStatements: []base.ParsedStatement{
-			{
-				Statement: base.Statement{
-					Text:  "SELECT FROM WHERE;",
-					Start: &storepb.Position{Line: 1},
-				},
-				AST: bridgeMiss,
-			},
-			{
-				Statement: base.Statement{
-					Text:  "SELECT 1",
-					Start: &storepb.Position{Line: 2},
-				},
-				AST: bridgeHit,
-			},
-		},
-	}
-
-	got, err := getTiDBNodes(ctx)
-	require.NoError(t, err,
-		"bridge miss must be soft-failed (skip), not surfaced as 'AST type mismatch' — see Phase 1.5 invariant #2")
-	require.Len(t, got, 1,
-		"expected 1 statement from the bridge-hit branch; the bridge-miss statement should be skipped silently")
 }
 
 // TestCollectFKCreateTableNilConstraintGuard pins the defensive nil-check
@@ -471,12 +420,8 @@ func TestOmniCharLength(t *testing.T) {
 	}
 }
 
-// TestOmniIsDDLStmt was REMOVED in cumulative #30 Codex-fix-1f:
-// the omniIsDDLStmt helper itself was removed when DDL detection
-// switched to pingcap's authoritative DDLNode interface via the
-// `getTiDBNodes` path. The omni-only enumeration was brittle (4
-// rounds of corrections across Codex-fix-1c/1d/1e) and fundamentally
-// gap-prone for Tier-4-deferred grammar (Sequence, FlashBackDatabase)
-// that omni's parser rejects but pingcap classifies as DDL. The
-// switch eliminates the enumeration. End-to-end coverage of the
+// A bytebase-side omniIsDDLStmt enumeration was removed earlier because it was
+// brittle for grammar omni once rejected. DDL detection now uses omni's
+// authoritative ast.IsDDL classifier (omni parses the full grammar), so no
+// bytebase enumeration is needed. End-to-end coverage of the
 // DDL-detection path is now in TestTiDBPriorBackupCheckAdvisor.
