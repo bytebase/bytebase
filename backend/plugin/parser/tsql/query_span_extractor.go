@@ -35,6 +35,11 @@ type querySpanExtractor struct {
 	predicateColumns base.SourceColumnSet
 
 	viewResolutionStack map[string]bool
+
+	// source is the original SQL text, used to slice expression names via Loc.
+	source string
+	// setOption is the statement when it is a SET of session options.
+	setOption *ast.SetOptionStmt
 }
 
 func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
@@ -195,7 +200,7 @@ func (q *querySpanExtractor) getColumnsFromCreateView(definition string, viewDat
 		}
 	}
 
-	newQ := newOmniQuerySpanExtractor(viewDatabaseName, viewSchemaName, q.gCtx, q.ignoreCaseSensitive)
+	newQ := newQuerySpanExtractor(viewDatabaseName, viewSchemaName, q.gCtx, q.ignoreCaseSensitive)
 	newQ.ctx = q.ctx
 	newQ.source = definition
 	newQ.viewResolutionStack = cloneViewResolutionStack(q.viewResolutionStack)
@@ -425,26 +430,8 @@ func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bo
 	return false
 }
 
-// omniQuerySpanExtractor extracts query span information from omni MSSQL AST.
-// It embeds querySpanExtractor so string-based resolution helpers
-// (tsqlIsFieldSensitive, tsqlFindTableSchemaByParts, isIdentifierEqual,
-// tsqlGetAllFieldsOfTableInFromOrOuterCTE) are reused directly.
-type omniQuerySpanExtractor struct {
-	*querySpanExtractor
-	// source is the original SQL text, used to slice expression names via Loc.
-	source string
-	// setOption is the statement when it is a SET of session options.
-	setOption *ast.SetOptionStmt
-}
-
-func newOmniQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *omniQuerySpanExtractor {
-	return &omniQuerySpanExtractor{
-		querySpanExtractor: newQuerySpanExtractor(defaultDatabase, defaultSchema, gCtx, ignoreCaseSensitive),
-	}
-}
-
 // getQuerySpan is the public entry point. Mirrors the ANTLR getQuerySpan flow.
-func (q *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.source = statement
 
@@ -541,7 +528,7 @@ func (q *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, statement str
 
 // extractFromSelectStmt processes a full SELECT statement (including set-ops,
 // WITH clause) and returns the result column set as a PseudoTable.
-func (q *omniQuerySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*base.PseudoTable, error) {
 	// WITH clause: populate CTE list BEFORE dispatching set-ops so that both
 	// arms of a `WITH cte AS (...) SELECT ... FROM cte UNION SELECT ... FROM cte`
 	// see the CTE in scope. The defer restores q.ctes on exit.
@@ -607,7 +594,7 @@ func (q *omniQuerySpanExtractor) extractFromSelectStmt(sel *ast.SelectStmt) (*ba
 // Errors from nested subquery extraction (ResourceNotFoundError or real
 // parser errors) propagate so the caller can surface them via the top-level
 // NotFoundError path instead of producing a silently-partial span.
-func (q *omniQuerySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
+func (q *querySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
 	if expr == nil {
 		return nil
 	}
@@ -778,7 +765,7 @@ func (q *omniQuerySpanExtractor) collectPredicatesInScope(expr ast.Node) error {
 // collectRowCountPredicates records what TOP, OFFSET, and FETCH read, since
 // they decide how many rows come back, and the conditions of subqueries in
 // ORDER BY. The ORDER BY keys themselves only order the rows.
-func (q *omniQuerySpanExtractor) collectRowCountPredicates(sel *ast.SelectStmt) error {
+func (q *querySpanExtractor) collectRowCountPredicates(sel *ast.SelectStmt) error {
 	if sel.Top != nil {
 		if err := q.collectPredicatesInScope(sel.Top.Count); err != nil {
 			return err
@@ -813,7 +800,7 @@ func (q *omniQuerySpanExtractor) collectRowCountPredicates(sel *ast.SelectStmt) 
 	return err
 }
 
-func (q *omniQuerySpanExtractor) mergeSubqueryIntoPredicates(body ast.Node) error {
+func (q *querySpanExtractor) mergeSubqueryIntoPredicates(body ast.Node) error {
 	sel, ok := body.(*ast.SelectStmt)
 	if !ok {
 		return nil
@@ -832,7 +819,7 @@ func (q *omniQuerySpanExtractor) mergeSubqueryIntoPredicates(body ast.Node) erro
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) extractFromSetOp(sel *ast.SelectStmt) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractFromSetOp(sel *ast.SelectStmt) (*base.PseudoTable, error) {
 	// Omni puts the WITH clause on the leftmost set-op arm (the parser attaches
 	// the WITH to the first SELECT expression, not to the outer Op node). Lift
 	// it into the current scope so the CTE is visible in BOTH arms, then
@@ -871,7 +858,7 @@ func (q *omniQuerySpanExtractor) extractFromSetOp(sel *ast.SelectStmt) (*base.Ps
 	return &base.PseudoTable{Columns: merged}, nil
 }
 
-func (q *omniQuerySpanExtractor) processWithClause(w *ast.WithClause) error {
+func (q *querySpanExtractor) processWithClause(w *ast.WithClause) error {
 	if w.CTEs == nil {
 		return nil
 	}
@@ -909,21 +896,19 @@ func (q *omniQuerySpanExtractor) processWithClause(w *ast.WithClause) error {
 // extractCTEBody extracts the column set of a CTE body. For recursive CTEs
 // (body is a set-op SelectStmt whose recursive arm references the CTE name),
 // the extractor iterates until the column sources stabilize.
-func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.SelectStmt) ([]base.QuerySpanResult, base.SourceColumnSet, error) {
-	newClone := func() *omniQuerySpanExtractor {
-		return &omniQuerySpanExtractor{
-			querySpanExtractor: &querySpanExtractor{
-				ctx:                 q.ctx,
-				defaultDatabase:     q.defaultDatabase,
-				defaultSchema:       q.defaultSchema,
-				ignoreCaseSensitive: q.ignoreCaseSensitive,
-				gCtx:                q.gCtx,
-				ctes:                append([]*base.PseudoTable{}, q.ctes...),
-				outerTableSources:   nil,
-				predicateColumns:    make(base.SourceColumnSet),
-				viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
-			},
-			source: q.source,
+func (q *querySpanExtractor) extractCTEBody(cteName string, body *ast.SelectStmt) ([]base.QuerySpanResult, base.SourceColumnSet, error) {
+	newClone := func() *querySpanExtractor {
+		return &querySpanExtractor{
+			ctx:                 q.ctx,
+			defaultDatabase:     q.defaultDatabase,
+			defaultSchema:       q.defaultSchema,
+			ignoreCaseSensitive: q.ignoreCaseSensitive,
+			gCtx:                q.gCtx,
+			ctes:                append([]*base.PseudoTable{}, q.ctes...),
+			outerTableSources:   nil,
+			predicateColumns:    make(base.SourceColumnSet),
+			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
+			source:              q.source,
 		}
 	}
 
@@ -984,7 +969,7 @@ func (q *omniQuerySpanExtractor) extractCTEBody(cteName string, body *ast.Select
 
 // extractTableSource returns the TableSource(s) produced by a single FROM item.
 // A JoinClause contributes multiple sources (left + right flattened).
-func (q *omniQuerySpanExtractor) extractTableSource(node ast.Node) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSource(node ast.Node) ([]base.TableSource, error) {
 	switch v := node.(type) {
 	case *ast.JoinClause:
 		return q.extractFromJoin(v)
@@ -1046,7 +1031,7 @@ func unsupportedNodeError(message string, node ast.Node) error {
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.TableSource, error) {
+func (q *querySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.TableSource, error) {
 	tableSourcesSnapshot := len(q.tableSourcesFrom)
 	defer func() { q.tableSourcesFrom = q.tableSourcesFrom[:tableSourcesSnapshot] }()
 	left, err := q.extractTableSource(j.Left)
@@ -1070,7 +1055,7 @@ func (q *omniQuerySpanExtractor) extractFromJoin(j *ast.JoinClause) ([]base.Tabl
 	return append(left, right...), nil
 }
 
-func (q *omniQuerySpanExtractor) resolveTableRef(t *ast.TableRef) (base.TableSource, error) {
+func (q *querySpanExtractor) resolveTableRef(t *ast.TableRef) (base.TableSource, error) {
 	ts, err := q.tsqlFindTableSchemaByParts(t.Server, t.Database, t.Schema, t.Object)
 	if err != nil {
 		return nil, err
@@ -1084,7 +1069,7 @@ func (q *omniQuerySpanExtractor) resolveTableRef(t *ast.TableRef) (base.TableSou
 	return ts, nil
 }
 
-func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef) (base.TableSource, error) {
+func (q *querySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef) (base.TableSource, error) {
 	var columnAliases []string
 	if at.Columns != nil {
 		for _, it := range at.Columns.Items {
@@ -1134,7 +1119,7 @@ func (q *omniQuerySpanExtractor) resolveAliasedTableRef(at *ast.AliasedTableRef)
 	}
 }
 
-func (q *omniQuerySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr, alias string, columnAliases []string) (base.TableSource, error) {
+func (q *querySpanExtractor) resolveTableValuedFunction(fn *ast.FuncCallExpr, alias string, columnAliases []string) (base.TableSource, error) {
 	if fn == nil || fn.Name == nil {
 		return nil, unsupportedTableSourceError(fn)
 	}
@@ -1210,7 +1195,7 @@ func stringSplitHasOrdinalColumn(args *ast.List) (bool, error) {
 	}
 }
 
-func (q *omniQuerySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, alias string, columnAliases ...string) (base.TableSource, error) {
+func (q *querySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, alias string, columnAliases ...string) (base.TableSource, error) {
 	body, ok := sq.Query.(*ast.SelectStmt)
 	if !ok {
 		return nil, unsupportedNodeError("only SELECT subqueries in table source are supported", sq.Query)
@@ -1228,7 +1213,7 @@ func (q *omniQuerySpanExtractor) resolveSubqueryAsTable(sq *ast.SubqueryExpr, al
 	return &base.PseudoTable{Name: normIdent(alias), Columns: cols}, nil
 }
 
-func (q *omniQuerySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias string, columnAliases []string) (base.TableSource, error) {
+func (q *querySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias string, columnAliases []string) (base.TableSource, error) {
 	name := normIdent(alias)
 	if vc.Rows == nil || vc.Rows.Len() == 0 {
 		return &base.PseudoTable{Name: name}, nil
@@ -1271,7 +1256,7 @@ func (q *omniQuerySpanExtractor) resolveValuesClause(vc *ast.ValuesClause, alias
 	return &base.PseudoTable{Name: name, Columns: cols}, nil
 }
 
-func (q *omniQuerySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias string) ([]base.TableSource, error) {
+func (q *querySpanExtractor) resolveTableVar(tv *ast.TableVarRef, alias string) ([]base.TableSource, error) {
 	if tv == nil {
 		return nil, nil
 	}
@@ -1349,7 +1334,7 @@ func populateCreateTempTable(c *ast.CreateTableStmt, out map[string]*base.Physic
 	}
 }
 
-func (q *omniQuerySpanExtractor) populateSelectIntoTempTable(sel *ast.SelectStmt, results []base.QuerySpanResult) {
+func (q *querySpanExtractor) populateSelectIntoTempTable(sel *ast.SelectStmt, results []base.QuerySpanResult) {
 	if sel == nil || sel.IntoTable == nil || q.gCtx.TempTables == nil || !strings.HasPrefix(sel.IntoTable.Object, "#") {
 		return
 	}
@@ -1388,27 +1373,25 @@ func applyColumnAliases(cols []base.QuerySpanResult, aliases []string) error {
 	return nil
 }
 
-func (q *omniQuerySpanExtractor) cloneForSubquery() *omniQuerySpanExtractor {
-	clone := &omniQuerySpanExtractor{
-		querySpanExtractor: &querySpanExtractor{
-			ctx:                 q.ctx,
-			defaultDatabase:     q.defaultDatabase,
-			defaultSchema:       q.defaultSchema,
-			ignoreCaseSensitive: q.ignoreCaseSensitive,
-			gCtx:                q.gCtx,
-			ctes:                append([]*base.PseudoTable{}, q.ctes...),
-			outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
-			predicateColumns:    make(base.SourceColumnSet),
-			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
-		},
-		source: q.source,
+func (q *querySpanExtractor) cloneForSubquery() *querySpanExtractor {
+	clone := &querySpanExtractor{
+		ctx:                 q.ctx,
+		defaultDatabase:     q.defaultDatabase,
+		defaultSchema:       q.defaultSchema,
+		ignoreCaseSensitive: q.ignoreCaseSensitive,
+		gCtx:                q.gCtx,
+		ctes:                append([]*base.PseudoTable{}, q.ctes...),
+		outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
+		predicateColumns:    make(base.SourceColumnSet),
+		viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
+		source:              q.source,
 	}
 	return clone
 }
 
 // -------------------- Target list --------------------
 
-func (q *omniQuerySpanExtractor) extractTargetList(list *ast.List) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTargetList(list *ast.List) ([]base.QuerySpanResult, error) {
 	if list == nil {
 		return nil, nil
 	}
@@ -1457,7 +1440,7 @@ func (q *omniQuerySpanExtractor) extractTargetList(list *ast.List) ([]base.Query
 	return results, nil
 }
 
-func (q *omniQuerySpanExtractor) expandStar(s *ast.StarExpr) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) expandStar(s *ast.StarExpr) ([]base.QuerySpanResult, error) {
 	if s.Qualifier == "" {
 		var out []base.QuerySpanResult
 		for _, ts := range q.tableSourcesFrom {
@@ -1472,11 +1455,11 @@ func (q *omniQuerySpanExtractor) expandStar(s *ast.StarExpr) ([]base.QuerySpanRe
 
 // resolveExpression maps an omni ExprNode to a QuerySpanResult. This is the
 // omni equivalent of the ANTLR getQuerySpanResultFromExpr.
-func (q *omniQuerySpanExtractor) resolveExpression(expr ast.ExprNode) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) resolveExpression(expr ast.ExprNode) (base.QuerySpanResult, error) {
 	return q.resolveExpressionNode(expr)
 }
 
-func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySpanResult, error) {
 	if n == nil {
 		return base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}, nil
 	}
@@ -1705,7 +1688,7 @@ func (q *omniQuerySpanExtractor) resolveExpressionNode(n ast.Node) (base.QuerySp
 	}
 }
 
-func (q *omniQuerySpanExtractor) resolveSimpleExpressionNode(n ast.Node) (base.QuerySpanResult, bool, error) {
+func (q *querySpanExtractor) resolveSimpleExpressionNode(n ast.Node) (base.QuerySpanResult, bool, error) {
 	switch v := n.(type) {
 	case *ast.Literal, *ast.VariableRef, *ast.Boolean:
 		return base.QuerySpanResult{Name: q.sliceName(v), SourceColumns: make(base.SourceColumnSet)}, true, nil
@@ -1720,7 +1703,7 @@ func (q *omniQuerySpanExtractor) resolveSimpleExpressionNode(n ast.Node) (base.Q
 	}
 }
 
-func (q *omniQuerySpanExtractor) resolveSubqueryExpr(sq *ast.SubqueryExpr) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) resolveSubqueryExpr(sq *ast.SubqueryExpr) (base.QuerySpanResult, error) {
 	r := base.QuerySpanResult{
 		Name:          q.sliceName(sq),
 		SourceColumns: make(base.SourceColumnSet),
@@ -1743,7 +1726,7 @@ func (q *omniQuerySpanExtractor) resolveSubqueryExpr(sq *ast.SubqueryExpr) (base
 	return r, nil
 }
 
-func (q *omniQuerySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.QuerySpanResult, error) {
 	r := base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}
 	for _, e := range exprs {
 		if e == nil {
@@ -1758,7 +1741,7 @@ func (q *omniQuerySpanExtractor) mergeExprSources(exprs ...ast.ExprNode) (base.Q
 	return r, nil
 }
 
-func (q *omniQuerySpanExtractor) mergeListSources(list *ast.List) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) mergeListSources(list *ast.List) (base.QuerySpanResult, error) {
 	r := base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}
 	if list == nil {
 		return r, nil
@@ -1775,7 +1758,7 @@ func (q *omniQuerySpanExtractor) mergeListSources(list *ast.List) (base.QuerySpa
 	return r, nil
 }
 
-func (q *omniQuerySpanExtractor) mergeOrderBySources(list *ast.List) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) mergeOrderBySources(list *ast.List) (base.QuerySpanResult, error) {
 	r := base.QuerySpanResult{SourceColumns: make(base.SourceColumnSet)}
 	if list == nil {
 		return r, nil
@@ -1806,7 +1789,7 @@ func (q *omniQuerySpanExtractor) mergeOrderBySources(list *ast.List) (base.Query
 // For *SubqueryExpr (and similar paren-wrapped nodes) the Loc spans the
 // surrounding parens; we strip a matching leading `(` / trailing `)` pair to
 // match the ANTLR subquery.getText() output.
-func (q *omniQuerySpanExtractor) sliceName(n ast.Node) string {
+func (q *querySpanExtractor) sliceName(n ast.Node) string {
 	loc := nodeLoc(n)
 	if loc.Start < 0 || loc.End < 0 || loc.Start >= len(q.source) {
 		return ""

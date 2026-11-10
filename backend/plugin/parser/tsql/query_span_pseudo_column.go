@@ -54,7 +54,7 @@ func classifyPseudoColumn(name string) pseudoColumnKind {
 // Both kinds require the reference to bind to exactly one candidate table in
 // scope — the engine reports ambiguity errors itself, so mirroring that is
 // fail-closed.
-func (q *omniQuerySpanExtractor) resolvePseudoColumnRef(v *ast.ColumnRef) (base.QuerySpanResult, bool, error) {
+func (q *querySpanExtractor) resolvePseudoColumnRef(v *ast.ColumnRef) (base.QuerySpanResult, bool, error) {
 	kind := classifyPseudoColumn(v.Column)
 	if kind == pseudoColumnNone {
 		return base.QuerySpanResult{}, false, nil
@@ -83,7 +83,7 @@ func (q *omniQuerySpanExtractor) resolvePseudoColumnRef(v *ast.ColumnRef) (base.
 
 // columnSegmentIsDelimited reports whether the reference's column segment is
 // bracket- or quote-delimited in the original source.
-func (q *omniQuerySpanExtractor) columnSegmentIsDelimited(v *ast.ColumnRef) bool {
+func (q *querySpanExtractor) columnSegmentIsDelimited(v *ast.ColumnRef) bool {
 	end := v.Loc.End
 	if end <= 0 || end > len(q.source) {
 		return false
@@ -96,7 +96,7 @@ func (q *omniQuerySpanExtractor) columnSegmentIsDelimited(v *ast.ColumnRef) bool
 // reference may bind to, filtered by the optional table qualifier
 // (t.$IDENTITY binds within t only). Inner scope is searched before outer,
 // matching tsqlIsFieldSensitive.
-func (q *omniQuerySpanExtractor) pseudoColumnCandidateSources(v *ast.ColumnRef) []base.TableSource {
+func (q *querySpanExtractor) pseudoColumnCandidateSources(v *ast.ColumnRef) []base.TableSource {
 	matches := func(ts base.TableSource) bool {
 		if v.Table != "" && !q.isIdentifierEqual(v.Table, ts.GetTableName()) {
 			return false
@@ -126,7 +126,7 @@ func (q *omniQuerySpanExtractor) pseudoColumnCandidateSources(v *ast.ColumnRef) 
 	return result
 }
 
-func (q *omniQuerySpanExtractor) resolveIdentityPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) resolveIdentityPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
 	type match struct {
 		column base.QuerySpanResult
 	}
@@ -155,7 +155,7 @@ func (q *omniQuerySpanExtractor) resolveIdentityPseudoColumn(v *ast.ColumnRef, s
 // exactly one physical column whose metadata has IsIdentity. The lookup goes
 // through the column's source resource rather than the table source itself so
 // aliased tables (wrapped as PseudoTable) resolve too.
-func (q *omniQuerySpanExtractor) isIdentityColumnResult(column base.QuerySpanResult) bool {
+func (q *querySpanExtractor) isIdentityColumnResult(column base.QuerySpanResult) bool {
 	if !column.IsPlainField || len(column.SourceColumns) != 1 {
 		return false
 	}
@@ -184,7 +184,7 @@ func (q *omniQuerySpanExtractor) isIdentityColumnResult(column base.QuerySpanRes
 	return false
 }
 
-func (*omniQuerySpanExtractor) resolveGraphPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
+func (*querySpanExtractor) resolveGraphPseudoColumn(v *ast.ColumnRef, sources []base.TableSource) (base.QuerySpanResult, error) {
 	if len(sources) == 0 {
 		return base.QuerySpanResult{}, errors.Errorf("no table in scope for graph pseudo-column %q", v.Column)
 	}
