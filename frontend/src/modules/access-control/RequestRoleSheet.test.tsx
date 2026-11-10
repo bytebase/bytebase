@@ -6,6 +6,7 @@ import type {
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ExprEditorProps } from "@/components/ExprEditor";
 import type { Permission } from "@/types";
 
 (
@@ -89,9 +90,22 @@ vi.mock("@/components/DatabaseResourceSelector", () => ({
   DatabaseResourceSelector: () => null,
 }));
 
-vi.mock("@/components/ExprEditor", () => ({
-  ExprEditor: () => null,
-}));
+vi.mock("@/components/ExprEditor", async () => {
+  const { buildSelectorCapabilities } = await import(
+    "@/modules/cel/logic/agentPrompt"
+  );
+  return {
+    ExprEditor: ({
+      factorList,
+      factorOperatorOverrideMap,
+    }: Pick<ExprEditorProps, "factorList" | "factorOperatorOverrideMap">) =>
+      createElement(
+        "pre",
+        { "data-testid": "expression-capabilities" },
+        buildSelectorCapabilities(factorList, factorOperatorOverrideMap)
+      ),
+  };
+});
 
 // RoleSelect: test-only stub that exposes a plain <select> so tests can pick a
 // role by setting value. We drive role selection via a hidden input bound to
@@ -170,12 +184,6 @@ vi.mock("@/modules/cel", () => ({
   emptySimpleExpr: () => ({}),
   validateSimpleExpr: () => true,
   wrapAsGroup: (e: unknown) => e,
-}));
-
-vi.mock("@/utils/cel-attributes", () => ({
-  CEL_ATTRIBUTE_RESOURCE_DATABASE: "resource.database",
-  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME: "resource.schema_name",
-  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME: "resource.table_name",
 }));
 
 vi.mock("@/utils/issue/cel", () => ({
@@ -365,8 +373,9 @@ async function typeReason(text: string): Promise<void> {
 // Stub window.open — production handler opens the created issue in a new tab.
 beforeEach(async () => {
   vi.spyOn(window, "open").mockImplementation(() => null);
-  // Reset env-kind mock between tests so per-test overrides don't leak.
+  // Reset role-scope mocks between tests so per-test overrides don't leak.
   const utilsMock = await import("@/lib/project-member/utils");
+  vi.mocked(utilsMock.roleHasDatabaseLimitation).mockReturnValue(false);
   vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockReturnValue(
     undefined
   );
@@ -464,6 +473,45 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     await flush();
 
     expect(getSubmitButton().disabled).toBe(false);
+  });
+
+  it("keeps approval database targets positive without restricting name string predicates", async () => {
+    const utilsMock = await import("@/lib/project-member/utils");
+    vi.mocked(utilsMock.roleHasDatabaseLimitation).mockReturnValue(true);
+    await renderSheet(false);
+    await selectRole("roles/sqlEditorUser");
+    const expressionMode = [...container.querySelectorAll("label")].find(
+      (label) => label.textContent === "issue.role-grant.use-cel"
+    );
+    expect(expressionMode).toBeDefined();
+    await act(async () => {
+      expressionMode!.click();
+    });
+    const capabilities = container.querySelector(
+      '[data-testid="expression-capabilities"]'
+    );
+    expect(capabilities).not.toBeNull();
+    const { fields } = JSON.parse(capabilities!.textContent!) as {
+      fields: { name: string; templates: string[] }[];
+    };
+
+    expect(
+      fields.find((field) => field.name === "resource.database")?.templates
+    ).toEqual([
+      'resource.database == "value"',
+      'resource.database in ["value"]',
+    ]);
+    for (const factor of ["resource.table_name", "resource.schema_name"]) {
+      expect(fields.find((field) => field.name === factor)?.templates).toEqual(
+        expect.arrayContaining([
+          `${factor}.contains("value")`,
+          `!(${factor}.contains("value"))`,
+          `${factor}.startsWith("value")`,
+          `${factor}.endsWith("value")`,
+          `${factor}.matches("value")`,
+        ])
+      );
+    }
   });
 
   describe("direct DDL/DML execution", () => {

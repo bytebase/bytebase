@@ -387,8 +387,10 @@ func TestConditionStringOperators(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
+			t.Parallel()
 			for _, operator := range operators {
 				t.Run(operator.name, func(t *testing.T) {
+					t.Parallel()
 					program, err := scenario.validate(fmt.Sprintf(operator.expression, scenario.attribute))
 					require.NoError(t, err)
 					for _, input := range []struct {

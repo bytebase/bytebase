@@ -297,9 +297,15 @@ export function GrantAccessDialog({
           if (modeChangeRequestIdRef.current !== requestId) {
             return;
           }
-          if (nextResources) {
-            setDatabaseResources(nextResources);
+          if (!nextResources) {
+            pushNotification({
+              module: "bytebase",
+              style: "WARN",
+              title: t("cel.condition.cannot-convert-to-selection"),
+            });
+            return;
           }
+          setDatabaseResources(nextResources);
         }
 
         if (modeChangeRequestIdRef.current !== requestId) {
@@ -319,6 +325,7 @@ export function GrantAccessDialog({
       databaseResources,
       convertToDatabaseResources,
       expr,
+      t,
     ]
   );
 

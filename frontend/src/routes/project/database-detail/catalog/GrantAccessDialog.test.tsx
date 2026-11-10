@@ -7,6 +7,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { SensitiveColumn } from "@/lib/sensitive-data/types";
+import { type ConditionGroupExpr, ExprType } from "@/modules/cel";
+import type { ConditionExpression } from "@/utils/issue/cel";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -28,11 +30,26 @@ const mocks = vi.hoisted(() => {
   return {
     convertedExpr,
     batchConvertCELStringToParsedExpr: vi.fn(async () => [{ parsed: true }]),
+    batchConvertParsedExprToCELString: vi.fn(async () => [
+      "serialized-expression",
+    ]),
+    buildCELExpr: vi.fn(
+      async (): Promise<{ parsed: true } | undefined> => ({ parsed: true })
+    ),
+    convertFromExpr: vi.fn<() => ConditionExpression | undefined>(() => ({
+      databaseResources: [],
+    })),
     resolveCELExpr: vi.fn(() => convertedExpr),
     stringifyConditionExpression: vi.fn(() => "serialized-selection"),
     featureToRef: vi.fn(() => ({ value: true })),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
+    pushNotification: vi.fn(),
+    exprEditorProps: {
+      value: undefined as
+        | { onUpdate: (expr: ConditionGroupExpr) => void }
+        | undefined,
+    },
     accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
   };
 });
@@ -67,7 +84,7 @@ vi.mock("@/modules/cel", () => ({
     ConditionGroup: "ConditionGroup",
     RawString: "RawString",
   },
-  buildCELExpr: vi.fn(),
+  buildCELExpr: mocks.buildCELExpr,
   emptySimpleExpr: vi.fn(() => ({
     type: "ConditionGroup",
     operator: "_&&_",
@@ -149,32 +166,35 @@ vi.mock("@/components/ExprEditor", () => ({
     readonly,
   }: {
     expr: unknown;
-    onUpdate: (expr: unknown) => void;
+    onUpdate: (expr: ConditionGroupExpr) => void;
     readonly?: boolean;
-  }) => (
-    <div>
-      <div data-readonly={String(readonly)} data-testid="expr-editor">
-        {JSON.stringify(expr)}
+  }) => {
+    mocks.exprEditorProps.value = { onUpdate };
+    return (
+      <div>
+        <div data-readonly={String(readonly)} data-testid="expr-editor">
+          {JSON.stringify(expr)}
+        </div>
+        <button
+          data-testid="expr-editor-set-column-scope"
+          onClick={() =>
+            onUpdate({
+              type: ExprType.ConditionGroup,
+              operator: "_&&_",
+              args: [
+                {
+                  type: ExprType.Condition,
+                  operator: "_==_",
+                  args: ["resource.column_name", "id"],
+                },
+              ],
+            })
+          }
+          type="button"
+        />
       </div>
-      <button
-        data-testid="expr-editor-set-column-scope"
-        onClick={() =>
-          onUpdate({
-            type: "ConditionGroup",
-            operator: "_&&_",
-            args: [
-              {
-                type: "Condition",
-                operator: "_==_",
-                args: ["resource.column_name", "id"],
-              },
-            ],
-          })
-        }
-        type="button"
-      />
-    </div>
-  ),
+    );
+  },
 }));
 
 vi.mock("@/components/FeatureAttention", () => ({
@@ -235,7 +255,7 @@ vi.mock("@/components/ui/tooltip", () => ({
 
 vi.mock("@/stores", () => ({
   featureToRef: mocks.featureToRef,
-  pushNotification: vi.fn(),
+  pushNotification: mocks.pushNotification,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -264,15 +284,13 @@ vi.mock("@/stores/app", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  batchConvertParsedExprToCELString: vi.fn(),
+  batchConvertParsedExprToCELString: mocks.batchConvertParsedExprToCELString,
   extractDatabaseResourceName: vi.fn(),
   getDatabaseNameOptionConfig: vi.fn(() => ({ options: [] })),
 }));
 
 vi.mock("@/utils/issue/cel", () => ({
-  convertFromExpr: vi.fn(() => ({
-    databaseResources: [],
-  })),
+  convertFromExpr: mocks.convertFromExpr,
   stringifyConditionExpression: mocks.stringifyConditionExpression,
 }));
 
@@ -403,6 +421,10 @@ describe("GrantAccessDialog", () => {
     mocks.batchConvertCELStringToParsedExpr.mockClear();
     mocks.resolveCELExpr.mockClear();
     mocks.stringifyConditionExpression.mockClear();
+    mocks.buildCELExpr.mockReset().mockResolvedValue({ parsed: true });
+    mocks.convertFromExpr.mockReset().mockReturnValue({ databaseResources: [] });
+    mocks.pushNotification.mockClear();
+    mocks.upsertPolicy.mockClear();
   });
 
   test("keeps resource scope choices visible", async () => {
@@ -546,6 +568,96 @@ describe("GrantAccessDialog", () => {
         .querySelector('[data-testid="database-resource-selector"]')
         ?.getAttribute("data-include-columns")
     ).toBe("true");
+
+    unmount();
+  });
+
+  test.each(["contains", "matches"] as const)(
+    "keeps a %s scope in expression mode when it cannot be selected manually",
+    async (operator) => {
+      const { container, unmount } = renderGrantAccessDialog();
+      await flush();
+      await selectResourceMode(container, "EXPRESSION");
+
+      const patternExpr: ConditionGroupExpr = {
+        type: ExprType.ConditionGroup,
+        operator: "_&&_",
+        args: [
+          {
+            type: ExprType.Condition,
+            operator,
+            args: ["resource.table_name", "archive"],
+          },
+        ],
+      };
+      act(() => mocks.exprEditorProps.value?.onUpdate(patternExpr));
+      await flush();
+      mocks.convertFromExpr.mockReturnValueOnce(undefined);
+
+      await selectResourceMode(container, "SELECT");
+
+      expect(selectedResourceMode(container)).toBe("EXPRESSION");
+      expect(
+        container.querySelector('[data-testid="expr-editor"]')?.textContent
+      ).toBe(JSON.stringify(patternExpr));
+      expect(mocks.pushNotification).toHaveBeenCalledWith({
+        module: "bytebase",
+        style: "WARN",
+        title: "cel.condition.cannot-convert-to-selection",
+      });
+      expect(
+        container.querySelector('[data-testid="database-resource-selector"]')
+      ).toBeNull();
+
+      const pattern = `resource.table_name.${operator}("archive")`;
+      mocks.batchConvertParsedExprToCELString.mockResolvedValueOnce([pattern]);
+      await click(
+        container.querySelector<HTMLElement>(
+          '[data-testid="account-multi-select"]'
+        )!
+      );
+      const confirm = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).find((button) => button.textContent === "common.confirm")!;
+      await click(confirm);
+
+      expect(mocks.buildCELExpr).toHaveBeenLastCalledWith(patternExpr);
+      expect(mocks.upsertPolicy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          policy: expect.objectContaining({
+            policy: expect.objectContaining({
+              value: expect.objectContaining({
+                exemptions: [
+                  expect.objectContaining({
+                    condition: expect.objectContaining({
+                      expression: `(${pattern})`,
+                    }),
+                  }),
+                ],
+              }),
+            }),
+          }),
+        })
+      );
+
+      unmount();
+    }
+  );
+
+  test("keeps expression mode when CEL cannot be parsed", async () => {
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+    await selectResourceMode(container, "EXPRESSION");
+    mocks.buildCELExpr.mockResolvedValueOnce(undefined);
+
+    await selectResourceMode(container, "SELECT");
+
+    expect(selectedResourceMode(container)).toBe("EXPRESSION");
+    expect(mocks.pushNotification).toHaveBeenCalledWith({
+      module: "bytebase",
+      style: "WARN",
+      title: "cel.condition.cannot-convert-to-selection",
+    });
 
     unmount();
   });

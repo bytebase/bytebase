@@ -529,6 +529,7 @@
       "add-group": "Thêm nhóm điều kiện",
       "add-raw-expression": "Thêm biểu thức thô",
       "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện",
+      "cannot-convert-to-selection": "Không thể biểu diễn điều kiện này bằng lựa chọn thủ công.",
       "description-tips": "Điều kiện là một quy tắc có thể được định cấu hình thông qua một biểu thức. Ví dụ: điều kiện \"Môi trường là sản xuất\" sẽ khớp với các vấn đề được thực hiện trong môi trường \"sản xuất\".",
       "group": {
         "and": {

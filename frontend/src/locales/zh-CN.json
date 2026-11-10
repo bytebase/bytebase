@@ -529,6 +529,7 @@
       "add-group": "添加条件组",
       "add-raw-expression": "添加 Raw 表达式",
       "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件",
+      "cannot-convert-to-selection": "此条件无法通过手动选择表示。",
       "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
       "group": {
         "and": {

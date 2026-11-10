@@ -407,6 +407,7 @@ func TestEvaluateExemptionOfColumnStringOperators(t *testing.T) {
 	}
 	for _, operator := range operators {
 		t.Run(operator.name, func(t *testing.T) {
+			t.Parallel()
 			condition := &expr.Expr{Expression: operator.expression}
 			_, err := common.ValidateMaskingExemptionCELExpr(condition)
 			require.NoError(t, err)
