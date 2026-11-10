@@ -15,22 +15,22 @@ func (testAST) ASTStartPosition() *storepb.Position {
 	return nil
 }
 
-// TestParseSnowflakeStatementsOmniAST locks the omni-only contract: every
-// non-empty statement carries an OmniAST wrapping a non-nil omni node
-// (reachable via GetOmniNode); the legacy ANTLR tree is gone.
-func TestParseSnowflakeStatementsOmniAST(t *testing.T) {
+// TestParseSnowflakeStatementsAST locks the omni-only contract: every
+// non-empty statement carries an AST wrapping a non-nil omni node
+// (reachable via GetNode); the legacy ANTLR tree is gone.
+func TestParseSnowflakeStatementsAST(t *testing.T) {
 	parsed, err := parseSnowflakeStatements("CREATE TABLE t1(id INT);\nSELECT id FROM t1;")
 	require.NoError(t, err)
 	require.Len(t, parsed, 2)
 
 	for i, ps := range parsed {
-		omniAST, ok := ps.AST.(*OmniAST)
-		require.True(t, ok, "stmt %d: AST must be *OmniAST", i)
-		require.Equal(t, ps.Text, omniAST.Text, "stmt %d", i)
+		wrapper, ok := ps.AST.(*AST)
+		require.True(t, ok, "stmt %d: AST must be *AST", i)
+		require.Equal(t, ps.Text, wrapper.Text, "stmt %d", i)
 
-		// The omni node must be reachable through GetOmniNode.
-		node, ok := GetOmniNode(ps.AST)
-		require.True(t, ok, "stmt %d: GetOmniNode must work", i)
+		// The omni node must be reachable through GetNode.
+		node, ok := GetNode(ps.AST)
+		require.True(t, ok, "stmt %d: GetNode must work", i)
 		require.NotNil(t, node, "stmt %d", i)
 
 		// ASTStartPosition keeps the legacy shape (line-based, BaseLine()+1),
@@ -38,9 +38,9 @@ func TestParseSnowflakeStatementsOmniAST(t *testing.T) {
 		require.EqualValues(t, ps.BaseLine()+1, ps.AST.ASTStartPosition().GetLine(), "stmt %d", i)
 	}
 
-	node0, _ := GetOmniNode(parsed[0].AST)
+	node0, _ := GetNode(parsed[0].AST)
 	require.IsType(t, (*omniast.CreateTableStmt)(nil), node0)
-	node1, _ := GetOmniNode(parsed[1].AST)
+	node1, _ := GetNode(parsed[1].AST)
 	require.IsType(t, (*omniast.SelectStmt)(nil), node1)
 }
 
@@ -59,7 +59,7 @@ func TestParseSnowflakeStatementsEmptyAndError(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, parsed, 2)
 	for i, ps := range parsed {
-		_, ok := GetOmniNode(ps.AST)
+		_, ok := GetNode(ps.AST)
 		require.True(t, ok, "stmt %d", i)
 	}
 
@@ -68,13 +68,13 @@ func TestParseSnowflakeStatementsEmptyAndError(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestGetOmniNodeEdgeCases covers the accessor's non-OmniAST inputs.
-func TestGetOmniNodeEdgeCases(t *testing.T) {
-	node, ok := GetOmniNode(nil)
+// TestGetNodeEdgeCases covers the accessor's non-AST inputs.
+func TestGetNodeEdgeCases(t *testing.T) {
+	node, ok := GetNode(nil)
 	require.False(t, ok)
 	require.Nil(t, node)
 
-	node, ok = GetOmniNode(testAST{})
+	node, ok = GetNode(testAST{})
 	require.False(t, ok)
 	require.Nil(t, node)
 }

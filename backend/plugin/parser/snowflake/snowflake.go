@@ -37,11 +37,11 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 			Statement: stmt,
 		}
 		if !stmt.Empty {
-			node, err := parseOmniStatementNode(stmt.Text)
+			node, err := parseStatementNode(stmt.Text)
 			if err != nil {
-				return nil, convertOmniParseError(err, stmt)
+				return nil, convertParseError(err, stmt)
 			}
-			ps.AST = &OmniAST{
+			ps.AST = &AST{
 				Node: node,
 				Text: stmt.Text,
 				// Keep the legacy ASTStartPosition shape: 1-based line of the

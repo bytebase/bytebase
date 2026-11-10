@@ -40,7 +40,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := snowsqlparser.GetOmniNode(stmt.AST)
+		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
