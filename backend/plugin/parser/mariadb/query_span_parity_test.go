@@ -138,7 +138,7 @@ func runMySQLGoldenCase(
 		Engine:                  engine,
 	}
 
-	omni, err := newOmniQuerySpanExtractor(defaultDatabase, gCtx, ignoreCaseSensitive).getOmniQuerySpan(ctx, statement)
+	omni, err := newQuerySpanExtractor(defaultDatabase, gCtx, ignoreCaseSensitive).getQuerySpan(ctx, statement)
 	if err != nil {
 		return nil, err
 	}

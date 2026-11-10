@@ -131,7 +131,7 @@ func selectItemsNamed(items []base.QuerySpanResult, name string) (base.SourceCol
 
 // collectConditionColumns records the columns expr reads, where the database
 // evaluates it on unmasked values to decide which rows come back.
-func (q *omniQuerySpanExtractor) collectConditionColumns(expr ast.ExprNode) {
+func (q *querySpanExtractor) collectConditionColumns(expr ast.ExprNode) {
 	if expr == nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (q *omniQuerySpanExtractor) collectConditionColumns(expr ast.ExprNode) {
 
 // collectNestedQueryColumns records the predicate columns of the queries
 // nested in node, whose own value only groups or orders the rows.
-func (q *omniQuerySpanExtractor) collectNestedQueryColumns(node ast.Node) {
+func (q *querySpanExtractor) collectNestedQueryColumns(node ast.Node) {
 	if node == nil {
 		return
 	}
@@ -166,7 +166,7 @@ func (q *omniQuerySpanExtractor) collectNestedQueryColumns(node ast.Node) {
 
 // collectTrailingClauses records what ORDER BY and LIMIT decide: the queries
 // nested in ORDER BY, and the row count. The ORDER BY keys only order rows.
-func (q *omniQuerySpanExtractor) collectTrailingClauses(orderBy []*ast.OrderByItem, limit *ast.Limit) {
+func (q *querySpanExtractor) collectTrailingClauses(orderBy []*ast.OrderByItem, limit *ast.Limit) {
 	q.clause = clauseOrderBy
 	for _, item := range orderBy {
 		if item != nil {
@@ -182,13 +182,13 @@ func (q *omniQuerySpanExtractor) collectTrailingClauses(orderBy []*ast.OrderByIt
 // collectExplainedQueryColumns records the predicate columns of the query
 // EXPLAIN ANALYZE runs, whose plan reports the rows each condition kept. The
 // plan is not a result set, so the query's lineage is dropped.
-func (q *omniQuerySpanExtractor) collectExplainedQueryColumns(stmt ast.StmtNode) {
+func (q *querySpanExtractor) collectExplainedQueryColumns(stmt ast.StmtNode) {
 	if _, err := q.extractSelectRoot(stmt); err != nil {
 		q.recordColumnsNamedIn(stmt)
 	}
 }
 
-func (q *omniQuerySpanExtractor) recordJoinedColumn(table base.TableSource, name string) {
+func (q *querySpanExtractor) recordJoinedColumn(table base.TableSource, name string) {
 	if field, ok := querySpanResultNamed(table.GetQuerySpanResult(), name); ok {
 		mergeSourceColumnSetInto(q.predicateColumns, field.SourceColumns)
 		return
@@ -198,7 +198,7 @@ func (q *omniQuerySpanExtractor) recordJoinedColumn(table base.TableSource, name
 
 // recordColumnsNamedIn over-approximates the columns node reads by name, for
 // a condition the extractor could not resolve.
-func (q *omniQuerySpanExtractor) recordColumnsNamedIn(node ast.Node) {
+func (q *querySpanExtractor) recordColumnsNamedIn(node ast.Node) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		if ref, ok := n.(*ast.ColumnRef); ok && !ref.Star {
 			q.recordColumnsNamed(ref.Schema, ref.Table, ref.Column)
@@ -210,7 +210,7 @@ func (q *omniQuerySpanExtractor) recordColumnsNamedIn(node ast.Node) {
 // recordColumnsNamed records every column called fieldName that the reference
 // could mean: in any visible table or select list, and in any table the
 // statement reads. A qualifier that names none of them is ignored.
-func (q *omniQuerySpanExtractor) recordColumnsNamed(databaseName, tableName, fieldName string) {
+func (q *querySpanExtractor) recordColumnsNamed(databaseName, tableName, fieldName string) {
 	qualifierMatched := false
 	recordTables := func(tables []base.TableSource) {
 		for _, table := range tables {
@@ -250,7 +250,7 @@ func (q *omniQuerySpanExtractor) recordColumnsNamed(databaseName, tableName, fie
 	}
 }
 
-func (q *omniQuerySpanExtractor) metadataColumnsNamed(databaseName, tableName, fieldName string) []string {
+func (q *querySpanExtractor) metadataColumnsNamed(databaseName, tableName, fieldName string) []string {
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return nil
 	}
