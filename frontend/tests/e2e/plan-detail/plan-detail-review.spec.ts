@@ -620,6 +620,9 @@ test.describe("A step held only by a service account", () => {
     ).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByText(serviceAccount.email)).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: /1 reviewer/ }),
+    ).toBeFocused();
   });
 
   test("the header status popover opens the reviewer list, and Escape closes only the list", async () => {
@@ -631,6 +634,12 @@ test.describe("A step held only by a service account", () => {
 
     await statusPopover.getByRole("button", { name: /1 reviewer/ }).click();
     await expect(page.getByText(serviceAccount.email)).toBeVisible();
+
+    await page
+      .getByRole("button", { name: `Copy email for ${serviceAccountTitle}` })
+      .click();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+    await expect(statusPopover).toBeVisible();
 
     await page.keyboard.press("Escape");
     await expect(page.getByText(serviceAccount.email)).toBeHidden();

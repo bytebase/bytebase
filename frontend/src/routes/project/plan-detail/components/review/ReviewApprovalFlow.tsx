@@ -356,8 +356,8 @@ function NodeReviewers({
   return (
     <div className="mt-1">
       <Popover>
-        <PopoverTrigger className="-ml-0.5 flex h-5 w-fit cursor-pointer items-center gap-x-1.5 rounded-xs pr-1 pl-0.5 hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent data-[popup-open]:bg-control-bg">
-          <span className="flex items-center">
+        <PopoverTrigger className="-ml-1 flex h-5 w-fit cursor-pointer items-center gap-x-1.5 rounded-xs px-1 hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent data-[popup-open]:bg-control-bg">
+          <span aria-hidden className="flex items-center">
             {visible.map(({ user }) => (
               <InitialsAvatar
                 className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"

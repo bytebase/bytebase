@@ -31,11 +31,13 @@ vi.mock("@/components/UserAvatar", () => ({
 }));
 
 // jsdom has no layout, so the real virtualizer measures a zero-height scroller
-// and renders no rows; render every row instead.
+// and renders no rows. This one renders the first `windowSize` rows, every row
+// by default.
+const virtualWindow = vi.hoisted(() => ({ size: Number.POSITIVE_INFINITY }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: (options: { count: number; getItemKey?: (i: number) => string }) => ({
     getVirtualItems: () =>
-      Array.from({ length: options.count }, (_, index) => ({
+      Array.from({ length: Math.min(options.count, virtualWindow.size) }, (_, index) => ({
         index,
         key: options.getItemKey?.(index) ?? index,
         start: index * 40,
@@ -89,6 +91,7 @@ afterEach(() => {
   cleanup();
   document.body.innerHTML = "";
   vi.useRealTimers();
+  virtualWindow.size = Number.POSITIVE_INFINITY;
 });
 
 describe("ReviewerList", () => {
@@ -100,6 +103,14 @@ describe("ReviewerList", () => {
     expect(names[0]).toBe("Person 0001");
     expect(names[119]).toBe("Person 0120");
     expect(document.body.textContent).not.toContain("and-n-more");
+  });
+
+  test("mounts only the rows the virtualizer has in view, sized for the whole list", () => {
+    virtualWindow.size = 10;
+    render(<ReviewerList candidates={people(1200)} />);
+
+    expect(rowNames()).toHaveLength(10);
+    expect(screen.getByRole("list")).toHaveStyle({ height: "48000px" });
   });
 
   test.each([
@@ -119,6 +130,16 @@ describe("ReviewerList", () => {
 
     await search("PERSON0103@EXAMPLE");
     expect(rowNames()).toEqual(["Person 0103"]);
+  });
+
+  test("a new search shows its results from the first match, not from the old scroll position", async () => {
+    render(<ReviewerList candidates={people(120)} />);
+    const scroller = screen.getByRole("list").parentElement as HTMLElement;
+    scroller.scrollTop = 2000;
+
+    await search("person 00");
+
+    expect(scroller.scrollTop).toBe(0);
   });
 
   test("search keeps the list's order", async () => {

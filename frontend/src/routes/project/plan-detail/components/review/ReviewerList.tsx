@@ -45,6 +45,7 @@ export function ReviewerList({
     estimateSize: () => ESTIMATED_ROW_HEIGHT,
     getItemKey: (index) => matches[index].user.name,
     measureElement: (element) => element.getBoundingClientRect().height,
+    gap: 8,
     overscan: 8,
   });
 
@@ -57,7 +58,11 @@ export function ReviewerList({
           value={query}
           placeholder={t("plan.review.approval-flow.search-placeholder")}
           aria-label={t("plan.review.approval-flow.search-placeholder")}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            // Show a new search's results from the first match.
+            if (scrollRef.current) scrollRef.current.scrollTop = 0;
+          }}
         />
       )}
       {matches.length === 0 ? (
@@ -91,7 +96,7 @@ export function ReviewerList({
                 ref={virtualizer.measureElement}
                 data-index={item.index}
                 role="listitem"
-                className="absolute top-0 left-0 w-full pb-2"
+                className="absolute top-0 left-0 w-full"
                 style={{ transform: `translateY(${item.start}px)` }}
               >
                 <CandidateRow candidate={matches[item.index]} />

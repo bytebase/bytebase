@@ -162,6 +162,10 @@ describe("ReviewApprovalFlow reviewer list", () => {
     document.body.appendChild(container);
     render();
     const trigger = reviewerTrigger(container);
+    // Screen readers name the button by its count, not by the avatar initials.
+    expect(trigger.querySelector('[aria-hidden="true"]')?.textContent).toBe(
+      "PePePe+117"
+    );
 
     await act(async () => {
       for (const type of ["pointerover", "pointerenter", "pointermove"]) {
@@ -200,6 +204,35 @@ describe("ReviewApprovalFlow reviewer list", () => {
       await new Promise((resolve) => setTimeout(resolve, 300));
     });
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+    unmount();
+  });
+
+  test.each([
+    [12, "the search box"],
+    [3, "the popup"],
+  ])("with %i reviewers, opening moves focus to %s", async (count, target) => {
+    withCandidates(count);
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewApprovalFlow issue={makeIssue()} />
+    );
+    document.body.appendChild(container);
+    render();
+
+    await act(async () => {
+      reviewerTrigger(container).click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    const focused = document.activeElement as HTMLElement;
+    if (target === "the search box") {
+      expect(focused.getAttribute("aria-label")).toBe(
+        "plan.review.approval-flow.search-placeholder"
+      );
+    } else {
+      expect(focused.getAttribute("role")).toBe("dialog");
+      expect(focused.querySelector('[role="list"]')).not.toBeNull();
+    }
 
     unmount();
   });
