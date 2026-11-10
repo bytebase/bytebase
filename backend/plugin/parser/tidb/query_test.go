@@ -86,6 +86,10 @@ func TestValidateSQLForEditor(t *testing.T) {
 			gotAllQuery: false,
 		},
 		{
+			// A CTE may precede INSERT ... SELECT but not INSERT ... VALUES.
+			// omni accepts this (TiDB v8.5.5 rejects it at parse), so the
+			// validator refuses it by classifying the INSERT as non-read rather
+			// than surfacing a parse error — the editor blocks it either way.
 			statement: `
 				With t as (
 					select * from t1
@@ -96,7 +100,6 @@ func TestValidateSQLForEditor(t *testing.T) {
 				`,
 			valid:       false,
 			gotAllQuery: false,
-			err:         true,
 		},
 		{
 			statement:   "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
@@ -121,6 +124,13 @@ func TestValidateSQLForEditor(t *testing.T) {
 		},
 		{
 			statement:   `SET max_execution_time = 1000; select * from t`,
+			valid:       true,
+			gotAllQuery: false,
+		},
+		{
+			// omni parses SET TRANSACTION as its own node; it must stay an
+			// allowed session setting, like SET, not fall into the refusal case.
+			statement:   `SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED; SELECT * FROM t`,
 			valid:       true,
 			gotAllQuery: false,
 		},

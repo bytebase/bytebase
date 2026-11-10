@@ -1,4 +1,4 @@
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AgentMinimizedLauncher } from "./AgentMinimizedLauncher";
@@ -16,13 +16,17 @@ let disconnects: ReturnType<typeof vi.fn>[];
 let rects: Map<Element, DOMRect>;
 let cleanups: (() => void)[];
 
-function renderLauncher() {
+function renderLauncher(
+  props: Partial<ComponentProps<typeof AgentMinimizedLauncher>> = {}
+) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
   const onOpen = vi.fn();
-  act(() => root.render(<AgentMinimizedLauncher onOpen={onOpen} />));
+  act(() => root.render(<AgentMinimizedLauncher {...props} onOpen={onOpen} />));
   const button = container.querySelector<HTMLButtonElement>("button")!;
+  button.setPointerCapture = vi.fn();
+  button.releasePointerCapture = vi.fn();
   const unmount = () => act(() => root.unmount());
   cleanups.push(unmount);
   return { button, onOpen, unmount };
@@ -41,6 +45,26 @@ function createFooter(height: number, left = 0, width = window.innerWidth) {
 function notifyResize() {
   act(() => {
     for (const callback of resizeCallbacks) callback();
+  });
+}
+
+function pointer(
+  button: HTMLButtonElement,
+  type: string,
+  init: PointerEventInit = {}
+) {
+  act(() => {
+    button.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        isPrimary: true,
+        clientX: 1564,
+        clientY: 964,
+        ...init,
+      })
+    );
   });
 }
 
@@ -69,8 +93,9 @@ beforeEach(() => {
         this.hasAttribute("data-agent-window")
       ) {
         const bottom = Number.parseFloat(this.style.bottom) || 16;
+        const right = Number.parseFloat(this.style.right) || 16;
         return new DOMRect(
-          window.innerWidth - 56,
+          window.innerWidth - right - 40,
           window.innerHeight - bottom - 40,
           40,
           40
@@ -89,6 +114,30 @@ afterEach(() => {
 });
 
 describe("AgentMinimizedLauncher", () => {
+  test("restores a manual position without saving temporary footer displacement", async () => {
+    const footer = createFooter(72, 0, 500);
+    document.body.appendChild(footer);
+    const onPositionChange = vi.fn();
+    const { button } = renderLauncher({
+      initialPosition: { right: 1316, bottom: 16 },
+      onPositionChange,
+    });
+    expect(button.style.right).toBe("1316px");
+    expect(button.style.bottom).toBe("88px");
+    notifyResize();
+    expect(onPositionChange).not.toHaveBeenCalled();
+
+    await act(async () => footer.remove());
+    expect(button.style.bottom).toBe("16px");
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: 1464, clientY: 864 });
+    pointer(button, "pointerup");
+    expect(onPositionChange).toHaveBeenLastCalledWith({
+      right: 1416,
+      bottom: 116,
+    });
+  });
+
   test("remains a labeled icon button and opens only when clicked", () => {
     const { button, onOpen } = renderLauncher();
     expect(button.type).toBe("button");
@@ -99,6 +148,104 @@ describe("AgentMinimizedLauncher", () => {
     expect(onOpen).not.toHaveBeenCalled();
     act(() => button.click());
     expect(onOpen).toHaveBeenCalledOnce();
+  });
+
+  test.each(["mouse", "touch", "pen"])(
+    "drags with a %s pointer without opening on release",
+    (pointerType) => {
+      const { button, onOpen } = renderLauncher();
+      pointer(button, "pointerdown", { pointerType });
+      pointer(button, "pointermove", {
+        pointerType,
+        clientX: 1364,
+        clientY: 864,
+      });
+      pointer(button, "pointerup", { pointerType });
+      act(() => button.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })));
+
+      expect(button.style.right).toBe("216px");
+      expect(button.style.bottom).toBe("116px");
+      expect(button.setPointerCapture).toHaveBeenCalledWith(1);
+      expect(button.releasePointerCapture).toHaveBeenCalledWith(1);
+      expect(onOpen).not.toHaveBeenCalled();
+      notifyResize();
+      expect(button.style.right).toBe("216px");
+      expect(button.style.bottom).toBe("116px");
+
+      pointer(button, "pointerdown");
+      pointer(button, "pointerup");
+      act(() => button.click());
+      expect(onOpen).toHaveBeenCalledOnce();
+    }
+  );
+
+  test("allows click jitter and keyboard activation after dragging", () => {
+    const { button, onOpen } = renderLauncher();
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: 1566, clientY: 966 });
+    pointer(button, "pointerup");
+    act(() => button.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 })));
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(button.style.bottom).toBe("16px");
+
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: 1364, clientY: 864 });
+    pointer(button, "pointerup");
+    act(() => button.click());
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
+  test("clamps dragging and viewport changes to the visible bounds", () => {
+    const { button } = renderLauncher();
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: -1000, clientY: -1000 });
+    expect(button.getBoundingClientRect().left).toBe(16);
+    expect(button.getBoundingClientRect().top).toBe(16);
+    pointer(button, "pointerup");
+
+    vi.stubGlobal("innerWidth", 390);
+    vi.stubGlobal("innerHeight", 844);
+    act(() => window.dispatchEvent(new Event("resize")));
+    expect(button.getBoundingClientRect().left).toBe(16);
+    expect(button.getBoundingClientRect().top).toBe(16);
+
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: 4000, clientY: 4000 });
+    pointer(button, "pointerup");
+    expect(button.style.right).toBe("16px");
+    expect(button.style.bottom).toBe("16px");
+  });
+
+  test("checks footer collisions at the dragged horizontal position", () => {
+    const footer = createFooter(72, 0, 500);
+    document.body.appendChild(footer);
+    const { button } = renderLauncher();
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { clientX: 264 });
+    pointer(button, "pointerup");
+    expect(button.style.right).toBe("1316px");
+    expect(button.style.bottom).toBe("88px");
+    notifyResize();
+    expect(button.style.bottom).toBe("88px");
+  });
+
+  test("ignores secondary pointers and stops when pointer capture is lost", () => {
+    const { button } = renderLauncher();
+    pointer(button, "pointerdown", { button: 2 });
+    pointer(button, "pointermove", { clientX: 1364, clientY: 864 });
+    expect(button.style.bottom).toBe("16px");
+
+    pointer(button, "pointerdown");
+    pointer(button, "pointermove", { pointerId: 2, clientX: 1364, clientY: 864 });
+    expect(button.style.bottom).toBe("16px");
+    pointer(button, "lostpointercapture");
+    pointer(button, "pointermove", { clientX: 1364, clientY: 864 });
+    expect(button.style.bottom).toBe("16px");
+
+    pointer(button, "pointerdown");
+    pointer(button, "pointercancel");
+    pointer(button, "pointermove", { clientX: 1364, clientY: 864 });
+    expect(button.style.bottom).toBe("16px");
   });
 
   test.each([

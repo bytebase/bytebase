@@ -43,6 +43,12 @@ import type {
   ToolCall,
 } from "../logic/types";
 import { getDefaultAgentWindowState } from "../window";
+import {
+  type AgentPreferences,
+  DEFAULT_AGENT_PREFERENCES,
+  getAgentPreferencesKey,
+  normalizeAgentPreferences,
+} from "./preferences";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
@@ -744,6 +750,12 @@ export interface AgentState {
   sidebarWidth: number;
   minimized: boolean;
 
+  preferences: AgentPreferences;
+  preferencesStorageError: boolean;
+  updatePreferences: (patch: Partial<AgentPreferences>) => void;
+  resetPreferences: () => void;
+  syncPreferences: () => void;
+
   // Chat state
   workspaceName: string | null;
   userEmail: string | null;
@@ -1017,16 +1029,43 @@ export const selectHasRunningChat = (state: AgentState): boolean =>
 // --- Store creation ---
 
 const getSafeStorage = (): Storage | null => {
-  const storage = globalThis.localStorage as Partial<Storage> | undefined;
-  if (
-    !storage ||
-    typeof storage.getItem !== "function" ||
-    typeof storage.setItem !== "function" ||
-    typeof storage.removeItem !== "function"
-  ) {
+  try {
+    const storage = globalThis.localStorage as Partial<Storage> | undefined;
+    if (
+      !storage ||
+      typeof storage.getItem !== "function" ||
+      typeof storage.setItem !== "function" ||
+      typeof storage.removeItem !== "function"
+    ) {
+      return null;
+    }
+    // Browsers may expose Storage while denying access to its contents.
+    storage.getItem(AGENT_STATE_KEY);
+    return storage as Storage;
+  } catch {
     return null;
   }
-  return storage as Storage;
+};
+
+const loadAgentPreferences = (workspaceName: string, userEmail: string) => {
+  const key = getAgentPreferencesKey(workspaceName, userEmail);
+  try {
+    const storage = getSafeStorage();
+    if (!storage || !key)
+      throw new Error("Agent preference storage unavailable");
+    const serialized = storage.getItem(key);
+    return {
+      preferences: normalizeAgentPreferences(
+        serialized ? JSON.parse(serialized) : null
+      ),
+      preferencesStorageError: false,
+    };
+  } catch {
+    return {
+      preferences: { ...DEFAULT_AGENT_PREFERENCES },
+      preferencesStorageError: true,
+    };
+  }
 };
 
 const getInitialWindowState = () => {
@@ -1531,6 +1570,41 @@ export const createAgentStore = () => {
         size: initialWindowState.size,
         sidebarWidth: initialWindowState.sidebarWidth,
         minimized: false,
+
+        preferences: { ...DEFAULT_AGENT_PREFERENCES },
+        preferencesStorageError: false,
+        updatePreferences: (patch) => {
+          const { workspaceName, userEmail } = get();
+          const key =
+            workspaceName && userEmail
+              ? getAgentPreferencesKey(workspaceName, userEmail)
+              : null;
+          if (!key) return;
+          const preferences = normalizeAgentPreferences({
+            ...get().preferences,
+            ...patch,
+          });
+          let preferencesStorageError = false;
+          try {
+            const storage = getSafeStorage();
+            if (!storage)
+              throw new Error("Agent preference storage unavailable");
+            storage.setItem(key, JSON.stringify(preferences));
+          } catch {
+            preferencesStorageError = true;
+          }
+          set((draft) => {
+            draft.preferences = preferences;
+            draft.preferencesStorageError = preferencesStorageError;
+          });
+        },
+        resetPreferences: () =>
+          get().updatePreferences(DEFAULT_AGENT_PREFERENCES),
+        syncPreferences: () => {
+          const { workspaceName, userEmail } = get();
+          if (!workspaceName || !userEmail) return;
+          set(loadAgentPreferences(workspaceName, userEmail));
+        },
 
         // Chat state (from persisted/initial)
         workspaceName: null,
@@ -2613,6 +2687,8 @@ export const createAgentStore = () => {
               draft.queuedUserMessageInFlightByChatId = {};
               draft.remoteBusyChatIds = {};
               draft.expressionDraftTargetsByChatId = {};
+              draft.preferences = { ...DEFAULT_AGENT_PREFERENCES };
+              draft.preferencesStorageError = false;
             });
             return false;
           }
@@ -2642,6 +2718,10 @@ export const createAgentStore = () => {
           migrateLegacyState(storage, workspaceName, nextUserEmail);
           const persistedState = getPersistedState(storage, stateKey);
           const serialized = storage?.getItem(stateKey);
+          const preferencesState = loadAgentPreferences(
+            workspaceName,
+            nextUserEmail
+          );
           snapshotsByScope.set(
             stateKey,
             serialized ? persistedState : createEmptyPersistedState()
@@ -2662,6 +2742,9 @@ export const createAgentStore = () => {
             draft.queuedUserMessageInFlightByChatId = {};
             draft.remoteBusyChatIds = {};
             draft.expressionDraftTargetsByChatId = {};
+            draft.preferences = preferencesState.preferences;
+            draft.preferencesStorageError =
+              preferencesState.preferencesStorageError;
           });
           get().loadWindowState();
           return true;
@@ -2840,7 +2923,13 @@ export const createAgentStore = () => {
     );
     const merged = rebasePersistedChanges(base, local, remote, locallyBusy);
     const serialized = persist ? JSON.stringify(merged) : saved;
-    if (persist && serialized !== saved) storage.setItem(key, serialized!);
+    if (persist && serialized !== saved) {
+      try {
+        storage.setItem(key, serialized!);
+      } catch {
+        return;
+      }
+    }
     if (serialized) lastSerializedByScope.set(key, serialized);
     storageSnapshotsByScope.set(key, persist ? merged : remote);
 
@@ -2946,13 +3035,22 @@ if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
     const { workspaceName, userEmail } = useAgentStore.getState();
     if (
-      workspaceName &&
-      userEmail &&
-      (event.key === null ||
-        event.key === getAgentStateKey(workspaceName, userEmail)) &&
-      (!event.storageArea || event.storageArea === getSafeStorage())
+      !workspaceName ||
+      !userEmail ||
+      (event.storageArea && event.storageArea !== getSafeStorage())
+    )
+      return;
+    if (
+      event.key === null ||
+      event.key === getAgentStateKey(workspaceName, userEmail)
     ) {
       useAgentStore.getState().syncState();
+    }
+    if (
+      event.key === null ||
+      event.key === getAgentPreferencesKey(workspaceName, userEmail)
+    ) {
+      useAgentStore.getState().syncPreferences();
     }
   });
   window.addEventListener("focus", () => useAgentStore.getState().syncState());

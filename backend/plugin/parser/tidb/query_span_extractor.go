@@ -2,10 +2,10 @@ package tidb
 
 import (
 	"context"
+	"slices"
 	"strings"
 
-	"github.com/pingcap/tidb/pkg/parser"
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -20,6 +20,7 @@ const rowIDColumnName = "_tidb_rowid"
 type querySpanExtractor struct {
 	ctx               context.Context
 	defaultDatabase   string
+	statement         string
 	metaCache         map[string]*model.DatabaseMetadata
 	gCtx              base.GetQuerySpanContext
 	lowerTableViewMap map[string]map[string]bool
@@ -50,22 +51,25 @@ func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
+	q.statement = statement
 
-	p := parser.New()
-	p.EnableWindowFunc(true)
-	nodeList, _, err := p.Parse(statement, "", "")
+	list, err := ParseTiDBOmni(statement)
 	if err != nil {
 		return nil, err
 	}
-	if len(nodeList) != 1 {
-		return nil, errors.Errorf("expecting 1 statement, but got %d", len(nodeList))
+	if list == nil || len(list.Items) != 1 {
+		got := 0
+		if list != nil {
+			got = len(list.Items)
+		}
+		return nil, errors.Errorf("expecting 1 statement, but got %d", got)
 	}
 
-	node := nodeList[0]
+	node := list.Items[0]
 
 	accessNode := node
 	includeUncached := false
-	if explain, ok := node.(*tidbast.ExplainStmt); ok {
+	if explain, ok := node.(*ast.ExplainStmt); ok {
 		if explain.Stmt == nil {
 			return nil, errors.New("EXPLAIN by digest or connection is not supported: referenced tables cannot be determined")
 		}
@@ -167,13 +171,13 @@ func notFoundSyncTarget(e *base.ResourceNotFoundError, defaultDatabase string) b
 	return r
 }
 
-func skipQuerySpan(node tidbast.Node, queryType base.QueryType) bool {
+func skipQuerySpan(node ast.Node, queryType base.QueryType) bool {
 	if queryType == base.Select {
 		return false
 	}
 
 	// This is for internal view in a SELECT statement.
-	if _, ok := node.(*tidbast.CreateViewStmt); ok {
+	if _, ok := node.(*ast.CreateViewStmt); ok {
 		return false
 	}
 
@@ -213,14 +217,14 @@ var systemDatabases = map[string]bool{
 	"metrics_schema": true,
 }
 
-func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached bool) base.SourceColumnSet {
+func (q *querySpanExtractor) getAccessTables(node ast.Node, includeUncached bool) base.SourceColumnSet {
 	accessesMap := make(base.SourceColumnSet)
 	// ANALYZE executes before metadata can be refreshed. Keep every physical
 	// target for authorization, excluding only references to in-scope CTEs.
-	v := &accessTableVisitor{resolveCTEs: includeUncached}
-	node.Accept(v)
-	for _, table := range v.tables {
-		databaseName := table.Schema.O
+	c := &accessTableCollector{resolveCTEs: includeUncached}
+	ast.Walk(c, node)
+	for _, table := range c.tables {
+		databaseName := table.Schema
 		if databaseName == "" {
 			databaseName = q.defaultDatabase
 		}
@@ -228,20 +232,105 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node, includeUncached 
 		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
 		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly,
 		// what we found is the physical table `t1`, but the query actually accesses the CTE `t1`.
-		// We do this because we do not have too much time to implement the real behavior.
-		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
-		// figure out whether the table is the table the query actually accesses
-		if !includeUncached && !q.existsTableMetadata(databaseName, table.Name.O) {
+		if !includeUncached && !q.existsTableMetadata(databaseName, table.Name) {
 			continue
 		}
 
 		resource := base.ColumnResource{
 			Database: databaseName,
-			Table:    table.Name.O,
+			Table:    table.Name,
 		}
 		accessesMap[resource] = true
 	}
 	return accessesMap
+}
+
+// accessTableCollector walks an omni AST collecting the base TableRef nodes a
+// statement reads, skipping references to in-scope CTEs (when resolveCTEs) and
+// the alias-only tables named by a locking clause.
+type accessTableCollector struct {
+	tables        []*ast.TableRef
+	resolveCTEs   bool
+	cteScopes     []map[string]bool
+	lockingTables map[*ast.TableRef]bool
+}
+
+func (c *accessTableCollector) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		return nil
+	}
+	return c.enter(node)
+}
+
+func (c *accessTableCollector) enter(node ast.Node) ast.Visitor {
+	// Locking clauses reference FROM aliases, whose physical sources are visited separately.
+	if sel, ok := node.(*ast.SelectStmt); ok && sel.ForUpdate != nil {
+		if c.lockingTables == nil {
+			c.lockingTables = make(map[*ast.TableRef]bool)
+		}
+		for _, table := range sel.ForUpdate.Tables {
+			c.lockingTables[table] = true
+		}
+	}
+	// A recursive CTE's name is visible inside its own definition.
+	if cte, ok := node.(*ast.CommonTableExpr); ok && c.resolveCTEs && cte.Recursive && len(c.cteScopes) > 0 {
+		c.cteScopes[len(c.cteScopes)-1][strings.ToLower(cte.Name)] = true
+	}
+	if table, ok := node.(*ast.TableRef); ok {
+		if c.lockingTables[table] {
+			return nil
+		}
+		if c.resolveCTEs && table.Schema == "" {
+			for _, scope := range c.cteScopes {
+				if scope[strings.ToLower(table.Name)] {
+					return nil
+				}
+			}
+		}
+		c.tables = append(c.tables, table)
+		return nil
+	}
+	if c.resolveCTEs {
+		switch node.(type) {
+		case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+			c.cteScopes = append(c.cteScopes, make(map[string]bool))
+			return &accessTableScopeGuard{c: c}
+		}
+		if cte, ok := node.(*ast.CommonTableExpr); ok {
+			// A non-recursive CTE becomes visible only after its definition.
+			return &accessTableCTEGuard{c: c, name: strings.ToLower(cte.Name)}
+		}
+	}
+	return c
+}
+
+// accessTableScopeGuard pops the CTE scope its enclosing query pushed.
+type accessTableScopeGuard struct {
+	c *accessTableCollector
+}
+
+func (g *accessTableScopeGuard) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		g.c.cteScopes = g.c.cteScopes[:len(g.c.cteScopes)-1]
+		return nil
+	}
+	return g.c.enter(node)
+}
+
+// accessTableCTEGuard registers the CTE name in the enclosing scope on leave.
+type accessTableCTEGuard struct {
+	c    *accessTableCollector
+	name string
+}
+
+func (g *accessTableCTEGuard) Visit(node ast.Node) ast.Visitor {
+	if node == nil {
+		if len(g.c.cteScopes) > 0 {
+			g.c.cteScopes[len(g.c.cteScopes)-1][g.name] = true
+		}
+		return nil
+	}
+	return g.c.enter(node)
 }
 
 func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName string) bool {
@@ -278,193 +367,183 @@ func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName 
 	return q.lowerTableViewMap[databaseName][strings.ToLower(tableName)]
 }
 
-func (q *querySpanExtractor) extractTableSourceFromNode(node tidbast.Node) (base.TableSource, error) {
+// extractTableSourceFromNode extracts the output columns of a query node (a
+// SELECT, a set operation, or a CREATE VIEW body) as a table source.
+func (q *querySpanExtractor) extractTableSourceFromNode(node ast.Node) (base.TableSource, error) {
 	if node == nil {
 		return nil, nil
 	}
 	switch node := node.(type) {
-	case *tidbast.SelectStmt:
+	case *ast.SelectStmt:
 		return q.extractSelect(node)
-	case *tidbast.Join:
-		return q.extractJoin(node)
-	case *tidbast.TableSource:
-		return q.extractTableSource(node)
-	case *tidbast.TableName:
-		return q.extractTableName(node)
-	case *tidbast.SetOprStmt:
-		return q.extractSetOpr(node)
-	case *tidbast.SetOprSelectList:
-		return q.extractSetOprSelectList(node)
-	case *tidbast.CreateViewStmt:
+	case *ast.CreateViewStmt:
 		tableSource, err := q.extractTableSourceFromNode(node.Select)
 		if err != nil {
 			return nil, err
 		}
 		querySpanResult := tableSource.GetQuerySpanResult()
 
-		if len(node.Cols) == 0 {
-			return base.NewPseudoTable(node.ViewName.Name.O, querySpanResult), nil
+		viewName := ""
+		if node.Name != nil {
+			viewName = node.Name.Name
+		}
+		if len(node.Columns) == 0 {
+			return base.NewPseudoTable(viewName, querySpanResult), nil
 		}
 
-		if len(node.Cols) != len(querySpanResult) {
-			return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", node.ViewName.Name.O)
+		if len(node.Columns) != len(querySpanResult) {
+			return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", viewName)
 		}
 
 		var columns []base.QuerySpanResult
 		for i, item := range querySpanResult {
 			columns = append(columns, base.QuerySpanResult{
-				Name:          node.Cols[i].L,
+				Name:          strings.ToLower(node.Columns[i]),
 				SourceColumns: item.SourceColumns,
 			})
 		}
-		return base.NewPseudoTable(node.ViewName.Name.O, columns), nil
+		return base.NewPseudoTable(viewName, columns), nil
 	}
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractNonRecursiveCTE(node *tidbast.CommonTableExpression) (*base.PseudoTable, error) {
-	tableSource, err := q.extractTableSourceFromNode(node.Query.Query)
+func (q *querySpanExtractor) extractNonRecursiveCTE(node *ast.CommonTableExpr) (*base.PseudoTable, error) {
+	tableSource, err := q.extractTableSourceFromNode(node.Select)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from CTE query")
 	}
 	querySpanResults := tableSource.GetQuerySpanResult()
-	if len(node.ColNameList) > 0 {
-		if len(node.ColNameList) != len(querySpanResults) {
-			return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(node.ColNameList))
+	if len(node.Columns) > 0 {
+		if len(node.Columns) != len(querySpanResults) {
+			return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(querySpanResults), len(node.Columns))
 		}
-		for i, name := range node.ColNameList {
+		for i, name := range node.Columns {
 			// The column name for MySQL is case insensitive.
-			querySpanResults[i].Name = name.L
+			querySpanResults[i].Name = strings.ToLower(name)
 		}
 	}
 
 	return &base.PseudoTable{
-		Name:    node.Name.O,
+		Name:    node.Name,
 		Columns: querySpanResults,
 	}, nil
 }
 
-func (q *querySpanExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpression) (*base.PseudoTable, error) {
-	switch x := node.Query.Query.(type) {
-	case *tidbast.SetOprStmt:
-		if x.With != nil {
-			previousCteOuterLength := len(q.ctes)
-			defer func() {
-				q.ctes = q.ctes[:previousCteOuterLength]
-			}()
-			for _, cte := range x.With.CTEs {
-				cteTableSource, err := q.extractCTE(cte)
-				if err != nil {
-					return nil, err
-				}
-				q.ctes = append(q.ctes, cteTableSource)
-			}
-
-			for i := previousCteOuterLength; i < len(q.ctes); i++ {
-				cteTableSource := q.ctes[i]
-				if strings.EqualFold(cteTableSource.Name, node.Name.O) {
-					// It means this recursive CTE will be hidden by the inner CTE with the same name.
-					// In other words, this recursive CTE will be not references by itself sub-query.
-					// So, we can build it as non-recursive CTE
-					return q.extractNonRecursiveCTE(node)
-				}
-			}
-		}
-
-		initialPart, recursivePart := splitInitialAndRecursivePart(x, node.Name.O)
-		if len(initialPart) == 0 {
-			return nil, errors.Errorf("Failed to find initial part for recursive common table expression")
-		}
-		if len(recursivePart) == 0 {
-			return q.extractNonRecursiveCTE(node)
-		}
-
-		initialTableSource, err := q.extractTableSourceFromNode(&tidbast.SetOprStmt{
-			SelectList: &tidbast.SetOprSelectList{
-				Selects: initialPart,
-			},
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract table source from initial part of recursive CTE")
-		}
-		initialQuerySpanResult := initialTableSource.GetQuerySpanResult()
-		if len(node.ColNameList) > 0 {
-			if len(node.ColNameList) != len(initialQuerySpanResult) {
-				return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialQuerySpanResult), len(node.ColNameList))
-			}
-			for i, name := range node.ColNameList {
-				// The column name for MySQL is case insensitive.
-				initialQuerySpanResult[i].Name = name.L
-			}
-		}
-
-		cteTableResource := &base.PseudoTable{
-			Name:    node.Name.O,
-			Columns: initialQuerySpanResult,
-		}
-
-		// Compute dependent closures.
-		// There are two ways to compute dependent closures:
-		//   1. find the all dependent edges, then use graph theory traversal to find the closure.
-		//   2. Iterate to simulate the CTE recursive process, each turn check whether the Sensitive state has changed, and stop if no change.
-		//
-		// Consider the option 2 can easy to implementation, because the simulate process has been written.
-		// On the other hand, the number of iterations of the entire algorithm will not exceed the length of fields.
-		// In actual use, the length of fields will not be more than 20 generally.
-		// So I think it's OK for now.
-		// If any performance issues in use, optimize here.
-		q.ctes = append(q.ctes, cteTableResource)
-		defer func() {
-			q.ctes = q.ctes[:len(q.ctes)-1]
-		}()
-		for {
-			recursiveTableSource, err := q.extractTableSourceFromNode(&tidbast.SetOprStmt{
-				SelectList: &tidbast.SetOprSelectList{
-					Selects: recursivePart,
-				},
-			})
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to extract table source from recursive part of recursive CTE")
-			}
-			recursiveQuerySpanResult := recursiveTableSource.GetQuerySpanResult()
-			if len(recursiveQuerySpanResult) != len(initialQuerySpanResult) {
-				return nil, errors.Errorf("cte table expr has %d columns, but recursive part has %d columns", len(initialQuerySpanResult), len(recursiveQuerySpanResult))
-			}
-
-			changed := false
-			for i, spanQueryResult := range recursiveQuerySpanResult {
-				newResourceColumns, hasDiff := base.MergeSourceColumnSet(initialQuerySpanResult[i].SourceColumns, spanQueryResult.SourceColumns)
-				if hasDiff {
-					changed = true
-					initialQuerySpanResult[i].SourceColumns = newResourceColumns
-				}
-			}
-
-			if !changed {
-				break
-			}
-			q.ctes[len(q.ctes)-1].Columns = initialQuerySpanResult
-		}
-		return cteTableResource, nil
-	default:
+func (q *querySpanExtractor) extractRecursiveCTE(node *ast.CommonTableExpr) (*base.PseudoTable, error) {
+	// omni folds UNION/INTERSECT/EXCEPT into SelectStmt; a recursive CTE whose
+	// body is not a set operation has no recursive arm.
+	selectStmt := ast.UnwrapParenSource(node.Select)
+	if selectStmt == nil || selectStmt.SetOp == ast.SetOpNone {
 		return q.extractNonRecursiveCTE(node)
 	}
+
+	// The CTE may hide an outer CTE of the same name with its own inner WITH; in
+	// that case the recursion does not reference itself and it is non-recursive.
+	for _, cte := range selectStmt.CTEs {
+		if strings.EqualFold(cte.Name, node.Name) {
+			return q.extractNonRecursiveCTE(node)
+		}
+	}
+
+	// The body's own WITH clause must be visible to the anchor, e.g. the `seed`
+	// in `WITH RECURSIVE r AS (WITH seed AS (...) SELECT ... FROM seed UNION ALL
+	// SELECT ... FROM r) ...`. The fixpoint loop below re-registers these via
+	// extractSelect, so this scope is scoped to the initial anchor extraction.
+	previousInnerCteLength := len(q.ctes)
+	for _, cte := range selectStmt.CTEs {
+		cteTableSource, cteErr := q.extractCTE(cte)
+		if cteErr != nil {
+			q.ctes = q.ctes[:previousInnerCteLength]
+			return nil, cteErr
+		}
+		q.ctes = append(q.ctes, cteTableSource)
+	}
+	initialTableSource, err := q.extractRecursiveCTEAnchor(selectStmt)
+	q.ctes = q.ctes[:previousInnerCteLength]
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to extract table source from initial part of recursive CTE")
+	}
+	initialQuerySpanResult := cloneQuerySpanResults(initialTableSource.GetQuerySpanResult())
+	if len(node.Columns) > 0 {
+		if len(node.Columns) != len(initialQuerySpanResult) {
+			return nil, errors.Errorf("cte table expr has %d columns, but alias has %d columns", len(initialQuerySpanResult), len(node.Columns))
+		}
+		for i, name := range node.Columns {
+			// The column name for MySQL is case insensitive.
+			initialQuerySpanResult[i].Name = strings.ToLower(name)
+		}
+	}
+
+	cteTableResource := &base.PseudoTable{
+		Name:    node.Name,
+		Columns: initialQuerySpanResult,
+	}
+
+	// Simulate the recursive process: iterate until the source column sets of
+	// the CTE columns stop growing. The number of iterations never exceeds the
+	// number of columns.
+	q.ctes = append(q.ctes, cteTableResource)
+	defer func() {
+		q.ctes = q.ctes[:len(q.ctes)-1]
+	}()
+	for {
+		recursiveTableSource, err := q.extractSelect(node.Select)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to extract table source from recursive part of recursive CTE")
+		}
+		recursiveQuerySpanResult := recursiveTableSource.GetQuerySpanResult()
+		if len(recursiveQuerySpanResult) != len(initialQuerySpanResult) {
+			return nil, errors.Errorf("cte table expr has %d columns, but recursive part has %d columns", len(initialQuerySpanResult), len(recursiveQuerySpanResult))
+		}
+
+		changed := false
+		for i, spanQueryResult := range recursiveQuerySpanResult {
+			newResourceColumns, hasDiff := base.MergeSourceColumnSet(initialQuerySpanResult[i].SourceColumns, spanQueryResult.SourceColumns)
+			if hasDiff {
+				changed = true
+				initialQuerySpanResult[i].SourceColumns = newResourceColumns
+			}
+		}
+
+		if !changed {
+			break
+		}
+		cteTableResource.Columns = cloneQuerySpanResults(initialQuerySpanResult)
+	}
+	cteTableResource.Columns = initialQuerySpanResult
+	return cteTableResource, nil
 }
 
-func (q *querySpanExtractor) extractCTE(node *tidbast.CommonTableExpression) (*base.PseudoTable, error) {
-	if node.IsRecursive {
+// extractRecursiveCTEAnchor extracts the non-recursive anchor of a recursive
+// CTE: the leftmost SELECT of its set-operation tree.
+func (q *querySpanExtractor) extractRecursiveCTEAnchor(stmt *ast.SelectStmt) (base.TableSource, error) {
+	stmt = ast.UnwrapParenSource(stmt)
+	if stmt == nil || stmt.SetOp == ast.SetOpNone {
+		return q.extractSelect(stmt)
+	}
+	if stmt.Left != nil {
+		return q.extractRecursiveCTEAnchor(stmt.Left)
+	}
+	return q.extractRecursiveCTEAnchor(stmt.Right)
+}
+
+func (q *querySpanExtractor) extractCTE(node *ast.CommonTableExpr) (*base.PseudoTable, error) {
+	if node.Recursive {
 		return q.extractRecursiveCTE(node)
 	}
 	return q.extractNonRecursiveCTE(node)
 }
 
-func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.TableSource, error) {
-	if node.With != nil {
+func (q *querySpanExtractor) extractSelect(node *ast.SelectStmt) (base.TableSource, error) {
+	if node == nil {
+		return new(base.PseudoTable), nil
+	}
+	if len(node.CTEs) > 0 {
 		previousCteOuterLength := len(q.ctes)
 		defer func() {
 			q.ctes = q.ctes[:previousCteOuterLength]
 		}()
-		for _, cte := range node.With.CTEs {
+		for _, cte := range node.CTEs {
 			cteTableSource, err := q.extractCTE(cte)
 			if err != nil {
 				return nil, err
@@ -473,74 +552,145 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 		}
 	}
 
-	var fromFieldList []base.TableSource
-	if node.From != nil {
-		tableSource, err := q.extractTableSourceFromNode(node.From.TableRefs)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract table source from FROM clause")
+	switch {
+	case node.ParenSource != nil:
+		return q.extractSelect(node.ParenSource)
+	case node.SetOp != ast.SetOpNone:
+		return q.extractSetOp(node)
+	case node.TableSource != nil:
+		if node.TableSource.Table == nil {
+			return new(base.PseudoTable), nil
 		}
+		return q.findTableSchema(node.TableSource.Table.Schema, node.TableSource.Table.Name)
+	case node.ValuesSource != nil:
+		return q.extractValues(node.ValuesSource)
+	}
+
+	var fromFieldList []base.TableSource
+	if len(node.From) > 0 {
 		previousTableSourcesFromLength := len(q.tableSourcesFrom)
 		defer func() {
 			q.tableSourcesFrom = q.tableSourcesFrom[:previousTableSourcesFromLength]
 		}()
-		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSource)
-		fromFieldList = append(fromFieldList, tableSource)
+		for _, tableExpr := range node.From {
+			tableSource, err := q.extractTableSource(tableExpr)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to extract table source from FROM clause")
+			}
+			if tableSource == nil {
+				continue
+			}
+			q.tableSourcesFrom = append(q.tableSourcesFrom, tableSource)
+			fromFieldList = append(fromFieldList, tableSource)
+		}
 	}
 
 	result := new(base.PseudoTable)
-	if node.Fields != nil {
-		for _, field := range node.Fields.Fields {
-			if field.WildCard != nil {
-				if field.WildCard.Table.O == "" {
-					var columns []base.QuerySpanResult
-					for _, tableSource := range fromFieldList {
-						columns = append(columns, tableSource.GetQuerySpanResult()...)
-					}
-					result.Columns = append(result.Columns, columns...)
-				} else {
-					for _, tableSource := range fromFieldList {
-						sameDatabase := (strings.EqualFold(field.WildCard.Schema.O, tableSource.GetDatabaseName()) || (field.WildCard.Schema.O == "" && strings.EqualFold(tableSource.GetDatabaseName(), q.defaultDatabase)))
-						sameTable := strings.EqualFold(field.WildCard.Table.O, tableSource.GetTableName())
-						find := false
-						if sameDatabase && sameTable {
-							result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
-							find = true
-							break
-						}
-						if !find {
-							sources, ok := q.getAllTableColumnSources(field.WildCard.Schema.O, field.WildCard.Table.O)
-							if ok {
-								result.Columns = append(result.Columns, sources...)
-								find = true
-							}
-						}
-						if !find {
-							return nil, &base.ResourceNotFoundError{
-								Err:      errors.New("failed to find table to calculate asterisk"),
-								Database: &field.WildCard.Schema.O,
-								Table:    &field.WildCard.Table.O,
-							}
-						}
-					}
-				}
-			} else {
-				sourceColumnSet, err := q.extractSourceColumnSetFromExpression(field.Expr)
-				if err != nil {
-					return nil, err
-				}
-				fieldName := extractFieldName(field)
-				result.Columns = append(result.Columns, base.QuerySpanResult{
-					Name:          fieldName,
-					SourceColumns: sourceColumnSet,
-				})
-			}
+	for _, field := range node.TargetList {
+		columns, err := q.extractTargetColumns(field, fromFieldList)
+		if err != nil {
+			return nil, err
 		}
+		result.Columns = append(result.Columns, columns...)
 	}
 
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromExpressionList(list []tidbast.ExprNode) (base.SourceColumnSet, error) {
+// extractTargetColumns resolves one select-list item to its output columns,
+// expanding `*` and `table.*` against the FROM sources.
+func (q *querySpanExtractor) extractTargetColumns(field ast.ExprNode, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+	expr := field
+	name := ""
+	if resTarget, ok := field.(*ast.ResTarget); ok {
+		expr = resTarget.Val
+		name = resTarget.Name
+	}
+
+	// Bare `*`.
+	if _, ok := expr.(*ast.StarExpr); ok {
+		var columns []base.QuerySpanResult
+		for _, tableSource := range fromFieldList {
+			columns = append(columns, tableSource.GetQuerySpanResult()...)
+		}
+		return columns, nil
+	}
+
+	// `table.*` / `db.table.*`.
+	if columnRef, ok := expr.(*ast.ColumnRef); ok && columnRef.Star {
+		return q.extractTableWildcard(columnRef.Schema, columnRef.Table, fromFieldList)
+	}
+
+	sourceColumnSet, err := q.extractSourceColumnSetFromExpression(expr)
+	if err != nil {
+		return nil, err
+	}
+	if name == "" {
+		name = q.deriveFieldName(expr)
+	}
+	return []base.QuerySpanResult{{
+		Name:          name,
+		SourceColumns: sourceColumnSet,
+	}}, nil
+}
+
+func (q *querySpanExtractor) extractTableWildcard(databaseName, tableName string, fromFieldList []base.TableSource) ([]base.QuerySpanResult, error) {
+	for _, tableSource := range fromFieldList {
+		sameDatabase := strings.EqualFold(databaseName, tableSource.GetDatabaseName()) || (databaseName == "" && strings.EqualFold(tableSource.GetDatabaseName(), q.defaultDatabase))
+		sameTable := strings.EqualFold(tableName, tableSource.GetTableName())
+		if sameDatabase && sameTable {
+			return tableSource.GetQuerySpanResult(), nil
+		}
+	}
+	if sources, ok := q.getAllTableColumnSources(databaseName, tableName); ok {
+		return sources, nil
+	}
+	return nil, &base.ResourceNotFoundError{
+		Err:      errors.New("failed to find table to calculate asterisk"),
+		Database: &databaseName,
+		Table:    &tableName,
+	}
+}
+
+// deriveFieldName reproduces the auto-derived name of an unaliased select item:
+// a bare column's name, else the item's original source text.
+func (q *querySpanExtractor) deriveFieldName(expr ast.ExprNode) string {
+	if columnRef, ok := expr.(*ast.ColumnRef); ok && !columnRef.Star {
+		return columnRef.Column
+	}
+	if loc, ok := omniExprLoc(expr); ok && loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(q.statement) {
+		return strings.TrimSpace(q.statement[loc.Start:loc.End])
+	}
+	return ""
+}
+
+func (q *querySpanExtractor) extractValues(node *ast.ValuesStmt) (base.TableSource, error) {
+	result := new(base.PseudoTable)
+	if node == nil {
+		return result, nil
+	}
+	for i, row := range node.Rows {
+		for j, expr := range row {
+			sourceColumnSet, err := q.extractSourceColumnSetFromExpression(expr)
+			if err != nil {
+				return nil, err
+			}
+			if i == 0 {
+				result.Columns = append(result.Columns, base.QuerySpanResult{
+					Name:          q.deriveFieldName(expr),
+					SourceColumns: sourceColumnSet,
+				})
+				continue
+			}
+			if j < len(result.Columns) {
+				result.Columns[j].SourceColumns, _ = base.MergeSourceColumnSet(result.Columns[j].SourceColumns, sourceColumnSet)
+			}
+		}
+	}
+	return result, nil
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromExpressionList(list []ast.ExprNode) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 	for _, node := range list {
 		sourceColumnSet, err := q.extractSourceColumnSetFromExpression(node)
@@ -552,14 +702,17 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionList(list []tid
 	return result, nil
 }
 
-func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.ExprNode) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in ast.ExprNode) (base.SourceColumnSet, error) {
 	if in == nil {
 		return base.SourceColumnSet{}, nil
 	}
 
 	switch node := in.(type) {
-	case *tidbast.ColumnNameExpr:
-		database, table, column := node.Name.Schema.O, node.Name.Table.O, node.Name.Name.O
+	case *ast.ColumnRef:
+		if node.Star {
+			return base.SourceColumnSet{}, nil
+		}
+		database, table, column := node.Schema, node.Table, node.Column
 		sources, ok := q.getFieldColumnSource(database, table, column)
 		if ok {
 			return sources, nil
@@ -574,97 +727,124 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 			Table:    &table,
 			Column:   &column,
 		}
-	case *tidbast.BinaryOperationExpr:
-		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.L, node.R})
-	case *tidbast.UnaryOperationExpr:
-		return q.extractSourceColumnSetFromExpression(node.V)
-	case *tidbast.FuncCallExpr:
-		return q.extractSourceColumnSetFromExpressionList(node.Args)
-	case *tidbast.FuncCastExpr:
+	case *ast.BinaryExpr:
+		return q.extractSourceColumnSetFromExpressionList([]ast.ExprNode{node.Left, node.Right})
+	case *ast.UnaryExpr:
+		return q.extractSourceColumnSetFromExpression(node.Operand)
+	case *ast.FuncCallExpr:
+		var exprs []ast.ExprNode
+		exprs = append(exprs, node.Args...)
+		for _, item := range node.OrderBy {
+			if item != nil {
+				exprs = append(exprs, item.Expr)
+			}
+		}
+		if node.Over != nil {
+			exprs = append(exprs, node.Over.PartitionBy...)
+			for _, item := range node.Over.OrderBy {
+				if item != nil {
+					exprs = append(exprs, item.Expr)
+				}
+			}
+		}
+		return q.extractSourceColumnSetFromExpressionList(exprs)
+	case *ast.CastExpr:
 		return q.extractSourceColumnSetFromExpression(node.Expr)
-	case *tidbast.AggregateFuncExpr:
-		return q.extractSourceColumnSetFromExpressionList(node.Args)
-	case *tidbast.PatternInExpr:
-		nodeList := []tidbast.ExprNode{}
-		nodeList = append(nodeList, node.Expr)
+	case *ast.ConvertExpr:
+		return q.extractSourceColumnSetFromExpression(node.Expr)
+	case *ast.InExpr:
+		nodeList := []ast.ExprNode{node.Expr}
 		nodeList = append(nodeList, node.List...)
-		nodeList = append(nodeList, node.Sel)
-		return q.extractSourceColumnSetFromExpressionList(nodeList)
-	case *tidbast.PatternLikeOrIlikeExpr:
-		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.Expr, node.Pattern})
-	case *tidbast.PatternRegexpExpr:
-		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.Expr, node.Pattern})
-	case *tidbast.SubqueryExpr:
-		// Subquery in SELECT fields is special.
-		// It can be the non-associated or associated subquery.
-		// For associated subquery, we should set the fromFieldList as the outerSchemaInfo.
-		// So that the subquery can access the outer schema.
-		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
-		subqueryExtractor := &querySpanExtractor{
-			ctx:                 q.ctx,
-			defaultDatabase:     q.defaultDatabase,
-			metaCache:           q.metaCache,
-			gCtx:                q.gCtx,
-			ctes:                q.ctes,
-			outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
-			tableSourcesFrom:    []base.TableSource{},
-			baseTableSources:    q.baseTableSources,
-			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
-		}
-		tableSource, err := subqueryExtractor.extractTableSourceFromNode(node.Query)
+		sourceColumnSet, err := q.extractSourceColumnSetFromExpressionList(nodeList)
 		if err != nil {
-			return base.SourceColumnSet{}, errors.Wrap(err, "failed to extract table source from subquery")
+			return nil, err
 		}
-		spanResult := tableSource.GetQuerySpanResult()
-		sourceColumnSet := base.SourceColumnSet{}
-
-		for _, field := range spanResult {
-			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
+		if node.Select != nil {
+			selectColumns, err := q.extractSubquerySourceColumnSet(node.Select)
+			if err != nil {
+				return nil, err
+			}
+			sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, selectColumns)
 		}
 		return sourceColumnSet, nil
-	case *tidbast.CompareSubqueryExpr:
-		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.L, node.R})
-	case *tidbast.ExistsSubqueryExpr:
-		return q.extractSourceColumnSetFromExpression(node.Sel)
-	case *tidbast.IsNullExpr:
+	case *ast.LikeExpr:
+		return q.extractSourceColumnSetFromExpressionList([]ast.ExprNode{node.Expr, node.Pattern, node.Escape})
+	case *ast.SubqueryExpr:
+		return q.extractSubquerySourceColumnSet(node.Select)
+	case *ast.ExistsExpr:
+		return q.extractSubquerySourceColumnSet(node.Select)
+	case *ast.IsExpr:
 		return q.extractSourceColumnSetFromExpression(node.Expr)
-	case *tidbast.IsTruthExpr:
-		return q.extractSourceColumnSetFromExpression(node.Expr)
-	case *tidbast.BetweenExpr:
-		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.Expr, node.Left, node.Right})
-	case *tidbast.CaseExpr:
-		nodeList := []tidbast.ExprNode{}
-		nodeList = append(nodeList, node.Value)
-		nodeList = append(nodeList, node.ElseClause)
-		for _, whenClause := range node.WhenClauses {
-			nodeList = append(nodeList, whenClause.Expr)
-			nodeList = append(nodeList, whenClause.Result)
+	case *ast.BetweenExpr:
+		return q.extractSourceColumnSetFromExpressionList([]ast.ExprNode{node.Expr, node.Low, node.High})
+	case *ast.CaseExpr:
+		var nodeList []ast.ExprNode
+		nodeList = append(nodeList, node.Operand)
+		for _, whenClause := range node.Whens {
+			if whenClause == nil {
+				continue
+			}
+			nodeList = append(nodeList, whenClause.Cond, whenClause.Result)
 		}
+		nodeList = append(nodeList, node.Default)
 		return q.extractSourceColumnSetFromExpressionList(nodeList)
-	case *tidbast.ParenthesesExpr:
+	case *ast.ParenExpr:
 		return q.extractSourceColumnSetFromExpression(node.Expr)
-	case *tidbast.RowExpr:
-		return q.extractSourceColumnSetFromExpressionList(node.Values)
-	case *tidbast.VariableExpr:
+	case *ast.RowExpr:
+		return q.extractSourceColumnSetFromExpressionList(node.Items)
+	case *ast.MatchExpr:
+		var nodeList []ast.ExprNode
+		for _, column := range node.Columns {
+			nodeList = append(nodeList, column)
+		}
+		nodeList = append(nodeList, node.Against)
+		return q.extractSourceColumnSetFromExpressionList(nodeList)
+	case *ast.IntervalExpr:
 		return q.extractSourceColumnSetFromExpression(node.Value)
-	case *tidbast.PositionExpr:
-		return q.extractSourceColumnSetFromExpression(node.P)
-	case *tidbast.MatchAgainst:
-		return q.extractSourceColumnSetFromExpression(node.Against)
-	case *tidbast.WindowFuncExpr:
-		return q.extractSourceColumnSetFromExpressionList(node.Args)
-	case *tidbast.ValuesExpr,
-		*tidbast.TableNameExpr,
-		*tidbast.MaxValueExpr,
-		*tidbast.SetCollationExpr,
-		*tidbast.TrimDirectionExpr,
-		*tidbast.TimeUnitExpr,
-		*tidbast.GetFormatSelectorExpr,
-		*tidbast.DefaultExpr:
-		// No expression need to extract.
+	case *ast.CollateExpr:
+		return q.extractSourceColumnSetFromExpression(node.Expr)
+	case *ast.ExtractExpr:
+		return q.extractSourceColumnSetFromExpression(node.Expr)
+	case *ast.MemberOfExpr:
+		return q.extractSourceColumnSetFromExpressionList([]ast.ExprNode{node.Value, node.Array})
+	case *ast.PositionExpr:
+		return q.extractSourceColumnSetFromExpressionList([]ast.ExprNode{node.Substr, node.Str})
 	default:
+		// Literals, variable references, default values, keyword arguments and
+		// the like carry no column lineage.
 	}
 	return base.SourceColumnSet{}, nil
+}
+
+// extractSubquerySourceColumnSet extracts the merged source columns of a
+// subquery, giving it the current FROM as its outer scope so a correlated
+// reference resolves against the enclosing query.
+func (q *querySpanExtractor) extractSubquerySourceColumnSet(selectStmt *ast.SelectStmt) (base.SourceColumnSet, error) {
+	if selectStmt == nil {
+		return base.SourceColumnSet{}, nil
+	}
+	subqueryExtractor := &querySpanExtractor{
+		ctx:                 q.ctx,
+		defaultDatabase:     q.defaultDatabase,
+		statement:           q.statement,
+		metaCache:           q.metaCache,
+		gCtx:                q.gCtx,
+		lowerTableViewMap:   q.lowerTableViewMap,
+		ctes:                q.ctes,
+		outerTableSources:   slices.Concat(q.outerTableSources, q.tableSourcesFrom),
+		tableSourcesFrom:    []base.TableSource{},
+		baseTableSources:    q.baseTableSources,
+		viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
+	}
+	tableSource, err := subqueryExtractor.extractTableSourceFromNode(selectStmt)
+	if err != nil {
+		return base.SourceColumnSet{}, errors.Wrap(err, "failed to extract table source from subquery")
+	}
+	sourceColumnSet := base.SourceColumnSet{}
+	for _, field := range tableSource.GetQuerySpanResult() {
+		sourceColumnSet, _ = base.MergeSourceColumnSet(sourceColumnSet, field.SourceColumns)
+	}
+	return sourceColumnSet, nil
 }
 
 func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName string) ([]base.QuerySpanResult, bool) {
@@ -678,28 +858,10 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
 			return nil, false
 		}
-		// If the table name is empty, we should check if there are ambiguous fields,
-		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
-
 		return tableSource.GetQuerySpanResult(), true
 	}
 
-	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
-	//
-	//  select (
-	//    select (
-	//      select max(a) > x1.a from t
-	//    )
-	//    from t1 as x1
-	//    limit 1
-	//  )
-	//  from t as x1;
-	//
-	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
-	// This is the reason we loop the slice in reversed order.
-	//
 	// The statement's own FROM is searched first, as in candidateTableSources.
-
 	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
@@ -717,8 +879,6 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 }
 
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, bool) {
-	// If the table name is empty, we should check if there are ambiguous fields,
-	// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
 	for _, tableSource := range q.candidateTableSources(databaseName, tableName) {
 		for _, field := range tableSource.GetQuerySpanResult() {
 			if strings.EqualFold(field.Name, fieldName) {
@@ -733,8 +893,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 // handle. Every table source it can bind to must be built from base tables,
 // where TiDB rejects this name for a real column (ERROR 1166). A view or
 // subquery can own one that cached metadata lacks, and only the not-found
-// error triggers the resync that finds it: on TiDB 8.5,
-// `SELECT _tidb_rowid FROM clustered_tbl, such_view` reads the view's column.
+// error triggers the resync that finds it.
 func (q *querySpanExtractor) isRowIDReference(databaseName, tableName, fieldName string) bool {
 	if !strings.EqualFold(fieldName, rowIDColumnName) {
 		return false
@@ -756,7 +915,8 @@ func (q *querySpanExtractor) isBaseTableSource(tableSource base.TableSource) boo
 }
 
 // candidateTableSources returns the table sources a column reference with the
-// given qualifiers can bind to, in resolution order.
+// given qualifiers can bind to, in resolution order. The statement's own FROM
+// is closer than any enclosing query, so it is searched first.
 func (q *querySpanExtractor) candidateTableSources(databaseName, tableName string) []base.TableSource {
 	var candidates []base.TableSource
 	appendIfMatch := func(tableSource base.TableSource) {
@@ -769,24 +929,6 @@ func (q *querySpanExtractor) candidateTableSources(databaseName, tableName strin
 		candidates = append(candidates, tableSource)
 	}
 
-	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
-	//
-	//  select (
-	//    select (
-	//      select max(a) > x1.a from t
-	//    )
-	//    from t1 as x1
-	//    limit 1
-	//  )
-	//  from t as x1;
-	//
-	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
-	// This is the reason we loop the slice in reversed order.
-	//
-	// The statement's own FROM is closer than any enclosing query, so it is
-	// searched first. Otherwise a column the subquery reads is traced to a
-	// same-named column of an outer table.
-
 	for _, tableSource := range q.tableSourcesFrom {
 		appendIfMatch(tableSource)
 	}
@@ -796,30 +938,77 @@ func (q *querySpanExtractor) candidateTableSources(databaseName, tableName strin
 	return candidates
 }
 
-func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, error) {
-	if node.Right == nil {
-		// This case is no Join.
-		return q.extractTableSourceFromNode(node.Left)
+func (q *querySpanExtractor) extractTableSource(tableExpr ast.TableExpr) (base.TableSource, error) {
+	switch t := tableExpr.(type) {
+	case nil:
+		return nil, nil
+	case *ast.TableRef:
+		tableSource, err := q.findTableSchema(t.Schema, t.Name)
+		if err != nil {
+			return nil, err
+		}
+		if t.Alias == "" {
+			return tableSource, nil
+		}
+		aliased := base.NewPseudoTable(t.Alias, tableSource.GetQuerySpanResult())
+		if q.isBaseTableSource(tableSource) {
+			q.baseTableSources[aliased] = true
+		}
+		return aliased, nil
+	case *ast.SubqueryExpr:
+		return q.extractDerivedTable(t)
+	case *ast.JoinClause:
+		return q.extractJoin(t)
+	default:
+		return nil, errors.Errorf("unsupported table source %T", tableExpr)
 	}
-	leftTableSource, err := q.extractTableSourceFromNode(node.Left)
+}
+
+func (q *querySpanExtractor) extractDerivedTable(node *ast.SubqueryExpr) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromNode(node.Select)
+	if err != nil {
+		return nil, err
+	}
+	results := cloneQuerySpanResults(tableSource.GetQuerySpanResult())
+	if len(node.Columns) > 0 {
+		if len(node.Columns) != len(results) {
+			return nil, errors.Errorf("derived table column list length %d doesn't match result column length %d", len(node.Columns), len(results))
+		}
+		for i := range node.Columns {
+			results[i].Name = strings.ToLower(node.Columns[i])
+		}
+	}
+	name := node.Alias
+	if name == "" {
+		name = tableSource.GetTableName()
+	}
+	return base.NewPseudoTable(name, results), nil
+}
+
+func (q *querySpanExtractor) extractJoin(node *ast.JoinClause) (base.TableSource, error) {
+	leftTableSource, err := q.extractTableSource(node.Left)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from left table")
 	}
-	q.tableSourcesFrom = append(q.tableSourcesFrom, leftTableSource)
-	rightTableSource, err := q.extractTableSourceFromNode(node.Right)
+	if leftTableSource != nil {
+		q.tableSourcesFrom = append(q.tableSourcesFrom, leftTableSource)
+	}
+	rightTableSource, err := q.extractTableSource(node.Right)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from right table")
 	}
-	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
+	if rightTableSource == nil {
+		return leftTableSource, nil
+	}
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	joined := q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
-	if q.isBaseTableSource(leftTableSource) && q.isBaseTableSource(rightTableSource) {
+	if leftTableSource != nil && q.isBaseTableSource(leftTableSource) && q.isBaseTableSource(rightTableSource) {
 		q.baseTableSources[joined] = true
 	}
 	return joined, nil
 }
 
-func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSource, rightTableSource base.TableSource) *base.PseudoTable {
+func (*querySpanExtractor) mergeJoinTableSource(node *ast.JoinClause, leftTableSource, rightTableSource base.TableSource) *base.PseudoTable {
 	leftSpanResult, rightSpanResult := leftTableSource.GetQuerySpanResult(), rightTableSource.GetQuerySpanResult()
 
 	result := new(base.PseudoTable)
@@ -830,11 +1019,16 @@ func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSou
 		leftSpanResultIdx[strings.ToLower(spanResult.Name)] = i
 	}
 	for i, spanResult := range rightSpanResult {
-		// Column name in TiDB is case insensitive.
 		rightSpanResultIdx[strings.ToLower(spanResult.Name)] = i
 	}
 
-	if node.NaturalJoin {
+	natural := node.Type == ast.JoinNatural || node.Type == ast.JoinNaturalLeft || node.Type == ast.JoinNaturalRight
+	var using []string
+	if usingCondition, ok := node.Condition.(*ast.UsingCondition); ok && usingCondition != nil {
+		using = usingCondition.Columns
+	}
+
+	if natural {
 		// Natural Join will merge the same column name field.
 		for _, spanResult := range leftSpanResult {
 			if rightIdx, exists := rightSpanResultIdx[strings.ToLower(spanResult.Name)]; exists {
@@ -847,73 +1041,46 @@ func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSou
 				result.Columns = append(result.Columns, spanResult)
 			}
 		}
-	} else {
-		if len(node.Using) != 0 {
-			// ... JOIN ... USING (...) will merge the column in USING.
-			usingMap := make(map[string]bool)
-			for _, column := range node.Using {
-				// Column name in TiDB is case insensitive.
-				usingMap[column.Name.L] = true
-			}
-
-			for _, spanResult := range leftSpanResult {
-				_, existsInUsingMap := usingMap[strings.ToLower(spanResult.Name)]
-				rightIdx, existsInRightField := rightSpanResultIdx[strings.ToLower(spanResult.Name)]
-				// Merge column in USING.
-				if existsInUsingMap && existsInRightField {
-					rightSpanResult[rightIdx].SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[rightIdx].SourceColumns)
-				}
-				result.Columns = append(result.Columns, spanResult)
-			}
-
-			for _, spanResult := range rightSpanResult {
-				_, existsInUsing := usingMap[strings.ToLower(spanResult.Name)]
-				_, existsInLeftField := leftSpanResultIdx[strings.ToLower(spanResult.Name)]
-				if existsInUsing && existsInLeftField {
-					continue
-				}
-				result.Columns = append(result.Columns, spanResult)
-			}
-		} else {
-			result.Columns = append(result.Columns, leftSpanResult...)
-			result.Columns = append(result.Columns, rightSpanResult...)
+	} else if len(using) != 0 {
+		// ... JOIN ... USING (...) will merge the column in USING.
+		usingMap := make(map[string]bool)
+		for _, column := range using {
+			usingMap[strings.ToLower(column)] = true
 		}
+
+		for _, spanResult := range leftSpanResult {
+			_, existsInUsingMap := usingMap[strings.ToLower(spanResult.Name)]
+			rightIdx, existsInRightField := rightSpanResultIdx[strings.ToLower(spanResult.Name)]
+			if existsInUsingMap && existsInRightField {
+				rightSpanResult[rightIdx].SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[rightIdx].SourceColumns)
+			}
+			result.Columns = append(result.Columns, spanResult)
+		}
+
+		for _, spanResult := range rightSpanResult {
+			_, existsInUsing := usingMap[strings.ToLower(spanResult.Name)]
+			_, existsInLeftField := leftSpanResultIdx[strings.ToLower(spanResult.Name)]
+			if existsInUsing && existsInLeftField {
+				continue
+			}
+			result.Columns = append(result.Columns, spanResult)
+		}
+	} else {
+		result.Columns = append(result.Columns, leftSpanResult...)
+		result.Columns = append(result.Columns, rightSpanResult...)
 	}
 
 	return result
 }
 
-func (q *querySpanExtractor) extractTableSource(node *tidbast.TableSource) (base.TableSource, error) {
-	tableSource, err := q.extractTableSourceFromNode(node.Source)
-	if err != nil {
-		return nil, err
-	}
-	if node.AsName.O != "" {
-		aliased := base.NewPseudoTable(node.AsName.O, tableSource.GetQuerySpanResult())
-		if q.isBaseTableSource(tableSource) {
-			q.baseTableSources[aliased] = true
-		}
-		return aliased, nil
-	}
-	return tableSource, nil
-}
-
 func (q *querySpanExtractor) findTableSchema(databaseName string, tableName string) (base.TableSource, error) {
-	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
-	//
-	//  with tt2 as (
-	//    with tt2 as (select * from t)
-	//    select max(a) from tt2)
-	//  select * from tt2
-	//
-	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
-	// This is the reason we loop the slice in reversed order.
+	// Each CTE name in one WITH clause must be unique, but we can use the same
+	// name in a different-level CTE, so we loop in reverse to use the closest.
 	if databaseName == "" {
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			cte := q.ctes[i]
 			// TiDB fixes lower_case_table_names at 2, so `FROM c` reads CTE `C`
-			// even when a base table `c` exists. Matching by case would trace
-			// the CTE's columns to that table and apply its masking policy.
+			// even when a base table `c` exists.
 			if strings.EqualFold(cte.Name, tableName) {
 				return cte, nil
 			}
@@ -1013,6 +1180,12 @@ func cloneViewResolutionStack(in map[string]bool) map[string]bool {
 	return out
 }
 
+func cloneQuerySpanResults(results []base.QuerySpanResult) []base.QuerySpanResult {
+	clone := make([]base.QuerySpanResult, len(results))
+	copy(clone, results)
+	return clone
+}
+
 func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.DatabaseMetadata, error) {
 	if meta, ok := q.metaCache[databaseName]; ok {
 		return meta, nil
@@ -1025,26 +1198,19 @@ func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.Da
 	return meta, nil
 }
 
-func (q *querySpanExtractor) extractTableName(node *tidbast.TableName) (base.TableSource, error) {
-	return q.findTableSchema(node.Schema.O, node.Name.O)
-}
-
-func (q *querySpanExtractor) extractSetOpr(node *tidbast.SetOprStmt) (base.TableSource, error) {
-	if node.With != nil {
-		previousCteOuterLength := len(q.ctes)
-		defer func() {
-			q.ctes = q.ctes[:previousCteOuterLength]
-		}()
-		for _, cte := range node.With.CTEs {
-			cteTableSource, err := q.extractCTE(cte)
-			if err != nil {
-				return nil, err
-			}
-			q.ctes = append(q.ctes, cteTableSource)
-		}
+func (q *querySpanExtractor) extractSetOp(node *ast.SelectStmt) (base.TableSource, error) {
+	if node == nil || node.SetOp == ast.SetOpNone {
+		return q.extractSelect(node)
 	}
-
-	return q.extractTableSourceFromNode(node.SelectList)
+	left, err := q.extractSelect(node.Left)
+	if err != nil {
+		return nil, err
+	}
+	right, err := q.extractSelect(node.Right)
+	if err != nil {
+		return nil, err
+	}
+	return mergeTableSource(left, right)
 }
 
 func mergeTableSource(left, right base.TableSource) (base.TableSource, error) {
@@ -1067,37 +1233,4 @@ func mergeTableSource(left, right base.TableSource) (base.TableSource, error) {
 		Name:    "",
 		Columns: result,
 	}, nil
-}
-
-func (q *querySpanExtractor) extractSetOprSelectList(node *tidbast.SetOprSelectList) (base.TableSource, error) {
-	if node.With != nil {
-		previousCteOuterLength := len(q.ctes)
-		defer func() {
-			q.ctes = q.ctes[:previousCteOuterLength]
-		}()
-		for _, cte := range node.With.CTEs {
-			cteTableSource, err := q.extractCTE(cte)
-			if err != nil {
-				return nil, err
-			}
-			q.ctes = append(q.ctes, cteTableSource)
-		}
-	}
-
-	var result base.TableSource
-	for i, selectStmt := range node.Selects {
-		tableSource, err := q.extractTableSourceFromNode(selectStmt)
-		if err != nil {
-			return nil, err
-		}
-		if i == 0 {
-			result = tableSource
-		} else {
-			result, err = mergeTableSource(result, tableSource)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to merge table source for %dth select statement", i)
-			}
-		}
-	}
-	return result, nil
 }

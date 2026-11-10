@@ -11,7 +11,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	omniast "github.com/bytebase/omni/tidb/ast"
@@ -55,36 +54,6 @@ func (t tablePK) tableList() []string {
 	}
 	slices.Sort(tableList)
 	return tableList
-}
-
-// getTiDBNodes extracts pingcap-AST nodes. Its only consumer is
-// advisor_builtin_prior_backup_check, which uses pingcap AST for authoritative
-// DDL detection on its dual-path.
-//
-// On a PingCapASTProvider whose AsPingCapAST returns (nil, false) — i.e.
-// the bridge tried and pingcap rejected the statement — the statement is
-// skipped, not surfaced as an error. A non-provider, non-*AST input is
-// still surfaced as an engine-mismatch error.
-func getTiDBNodes(checkCtx advisor.Context) ([]ast.StmtNode, error) {
-	if checkCtx.ParsedStatements == nil {
-		return nil, errors.New("ParsedStatements is not provided in context")
-	}
-
-	var stmtNodes []ast.StmtNode
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		tidbAST, ok := tidbparser.GetTiDBAST(stmt.AST)
-		if !ok {
-			if _, isProvider := stmt.AST.(tidbparser.PingCapASTProvider); isProvider {
-				continue
-			}
-			return nil, errors.New("AST type mismatch: expected TiDB parser result")
-		}
-		stmtNodes = append(stmtNodes, tidbAST.Node)
-	}
-	return stmtNodes, nil
 }
 
 // OmniStmt bundles an omni/tidb AST node with the source text and base line of
@@ -751,9 +720,9 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 				BaseLine: stmt.BaseLine(),
 			})
 		case *tidbparser.AST:
-			// Dispatcher fell back to pingcap (omni rejected this statement).
-			// Migrated advisors emit no advice for omni-rejected SQL, so skip;
-			// getTiDBNodes consumers still see the pingcap AST.
+			// omni is the sole TiDB parser, so this bridge AST no longer
+			// reaches here; kept defensively. Advisors emit no advice for a
+			// statement omni did not produce, so skip it.
 			continue
 		default:
 			slog.Warn("unexpected stmt.AST type for tidb dispatcher",
