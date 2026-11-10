@@ -79,15 +79,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	spanInput := unwrapExplainForSpan(single)
 
 	// Delegate to omni for table-access extraction + classification.
-	omniSpan, err := analysis.GetQuerySpan(spanInput)
+	span, err := analysis.GetQuerySpan(spanInput)
 	if err != nil {
 		return nil, err
 	}
 
-	sources := q.toSourceColumnSet(omniSpan)
+	sources := q.toSourceColumnSet(span)
 
 	// Track CTE names omni discovered for callers that want to inspect them.
-	for _, name := range omniSpan.CTEs {
+	for _, name := range span.CTEs {
 		q.ctes[strings.ToLower(name)] = true
 	}
 

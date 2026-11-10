@@ -16,28 +16,28 @@ func init() {
 	base.RegisterParseStatementsFunc(storepb.Engine_DORIS, parseDorisStatements)
 }
 
-// omniAST wraps an omni AST node to implement the base.AST interface.
-type omniAST struct {
+// astNode wraps an omni AST node to implement the base.AST interface.
+type astNode struct {
 	node     ast.Node
 	text     string
 	startPos *storepb.Position
 }
 
 // ASTStartPosition implements base.AST.
-func (a *omniAST) ASTStartPosition() *storepb.Position {
+func (a *astNode) ASTStartPosition() *storepb.Position {
 	return a.startPos
 }
 
 // Node returns the underlying omni AST node. May be nil if the segment
 // failed to parse cleanly but errors were tolerated by the caller.
-func (a *omniAST) Node() ast.Node {
+func (a *astNode) Node() ast.Node {
 	return a.node
 }
 
 // parseDorisStatements is the ParseStatementsFunc for Doris.
 // Returns []ParsedStatement with both text and AST populated.
 //
-// For non-empty segments, the AST is an *omniAST wrapping the omni AST node.
+// For non-empty segments, the AST is an *astNode wrapping the omni AST node.
 // The first parse error encountered (per-segment) is returned to the caller,
 // matching the prior behaviour of bailing out on the first syntax error.
 func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
@@ -66,7 +66,7 @@ func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
 		if file != nil && len(file.Stmts) > 0 {
 			node = file.Stmts[0]
 		}
-		ps.AST = &omniAST{
+		ps.AST = &astNode{
 			node:     node,
 			text:     stmt.Text,
 			startPos: stmt.Start,
@@ -78,19 +78,19 @@ func parseDorisStatements(statement string) ([]base.ParsedStatement, error) {
 }
 
 // parseDorisSQL parses the given SQL statement using the omni Doris parser.
-// Returns one *omniAST per non-empty segment (empty / comment-only segments
+// Returns one *astNode per non-empty segment (empty / comment-only segments
 // are skipped).
 //
 // This retains the historical signature shape used by other doris package
 // files; on the first parse error it returns a *base.SyntaxError with the
 // position translated into the coordinates of the original input.
-func parseDorisSQL(statement string) ([]*omniAST, error) {
+func parseDorisSQL(statement string) ([]*astNode, error) {
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*omniAST
+	var result []*astNode
 	for _, stmt := range stmts {
 		if stmt.Empty || strings.TrimSpace(stmt.Text) == "" {
 			continue
@@ -103,7 +103,7 @@ func parseDorisSQL(statement string) ([]*omniAST, error) {
 		if file != nil && len(file.Stmts) > 0 {
 			node = file.Stmts[0]
 		}
-		result = append(result, &omniAST{
+		result = append(result, &astNode{
 			node:     node,
 			text:     stmt.Text,
 			startPos: stmt.Start,
