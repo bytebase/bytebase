@@ -177,18 +177,19 @@ func convertToAuditLogs(auditLogs []*store.AuditLog) []*v1pb.AuditLog {
 
 func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
-		Name:          fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
-		CreateTime:    timestamppb.New(l.CreatedAt),
-		Actor:         l.Payload.User,
-		Method:        l.Payload.Method,
-		Severity:      convertToAuditLogSeverity(l.Payload.Severity),
-		Resource:      l.Payload.Resource,
-		Request:       l.Payload.Request,
-		Response:      l.Payload.Response,
-		Status:        l.Payload.Status,
-		Latency:       l.Payload.Latency,
-		ServiceData:   l.Payload.ServiceData,
-		McpDelegation: convertToMCPDelegation(l.Payload.McpDelegation),
+		Name:              fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
+		CreateTime:        timestamppb.New(l.CreatedAt),
+		Actor:             l.Payload.User,
+		Method:            l.Payload.Method,
+		Severity:          convertToAuditLogSeverity(l.Payload.Severity),
+		Resource:          l.Payload.Resource,
+		Request:           l.Payload.Request,
+		Response:          l.Payload.Response,
+		Status:            l.Payload.Status,
+		Latency:           l.Payload.Latency,
+		ServiceData:       l.Payload.ServiceData,
+		McpDelegation:     convertToMCPDelegation(l.Payload.McpDelegation),
+		FederatedIdentity: convertToFederatedIdentity(l.Payload.FederatedIdentity),
 	}
 }
 
@@ -205,6 +206,13 @@ func convertToMCPDelegation(d *storepb.MCPDelegation) *v1pb.MCPDelegation {
 		ClientId:      d.ClientId,
 		CorrelationId: d.CorrelationId,
 	}
+}
+
+func convertToFederatedIdentity(f *storepb.FederatedIdentity) *v1pb.FederatedIdentity {
+	if f == nil {
+		return nil
+	}
+	return &v1pb.FederatedIdentity{Issuer: f.Issuer, Subject: f.Subject}
 }
 
 func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severity {

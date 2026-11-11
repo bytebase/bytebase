@@ -125,6 +125,26 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal("mcp:read-only", delegated["mcp_scope"])
 	a.Equal("https://bb.example.com/mcp", delegated["mcp_resource"])
 	a.Equal("client-A", delegated["mcp_client_id"])
+
+	a.NotContains(got, "federated_subject",
+		"rows without a federated identity must not emit its keys")
+	buf.Reset()
+	p4 := &storepb.AuditLog{
+		Parent:   "workspaces/ws-abc",
+		Method:   "/bytebase.v1.ProjectService/CreateProject",
+		Severity: storepb.AuditLog_INFO,
+		User:     "workloadIdentities/ci@workload.bytebase.com",
+		FederatedIdentity: &storepb.FederatedIdentity{
+			Issuer:  "https://token.actions.githubusercontent.com",
+			Subject: "repo:my-org/app:ref:refs/heads/main",
+		},
+	}
+	LogAuditToStdout(context.Background(), p4)
+
+	var federated map[string]any
+	a.NoError(json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &federated))
+	a.Equal("https://token.actions.githubusercontent.com", federated["federated_issuer"])
+	a.Equal("repo:my-org/app:ref:refs/heads/main", federated["federated_subject"])
 }
 
 // recordingWriter captures the row RecordOutOfBandAudit inserts.

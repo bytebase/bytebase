@@ -17,6 +17,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -482,6 +483,80 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 			}
 		}
 		require.Equal(t, 1, publicRows, "the nil-grant call must produce exactly one row without MCP provenance")
+	})
+}
+
+func TestAuditRowCarriesFederatedIdentity(t *testing.T) {
+	t.Parallel()
+	federated := &common.FederatedIdentity{
+		Issuer:  "https://token.actions.githubusercontent.com",
+		Subject: "repo:my-org/app:ref:refs/heads/main",
+	}
+	want := &storepb.FederatedIdentity{Issuer: federated.Issuer, Subject: federated.Subject}
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+
+	t.Run("a call made with an exchanged token", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:             true,
+			Resources:         []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request: &v1pb.QueryRequest{Name: "instances/i/databases/d"},
+			method:  "/bytebase.v1.SQLService/Query",
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
+	t.Run("any other call carries none", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:     true,
+			Resources: []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request: &v1pb.QueryRequest{Name: "instances/i/databases/d"},
+			method:  "/bytebase.v1.SQLService/Query",
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Nil(t, rows[0].payload.GetFederatedIdentity())
+	})
+
+	t.Run("a successful exchange names the identity and the workload behind it", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{
+			Audit:             true,
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "CI@workload.bytebase.com"},
+			response:                &v1pb.ExchangeTokenResponse{},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Equal(t, "workloadIdentities/ci@workload.bytebase.com", rows[0].payload.GetUser())
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
+	t.Run("a refused exchange names no actor", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "ci@workload.bytebase.com"},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+			rerr:                    connect.NewError(connect.CodeUnauthenticated, errors.New("token validation failed")),
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Empty(t, rows[0].payload.GetUser())
+		require.Nil(t, rows[0].payload.GetFederatedIdentity())
 	})
 }
 

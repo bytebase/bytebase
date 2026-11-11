@@ -410,6 +410,11 @@
     },
     "export-finished": "Exportación finalizada",
     "export-tooltip": "Debe seleccionar hora de inicio y fin dentro de 30 días",
+    "federated-identity": {
+      "issuer": "Emisor",
+      "origin": "Sesión iniciada desde una carga de trabajo externa",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "ID de cliente",

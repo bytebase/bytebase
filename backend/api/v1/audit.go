@@ -266,6 +266,10 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 		if loginResponse, ok := e.response.(*v1pb.LoginResponse); ok {
 			user = loginResponse.GetUser().GetName()
 		}
+		// Only a successful exchange proves the caller is the identity it named.
+		if exchangeRequest, ok := e.request.(*v1pb.ExchangeTokenRequest); ok && e.rerr == nil {
+			user = common.FormatWorkloadIdentityEmail(strings.ToLower(exchangeRequest.GetEmail()))
+		}
 	}
 
 	authContextAny := ctx.Value(common.AuthContextKey)
@@ -367,9 +371,10 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 	// service_data holds a before-image Setting or an IAM policy delta, and
 	// status.details holds whatever a failing handler attached.
 	//
-	// The rest of the row is left alone deliberately. request_metadata and
-	// mcp_delegation are ordinary store messages with nothing annotated under
-	// them, and request and response are already redacted strings.
+	// The rest of the row is left alone deliberately. request_metadata,
+	// mcp_delegation and federated_identity are ordinary store messages with
+	// nothing annotated under them, and request and response are already
+	// redacted strings.
 	// TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads fails if that stops
 	// being true.
 	//
@@ -412,18 +417,19 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 		rows = append(rows, auditRow{
 			workspaceID: workspaceIDForAudit,
 			payload: &storepb.AuditLog{
-				Parent:          ap.parent,
-				Method:          e.method,
-				Resource:        resource,
-				Severity:        severity,
-				User:            user,
-				Request:         requestString,
-				Response:        responseString,
-				Status:          auditStatus,
-				Latency:         durationpb.New(e.latency),
-				ServiceData:     serviceData,
-				RequestMetadata: requestMetadata,
-				McpDelegation:   mcpDelegation,
+				Parent:            ap.parent,
+				Method:            e.method,
+				Resource:          resource,
+				Severity:          severity,
+				User:              user,
+				Request:           requestString,
+				Response:          responseString,
+				Status:            auditStatus,
+				Latency:           durationpb.New(e.latency),
+				ServiceData:       serviceData,
+				RequestMetadata:   requestMetadata,
+				McpDelegation:     mcpDelegation,
+				FederatedIdentity: federatedIdentityFromAuthContext(authContext),
 			},
 		})
 	}
@@ -446,6 +452,14 @@ func mcpDelegationFromAuthContext(authContext *common.AuthContext) *storepb.MCPD
 		ClientId:      g.ClientID,
 		CorrelationId: g.CorrelationID,
 	}
+}
+
+func federatedIdentityFromAuthContext(authContext *common.AuthContext) *storepb.FederatedIdentity {
+	f := authContext.FederatedIdentity
+	if f == nil {
+		return nil
+	}
+	return &storepb.FederatedIdentity{Issuer: f.Issuer, Subject: f.Subject}
 }
 
 func getRequestResource(request any, method string) string {

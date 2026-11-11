@@ -59,6 +59,7 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type {
   AuditLog,
+  FederatedIdentity,
   MCPDelegation,
 } from "@/types/proto-es/v1/audit_log_service_pb";
 import {
@@ -261,16 +262,16 @@ function getViewLink(auditLog: AuditLog): string | null {
 }
 
 // ============================================================
-// MCP provenance
+// Actor provenance
 // ============================================================
 
-// McpProvenanceField renders one label/value pair of the delegation grant.
-// Empty values are omitted rather than shown as a placeholder: these are the
-// grant's stored values copied verbatim, so empty means the grant recorded
-// nothing — a pre-grant legacy session, or a client that omitted `scope` at
-// consent. Inventing a stand-in would misreport stored state as unknown state.
+// ProvenanceField renders one label/value pair of an actor tooltip.
+// Empty values are omitted rather than shown as a placeholder: an MCP grant's
+// values are copied verbatim, so empty means the grant recorded nothing — a
+// pre-grant legacy session, or a client that omitted `scope` at consent.
+// Inventing a stand-in would misreport stored state as unknown state.
 // See DelegatedGrant in backend/common/context.go for the empty-state map.
-function McpProvenanceField({
+function ProvenanceField({
   label,
   value,
 }: Readonly<{ label: string; value: string }>) {
@@ -290,18 +291,39 @@ function McpProvenanceDetail({
   return (
     <div className="flex flex-col gap-y-1.5 text-xs">
       <span className="font-medium">{t("audit-log.mcp.origin")}</span>
-      <McpProvenanceField
+      <ProvenanceField
         label={t("audit-log.mcp.correlation-id")}
         value={delegation.correlationId}
       />
-      <McpProvenanceField label={t("common.scope")} value={delegation.scope} />
-      <McpProvenanceField
+      <ProvenanceField label={t("common.scope")} value={delegation.scope} />
+      <ProvenanceField
         label={t("common.resource")}
         value={delegation.resource}
       />
-      <McpProvenanceField
+      <ProvenanceField
         label={t("audit-log.mcp.client-id")}
         value={delegation.clientId}
+      />
+    </div>
+  );
+}
+
+function FederatedIdentityDetail({
+  identity,
+}: Readonly<{ identity: FederatedIdentity }>) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-y-1.5 text-xs">
+      <span className="font-medium">
+        {t("audit-log.federated-identity.origin")}
+      </span>
+      <ProvenanceField
+        label={t("audit-log.federated-identity.subject")}
+        value={identity.subject}
+      />
+      <ProvenanceField
+        label={t("audit-log.federated-identity.issuer")}
+        value={identity.issuer}
       />
     </div>
   );
@@ -317,7 +339,7 @@ function McpProvenanceDetail({
 // none.
 function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
   const { t } = useTranslation();
-  return (
+  const actor = (
     <div className="flex items-center gap-x-1.5">
       {log.actor ? (
         <BlockTooltip
@@ -340,6 +362,23 @@ function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
           </Badge>
         </Tooltip>
       )}
+    </div>
+  );
+  if (!log.federatedIdentity) return actor;
+  // One workload identity can admit many external workloads, so on its rows
+  // the subject is what tells the callers apart.
+  return (
+    <div className="flex flex-col">
+      {actor}
+      <BlockTooltip
+        content={<FederatedIdentityDetail identity={log.federatedIdentity} />}
+        popupClassName="max-w-96"
+        render={<span className="min-w-0" />}
+      >
+        <span className="block truncate text-xs text-control-light">
+          {log.federatedIdentity.subject}
+        </span>
+      </BlockTooltip>
     </div>
   );
 }

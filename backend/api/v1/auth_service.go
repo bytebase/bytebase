@@ -1218,16 +1218,23 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	}
 
 	// Validate OIDC token
-	if _, err = wif.ValidateToken(ctx, request.Token, wicConfig); err != nil {
+	claims, err := wif.ValidateToken(ctx, request.Token, wicConfig)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.Wrap(err, "token validation failed"))
 	}
 
 	// Generate Bytebase API token using workspace from the WI record.
-	token, err := auth.GenerateAPIToken(wi.Email, wi.Workspace, s.secret)
+	federated := common.FederatedIdentity{Issuer: claims.Issuer, Subject: claims.Subject}
+	token, err := auth.GenerateWorkloadIdentityToken(wi.Email, wi.Workspace, federated, s.secret)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal,
 			errors.Wrap(err, "failed to generate access token"))
+	}
+	// The exchange itself carries no Bytebase token, so its audit row takes the
+	// federated identity from here.
+	if authContext, ok := common.GetAuthContextFromContext(ctx); ok {
+		authContext.FederatedIdentity = &federated
 	}
 
 	return connect.NewResponse(&v1pb.ExchangeTokenResponse{

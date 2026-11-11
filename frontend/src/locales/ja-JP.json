@@ -410,6 +410,11 @@
     },
     "export-finished": "エクスポートが完了しました",
     "export-tooltip": "30日以内の開始時間と終了時間を選択する必要があります",
+    "federated-identity": {
+      "issuer": "発行者",
+      "origin": "外部ワークロードからのサインイン",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "クライアント ID",

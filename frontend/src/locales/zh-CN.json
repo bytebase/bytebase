@@ -410,6 +410,11 @@
     },
     "export-finished": "导出完成",
     "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
+    "federated-identity": {
+      "issuer": "签发方",
+      "origin": "由外部工作负载登录",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "客户端 ID",

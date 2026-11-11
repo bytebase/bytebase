@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 // GenerateOpaqueToken creates a cryptographically random opaque token.
@@ -35,6 +37,17 @@ type claimsMessage struct {
 	// session tokens. Declared here rather than on oauth2ClaimsMessage because
 	// this is the type every verifier parses into.
 	TokenUse string `json:"token_use,omitempty"`
+	// Actor is set on a workload identity token: the external workload acting
+	// as the identity. It is recorded on audit rows and never read for
+	// authorization.
+	Actor *actorClaim `json:"act,omitempty"`
+}
+
+// actorClaim is the RFC 8693 "act" claim, identifying the acting party by the
+// issuer and subject of the OIDC token it presented.
+type actorClaim struct {
+	Issuer  string `json:"iss"`
+	Subject string `json:"sub"`
 }
 
 // oauth2ClaimsMessage extends claimsMessage with OAuth2-specific fields.
@@ -47,10 +60,39 @@ type oauth2ClaimsMessage struct {
 	Scope string `json:"scope,omitempty"`
 }
 
+func (c *claimsMessage) federatedIdentity() *common.FederatedIdentity {
+	if c.Actor == nil {
+		return nil
+	}
+	return &common.FederatedIdentity{Issuer: c.Actor.Issuer, Subject: c.Actor.Subject}
+}
+
 // GenerateAPIToken generates an API token.
 func GenerateAPIToken(userEmail string, workspaceID, secret string) (string, error) {
 	expirationTime := time.Now().Add(apiTokenDuration)
 	return generateToken(userEmail, workspaceID, AccessTokenAudience, expirationTime, []byte(secret))
+}
+
+// GenerateWorkloadIdentityToken generates an API token for a workload identity
+// that carries the external identity it was exchanged for.
+func GenerateWorkloadIdentityToken(email, workspaceID string, federated common.FederatedIdentity, secret string) (string, error) {
+	now := time.Now()
+	claims := &claimsMessage{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience:  jwt.ClaimStrings{AccessTokenAudience},
+			ExpiresAt: jwt.NewNumericDate(now.Add(apiTokenDuration)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			Issuer:    issuer,
+			Subject:   email,
+		},
+		WorkspaceID: workspaceID,
+		Actor:       &actorClaim{Issuer: federated.Issuer, Subject: federated.Subject},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = keyID
+
+	return token.SignedString([]byte(secret))
 }
 
 // GenerateAccessToken generates an access token for web.

@@ -1107,7 +1107,7 @@ var auditRecordedFields = []string{
 // and this fails, because nothing would redact it.
 func TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads(t *testing.T) {
 	t.Parallel()
-	for _, message := range []proto.Message{&storepb.RequestMetadata{}, &storepb.MCPDelegation{}} {
+	for _, message := range []proto.Message{&storepb.RequestMetadata{}, &storepb.MCPDelegation{}, &storepb.FederatedIdentity{}} {
 		descriptor := message.ProtoReflect().Descriptor()
 		require.Nil(t, planFor(descriptor),
 			"%s is assigned onto the audit row unredacted; annotating a field under it needs redaction wired up "+

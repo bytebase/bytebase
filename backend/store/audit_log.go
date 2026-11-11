@@ -135,9 +135,9 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 //
 // The payload is protojson, so its keys are camelCase and a filter name is not
 // always the key it reads. The four plain columns keep the historical rule that
-// the name IS the key; the two MCP filters do not, because the provenance they
-// read lives on a nested message (AuditLog.mcp_delegation, marshalled as
-// "mcpDelegation").
+// the name IS the key; the MCP and federated filters do not, because what they
+// read lives on nested messages (AuditLog.mcp_delegation, marshalled as
+// "mcpDelegation", and AuditLog.federated_identity, as "federatedIdentity").
 func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 	// The variable decides the literal's type, so an unknown key is reported as
 	// one whatever it was compared against.
@@ -163,7 +163,7 @@ func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 		}
 		return qb.Q().Space("NOT (payload ?? 'mcpDelegation')"), nil
 
-	case "resource", "method", "actor", "severity", "mcp_correlation_id":
+	case "resource", "method", "actor", "severity", "mcp_correlation_id", "federated_subject":
 		value, ok := rawValue.(string)
 		if !ok {
 			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
@@ -173,6 +173,9 @@ func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 		}
 		if variable == "actor" {
 			return qb.Q().Space("payload->>'user' = ?", value), nil
+		}
+		if variable == "federated_subject" {
+			return qb.Q().Space("payload->'federatedIdentity'->>'subject' = ?", value), nil
 		}
 		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
 
