@@ -52,8 +52,9 @@ cards reads as two unrelated boxes. That doc changes the guideline and its scann
 corner in the files that draw a comment card, and the slice that builds the group adds the
 group's file to them. The cards inside keep their title bar and shadow. The two
 levels look different, so it stays clear that the finding is the unit and the group only says
-where it belongs. The review line sits inside the
-border with `px-3`, and the cards below it with 12px on each side and 8px between them.
+where it belongs. The review line sits inside the border with `px-3 py-2`, so a folded group has
+8px above and below its text and does not read as crowded. The cards sit below the line with 12px
+on each side and 8px between them.
 
 **D3 · A person's comment stays a top-level entry.** Its card starts on the group's left edge, so
 the page has one outer edge. Findings sit 12px inside it, and the border explains why.
