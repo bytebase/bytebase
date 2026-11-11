@@ -372,6 +372,10 @@ export function CommentThreadCard({
 }
 
 export type ThreadBarProps = {
+  // Where the card is drawn. In the Changes section a click anywhere on the
+  // bar folds; in Activity only the left part does, since the right end holds
+  // the lines and a link.
+  place: "changes" | "activity";
   // Names what the thread is on.
   title: ReactNode;
   // The fold control's name: the title's text, then the lines when the bar
@@ -415,6 +419,7 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
 // the badge of a P0 or P1 finding, "Outdated", and the link.
 function ThreadBar({
   anchorState,
+  place,
   folded,
   foldLabel,
   lines,
@@ -461,7 +466,15 @@ function ThreadBar({
       data-anchor-state={anchorState}
       data-testid="thread-bar"
       onClick={(event) => {
-        if (shouldFoldFromBarClick(event)) onToggleFold();
+        if (!shouldFoldFromBarClick(event)) return;
+        const target = event.target as Element;
+        if (
+          place === "activity" &&
+          (target === event.currentTarget || target.closest("[data-bar-rest]"))
+        ) {
+          return;
+        }
+        onToggleFold();
       }}
     >
       <Button
@@ -481,9 +494,9 @@ function ThreadBar({
       <span className="flex min-w-0 truncate">{title}</span>
       {markers}
       {labels}
-      <span className="flex-1" />
+      <span className="flex-1" data-bar-rest data-testid="thread-bar-gap" />
       {lines && (
-        <span className="shrink-0" data-testid="thread-bar-lines">
+        <span className="shrink-0" data-bar-rest data-testid="thread-bar-lines">
           {lineRangeLabel(t, lines)}
         </span>
       )}

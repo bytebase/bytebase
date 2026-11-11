@@ -160,7 +160,7 @@ const rootName = `${ISSUE}/issueComments/root`;
 
 // A bar whose owner keeps the card unfolded, for behavior the place does not
 // change.
-const OPEN_BAR = { title: "Comment on line 3", foldLabel: "Comment on line 3", folded: false, onToggleFold: () => {} };
+const OPEN_BAR = { place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded: false, onToggleFold: () => {} };
 
 let container: HTMLDivElement;
 let root: Root;
@@ -627,6 +627,7 @@ test("focuses and reveals the reply footer once when opened in Monaco", () => {
 
 describe("title bar", () => {
   const bar = (folded: boolean, onToggleFold = vi.fn()) => ({
+    place: "changes" as const,
     title: "plan.review.thread.comment-title:7",
     foldLabel: "plan.review.thread.comment-title:7",
     folded,
@@ -681,7 +682,7 @@ describe("title bar", () => {
 
   test("a click on the bar's title folds and unfolds; the fold control folds once; a drag that selects text does not", () => {
     const onToggleFold = vi.fn();
-    render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    render(<CommentThreadCard bar={bar(false, onToggleFold)} issue={issue} project={project} thread={findingThread()} />);
     const title = foldControl()?.nextElementSibling as HTMLElement;
     click(title);
     expect(onToggleFold).toHaveBeenCalledTimes(1);
@@ -757,7 +758,7 @@ describe("priority in the bar", () => {
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority });
     return groupThreads([root])[0];
   };
-  const changesBar = (folded: boolean) => ({ title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });
+  const changesBar = (folded: boolean) => ({ place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });
   const barBadge = () => container.querySelector("[data-testid='thread-bar'] [data-testid='review-priority']");
 
   test.each([
@@ -780,6 +781,7 @@ describe("priority in the bar", () => {
 
 describe("Activity bar", () => {
   const activityBar = (extra: Partial<ThreadBarProps> = {}): ThreadBarProps => ({
+    place: "activity",
     title: "alpha_prod",
     foldLabel: "alpha_prod, lines 9–10",
     lines: { startLine: 9, endLine: 10 },
@@ -894,6 +896,33 @@ describe("Activity bar", () => {
     expect(unavailable.className.split(" ")).toContain("text-control");
     expect(unavailable.className).not.toContain("warning");
     expect(resolved.className).not.toContain("warning");
+  });
+
+  test("in Activity a click on the change's label or a state label folds, and one on the lines, the link or the gap does not", () => {
+    const onViewInStatement = vi.fn();
+    render(
+      <CommentThreadCard
+        bar={activityBar({ title: <span data-testid="change-label">alpha_prod</span>, anchorState: "CURRENT", onViewInStatement })}
+        issue={issue}
+        project={project}
+        thread={thread(true)}
+      />
+    );
+    const folded = () => foldControl().getAttribute("aria-expanded") === "false";
+    expect(folded()).toBe(true);
+    click(container.querySelector("[data-testid='change-label']"));
+    expect(folded()).toBe(false);
+    click(barNode().querySelector("[data-testid='thread-state']"));
+    expect(folded()).toBe(true);
+    click(barNode().querySelector("[data-testid='thread-bar-lines']"));
+    expect(folded()).toBe(true);
+    click(barNode().querySelector("[data-testid='thread-bar-gap']"));
+    expect(folded()).toBe(true);
+    click(barNode());
+    expect(folded()).toBe(true);
+    click(buttonByText("plan.review.thread.anchor.view-in-statement"));
+    expect(onViewInStatement).toHaveBeenCalledOnce();
+    expect(folded()).toBe(true);
   });
 
   test("puts the state labels after the title and the lines and link at the right end", () => {

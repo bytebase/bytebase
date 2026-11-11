@@ -118,6 +118,7 @@ export function StatementAnchorContext({
     ? t("plan.review.thread.comment-on-plan")
     : (reference?.label ?? t("plan.review.thread.anchor.unavailable-change"));
   const bar: ThreadBarProps = {
+    place: "activity",
     title: reference ? (
       <PlanChangeReference reference={reference} tone="control" />
     ) : (

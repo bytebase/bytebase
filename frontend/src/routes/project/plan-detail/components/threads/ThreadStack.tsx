@@ -112,6 +112,7 @@ export function ThreadStack({
           >
             <CommentThreadCard
               bar={{
+                place: "changes",
                 title,
                 foldLabel: title,
                 folded: !expanded,
