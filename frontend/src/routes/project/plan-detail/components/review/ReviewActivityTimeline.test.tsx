@@ -386,6 +386,11 @@ describe("ReviewActivityTimeline", () => {
       "common.show",
       "common.hide",
     ]);
+    // Show and Hide take the shared link button's own color, like any link.
+    for (const button of runButtons()) {
+      expect(button.className).toContain("text-accent");
+      expect(button.className).not.toContain("text-control-light");
+    }
     const text = container.textContent ?? "";
     expect(text).toContain("plan.review.activity.n-findings");
     expect(text).toContain("plan.review.activity.n-no-longer-found");
