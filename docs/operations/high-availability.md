@@ -107,7 +107,7 @@ Check the following:
 
 ### `replicaCount` is lower than expected during a restart
 
-A replica falls out of the active set after roughly 30 seconds without a heartbeat. A brief drop during restarts or node moves can therefore be expected.
+A replica that shuts down gracefully removes its heartbeat when it stops. A replica that crashes or is killed falls out of the active set after roughly 30 seconds without a heartbeat. Each server also caches the count for up to 30 seconds, so a brief drop during restarts or node moves can be expected.
 
 ### Logs show `multiple Bytebase server replicas detected ... but HA is not enabled in license`
 
@@ -115,6 +115,8 @@ This means the deployment topology and license do not match. Resolve it by doing
 
 - reduce the deployment back to a single active replica, or
 - install a license where `GET /v1/subscription` returns `ha: true`.
+
+A rolling update that starts the new server before stopping the old one runs two servers for a short time, so this message can appear briefly during the rollout. It needs action only if it persists after the old server has stopped.
 
 ### Old heartbeat rows exist in the database
 
