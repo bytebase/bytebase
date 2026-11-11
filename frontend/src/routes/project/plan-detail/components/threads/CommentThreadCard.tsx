@@ -59,8 +59,7 @@ const FOLD_REPLIES_ABOVE = 4;
 // in the footer. The reply composer carries a checkbox that mirrors the thread
 // state and, when toggled, settles the thread after the reply is posted.
 // Every card starts with a title bar that holds the fold control and the
-// state, and folding leaves the bar alone. The Changes section keeps the fold
-// state; in Activity the card keeps it.
+// state, and folding leaves the bar alone.
 export function CommentThreadCard({
   bar,
   className,
@@ -372,9 +371,7 @@ export function CommentThreadCard({
 }
 
 export type ThreadBarProps = {
-  // Where the card is drawn. In the Changes section a click anywhere on the
-  // bar folds; in Activity only the left part does, since the right end holds
-  // the lines and a link.
+  // Where the card is drawn.
   place: "changes" | "activity";
   // Names what the thread is on.
   title: ReactNode;
@@ -415,8 +412,7 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
 }
 
 // The bar's words and icons are text-control: text-control-light falls under
-// the 4.5:1 contrast minimum. Color is kept for what the reader must act on:
-// the badge of a P0 or P1 finding, "Outdated", and the link.
+// the 4.5:1 contrast minimum.
 function ThreadBar({
   anchorState,
   place,
@@ -462,7 +458,7 @@ function ThreadBar({
     // one focusable control, and the keyboard's path.
     <div
       className={cn(
-        "flex min-h-8 min-w-0 items-center gap-x-2 bg-background px-2 text-xs text-control",
+        "flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1 bg-background px-2 py-1 text-xs text-control",
         place === "changes" && "cursor-pointer",
         folded ? "rounded-lg" : "rounded-t-lg border-b border-block-border"
       )}
@@ -497,7 +493,13 @@ function ThreadBar({
         data-bar-lead
         data-testid="thread-bar-lead"
       >
-        <span className="flex min-w-0 truncate">{title}</span>
+        {typeof title === "string" ? (
+          <span className="min-w-0 truncate" title={title}>
+            {title}
+          </span>
+        ) : (
+          <span className="flex min-w-0">{title}</span>
+        )}
         {markers}
         {labels}
       </span>

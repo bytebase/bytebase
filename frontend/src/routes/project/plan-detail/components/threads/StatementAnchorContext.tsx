@@ -117,6 +117,8 @@ export function StatementAnchorContext({
   const titleText = !anchor
     ? t("plan.review.thread.comment-on-plan")
     : (reference?.label ?? t("plan.review.thread.anchor.unavailable-change"));
+  // Two changes with the same label are told apart by their numbers.
+  const nameText = reference?.showIndex ? reference.accessibleLabel : titleText;
   const bar: ThreadBarProps = {
     place: "activity",
     title: reference ? (
@@ -126,11 +128,11 @@ export function StatementAnchorContext({
     ),
     foldLabel: range
       ? t("plan.review.thread.fold-label", {
-          title: titleText,
+          title: nameText,
           count: range.endLine - range.startLine + 1,
           range: formatLineRange(range),
         })
-      : titleText,
+      : nameText,
     lines: range,
     anchorState: state,
     stateTooltip,

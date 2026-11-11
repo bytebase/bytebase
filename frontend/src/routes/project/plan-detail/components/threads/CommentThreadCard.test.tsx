@@ -731,8 +731,17 @@ describe("title bar", () => {
     }
   });
 
-  test("draws the bar and the footer white, with no gray of their own", () => {
+  test("truncates a text title with an ellipsis and keeps its full text on hover", () => {
     render(<CommentThreadCard bar={bar(false)} issue={issue} project={project} thread={findingThread(false)} />);
+    const title = (barNode() as HTMLElement).querySelector("[data-testid='thread-bar-lead'] > span") as HTMLElement;
+    expect(title.textContent).toBe("plan.review.thread.comment-title:7");
+    expect(title.getAttribute("title")).toBe("plan.review.thread.comment-title:7");
+    expect(title.className.split(" ")).toContain("truncate");
+    expect(title.className.split(" ")).not.toContain("flex");
+  });
+
+  test.each(["changes", "activity"] as const)("draws the bar and the footer white in %s, with no gray of their own", (place) => {
+    render(<CommentThreadCard bar={{ ...bar(false), place }} issue={issue} project={project} thread={findingThread(false)} />);
     const footer = container.querySelector("[data-testid='thread-reply-footer']") as HTMLElement;
     for (const part of [barNode() as HTMLElement, footer]) {
       expect(part.className.split(" ")).toContain("bg-background");

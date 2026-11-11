@@ -1581,6 +1581,42 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await composer.getByRole("button", { name: "Cancel" }).click();
     await expect(planPage.inlineComposer).toHaveCount(0);
   });
+
+  test("on a phone, every part of an Activity card's bar stays inside the card, with nothing overlapping", async () => {
+    await page.setViewportSize({ width: 375, height: 1200 });
+    const card = planPage.threadCardIn("review", earlierRoot);
+    await card.scrollIntoViewIfNeeded();
+    const bar = card.getByTestId("thread-bar");
+    await expect(bar.getByTestId("thread-bar-lines")).toBeVisible();
+    await expect(bar.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          const cardBox = await card.boundingBox();
+          if (!cardBox) return ["no card box"];
+          const boxes = [];
+          for (const part of await bar.locator(":scope > *").all()) {
+            const box = await part.boundingBox();
+            if (box && box.width > 0) boxes.push(box);
+          }
+          const problems: string[] = [];
+          for (const box of boxes) {
+            if (box.x + box.width > cardBox.x + cardBox.width + 0.5) problems.push("past the card's edge");
+          }
+          for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+              const [a, b] = [boxes[i], boxes[j]];
+              const sameRow = a.y < b.y + b.height && b.y < a.y + a.height;
+              const apart = a.x + a.width <= b.x + 0.5 || b.x + b.width <= a.x + 0.5;
+              if (sameRow && !apart) problems.push("parts overlap");
+            }
+          }
+          return problems;
+        },
+        { timeout: 5_000 },
+      )
+      .toEqual([]);
+  });
 });
 
 // Inline comment threads, third pass: the editor scroll a walker step makes.

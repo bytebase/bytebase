@@ -18,7 +18,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
-    t: (key: string, options?: { count?: number; range?: string; title?: string }) => {
+    t: (key: string, options?: { count?: number; index?: number; label?: string; range?: string; title?: string }) => {
+      if (key === "plan.spec.change-reference.accessible-label") {
+        return `Change ${options?.index}: ${options?.label}`;
+      }
       if (key === "plan.review.thread.anchor.line") {
         return `${(options?.count ?? 1) > 1 ? "Lines" : "Line"} ${options?.range}`;
       }
@@ -153,6 +156,25 @@ describe("StatementAnchorContext", () => {
     cleanup();
     const second = renderAnchor({ anchor: anchor(2, 2), placement: OUTDATED });
     expect(second.bar().getAttribute("data-fold-label")).toBe("alpha_prod, line 2");
+  });
+
+  test("names the fold controls of two changes with the same label apart, by their numbers", () => {
+    const twin = (id: string) => create(Plan_SpecSchema, {
+      id,
+      config: { case: "changeDatabaseConfig", value: create(Plan_ChangeDatabaseConfigSchema, {
+        sheet: currentName,
+        targets: ["instances/prod/databases/alpha_prod"],
+      }) },
+    });
+    const twins = create(PlanSchema, { specs: [twin("spec"), twin("spec-2")] });
+    const onSpec = (spec: string) => buildWholeLineAnchor({ spec, sheetSha256: savedHash, startLine: 4, endLine: 5 });
+    const first = renderAnchor({ plan: twins, anchor: onSpec("spec"), placement: OUTDATED });
+    const firstName = first.bar().getAttribute("data-fold-label");
+    cleanup();
+    const second = renderAnchor({ plan: twins, anchor: onSpec("spec-2"), placement: OUTDATED });
+    const secondName = second.bar().getAttribute("data-fold-label");
+    expect(firstName).toBe("Change 1: alpha_prod, lines 4–5");
+    expect(secondName).toBe("Change 2: alpha_prod, lines 4–5");
   });
 
   test("hands the excerpt to the body and keeps it out of the bar", () => {
