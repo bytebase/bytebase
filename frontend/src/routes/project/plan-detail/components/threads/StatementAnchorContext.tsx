@@ -218,13 +218,13 @@ function SqlExcerpt({
       cancelled = true;
     };
   }, [dimmed, range.endLine, sheetName, statement]);
-  // An outdated or unavailable excerpt is plain grey text: syntax colors
-  // fall under the contrast minimum once dimmed.
+  // An outdated or unavailable excerpt is plain text with no syntax colors;
+  // their absence is what says the lines are no longer current.
   const htmlLines =
     !dimmed && colorized?.sheetName === sheetName ? colorized.lines : undefined;
   if (lines.length === 0) return null;
   return (
-    <pre className="m-0 overflow-x-auto bg-background font-mono text-sm leading-6">
+    <pre className="m-0 overflow-x-auto bg-control-bg font-mono text-sm leading-6">
       <div className="w-max min-w-full">
         {lines.map((line, index) => {
           const lineNumber = startLine + index;
@@ -259,7 +259,7 @@ function SqlExcerpt({
                 <code
                   className={cn(
                     "min-w-0 flex-1 whitespace-pre",
-                    dimmed ? "text-control-light" : "text-main"
+                    dimmed ? "text-control" : "text-main"
                   )}
                 >
                   {line}
