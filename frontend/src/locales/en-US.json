@@ -2393,6 +2393,8 @@
         },
         "applies-to": "Applies to",
         "comment-on-lines": "Comment on lines",
+        "comment-title_one": "Comment on line {{range}}",
+        "comment-title_other": "Comment on lines {{range}}",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",

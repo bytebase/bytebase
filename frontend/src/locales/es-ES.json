@@ -2393,6 +2393,8 @@
         },
         "applies-to": "Se aplica a",
         "comment-on-lines": "Comentar las líneas",
+        "comment-title_one": "Comentario en la línea {{range}}",
+        "comment-title_other": "Comentario en las líneas {{range}}",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",

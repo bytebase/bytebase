@@ -1121,6 +1121,28 @@ describe("StatementThreadsLayer", () => {
     ]);
   });
 
+  test("folding a card from its bar keeps it on its line and clears the walker's selection; unfolding selects it again", () => {
+    mocks.comments = [threadRoot("a", 2, 2, { createdAt: 1 }), threadRoot("b", 5, 5, { createdAt: 2 })];
+    const fake = createFakeEditor();
+    mount(fake.editor);
+    const walkerText = () => hosted(fake.widgets, "[data-testid='thread-walker']")?.textContent;
+    const press = (selector: string) =>
+      act(() => {
+        hosted(fake.widgets, selector)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
+    expect(walkerText()).toContain("1/2");
+
+    press("[data-testid='close-thread']");
+    expect(zoneAfter(fake.zones)).toEqual([2]);
+    expect(hosted(fake.widgets, "[data-testid='pick-thread']")?.getAttribute("data-expanded")).toBe("false");
+    expect(walkerText()).toContain("0/2");
+
+    press("[data-testid='pick-thread']");
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
+    expect(walkerText()).toContain("1/2");
+  });
+
   test("the walker is absent without unresolved placed threads and reports unplaced ones", () => {
     mocks.comments = [threadRoot("done", 2, 2, { resolved: true })];
     const fake = createFakeEditor();

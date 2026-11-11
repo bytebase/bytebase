@@ -717,3 +717,155 @@ test("focuses and reveals the reply footer once when opened in Monaco", () => {
   render(view("Typing a reply"));
   expect(reveal).toHaveBeenCalledTimes(1);
 });
+
+describe("title bar", () => {
+  const bar = (folded: boolean, onToggleFold = vi.fn()) => ({
+    title: "plan.review.thread.comment-title:7",
+    folded,
+    onToggleFold,
+  });
+  const findingThread = (resolved = false) => {
+    const root = comment("root", "Missing WHERE clause.", { creator: "", resolved });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.AI,
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+      title: "Add a WHERE clause",
+    });
+    return groupThreads([root, comment("r1", "A reply", { root: rootName })])[0];
+  };
+  const barNode = () => container.querySelector("[data-testid='thread-bar']");
+  const foldControl = () => barNode()?.querySelector("button");
+
+  test("is the same folded and unfolded, and a folded card shows nothing from the body", () => {
+    const thread = findingThread(true);
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={thread} />);
+    const unfolded = barNode()?.textContent;
+    expect(container.querySelector("[data-testid='thread-comment']")).not.toBeNull();
+
+    render(<CommentThreadCard bar={bar(true)} collapsible={false} issue={issue} project={project} thread={thread} />);
+    expect(barNode()?.textContent).toBe(unfolded);
+    expect(unfolded).toBe("plan.review.thread.comment-title:7P1plan.review.thread.resolved");
+    const card = container.querySelector("[data-testid='comment-thread']");
+    expect(card?.children).toHaveLength(1);
+    expect(card?.textContent).not.toContain("sql-review.ai-review.self");
+    expect(card?.textContent).not.toContain("Add a WHERE clause");
+    expect(card?.textContent).not.toContain("A reply");
+    // The bar says how urgent the thread is; nothing else of the finding shows.
+    expect(card?.querySelectorAll("[data-testid='review-priority']")).toHaveLength(1);
+    expect(barNode()?.querySelector("[data-testid='review-priority']")).not.toBeNull();
+    expect(card?.querySelector("[data-testid='thread-reply-footer']")).toBeNull();
+  });
+
+  test("names its fold control by the title and reports the click", () => {
+    const onToggleFold = vi.fn();
+    render(<CommentThreadCard bar={bar(true, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    expect(foldControl()?.getAttribute("aria-label")).toBe("plan.review.thread.comment-title:7");
+    expect(foldControl()?.getAttribute("aria-expanded")).toBe("false");
+    click(foldControl());
+    expect(onToggleFold).toHaveBeenCalledOnce();
+    // The owner keeps the fold state: the card stays folded until it says so.
+    expect(container.querySelector("[data-testid='thread-comment']")).toBeNull();
+
+    render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    expect(foldControl()?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('button[aria-label="common.close"]')).toBeNull();
+  });
+
+  test("a click on the bar's title folds and unfolds; the fold control folds once; a drag that selects text does not", () => {
+    const onToggleFold = vi.fn();
+    render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    const title = foldControl()?.nextElementSibling as HTMLElement;
+    click(title);
+    expect(onToggleFold).toHaveBeenCalledTimes(1);
+    click(barNode());
+    expect(onToggleFold).toHaveBeenCalledTimes(2);
+    // The fold control is still the one control that folds, never twice.
+    click(foldControl());
+    expect(onToggleFold).toHaveBeenCalledTimes(3);
+    // A drag that ends with selected text in the bar does not fold it.
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    click(title);
+    expect(onToggleFold).toHaveBeenCalledTimes(3);
+    window.getSelection()?.removeAllRanges();
+    // The bar adds no focus stop of its own.
+    expect(barNode()?.getAttribute("tabindex")).toBeNull();
+    expect(barNode()?.getAttribute("role")).toBeNull();
+  });
+
+  test("says Resolved in the bar, never in the footer, and nothing for an open thread", () => {
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+    const states = container.querySelectorAll("[data-testid='thread-state']");
+    expect(states).toHaveLength(1);
+    expect(barNode()?.contains(states[0])).toBe(true);
+    // State labels follow the title, before the spacer, in every place.
+    const title = barNode()?.querySelector("button")?.nextElementSibling;
+    expect(title?.className).not.toContain("flex-1");
+    // Title, then the markers (this P1 finding's badge), then the state.
+    expect(title?.nextElementSibling?.getAttribute("data-testid")).toBe("review-priority");
+    expect(title?.nextElementSibling?.nextElementSibling).toBe(states[0]);
+    expect(states[0].nextElementSibling?.className).toContain("flex-1");
+
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(false)} />);
+    expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
+  });
+
+  test("carries no text-control-light, folded or not", () => {
+    for (const folded of [false, true]) {
+      render(<CommentThreadCard bar={bar(folded)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+      const nodes = [barNode()!, ...barNode()!.querySelectorAll("*")];
+      expect(nodes.filter((node) => node.getAttribute("class")?.includes("text-control-light"))).toEqual([]);
+      expect(barNode()?.className).toContain("text-control");
+    }
+  });
+
+  test("draws the bar and the footer white, with no gray of their own", () => {
+    render(<CommentThreadCard bar={bar(false)} issue={issue} project={project} thread={findingThread(false)} />);
+    const footer = container.querySelector("[data-testid='thread-reply-footer']") as HTMLElement;
+    for (const part of [barNode() as HTMLElement, footer]) {
+      expect(part.className.split(" ")).toContain("bg-background");
+      expect(part.className).not.toMatch(/\bbg-control-bg/);
+    }
+  });
+
+  test.each([
+    { reply: false, settle: false, footer: false },
+    { reply: true, settle: false, footer: true },
+    { reply: false, settle: true, footer: true },
+  ])("has a footer only when the reader can act: %o", ({ reply, settle, footer }) => {
+    mocks.hasPermission.mockImplementation((_project: unknown, permission: unknown) =>
+      permission === "bb.issueComments.create" ? reply : settle
+    );
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+    expect(container.querySelector("[data-testid='thread-reply-footer']") !== null).toBe(footer);
+  });
+});
+
+describe("priority in the bar", () => {
+  const finding = (priority: IssueComment_ReviewMetadata_Priority) => {
+    const root = comment("root", "Drops a table.", { creator: "" });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority });
+    return groupThreads([root])[0];
+  };
+  const changesBar = (folded: boolean) => ({ title: "Comment on line 3", folded, onToggleFold: () => {} });
+  const barBadge = () => container.querySelector("[data-testid='thread-bar'] [data-testid='review-priority']");
+
+  test.each([
+    { priority: IssueComment_ReviewMetadata_Priority.P0, label: "P0" },
+    { priority: IssueComment_ReviewMetadata_Priority.P1, label: "P1" },
+  ])("a $label finding shows its badge in the bar, folded and unfolded", ({ priority, label }) => {
+    for (const folded of [true, false]) {
+      render(<CommentThreadCard bar={changesBar(folded)} collapsible={false} issue={issue} project={project} thread={finding(priority)} />);
+      expect(barBadge()?.textContent).toBe(label);
+    }
+  });
+
+  test("a P2 finding and a person's thread show no badge in the bar", () => {
+    render(<CommentThreadCard bar={changesBar(true)} collapsible={false} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2)} />);
+    expect(barBadge()).toBeNull();
+    render(<CommentThreadCard bar={changesBar(true)} collapsible={false} issue={issue} project={project} thread={groupThreads([comment("root", "A question")])[0]} />);
+    expect(barBadge()).toBeNull();
+  });
+});
