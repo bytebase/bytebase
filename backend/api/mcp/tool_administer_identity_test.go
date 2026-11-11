@@ -33,6 +33,12 @@ const (
 
 // journeyFourBody is journey 4's request as an agent writes it from the
 // search_api note: camelCase, the provider by name, no issuer.
+const journeyFourResult = `Created: workload identity "` + journeyFourEmail + `" in project "hr", with the GitOps Service Agent role there. ` +
+	"A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. " +
+	"MCP cannot change or remove a workload identity: change or remove it in the console.\n" +
+	"GitOps: https://bb.example.com/projects/hr/gitops\n" +
+	"Workload identities: https://bb.example.com/projects/hr/workload-identities"
+
 const journeyFourBody = `{
   "parent": "projects/hr",
   "workloadIdentityId": "hr-migrations-ci",
@@ -223,16 +229,11 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	}`, jsonString(t, grants[0].body), "the grant adds the identity and keeps every stored binding, with the etag it read")
 	require.Equal(t, &auth.MCPConfirmedDecision{Procedure: v1connect.ProjectServiceSetIamPolicyProcedure, Resource: "projects/hr"}, grants[0].confirmed)
 
-	text := `Created: workload identity "` + journeyFourEmail + `" in project "hr", with the GitOps Service Agent role there. ` +
-		"A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. " +
-		"MCP cannot change or remove a workload identity, so a later change, such as an ID added to its pattern, is made in the console.\n" +
-		"GitOps: https://bb.example.com/projects/hr/gitops\n" +
-		"Workload identities: https://bb.example.com/projects/hr/workload-identities"
-	require.Equal(t, text, resultText(t, res))
+	require.Equal(t, journeyFourResult, resultText(t, res))
 	output, err := json.Marshal(res.StructuredContent)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"operationId":"`+administerCreateIdentity+`","changed":true,
-		"message":`+jsonString(t, text)+`,"link":"https://bb.example.com/projects/hr/gitops"}`, string(output))
+		"message":`+jsonString(t, journeyFourResult)+`,"link":"https://bb.example.com/projects/hr/gitops"}`, string(output))
 }
 
 func TestAdministerIdentityFitsTheOtherShapesInFourLines(t *testing.T) {
@@ -525,6 +526,7 @@ func TestAdministerIdentityCreatesAGitLabIdentityWithGitLabsIssuer(t *testing.T)
 	require.Equal(t, "https://gitlab.com", config["issuerUrl"])
 	require.Equal(t, []any{"bytebase"}, config["allowedAudiences"])
 	require.Equal(t, "project_path:acme/team/deploy:*", config["subjectPattern"])
+	require.Equal(t, journeyFourResult, resultText(t, res), "a GitLab identity's result names no GitHub-only change")
 }
 
 func TestAdministerIdentityRefusesAnExpiredAnswer(t *testing.T) {
@@ -618,8 +620,10 @@ func TestAdministerIdentityReportsARoleItCouldNotGrant(t *testing.T) {
 			text := resultText(t, res)
 			require.True(t, strings.HasPrefix(text, `Created workload identity "`+journeyFourEmail+`" in project "hr", but Bytebase did not grant it the GitOps Service Agent role: `), text)
 			require.Contains(t, text, tc.reason)
-			require.Contains(t, text, "It can sign in, and it does not have that role until it is granted signed in to the console.")
-			require.True(t, strings.HasSuffix(text, "\nMembers: https://bb.example.com/projects/hr/members"), text)
+			require.Contains(t, text, "It can sign in, and it does not have that role until it is granted signed in to the console. "+
+				"MCP cannot change or remove a workload identity: change or remove it in the console.")
+			require.True(t, strings.HasSuffix(text, "\nMembers: https://bb.example.com/projects/hr/members\n"+
+				"Workload identities: https://bb.example.com/projects/hr/workload-identities"), text)
 			output, err := json.Marshal(res.StructuredContent)
 			require.NoError(t, err)
 			require.Contains(t, string(output), `"changed":true`)

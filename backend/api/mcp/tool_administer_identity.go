@@ -31,6 +31,10 @@ var identityIssuers = map[v1pb.WorkloadIdentityConfig_ProviderType]string{
 // GitOps workflows request.
 const identityAudience = "bytebase"
 
+// identityConsoleOnly ends each result of a create that stored the identity:
+// the gate refuses its update and its delete over MCP.
+const identityConsoleOnly = "MCP cannot change or remove a workload identity: change or remove it in the console."
+
 // identityRole is the role the entry grants: the console's default, which the
 // GitOps workflows need.
 var (
@@ -143,13 +147,13 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 	}
 	if why := s.grantIdentityRole(ctx, change); why != "" {
 		membersLink := s.consoleLink(ctx, project+"/members")
-		text := fmt.Sprintf("Created workload identity %q in project %q, but Bytebase did not grant it the %s role: %s. It can sign in, and it does not have that role until it is granted signed in to the console.\nMembers: %s", change.email, change.projectID, identityRoleTitle, why, membersLink)
+		text := fmt.Sprintf("Created workload identity %q in project %q, but Bytebase did not grant it the %s role: %s. It can sign in, and it does not have that role until it is granted signed in to the console. %s\nMembers: %s\nWorkload identities: %s",
+			change.email, change.projectID, identityRoleTitle, why, identityConsoleOnly, membersLink, link)
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: membersLink}, nil
 	}
 	gitopsLink := s.consoleLink(ctx, project+"/gitops")
-	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. "+
-		"MCP cannot change or remove a workload identity, so a later change, such as an ID added to its pattern, is made in the console.\nGitOps: %s\nWorkload identities: %s",
-		change.email, change.projectID, identityRoleTitle, gitopsLink, link)
+	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. %s\nGitOps: %s\nWorkload identities: %s",
+		change.email, change.projectID, identityRoleTitle, identityConsoleOnly, gitopsLink, link)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: gitopsLink}, nil
 }
 
