@@ -86,11 +86,17 @@ line, and Show and Hide are its fold control:
 - A hidden group is folded to its first line, inside its frame. It shows no finding card,
   whatever replies the findings have.
 - A review with no findings has nothing to fold. It is a plain line with no frame and no Show.
+- A hidden group opens when one of its findings is asked for from elsewhere on the page, so the
+  page can scroll to the card it was asked to show. The timeline already does this for its
+  folded middle, which unfolds when a card inside it is asked for.
 
 Today a hidden run still shows the findings `needsActivityCard` in `threadModel.ts` keeps: one
 people replied to, or one the Changes section cannot show. So when every finding of a review has
 a reply, Hide changes nothing but its own word, and reads as broken. A hidden finding is not
 lost: the review line still counts it, as in "2 findings, 1 open", and Show brings it back.
+The old rule also kept a card on the page for a finding the Changes section cannot show, which
+is where `focusInActivity` in `useFocusThread.ts` sends the reader. Opening the group on such a
+request keeps that jump working.
 Rejected: keeping that rule. A control that sometimes hides is worse than one that always does.
 Rejected: a hidden review as a plain line. The entry would change from a box to a sentence and
 back each time it is toggled.
@@ -131,7 +137,8 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
    - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry, and
      a hidden run has none. `needsActivityCard` in `threadModel.ts` then has no caller and goes.
    - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group. `ThreadActivityRow`
-     keeps rendering a person's thread.
+     keeps rendering a person's thread. A focus request for a finding opens its group before the
+     timeline scrolls to it.
    - `foldTimeline.ts`: a group stays together when a long history folds, as an open run's line
      and cards do today.
    - `docs/agents/frontend-ux.md`: the exception in D4.
@@ -141,7 +148,8 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
      hidden run has none, with and without replies), `ReviewActivityTimeline.test.tsx` (a finding
      renders inside its review's group and without a timeline icon; a hidden review with findings
      renders its frame around the review line and no card; a review with no findings renders no
-     frame), `foldTimeline.test.ts`. E2E:
+     frame; a focus request for a finding in a hidden review opens the group and scrolls to the
+     card), `foldTimeline.test.ts`. E2E:
      `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
 
 ## Not in this PR
