@@ -6317,7 +6317,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
 
       
         <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
-        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
+        <p>ReviewRun is the status slot of the review on one issue. Results live in</p><p>issue comments; the run carries none.</p>
 
         
 
@@ -6348,6 +6348,14 @@ executor or by the reaper. </p></td>
                   <td></td>
                   <td><p>The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the
 version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>code</td>
+                  <td><a href="#google.rpc.Code">google.rpc.Code</a></td>
+                  <td></td>
+                  <td><p>The kind of failure behind `error`, for the FAILED status. Unset when
+the failure fits no more specific code. </p></td>
                 </tr>
               
             </tbody>
@@ -6401,7 +6409,7 @@ version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
         </table>
       
         <h3 id="bytebase.store.ReviewRun.Type">ReviewRun.Type</h3>
-        <p>The reviewer. Stored by name in review_run.type, which has no CHECK:</p><p>like Issue.Type and Task.Type, the enum is the source of truth and a</p><p>new reviewer is a new value, not a migration.</p>
+        <p>The reviewer that found a result. One run holds every reviewer, so the</p><p>type is recorded on each result, not on the run.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -6650,7 +6658,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, the</p><p>databases it applies to, and for an AI result, its title. When a run</p><p>completes, an earlier result of its type whose fingerprint the run</p><p>reports again keeps its thread, and the run posts no new result for it;</p><p>every other earlier root of its type is resolved and marked superseded,</p><p>in the transaction that posts the new results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer found it, what it was judged against, its priority, the</p><p>databases it applies to, and for an AI result, its title. When a run</p><p>completes, an earlier result whose fingerprint the run reports again</p><p>keeps its thread, and the run posts no new result for it; every other</p><p>earlier result on the issue is resolved and marked superseded, in the</p><p>transaction that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6663,8 +6671,8 @@ change. </p></td>
                   <td>run_type</td>
                   <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
                   <td></td>
-                  <td><p>The reviewer slot that posted the result; review_run.type stores the
-same enum by name. </p></td>
+                  <td><p>The reviewer that found the result. One run holds the results of every
+reviewer. </p></td>
                 </tr>
               
                 <tr>
@@ -6695,9 +6703,9 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed without reporting the
-result again, so the latest review does not hold it. Set by that run
-whatever the thread state, and never cleared. </p></td>
+                  <td><p>A later run has completed without reporting the result again, so the
+latest review does not hold it. Set by that run whatever the thread
+state, and never cleared. </p></td>
                 </tr>
               
                 <tr>
@@ -6744,7 +6752,7 @@ holds the rest. Empty for a RULE result, which rule_type names. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewRunCompletion">IssueCommentPayload.ReviewRunCompletion</h3>
-        <p>ReviewRunCompletion records that a review run completed DONE, and what</p><p>it did to the results of its reviewer. Posted with no creator, in the</p><p>transaction that posts the run's results.</p>
+        <p>ReviewRunCompletion records that a review run completed DONE, and what</p><p>it did to the earlier results. Posted with no creator, in the</p><p>transaction that posts the run's results.</p>
 
         
           <table class="field-table">
@@ -6757,7 +6765,8 @@ holds the rest. Empty for a RULE result, which rule_type names. </p></td>
                   <td>run_type</td>
                   <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Set on a completion from before an issue had one review run, and on no
+later one. </p></td>
                 </tr>
               
                 <tr>

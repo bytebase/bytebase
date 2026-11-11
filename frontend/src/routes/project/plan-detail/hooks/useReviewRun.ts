@@ -39,8 +39,8 @@ export type ReviewRunState = {
 
 // The issue's review run, read again whenever `reloadKey` changes and polled:
 // often while it is queued or running, and slowly once it has settled. The
-// server starts the review wherever it runs the plan checks, so the caller
-// keys a reload on the same events.
+// server starts the review when the plan's SQL changes, so the caller keys a
+// reload on the plan's update.
 export function useReviewRun({
   enabled,
   issueName,

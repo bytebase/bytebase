@@ -2098,7 +2098,6 @@
       "up-to-on": "最多 {{database}} 上 {{rows}} 行"
     },
     "automated-review": {
-      "ai-sampled": "AI 审核抽样了 {{count}}/{{total}} 个数据库",
       "checks": "计划检查",
       "details": "详情",
       "failed": "无法运行",
@@ -2132,6 +2131,7 @@
       "run-again-description": "每次运行都会为所审核的每个数据库调用模型，结果可能不同。再次报告的发现会保留原有讨论，不再报告的发现会被标记为已解决。",
       "run-again-title": "再次运行审核？",
       "running": "运行中",
+      "sampled": "审核抽样了 {{count}}/{{total}} 个数据库",
       "save-first": "请先保存或放弃修改，再运行审核。",
       "scope": "审核了 {{databases}}",
       "scope-label": "本次审核的范围",

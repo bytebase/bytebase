@@ -7,6 +7,7 @@
 package store
 
 import (
+	code "google.golang.org/genproto/googleapis/rpc/code"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -21,9 +22,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The reviewer. Stored by name in review_run.type, which has no CHECK:
-// like Issue.Type and Task.Type, the enum is the source of truth and a
-// new reviewer is a new value, not a migration.
+// The reviewer that found a result. One run holds every reviewer, so the
+// type is recorded on each result, not on the run.
 type ReviewRun_Type int32
 
 const (
@@ -132,8 +132,8 @@ func (ReviewRun_Status) EnumDescriptor() ([]byte, []int) {
 	return file_store_review_run_proto_rawDescGZIP(), []int{0, 1}
 }
 
-// ReviewRun is the status slot of one reviewer (rule engine or AI) on one
-// issue. Results live in issue comments; the run carries none.
+// ReviewRun is the status slot of the review on one issue. Results live in
+// issue comments; the run carries none.
 type ReviewRun struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -179,8 +179,11 @@ type ReviewRunPayload struct {
 	// The plan's PlanConfig.approval_input_version when the slot was reset: the
 	// version of the plan's SQL this run reviews. Completion keeps it.
 	ApprovalInputVersion int64 `protobuf:"varint,2,opt,name=approval_input_version,json=approvalInputVersion,proto3" json:"approval_input_version,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The kind of failure behind `error`, for the FAILED status. Unset when
+	// the failure fits no more specific code.
+	Code          code.Code `protobuf:"varint,3,opt,name=code,proto3,enum=google.rpc.Code" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ReviewRunPayload) Reset() {
@@ -227,11 +230,18 @@ func (x *ReviewRunPayload) GetApprovalInputVersion() int64 {
 	return 0
 }
 
+func (x *ReviewRunPayload) GetCode() code.Code {
+	if x != nil {
+		return x.Code
+	}
+	return code.Code(0)
+}
+
 var File_store_review_run_proto protoreflect.FileDescriptor
 
 const file_store_review_run_proto_rawDesc = "" +
 	"\n" +
-	"\x16store/review_run.proto\x12\x0ebytebase.store\"\x8f\x01\n" +
+	"\x16store/review_run.proto\x12\x0ebytebase.store\x1a\x15google/rpc/code.proto\"\x8f\x01\n" +
 	"\tReviewRun\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
@@ -243,10 +253,11 @@ const file_store_review_run_proto_rawDesc = "" +
 	"\aRUNNING\x10\x02\x12\b\n" +
 	"\x04DONE\x10\x03\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04\"^\n" +
+	"\x06FAILED\x10\x04\"\x84\x01\n" +
 	"\x10ReviewRunPayload\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x124\n" +
-	"\x16approval_input_version\x18\x02 \x01(\x03R\x14approvalInputVersionB\x91\x01\n" +
+	"\x16approval_input_version\x18\x02 \x01(\x03R\x14approvalInputVersion\x12$\n" +
+	"\x04code\x18\x03 \x01(\x0e2\x10.google.rpc.CodeR\x04codeB\x91\x01\n" +
 	"\x12com.bytebase.storeB\x0eReviewRunProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -268,13 +279,15 @@ var file_store_review_run_proto_goTypes = []any{
 	(ReviewRun_Status)(0),    // 1: bytebase.store.ReviewRun.Status
 	(*ReviewRun)(nil),        // 2: bytebase.store.ReviewRun
 	(*ReviewRunPayload)(nil), // 3: bytebase.store.ReviewRunPayload
+	(code.Code)(0),           // 4: google.rpc.Code
 }
 var file_store_review_run_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: bytebase.store.ReviewRunPayload.code:type_name -> google.rpc.Code
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_review_run_proto_init() }

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { usePlanCheckActions } from "../hooks/usePlanCheckActions";
-import { useSqlReviewV2 } from "../hooks/useSqlReviewV2";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   type AffectedRowsSummary,
@@ -35,7 +34,6 @@ export function AffectedRowsStrip({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
-  const review = useSqlReviewV2()?.review;
   const [detailsState, setDetailsState] = useState<{
     open: boolean;
     filter: AffectedRowsFilter;
@@ -160,7 +158,7 @@ export function AffectedRowsStrip({
       {showRerun && (
         <InlineAction
           disabled={isRunningChecks}
-          onClick={() => void runChecks().then(() => review?.reload())}
+          onClick={() => void runChecks()}
         >
           {t("plan.affected-rows.rerun")}
         </InlineAction>

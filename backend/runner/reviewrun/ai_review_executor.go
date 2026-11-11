@@ -78,9 +78,9 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveCheckTargets, not DeriveReviewTargets: every database costs model
-	// calls, so the AI review covers the databases plan checks sample when the
-	// project sets ci_sampling_size, and every database otherwise.
+	// Every database costs model calls, so the review covers the databases
+	// plan checks sample when the project sets ci_sampling_size, and every
+	// database otherwise.
 	checkTargets, err := plancheck.DeriveCheckTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
@@ -328,7 +328,7 @@ func (e *AIReviewExecutor) resolveAIReviewTarget(ctx context.Context, checkTarge
 		return nil, storepb.Engine_ENGINE_UNSPECIFIED, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return nil, storepb.Engine_ENGINE_UNSPECIFIED, errors.New("metadata not synced")
+		return nil, storepb.Engine_ENGINE_UNSPECIFIED, errMetadataNotSynced
 	}
 	schema := dbSchema.GetProto()
 	request.Target = aiReviewTarget(instance, database, schema)

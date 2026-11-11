@@ -251,9 +251,12 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, ruleReviewCovers)
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
-	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics)
-	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores))
-	s.reviewRunScheduler.Register(store.ReviewRunTypeAI, reviewrun.NewAIReviewExecutor(stores, ruleReviewCovers))
+	var ruleReviewExecutor reviewrun.Executor
+	if profile.SQLReviewV2 {
+		ruleReviewExecutor = reviewrun.NewRuleExecutor(stores)
+	}
+	reviewExecutor := reviewrun.NewReviewExecutor(stores, ruleReviewExecutor, reviewrun.NewAIReviewExecutor(stores, ruleReviewCovers))
+	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics, reviewExecutor)
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner

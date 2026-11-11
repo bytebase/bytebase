@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -27,10 +28,10 @@ func reviewRunName(projectID string, issueUID int64) string {
 	return fmt.Sprintf("projects/%s/issues/%d/reviewRun", projectID, issueUID)
 }
 
-// TestRunReviewStartsTheRuleJobWithEveryRuleOff pins that switching every rule
-// off does not refuse a review: the rule job completes with no findings, which
-// resolves the findings of earlier runs.
-func TestRunReviewStartsTheRuleJobWithEveryRuleOff(t *testing.T) {
+// TestRunReviewStartsWithEveryRuleOff pins that switching every rule off does
+// not refuse a review: the run completes with no findings, which resolves the
+// findings of earlier runs.
+func TestRunReviewStartsWithEveryRuleOff(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -55,10 +56,10 @@ func TestRunReviewStartsTheRuleJobWithEveryRuleOff(t *testing.T) {
 	}))
 	require.NoError(t, err)
 	require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
-	job, err := stores.GetReviewRun(ctx, "project-a", issue.UID, store.ReviewRunTypeRule)
+	run, err := stores.GetReviewRun(ctx, "project-a", issue.UID)
 	require.NoError(t, err)
-	require.NotNil(t, job)
-	require.Equal(t, storepb.ReviewRun_AVAILABLE, job.Status)
+	require.NotNil(t, run)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 }
 
 func TestGetReviewRun(t *testing.T) {
@@ -68,29 +69,59 @@ func TestGetReviewRun(t *testing.T) {
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
 	service := newIssueServiceForTest(t, stores)
 	name := reviewRunName("project-a", issue.UID)
+	getRun := func() *v1pb.ReviewRun {
+		t.Helper()
+		run, err := getReviewRunForTest(ctx, service, name)
+		require.NoError(t, err)
+		return run
+	}
+	// start starts a run and claims it, as the scheduler would.
+	start := func() (*v1pb.ReviewRun, *store.ClaimedReviewRun) {
+		t.Helper()
+		run, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ReviewRun_RUNNING, run.Msg.State, "a queued run reads as RUNNING")
+		require.True(t, proto.Equal(run.Msg, getRun()), "got %v, want %v", getRun(), run.Msg)
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1)
+		return run.Msg, claimed[0]
+	}
+	complete := func(claimed *store.ClaimedReviewRun, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload) *v1pb.ReviewRun {
+		t.Helper()
+		updated, err := stores.CompleteReviewRun(ctx, claimed, "replica-1", status, payload, nil)
+		require.NoError(t, err)
+		require.True(t, updated)
+		return getRun()
+	}
 
 	_, err := getReviewRunForTest(ctx, service, name)
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), "a run that never started")
 
-	run, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
-	require.NoError(t, err)
-	got, err := getReviewRunForTest(ctx, service, name)
-	require.NoError(t, err)
-	require.True(t, proto.Equal(run.Msg, got), "got %v, want %v", got, run.Msg)
-
-	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
-	require.NoError(t, err)
-	require.Len(t, claimed, 1)
-	updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"}, nil)
-	require.NoError(t, err)
-	require.True(t, updated)
-	got, err = getReviewRunForTest(ctx, service, name)
-	require.NoError(t, err)
+	started, claimed := start()
+	got := getRun()
 	require.Equal(t, name, got.Name)
+	require.Equal(t, v1pb.ReviewRun_RUNNING, got.State, "a claimed run reads as RUNNING")
+	require.Nil(t, got.Error)
+	require.Nil(t, got.EndTime)
+
+	got = complete(claimed, storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"})
 	require.Equal(t, v1pb.ReviewRun_FAILED, got.State)
-	require.Equal(t, int32(connect.CodeUnknown), got.GetError().GetCode())
+	require.Equal(t, int32(code.Code_UNKNOWN), got.GetError().GetCode(), "a failure stored with no code")
 	require.Equal(t, "boom", got.GetError().GetMessage())
-	require.True(t, proto.Equal(run.Msg.CreateTime, got.CreateTime))
+	require.True(t, proto.Equal(started.CreateTime, got.CreateTime))
+	require.NotNil(t, got.EndTime)
+
+	_, claimed = start()
+	got = complete(claimed, storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "rate limited", Code: code.Code_RESOURCE_EXHAUSTED})
+	require.Equal(t, v1pb.ReviewRun_FAILED, got.State)
+	require.Equal(t, int32(code.Code_RESOURCE_EXHAUSTED), got.GetError().GetCode())
+	require.Equal(t, "rate limited", got.GetError().GetMessage())
+
+	_, claimed = start()
+	got = complete(claimed, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
+	require.Equal(t, v1pb.ReviewRun_SUCCEEDED, got.State)
+	require.Nil(t, got.Error)
 	require.NotNil(t, got.EndTime)
 
 	for _, tc := range []struct {
@@ -154,88 +185,45 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	require.True(t, proto.Equal(runB.Msg.CreateTime, gotB.CreateTime))
 }
 
-// TestGetReviewRunReadsTheReviewersJobsAsOneRun pins how the rule job and the
-// AI job read as one run.
-func TestGetReviewRunReadsTheReviewersJobsAsOneRun(t *testing.T) {
+// TestRunReviewStartsOneRunWhateverTheAISetting pins that under SQL Review V2
+// the AI setting decides nothing at the start: the review is one run, and
+// whether the AI review takes part is the executor's to read.
+func TestRunReviewStartsOneRunWhateverTheAISetting(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
-	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
-	name := reviewRunName("project-a", issue.UID)
-	setAIReview := func(on bool) {
-		t.Helper()
-		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
-			Name:      storepb.SettingName_AI,
-			Workspace: "default",
-			Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: on},
-		})
-		require.NoError(t, err)
-	}
-	getRun := func() *v1pb.ReviewRun {
-		t.Helper()
-		run, err := getReviewRunForTest(ctx, service, name)
-		require.NoError(t, err)
-		return run
-	}
 
-	setAIReview(true)
-	_, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
-	require.NoError(t, err)
-	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
-	require.NoError(t, err)
-	require.Len(t, claimed, 2)
-	complete := func(reviewType string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload) {
-		t.Helper()
-		for _, c := range claimed {
-			if c.Type != reviewType {
-				continue
-			}
-			updated, err := stores.CompleteReviewRun(ctx, c, "replica-1", status, payload, nil)
+	for attempt, setting := range []*storepb.AISetting{
+		nil,
+		{Enabled: true},
+		{Enabled: true, SqlReviewEnabled: true},
+		{SqlReviewEnabled: true},
+	} {
+		if setting != nil {
+			_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+				Name:      storepb.SettingName_AI,
+				Workspace: "default",
+				Value:     setting,
+			})
 			require.NoError(t, err)
-			require.True(t, updated)
 		}
+		resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
+			Name: reviewRunName("project-a", issue.UID),
+		}))
+		require.NoError(t, err, "setting %v", setting)
+		require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+		require.Len(t, claimed, 1, "setting %v", setting)
+		require.Equal(t, int64(attempt), claimed[0].Attempt, "every start resets the same slot")
 	}
-
-	complete(store.ReviewRunTypeRule, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
-	run := getRun()
-	require.Equal(t, v1pb.ReviewRun_RUNNING, run.State, "the AI job is still running")
-	require.Nil(t, run.EndTime)
-
-	complete(store.ReviewRunTypeAI, storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "rate limited"})
-	run = getRun()
-	require.Equal(t, v1pb.ReviewRun_FAILED, run.State, "one failed job fails the run")
-	require.Equal(t, "rate limited", run.GetError().GetMessage())
-	require.NotNil(t, run.EndTime)
-
-	// Switching the AI review off changes nothing a caller reads. The next
-	// review restarts the AI job too, whose run then ends with no finding.
-	setAIReview(false)
-	run = getRun()
-	require.Equal(t, v1pb.ReviewRun_FAILED, run.State, "a failed AI job stays failed until the review runs again")
-	_, err = service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
-	require.NoError(t, err)
-	claimed, err = stores.ClaimAvailableReviewRuns(ctx, "replica-1")
-	require.NoError(t, err)
-	require.Len(t, claimed, 2, "the AI job restarts with the review")
-	complete(store.ReviewRunTypeRule, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
-	complete(store.ReviewRunTypeAI, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
-	run = getRun()
-	require.Equal(t, v1pb.ReviewRun_SUCCEEDED, run.State)
-	require.Nil(t, run.Error)
-
-	// The rule job restarts alone on new SQL, as the rollout creator does.
-	setAIReview(true)
-	_, err = stores.GetDB().ExecContext(ctx, `
-		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"1"')
-		WHERE project = $1 AND id = $2
-	`, issue.ProjectID, *issue.PlanUID)
-	require.NoError(t, err)
-	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
-	require.NoError(t, err)
-	run = getRun()
-	require.Equal(t, v1pb.ReviewRun_RUNNING, run.State, "the AI job of the earlier SQL is not part of this run")
-	require.False(t, run.Outdated)
+	var slots int
+	require.NoError(t, stores.GetDB().QueryRowContext(ctx, `
+		SELECT count(*) FROM review_run WHERE project = 'project-a' AND issue_id = $1
+	`, issue.UID).Scan(&slots))
+	require.Equal(t, 1, slots)
 }
 
 func getReviewRunForTest(ctx context.Context, service *IssueService, name string) (*v1pb.ReviewRun, error) {
@@ -279,49 +267,9 @@ func createReviewRunIssue(ctx context.Context, t *testing.T, stores *store.Store
 	return issue
 }
 
-// TestRunReviewStartsTheAIJobWhileItIsOnOrHasAJob pins that an AI review
-// that is off is skipped, not refused, and that an issue it reviewed before
-// still restarts its job.
-func TestRunReviewStartsTheAIJobWhileItIsOnOrHasAJob(t *testing.T) {
-	t.Parallel()
-	ctx := issueServiceTestContext()
-	stores := setupIssueServiceTestStore(ctx, t)
-	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
-	service := newIssueServiceForTest(t, stores)
-
-	startedTypes := func(setting *storepb.AISetting) []string {
-		t.Helper()
-		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
-			Name:      storepb.SettingName_AI,
-			Workspace: "default",
-			Value:     setting,
-		})
-		require.NoError(t, err)
-		resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-			Name: reviewRunName("project-a", issue.UID),
-		}))
-		require.NoError(t, err)
-		require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
-		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
-		require.NoError(t, err)
-		var types []string
-		for _, c := range claimed {
-			types = append(types, c.Type)
-		}
-		return types
-	}
-
-	require.Equal(t, []string{store.ReviewRunTypeRule}, startedTypes(&storepb.AISetting{Enabled: true}), "the AI review's switch is off")
-	require.ElementsMatch(t, []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}, startedTypes(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true}))
-	restartOrder, err := service.startableReviewTypes(ctx, "project-a", issue.UID)
-	require.NoError(t, err)
-	require.Equal(t, []string{store.ReviewRunTypeAI, store.ReviewRunTypeRule}, restartOrder, "the AI job restarts first")
-	require.ElementsMatch(t, []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}, startedTypes(&storepb.AISetting{SqlReviewEnabled: true}), "an issue that has an AI job restarts it with AI off, to end it with no finding")
-}
-
-// TestRunReviewWithoutSQLReviewV2 pins a server without SQL Review V2: it has
-// no rule job, so a review is the AI job alone, and is refused while the AI
-// review is off.
+// TestRunReviewWithoutSQLReviewV2 pins a server without SQL Review V2: no
+// standard rule review runs there, so a review is refused unless the AI review
+// is on.
 func TestRunReviewWithoutSQLReviewV2(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
@@ -334,54 +282,61 @@ func TestRunReviewWithoutSQLReviewV2(t *testing.T) {
 			Name: reviewRunName("project-a", issue.UID),
 		}))
 	}
+	setAISetting := func(setting *storepb.AISetting) {
+		t.Helper()
+		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: "default",
+			Value:     setting,
+		})
+		require.NoError(t, err)
+	}
 
 	_, err := runReview()
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 	require.ErrorContains(t, err, "AI is not enabled")
-	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+	setAISetting(&storepb.AISetting{Enabled: true})
+	_, err = runReview()
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	run, err := stores.GetReviewRun(ctx, "project-a", issue.UID)
 	require.NoError(t, err)
-	require.Empty(t, claimed, "a refused review creates no job")
+	require.Nil(t, run, "a refused review creates no run")
 
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_AI,
-		Workspace: "default",
-		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
-	})
-	require.NoError(t, err)
+	setAISetting(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true})
 	resp, err := runReview()
 	require.NoError(t, err, "the AI review does not depend on SQL Review V2")
 	require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
-	claimed, err = stores.ClaimAvailableReviewRuns(ctx, "replica")
+	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
-	require.Equal(t, store.ReviewRunTypeAI, claimed[0].Type)
 }
 
-func TestStartReviews(t *testing.T) {
+func TestStartReview(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	b, err := bus.New()
 	require.NoError(t, err)
-	claimedTypes := func() []string {
+	claimedAttempts := func() []int64 {
 		t.Helper()
 		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
 		require.NoError(t, err)
-		var types []string
+		var attempts []int64
 		for _, c := range claimed {
-			types = append(types, c.Type)
+			attempts = append(attempts, c.Attempt)
 		}
-		return types
+		return attempts
 	}
 	sqlReviewV2 := &config.Profile{SQLReviewV2: true}
-	bothReviews := []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}
 
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
-	startReviews(ctx, &config.Profile{}, stores, b, issue, bothReviews...)
-	require.Empty(t, claimedTypes(), "SQL Review V2 is off")
+	startReview(ctx, &config.Profile{}, stores, b, issue)
+	require.Empty(t, claimedAttempts(), "SQL Review V2 is off")
+	require.Empty(t, b.ReviewRunTickleChan)
 
-	startReviews(ctx, sqlReviewV2, stores, b, issue, bothReviews...)
-	require.Equal(t, []string{store.ReviewRunTypeRule}, claimedTypes(), "the AI review is switched off")
+	startReview(ctx, sqlReviewV2, stores, b, issue)
+	require.Equal(t, []int64{0}, claimedAttempts())
 	require.Len(t, b.ReviewRunTickleChan, 1)
 
 	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
@@ -390,21 +345,20 @@ func TestStartReviews(t *testing.T) {
 		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
 	})
 	require.NoError(t, err)
-	startReviews(ctx, sqlReviewV2, stores, b, issue, bothReviews...)
-	require.ElementsMatch(t, bothReviews, claimedTypes())
-
-	startReviews(ctx, sqlReviewV2, stores, b, issue, store.ReviewRunTypeRule)
-	require.Equal(t, []string{store.ReviewRunTypeRule}, claimedTypes(), "only the requested review starts")
+	startReview(ctx, sqlReviewV2, stores, b, issue)
+	require.Equal(t, []int64{1}, claimedAttempts(), "the review is one run with the AI review on too")
 
 	issue.Status = storepb.Issue_DONE
-	startReviews(ctx, sqlReviewV2, stores, b, issue, bothReviews...)
-	require.Empty(t, claimedTypes(), "a closed issue is skipped")
+	startReview(ctx, sqlReviewV2, stores, b, issue)
+	require.Empty(t, claimedAttempts(), "a closed issue is skipped")
+	startReview(ctx, sqlReviewV2, stores, b, nil)
+	require.Empty(t, claimedAttempts(), "a plan with no issue is skipped")
 }
 
-// TestAIReviewStartsWhenTheSQLIsSubmittedOrChanged pins the points the AI
-// review starts on its own: creating the issue and changing the plan's SQL.
-// Rerunning the plan checks leaves it alone.
-func TestAIReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
+// TestReviewStartsWhenTheSQLIsSubmittedOrChanged pins the points the review
+// starts on its own: creating the issue and changing the plan's SQL. Rerunning
+// the plan checks leaves it alone.
+func TestReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -456,11 +410,11 @@ func TestAIReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	iamManager, err := iam.NewManager(stores, nil, false)
 	require.NoError(t, err)
 	planService := NewPlanService(stores, issueService.bus, iamManager, webhook.NewManager(stores, nil), nil, &config.Profile{SQLReviewV2: true})
-	getRun := func(issueUID int64, reviewType string) *store.ReviewRunMessage {
+	getRun := func(issueUID int64) *store.ReviewRunMessage {
 		t.Helper()
-		run, err := stores.GetReviewRun(ctx, projectID, issueUID, reviewType)
+		run, err := stores.GetReviewRun(ctx, projectID, issueUID)
 		require.NoError(t, err)
-		require.NotNil(t, run, "%s review run", reviewType)
+		require.NotNil(t, run)
 		return run
 	}
 	claimAll := func() {
@@ -479,9 +433,9 @@ func TestAIReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	require.NoError(t, err)
 	_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
 	require.NoError(t, err)
-	aiRun := getRun(issueUID, store.ReviewRunTypeAI)
-	require.Equal(t, storepb.ReviewRun_AVAILABLE, aiRun.Status)
-	require.Equal(t, int64(0), aiRun.Attempt)
+	run := getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
+	require.Equal(t, int64(0), run.Attempt)
 	claimAll()
 
 	_, err = planService.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
@@ -502,21 +456,19 @@ func TestAIReviewStartsWhenTheSQLIsSubmittedOrChanged(t *testing.T) {
 	require.NoError(t, err)
 	updatedPlan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: &plan.UID})
 	require.NoError(t, err)
-	aiRun = getRun(issueUID, store.ReviewRunTypeAI)
-	require.Equal(t, storepb.ReviewRun_AVAILABLE, aiRun.Status, "changing the SQL restarts the AI review")
-	require.Equal(t, int64(1), aiRun.Attempt)
-	require.Equal(t, updatedPlan.Config.GetApprovalInputVersion(), aiRun.Payload.GetApprovalInputVersion(), "the run reviews the new SQL")
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status, "changing the SQL restarts the review")
+	require.Equal(t, int64(1), run.Attempt)
+	require.Equal(t, updatedPlan.Config.GetApprovalInputVersion(), run.Payload.GetApprovalInputVersion(), "the run reviews the new SQL")
 	claimAll()
 
-	ruleAttempt := getRun(issueUID, store.ReviewRunTypeRule).Attempt
 	_, err = planService.RunPlanChecks(ctx, connect.NewRequest(&v1pb.RunPlanChecksRequest{
 		Name: common.FormatPlan(projectID, plan.UID),
 	}))
 	require.NoError(t, err)
-	require.Equal(t, ruleAttempt+1, getRun(issueUID, store.ReviewRunTypeRule).Attempt, "rerunning the checks reruns the rule review")
-	aiRun = getRun(issueUID, store.ReviewRunTypeAI)
-	require.Equal(t, storepb.ReviewRun_RUNNING, aiRun.Status, "rerunning the checks leaves the AI review alone")
-	require.Equal(t, int64(1), aiRun.Attempt)
+	run = getRun(issueUID)
+	require.Equal(t, storepb.ReviewRun_RUNNING, run.Status, "rerunning the checks leaves the review alone")
+	require.Equal(t, int64(1), run.Attempt)
 }
 
 func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
@@ -525,7 +477,7 @@ func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
-	_, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	_, err := stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	getRun := func() *v1pb.ReviewRun {
 		t.Helper()
@@ -544,7 +496,7 @@ func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, getRun().Outdated, "the plan's SQL changed after the run started")
 
-	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	require.False(t, getRun().Outdated)
 }
@@ -589,10 +541,10 @@ func TestResolvingAThreadRequestsARolloutCheck(t *testing.T) {
 	require.Equal(t, bus.PlanRef{ProjectID: "project-a", PlanID: *issue.PlanUID}, <-service.bus.RolloutCreationChan)
 }
 
-// TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow pins the order that
-// keeps a new issue's rollout held: the workflow's approval check can create
-// the rollout, so the rule review slot must exist by the time it is sent.
-func TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow(t *testing.T) {
+// TestCreateIssueStartsTheReviewBeforeTheWorkflow pins the order that keeps a
+// new issue's rollout held: the workflow's approval check can create the
+// rollout, so the review slot must exist by the time it is sent.
+func TestCreateIssueStartsTheReviewBeforeTheWorkflow(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -623,7 +575,7 @@ func TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow(t *testing.T) {
 		for time.Now().Before(deadline) {
 			issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, PlanUID: &plan.UID})
 			if err == nil && issue != nil {
-				run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+				run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 				if err == nil && run != nil {
 					slotBeforeApprovalCheck <- true
 					return
@@ -642,13 +594,13 @@ func TestCreateIssueStartsTheRuleReviewBeforeTheWorkflow(t *testing.T) {
 		},
 	}))
 	require.NoError(t, err)
-	require.True(t, <-slotBeforeApprovalCheck, "the rule review slot exists before the approval check is sent")
+	require.True(t, <-slotBeforeApprovalCheck, "the review slot exists before the approval check is sent")
 }
 
-// TestUpdatePlanStartsTheRuleReviewBeforeTheChecks pins the order that keeps
-// an edited plan's rollout held: the plan checks and the approval check can
-// each lead to the rollout, so the rule review slot must be reset first.
-func TestUpdatePlanStartsTheRuleReviewBeforeTheChecks(t *testing.T) {
+// TestUpdatePlanStartsTheReviewBeforeTheChecks pins the order that keeps an
+// edited plan's rollout held: the plan checks and the approval check can each
+// lead to the rollout, so the review slot must be reset first.
+func TestUpdatePlanStartsTheReviewBeforeTheChecks(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -673,7 +625,7 @@ func TestUpdatePlanStartsTheRuleReviewBeforeTheChecks(t *testing.T) {
 	sheets, err := stores.CreateSheets(ctx, projectID, &store.SheetMessage{Statement: "ALTER TABLE t ADD COLUMN c INT;"})
 	require.NoError(t, err)
 	issue := createReviewRunIssue(ctx, t, stores, projectID)
-	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
 	require.NoError(t, err)
@@ -698,7 +650,7 @@ func TestUpdatePlanStartsTheRuleReviewBeforeTheChecks(t *testing.T) {
 	go func() {
 		reset := false
 		for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
-			run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+			run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 			if err == nil && run != nil && run.Status == storepb.ReviewRun_AVAILABLE {
 				reset = true
 				break
@@ -737,5 +689,5 @@ func TestUpdatePlanStartsTheRuleReviewBeforeTheChecks(t *testing.T) {
 	close(updateDone)
 	require.NoError(t, err)
 	require.Positive(t, <-signals, "the update signals the plan checks or the approval check")
-	require.True(t, <-slotResetBeforeSignal, "the rule review slot is reset before the first signal")
+	require.True(t, <-slotResetBeforeSignal, "the review slot is reset before the first signal")
 }

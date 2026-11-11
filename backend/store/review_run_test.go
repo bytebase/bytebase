@@ -22,13 +22,13 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	ctx, db, s := fixture.ctx, fixture.db, fixture.store
 
 	// The first create initializes the slot at attempt 0, AVAILABLE.
-	run, err := s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err := s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(0), run.Attempt)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 
 	// A missing issue is a clean NotFound, not an FK failure.
-	_, err = s.CreateReviewRun(ctx, "default", 999, store.ReviewRunTypeRule)
+	_, err = s.CreateReviewRun(ctx, "default", 999)
 	require.Equal(t, common.NotFound, common.ErrorCode(err))
 
 	// Claim moves the slot to RUNNING for this replica and returns the fence.
@@ -37,7 +37,6 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.Len(t, claimed, 1)
 	require.Equal(t, "default", claimed[0].ProjectID)
 	require.Equal(t, int64(201), claimed[0].IssueUID)
-	require.Equal(t, store.ReviewRunTypeRule, claimed[0].Type)
 	require.Equal(t, int64(0), claimed[0].Attempt)
 
 	// Nothing is left to claim.
@@ -47,7 +46,7 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 
 	// Creating a new run supersedes the RUNNING execution: the attempt bumps
 	// and the slot returns to AVAILABLE.
-	run, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err = s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), run.Attempt)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
@@ -73,7 +72,7 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	var status, payloadError string
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT status, payload->>'error' FROM review_run
-		WHERE project = 'default' AND issue_id = 201 AND type = 'RULE'
+		WHERE project = 'default' AND issue_id = 201 AND type = 'REVIEW'
 	`).Scan(&status, &payloadError))
 	require.Equal(t, "FAILED", status)
 	require.Equal(t, "boom", payloadError)
@@ -85,7 +84,7 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 
 	// The reaper fails a RUNNING run whose replica has no recent heartbeat
 	// and writes the abandonment error; the reset clears it again.
-	run, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err = s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(2), run.Attempt)
 	claimed, err = s.ClaimAvailableReviewRuns(ctx, "dead-replica")
@@ -96,13 +95,13 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.Equal(t, int64(1), rowsAffected)
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT status, payload->>'error' FROM review_run
-		WHERE project = 'default' AND issue_id = 201 AND type = 'RULE'
+		WHERE project = 'default' AND issue_id = 201 AND type = 'REVIEW'
 	`).Scan(&status, &payloadError))
 	require.Equal(t, "FAILED", status)
 	require.Contains(t, payloadError, "abandoned")
 
 	// A run whose replica beats survives the reaper.
-	run, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err = s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), run.Attempt)
 	claimed, err = s.ClaimAvailableReviewRuns(ctx, "live-replica")
@@ -129,12 +128,12 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	`)
 	ctx, db, s := fixture.ctx, fixture.db, fixture.store
 
-	got, err := s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	got, err := s.GetReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Nil(t, got, "a slot that was never created")
 
 	// default: FAILED at attempt 0. other: AVAILABLE at attempt 1.
-	_, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	_, err = s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
 	require.NoError(t, err)
@@ -143,7 +142,7 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, updated)
 	for range 2 {
-		_, err = s.CreateReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+		_, err = s.CreateReviewRun(ctx, "other", 201)
 		require.NoError(t, err)
 	}
 
@@ -157,26 +156,25 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 		var row slotRow
 		require.NoError(t, db.QueryRowContext(ctx, `
 			SELECT attempt, status, created_at, updated_at FROM review_run
-			WHERE project = $1 AND issue_id = 201 AND type = 'RULE'
+			WHERE project = $1 AND issue_id = 201 AND type = 'REVIEW'
 		`, projectID).Scan(&row.Attempt, &row.Status, &row.CreatedAt, &row.UpdatedAt))
 		return row
 	}
 	rawDefault, rawOther := readRaw("default"), readRaw("other")
 	require.NotEqual(t, rawDefault.Status, rawOther.Status, "the two slots must differ to tell them apart")
 
-	got, err = s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	got, err = s.GetReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, "default", got.ProjectID)
 	require.Equal(t, int64(201), got.IssueUID)
-	require.Equal(t, store.ReviewRunTypeRule, got.Type)
 	require.Equal(t, int64(0), got.Attempt)
 	require.Equal(t, storepb.ReviewRun_FAILED, got.Status)
 	require.Equal(t, "boom", got.Payload.GetError())
 	require.True(t, got.CreatedAt.Equal(rawDefault.CreatedAt))
 	require.True(t, got.UpdatedAt.Equal(rawDefault.UpdatedAt))
 
-	got, err = s.GetReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+	got, err = s.GetReviewRun(ctx, "other", 201)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, "other", got.ProjectID)
@@ -186,13 +184,68 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	require.True(t, got.CreatedAt.Equal(rawOther.CreatedAt))
 	require.True(t, got.UpdatedAt.Equal(rawOther.UpdatedAt))
 
-	// The reviewer type is part of the key, and so is the issue.
-	got, err = s.GetReviewRun(ctx, "default", 201, store.ReviewRunTypeAI)
+	got, err = s.GetReviewRun(ctx, "default", 999)
 	require.NoError(t, err)
-	require.Nil(t, got)
-	got, err = s.GetReviewRun(ctx, "default", 999, store.ReviewRunTypeRule)
+	require.Nil(t, got, "the issue is part of the key")
+}
+
+// TestReviewRunIgnoresRowsOfAnotherType pins that an issue's review run is the
+// one row of the review's own type: a row a single reviewer's job left behind
+// is never read, claimed, reset, or completed.
+func TestReviewRunIgnoresRowsOfAnotherType(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (201, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE');
+		INSERT INTO review_run (project, issue_id, type, attempt, status) VALUES
+			('default', 201, 'RULE', 4, 'AVAILABLE'),
+			('default', 201, 'AI', 2, 'AVAILABLE');
+	`)
+	ctx, db, s := fixture.ctx, fixture.db, fixture.store
+	leftovers := func() []string {
+		t.Helper()
+		rows, err := db.QueryContext(ctx, `
+			SELECT type || ' ' || attempt || ' ' || status || ' ' || COALESCE(replica_id, '-') FROM review_run
+			WHERE project = 'default' AND issue_id = 201 AND type <> 'REVIEW'
+			ORDER BY type
+		`)
+		require.NoError(t, err)
+		defer rows.Close()
+		var out []string
+		for rows.Next() {
+			var row string
+			require.NoError(t, rows.Scan(&row))
+			out = append(out, row)
+		}
+		require.NoError(t, rows.Err())
+		return out
+	}
+	before := leftovers()
+	require.Equal(t, []string{"AI 2 AVAILABLE -", "RULE 4 AVAILABLE -"}, before)
+
+	got, err := s.GetReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
-	require.Nil(t, got)
+	require.Nil(t, got, "a row of another type is no review run")
+	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Empty(t, claimed, "a row of another type is never claimed")
+
+	run, err := s.CreateReviewRun(ctx, "default", 201)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), run.Attempt, "the review run is a slot of its own")
+	claimed, err = s.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	require.Equal(t, int64(0), claimed[0].Attempt)
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, nil)
+	require.NoError(t, err)
+	require.True(t, updated)
+
+	got, err = s.GetReviewRun(ctx, "default", 201)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, storepb.ReviewRun_DONE, got.Status)
+	require.Equal(t, before, leftovers())
 }
 
 func TestReviewRunKeepsItsApprovalInputVersion(t *testing.T) {
@@ -211,16 +264,16 @@ func TestReviewRunKeepsItsApprovalInputVersion(t *testing.T) {
 	ctx, db, s := fixture.ctx, fixture.db, fixture.store
 	slot := func(projectID string) *store.ReviewRunMessage {
 		t.Helper()
-		run, err := s.GetReviewRun(ctx, projectID, 201, store.ReviewRunTypeRule)
+		run, err := s.GetReviewRun(ctx, projectID, 201)
 		require.NoError(t, err)
 		require.NotNil(t, run)
 		return run
 	}
 
-	run, err := s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err := s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(2), run.Payload.GetApprovalInputVersion())
-	run, err = s.CreateReviewRun(ctx, "other", 201, store.ReviewRunTypeRule)
+	run, err = s.CreateReviewRun(ctx, "other", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(7), run.Payload.GetApprovalInputVersion())
 	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
@@ -245,7 +298,7 @@ func TestReviewRunKeepsItsApprovalInputVersion(t *testing.T) {
 	require.Equal(t, storepb.ReviewRun_DONE, slot("default").Status)
 	require.Equal(t, int64(2), slot("default").Payload.GetApprovalInputVersion())
 
-	run, err = s.CreateReviewRun(ctx, "default", 201, store.ReviewRunTypeRule)
+	run, err = s.CreateReviewRun(ctx, "default", 201)
 	require.NoError(t, err)
 	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
 	require.Equal(t, int64(3), slot("default").Payload.GetApprovalInputVersion())
