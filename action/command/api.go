@@ -73,10 +73,38 @@ type client struct {
 
 	// Client options
 	options clientOptions
+
+	auth *unifiedInterceptor
 }
 
-// newClient creates a client using either access-token or service-account authentication.
-func newClient(url, accessToken, serviceAccount, serviceAccountSecret string, opts clientOptions) (*client, error) {
+// credential is the one sign-in method the client uses.
+type credential struct {
+	accessToken          string
+	serviceAccount       string
+	serviceAccountSecret string
+	workloadIdentity     string
+	// idToken supplies the CI job's token for workloadIdentity.
+	idToken idTokenSource
+}
+
+// SignInError is a sign-in that failed or a token the server rejected. Its
+// message is the one line a job shows for the failure.
+type SignInError struct {
+	// who reads after "sign in", such as "as ci@workload.bytebase.com".
+	who string
+	err error
+}
+
+func (e *SignInError) Error() string {
+	return fmt.Sprintf("sign in %s: %v", e.who, e.err)
+}
+
+func (e *SignInError) Unwrap() error {
+	return e.err
+}
+
+// newClient creates a client that signs in with the given credential.
+func newClient(url string, cred credential, opts clientOptions) (*client, error) {
 	if opts.pageSize <= 0 {
 		opts.pageSize = 100
 	}
@@ -99,25 +127,34 @@ func newClient(url, accessToken, serviceAccount, serviceAccountSecret string, op
 	}
 
 	var tokenRefresher func(ctx context.Context) (string, error)
-	if accessToken != "" {
+	var who string
+	switch {
+	case cred.accessToken != "":
 		// Use the provided access token directly; no refresh needed.
 		tokenRefresher = func(_ context.Context) (string, error) {
-			return accessToken, nil
+			return cred.accessToken, nil
 		}
-	} else {
-		tokenRefresher = getTokenRefresher(httpClient, serviceAccount, serviceAccountSecret, url)
+		who = "with the access token"
+	case cred.workloadIdentity != "":
+		tokenRefresher = getWorkloadIdentityRefresher(httpClient, cred.workloadIdentity, cred.idToken, url)
+		who = "as " + cred.workloadIdentity
+	default:
+		tokenRefresher = getTokenRefresher(httpClient, cred.serviceAccount, cred.serviceAccountSecret, url)
+		who = "as " + cred.serviceAccount
 	}
 
 	// Create unified interceptor.
 	unifiedInt := newUnifiedInterceptor(opts.retryConfig, tokenRefresher)
+	unifiedInt.who = who
 	interceptors := connect.WithInterceptors(unifiedInt)
 
 	return &client{
 		httpClient:           httpClient,
 		url:                  url,
-		serviceAccount:       serviceAccount,
-		serviceAccountSecret: serviceAccountSecret,
+		serviceAccount:       cred.serviceAccount,
+		serviceAccountSecret: cred.serviceAccountSecret,
 		options:              opts,
+		auth:                 unifiedInt,
 		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
 		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
@@ -167,11 +204,43 @@ func getTokenRefresher(httpClient connect.HTTPClient, email, password, url strin
 
 		resp, err := authClient.Login(ctx, req)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to login")
+			return "", err
 		}
 
 		return resp.Msg.Token, nil
 	}
+}
+
+func getWorkloadIdentityRefresher(httpClient connect.HTTPClient, email string, idToken idTokenSource, url string) func(ctx context.Context) (string, error) {
+	authClient := v1connect.NewAuthServiceClient(httpClient, url)
+	return func(ctx context.Context) (string, error) {
+		token, err := idToken(ctx)
+		if err != nil {
+			return "", err
+		}
+		resp, err := authClient.ExchangeToken(ctx, connect.NewRequest(&v1pb.ExchangeTokenRequest{
+			Token: token,
+			Email: email,
+		}))
+		if err != nil {
+			// The text the server returns when the token's aud is not one the
+			// identity allows.
+			if strings.Contains(err.Error(), "audience mismatch") {
+				return "", errors.Wrap(err, "the ID token's audience is not one the identity allows; set --workload-identity-audience on GitHub, or the aud of the id_tokens entry on GitLab")
+			}
+			return "", err
+		}
+		return resp.Msg.AccessToken, nil
+	}
+}
+
+// signIn gets the token before the first request, so that a refused sign-in
+// fails the run here and every request carries the token.
+func (c *client) signIn(ctx context.Context) error {
+	if err := c.auth.reauthenticateOnce(ctx); err != nil {
+		return &SignInError{who: c.auth.who, err: err}
+	}
+	return nil
 }
 
 func (c *client) checkRelease(ctx context.Context, r *v1pb.CheckReleaseRequest) (*v1pb.CheckReleaseResponse, error) {
@@ -347,6 +416,8 @@ type unifiedInterceptor struct {
 	maxInterval     time.Duration
 	tokenRefresher  func(ctx context.Context) (string, error)
 	refreshGroup    singleflight.Group
+	// who names the credential in a SignInError.
+	who string
 }
 
 func newUnifiedInterceptor(config *retryConfig, tokenRefresher func(ctx context.Context) (string, error)) *unifiedInterceptor {
@@ -418,12 +489,12 @@ func (ui *unifiedInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			// refresh at most once per request.
 			if code == connect.CodeUnauthenticated && ui.tokenRefresher != nil {
 				if reauthenticated {
-					return nil, err
+					return nil, &SignInError{who: ui.who, err: err}
 				}
 				reauthenticated = true
 				refreshErr := ui.reauthenticateOnce(ctx)
 				if refreshErr != nil {
-					return nil, errors.Wrap(refreshErr, "failed to login")
+					return nil, &SignInError{who: ui.who, err: refreshErr}
 				}
 				// Don't count auth retry against attempt limit
 				attempt--
