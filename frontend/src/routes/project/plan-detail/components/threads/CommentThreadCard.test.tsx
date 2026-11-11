@@ -709,14 +709,14 @@ describe("title bar", () => {
     const states = container.querySelectorAll("[data-testid='thread-state']");
     expect(states).toHaveLength(1);
     expect(barNode()?.contains(states[0])).toBe(true);
-    // State labels follow the title, before the spacer, in every place.
+    // State labels follow the title in every place: the title never grows past its text.
     const lead = barNode()?.querySelector("[data-testid='thread-bar-lead']");
     const title = lead?.firstElementChild;
-    expect(title?.className).not.toContain("flex-1");
+    expect(title?.className.split(" ")).toContain("max-w-max");
     // Title, then the markers (this P1 finding's badge), then the state.
     expect(title?.nextElementSibling?.getAttribute("data-testid")).toBe("review-priority");
     expect(title?.nextElementSibling?.nextElementSibling).toBe(states[0]);
-    expect(lead?.nextElementSibling?.className).toContain("flex-1");
+    expect(lead?.nextElementSibling).toBeNull();
 
     render(<CommentThreadCard bar={bar(false)} issue={issue} project={project} thread={findingThread(false)} />);
     expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
@@ -951,8 +951,6 @@ describe("Activity bar", () => {
     expect(folded()).toBe(true);
     click(barNode().querySelector("[data-testid='thread-bar-lines']"));
     expect(folded()).toBe(true);
-    click(barNode().querySelector("[data-testid='thread-bar-gap']"));
-    expect(folded()).toBe(true);
     click(barNode());
     expect(folded()).toBe(true);
     click(buttonByText("plan.review.thread.anchor.view-in-statement"));
@@ -960,12 +958,14 @@ describe("Activity bar", () => {
     expect(folded()).toBe(true);
   });
 
-  test("puts the state labels after the title and the lines and link at the right end", () => {
+  test("puts the state labels after the title and the lines and link together at the right end", () => {
     render(<CommentThreadCard bar={activityBar({ anchorState: "CURRENT", onViewInStatement: () => {} })} issue={issue} project={project} thread={thread(true)} />);
     const state = barNode().querySelector("[data-testid='thread-state']") as HTMLElement;
-    const spacer = state.closest("[data-testid='thread-bar-lead']")?.nextElementSibling as HTMLElement;
-    expect(spacer.className).toContain("flex-1");
-    expect(spacer.nextElementSibling?.getAttribute("data-testid")).toBe("thread-bar-lines");
+    const end = state.closest("[data-testid='thread-bar-lead']")?.nextElementSibling as HTMLElement;
+    expect(end.getAttribute("data-testid")).toBe("thread-bar-end");
+    expect(end.className.split(" ")).toContain("ml-auto");
+    expect(end.firstElementChild?.getAttribute("data-testid")).toBe("thread-bar-lines");
+    expect(end.textContent).toContain("plan.review.thread.anchor.view-in-statement");
   });
 
   test("a resolved thread whose reader can neither reply nor reopen has no footer", () => {

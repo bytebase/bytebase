@@ -1611,11 +1611,21 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
               if (sameRow && !apart) problems.push("parts overlap");
             }
           }
+          const barBox = await bar.boundingBox();
+          const linesBox = await bar.getByTestId("thread-bar-lines").boundingBox();
+          const linkBox = await bar.getByRole("button", { name: "View in Statement" }).boundingBox();
+          if (barBox && linesBox && linkBox) {
+            if (Math.abs(linesBox.y - linkBox.y) > 4) problems.push("lines and link on different rows");
+            if (barBox.x + barBox.width - (linkBox.x + linkBox.width) > 12) problems.push("link not at the right end");
+          }
           return problems;
         },
         { timeout: 5_000 },
       )
       .toEqual([]);
+    // At desktop width the same bar is one row.
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await expect.poll(async () => (await bar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
   });
 });
 

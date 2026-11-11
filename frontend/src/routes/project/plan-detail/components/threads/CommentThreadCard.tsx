@@ -485,40 +485,50 @@ function ThreadBar({
           <ChevronDown className="size-3.5" />
         )}
       </Button>
+      {/* The title shrinks to 64px before the bar wraps, and never grows past
+          its text, so the labels stay beside it. */}
       <span
-        className={cn(
-          "flex min-w-0 items-center gap-x-2",
-          place === "activity" && "cursor-pointer"
-        )}
+        className={cn("contents", place === "activity" && "cursor-pointer")}
         data-bar-lead
         data-testid="thread-bar-lead"
       >
         {typeof title === "string" ? (
-          <span className="min-w-0 truncate" title={title}>
+          <span
+            className="min-w-16 max-w-max flex-1 basis-0 truncate"
+            title={title}
+          >
             {title}
           </span>
         ) : (
-          <span className="flex min-w-0">{title}</span>
+          <span className="flex min-w-16 max-w-max flex-1 basis-0">
+            {title}
+          </span>
         )}
         {markers}
         {labels}
       </span>
-      <span className="flex-1" data-testid="thread-bar-gap" />
-      {lines && (
-        <span className="shrink-0" data-testid="thread-bar-lines">
-          {lineRangeLabel(t, lines)}
-        </span>
-      )}
-      {onViewInStatement && (
-        <Button
-          appearance="link"
-          className="h-auto shrink-0 p-0"
-          onClick={onViewInStatement}
-          size="xs"
+      {(lines || onViewInStatement) && (
+        <span
+          className="ml-auto flex shrink-0 items-center gap-x-2"
+          data-testid="thread-bar-end"
         >
-          {t("plan.review.thread.anchor.view-in-statement")}
-          <ExternalLink className="size-3" />
-        </Button>
+          {lines && (
+            <span data-testid="thread-bar-lines">
+              {lineRangeLabel(t, lines)}
+            </span>
+          )}
+          {onViewInStatement && (
+            <Button
+              appearance="link"
+              className="h-auto p-0"
+              onClick={onViewInStatement}
+              size="xs"
+            >
+              {t("plan.review.thread.anchor.view-in-statement")}
+              <ExternalLink className="size-3" />
+            </Button>
+          )}
+        </span>
       )}
     </div>
   );
