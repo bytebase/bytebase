@@ -635,6 +635,72 @@ describe("AuditLogTable", () => {
     unmount();
   });
 
+  test("shows the external subject under a workload identity's actor", async () => {
+    vi.useFakeTimers();
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [
+        create(AuditLogSchema, {
+          name: "auditLogs/1",
+          method: "/bytebase.v1.ProjectService/UpdateProject",
+          actor: "workloadIdentities/ci@workload.bytebase.com",
+          federatedIdentity: {
+            issuer: "https://token.actions.githubusercontent.com",
+            subject: "repo:my-org/app:ref:refs/heads/main",
+          },
+        }),
+        create(AuditLogSchema, {
+          name: "auditLogs/2",
+          method: "/bytebase.v1.ProjectService/UpdateProject",
+          actor: "users/human@example.com",
+        }),
+      ],
+      nextPageToken: "",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const rows = [...container.querySelectorAll("tbody tr")];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain("ci@workload.bytebase.com");
+    expect(rows[0].textContent).toContain(
+      "repo:my-org/app:ref:refs/heads/main"
+    );
+    expect(rows[1].textContent).not.toContain("repo:");
+
+    // The issuer repeats on every row of one identity, so it lives in the
+    // tooltip rather than the cell.
+    expect(rows[0].textContent).not.toContain("token.actions");
+    const subject = [...rows[0].querySelectorAll("span")].find(
+      (el) => el.textContent === "repo:my-org/app:ref:refs/heads/main"
+    );
+    await act(async () => {
+      subject?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(100);
+    });
+    const overlay = document.getElementById("bb-react-layer-overlay");
+    const pairs: Record<string, string> = {};
+    for (const row of overlay?.querySelectorAll("div") ?? []) {
+      const spans = row.querySelectorAll(":scope > span");
+      if (spans.length === 2) {
+        pairs[spans[0].textContent ?? ""] = spans[1].textContent ?? "";
+      }
+    }
+    expect(pairs).toEqual({
+      "audit-log.federated-identity.subject":
+        "repo:my-org/app:ref:refs/heads/main",
+      "audit-log.federated-identity.issuer":
+        "https://token.actions.githubusercontent.com",
+    });
+
+    unmount();
+  });
+
   test("a delegation whose every field is empty still badges the row", async () => {
     // Presence of the message is the marker: a pre-grant legacy session — a
     // plain web-session token at /mcp — stores no scope, resource, or client

@@ -410,6 +410,11 @@
     },
     "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
+    "federated-identity": {
+      "issuer": "Nhà phát hành",
+      "origin": "Đăng nhập từ một khối lượng công việc bên ngoài",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "ID máy khách",

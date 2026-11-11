@@ -38,6 +38,7 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
    * - create_time: support ">=" and "<=" operator.
    * - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
    * - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+   * - federated_subject: the external subject behind a workload identity, taken from an entry's federated_identity.subject. Support "==" operator.
    *
    * For example:
    *  - filter = "method == '/bytebase.v1.SQLService/Query'"
@@ -46,6 +47,7 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
    *  - filter = "mcp == true"
    *  - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
+   *  - filter = "federated_subject == 'repo:my-org/app:ref:refs/heads/main'"
    *
    * @generated from field: string filter = 1;
    */
@@ -309,6 +311,14 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
    * @generated from field: bytebase.v1.MCPDelegation mcp_delegation = 13;
    */
   mcpDelegation?: MCPDelegation | undefined;
+
+  /**
+   * The external workload behind a workload identity. Set on a successful
+   * token exchange and on every call made with the token it issued.
+   *
+   * @generated from field: bytebase.v1.FederatedIdentity federated_identity = 14;
+   */
+  federatedIdentity?: FederatedIdentity | undefined;
 };
 
 /**
@@ -489,6 +499,33 @@ export declare type MCPDelegation = Message<"bytebase.v1.MCPDelegation"> & {
  * Use `create(MCPDelegationSchema)` to create a new message.
  */
 export declare const MCPDelegationSchema: GenMessage<MCPDelegation>;
+
+/**
+ * The verified OIDC identity a workload identity token was exchanged for.
+ *
+ * @generated from message bytebase.v1.FederatedIdentity
+ */
+export declare type FederatedIdentity = Message<"bytebase.v1.FederatedIdentity"> & {
+  /**
+   * The token's "iss" claim, e.g. "https://token.actions.githubusercontent.com".
+   *
+   * @generated from field: string issuer = 1;
+   */
+  issuer: string;
+
+  /**
+   * The token's "sub" claim, e.g. "repo:my-org/app:ref:refs/heads/main".
+   *
+   * @generated from field: string subject = 2;
+   */
+  subject: string;
+};
+
+/**
+ * Describes the message bytebase.v1.FederatedIdentity.
+ * Use `create(FederatedIdentitySchema)` to create a new message.
+ */
+export declare const FederatedIdentitySchema: GenMessage<FederatedIdentity>;
 
 /**
  * AuditLogService manages audit logs for system activities and API calls.

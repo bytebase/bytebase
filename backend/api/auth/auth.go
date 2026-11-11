@@ -107,7 +107,7 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 		}
 		ctx = context.WithValue(ctx, common.AuthContextKey, authContext)
 
-		user, workspaceID, err := in.getUserConnect(ctx, accessTokenStr)
+		user, claims, err := in.getUserConnect(ctx, accessTokenStr)
 		if err != nil {
 			if IsAuthenticationSkipped(req.Spec().Procedure, authContext) {
 				return next(ctx, req)
@@ -115,8 +115,9 @@ func (in *APIAuthInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFun
 			return nil, err
 		}
 
+		authContext.FederatedIdentity = claims.federatedIdentity()
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
-		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, claims.WorkspaceID)
 		return next(ctx, req)
 	}
 }
@@ -151,6 +152,7 @@ func (in *APIAuthInterceptor) WrapStreamingHandler(next connect.StreamingHandler
 		}
 
 		in.profile.LastActiveTS.Store(time.Now().Unix())
+		authContext.FederatedIdentity = claims.federatedIdentity()
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, claims.WorkspaceID)
 
@@ -348,16 +350,16 @@ func (in *APIAuthInterceptor) authenticateConnect(ctx context.Context, accessTok
 }
 
 // getUserConnect is a ConnectRPC-specific version that returns ConnectRPC errors.
-// Returns the user and workspace ID from the token claims.
-func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, string, error) {
+// Returns the user and the token claims.
+func (in *APIAuthInterceptor) getUserConnect(ctx context.Context, accessTokenStr string) (*store.UserMessage, *claimsMessage, error) {
 	user, claims, err := in.authenticateConnect(ctx, accessTokenStr)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	// Only update for authorized request.
 	in.profile.LastActiveTS.Store(time.Now().Unix())
-	return user, claims.WorkspaceID, nil
+	return user, claims, nil
 }
 
 // GetUserEmailFromMFATempToken returns the user email from the MFA temp token.
