@@ -209,6 +209,7 @@ function SqlExcerpt({
     lines: string[];
   }>();
   useEffect(() => {
+    if (dimmed) return;
     let cancelled = false;
     void colorizedLinesOf(sheetName, statement, range.endLine).then((html) => {
       if (!cancelled) setColorized({ sheetName, lines: html });
@@ -216,17 +217,14 @@ function SqlExcerpt({
     return () => {
       cancelled = true;
     };
-  }, [range.endLine, sheetName, statement]);
+  }, [dimmed, range.endLine, sheetName, statement]);
+  // An outdated or unavailable excerpt is plain grey text: syntax colors
+  // fall under the contrast minimum once dimmed.
   const htmlLines =
-    colorized?.sheetName === sheetName ? colorized.lines : undefined;
+    !dimmed && colorized?.sheetName === sheetName ? colorized.lines : undefined;
   if (lines.length === 0) return null;
   return (
-    <pre
-      className={cn(
-        "m-0 overflow-x-auto bg-background font-mono text-sm leading-6",
-        dimmed && "opacity-60"
-      )}
-    >
+    <pre className="m-0 overflow-x-auto bg-background font-mono text-sm leading-6">
       <div className="w-max min-w-full">
         {lines.map((line, index) => {
           const lineNumber = startLine + index;
@@ -234,15 +232,21 @@ function SqlExcerpt({
             lineNumber >= range.startLine && lineNumber <= range.endLine;
           const html = htmlLines?.[lineNumber - 1];
           return (
+            // The inset lines the numbers up with the comment's text column;
+            // a bar 8px left of the numbers marks the commented lines.
             <div
-              className={cn(
-                "flex items-start gap-x-3 px-3",
-                selected && "bg-accent/12"
-              )}
+              className="relative flex items-start gap-x-3 pr-3 pl-9 sm:pl-10"
               data-line-number={lineNumber}
               data-selected={selected || undefined}
               key={lineNumber}
             >
+              {selected && (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-6.25 w-0.75 bg-control sm:left-7.25"
+                  data-testid="excerpt-range-marker"
+                />
+              )}
               <span
                 className="shrink-0 select-none text-right text-control-placeholder"
                 style={{
@@ -252,7 +256,12 @@ function SqlExcerpt({
                 {lineNumber}
               </span>
               {html === undefined ? (
-                <code className="min-w-0 flex-1 whitespace-pre text-main">
+                <code
+                  className={cn(
+                    "min-w-0 flex-1 whitespace-pre",
+                    dimmed ? "text-control-light" : "text-main"
+                  )}
+                >
                   {line}
                 </code>
               ) : (
