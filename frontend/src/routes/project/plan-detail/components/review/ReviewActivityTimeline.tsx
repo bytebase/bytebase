@@ -414,7 +414,6 @@ function ReviewRunActivityRow({
             <Button
               aria-expanded={source.open}
               appearance="link"
-              className="text-control-light"
               onClick={onToggle}
               size="xs"
             >
