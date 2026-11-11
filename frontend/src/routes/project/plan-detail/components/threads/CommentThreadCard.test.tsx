@@ -744,13 +744,15 @@ describe("title bar", () => {
 
     render(<CommentThreadCard bar={bar(true)} collapsible={false} issue={issue} project={project} thread={thread} />);
     expect(barNode()?.textContent).toBe(unfolded);
-    expect(unfolded).toBe("plan.review.thread.comment-title:7plan.review.thread.resolved");
+    expect(unfolded).toBe("plan.review.thread.comment-title:7P1plan.review.thread.resolved");
     const card = container.querySelector("[data-testid='comment-thread']");
     expect(card?.children).toHaveLength(1);
     expect(card?.textContent).not.toContain("sql-review.ai-review.self");
     expect(card?.textContent).not.toContain("Add a WHERE clause");
     expect(card?.textContent).not.toContain("A reply");
-    expect(card?.querySelector("[data-testid='review-priority']")).toBeNull();
+    // The bar says how urgent the thread is; nothing else of the finding shows.
+    expect(card?.querySelectorAll("[data-testid='review-priority']")).toHaveLength(1);
+    expect(barNode()?.querySelector("[data-testid='review-priority']")).not.toBeNull();
     expect(card?.querySelector("[data-testid='thread-reply-footer']")).toBeNull();
   });
 
@@ -801,7 +803,9 @@ describe("title bar", () => {
     // State labels follow the title, before the spacer, in every place.
     const title = barNode()?.querySelector("button")?.nextElementSibling;
     expect(title?.className).not.toContain("flex-1");
-    expect(title?.nextElementSibling).toBe(states[0]);
+    // Title, then the markers (this P1 finding's badge), then the state.
+    expect(title?.nextElementSibling?.getAttribute("data-testid")).toBe("review-priority");
+    expect(title?.nextElementSibling?.nextElementSibling).toBe(states[0]);
     expect(states[0].nextElementSibling?.className).toContain("flex-1");
 
     render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(false)} />);
@@ -836,5 +840,32 @@ describe("title bar", () => {
     );
     render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
     expect(container.querySelector("[data-testid='thread-reply-footer']") !== null).toBe(footer);
+  });
+});
+
+describe("priority in the bar", () => {
+  const finding = (priority: IssueComment_ReviewMetadata_Priority) => {
+    const root = comment("root", "Drops a table.", { creator: "" });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority });
+    return groupThreads([root])[0];
+  };
+  const changesBar = (folded: boolean) => ({ title: "Comment on line 3", folded, onToggleFold: () => {} });
+  const barBadge = () => container.querySelector("[data-testid='thread-bar'] [data-testid='review-priority']");
+
+  test.each([
+    { priority: IssueComment_ReviewMetadata_Priority.P0, label: "P0" },
+    { priority: IssueComment_ReviewMetadata_Priority.P1, label: "P1" },
+  ])("a $label finding shows its badge in the bar, folded and unfolded", ({ priority, label }) => {
+    for (const folded of [true, false]) {
+      render(<CommentThreadCard bar={changesBar(folded)} collapsible={false} issue={issue} project={project} thread={finding(priority)} />);
+      expect(barBadge()?.textContent).toBe(label);
+    }
+  });
+
+  test("a P2 finding and a person's thread show no badge in the bar", () => {
+    render(<CommentThreadCard bar={changesBar(true)} collapsible={false} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2)} />);
+    expect(barBadge()).toBeNull();
+    render(<CommentThreadCard bar={changesBar(true)} collapsible={false} issue={issue} project={project} thread={groupThreads([comment("root", "A question")])[0]} />);
+    expect(barBadge()).toBeNull();
   });
 });

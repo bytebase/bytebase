@@ -28,7 +28,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Issue,
+  IssueComment_ReviewMetadata_Priority,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import "./CommentThreadCard.css";
@@ -215,7 +218,13 @@ export function CommentThreadCard({
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {bar && <ThreadBar {...bar} resolved={thread.resolved} />}
+      {bar && (
+        <ThreadBar
+          {...bar}
+          markers={<ThreadMarkers thread={thread} />}
+          resolved={thread.resolved}
+        />
+      )}
       {!bar?.folded && renderContext && (
         <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
           {renderContext(
@@ -396,8 +405,8 @@ type ThreadBarProps = {
   onToggleFold: () => void;
 };
 
-// Every word and icon in the bar is text-control: text-control-light falls
-// under the 4.5:1 contrast minimum on the bar's background.
+// The bar's words and icons are text-control: text-control-light falls under
+// the 4.5:1 contrast minimum. The badge of a P0 or P1 finding is its color.
 // A click inside the bar folds unless it lands on a control, which keeps its
 // own meaning, or ends a drag that selected text.
 const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
@@ -406,12 +415,27 @@ const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
   return !window.getSelection()?.toString();
 };
 
+// What a folded thread must still say about how urgent it is: the badge of a
+// P0 or P1 finding, which needs someone to act. A P2 finding and a person's
+// thread show none.
+function ThreadMarkers({ thread }: { thread: CommentThread }) {
+  const priority = thread.root.reviewMetadata?.priority;
+  if (
+    priority !== IssueComment_ReviewMetadata_Priority.P0 &&
+    priority !== IssueComment_ReviewMetadata_Priority.P1
+  ) {
+    return null;
+  }
+  return <ReviewPriorityBadge priority={priority} />;
+}
+
 function ThreadBar({
   folded,
+  markers,
   onToggleFold,
   resolved,
   title,
-}: ThreadBarProps & { resolved: boolean }) {
+}: ThreadBarProps & { markers: ReactNode; resolved: boolean }) {
   return (
     // A click anywhere on the bar folds too. It is a pointer shortcut: the fold
     // control stays the one focusable control, and the keyboard's path.
@@ -442,6 +466,7 @@ function ThreadBar({
       <span className="min-w-0 truncate" title={title}>
         {title}
       </span>
+      {markers}
       {resolved && <ThreadStateBadge />}
       <span className="flex-1" />
     </div>
