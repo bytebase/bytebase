@@ -302,24 +302,29 @@ shippable, names what it depends on, and is opened after the one before it merge
 
 A slice is finished when the rows it names hold and no invariant is broken. Its tests assert every
 row and invariant it delivers, at least one case each, so a slice cannot pass while a row it
-claims is missing. Under Tests, a slice names where its tests live and the cases that are easy to
-miss. That list is not the whole set. This plan names each slice's files so its size can be
-judged. Which props and helpers carry the rules is decided in the slice's own PR and reviewed
-there.
+claims is missing. A slice that removes a signal the page has today delivers its replacement
+in the same PR, so main never shows less than it did. Under Tests, a slice names where its
+tests live and the cases that are easy to miss. That list is not the whole set. This plan names
+each slice's files so its size can be judged. Which props and helpers carry the rules is decided
+in the slice's own PR and reviewed there.
 
-1. **Bar and folding in the Changes section (D3, D4's folded form, D5, and "Resolved" from D6).**
-   Depends on nothing.
-   - Delivers, for a card in the Changes section: the first row of Title; "Resolved" from State
-     labels; the Footer row; the Changes section row of Folding; the white bar and footer of
-     invariant 2; invariants 4, 5 and 7, and invariant 6 for "Resolved". `CollapsedThreadRow`
-     goes. Until slice 2 the Activity card is untouched, apart from the color of "Resolved",
-     which both places draw with `ThreadStateBadge`.
+1. **Bar and folding in the Changes section (D3, D4's folded form and its priority badge, D5,
+   and "Resolved" from D6).** Depends on nothing.
+   - Delivers, for a card in the Changes section: the first row of Title; the three priority
+     rows of Markers; "Resolved" from State labels; the Footer row; the Changes section row of
+     Folding; the white bar and footer of invariant 2; invariants 5 and 7; invariant 4 apart
+     from "Prod", which slice 6 adds; and invariant 6 for the badge and for "Resolved".
+     `CollapsedThreadRow` goes, and it is what shows a folded finding's priority today, so the
+     badge moves into the bar in this slice. Until slice 2 the Activity card is untouched,
+     apart from the color of "Resolved", which both places draw with `ThreadStateBadge`.
    - Files: `CommentThreadCard.tsx`, `ThreadStack.tsx`, `StatementThreadsLayer.tsx`,
-     `ThreadStateBadge.tsx`, and the five locale files for the title.
+     `ThreadStateBadge.tsx`, `ReviewResult.tsx` for the badge the bar shares, and the five
+     locale files for the title.
    - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
      `StatementThreadsLayer.test.tsx`. They include: the bar is the same folded and unfolded, and
-     a folded card shows nothing from the body, by invariant 4; folding from the bar updates the
-     layer's state and the stepper's selection; a click on the bar's title folds and unfolds, and
+     a folded card shows nothing from the body, by invariant 4; a P0 and a P1 finding show the
+     badge in the bar, folded and unfolded, and a P2 finding and a person's thread show none;
+     folding from the bar updates the layer's state and the stepper's selection; a click on the bar's title folds and unfolds, and
      a drag that selects its text does not; a resolved thread whose reader can neither reply nor
      resolve has no footer; the bar and the footer are `bg-background`; nothing in the bar
      carries `text-control-light`. E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
@@ -327,18 +332,19 @@ there.
      and resolving in the Changes section.
 2. **The Activity card takes the bar, and the frame (the corners and shadow of D2; D3, D4's folded
    form and D5 in Activity; the rest of D6; D10).** Depends on slice 1.
-   - Delivers, for a card in Activity: the three Activity rows of Title; every row of State
-     labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
+   - Delivers, for a card in Activity: the three Activity rows of Title; the three priority rows
+     of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
      drawn as today; the Activity row of Folding. For a card in both places: the frame,
      `rounded-lg` and `shadow-md`, with the exception in the guideline and in its scanner. After
-     this slice no card is drawn without a bar, so invariants 3 and 8 hold in full, invariant 6
+     this slice no thread card is drawn without a bar or the frame, so invariant 8 holds in full,
+     invariant 3 holds for every card but the composer, which slice 5 finishes, and invariant 6
      holds for every state label, and `ThreadSummary` goes.
    - Files: `CommentThreadCard.tsx`, `StatementAnchorContext.tsx`, `ReviewActivityTimeline.tsx`,
      `ThreadStack.tsx`, `docs/agents/frontend-ux.md`, `frontend/scripts/check-ui-guideline.mjs`
      with its test, and the five locale files for "Comment on the plan".
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
-     different names; a click on the change's label folds, and a click on the lines or on the
+     different names; a folded P0 finding shows its badge; a click on the change's label folds, and a click on the lines or on the
      link does not; the excerpt renders in the body and not in the bar; "Outdated" carries the
      warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
      frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
@@ -368,17 +374,17 @@ there.
      on it yet.
    - Tests: a new `InlineThreadComposer.test.tsx`. They include: the composer has the frame,
      with its corners and shadow, and its avatar is in the body.
-6. **Priority and "Prod" in the bar (D4's markers).** Depends on slice 2, which puts the bar in
-   both places.
-   - Delivers: every row of Markers, and invariant 6 for the badge and for "Prod".
-   - Files: `CommentThreadCard.tsx`, `ReviewResult.tsx` for the badge the bar shares, a helper
-     beside `threadModel.ts` that tells whether a finding's databases include one in a production
-     environment, and the five locale files for "Prod".
-   - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: a P0 and a P1
-     finding show the badge in the bar, folded and unfolded; a P2 finding and a person's thread
-     show none; "Prod" shows when one of the finding's databases is in a production environment,
-     and does not when none is or when the environment-tier feature is off; the label holds no
-     database name.
+6. **"Prod" in the bar (D4's production marker).** Depends on slice 2, which puts the bar in
+   both places. It adds a signal the page does not have today, so nothing waits on it.
+   - Delivers: the "Prod" row of Markers, which completes invariant 4, and invariant 6 for
+     "Prod".
+   - Files: `CommentThreadCard.tsx`, a helper beside `threadModel.ts` that tells whether a
+     finding's databases include one in a production environment, and the five locale files
+     for "Prod".
+   - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: "Prod" shows
+     when one of the finding's databases is in a production environment, and does not when
+     none is, when the environment-tier feature is off, or on a person's thread; the label
+     holds no database name.
 
 D9 changes nothing, so no slice carries it.
 
@@ -391,7 +397,7 @@ The two sibling docs add three more PRs. Across all three docs the order is:
 | Card 3: no line tints, the gray ground, and the width limit | Card 1 |
 | Card 4: comment column and replies | Nothing |
 | Card 5: composer | Card 2 |
-| Card 6: priority and "Prod" in the bar | Card 2 |
+| Card 6: "Prod" in the bar | Card 2 |
 | Excerpt 1: the SQL excerpt | Card 4, for the comment's text column |
 | Group 1: Show and Hide in the link color | Nothing |
 | Group 2: findings grouped under their review | Card 2, for the finding card's bar and corners |
