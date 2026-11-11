@@ -896,6 +896,14 @@ describe("Activity bar", () => {
     expect(resolved.className).not.toContain("warning");
   });
 
+  test("puts the state labels after the title and the lines and link at the right end", () => {
+    render(<CommentThreadCard bar={activityBar({ anchorState: "CURRENT", onViewInStatement: () => {} })} issue={issue} project={project} thread={thread(true)} />);
+    const state = barNode().querySelector("[data-testid='thread-state']") as HTMLElement;
+    const spacer = state.nextElementSibling as HTMLElement;
+    expect(spacer.className).toContain("flex-1");
+    expect(spacer.nextElementSibling?.getAttribute("data-testid")).toBe("thread-bar-lines");
+  });
+
   test("a resolved thread whose reader can neither reply nor reopen has no footer", () => {
     mocks.hasPermission.mockReturnValue(false);
     render(<CommentThreadCard bar={activityBar()} issue={issue} project={project} thread={thread(true)} />);
