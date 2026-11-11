@@ -266,10 +266,12 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 		if loginResponse, ok := e.response.(*v1pb.LoginResponse); ok {
 			user = loginResponse.GetUser().GetName()
 		}
-		// Only a successful exchange proves the caller is the identity it named.
-		if exchangeRequest, ok := e.request.(*v1pb.ExchangeTokenRequest); ok && e.rerr == nil {
-			user = common.FormatWorkloadIdentityEmail(strings.ToLower(exchangeRequest.GetEmail()))
-		}
+	}
+	// A successful exchange signs in as the identity it named, whatever
+	// credential the request also carried, so the actor matches the federated
+	// identity the handler recorded.
+	if exchangeRequest, ok := e.request.(*v1pb.ExchangeTokenRequest); ok && e.rerr == nil {
+		user = common.FormatWorkloadIdentityEmail(strings.ToLower(exchangeRequest.GetEmail()))
 	}
 
 	authContextAny := ctx.Value(common.AuthContextKey)

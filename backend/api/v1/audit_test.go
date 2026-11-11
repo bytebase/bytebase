@@ -544,6 +544,24 @@ func TestAuditRowCarriesFederatedIdentity(t *testing.T) {
 		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
 	})
 
+	t.Run("a successful exchange names the identity even when another credential is sent", func(t *testing.T) {
+		t.Parallel()
+		ctx := newAuditTestContext(&common.AuthContext{
+			Audit:             true,
+			FederatedIdentity: federated,
+		})
+		rows, err := in.buildAuditRows(ctx, &auditEntry{
+			request:                 &v1pb.ExchangeTokenRequest{Email: "ci@workload.bytebase.com"},
+			response:                &v1pb.ExchangeTokenResponse{},
+			method:                  v1connect.AuthServiceExchangeTokenProcedure,
+			handlerAuditWorkspaceID: auditTestWorkspace,
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.Equal(t, "workloadIdentities/ci@workload.bytebase.com", rows[0].payload.GetUser())
+		require.True(t, proto.Equal(want, rows[0].payload.GetFederatedIdentity()))
+	})
+
 	t.Run("a refused exchange names no actor", func(t *testing.T) {
 		t.Parallel()
 		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
