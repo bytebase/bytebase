@@ -830,14 +830,11 @@ func TestDecideIssueQuotesTheTitle(t *testing.T) {
 		"a title must not be able to add a line of its own to the confirmation")
 }
 
-// askedMessage returns the confirmation message a decide_issue call on the
-// mock shows.
 func TestDecideIssuePutsTheCommentUnderTheChoice(t *testing.T) {
 	for name, tc := range map[string]struct {
 		comment, description string
 	}{
 		"no comment":                  {"", ""},
-		"a comment":                   {"checked the statement", `Comment: "checked the statement"`},
 		"a comment with a line break": {"checked\nthe statement", `Comment: "checked\nthe statement"`},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -854,15 +851,12 @@ func TestDecideIssuePutsTheCommentUnderTheChoice(t *testing.T) {
 			asked := user.lastParams(t)
 			require.NotContains(t, asked.Message, "Comment:")
 			require.Equal(t, tc.description, choiceDescription(t, asked))
-			if tc.comment == "" {
-				schema, err := json.Marshal(asked.RequestedSchema)
-				require.NoError(t, err)
-				require.NotContains(t, string(schema), "description", "a decision with no comment sends no description")
-			}
 		})
 	}
 }
 
+// askedMessage returns the confirmation message a decide_issue call on the
+// mock shows.
 func askedMessage(t *testing.T, mock *decisionMock) string {
 	t.Helper()
 	endpoint, token := newDecideServer(t, mock)

@@ -146,7 +146,6 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 	}
 	action := capitalize(decision.verb())
 	choice := confirmChoice{question: action + " this issue?", action: action}
-	// On the approval line, the comment ran past the terminal's edge and was cut.
 	if view.Comment != "" {
 		choice.description = fmt.Sprintf("Comment: %q", view.Comment)
 	}
