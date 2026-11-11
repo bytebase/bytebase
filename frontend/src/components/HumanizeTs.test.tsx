@@ -67,6 +67,7 @@ const formatters = vi.hoisted(() => {
   });
   return {
     queueTimeReading: ageReading("queue", 60_000),
+    minuteQueueTimeReading: ageReading("queue-minute", 75_000),
     relativeTimeReading: ageReading("relative", 45_000),
     formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
     compactTimeReading: fixedReading("compact"),
@@ -325,6 +326,37 @@ describe("HumanizeTs", () => {
     expect(container.textContent).toBe("queue:30000");
     advanceSeconds(1);
     expect(container.textContent).toBe("queue:60000");
+  });
+
+  test("keeps a minute-precision label on its own reading and boundary", () => {
+    const { container, root } = mount();
+    act(() =>
+      root.render(
+        <HumanizeTs precision="minute" tsMs={secondsAgo(30)} tooltip={false} />
+      )
+    );
+    expect(container.textContent).toBe("queue-minute:30000");
+
+    // The minute-precision reading's boundary is 75s after the timestamp.
+    advanceSeconds(44);
+    expect(container.textContent).toBe("queue-minute:30000");
+    advanceSeconds(1);
+    expect(container.textContent).toBe("queue-minute:75000");
+  });
+
+  test("leaves the other modes' readings alone at minute precision", () => {
+    const { container, root } = mount();
+    act(() =>
+      root.render(
+        <HumanizeTs
+          mode="compact"
+          precision="minute"
+          tsMs={1_000_000}
+          tooltip={false}
+        />
+      )
+    );
+    expect(container.textContent).toBe("compact:1000000:en");
   });
 
   test.each(["compact", "datetime", "operational"] as const)(

@@ -11,8 +11,10 @@ import {
   dateTimeSegments,
   displayableInstantMs,
   formatAbsoluteDateTime,
+  minuteQueueTimeReading,
   operationalTimeReading,
   queueTimeReading,
+  type RelativePrecision,
   relativeTimeReading,
   type TimeReading,
 } from "@/utils/datetime";
@@ -39,6 +41,12 @@ interface HumanizeTsProps {
   /** The instant to show, in milliseconds; nothing renders without one. */
   tsMs: number | undefined;
   mode?: TimeDisplayMode;
+  /**
+   * The finest unit the `queue` label's age counts in. `minute` reads "now"
+   * through the first minute instead of ticking each second. Other modes
+   * ignore it.
+   */
+  precision?: RelativePrecision;
   className?: string;
   /**
    * Keep the label on one line inside its box. Where the box is too narrow, a
@@ -119,6 +127,7 @@ function DateKeptWhole({ date, rest, dateFirst }: DateTimeSegments) {
 export function HumanizeTs({
   tsMs: instantMs,
   mode = "queue",
+  precision = "second",
   className,
   truncate = false,
   tooltip = true,
@@ -128,7 +137,11 @@ export function HumanizeTs({
   // A row loses its timestamp rather than the page its subtree: what is not an
   // instant has no rendering, and the formatters throw on it.
   const tsMs = displayableInstantMs(instantMs);
-  const { label: labelReading, Hidden, hasTime } = MODES[mode];
+  const { label: modeReading, Hidden, hasTime } = MODES[mode];
+  const labelReading =
+    mode === "queue" && precision === "minute"
+      ? minuteQueueTimeReading
+      : modeReading;
   const label = useTimeReading(labelReading, tsMs);
   if (tsMs === undefined) {
     return null;

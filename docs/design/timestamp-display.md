@@ -171,6 +171,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Release list / detail meta | `routes/project/ProjectReleaseDashboardPage.tsx`, `ProjectReleaseDetailPage.tsx`, `components/release/ReleaseInfoCard.tsx` (fixed string today — adopts `HumanizeTs`) | Work queue / meta | 30d switch |
 | Issue comments & activity | `components/issue-activity/IssueCommentActivity.tsx`, `routes/project/issue-detail/components/IssueDetailCommentList.tsx` | Feed | 30d switch |
 | Review timeline / rejection banner | `routes/project/plan-detail/components/review/ReviewActivityTimeline.tsx`, `ReviewRejectionBanner.tsx` | Feed | 30d switch |
+| Automated review rows | `routes/project/plan-detail/components/review/AutomatedReviewSection.tsx` | Freshness | 30d switch at minute precision: "now" through the first minute. Reviewer rows finish seconds apart, so ages in seconds tick out of step on adjacent lines (BYT-10503) |
 | Plan detail "created" | `routes/project/plan-detail/components/PlanDetailMeta.tsx` | Meta | 30d switch |
 | Deploy current status (latest-run times) | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployLatestTaskRunInfo.tsx` | Freshness | 30d switch |
 | **Scheduled rollout pill** | `DeployTaskHeader.tsx` (task pinned to a run time) | **Operational** | **Absolute + timezone** |
