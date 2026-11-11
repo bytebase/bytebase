@@ -29,12 +29,14 @@ export const productionEnvironmentsOf = (
 };
 
 // Names some card has asked for and that have no answer yet. Finding cards
-// mount together and share targets, and the store's batch fetch does not join
-// a request already in flight, so each name is asked for once at a time. A
-// failed name is asked for again by the next card, as the store expects.
+// mount together, and the store's batch fetch neither joins a request in
+// flight nor gathers names across callers, so the cards that ask in one tick
+// share one request, and a name is asked for once at a time. A failed name is
+// asked for again by the next card, as the store expects.
 const pendingDatabaseNames = new Set<string>();
+let queuedBatch: { names: Set<string>; done: Promise<void> } | undefined;
 
-export const requestMissingDatabases = async (
+export const requestMissingDatabases = (
   names: readonly string[],
   isCached: (name: string) => boolean,
   fetch: (names: string[]) => Promise<unknown>
@@ -42,11 +44,20 @@ export const requestMissingDatabases = async (
   const missing = names.filter(
     (name) => !isCached(name) && !pendingDatabaseNames.has(name)
   );
-  if (missing.length === 0) return;
+  if (missing.length === 0) return Promise.resolve();
   for (const name of missing) pendingDatabaseNames.add(name);
-  try {
-    await fetch(missing);
-  } finally {
-    for (const name of missing) pendingDatabaseNames.delete(name);
+  if (!queuedBatch) {
+    const batch = new Set<string>();
+    const done = Promise.resolve().then(async () => {
+      queuedBatch = undefined;
+      try {
+        await fetch([...batch]);
+      } finally {
+        for (const name of batch) pendingDatabaseNames.delete(name);
+      }
+    });
+    queuedBatch = { names: batch, done };
   }
+  for (const name of missing) queuedBatch.names.add(name);
+  return queuedBatch.done;
 };

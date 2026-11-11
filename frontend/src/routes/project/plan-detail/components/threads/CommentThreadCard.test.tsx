@@ -1016,19 +1016,19 @@ describe("the production badge in the bar", () => {
   const barNode = () => container.querySelector("[data-testid='thread-bar']") as HTMLElement;
   const envBadges = () => [...barNode().querySelectorAll("[data-testid='thread-production']")] as HTMLElement[];
 
-  test("cards that mount together ask for their uncached databases once, by valid name only", () => {
+  test("cards that mount together share one request for their uncached databases, by valid name only", async () => {
     mocks.databasesByName = {};
     mocks.batchFetch.mockReset();
-    mocks.batchFetch.mockReturnValue(new Promise(() => {}));
-    const shared = [PROD_DB, TEST_DB, "not-a-database"];
+    mocks.batchFetch.mockResolvedValue([]);
     render(
       <>
-        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, shared)} />
-        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2, shared)} />
-        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P0, shared)} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_DB, "not-a-database"])} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2, [TEST_DB])} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P0, [PROD_B_DB, PROD_DB])} />
       </>
     );
-    expect(mocks.batchFetch.mock.calls).toEqual([[[PROD_DB, TEST_DB]]]);
+    await act(async () => {});
+    expect(mocks.batchFetch.mock.calls).toEqual([[[PROD_DB, TEST_DB, PROD_B_DB]]]);
   });
 
   test("caps a long environment name at a width it truncates to, with the full name on hover", () => {

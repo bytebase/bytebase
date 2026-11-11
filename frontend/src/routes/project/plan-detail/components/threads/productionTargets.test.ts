@@ -85,10 +85,10 @@ describe("productionEnvironmentsOf", () => {
 });
 
 describe("requestMissingDatabases", () => {
-  test("asks once for a name that is cached or already being fetched by another card", async () => {
+  test("cards that ask in the same tick share one request for all their uncached names", async () => {
     const pending: (() => void)[] = [];
     const fetch = vi.fn(
-      () =>
+      (_names: string[]) =>
         new Promise<void>((resolve) => {
           pending.push(resolve);
         })
@@ -104,12 +104,20 @@ describe("requestMissingDatabases", () => {
       cached,
       fetch
     );
+    await Promise.resolve();
     expect(fetch.mock.calls).toEqual([
-      [["instances/i/databases/a"]],
-      [["instances/i/databases/b"]],
+      [["instances/i/databases/a", "instances/i/databases/b"]],
     ]);
+    // A later card does not ask again for a name that request still holds.
+    const third = requestMissingDatabases(
+      ["instances/i/databases/a", "instances/i/databases/c"],
+      cached,
+      fetch
+    );
+    await Promise.resolve();
+    expect(fetch.mock.calls.at(-1)).toEqual([["instances/i/databases/c"]]);
     for (const resolve of pending) resolve();
-    await Promise.all([first, second]);
+    await Promise.all([first, second, third]);
   });
 
   test("asks again after a request ends, so a name that failed is retried by the next card", async () => {
