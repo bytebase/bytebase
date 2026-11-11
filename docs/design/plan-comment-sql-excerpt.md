@@ -1,13 +1,13 @@
 # Plan comment SQL excerpt
 
-Status: proposal · 2026-11-10
+Status: proposal · 2026-11-11
 
 In the Activity timeline, a comment thread on lines of SQL shows those lines above the comment, so
 a reader can tell what the comment is about without opening the statement. Today every commented
 line in that excerpt is tinted, whatever the comment says, and the comment starts on the same left
 edge as the line numbers, so it reads as more lines of the statement. The rule this doc lands on:
-**the excerpt marks the commented lines with a bar beside the line numbers, paints nothing behind
-the code, and sits inset from the comment below it.**
+**the excerpt sits on grey inside the white card, marks the commented lines with a bar beside the
+line numbers, tints no line, and sits inset from the comment below it.**
 
 This is the second of three docs, each in its own PR. [Plan comment card](plan-comment-card.md)
 covers the card the excerpt sits in. The third, Plan review findings group, covers how findings
@@ -27,14 +27,16 @@ recorded lines of the sheet revision a thread was made on.
   (`CONTEXT_LINES_BEFORE`), so without the tint nothing separates context from the commented lines.
 - **The comment runs on from the SQL.** Each excerpt row is padded `px-3`, and the comment below is
   padded `px-2 sm:px-3`, so the line numbers and the author's avatar start on the same edge.
+  Both are on the same white.
 - **An outdated excerpt is faded.** When the thread's lines have changed or cannot be placed, the
   excerpt renders at `opacity-60`. That takes the syntax colors under the 4.5:1 contrast minimum:
   a quoted identifier falls to about 3.4:1 against the background.
 
 ## Principle
 
-> The SQL in a comment card is a quotation. Mark what the comment is about with a rule in the
-> margin, the way a quotation is marked, and keep the quotation visibly apart from the comment.
+> The SQL in a comment card is a quotation. Set it on the statement's grey, mark what the comment
+> is about with a rule in the margin, the way a quotation is marked, and keep the quotation
+> visibly apart from the comment.
 
 ## Decisions
 
@@ -45,9 +47,9 @@ above it. Rejected: grey context lines with no other marker. The reader has to c
 to find the range, and a context of one short line barely differs.
 
 **D2 · A bar beside the line numbers marks the range.** Rows inside the range carry a 3px bar in
-`control`, 8px left of the line numbers. Nothing is painted behind the code. The title bar of the
-card names the same lines in words. VS Code marks commented lines the same way, with a bar in the
-margin. Rejected: darker, bolder line numbers for the range and no bar. It is the quietest option
+`control`, 8px left of the line numbers. No line is tinted: every row has the excerpt's one
+ground, from D5. The title bar of the card names the same lines in words. VS Code marks commented
+lines the same way, with a bar in the margin. Rejected: darker, bolder line numbers for the range and no bar. It is the quietest option
 and the easiest to miss.
 
 **D3 · The SQL is inset from the comment.** The excerpt's left padding becomes the start of the
@@ -64,8 +66,18 @@ the Plan review findings group doc rules out. Rejected: indenting the
 comment instead of the SQL. The comment loses width and still sits in the code's column.
 
 **D4 · An outdated or unavailable excerpt is grey, not faded.** `opacity-60` goes. The lines render
-in `text-control-light` without syntax colors, which is 4.8:1 on the background. The bar from D2
-still marks the range.
+in `text-control` without syntax colors, which is 7:1 on the excerpt's ground. The lighter
+`text-control-light` is 4.4:1 there, under the minimum. The missing syntax colors are what say
+the lines are no longer current. The bar from D2 still marks the range.
+
+**D5 · The excerpt sits on grey.** Its ground is `bg-control-bg`, and the card around it is
+white. This is the rule of [Plan comment card](plan-comment-card.md) that SQL is on grey and the
+card is white, applied inside the card. The statement in the Changes section takes the lighter
+`bg-control-bg/50`. The excerpt is a small band inside a white card on a white page, and the
+lighter grey barely shows there. The ground and the inset from D3 work together: the ground
+says which rows are SQL, and the inset lines the numbers up with the comment's text. Rejected:
+a white excerpt set apart by the inset alone. The SQL and the comment are still one sheet.
+Rejected: `bg-control-bg/50`, for the reason above.
 
 ## States
 
@@ -90,14 +102,15 @@ Frontend only. One PR. It depends on the comment column slice of
 comment's text column, which D3 here lines up with. The slice is named by what it builds because
 its number can change while that doc is in review.
 
-1. **Excerpt (D1 to D4).**
+1. **Excerpt (D1 to D5).**
    - Files: `StatementAnchorContext.tsx` (`SqlExcerpt`): drop `bg-accent/12` and `opacity-60`, add
-     the bar and the `pl-9 sm:pl-10` inset, and render a dimmed excerpt as plain text in
-     `text-control-light` instead of the colorized HTML. The condition that mounts `SqlExcerpt`
-     does not change.
-   - Tests: `StatementAnchorContext.test.tsx`: no row carries a background class; rows inside the
-     range carry the marker and rows outside do not; a dimmed excerpt uses the grey text class, no
-     opacity and no colorized HTML; rows carry the inset class pair.
+     the `bg-control-bg` ground, the bar and the `pl-9 sm:pl-10` inset, and render a dimmed
+     excerpt as plain text in `text-control` instead of the colorized HTML. The condition that
+     mounts `SqlExcerpt` does not change.
+   - Tests: `StatementAnchorContext.test.tsx`: the excerpt carries the ground and no row has a
+     background of its own; rows inside the range carry the marker and rows outside do not; a
+     dimmed excerpt uses `text-control`, no opacity and no colorized HTML; rows carry the inset
+     class pair.
 
 ## Not in this PR
 
@@ -105,5 +118,6 @@ its number can change while that doc is in review.
   two lines above it.
 - Showing how the statement differs now from the revision an outdated comment was made on.
 - Limiting the height of a very long range.
+- The color of the excerpt's line numbers.
 - Hiding the excerpt when a large sheet's preview ends inside the commented range. Today it shows
   the lines the preview holds, and this doc leaves when the excerpt renders as it is.
