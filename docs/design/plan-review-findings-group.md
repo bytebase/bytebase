@@ -1,6 +1,6 @@
 # Plan review findings group
 
-Status: proposal · 2026-11-10
+Status: proposal · 2026-11-11
 
 When Standard rules or AI review finishes a run on a plan, the Activity timeline records it as one
 line, such as "Standard rules reviewed the SQL · 2 findings, 1 open", with a Show or Hide control.
@@ -45,10 +45,12 @@ keeps two card edges. Rejected: giving every thread a line of its own, such as "
 SQL", so that no card is indented. It costs a line for each comment from a person and shows
 ownership less plainly than a group does. It is the fallback if D4 is not accepted.
 
-**D2 · The group is a border and nothing else.** `border-block-border` and `rounded-sm`, with no
-shadow, no fill and no title bar. The cards inside keep their title bar and shadow from
-[Plan comment card](plan-comment-card.md). The two levels look different, so it stays clear that
-the finding is the unit and the group only says where it belongs. The review line sits inside the
+**D2 · The group is a border and nothing else.** `border-block-border`, with the corners of the
+cards it holds and with no shadow, no fill and no title bar. A comment card is `rounded-lg` in
+[Plan comment card](plan-comment-card.md), so the group is too: a sharper frame around rounder
+cards reads as two unrelated boxes. The cards inside keep their title bar and shadow. The two
+levels look different, so it stays clear that the finding is the unit and the group only says
+where it belongs. The review line sits inside the
 border with `px-3`, and the cards below it with 12px on each side and 8px between them.
 
 **D3 · A person's comment stays a top-level entry.** Its card starts on the group's left edge, so
@@ -61,8 +63,8 @@ inside cards." The rule stays. The slice that builds D1 amends it to:
 > belong to one parent entry in a list or timeline when all of the following hold:
 >
 > - The frame's first line names the parent and carries the control that shows or hides the group.
-> - The frame is a border only: `border-block-border` and `rounded-sm`, with no shadow, no fill and
->   no title bar. The cards inside keep their own.
+> - The frame is a border only: `border-block-border`, with the corners of the cards it holds and
+>   with no shadow, no fill and no title bar. The cards inside keep their own.
 > - Nesting stops there. A card inside a group frame MUST NOT contain another framed box.
 > - A group with no cards showing renders as its first line alone, without the frame.
 
@@ -116,8 +118,8 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
      `text-control-light` override.
    - Tests: `ReviewActivityTimeline.test.tsx` (the control carries no color override).
 2. **Group (D1 to D5).** Depends on the slice of [Plan comment card](plan-comment-card.md) that
-   gives the Activity card its title bar, D3 there. The slice is named by what it builds because
-   its number can change while that doc is in review.
+   gives the Activity card its title bar and its corners. The slice is named by what it builds
+   because its number can change while that doc is in review.
    - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry.
    - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group. `ThreadActivityRow`
      keeps rendering a person's thread.
