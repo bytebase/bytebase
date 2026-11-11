@@ -3,9 +3,10 @@
    come from the semantic tokens in tailwind.css. */
 
 /* The one line highlight: the reader's own selection while choosing lines
-   or writing a comment. No thread paints its lines. */
+   or writing a comment. No thread paints its lines. Monaco draws decorations
+   over its text selection, so the highlight stays translucent. */
 .monaco-editor .bb-thread-line--selecting {
-  background: rgb(var(--color-control-bg-hover));
+  background: rgb(var(--color-control-bg-hover) / 0.6);
 }
 
 /* Monaco owns the 24px hit area. Every marker is an 18px tile centered in

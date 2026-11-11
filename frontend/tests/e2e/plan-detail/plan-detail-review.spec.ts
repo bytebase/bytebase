@@ -1492,11 +1492,12 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
-    // The selection is the one highlight, in the neutral grey token.
+    // The selection is the one highlight, in the neutral grey token. It stays
+    // translucent so Monaco's own text selection still shows through.
     const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
     await expect(selected).toBeVisible();
     const grey = await page.evaluate(
-      () => `rgb(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")})`,
+      () => `rgba(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")}, 0.6)`,
     );
     await expect(selected).toHaveCSS("background-color", grey);
     await planPage.clickAddThreadGlyph();
