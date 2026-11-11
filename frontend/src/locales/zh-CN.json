@@ -2411,6 +2411,8 @@
         },
         "applies-to": "适用于",
         "comment-on-lines": "评论所选行",
+        "comment-title_one": "第 {{range}} 行的评论",
+        "comment-title_other": "第 {{range}} 行的评论",
         "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",

@@ -1,11 +1,13 @@
 import {
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Loader2,
   RotateCcw,
 } from "lucide-react";
 import {
+  type MouseEvent,
   type ReactNode,
   type SetStateAction,
   useContext,
@@ -23,6 +25,7 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
@@ -55,17 +58,17 @@ const FOLD_REPLIES_ABOVE = 4;
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer, where a resolved thread also says so. The reply composer
-// carries a checkbox that mirrors the thread state and, when toggled, settles
-// the thread after the reply is posted. Resolved threads collapse to a
-// summary row.
+// in the footer. The reply composer carries a checkbox that mirrors the thread
+// state and, when toggled, settles the thread after the reply is posted.
+// With a `bar`, the card starts with a title bar that holds the fold control
+// and the state, and folding leaves the bar alone; the owner keeps the fold
+// state. Without one, a resolved thread collapses to a summary row.
 export function CommentThreadCard({
+  bar,
   className,
   collapsible = true,
   renderContext,
   issue,
-  label,
-  onClose,
   onThreadStateChanged,
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
@@ -73,16 +76,13 @@ export function CommentThreadCard({
   spec,
   thread,
 }: {
+  bar?: ThreadBarProps;
   className?: string;
   // Whether a resolved thread may collapse to its summary row.
   collapsible?: boolean;
   // Full-width statement context above the root author and discussion.
   renderContext?: (onCollapse?: () => void) => ReactNode;
   issue: Issue;
-  // Extra header text after the timestamp (the anchored line range).
-  label?: ReactNode;
-  // Editor placement: closes the expanded thread back to its marker.
-  onClose?: () => void;
   // Fired only after this card successfully changes state, never on refresh.
   onThreadStateChanged?: (resolved: boolean) => void;
   replyDraft?: string;
@@ -200,7 +200,7 @@ export function CommentThreadCard({
     }
   };
 
-  if (collapsed) {
+  if (collapsed && !bar) {
     return (
       <div
         className={cn(
@@ -226,7 +226,14 @@ export function CommentThreadCard({
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {renderContext && (
+      {bar && (
+        <ThreadBar
+          {...bar}
+          markers={<ThreadMarkers thread={thread} />}
+          resolved={thread.resolved}
+        />
+      )}
+      {!bar?.folded && renderContext && (
         <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
           {renderContext(
             thread.resolved && collapsible
@@ -235,171 +242,251 @@ export function CommentThreadCard({
           )}
         </div>
       )}
-      <ThreadComment
-        actions={
-          <>
-            {diagnostic && <AgentDiagnosticHelpButton context={diagnostic} />}
-            {thread.resolved && collapsible && !renderContext && (
-              <Button
-                aria-label={t("common.collapse")}
-                onClick={() => setCollapsed(true)}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-            {onClose && (
-              <Button
-                aria-label={t("common.close")}
-                onClick={onClose}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-          </>
-        }
-        comment={thread.root}
-        label={label}
-        onEdit={actions.edit}
-        project={project}
-        spec={spec}
-      />
-      {(hiddenCount > 0 || visibleReplies.length > 0) && (
-        <div
-          className="bb-thread-replies bg-control-bg/50"
-          data-testid="thread-replies"
-        >
-          {hiddenCount > 0 && (
-            <div className="flex justify-center py-1">
-              <Button
-                onClick={() => setShowAllReplies(true)}
-                size="xs"
-                appearance="link"
-              >
-                <ChevronDown className="size-3.5" />
-                {t("plan.review.thread.n-replies-hidden", {
-                  count: hiddenCount,
-                })}
-                <span className="text-control-placeholder">·</span>
-                {t("plan.review.activity.show-all")}
-              </Button>
+      {!bar?.folded && (
+        <div className="relative">
+          <ThreadComment
+            actions={
+              <>
+                {diagnostic && (
+                  <AgentDiagnosticHelpButton context={diagnostic} />
+                )}
+                {thread.resolved && collapsible && !bar && !renderContext && (
+                  <Button
+                    aria-label={t("common.collapse")}
+                    onClick={() => setCollapsed(true)}
+                    size="xs"
+                    appearance="secondary"
+                  >
+                    <ChevronUp className="size-3.5" />
+                  </Button>
+                )}
+              </>
+            }
+            comment={thread.root}
+            onEdit={actions.edit}
+            project={project}
+            spec={spec}
+          />
+          {(hiddenCount > 0 || visibleReplies.length > 0) && (
+            <div
+              className="bb-thread-replies ml-7"
+              data-testid="thread-replies"
+            >
+              {/* Joins the replies to the first comment, under its avatar. */}
+              <Separator
+                className="absolute top-9 bottom-2 left-4.5 h-auto sm:left-5.5"
+                data-testid="thread-replies-rail"
+                orientation="vertical"
+              />
+              {hiddenCount > 0 && (
+                <div className="flex justify-center py-1">
+                  <Button
+                    onClick={() => setShowAllReplies(true)}
+                    size="xs"
+                    appearance="link"
+                  >
+                    <ChevronDown className="size-3.5" />
+                    {t("plan.review.thread.n-replies-hidden", {
+                      count: hiddenCount,
+                    })}
+                    <span className="text-control-placeholder">·</span>
+                    {t("plan.review.activity.show-all")}
+                  </Button>
+                </div>
+              )}
+              {visibleReplies.map((reply) => (
+                <ThreadComment
+                  comment={reply}
+                  key={reply.name}
+                  onEdit={actions.edit}
+                  project={project}
+                />
+              ))}
             </div>
           )}
-          {visibleReplies.map((reply) => (
-            <ThreadComment
-              comment={reply}
-              key={reply.name}
-              onEdit={actions.edit}
-              project={project}
-            />
-          ))}
         </div>
       )}
-      {(allowReply || allowSettle || thread.resolved) && (
-        <div
-          className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
-          ref={replyFooterRef}
-          data-testid="thread-reply-footer"
-        >
-          {allowReply && (
-            <>
-              {replyOpen && (
-                <div
-                  className="hidden h-6 shrink-0 self-start items-center @xs/thread:flex"
-                  data-testid="reply-composer-avatar"
-                >
-                  <UserAvatar
-                    colorSeed={currentUser.email}
-                    size="xs"
-                    title={currentUser.title || currentUser.email}
-                  />
-                </div>
-              )}
-              {replyOpen ? (
-                <div className="flex min-w-0 flex-1 flex-col gap-y-2">
-                  <MarkdownEditor
-                    autoFocus
-                    compact
-                    content={replyDraft}
-                    onChange={setReplyDraft}
-                    onSubmit={() => void submitReply()}
-                    placeholder={t("plan.review.thread.reply-placeholder")}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    {allowSettle && (
-                      <div className="flex items-center gap-x-2">
-                        <Checkbox
-                          id={resolveCheckboxId}
-                          checked={settleWithReply}
-                          disabled={busy}
-                          onCheckedChange={setSettleWithReply}
-                        />
-                        <label
-                          htmlFor={resolveCheckboxId}
-                          className="cursor-pointer text-sm"
-                        >
-                          {thread.resolved
-                            ? t("plan.review.thread.reopen-thread")
-                            : t("plan.review.thread.resolve-thread")}
-                        </label>
-                      </div>
-                    )}
-                    <Button
-                      className="ml-auto"
-                      onClick={() => setReplyOpen(false)}
-                      size="sm"
-                      appearance="secondary"
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={busy || !replyDraft.trim()}
-                      onClick={() => void submitReply()}
-                    >
-                      {busy && <Loader2 className="size-4 animate-spin" />}
-                      {t("plan.review.thread.reply")}
-                    </Button>
+      {!bar?.folded &&
+        (allowReply || allowSettle || (!bar && thread.resolved)) && (
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2 rounded-b-sm border-t border-block-border px-2 py-2 sm:px-3",
+              bar ? "bg-background" : "bg-control-bg/50"
+            )}
+            ref={replyFooterRef}
+            data-testid="thread-reply-footer"
+          >
+            {allowReply && (
+              <>
+                {replyOpen && (
+                  <div
+                    className="hidden h-6 shrink-0 self-start items-center @xs/thread:flex"
+                    data-testid="reply-composer-avatar"
+                  >
+                    <UserAvatar
+                      colorSeed={currentUser.email}
+                      size="xs"
+                      title={currentUser.title || currentUser.email}
+                    />
                   </div>
-                </div>
-              ) : (
-                <Button
-                  appearance="outline"
-                  className="min-w-20 flex-1 justify-start bg-background text-control-placeholder"
-                  onClick={() => setReplyOpen(true)}
-                  size="sm"
-                  type="button"
-                >
-                  {t("plan.review.thread.reply-placeholder")}
-                </Button>
-              )}
-            </>
-          )}
-          {!allowReply && <span className="flex-1" />}
-          {thread.resolved && !replyOpen && <ThreadStateBadge />}
-          {allowSettle && !replyOpen && (
-            <Button
-              appearance="outline"
-              className="ml-auto shrink-0 bg-background"
-              disabled={busy}
-              onClick={() => void settleThread()}
-              size="sm"
-            >
-              {thread.resolved ? (
-                <RotateCcw className="size-3.5" />
-              ) : (
-                <Check className="size-3.5" />
-              )}
-              {thread.resolved
-                ? t("common.reopen")
-                : t("plan.review.thread.resolve")}
-            </Button>
-          )}
-        </div>
+                )}
+                {replyOpen ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-y-2">
+                    <MarkdownEditor
+                      autoFocus
+                      compact
+                      content={replyDraft}
+                      onChange={setReplyDraft}
+                      onSubmit={() => void submitReply()}
+                      placeholder={t("plan.review.thread.reply-placeholder")}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      {allowSettle && (
+                        <div className="flex items-center gap-x-2">
+                          <Checkbox
+                            id={resolveCheckboxId}
+                            checked={settleWithReply}
+                            disabled={busy}
+                            onCheckedChange={setSettleWithReply}
+                          />
+                          <label
+                            htmlFor={resolveCheckboxId}
+                            className="cursor-pointer text-sm"
+                          >
+                            {thread.resolved
+                              ? t("plan.review.thread.reopen-thread")
+                              : t("plan.review.thread.resolve-thread")}
+                          </label>
+                        </div>
+                      )}
+                      <Button
+                        className="ml-auto"
+                        onClick={() => setReplyOpen(false)}
+                        size="sm"
+                        appearance="secondary"
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={busy || !replyDraft.trim()}
+                        onClick={() => void submitReply()}
+                      >
+                        {busy && <Loader2 className="size-4 animate-spin" />}
+                        {t("plan.review.thread.reply")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    appearance="outline"
+                    className="min-w-20 flex-1 justify-start bg-background text-control-placeholder"
+                    onClick={() => setReplyOpen(true)}
+                    size="sm"
+                    type="button"
+                  >
+                    {t("plan.review.thread.reply-placeholder")}
+                  </Button>
+                )}
+              </>
+            )}
+            {!allowReply && <span className="flex-1" />}
+            {!bar && thread.resolved && !replyOpen && <ThreadStateBadge />}
+            {allowSettle && !replyOpen && (
+              <Button
+                appearance="outline"
+                className="ml-auto shrink-0 bg-background"
+                disabled={busy}
+                onClick={() => void settleThread()}
+                size="sm"
+              >
+                {thread.resolved ? (
+                  <RotateCcw className="size-3.5" />
+                ) : (
+                  <Check className="size-3.5" />
+                )}
+                {thread.resolved
+                  ? t("common.reopen")
+                  : t("plan.review.thread.resolve")}
+              </Button>
+            )}
+          </div>
+        )}
+    </div>
+  );
+}
+
+type ThreadBarProps = {
+  // Names what the thread is on, and names the fold control.
+  title: string;
+  folded: boolean;
+  onToggleFold: () => void;
+};
+
+// The bar's words and icons are text-control: text-control-light falls under
+// the 4.5:1 contrast minimum. The badge of a P0 or P1 finding is its color.
+// A click inside the bar folds unless it lands on a control, which keeps its
+// own meaning, or ends a drag that selected text.
+const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
+  const target = event.target as Element;
+  if (target.closest("button, a, input, [role='button']")) return false;
+  return !window.getSelection()?.toString();
+};
+
+// What a folded thread must still say about how urgent it is: the badge of a
+// P0 or P1 finding, which needs someone to act. A P2 finding and a person's
+// thread show none.
+function ThreadMarkers({ thread }: { thread: CommentThread }) {
+  const priority = thread.root.reviewMetadata?.priority;
+  if (
+    priority !== IssueComment_ReviewMetadata_Priority.P0 &&
+    priority !== IssueComment_ReviewMetadata_Priority.P1
+  ) {
+    return null;
+  }
+  return <ReviewPriorityBadge priority={priority} />;
+}
+
+function ThreadBar({
+  folded,
+  markers,
+  onToggleFold,
+  resolved,
+  title,
+}: ThreadBarProps & { markers: ReactNode; resolved: boolean }) {
+  return (
+    // A click anywhere on the bar folds too. It is a pointer shortcut: the fold
+    // control stays the one focusable control, and the keyboard's path.
+    <div
+      className={cn(
+        "flex min-h-8 min-w-0 cursor-pointer items-center gap-x-2 bg-background px-2 text-xs text-control",
+        folded ? "rounded-sm" : "rounded-t-sm border-b border-block-border"
       )}
+      data-testid="thread-bar"
+      onClick={(event) => {
+        if (shouldFoldFromBarClick(event)) onToggleFold();
+      }}
+    >
+      <Button
+        appearance="secondary"
+        aria-expanded={!folded}
+        aria-label={title}
+        className="shrink-0"
+        onClick={onToggleFold}
+        size="xs"
+      >
+        {folded ? (
+          <ChevronRight className="size-3.5" />
+        ) : (
+          <ChevronDown className="size-3.5" />
+        )}
+      </Button>
+      <span className="min-w-0 truncate" title={title}>
+        {title}
+      </span>
+      {markers}
+      {resolved && <ThreadStateBadge />}
+      <span className="flex-1" />
     </div>
   );
 }

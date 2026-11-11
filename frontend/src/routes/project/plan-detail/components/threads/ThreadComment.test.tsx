@@ -152,7 +152,9 @@ describe("ThreadComment", () => {
       const header = content.firstElementChild as HTMLElement;
 
       expect(within(header).getByTitle(reviewer).textContent).toBe(reviewer);
-      expect(within(header).getByTestId("reviewer-avatar")).toBeDefined();
+      expect(
+        within(getByTestId("comment-avatar")).getByTestId("reviewer-avatar")
+      ).toBeDefined();
       expect(within(header).queryByTestId("review-priority")).toBeNull();
       expect(
         Array.from(content.children)
@@ -193,6 +195,19 @@ describe("ThreadComment", () => {
 
     const { container } = renderComment(reviewResult("Missing WHERE clause."));
     expect(container.querySelector("[data-testid='review-rule']")).toBeNull();
+  });
+
+  test.each([
+    { kind: "comment", make: () => userComment("Looks good") },
+    { kind: "review result", make: () => reviewResult("Missing WHERE clause.") },
+  ])("sets a $kind's avatar in a column of its own, beside every row of its text", ({ make }) => {
+    const { getByTestId } = renderComment(make());
+    const avatar = getByTestId("comment-avatar");
+    const content = getByTestId("comment-content");
+    expect(avatar.nextElementSibling).toBe(content);
+    expect(avatar.className).toContain("w-5");
+    expect(content.contains(avatar)).toBe(false);
+    expect(content.querySelector("[data-testid='reviewer-avatar']")).toBeNull();
   });
 
   test("shows a user comment as its author with no review details", () => {

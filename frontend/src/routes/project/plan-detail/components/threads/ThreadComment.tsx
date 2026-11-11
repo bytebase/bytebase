@@ -12,10 +12,9 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ReviewHeading, ReviewTargets, useCommentAuthor } from "./ReviewResult";
 
-// Roots and replies share one layout: author identity in the header, with
-// the body aligned to the comment region rather than indented below the name.
-// A review result follows the header with its targets, then its priority and
-// rule, then its text.
+// Roots and replies share one layout: the avatar in a column of its own, and
+// beside it the author row, then for a review result its targets and its
+// priority and rule, then the text.
 export function ThreadComment({
   actions,
   className,
@@ -72,22 +71,23 @@ export function ThreadComment({
       id={comment.name}
     >
       <div
+        className="flex h-6 w-5 shrink-0 items-center"
+        data-testid="comment-avatar"
+      >
+        {author.avatar}
+      </div>
+      <div
         className="flex min-w-0 flex-1 flex-col gap-y-2"
         data-testid="comment-content"
       >
         <div className="flex min-h-6 items-center gap-x-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-            <div className="flex min-w-0 max-w-full items-center gap-x-2">
-              <div className="shrink-0" data-testid="comment-avatar">
-                {author.avatar}
-              </div>
-              <span
-                className="min-w-0 truncate text-sm font-medium text-main"
-                title={author.name}
-              >
-                {author.name}
-              </span>
-            </div>
+            <span
+              className="min-w-0 max-w-full truncate text-sm font-medium text-main"
+              title={author.name}
+            >
+              {author.name}
+            </span>
             <HumanizeTs
               className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
               tsMs={createdTs}

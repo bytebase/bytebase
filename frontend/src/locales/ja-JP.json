@@ -2411,6 +2411,8 @@
         },
         "applies-to": "対象",
         "comment-on-lines": "選択行にコメント",
+        "comment-title_one": "{{range}} 行目へのコメント",
+        "comment-title_other": "{{range}} 行目へのコメント",
         "n-replies-hidden_one": "{{count}} 件の返信が非表示",
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
