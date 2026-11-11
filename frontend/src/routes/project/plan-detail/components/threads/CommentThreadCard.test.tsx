@@ -21,6 +21,10 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   updateIssueComment: vi.fn(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
+  envTier: true,
+  databasesByName: {} as Record<string, unknown>,
+  environmentList: [] as unknown[],
+  batchFetch: vi.fn(async (_names: string[]) => [] as unknown[]),
 }));
 
 vi.mock("@/utils/featureGates", () => ({
@@ -79,6 +83,7 @@ vi.mock("@/components/MarkdownEditor", async (importOriginal) => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
+  usePlanFeature: () => mocks.envTier,
   useCurrentUser: () => ({ email: "me@example.com", title: "Me" }),
   useUserByIdentifier: (principal: string | undefined) =>
     principal
@@ -104,14 +109,22 @@ vi.mock("@/stores/app", () => ({
           email: principal.replace(/^users\//, ""),
           title: principal.replace(/^users\//, "").split("@")[0],
         }),
+        databasesByName: mocks.databasesByName,
+        environmentList: mocks.environmentList,
       }),
     {
       getState: () => ({
+        batchGetOrFetchDatabases: (names: string[]) => mocks.batchFetch(names),
+        databasesByName: mocks.databasesByName,
         createIssueComment: mocks.createIssueComment,
         updateIssueComment: mocks.updateIssueComment,
       }),
     }
   ),
+}));
+
+vi.mock("../PlanTargetDisplay", () => ({
+  PlanTargetDisplay: ({ target }: { target: string }) => <span>{target}</span>,
 }));
 
 vi.mock("@/utils/iam/permission", () => ({
@@ -974,5 +987,110 @@ describe("Activity bar", () => {
     click(foldControl());
     expect(unfolded()).toBe(true);
     expect(container.querySelector("[data-testid='thread-reply-footer']")).toBeNull();
+  });
+});
+
+describe("the production badge in the bar", () => {
+  const PROD_DB = "instances/i/databases/orders_prod";
+  const TEST_DB = "instances/i/databases/orders_test";
+  const PROD_B_DB = "instances/i/databases/orders_prod_b";
+  beforeEach(() => {
+    mocks.envTier = true;
+    mocks.environmentList = [
+      { name: "environments/prod", id: "prod", title: "Production", tags: { protected: "protected" }, color: "#dc2626", order: 0 },
+      { name: "environments/prod-b", id: "prod-b", title: "Prod EU", tags: { protected: "protected" }, color: "", order: 1 },
+      { name: "environments/test", id: "test", title: "Test", tags: {}, color: "", order: 2 },
+    ];
+    mocks.databasesByName = {
+      [PROD_DB]: { name: PROD_DB, effectiveEnvironment: "environments/prod" },
+      [TEST_DB]: { name: TEST_DB, effectiveEnvironment: "environments/test" },
+      [PROD_B_DB]: { name: PROD_B_DB, effectiveEnvironment: "environments/prod-b" },
+    };
+  });
+  const finding = (priority: IssueComment_ReviewMetadata_Priority, targets: string[]) => {
+    const root = comment("root", "Drops a table.", { creator: "" });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority, targets });
+    return groupThreads([root])[0];
+  };
+  const changesBar = (folded: boolean) => ({ place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });
+  const barNode = () => container.querySelector("[data-testid='thread-bar']") as HTMLElement;
+  const envBadges = () => [...barNode().querySelectorAll("[data-testid='thread-production']")] as HTMLElement[];
+
+  test("cards that mount together share one request for their uncached databases, by valid name only", async () => {
+    mocks.databasesByName = {};
+    mocks.batchFetch.mockReset();
+    mocks.batchFetch.mockResolvedValue([]);
+    render(
+      <>
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_DB, "not-a-database"])} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2, [TEST_DB])} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P0, [PROD_B_DB, PROD_DB])} />
+      </>
+    );
+    await act(async () => {});
+    expect(mocks.batchFetch.mock.calls).toEqual([[[PROD_DB, TEST_DB, PROD_B_DB]]]);
+  });
+
+  test("caps a long environment name at a width it truncates to, with the full name on hover", () => {
+    render(<CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_DB])} />);
+    const [badge] = envBadges();
+    expect(badge.className.split(" ")).toContain("max-w-40");
+    expect(badge.getAttribute("title")).toBe("Production");
+    expect(badge.querySelector(".truncate")?.textContent).toBe("Production");
+  });
+
+  test("shows the environment's badge after the priority, by name on a tint of its color, folded and unfolded", () => {
+    for (const folded of [true, false]) {
+      render(<CommentThreadCard bar={changesBar(folded)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [TEST_DB, PROD_DB])} />);
+      const [badge] = envBadges();
+      expect(envBadges()).toHaveLength(1);
+      expect(badge.textContent).toBe("Production");
+      expect(badge.textContent).not.toContain("orders");
+      expect(barNode().querySelector("[data-testid='review-priority']")?.compareDocumentPosition(badge)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(badge.style.backgroundColor).toBe("rgba(220, 38, 38, 0.1)");
+      expect(badge.style.color).toBe("");
+      const classes = badge.className.split(" ");
+      for (const name of ["rounded-xs", "text-control"]) expect(classes).toContain(name);
+      expect(badge.className).not.toMatch(/\btext-(accent|warning|error|success)\b/);
+      expect(badge.className).not.toMatch(/\bborder-(?!transparent\b)[a-z]/);
+    }
+  });
+
+  test("an environment with no color gets the default tint, and two production environments show a badge each, in environment order", () => {
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_B_DB])} />);
+    expect(envBadges()[0].style.backgroundColor).toBe("rgba(79, 70, 229, 0.1)");
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_B_DB, PROD_DB])} />);
+    expect(envBadges().map((badge) => badge.textContent)).toEqual(["Production", "Prod EU"]);
+  });
+
+  test("a P2 finding shows its environment's badge with no priority", () => {
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2, [PROD_DB])} />);
+    expect(envBadges().map((badge) => badge.textContent)).toEqual(["Production"]);
+    expect(barNode().querySelector("[data-testid='review-priority']")).toBeNull();
+  });
+
+  test("shows no badge when no database is in production, without the environment-tier feature, or for a person's thread", () => {
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [TEST_DB])} />);
+    expect(envBadges()).toEqual([]);
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={groupThreads([comment("root", "A question")])[0]} />);
+    expect(envBadges()).toEqual([]);
+    mocks.envTier = false;
+    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_DB])} />);
+    expect(envBadges()).toEqual([]);
+  });
+
+  test("in Activity a click on the environment's badge folds the card", () => {
+    render(
+      <CommentThreadCard
+        bar={{ place: "activity", title: "alpha_prod", foldLabel: "alpha_prod, line 3", lines: { startLine: 3, endLine: 3 } }}
+        issue={issue}
+        project={project}
+        thread={finding(IssueComment_ReviewMetadata_Priority.P0, [PROD_DB])}
+      />
+    );
+    const expanded = () => barNode().querySelector("button[aria-expanded]")?.getAttribute("aria-expanded");
+    expect(expanded()).toBe("true");
+    click(envBadges()[0]);
+    expect(expanded()).toBe("false");
   });
 });

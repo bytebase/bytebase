@@ -17,7 +17,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { hexToRgb } from "@/utils";
 
-const LIGHT_BADGE_BACKGROUND_ALPHA = 0.1;
+export const LIGHT_BADGE_BACKGROUND_ALPHA = 0.1;
 
 /**
  * Pure-presentational environment badge — no hooks, no store reads.

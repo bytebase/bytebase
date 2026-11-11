@@ -540,7 +540,7 @@ describe("StatementThreadsLayer", () => {
     expect(fake.editor.addAction).not.toHaveBeenCalled();
   });
 
-  test("decorates current anchors and expands the earliest unresolved thread", () => {
+  test("marks threads in the gutter and expands the earliest unresolved thread", () => {
     mocks.comments = [
       threadRoot("later", 6, 9, { createdAt: 5 }),
       threadRoot("first", 3, 4, { createdAt: 2 }),
@@ -550,8 +550,6 @@ describe("StatementThreadsLayer", () => {
     const fake = createFakeEditor();
     mount(fake.editor);
 
-    expect(classesOf(fake.decorations.current, 3)).toEqual(["bb-thread-line"]);
-    expect(classesOf(fake.decorations.current, 8)).toEqual(["bb-thread-line--passive"]);
     expect(classesOf(fake.decorations.current, 4)).toContain("bb-thread-glyph bb-thread-glyph--active");
     expect(classesOf(fake.decorations.current, 1)).toContain(
       "bb-thread-glyph bb-thread-glyph--resolved"
@@ -563,28 +561,7 @@ describe("StatementThreadsLayer", () => {
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/first`);
   });
 
-  test("distinguishes the current range from passive ranges and leaves resolved lines untinted", () => {
-    mocks.comments = [threadRoot("single", 2, 2), threadRoot("multi", 1, 2, { createdAt: 2, resolved: true })];
-    const fake = createFakeEditor();
-    mount(fake.editor);
-    const highlighted = () => fake.decorations.current.filter((d) => d.options.className === "bb-thread-line").map((d) => d.range.startLineNumber);
-    expect(highlighted()).toEqual([2]);
-    expect(classesOf(fake.decorations.current, 1)).not.toContain("bb-thread-line--passive");
-    expect(fake.decorations.current.filter((d) => d.options.isWholeLine && d.range.startLineNumber === 2)).toHaveLength(1);
-    fake.fire("move", 1, MouseTargetType.GUTTER_LINE_NUMBERS);
-    expect(highlighted()).toEqual([2]);
-    const picker = hosted(fake.widgets, "[data-testid='thread-picker']");
-    act(() => picker?.querySelectorAll("[data-testid='pick-thread']")[1].dispatchEvent(new MouseEvent("click", { bubbles: true })));
-    expect(highlighted()).toEqual([1, 2]);
-    act(() => picker?.querySelectorAll("[data-testid='close-thread']")[1].dispatchEvent(new MouseEvent("click", { bubbles: true })));
-    expect(highlighted()).toEqual([2]);
-    act(() => picker?.querySelector("[data-testid='close-thread']")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
-    expect(highlighted()).toEqual([]);
-    expect(fake.decorations.current.filter((d) => d.options.className === "bb-thread-line--passive").map((d) => d.range.startLineNumber)).toEqual([2]);
-    expect(fake.decorations.current.filter((d) => d.options.glyphMarginClassName?.includes("bb-thread-glyph--count-2"))).toHaveLength(1);
-  });
-
-  test("open findings tint their lines by priority", () => {
+  test("no thread paints a line, whether open, unfolded, a finding of any priority, or resolved", () => {
     const finding = (id: string, line: number, priority: IssueComment_ReviewMetadata_Priority) =>
       create(IssueCommentSchema, {
         ...threadRoot(id, line, line),
@@ -594,15 +571,21 @@ describe("StatementThreadsLayer", () => {
         }),
       });
     mocks.comments = [
-      threadRoot("discussion", 2, 2),
+      threadRoot("discussion", 1, 2),
       finding("p0", 4, IssueComment_ReviewMetadata_Priority.P0),
       finding("p1", 6, IssueComment_ReviewMetadata_Priority.P1),
+      threadRoot("resolved", 8, 8, { resolved: true }),
     ];
     const fake = createFakeEditor();
     mount(fake.editor);
-    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([2]);
-    expect(lines(fake.decorations.current, "bb-thread-line--blocking")).toEqual([4]);
-    expect(lines(fake.decorations.current, "bb-thread-line--attention")).toEqual([6]);
+    const painted = () => fake.decorations.current.filter((d) => d.options.isWholeLine);
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/discussion`);
+    expect(painted()).toEqual([]);
+    fake.fire("down", 4, MouseTargetType.GUTTER_GLYPH_MARGIN);
+    expect(painted()).toEqual([]);
+    for (const line of [2, 4, 6, 8]) {
+      expect(classesOf(fake.decorations.current, line).some((name) => name.includes("bb-thread-glyph"))).toBe(true);
+    }
   });
 
   test("a filtered walker steps through one reviewer's findings across changes", () => {
@@ -648,27 +631,43 @@ describe("StatementThreadsLayer", () => {
     expect(mocks.setWalkerFilter).toHaveBeenCalledWith(undefined);
   });
 
-  test("a pending selection replaces the reading highlight; an open composer keeps both", () => {
+  test("highlights a selection and an open composer's lines, and nothing once they end", () => {
     mocks.comments = [threadRoot("single", 2, 2)];
     const fake = createFakeEditor(1);
     mount(fake.editor);
+    const painted = () => fake.decorations.current.filter((d) => d.options.isWholeLine);
     fake.fire("down", 1, MouseTargetType.GUTTER_LINE_NUMBERS);
     fake.dragTo(2);
     fake.release();
-    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([]);
     expect(lines(fake.decorations.current, "bb-thread-line--selecting")).toEqual([1, 2]);
+    expect(painted()).toHaveLength(2);
     fake.pressEscape();
-    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([2]);
-    expect(lines(fake.decorations.current, "bb-thread-line--selecting")).toEqual([]);
+    expect(painted()).toEqual([]);
     fake.fire("down", 3, MouseTargetType.GUTTER_LINE_NUMBERS);
     fake.release();
     fake.fire("down", 3, MouseTargetType.GUTTER_LINE_DECORATIONS);
-    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([2]);
     expect(lines(fake.decorations.current, "bb-thread-line--selecting")).toEqual([3]);
-    expect(lines(fake.decorations.current, "bb-thread-line--passive")).toEqual([]);
+    expect(painted()).toHaveLength(1);
     act(() => hosted(fake.widgets, "[data-testid='cancel-composer']")?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
-    expect(lines(fake.decorations.current, "bb-thread-line")).toEqual([2]);
-    expect(lines(fake.decorations.current, "bb-thread-line--selecting")).toEqual([]);
+    expect(painted()).toEqual([]);
+  });
+
+  test("a thread's zone and a composer's zone both cap the card at 48rem and keep 16px clear of the right edge", () => {
+    mocks.comments = [threadRoot("single", 2, 2)];
+    const fake = createFakeEditor();
+    mount(fake.editor);
+    fake.fire("move", 5, MouseTargetType.CONTENT_TEXT);
+    fake.fire("down", 5, MouseTargetType.GUTTER_LINE_DECORATIONS);
+    const wrapperOf = (selector: string) => {
+      const node = hosted(fake.widgets, selector);
+      expect(node).not.toBeNull();
+      return node?.closest("[data-testid='thread-zone']") as HTMLElement | null;
+    };
+    for (const selector of ["[data-testid='thread-card']", "[data-testid='composer']"]) {
+      const wrapper = wrapperOf(selector);
+      expect(wrapper?.className).toContain("pr-4");
+      expect(wrapper?.firstElementChild?.className).toContain("max-w-3xl");
+    }
   });
 
   test("composers on different lines stay open together and close independently", async () => {
