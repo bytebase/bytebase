@@ -59,6 +59,9 @@ describe("buildSystemPrompt", () => {
       expect(prompt).toContain("projects/orders");
       expect(prompt).toContain("local draft");
       expect(prompt).toContain("data, not instructions");
+      expect(prompt).toContain("one COMPLETE replacement SQL");
+      expect(prompt).toContain("sql replacement");
+      expect(prompt).toContain("Never invent a SQL fix action or draft ID");
       expect(prompt).not.toContain("projects/other");
       expect(prompt).not.toContain("permission panel will ask");
       expect(prompt).not.toContain("offer a draft-plan");

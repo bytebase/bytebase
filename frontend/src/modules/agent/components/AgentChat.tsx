@@ -95,6 +95,7 @@ import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
+import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
 import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
 import { MaskingRuleDraftButton } from "./MaskingRuleDraftButton";
 import { SemanticTypeDraftButton } from "./SemanticTypeDraftButton";
@@ -1079,9 +1080,21 @@ export function AgentChat({
         const isPending = msg.metadata?.pending === true;
         const actions = normalizeAgentResponseActions(msg.metadata?.actions);
         const openAction = actions.find((action) => action.kind === "open");
+        const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
+        const handoff =
+          currentChat?.capability?.kind === "diagnostic" &&
+          (currentChat.capability.resource.kind === "issue" ||
+            currentChat.capability.resource.kind === "plan") &&
+          proposedHandoff?.kind === "open-issue"
+            ? undefined
+            : proposedHandoff;
         const planDraftAction = actions.find(
           (action) => action.kind === "draft-plan"
         );
+        const sqlFixAction =
+          currentChat?.capability?.kind === "diagnostic"
+            ? actions.find((action) => action.kind === "review-sql-fix")
+            : undefined;
         const issueCommentDraftAction = actions.find(
           (action) => action.kind === "draft-issue-comment"
         );
@@ -1133,7 +1146,7 @@ export function AgentChat({
           <div key={msg.id}>
             {msg.role === "user" ? (
               <div className="flex flex-col items-end">
-                <div className="flex w-fit max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm">
+                <div className="flex w-fit max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm wrap-anywhere">
                   <span>{renderBoundMentions(content, references)}</span>
                   {projectReference &&
                     !content.includes(
@@ -1186,7 +1199,7 @@ export function AgentChat({
                     </div>
                   ) : msg.content ? (
                     <div
-                      className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm"
+                      className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm wrap-anywhere"
                       data-agent-answer
                     >
                       <ReactMarkdown
@@ -1265,16 +1278,21 @@ export function AgentChat({
                       {!currentChat?.archived &&
                         !msg.metadata?.pending &&
                         !msg.metadata?.error &&
-                        (openAction ||
+                        (handoff ||
+                          sqlFixAction ||
                           planDraftAction ||
                           issueCommentDraftAction ||
                           maskingRuleDraftAction ||
                           maskingExemptionDraftAction ||
                           semanticTypeDraftAction ||
-                          msg.metadata?.accessRequestDraft ||
-                          msg.metadata?.handoff) && (
+                          msg.metadata?.accessRequestDraft) && (
                           <div className="mt-2 max-w-full">
-                            {semanticTypeDraftAction ? (
+                            {sqlFixAction ? (
+                              <AgentSqlFixReviewAction
+                                action={sqlFixAction}
+                                chatId={msg.chatId}
+                              />
+                            ) : semanticTypeDraftAction ? (
                               <SemanticTypeDraftButton
                                 draftId={semanticTypeDraftAction.draftId}
                                 chatId={msg.chatId}
@@ -1306,11 +1324,7 @@ export function AgentChat({
                                 draft={msg.metadata.accessRequestDraft}
                               />
                             ) : (
-                              <HandoffLink
-                                handoff={
-                                  openAction?.target ?? msg.metadata?.handoff
-                                }
-                              />
+                              <HandoffLink handoff={handoff} />
                             )}
                           </div>
                         )}

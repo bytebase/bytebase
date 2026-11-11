@@ -69,6 +69,7 @@ import {
   dispatchPreparedApiCall,
   prepareApiCall,
   type CallApiArgs,
+  type PreparedApiCall,
 } from "./callApi";
 import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
@@ -92,7 +93,10 @@ import {
   getMaskingScopeChoices,
 } from "./maskingChoices";
 import { createProjectOverviewTool } from "./projectOverview";
-import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
+import {
+  apiTargetsAnotherProject,
+  isApiFilterConstrainedToProject,
+} from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
@@ -170,7 +174,9 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
     ? normalizeAgentHandoff(args.handoff)
     : undefined;
   const actions = args.success
-    ? normalizeAgentResponseActions(args.actions)
+    ? normalizeAgentResponseActions(args.actions).filter(
+        (action) => action.kind !== "review-sql-fix"
+      )
     : [];
   return {
     kind: "done",
@@ -376,6 +382,30 @@ const targetsSelectedPlan = (
     return false;
   }
   return (args.body as Record<string, unknown>).name === referencedPlan;
+};
+
+const databaseListIsProjectConstrained = async (
+  call: PreparedApiCall,
+  project: string
+): Promise<boolean> => {
+  try {
+    const body = JSON.parse(call.body) as Record<string, unknown>;
+    if (
+      body.parent === project ||
+      (typeof body.parent === "string" &&
+        body.parent.startsWith(`${project}/instances/`) &&
+        /^projects\/[^/]+\/instances\/[^/]+$/.test(body.parent))
+    ) {
+      return true;
+    }
+    // Workspace and shared-instance parents can include other projects' databases.
+    return (
+      typeof body.filter === "string" &&
+      (await isApiFilterConstrainedToProject(body.filter, project))
+    );
+  } catch {
+    return false;
+  }
 };
 
 export interface AgentToolDefinitionOptions {
@@ -1555,7 +1585,14 @@ export function createToolExecutor(
         }
         if (
           referencedProject &&
-          (await apiTargetsAnotherProject(prepared.call, referencedProject))
+          ((await apiTargetsAnotherProject(prepared.call, referencedProject)) ||
+            (isDiagnostic &&
+              prepared.call.operationId ===
+                "bytebase.v1.DatabaseService.ListDatabases" &&
+              !(await databaseListIsProjectConstrained(
+                prepared.call,
+                referencedProject
+              ))))
         ) {
           return toToolResult(
             JSON.stringify({

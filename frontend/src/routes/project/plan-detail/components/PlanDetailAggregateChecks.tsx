@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { PlanCheckSection } from "@/components/plan-check/PlanCheckSection";
 import { getPlanCheckSummaryWithFallback } from "@/lib/plan/check";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { usePlanCheckActions } from "../hooks/usePlanCheckActions";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
@@ -37,6 +39,28 @@ export function PlanDetailAggregateChecks() {
         onRefreshOnOpen={refreshChecks}
         onRun={runChecks}
         planCheckRuns={page.planCheckRuns}
+        renderResultAction={(result) => {
+          const sourceId = `${page.plan.name}/planCheckRun`;
+          if (
+            page.isCreating ||
+            page.planCheckRuns.length !== 1 ||
+            page.planCheckRuns[0].name !== sourceId
+          )
+            return null;
+          const context = getPlanCheckDiagnosticContext({
+            resource: {
+              kind: "plan",
+              name: page.plan.name,
+              project: `projects/${page.projectId}`,
+              label: page.plan.name,
+            },
+            result,
+            sourceId,
+          });
+          return context ? (
+            <AgentDiagnosticHelpButton context={context} />
+          ) : null;
+        }}
         renderTarget={(target) => (
           <PlanTargetDisplay showEnvironment target={target} />
         )}

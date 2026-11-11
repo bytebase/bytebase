@@ -25,10 +25,19 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
+import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type Issue,
+  IssueComment_ReviewMetadata_Priority,
+  IssueComment_ThreadState,
+  ReviewRun_Type,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import "./CommentThreadCard.css";
 import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
@@ -137,6 +146,7 @@ export function CommentThreadCard({
 
   const allowReply = canReplyToThread(project, issue);
   const allowSettle = canSettleThread(project);
+  const diagnostic = findingDiagnosticContext(thread, issue, project, spec);
   // The reply composer's checkbox names the action for the thread's current
   // state and, when checked, performs it after the reply is posted:
   //   open thread     -> "Resolve thread", unchecked; a reply keeps it open.
@@ -228,6 +238,7 @@ export function CommentThreadCard({
       <ThreadComment
         actions={
           <>
+            {diagnostic && <AgentDiagnosticHelpButton context={diagnostic} />}
             {thread.resolved && collapsible && !renderContext && (
               <Button
                 aria-label={t("common.collapse")}
@@ -391,6 +402,106 @@ export function CommentThreadCard({
       )}
     </div>
   );
+}
+
+function findingDiagnosticContext(
+  thread: CommentThread,
+  issue: Issue,
+  project: Project | undefined,
+  spec: Plan_Spec | undefined
+): AgentDiagnosticContext | undefined {
+  const { root } = thread;
+  const review = root.reviewMetadata;
+  if (
+    !review ||
+    thread.resolved ||
+    root.threadState !== IssueComment_ThreadState.OPEN ||
+    ![ReviewRun_Type.RULE, ReviewRun_Type.AI].includes(review.runType)
+  )
+    return undefined;
+  const projectName = issue.name.split("/").slice(0, 2).join("/");
+  const issueScope = normalizeAgentDiagnosticCapability({
+    kind: "diagnostic",
+    resource: {
+      kind: "issue",
+      name: issue.name,
+      project: projectName,
+      label: issue.name,
+    },
+  });
+  if (
+    !issueScope ||
+    (project && project.name !== projectName) ||
+    !root.name.startsWith(`${issue.name}/issueComments/`) ||
+    !/^[a-zA-Z0-9-]+$/.test(
+      root.name.slice(`${issue.name}/issueComments/`.length)
+    ) ||
+    (spec && root.statementAnchor && spec.id !== root.statementAnchor.spec)
+  )
+    return undefined;
+  const scope = issue.plan
+    ? normalizeAgentDiagnosticCapability({
+        kind: "diagnostic",
+        resource: {
+          kind: "plan",
+          name: issue.plan,
+          project: projectName,
+          label: issue.plan,
+        },
+      })
+    : issueScope;
+  if (!scope) return undefined;
+  const anchor = root.statementAnchor;
+  const reviewer = review.runType === ReviewRun_Type.RULE ? "rule" : "ai";
+  const facts = [
+    { label: "Issue", value: issue.name },
+    {
+      label: "Review run",
+      value: `${issue.name}/reviewRuns/${reviewer} (${ReviewRun_Type[review.runType]}), attempt ${review.attempt}`,
+    },
+    {
+      label: "Rule",
+      value: [ReviewRuleType[review.ruleType], ...review.codes].join(": "),
+    },
+    {
+      label: "Priority",
+      value: IssueComment_ReviewMetadata_Priority[review.priority],
+    },
+    { label: "Targets", value: review.targets.join(", ") },
+    { label: "Superseded", value: String(review.superseded) },
+    {
+      label: "Evidence",
+      value:
+        "Partial: original SQL snapshot unavailable; use the original revision identifiers, not current SQL.",
+    },
+  ];
+  if (anchor) {
+    facts.push(
+      { label: "Spec", value: anchor.spec },
+      { label: "Original sheet SHA256", value: anchor.sheetSha256 }
+    );
+    if (anchor.startPosition && anchor.endPosition)
+      facts.push({
+        label: "Original SQL range",
+        value: `${anchor.startPosition.line}:${anchor.startPosition.column}-${anchor.endPosition.line}:${anchor.endPosition.column}`,
+      });
+  }
+  return {
+    resource: scope.resource,
+    kind: "review-finding",
+    sourceId: root.name,
+    summary: review.title || "Automated review finding",
+    detail: root.comment,
+    ...(anchor?.spec.trim() && /^[a-f0-9]{64}$/i.test(anchor.sheetSha256)
+      ? {
+          sqlFixSource: {
+            specId: anchor.spec,
+            sha256: anchor.sheetSha256,
+          },
+        }
+      : {}),
+    facts,
+  };
 }
 
 function ThreadSummary({

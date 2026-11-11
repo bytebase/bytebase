@@ -345,6 +345,24 @@
       "unsaved": "Chỉ điền vào biểu mẫu chưa lưu. Kiểm tra trước khi chọn Tạo."
     },
     "send": "Gửi",
+    "sql-fix": {
+      "applied": "Đã áp dụng SQL vào bản nháp",
+      "apply": "Áp dụng vào bản nháp",
+      "apply-failed": "Không thể áp dụng SQL. Chưa có thay đổi nào được thực hiện.",
+      "busy": "Hãy đợi chẩn đoán này hoàn tất trước khi áp dụng đề xuất.",
+      "checked-sql": "SQL đã kiểm tra",
+      "loading": "Đang tải trình soạn thảo SQL gốc...",
+      "original-unavailable": "SQL gốc không còn trong thẻ này. Hãy bắt đầu chẩn đoán mới từ vấn đề.",
+      "permission-denied": "Bạn không có quyền chỉnh sửa SQL này.",
+      "proposed-sql": "SQL được đề xuất",
+      "readonly": "SQL này ở chế độ chỉ đọc.",
+      "review": "Xem lại bản sửa SQL",
+      "review-current": "Xem SQL hiện tại",
+      "stale": "SQL đã thay đổi kể từ khi chuẩn bị bản sửa này. Hãy xem SQL hiện tại trước khi chuẩn bị bản sửa mới.",
+      "unavailable": "Trình soạn thảo SQL gốc không khả dụng. Hãy quay lại thay đổi gốc để áp dụng đề xuất này.",
+      "unsaved-checks": "Kiểm tra SQL chưa lưu",
+      "unsaved-only": "Chỉ áp dụng vào bản nháp chưa lưu"
+    },
     "stop": "Dừng",
     "token-usage": {
       "answer": "Câu trả lời",

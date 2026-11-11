@@ -165,6 +165,7 @@ vi.mock("@/stores/app", () => {
     get workspace() {
       return mocks.workspace;
     },
+    workspaceResourceName: () => mocks.workspace?.name ?? "",
   };
   const useAppStore = <T,>(selector: (value: typeof state) => T) =>
     selector(state);
@@ -308,6 +309,8 @@ beforeEach(async () => {
     minimized: initialState.minimized,
     abortControllersByChatId: {},
     remoteBusyChatIds: {},
+    sqlFixSourcesByChatId: {},
+    sqlFixDraftsById: {},
     preferences: {
       sendWithEnter: true,
       tokenLimitPerRun: 60_000,
@@ -5001,6 +5004,45 @@ describe("AgentInput", () => {
       view.unmount();
     }
   );
+
+  test.each([
+    { trusted: true, success: true },
+    { trusted: false, success: true },
+    { trusted: true, success: false },
+  ])("synthesizes SQL fix actions only for a trusted successful answer: $trusted/$success", async ({ trusted, success }) => {
+    const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
+    const answer = "Complete replacement:\n```sql\nUPDATE books SET price = 2;\n```";
+    const followUp = { kind: "continue", prompt: "Why is this predicate needed?" };
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: resource.project, plan: { status: "available", name: resource.name, state: "ACTIVE" } }) });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onText(answer);
+      return { kind: "completed", success, totalTokensUsed: 0, actions: [{ kind: "review-sql-fix", draftId: "model-invented" }, followUp] };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders/plans/7", title: "Plan" };
+    const chat = store.createChat({ context: resource.project, workspaceName: "workspaces/demo", capability: { kind: "diagnostic", resource } });
+    if (trusted) store.setSqlFixSource(chat.id, {
+      identity: JSON.stringify(["workspaces/demo", "users/me@example.com"]),
+      pageKey: "orders/7", resource, sourceId: `${resource.name}/planCheckRun`, plan: resource.name,
+      specId: "spec-1", sheet: "projects/orders/sheets/9", targets: ["instances/prod/databases/orders"], sha256: "a".repeat(64), sql: "UPDATE books SET price = 1;",
+    });
+    store.queueUserMessage({ chatId: chat.id, text: "Fix this SQL check", page, resourceReferences: [resource] });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    await act(async () => {
+      await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === answer)).toBe(true));
+    });
+    const actions = store.getMessages(chat.id).find((message) => message.content === answer)?.metadata?.actions ?? [];
+    expect(actions.some((action) => action.kind === "review-sql-fix")).toBe(trusted && success);
+    expect(actions).not.toContainEqual({ kind: "review-sql-fix", draftId: "model-invented" });
+    if (trusted && success) {
+      const action = actions.find((candidate) => candidate.kind === "review-sql-fix")!;
+      expect(useAgentStore.getState().sqlFixDraftsById[action.draftId].chatId).toBe(chat.id);
+      expect(actions.filter((candidate) => candidate.kind !== "continue")).toHaveLength(1);
+    }
+    expect(actions.filter((action) => action.kind === "continue")).toEqual(success ? [followUp] : []);
+    view.unmount();
+  });
 
   test("diagnostic answers cannot stage Issue comment drafts", async () => {
     const resource = { kind: "issue" as const, name: "projects/orders/issues/42", project: "projects/orders", label: "projects/orders/issues/42" };

@@ -26,6 +26,23 @@ const issueCommentDraft = {
 const ddlAnswer = "I suggest:\n\n```sql\nCREATE TABLE notes (id INT);\n```";
 
 describe("response actions", () => {
+  test("normalizes runtime SQL fix actions without accepting model-provided IDs", () => {
+    const action = { kind: "review-sql-fix", draftId: "sql-fix-1" };
+    expect(normalizeAgentResponseActions([action, followUp])).toEqual([
+      action,
+      followUp,
+    ]);
+    expect(acceptAgentResponseActions([action, followUp], [])).toEqual([
+      followUp,
+    ]);
+    expect(
+      normalizeAgentResponseActions([{ ...action, sql: "SELECT 1" }])
+    ).toEqual([]);
+    expect(
+      normalizeAgentResponseActions([{ ...action, project: "projects/sample" }])
+    ).toEqual([]);
+  });
+
   test("offers only a prepared current-run semantic type draft", () => {
     const action = { kind: "draft-semantic-type", draftId: "semantic-2" };
     expect(normalizeAgentResponseActions([action, followUp])).toEqual([

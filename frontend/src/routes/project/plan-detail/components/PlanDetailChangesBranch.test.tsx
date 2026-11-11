@@ -18,6 +18,7 @@ import {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  completeDraftChecks: undefined as undefined | ((content: Uint8Array | undefined, results: CheckReleaseResponse_CheckResult[] | undefined) => void),
   issueComments: [] as unknown[],
   sheetsByName: {} as Record<
     string,
@@ -458,9 +459,11 @@ vi.mock("./PlanDetailAggregateChecks", () => ({
 
 vi.mock("./PlanDetailDraftChecks", () => ({
   PlanDetailDraftChecks: ({
+    checkedContent,
     onCheckResultsChange,
     selectedSpec,
   }: {
+    checkedContent?: Uint8Array;
     checkResults?: CheckReleaseResponse_CheckResult[];
     onCheckResultsChange: (
       content: Uint8Array | undefined,
@@ -471,8 +474,10 @@ vi.mock("./PlanDetailDraftChecks", () => ({
       id: string;
     };
   }) => {
+    mocks.completeDraftChecks = onCheckResultsChange;
     return (
       <button
+        data-checked-sql={checkedContent ? new TextDecoder().decode(checkedContent) : ""}
         onClick={() => {
           const sheetName =
             selectedSpec.config?.case === "changeDatabaseConfig"
@@ -553,6 +558,7 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
+  mocks.completeDraftChecks = undefined;
   mocks.localSheets.clear();
   mocks.issueComments = [];
   mocks.sheetsByName = {};
@@ -1568,6 +1574,50 @@ describe("PlanDetailChangesBranch", () => {
     consoleError.mockRestore();
 
     expect(fired).toBe(false);
+  });
+
+  it("passes the checked statement bytes to draft diagnostic help", async () => {
+    const sheetName = "projects/foo/sheets/-1";
+    mocks.localSheets.set(sheetName, {
+      name: sheetName,
+      content: new TextEncoder().encode("select 1;"),
+      contentSize: 0n,
+    });
+    const page = buildPageState();
+    if (page.plan.specs[0].config.case === "changeDatabaseConfig") {
+      page.plan.specs[0].config.value.sheet = sheetName;
+    }
+    act(() => root.render(<PlanDetailProvider value={page}><PlanDetailChangesBranch selectedSpecId="spec-1" onSelectedSpecIdChange={vi.fn()} /></PlanDetailProvider>));
+    await flush();
+    await act(async () => {
+      ([...container.querySelectorAll("button")].find((button) => button.textContent === "run draft checks") as HTMLButtonElement).click();
+    });
+    await flush();
+
+    expect(container.querySelector("[data-checked-sql]")?.getAttribute("data-checked-sql")).toBe("select 1;");
+  });
+
+  it("ignores a late draft check response after changing the create-plan route", async () => {
+    const sheetName = "projects/foo/sheets/-1";
+    const content = new TextEncoder().encode("select 1;");
+    mocks.localSheets.set(sheetName, { name: sheetName, content, contentSize: 0n });
+    const page = buildPageState();
+    if (page.plan.specs[0].config.case === "changeDatabaseConfig") {
+      page.plan.specs[0].config.value.sheet = sheetName;
+    }
+    const render = () => root.render(<PlanDetailProvider value={page}><PlanDetailChangesBranch selectedSpecId="spec-1" onSelectedSpecIdChange={vi.fn()} /></PlanDetailProvider>);
+    act(render);
+    await flush();
+    const completeOriginalChecks = mocks.completeDraftChecks!;
+    page.pageKey = "foo/create/new-draft";
+    act(render);
+    await flush();
+
+    await act(async () => completeOriginalChecks(content, [{ target: "check-run-from-old-page", advices: [] } as unknown as CheckReleaseResponse_CheckResult]));
+    await flush();
+
+    expect(container.textContent).not.toContain("check-run-from-old-page");
+    expect(container.querySelector("[data-checked-sql]")?.getAttribute("data-checked-sql")).toBe("");
   });
 
   it("hides stale draft check runs after the create-plan statement changes", async () => {

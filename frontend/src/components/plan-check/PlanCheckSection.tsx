@@ -45,6 +45,7 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 const PAGE_SIZE = 10;
 
 interface PlanCheckSectionProps {
+  title?: string;
   planCheckRuns: PlanCheckRun[];
   // When provided, the section uses this summary instead of computing one
   // from planCheckRuns. Issue-detail uses this to fall back to
@@ -60,6 +61,7 @@ interface PlanCheckSectionProps {
   // Optional trailing element rendered after status counts (e.g. affected rows).
   trailingSummary?: ReactNode;
   renderTarget?: (target: string) => ReactNode;
+  renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
   // If true, FAILED and CANCELED runs without error results render as a
   // synthetic error group. Used by plan-detail regular checks.
   includeRunFailure?: boolean;
@@ -68,6 +70,7 @@ interface PlanCheckSectionProps {
 }
 
 export function PlanCheckSection({
+  title,
   planCheckRuns,
   summaryOverride,
   canRun,
@@ -77,6 +80,7 @@ export function PlanCheckSection({
   onRefreshOnOpen,
   trailingSummary,
   renderTarget,
+  renderResultAction,
   includeRunFailure = false,
   headingClassName = "textlabel uppercase",
 }: PlanCheckSectionProps) {
@@ -92,7 +96,7 @@ export function PlanCheckSection({
   return (
     <div className="flex flex-col gap-y-1">
       <div className="flex items-center justify-between gap-2">
-        <h3 className={headingClassName}>{t("plan.checks.self")}</h3>
+        <h3 className={headingClassName}>{title ?? t("plan.checks.self")}</h3>
         {canRun && (
           <Button
             disabled={isRunning || runDisabled}
@@ -133,6 +137,7 @@ export function PlanCheckSection({
         open={drawerOpen}
         planCheckRuns={planCheckRuns}
         renderTarget={renderTarget}
+        renderResultAction={renderResultAction}
       />
     </div>
   );
@@ -249,6 +254,7 @@ interface PlanCheckResultsDrawerProps {
   onRefreshOnOpen?: () => Promise<unknown>;
   includeRunFailure?: boolean;
   renderTarget?: (target: string) => ReactNode;
+  renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
 }
 
 export function PlanCheckResultsDrawer({
@@ -258,6 +264,7 @@ export function PlanCheckResultsDrawer({
   onRefreshOnOpen,
   includeRunFailure = false,
   renderTarget,
+  renderResultAction,
 }: PlanCheckResultsDrawerProps) {
   const { t } = useTranslation();
   const [selectedStatus, setSelectedStatus] = useState<
@@ -378,6 +385,12 @@ export function PlanCheckResultsDrawer({
                       <div className="flex flex-col gap-y-2 pl-8">
                         {group.results.map((result, index) => (
                           <PlanCheckResultCard
+                            action={
+                              result.status === Advice_Level.ERROR ||
+                              result.status === Advice_Level.WARNING
+                                ? renderResultAction?.(result)
+                                : undefined
+                            }
                             key={`${group.key}-${index}`}
                             result={result}
                           />
@@ -412,8 +425,10 @@ export function PlanCheckResultsDrawer({
 
 export function PlanCheckResultCard({
   result,
+  action,
 }: {
   result: PlanCheckRun_Result;
+  action?: ReactNode;
 }) {
   const { t } = useTranslation();
   const position =
@@ -433,7 +448,12 @@ export function PlanCheckResultCard({
     <div className="flex items-start gap-3 rounded-sm border border-control-border bg-control-bg px-3 py-2">
       <div className="mt-0.5 shrink-0">{statusIcon(result.status)}</div>
       <div className="flex min-w-0 flex-1 flex-col gap-y-1">
-        <div className="text-sm font-medium text-main">{displayTitle}</div>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0 break-words text-sm font-medium text-main">
+            {displayTitle}
+          </div>
+          {action}
+        </div>
         {result.content && (
           <div className="text-sm text-control">{result.content}</div>
         )}

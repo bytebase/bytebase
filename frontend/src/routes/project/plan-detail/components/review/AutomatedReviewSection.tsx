@@ -39,6 +39,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
+import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
@@ -48,7 +52,13 @@ import {
   ReviewRun_Status,
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
+  PlanCheckRun_Status,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { engineNameV1 } from "@/utils/v1/instance";
 import { useEffectiveStandardRules } from "../../hooks/useEffectiveStandardRules";
@@ -94,6 +104,18 @@ const runTypeOf = (reviewer: AutomatedReviewer): ReviewRun_Type | undefined =>
       ? ReviewRun_Type.AI
       : undefined;
 
+function diagnosticPlanResource(planName: string, projectId: string) {
+  return normalizeAgentDiagnosticCapability({
+    kind: "diagnostic",
+    resource: {
+      kind: "plan",
+      name: planName,
+      project: `projects/${projectId}`,
+      label: planName,
+    },
+  })?.resource;
+}
+
 // The machine reviewers, one line each, between Approval and Activity: the
 // conclusion, the open findings by priority, what people resolved, and what
 // the reviewer covered on hover. The findings themselves live in the editor;
@@ -112,6 +134,54 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
     await ruleReview?.reload();
   };
   const requestRerunChecks = () => void rerunAll();
+  const renderCheckAction = (result: PlanCheckRun_Result) => {
+    const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+    if (!resource || (page.issue && page.issue.plan !== page.plan.name))
+      return null;
+    const sourceId = `${page.plan.name}/planCheckRun`;
+    const matchingRuns = page.planCheckRuns.filter((run) => {
+      if (run.name !== sourceId) return false;
+      if (run.results.includes(result)) return true;
+      const stopped =
+        run.status === PlanCheckRun_Status.FAILED ||
+        run.status === PlanCheckRun_Status.CANCELED;
+      return (
+        stopped &&
+        !run.results.some((entry) => entry.status === Advice_Level.ERROR) &&
+        result.status === Advice_Level.ERROR &&
+        result.type === PlanCheckRun_Result_Type.TYPE_UNSPECIFIED &&
+        !result.target &&
+        result.content ===
+          (run.error ||
+            t(
+              run.status === PlanCheckRun_Status.CANCELED
+                ? "common.canceled"
+                : "common.failed"
+            ))
+      );
+    });
+    if (matchingRuns.length !== 1) return null;
+    const run = matchingRuns[0];
+    const context = getPlanCheckDiagnosticContext({
+      resource,
+      result,
+      sourceId,
+      facts: [
+        { label: "Plan", value: page.plan.name },
+        { label: "Status", value: PlanCheckRun_Status[run.status] },
+        ...(page.issue ? [{ label: "Issue", value: page.issue.name }] : []),
+        ...(run.createTime
+          ? [
+              {
+                label: "Started",
+                value: `${run.createTime.seconds}.${String(run.createTime.nanos).padStart(9, "0")}`,
+              },
+            ]
+          : []),
+      ],
+    });
+    return context ? <AgentDiagnosticHelpButton context={context} /> : null;
+  };
 
   if (rows.length === 0) return null;
 
@@ -186,6 +256,7 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         onOpenChange={setChecksDrawerOpen}
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
+        renderResultAction={renderCheckAction}
       />
     </div>
   );
@@ -292,6 +363,57 @@ function ReviewerRow({
   }
 
   const actions: ReactNode[] = [];
+  const reviewRun =
+    row.reviewer === "rule"
+      ? ruleReview?.run
+      : row.reviewer === "ai"
+        ? ai.run
+        : undefined;
+  const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+  let diagnosticHelp: ReactNode;
+  if (
+    row.conclusion === "failed" &&
+    resource &&
+    page.issue &&
+    page.issue.plan === page.plan.name &&
+    /^projects\/[^/]+\/issues\/[1-9]\d*$/.test(page.issue.name) &&
+    page.issue.name.startsWith(`${resource.project}/issues/`) &&
+    reviewRun?.name === `${page.issue.name}/reviewRuns/${row.reviewer}` &&
+    reviewRun.type === runType &&
+    reviewRun.status === ReviewRun_Status.FAILED &&
+    reviewRun.error.trim() &&
+    !(row.reviewer === "rule" && ruleReview?.loadFailed)
+  ) {
+    const facts: NonNullable<AgentDiagnosticContext["facts"]>[number][] = [
+      { label: "Plan", value: page.plan.name },
+      { label: "Issue", value: page.issue.name },
+      { label: "Reviewer", value: ReviewRun_Type[reviewRun.type] },
+      { label: "Status", value: ReviewRun_Status[reviewRun.status] },
+      { label: "Earlier SQL revision", value: String(reviewRun.outdated) },
+    ];
+    for (const [label, time] of [
+      ["Started", reviewRun.createTime],
+      ["Ended", reviewRun.endTime],
+    ] as const) {
+      if (time)
+        facts.push({
+          label,
+          value: `${time.seconds}.${String(time.nanos).padStart(9, "0")}`,
+        });
+    }
+    diagnosticHelp = (
+      <AgentDiagnosticHelpButton
+        context={{
+          resource,
+          kind: "review-run",
+          sourceId: reviewRun.name,
+          summary: `${ReviewRun_Type[reviewRun.type]} reviewer execution failed`,
+          detail: reviewRun.error,
+          facts,
+        }}
+      />
+    );
+  }
   if (row.reviewer === "rule") {
     if (ruleReview?.loadFailed) {
       actions.push(
@@ -392,10 +514,12 @@ function ReviewerRow({
           onOpen={openGroup}
           row={row}
           runType={runType}
-        />
-        {(row.reviewer === "rule" || row.reviewer === "ai") && hasResult && (
-          <ScopeInfo reviewer={row.reviewer} />
-        )}
+        >
+          {(row.reviewer === "rule" || row.reviewer === "ai") && hasResult && (
+            <ScopeInfo reviewer={row.reviewer} />
+          )}
+          {diagnosticHelp}
+        </ConclusionText>
       </span>
       {actions.length > 0 && (
         <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
@@ -585,11 +709,13 @@ function ConclusionText({
   runType,
   comments,
   onOpen,
+  children,
 }: {
   row: AutomatedReviewRow;
   runType: ReviewRun_Type | undefined;
   comments: readonly IssueComment[];
   onOpen: (group: FindingGroup) => void;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { findings } = row;
@@ -612,6 +738,19 @@ function ConclusionText({
     />
   );
   const isPlanCheck = runType === undefined;
+  if (row.conclusion === "failed") {
+    return (
+      <span className="flex min-w-0 flex-col gap-y-1">
+        <span className="wrap-anywhere whitespace-normal text-main">
+          {row.error || t("plan.automated-review.failed")}
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          {time}
+          {children}
+        </span>
+      </span>
+    );
+  }
   const parts: ReactNode[] = [];
   switch (row.conclusion) {
     case "loading":
@@ -625,13 +764,6 @@ function ConclusionText({
       break;
     case "outdated":
       parts.push(t("plan.automated-review.outdated"));
-      break;
-    case "failed":
-      parts.push(
-        <span className="break-words whitespace-normal text-main" key="error">
-          {row.error || t("plan.automated-review.failed")}
-        </span>
-      );
       break;
     case "passed":
       parts.push(
@@ -721,6 +853,7 @@ function ConclusionText({
           {part}
         </span>
       ))}
+      {children}
     </>
   );
 }

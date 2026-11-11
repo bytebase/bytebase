@@ -94,6 +94,20 @@ export function normalizeAgentResponseActions(
   const seenPrompts = new Set<string>();
   for (const candidate of raw) {
     if (primaryAction && continueActions.length === MAX_CONTINUE_ACTIONS) break;
+    if (!isRecord(candidate)) continue;
+    if (candidate.kind === "review-sql-fix") {
+      if (
+        Object.keys(candidate).every(
+          (key) => key === "kind" || key === "draftId"
+        ) &&
+        typeof candidate.draftId === "string" &&
+        /^[A-Za-z0-9_-]{1,100}$/.test(candidate.draftId) &&
+        !primaryAction
+      ) {
+        primaryAction = { kind: "review-sql-fix", draftId: candidate.draftId };
+      }
+      continue;
+    }
     if (
       !isRecord(candidate) ||
       Object.keys(candidate).some(
@@ -260,6 +274,7 @@ export function acceptAgentResponseActions(
   }
   const actions = normalizedActions.filter((action) => {
     if (action.kind === "continue") return true;
+    if (action.kind === "review-sql-fix") return false;
     if (
       action.kind === "draft-masking-rule" ||
       action.kind === "draft-masking-exemption" ||

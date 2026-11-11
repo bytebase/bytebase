@@ -345,6 +345,24 @@
       "unsaved": "仅填充尚未保存的表单。请检查后再点击创建。"
     },
     "send": "发送",
+    "sql-fix": {
+      "applied": "SQL 已应用到草稿",
+      "apply": "应用到草稿",
+      "apply-failed": "无法应用 SQL，未进行任何更改。",
+      "busy": "请等待本次诊断完成后再应用建议。",
+      "checked-sql": "已检查的 SQL",
+      "loading": "正在加载原 SQL 编辑器...",
+      "original-unavailable": "当前标签页中的原 SQL 已不可用，请从问题处重新发起诊断。",
+      "permission-denied": "您没有编辑此 SQL 的权限。",
+      "proposed-sql": "建议的 SQL",
+      "readonly": "此 SQL 为只读。",
+      "review": "审阅 SQL 修复",
+      "review-current": "查看当前 SQL",
+      "stale": "准备此修复后 SQL 已发生更改，请先查看当前 SQL 再生成新的修复。",
+      "unavailable": "原 SQL 编辑器不可用，请返回原变更以应用此建议。",
+      "unsaved-checks": "未保存 SQL 的检查",
+      "unsaved-only": "仅应用到未保存的草稿"
+    },
     "stop": "停止",
     "token-usage": {
       "answer": "回答",

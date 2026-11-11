@@ -24,6 +24,12 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import {
+  type AgentSqlFixDraft,
+  type AgentSqlFixSource,
+  extractAgentSqlFixSQL,
+  isCurrentAgentSqlFixSource,
+} from "../logic/sqlFix";
 import { normalizeModelCallUsage } from "../logic/tokenUsage";
 import type {
   AgentAskUserResponse,
@@ -791,6 +797,13 @@ export interface AgentState {
     string,
     RegisteredExpressionDraftTarget
   >;
+  sqlFixSourcesByChatId: Record<string, AgentSqlFixSource>;
+  sqlFixDraftsById: Record<string, AgentSqlFixDraft>;
+  setSqlFixSource: (chatId: string, source: AgentSqlFixSource) => void;
+  prepareSqlFixDraft: (
+    chatId: string,
+    answer: string
+  ) => Extract<AgentResponseAction, { kind: "review-sql-fix" }> | undefined;
 
   // UI actions
   open: () => void;
@@ -1536,6 +1549,30 @@ export const createAgentStore = () => {
       const _hasRunningChat = (): boolean =>
         get().chats.some((chat) => chat.status === "running");
 
+      const clearSqlFixDrafts = (state: AgentState, chatId: string) => {
+        delete state.sqlFixSourcesByChatId[chatId];
+        for (const [id, draft] of Object.entries(state.sqlFixDraftsById)) {
+          if (draft.chatId === chatId) delete state.sqlFixDraftsById[id];
+        }
+      };
+
+      const canUseSqlFixSource = (
+        chatId: string,
+        source: AgentSqlFixSource
+      ) => {
+        const state = get();
+        const chat = _getChat(chatId);
+        return Boolean(
+          chat?.capability &&
+            !chat.archived &&
+            state.currentChatId === chatId &&
+            !state.remoteBusyChatIds[chatId] &&
+            chat.workspaceName === state.workspaceName &&
+            isCurrentAgentSqlFixSource(source, chat.capability.resource) &&
+            JSON.parse(source.identity)[0] === state.workspaceName
+        );
+      };
+
       const _touchChatInDraft = (
         chats: AgentChat[],
         chatId: string
@@ -1641,6 +1678,8 @@ export const createAgentStore = () => {
         queuedUserMessageInFlightByChatId: {},
         remoteBusyChatIds: {},
         expressionDraftTargetsByChatId: {},
+        sqlFixSourcesByChatId: {},
+        sqlFixDraftsById: {},
 
         // UI actions
         open: () =>
@@ -2049,6 +2088,7 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.archived = true;
+              clearSqlFixDrafts(state, chatId);
               _touchChatInDraft(state.chats, chatId);
             }
           });
@@ -2064,6 +2104,7 @@ export const createAgentStore = () => {
 
             for (const chat of activeChats) {
               chat.archived = true;
+              clearSqlFixDrafts(state, chat.id);
               _touchChatInDraft(state.chats, chat.id);
             }
 
@@ -2124,6 +2165,7 @@ export const createAgentStore = () => {
             delete state.abortControllersByChatId[chatId];
             delete state.queuedUserMessagesByChatId[chatId];
             delete state.queuedUserMessageInFlightByChatId[chatId];
+            clearSqlFixDrafts(state, chatId);
             if (state.currentChatId === chatId) {
               // Select next available chat
               const ordered = [...state.chats].sort((a, b) => {
@@ -2178,6 +2220,7 @@ export const createAgentStore = () => {
               delete state.queuedUserMessagesByChatId[chatId];
               delete state.queuedUserMessageInFlightByChatId[chatId];
               delete state.expressionDraftTargetsByChatId[chatId];
+              clearSqlFixDrafts(state, chatId);
             }
 
             state.chats = state.chats.filter(
@@ -2191,6 +2234,30 @@ export const createAgentStore = () => {
             }
           });
           return deletedCount;
+        },
+
+        setSqlFixSource: (chatId, source) => {
+          if (!canUseSqlFixSource(chatId, source)) return;
+          set((state) => {
+            clearSqlFixDrafts(state, chatId);
+            state.sqlFixSourcesByChatId[chatId] = {
+              ...source,
+              resource: { ...source.resource },
+              targets: [...source.targets],
+            };
+          });
+        },
+
+        prepareSqlFixDraft: (chatId, answer) => {
+          const source = get().sqlFixSourcesByChatId[chatId];
+          if (!source || !canUseSqlFixSource(chatId, source)) return undefined;
+          const sql = extractAgentSqlFixSQL(answer);
+          if (sql === undefined || sql === source.sql) return undefined;
+          const id = uuidv4();
+          set((state) => {
+            state.sqlFixDraftsById[id] = { id, chatId, source, sql };
+          });
+          return { kind: "review-sql-fix", draftId: id };
         },
 
         registerExpressionDraftTarget: (chatId, apply, options = {}) => {
@@ -2710,6 +2777,8 @@ export const createAgentStore = () => {
               draft.queuedUserMessageInFlightByChatId = {};
               draft.remoteBusyChatIds = {};
               draft.expressionDraftTargetsByChatId = {};
+              draft.sqlFixSourcesByChatId = {};
+              draft.sqlFixDraftsById = {};
               draft.preferences = { ...DEFAULT_AGENT_PREFERENCES };
               draft.preferencesStorageError = false;
             });
@@ -2765,6 +2834,8 @@ export const createAgentStore = () => {
             draft.queuedUserMessageInFlightByChatId = {};
             draft.remoteBusyChatIds = {};
             draft.expressionDraftTargetsByChatId = {};
+            draft.sqlFixSourcesByChatId = {};
+            draft.sqlFixDraftsById = {};
             draft.preferences = preferencesState.preferences;
             draft.preferencesStorageError =
               preferencesState.preferencesStorageError;

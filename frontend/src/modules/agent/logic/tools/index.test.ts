@@ -1045,6 +1045,154 @@ describe("diagnostic capability", () => {
     expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
   });
 
+  test.each(["workspaces/example", "instances/shared"])(
+    "rejects a diagnostic database list under %s without a project constraint",
+    async (parent) => {
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability,
+      });
+
+      const result = await executor(
+        "call_api",
+        { operationId: "DatabaseService/ListDatabases", body: { parent } },
+        "unscoped-list"
+      );
+
+      expect(result).toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(/outside.*referenced project/i),
+      });
+      expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+      expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each(["workspaces/example", "instances/shared"])(
+    "allows a diagnostic database list under %s with a proven project filter",
+    async (parent) => {
+      celApi.batchParse.mockResolvedValue({
+        expressions: [
+          call(
+            "_&&_",
+            projectFilter("projects/referenced"),
+            call("_==_", ident("name"), literal("app"))
+          ),
+        ],
+      });
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability,
+      });
+
+      await expect(
+        executor(
+          "call_api",
+          {
+            operationId: "DatabaseService/ListDatabases",
+            body: {
+              parent,
+              filter: 'project == "projects/referenced" && name == "app"',
+            },
+          },
+          "scoped-list"
+        )
+      ).resolves.toEqual({ kind: "tool_result", result: "call_api" });
+      expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+      expect(celApi.batchParse).toHaveBeenCalledOnce();
+    }
+  );
+
+  test("rejects a diagnostic database list with a project-escaping OR filter", async () => {
+    celApi.batchParse.mockResolvedValue({
+      expressions: [
+        call(
+          "_||_",
+          projectFilter("projects/referenced"),
+          projectFilter("projects/other")
+        ),
+      ],
+    });
+    const result = await createToolExecutor({} as AppRouterInstance, {
+      capability,
+    })(
+      "call_api",
+      {
+        operationId: "DatabaseService/ListDatabases",
+        body: {
+          parent: "workspaces/example",
+          filter:
+            'project == "projects/referenced" || project == "projects/other"',
+        },
+      },
+      "escaping-list"
+    );
+
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/outside.*referenced project/i),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test("rejects a diagnostic database list when its project filter cannot be verified", async () => {
+    celApi.batchParse.mockRejectedValue(new Error("parser unavailable"));
+    const result = await createToolExecutor({} as AppRouterInstance, {
+      capability,
+    })(
+      "call_api",
+      {
+        operationId: "DatabaseService/ListDatabases",
+        body: {
+          parent: "instances/shared",
+          filter: 'project == "projects/referenced"',
+        },
+      },
+      "unverified-list"
+    );
+
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/outside.*referenced project/i),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test.each(["projects/referenced", "projects/referenced/instances/primary"])(
+    "allows a diagnostic database list with project parent %s",
+    async (parent) => {
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability,
+      });
+
+      await expect(
+        executor(
+          "call_api",
+          { operationId: "DatabaseService/ListDatabases", body: { parent } },
+          "project-list"
+        )
+      ).resolves.toEqual({ kind: "tool_result", result: "call_api" });
+      expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+      expect(celApi.batchParse).not.toHaveBeenCalled();
+    }
+  );
+
+  test("preserves normal chats' workspace-wide database lists", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      referencedProject: "projects/referenced",
+    });
+
+    await expect(
+      executor(
+        "call_api",
+        {
+          operationId: "DatabaseService/ListDatabases",
+          body: { parent: "workspaces/example" },
+        },
+        "normal-list"
+      )
+    ).resolves.toEqual({ kind: "tool_result", result: "call_api" });
+    expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+  });
+
   test.each(["plan", "issue", "database"] as const)(
     "binds the selected %s overview to the original resource",
     async (kind) => {
@@ -4086,6 +4234,45 @@ describe("agent tools ask_user", () => {
       ],
     });
   });
+
+  test.each([
+    undefined,
+    {
+      kind: "diagnostic" as const,
+      resource: {
+        kind: "plan" as const,
+        name: "projects/sample/plans/7",
+        project: "projects/sample",
+        label: "Plan",
+      },
+    },
+  ])(
+    "never accepts model-provided SQL fix review IDs on done: %j",
+    async (capability) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        capability,
+      });
+      await expect(
+        executeTool(
+          "done",
+          {
+            text: "Proposed SQL is available.",
+            success: true,
+            actions: [
+              { kind: "review-sql-fix", draftId: "invented" },
+              { kind: "continue", prompt: "Why is this safer?" },
+            ],
+          },
+          "model-sql-fix"
+        )
+      ).resolves.toEqual({
+        kind: "done",
+        text: "Proposed SQL is available.",
+        success: true,
+        actions: [{ kind: "continue", prompt: "Why is this safer?" }],
+      });
+    }
+  );
 
   test("exposes exact Issue, Plan, and failed Task Open targets", () => {
     const definition = getToolDefinitions().find(
