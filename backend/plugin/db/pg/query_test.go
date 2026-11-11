@@ -238,3 +238,32 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	require.Equal(t, "10000-01-01 08:00:00+08:00", values["tz_out_of_range"].GetStringValue())
 	require.Equal(t, "10000-01-01 00:00:00", values["ts_out_of_range"].GetStringValue())
 }
+
+// TestPgColumnTypeModifiersSkipsInTransaction guards the describe against aborting a caller's
+// open transaction: a failed describe inside one would abort it, so the caller's own execution
+// would report "25P02 current transaction is aborted" and lose the real error. The helper must
+// skip describe there and leave the transaction untouched.
+func TestPgColumnTypeModifiersSkipsInTransaction(t *testing.T) {
+	ctx := context.Background()
+	_, db := testcontainer.NewPgDatabase(t)
+
+	conn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, conn.Close()) }()
+
+	_, err = conn.ExecContext(ctx, "BEGIN")
+	require.NoError(t, err)
+
+	// Describing a missing table here would abort the transaction; the helper declines and
+	// returns nil (the caller falls back to the default precision).
+	require.Nil(t, util.PgColumnTypeModifiers(ctx, conn, "SELECT * FROM a_missing_table"))
+
+	// The transaction is still live, proving the helper left it alone: a valid query succeeds
+	// rather than failing with 25P02.
+	var one int
+	require.NoError(t, conn.QueryRowContext(ctx, "SELECT 1").Scan(&one))
+	require.Equal(t, 1, one)
+
+	_, err = conn.ExecContext(ctx, "ROLLBACK")
+	require.NoError(t, err)
+}
