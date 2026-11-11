@@ -167,8 +167,9 @@
   }
 }
 
+/* The flash rings a comment card, so it takes the card's corner. */
 .bb-thread-card--flash {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   animation: bb-thread-card-flash 1.2s ease-out;
 }
 

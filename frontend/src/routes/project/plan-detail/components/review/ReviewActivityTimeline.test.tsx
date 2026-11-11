@@ -145,31 +145,46 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
 
 vi.mock("../threads/CommentThreadCard", () => ({
   CommentThreadCard: ({
-    renderContext,
+    bar,
+    excerpt,
     spec,
     thread,
   }: {
-    renderContext?: (onCollapse?: () => void) => ReactNode;
+    bar: { foldLabel: string };
+    excerpt?: ReactNode;
     spec?: { id: string };
     thread: { root: { name: string }; replies: { name: string }[] };
   }) => (
     <div
+      data-fold-label={bar.foldLabel}
       data-replies={thread.replies.length}
       data-root={thread.root.name}
       data-spec={spec?.id}
       data-testid="thread-card"
     >
-      {renderContext?.()}
+      {excerpt}
     </div>
   ),
 }));
 
 vi.mock("../threads/StatementAnchorContext", () => ({
-  StatementAnchorContext: ({ onViewInStatement }: { onViewInStatement: () => void }) => (
-    <button data-testid="anchor-context" onClick={onViewInStatement}>
-      View in Statement
-    </button>
-  ),
+  StatementAnchorContext: ({
+    anchor,
+    children,
+    onViewInStatement,
+  }: {
+    anchor?: unknown;
+    children: (anchored: { bar: { foldLabel: string }; excerpt?: ReactNode }) => ReactNode;
+    onViewInStatement: () => void;
+  }) =>
+    children({
+      bar: { foldLabel: anchor ? "on lines" : "on the plan" },
+      excerpt: anchor ? (
+        <button data-testid="anchor-context" onClick={onViewInStatement}>
+          View in Statement
+        </button>
+      ) : undefined,
+    }),
 }));
 
 vi.mock("@/stores", () => ({
@@ -538,6 +553,30 @@ describe("ReviewActivityTimeline", () => {
     expect(container.querySelectorAll("li")).toHaveLength(1);
     expect(container.querySelector("[data-testid='comment-row']")).toBeNull();
 
+    act(() => root.unmount());
+  });
+
+  test("a thread that is not on lines gets a card with a bar and no excerpt", () => {
+    const issue = create(IssueSchema, { name: "projects/p1/issues/1", draft: false });
+    const plan = create(PlanSchema, { name: "projects/p1/plans/1" });
+    const rootName = "projects/p1/issues/1/issueComments/api";
+    const comments = [
+      create(IssueCommentSchema, {
+        name: rootName,
+        comment: "Posted from an API client",
+        creator: "users/submitter@example.com",
+        threadState: IssueComment_ThreadState.OPEN,
+      }),
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(<ReviewActivityTimeline comments={comments} issue={issue} plan={plan} />);
+    });
+    const card = container.querySelector("[data-testid='thread-card']");
+    expect(card?.getAttribute("data-root")).toBe(rootName);
+    expect(card?.getAttribute("data-fold-label")).toBe("on the plan");
+    expect(card?.querySelector("[data-testid='anchor-context']")).toBeNull();
     act(() => root.unmount());
   });
 
