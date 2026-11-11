@@ -129,14 +129,14 @@ func TestCreateWorkloadIdentityChecksItsProject(t *testing.T) {
 		}))
 		return err
 	}
-	stored := func(email string) bool {
+	stored := func(t *testing.T, email string) bool {
 		var n int
 		require.NoError(t, db.QueryRowContext(ctxA, `SELECT count(*) FROM workload_identity WHERE email = $1`, email).Scan(&n))
 		return n > 0
 	}
 
 	a.NoError(create("projects/hr", "ci"))
-	a.True(stored("ci@hr.workload.bytebase.com"))
+	a.True(stored(t, "ci@hr.workload.bytebase.com"))
 
 	for _, tc := range []struct {
 		name, parent, email string
@@ -146,11 +146,12 @@ func TestCreateWorkloadIdentityChecksItsProject(t *testing.T) {
 		{"another workspace's project", "projects/other", "ci@other.workload.bytebase.com"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			a := require.New(t)
 			err := create(tc.parent, "ci")
 			a.Error(err)
 			a.Equal(connect.CodeNotFound, connect.CodeOf(err))
-			a.False(stored(tc.email))
+			a.False(stored(t, tc.email))
 		})
 	}
 }
