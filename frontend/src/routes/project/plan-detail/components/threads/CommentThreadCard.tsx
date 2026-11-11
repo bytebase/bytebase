@@ -456,11 +456,14 @@ function ThreadBar({
     </>
   );
   return (
-    // A click anywhere on the bar folds too. It is a pointer shortcut: the fold
-    // control stays the one focusable control, and the keyboard's path.
+    // A click on the bar folds too: anywhere in the Changes section, and on the
+    // title, markers or state labels in Activity, whose right end holds the
+    // lines and a link. It is a pointer shortcut: the fold control stays the
+    // one focusable control, and the keyboard's path.
     <div
       className={cn(
-        "flex min-h-8 min-w-0 cursor-pointer items-center gap-x-2 bg-background px-2 text-xs text-control",
+        "flex min-h-8 min-w-0 items-center gap-x-2 bg-background px-2 text-xs text-control",
+        place === "changes" && "cursor-pointer",
         folded ? "rounded-lg" : "rounded-t-lg border-b border-block-border"
       )}
       data-anchor-state={anchorState}
@@ -468,12 +471,7 @@ function ThreadBar({
       onClick={(event) => {
         if (!shouldFoldFromBarClick(event)) return;
         const target = event.target as Element;
-        if (
-          place === "activity" &&
-          (target === event.currentTarget || target.closest("[data-bar-rest]"))
-        ) {
-          return;
-        }
+        if (place === "activity" && !target.closest("[data-bar-lead]")) return;
         onToggleFold();
       }}
     >
@@ -491,12 +489,21 @@ function ThreadBar({
           <ChevronDown className="size-3.5" />
         )}
       </Button>
-      <span className="flex min-w-0 truncate">{title}</span>
-      {markers}
-      {labels}
-      <span className="flex-1" data-bar-rest data-testid="thread-bar-gap" />
+      <span
+        className={cn(
+          "flex min-w-0 items-center gap-x-2",
+          place === "activity" && "cursor-pointer"
+        )}
+        data-bar-lead
+        data-testid="thread-bar-lead"
+      >
+        <span className="flex min-w-0 truncate">{title}</span>
+        {markers}
+        {labels}
+      </span>
+      <span className="flex-1" data-testid="thread-bar-gap" />
       {lines && (
-        <span className="shrink-0" data-bar-rest data-testid="thread-bar-lines">
+        <span className="shrink-0" data-testid="thread-bar-lines">
           {lineRangeLabel(t, lines)}
         </span>
       )}

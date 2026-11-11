@@ -710,12 +710,13 @@ describe("title bar", () => {
     expect(states).toHaveLength(1);
     expect(barNode()?.contains(states[0])).toBe(true);
     // State labels follow the title, before the spacer, in every place.
-    const title = barNode()?.querySelector("button")?.nextElementSibling;
+    const lead = barNode()?.querySelector("[data-testid='thread-bar-lead']");
+    const title = lead?.firstElementChild;
     expect(title?.className).not.toContain("flex-1");
     // Title, then the markers (this P1 finding's badge), then the state.
     expect(title?.nextElementSibling?.getAttribute("data-testid")).toBe("review-priority");
     expect(title?.nextElementSibling?.nextElementSibling).toBe(states[0]);
-    expect(states[0].nextElementSibling?.className).toContain("flex-1");
+    expect(lead?.nextElementSibling?.className).toContain("flex-1");
 
     render(<CommentThreadCard bar={bar(false)} issue={issue} project={project} thread={findingThread(false)} />);
     expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
@@ -898,6 +899,31 @@ describe("Activity bar", () => {
     expect(resolved.className).not.toContain("warning");
   });
 
+  test("a folded P0 finding in Activity shows its badge in the bar", () => {
+    const root = comment("root", "Drops a table.", { creator: "", resolved: true });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.RULE,
+      priority: IssueComment_ReviewMetadata_Priority.P0,
+    });
+    render(<CommentThreadCard bar={activityBar()} issue={issue} project={project} thread={groupThreads([root])[0]} />);
+    expect(foldControl().getAttribute("aria-expanded")).toBe("false");
+    expect(barNode().querySelector("[data-testid='review-priority']")?.textContent).toBe("P0");
+  });
+
+  test("in Activity only the title, markers and state labels show the pointer; the rest of the bar does not", () => {
+    render(<CommentThreadCard bar={activityBar({ anchorState: "CURRENT", onViewInStatement: () => {} })} issue={issue} project={project} thread={thread(true)} />);
+    expect(barNode().className).not.toContain("cursor-pointer");
+    const lead = barNode().querySelector("[data-testid='thread-bar-lead']") as HTMLElement;
+    expect(lead.className).toContain("cursor-pointer");
+    expect(lead.querySelector("[data-testid='thread-state']")).not.toBeNull();
+    expect(lead.contains(barNode().querySelector("[data-testid='thread-bar-lines']"))).toBe(false);
+  });
+
+  test("in the Changes section the whole bar shows the pointer", () => {
+    render(<CommentThreadCard bar={{ ...activityBar(), place: "changes", folded: false, onToggleFold: () => {} }} issue={issue} project={project} thread={thread(false)} />);
+    expect(barNode().className).toContain("cursor-pointer");
+  });
+
   test("in Activity a click on the change's label or a state label folds, and one on the lines, the link or the gap does not", () => {
     const onViewInStatement = vi.fn();
     render(
@@ -928,7 +954,7 @@ describe("Activity bar", () => {
   test("puts the state labels after the title and the lines and link at the right end", () => {
     render(<CommentThreadCard bar={activityBar({ anchorState: "CURRENT", onViewInStatement: () => {} })} issue={issue} project={project} thread={thread(true)} />);
     const state = barNode().querySelector("[data-testid='thread-state']") as HTMLElement;
-    const spacer = state.nextElementSibling as HTMLElement;
+    const spacer = state.closest("[data-testid='thread-bar-lead']")?.nextElementSibling as HTMLElement;
     expect(spacer.className).toContain("flex-1");
     expect(spacer.nextElementSibling?.getAttribute("data-testid")).toBe("thread-bar-lines");
   });
