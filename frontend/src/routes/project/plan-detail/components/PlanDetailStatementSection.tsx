@@ -808,7 +808,8 @@ export function PlanDetailStatementSection({
             className={cn(
               "relative overflow-hidden rounded-sm border border-control-border",
               showsAffectedRows && "rounded-b-none",
-              !isEditing && "plan-statement--monaco-transparent bg-control-bg/50"
+              !isEditing &&
+                "plan-statement--monaco-transparent bg-control-bg/50"
             )}
             data-testid={isEditing ? undefined : "statement-ground"}
           >
