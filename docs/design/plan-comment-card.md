@@ -58,7 +58,7 @@ One component draws a comment thread in both places. It has four parts, top to b
 
 | Part | What it is |
 | --- | --- |
-| Frame | The box: `border-block-border`, `rounded-lg` and `shadow-md` on `bg-background` |
+| Frame | The box: `border-control-border` and `rounded-lg` on `bg-background`, with no shadow |
 | Bar | One line in 12/16 `text-control`, with a border under it while the card is unfolded: the fold control, a title, markers, state labels and, in Activity, the lines and a link |
 | Body | In Activity the SQL excerpt, then the first comment and its replies |
 | Footer | The reply field and the Resolve or Reopen button |
@@ -195,12 +195,14 @@ lines, as BYT-10499 asks. Severity would still be painted on the SQL, and the re
 have to learn a color code. Rejected: one neutral tint for every commented range. It still paints
 the statement, and the title names the lines in words.
 
-**D2 · The frame has a width limit, 8px corners and a shadow that lifts it.** In the Changes
+**D2 · The frame has a width limit, 8px corners, a darker border and no shadow.** In the Changes
 section the card is capped at `max-w-3xl` (48rem) and keeps 16px clear of the right edge, where
-today it is 8px. The Activity card keeps its full width. The frame is `rounded-lg` and
-`shadow-md` in both places and for the composer. Today it is `rounded-sm`, and only the Changes
-section gives it a shadow, `shadow-sm`. The rounder corner and the stronger shadow make the card
-read as something laid on the statement and not as a panel of it. `docs/agents/frontend-ux.md`
+today it is 8px. The Activity card keeps its full width. The frame is `rounded-lg` with
+`border-control-border` in both places and for the composer, and it has no shadow. Today it is
+`rounded-sm` with `border-block-border`, and the Changes section adds `shadow-sm`. The rounder
+corner and the darker border make the card read as something laid on the statement and not as a
+panel of it. The lines inside the card, under the bar and above the footer, stay
+`border-block-border`. `docs/agents/frontend-ux.md`
 asks for `rounded-sm` on ordinary framed surfaces, and `frontend/scripts/check-ui-guideline.mjs`
 enforces it: `rounded-lg` is an off-scale radius there. The guideline says a rule changes in
 the guideline, the scanner and the scanner's tests together, and never through the baseline.
@@ -212,7 +214,11 @@ full width in the Changes section. A box as wide as the code reads as a band of 
 Rejected:
 12px corners. A folded thread becomes a pill, which in this product is a button or a tag.
 Rejected: a pointer from the card to its line, a shape the product
-has nowhere else. Rejected: `shadow-lg`. A folded thread then looks like a floating menu.
+has nowhere else. Rejected: a shadow of any size. The shared components use a shadow for what floats over
+the page: the popover, the tooltip, the toast and the dialog. The card sits in the page, the
+guideline has no scale of shadows to place it on, and a black shadow cannot be seen on a dark
+ground. Rejected: keeping `border-block-border`. Without a shadow it is too faint on the gray
+statement to mark the card's edge.
 
 **D3 · A title bar names the lines.** Every card starts with a bar, and its title says what the
 thread is on. The bar is white like the rest of the card, by invariant 2, with a border under it
@@ -349,13 +355,13 @@ in the slice's own PR and reviewed there.
      carries `text-control-light`. E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
      reads `thread-row`, which this slice removes, and `plan-detail-review.spec.ts` covers folding
      and resolving in the Changes section.
-2. **The Activity card takes the bar, and the frame (the corners and shadow of D2; D3, D4's folded
+2. **The Activity card takes the bar, and the frame (the corners and border of D2; D3, D4's folded
    form and D5 in Activity; the rest of D6; D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; the three priority rows
      of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the
      excerpt still in the body and drawn as today; the Activity row of Folding. For a card in
-     both places: the frame, `rounded-lg` and `shadow-md`, with the exception in the guideline
-     and in its scanner. After
+     both places: the frame, `rounded-lg` and `border-control-border` with no shadow, with the
+     exception for the corner in the guideline and in its scanner. After
      this slice no thread card is drawn without a bar or the frame, so invariant 8 holds in full,
      invariant 3 holds for every card but the composer, which slice 5 finishes, and invariant 6
      holds for every state label, and `ThreadSummary` goes.
@@ -367,7 +373,8 @@ in the slice's own PR and reviewed there.
      different names; a folded P0 finding shows its badge; a click on the change's label folds,
      and a click on the lines or on the link does not; the excerpt renders in the body and not
      in the bar; "Outdated" carries the warning color and no fill, and "Resolved" and "Statement
-     unavailable" carry neither; the frame has the corners and the shadow in both places.
+     unavailable" carry neither; the frame has the corners and the border of D2, and no shadow,
+     in both places.
      `check-ui-guideline.test.mjs`: the scanner accepts `rounded-lg` in a file that draws a
      comment card and still rejects it in any other file. E2E: `plan-detail-review.spec.ts`
      covers folding and resolving in Activity.
@@ -394,7 +401,7 @@ in the slice's own PR and reviewed there.
    - Files: `InlineThreadComposer.tsx`, and the scanner's list of files if the composer is not
      on it yet.
    - Tests: a new `InlineThreadComposer.test.tsx`. They include: the composer has the frame,
-     with its corners and shadow, and its avatar is in the body.
+     with its corners and border and no shadow, and its avatar is in the body.
 6. **The production badge in the bar (D4's production marker).** Depends on slice 2, which puts
    the bar in both places. It adds a signal the page does not have today, so nothing waits on
    it.
