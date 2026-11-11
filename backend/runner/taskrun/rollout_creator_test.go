@@ -520,7 +520,7 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 	require.True(t, tryCreateRollout(), "the review of the current SQL is done")
 }
 
-func TestTryCreateRolloutWaitsForTheAIReviewWhileItIsOn(t *testing.T) {
+func TestTryCreateRolloutWaitsForTheAIJob(t *testing.T) {
 	ctx := context.Background()
 	s, plan, issue := newAutoRolloutIssue(ctx, t)
 	project, err := s.GetProjectByResourceID(ctx, plan.ProjectID)
@@ -572,11 +572,11 @@ func TestTryCreateRolloutWaitsForTheAIReviewWhileItIsOn(t *testing.T) {
 	complete(store.ReviewRunTypeAI, storepb.ReviewRun_FAILED)
 	require.True(t, blocked(), "the AI review failed")
 
+	// No event follows a switch-off, so it must not release the rollout: the
+	// failed job holds until it runs again.
 	setAIReview(false)
-	require.False(t, blocked(), "an AI review that is off holds nothing")
+	require.True(t, blocked(), "a failed AI job holds whatever the switch says")
 
-	setAIReview(true)
-	require.True(t, blocked())
 	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeAI)
 	require.NoError(t, err)
 	complete(store.ReviewRunTypeAI, storepb.ReviewRun_DONE)

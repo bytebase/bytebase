@@ -208,9 +208,20 @@ func TestGetReviewRunReadsTheReviewersJobsAsOneRun(t *testing.T) {
 	require.Equal(t, "rate limited", run.GetError().GetMessage())
 	require.NotNil(t, run.EndTime)
 
+	// Switching the AI review off changes nothing a caller reads. The next
+	// review restarts the AI job too, whose run then ends with no finding.
 	setAIReview(false)
 	run = getRun()
-	require.Equal(t, v1pb.ReviewRun_SUCCEEDED, run.State, "the AI job does not count while the AI review is off")
+	require.Equal(t, v1pb.ReviewRun_FAILED, run.State, "a failed AI job stays failed until the review runs again")
+	_, err = service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
+	require.NoError(t, err)
+	claimed, err = stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 2, "the AI job restarts with the review")
+	complete(store.ReviewRunTypeRule, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
+	complete(store.ReviewRunTypeAI, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
+	run = getRun()
+	require.Equal(t, v1pb.ReviewRun_SUCCEEDED, run.State)
 	require.Nil(t, run.Error)
 
 	// The rule job restarts alone on new SQL, as the rollout creator does.
@@ -268,10 +279,10 @@ func createReviewRunIssue(ctx context.Context, t *testing.T, stores *store.Store
 	return issue
 }
 
-// TestRunReviewStartsTheAIJobOnlyWhileItsSwitchIsOn pins that an AI review
-// that is off is skipped, not refused: the review starts with the rule job
-// alone.
-func TestRunReviewStartsTheAIJobOnlyWhileItsSwitchIsOn(t *testing.T) {
+// TestRunReviewStartsTheAIJobWhileItIsOnOrHasAJob pins that an AI review
+// that is off is skipped, not refused, and that an issue it reviewed before
+// still restarts its job.
+func TestRunReviewStartsTheAIJobWhileItIsOnOrHasAJob(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -302,10 +313,10 @@ func TestRunReviewStartsTheAIJobOnlyWhileItsSwitchIsOn(t *testing.T) {
 
 	require.Equal(t, []string{store.ReviewRunTypeRule}, startedTypes(&storepb.AISetting{Enabled: true}), "the AI review's switch is off")
 	require.ElementsMatch(t, []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}, startedTypes(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true}))
-	restartOrder, err := service.startableReviewTypes(ctx)
+	restartOrder, err := service.startableReviewTypes(ctx, "project-a", issue.UID)
 	require.NoError(t, err)
 	require.Equal(t, []string{store.ReviewRunTypeAI, store.ReviewRunTypeRule}, restartOrder, "the AI job restarts first")
-	require.Equal(t, []string{store.ReviewRunTypeRule}, startedTypes(&storepb.AISetting{SqlReviewEnabled: true}), "AI is off")
+	require.ElementsMatch(t, []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}, startedTypes(&storepb.AISetting{SqlReviewEnabled: true}), "an issue that has an AI job restarts it with AI off, to end it with no finding")
 }
 
 // TestRunReviewWithoutSQLReviewV2 pins a server without SQL Review V2: it has

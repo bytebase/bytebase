@@ -54,11 +54,16 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, err
 	}
-	// A run created while the review was allowed must not reach the provider
-	// after it is switched off.
-	aiSetting, err := e.checkAISetting(ctx, project.Workspace)
+	// A run that starts with the review switched off reaches no provider and
+	// ends with no finding, which resolves the findings its earlier runs
+	// left. It starts that way when the switch-off came after the run was
+	// created, and when a review restarts for an issue that has an AI job.
+	aiSetting, err := e.store.GetAISettingUncached(ctx, project.Workspace)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	if allowed := aireview.CheckSetting(aiSetting) == nil; !allowed {
+		return nil, nil
 	}
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
@@ -100,8 +105,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	// The setting is read again before every provider call, retries included,
 	// so switching the review off stops a run in flight at its next call.
 	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
-		_, err := e.checkAISetting(ctx, project.Workspace)
-		return err
+		return e.checkAISetting(ctx, project.Workspace)
 	})))
 	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
 		// The schema is loaded once the unit holds its slot and dropped when
@@ -207,7 +211,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	// The merge and the summary fall back when a model call fails, the call
 	// that a switch-off refused included, so the setting is read again before
 	// the results post.
-	if _, err := e.checkAISetting(ctx, project.Workspace); err != nil {
+	if err := e.checkAISetting(ctx, project.Workspace); err != nil {
 		return nil, err
 	}
 	comments := aiReviewComments(projectID, issueUID, problems)
@@ -215,18 +219,16 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	return comments, nil
 }
 
-// checkAISetting returns the workspace AI setting if it allows the review. It
-// reads past the setting cache, which only this process's writes refresh, so
-// a switch-off written anywhere else stops the review too.
-func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) (*storepb.AISetting, error) {
+// checkAISetting reports why the workspace AI setting does not allow the
+// review, if it does not. It reads past the setting cache, which only this
+// process's writes refresh, so a switch-off written anywhere else stops the
+// review too.
+func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) error {
 	setting, err := e.store.GetAISettingUncached(ctx, workspace)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get AI setting")
+		return errors.Wrapf(err, "failed to get AI setting")
 	}
-	if err := aireview.CheckSetting(setting); err != nil {
-		return nil, err
-	}
-	return setting, nil
+	return aireview.CheckSetting(setting)
 }
 
 // earlierResults returns, for each sheet with findings, the results earlier

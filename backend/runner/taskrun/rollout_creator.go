@@ -237,7 +237,7 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 // under SQL Review V2: the review of the plan's current SQL has not
 // succeeded, or a thread on the issue is open. An open thread blocks whatever
 // its priority, and whoever started it. The review is every job its run is
-// read from, so the AI review holds the rollout too while it is on.
+// read from, so the AI review's job holds the rollout too.
 //
 // A run for an earlier approval input version holds too, and so does a
 // missing run on a plan with SQL to review: the slot write that should have
@@ -265,7 +265,7 @@ func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *stor
 		bus.Tickle(rc.bus.ReviewRunTickleChan)
 		return true, nil
 	}
-	jobs, err := apiv1.ReviewJobs(ctx, rc.store, project.Workspace, issue.ProjectID, issue.UID)
+	jobs, err := apiv1.ReviewJobs(ctx, rc.store, issue.ProjectID, issue.UID)
 	if err != nil {
 		return false, err
 	}

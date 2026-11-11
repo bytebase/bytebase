@@ -590,9 +590,12 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	}
 	executor := NewAIReviewExecutor(stores, ReviewsEngine)
 
+	// Switched off, the run ends with no finding before it reaches the
+	// target, which does not exist in this fixture.
 	setAISetting(&storepb.AISetting{Enabled: true})
-	_, err = executor.RunOnce(ctx, "p", issue.UID)
-	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	results, err := executor.RunOnce(ctx, "p", issue.UID)
+	require.NoError(t, err)
+	require.Empty(t, results)
 
 	// With the switch on the executor goes on to the target, which does not
 	// exist in this fixture.
@@ -607,6 +610,7 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	cached, err := stores.GetAISetting(ctx, "ws")
 	require.NoError(t, err)
 	require.True(t, cached.SqlReviewEnabled)
-	_, err = executor.RunOnce(ctx, "p", issue.UID)
-	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	results, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.NoError(t, err, "the run read the switch-off past the cache")
+	require.Empty(t, results)
 }

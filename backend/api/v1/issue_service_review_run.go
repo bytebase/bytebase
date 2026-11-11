@@ -28,7 +28,7 @@ func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	jobs, err := ReviewJobs(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), projectID, issueUID)
+	jobs, err := ReviewJobs(ctx, s.store, projectID, issueUID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -45,11 +45,14 @@ func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1
 }
 
 // ReviewJobs returns the reviewers' jobs the issue's review run is read from:
-// the rule job, and the AI job of the same SQL version while the workspace
-// allows the AI review. Each reviewer runs as a job of its own (BYT-10505).
-// The rollout creator waits for the same jobs, so the run a caller reads and
-// the rollout agree.
-func ReviewJobs(ctx context.Context, stores *store.Store, workspaceID, projectID string, issueUID int64) ([]*store.ReviewRunMessage, error) {
+// the rule job, and the AI job of the same SQL version. Each reviewer runs as
+// a job of its own (BYT-10505). The rollout creator waits for the same jobs,
+// so the run a caller reads and the rollout agree.
+//
+// No setting is read here. A job changes only when it runs, and every run
+// asks the rollout creator to look again, so nothing a caller reads changes
+// without the rollout hearing of it.
+func ReviewJobs(ctx context.Context, stores *store.Store, projectID string, issueUID int64) ([]*store.ReviewRunMessage, error) {
 	var jobs []*store.ReviewRunMessage
 	ruleJob, err := stores.GetReviewRun(ctx, projectID, issueUID, store.ReviewRunTypeRule)
 	if err != nil {
@@ -62,19 +65,9 @@ func ReviewJobs(ctx context.Context, stores *store.Store, workspaceID, projectID
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get the AI review run")
 	}
-	if aiJob == nil {
-		return jobs, nil
-	}
-	// An AI job of another version was left behind while the AI review was
-	// off: the review that started it is not the one the rule job belongs to.
-	if ruleJob != nil && aiJob.Payload.GetApprovalInputVersion() != ruleJob.Payload.GetApprovalInputVersion() {
-		return jobs, nil
-	}
-	aiSetting, err := stores.GetAISettingUncached(ctx, workspaceID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get AI setting")
-	}
-	if allowed := aireview.CheckSetting(aiSetting) == nil; allowed {
+	// An AI job of another version is not part of this run: the rule job
+	// restarted alone on newer SQL, as the rollout creator restarts it.
+	if aiJob != nil && (ruleJob == nil || aiJob.Payload.GetApprovalInputVersion() == ruleJob.Payload.GetApprovalInputVersion()) {
 		jobs = append(jobs, aiJob)
 	}
 	return jobs, nil
@@ -127,7 +120,7 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if err := checkReviewable(ctx, s.store, issue); err != nil {
 		return nil, err
 	}
-	reviewTypes, err := s.startableReviewTypes(ctx)
+	reviewTypes, err := s.startableReviewTypes(ctx, projectID, issueUID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,22 +142,21 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	return connect.NewResponse(convertToReviewRun(projectID, issueUID, jobs)), nil
 }
 
-// startableReviewTypes returns the reviewers a review starts now, in the
-// order their jobs restart: the AI review while the workspace allows it, and
-// the standard rules where SQL Review V2 is on. With neither, the error is
-// why the AI review is off.
+// startableReviewTypes returns the reviewers a review of the issue starts
+// now, in the order their jobs restart: the AI review, and the standard rules
+// where SQL Review V2 is on. With neither, the error is why the AI review is
+// off.
 //
 // The jobs restart one write at a time, and the AI job goes first. The rule
 // job is quick, so restarted first it could finish beside the AI job's
 // earlier result, and the two would read as a finished review.
-func (s *IssueService) startableReviewTypes(ctx context.Context) ([]string, error) {
+func (s *IssueService) startableReviewTypes(ctx context.Context, projectID string, issueUID int64) ([]string, error) {
 	var reviewTypes []string
-	aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	startsAI, aiErr, err := aiReviewStarts(ctx, s.profile, s.store, projectID, issueUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	aiErr := aireview.CheckSetting(aiSetting)
-	if aiErr == nil {
+	if startsAI {
 		reviewTypes = append(reviewTypes, store.ReviewRunTypeAI)
 	}
 	if s.profile.SQLReviewV2 {
@@ -174,6 +166,31 @@ func (s *IssueService) startableReviewTypes(ctx context.Context) ([]string, erro
 		return nil, connect.NewError(connect.CodeFailedPrecondition, aiErr)
 	}
 	return reviewTypes, nil
+}
+
+// aiReviewStarts reports whether a review of the issue restarts the AI job:
+// while the workspace allows the AI review, and under SQL Review V2 also once
+// the issue has an AI job. Switched off, that run reaches no provider and
+// ends with no finding, which resolves the findings the job left and clears
+// its failure. Left alone, a failed AI job would hold the rollout with no way
+// to retry it. aiErr is why the workspace does not allow the AI review.
+func aiReviewStarts(ctx context.Context, profile *config.Profile, stores *store.Store, projectID string, issueUID int64) (starts bool, aiErr error, err error) {
+	aiSetting, err := stores.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if err != nil {
+		return false, nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	aiErr = aireview.CheckSetting(aiSetting)
+	if aiErr == nil {
+		return true, nil, nil
+	}
+	if !profile.SQLReviewV2 {
+		return false, aiErr, nil
+	}
+	aiJob, err := stores.GetReviewRun(ctx, projectID, issueUID, store.ReviewRunTypeAI)
+	if err != nil {
+		return false, aiErr, errors.Wrapf(err, "failed to get the AI review run")
+	}
+	return aiJob != nil, aiErr, nil
 }
 
 // checkReviewable refuses a review the issue cannot have now: the issue must
@@ -215,10 +232,9 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 
 // startReviews starts the issue's reviews of the given types, in the given
 // order, where SQL Review V2 is on, at the points the plan checks run. The AI
-// review starts only while the workspace allows it. A caller that starts both
-// names the AI review first, as startableReviewTypes does. It never fails its
-// caller: an issue the reviews do not apply to is skipped, and a failure is
-// logged.
+// review starts as aiReviewStarts says. A caller that starts both names the
+// AI review first, as startableReviewTypes does. It never fails its caller:
+// an issue the reviews do not apply to is skipped, and a failure is logged.
 func startReviews(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage, reviewTypes ...string) {
 	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return
@@ -235,15 +251,15 @@ func startReviews(ctx context.Context, profile *config.Profile, stores *store.St
 	started := false
 	for _, reviewType := range reviewTypes {
 		if reviewType == store.ReviewRunTypeAI {
-			aiSetting, err := stores.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+			startsAI, _, err := aiReviewStarts(ctx, profile, stores, issue.ProjectID, issue.UID)
 			if err != nil {
-				slog.Warn("failed to get the AI setting to start the AI review",
+				slog.Warn("failed to tell whether the AI review starts",
 					slog.String("project", issue.ProjectID),
 					slog.Int64("issue_id", issue.UID),
 					log.BBError(err))
 				continue
 			}
-			if aireview.CheckSetting(aiSetting) != nil {
+			if !startsAI {
 				continue
 			}
 		}
