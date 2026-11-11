@@ -19,22 +19,30 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { LIGHT_BADGE_BACKGROUND_ALPHA } from "@/components/EnvironmentLabel";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useCurrentUser } from "@/hooks/useAppState";
+import { useCurrentUser, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/app";
+import { isValidDatabaseName } from "@/types";
 import {
   type Issue,
   IssueComment_ReviewMetadata_Priority,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
+import { hexToRgb } from "@/utils";
 import "./CommentThreadCard.css";
+import { productionEnvironmentsOf } from "./productionTargets";
 import { ReviewPriorityBadge } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
 import { ThreadStateBadge } from "./ThreadStateBadge";
@@ -398,18 +406,61 @@ const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
 };
 
 // What a folded thread must still say about how urgent it is: the badge of a
-// P0 or P1 finding, which needs someone to act. A P2 finding and a person's
-// thread show none.
+// P0 or P1 finding, which needs someone to act, and the badge of each
+// production environment a finding applies to. A person's thread shows
+// neither.
 function ThreadMarkers({ thread }: { thread: CommentThread }) {
-  const priority = thread.root.reviewMetadata?.priority;
-  if (
-    priority !== IssueComment_ReviewMetadata_Priority.P0 &&
-    priority !== IssueComment_ReviewMetadata_Priority.P1
-  ) {
-    return null;
-  }
-  return <ReviewPriorityBadge priority={priority} />;
+  const review = thread.root.reviewMetadata;
+  const targets = review?.targets ?? EMPTY_TARGETS;
+  const databasesByName = useAppStore((state) => state.databasesByName);
+  const environmentList = useAppStore((state) => state.environmentList);
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+  const targetKey = targets.join("\n");
+  useEffect(() => {
+    const names = targetKey.split("\n").filter(isValidDatabaseName);
+    if (names.length === 0) return;
+    void useAppStore
+      .getState()
+      .batchGetOrFetchDatabases(names, true)
+      .catch(() => {
+        // Without the databases the bar just shows no environment badge.
+      });
+  }, [targetKey]);
+  if (!review) return null;
+  const urgent =
+    review.priority === IssueComment_ReviewMetadata_Priority.P0 ||
+    review.priority === IssueComment_ReviewMetadata_Priority.P1;
+  const productionEnvironments = productionEnvironmentsOf(
+    targets,
+    { databasesByName, environmentList },
+    hasEnvTierFeature
+  );
+  return (
+    <>
+      {urgent && <ReviewPriorityBadge priority={review.priority} />}
+      {productionEnvironments.map((environment) => (
+        // The environment's own badge: its name on a tint of its color, the
+        // way an environment badge is drawn, with the bar's gray text.
+        <Badge
+          className="shrink-0 text-control"
+          data-testid="thread-production"
+          key={environment.name}
+          style={{
+            backgroundColor: `rgba(${hexToRgb(
+              environment.color || DEFAULT_ENVIRONMENT_COLOR
+            ).join(", ")}, ${LIGHT_BADGE_BACKGROUND_ALPHA})`,
+          }}
+        >
+          {environment.title}
+        </Badge>
+      ))}
+    </>
+  );
 }
+
+const EMPTY_TARGETS: readonly string[] = [];
 
 // The bar's words and icons are text-control: text-control-light falls under
 // the 4.5:1 contrast minimum.
