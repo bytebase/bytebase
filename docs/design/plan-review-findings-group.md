@@ -68,25 +68,31 @@ inside cards." The rule stays. The slice that builds D1 amends it to:
 > - The frame is a border only: `border-block-border`, with the corners of the cards it holds and
 >   with no shadow, no fill and no title bar. The cards inside keep their own.
 > - Nesting stops there. A card inside a group frame MUST NOT contain another framed box.
-> - A group with no cards showing renders as its first line alone, without the frame.
+> - Only a parent that has cards gets a frame. Hiding them folds the frame to its first line. A
+>   parent with no cards is a plain line.
 
 The first condition ties the frame to ownership, so it cannot be used for decoration. The second
-keeps the two levels distinct. The third caps the depth at two. The fourth prevents empty boxes.
+keeps the two levels distinct. The third caps the depth at two. The fourth prevents a frame around
+nothing, and keeps an entry the same shape when it is hidden and shown.
 Rejected: dropping the rule. It exists to stop decorative nesting, and that reason still holds.
 
-**D5 · Which cards a group shows is unchanged.** `buildTimelineEntries` already decides this, and
-the group only changes where they are drawn:
+**D5 · Show and Hide fold the whole group.** The group is a card whose first line is the review
+line, and Show and Hide are its fold control:
 
 - A run is open by default while one of its findings is still current, meaning no later run has
-  superseded it. Show and Hide override the default.
-- An open run shows the card of every finding it posted.
-- A hidden run shows only the findings `needsActivityCard` in `threadModel.ts` keeps. It checks
-  in this order: a finding people replied to keeps its card; otherwise a finding that a later run
-  superseded and that is resolved gets none; otherwise a finding keeps its card only when the
-  Changes section cannot show it.
+  superseded it. Show and Hide override the default. This does not change.
+- An open group shows the card of every finding the run posted.
+- A hidden group is folded to its first line, inside its frame. It shows no finding card,
+  whatever replies the findings have.
+- A review with no findings has nothing to fold. It is a plain line with no frame and no Show.
 
-So a hidden review can still have a group, holding only those cards, and a review with no cards to
-show is a plain line, as today.
+Today a hidden run still shows the findings `needsActivityCard` in `threadModel.ts` keeps: one
+people replied to, or one the Changes section cannot show. So when every finding of a review has
+a reply, Hide changes nothing but its own word, and reads as broken. A hidden finding is not
+lost: the review line still counts it, as in "2 findings, 1 open", and Show brings it back.
+Rejected: keeping that rule. A control that sometimes hides is worse than one that always does.
+Rejected: a hidden review as a plain line. The entry would change from a box to a sentence and
+back each time it is toggled.
 
 **D6 · The group wraps whatever a review line is.** BYT-10505 proposes showing Standard rules and
 AI review as one review. This design does not depend on the outcome: the group belongs to a review
@@ -104,8 +110,7 @@ Rejected: an outlined button, which is heavier than the one line it sits on.
 | --- | --- |
 | No findings | The review line alone |
 | Open, with findings | A group: the review line, then one card per finding |
-| Hidden, no finding needs a card | The review line alone, with Show |
-| Hidden, some findings need a card | A group with only those cards, and Show on the review line |
+| Hidden, with findings | The group folded: its frame around the review line, with Show |
 | A later review | The line says what changed: "1 new, 1 still found, 1 no longer found" |
 | A finding a later run reports again | Its thread stays with the run that first posted it, as today |
 | A comment from a person | Its own entry, outside any group |
@@ -122,7 +127,8 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
 2. **Group (D1 to D5).** Depends on the slice of [Plan comment card](plan-comment-card.md) that
    gives the Activity card its title bar and its corners. The slice is named by what it builds
    because its number can change while that doc is in review.
-   - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry.
+   - `timelineEvents.ts`: a run's finding entries become children of its `review-run` entry, and
+     a hidden run has none. `needsActivityCard` in `threadModel.ts` then has no caller and goes.
    - `ReviewActivityTimeline.tsx`: `ReviewRunActivityRow` renders the group. `ThreadActivityRow`
      keeps rendering a person's thread.
    - `foldTimeline.ts`: a group stays together when a long history folds, as an open run's line
@@ -130,10 +136,11 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
    - `docs/agents/frontend-ux.md`: the exception in D4.
    - `frontend/scripts/check-ui-guideline.mjs` and its test: the group's file joins the files the
      scanner allows `rounded-lg`.
-   - Tests: `timelineEvents.test.ts` (the kept-card rule in D5, unchanged cases plus the
-     grouping), `ReviewActivityTimeline.test.tsx` (a finding renders inside its review's group and
-     without a timeline icon; a hidden review with a kept finding still renders a group; a review
-     with no cards renders no frame), `foldTimeline.test.ts`. E2E:
+   - Tests: `timelineEvents.test.ts` (the default from D5; an open run has every finding and a
+     hidden run has none, with and without replies), `ReviewActivityTimeline.test.tsx` (a finding
+     renders inside its review's group and without a timeline icon; a hidden review with findings
+     renders its frame around the review line and no card; a review with no findings renders no
+     frame), `foldTimeline.test.ts`. E2E:
      `frontend/tests/e2e/plan-detail/plan-detail-review.spec.ts`.
 
 ## Not in this PR
