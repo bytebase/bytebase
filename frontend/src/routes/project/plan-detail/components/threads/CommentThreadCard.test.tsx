@@ -709,7 +709,7 @@ describe("title bar", () => {
     const states = container.querySelectorAll("[data-testid='thread-state']");
     expect(states).toHaveLength(1);
     expect(barNode()?.contains(states[0])).toBe(true);
-    // State labels follow the title in every place: the title never grows past its text.
+    // State labels follow the title in every place: the title does not stretch to fill the bar.
     const lead = barNode()?.querySelector("[data-testid='thread-bar-lead']");
     const title = lead?.firstElementChild;
     expect(title?.className.split(" ")).toContain("max-w-max");

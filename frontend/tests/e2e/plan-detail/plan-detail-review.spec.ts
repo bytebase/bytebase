@@ -1595,7 +1595,8 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
           const cardBox = await card.boundingBox();
           if (!cardBox) return ["no card box"];
           const boxes = [];
-          for (const part of await bar.locator(":scope > *").all()) {
+          // The title, markers and state labels sit in a box-less wrapper, so measure them too.
+          for (const part of await bar.locator(":scope > *, [data-testid='thread-bar-lead'] > *").all()) {
             const box = await part.boundingBox();
             if (box && box.width > 0) boxes.push(box);
           }
@@ -1626,6 +1627,19 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     // At desktop width the same bar is one row.
     await page.setViewportSize({ width: 1280, height: 1200 });
     await expect.poll(async () => (await bar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+  });
+
+  test("at desktop width a long title truncates and keeps its bar on one row", async () => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    const changesBar = planPage.threadBar("Comment on lines 4–5");
+    await changesBar.scrollIntoViewIfNeeded();
+    const title = changesBar.locator("[data-testid='thread-bar-lead'] > *").first();
+    // No seeded title is long enough, so lengthen this one in the page.
+    await title.evaluate((node) => {
+      node.textContent = "Comment on lines 4–5 of a statement with a very long title ".repeat(6);
+    });
+    await expect.poll(async () => (await changesBar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+    expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
   });
 });
 

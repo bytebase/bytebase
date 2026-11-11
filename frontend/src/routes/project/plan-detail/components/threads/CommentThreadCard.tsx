@@ -485,8 +485,8 @@ function ThreadBar({
           <ChevronDown className="size-3.5" />
         )}
       </Button>
-      {/* The title shrinks to 64px before the bar wraps, and never grows past
-          its text, so the labels stay beside it. */}
+      {/* The title is as wide as its text, at least 64px, so the labels stay
+          beside it; it shrinks to 64px before the bar wraps. */}
       <span
         className={cn("contents", place === "activity" && "cursor-pointer")}
         data-bar-lead
