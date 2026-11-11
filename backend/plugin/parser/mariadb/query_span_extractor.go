@@ -1567,9 +1567,15 @@ func classifyQueryType(node ast.Node, allSystems bool, source string) base.Query
 		*ast.InstallPluginStmt, *ast.UninstallPluginStmt, *ast.InstallComponentStmt,
 		*ast.UninstallComponentStmt, *ast.CloneStmt:
 		return base.DDL
+	// PREPARE/EXECUTE/DEALLOCATE can run arbitrary SQL hidden behind a variable
+	// (e.g. PREPARE s FROM 'DROP TABLE t'; EXECUTE s), so the extractor cannot
+	// see what they actually do. Requiring bb.sql.ddl for them, rather than the
+	// weaker bb.sql.dml, keeps a DML-only grant from running hidden DDL.
+	case *ast.PrepareStmt, *ast.ExecuteStmt, *ast.DeallocateStmt:
+		return base.DDL
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.BeginStmt, *ast.CommitStmt,
 		*ast.RollbackStmt, *ast.SavepointStmt, *ast.LockTablesStmt, *ast.UnlockTablesStmt,
-		*ast.LoadDataStmt, *ast.PrepareStmt, *ast.ExecuteStmt, *ast.DeallocateStmt,
+		*ast.LoadDataStmt,
 		*ast.CallStmt, *ast.DoStmt, *ast.HandlerOpenStmt, *ast.HandlerReadStmt, *ast.HandlerCloseStmt,
 		*ast.AnalyzeTableStmt, *ast.OptimizeTableStmt, *ast.CheckTableStmt, *ast.RepairTableStmt,
 		*ast.FlushStmt, *ast.KillStmt, *ast.ShutdownStmt, *ast.RestartStmt, *ast.XAStmt,

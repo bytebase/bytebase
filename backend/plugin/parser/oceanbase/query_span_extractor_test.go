@@ -584,6 +584,23 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 		}
 	})
 
+	t.Run("indirect_statements_require_ddl", func(t *testing.T) {
+		// PREPARE/EXECUTE/DEALLOCATE can run arbitrary SQL hidden behind a
+		// variable (PREPARE s FROM 'DROP TABLE t'; EXECUTE s), so they must
+		// require bb.sql.ddl rather than the weaker bb.sql.dml.
+		tests := []string{
+			"PREPARE stmt FROM 'SELECT 1'",
+			"EXECUTE stmt",
+			"DEALLOCATE PREPARE stmt",
+		}
+		for _, statement := range tests {
+			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			require.NoError(t, err, statement)
+			require.Equal(t, base.DDL, span.Type, statement)
+			require.Empty(t, span.Results, statement)
+		}
+	})
+
 	t.Run("dml_bucket_roots", func(t *testing.T) {
 		tests := []string{
 			"UPDATE t SET a = 1",
@@ -594,9 +611,6 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 			"SAVEPOINT s",
 			"LOCK TABLES t READ",
 			"UNLOCK TABLES",
-			"PREPARE stmt FROM 'SELECT 1'",
-			"EXECUTE stmt",
-			"DEALLOCATE PREPARE stmt",
 		}
 		for _, statement := range tests {
 			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
