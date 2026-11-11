@@ -21,6 +21,7 @@ const lifecycleStampPath =
 // cards: the only places rounded-lg is on the scale.
 const commentCardPaths = new Set([
   "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx",
+  "src/routes/project/plan-detail/components/threads/statementThreads.css",
 ]);
 const isCommentCardRadius = (token, path) =>
   commentCardPaths.has(path) &&
@@ -352,6 +353,7 @@ export function scanCssSource(source, path) {
   root.walkDecls((declaration) => {
     if (!cssRadiusPropertyPattern.test(declaration.prop)) return;
     const value = declaration.value.trim();
+    if (commentCardPaths.has(path) && value === "var(--radius-lg)") return;
     if (!approvedCssRadiusValues.has(value)) {
       addViolation(
         counts,
