@@ -211,11 +211,10 @@ holds comment cards, use `rounded-lg`, and the scanner allows it in the files th
 the way it already allows the lifecycle stamp its `rounded-full`. Every other surface keeps
 the scale. The fields and buttons inside the card keep their own corners. Rejected: keeping the
 full width in the Changes section. A box as wide as the code reads as a band of the statement.
-Rejected:
-12px corners. A folded thread becomes a pill, which in this product is a button or a tag.
-Rejected: a pointer from the card to its line, a shape the product
-has nowhere else. Rejected: a shadow of any size. The shared components use a shadow for what floats over
-the page: the popover, the tooltip, the toast and the dialog. The card sits in the page, the
+Rejected: 12px corners. A folded thread becomes a pill, which in this product is a button or a
+tag. Rejected: a pointer from the card to its line, a shape the product has nowhere else.
+Rejected: a shadow of any size. The shared components use a shadow for what floats over the
+page: the popover, the tooltip, the toast and the dialog. The card sits in the page, the
 guideline has no scale of shadows to place it on, and a black shadow cannot be seen on a dark
 ground. Rejected: keeping `border-block-border`. Without a shadow it is too faint on the gray
 statement to mark the card's edge.
