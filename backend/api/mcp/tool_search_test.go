@@ -336,6 +336,22 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Equal(t, 1, strings.Count(unavailable, "refused because "+administers), "one line per reason")
 	})
 
+	t.Run("the workload identity create names the tool and its fields", func(t *testing.T) {
+		text := searchText(t, s, SearchInput{OperationID: "WorkloadIdentityService/CreateWorkloadIdentity"})
+		for _, want := range []string{
+			"through the administer_workspace tool", "workloadIdentityId", "providerType GITHUB or GITLAB",
+			`\"repo:{owner}/{repo}:*\"`, "without it or the repository's ID", "no approval rule holds them", "Request Body",
+		} {
+			require.Contains(t, text, strings.ReplaceAll(want, `\"`, `"`))
+		}
+	})
+
+	t.Run("the project policy write names the one change MCP makes", func(t *testing.T) {
+		text := searchText(t, s, SearchInput{OperationID: "ProjectService/SetIamPolicy"})
+		require.Contains(t, text, "only when administer_workspace grants a workload identity it creates")
+		require.Contains(t, text, "change other members, roles and conditions signed in to the Bytebase console")
+	})
+
 	t.Run("detail mode gives the refusal, not the schema", func(t *testing.T) {
 		text := searchText(t, s, SearchInput{OperationID: "InstanceService/DeleteInstance"})
 		require.Contains(t, text, "## InstanceService/DeleteInstance")

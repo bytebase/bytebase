@@ -1063,8 +1063,8 @@ func TestMCPGateServesARoleGrantOnlyWithItsConfirmation(t *testing.T) {
 		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request("projects/hr"))
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
 		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), "administer_workspace", "the denial must name the tool that grants a role")
-		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where other roles are granted")
+		require.Contains(t, got.err.Error(), "IAM policy changes over MCP only when administer_workspace grants a workload identity it creates its role")
+		require.Contains(t, got.err.Error(), "Change other members, roles and conditions signed in to the Bytebase console")
 		require.True(t, got.auditMarked)
 	})
 
@@ -1494,7 +1494,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		wayOut    []string
 		notWayOut string
 	}{
-		v1pb.Issue_ROLE_GRANT:   {[]string{"whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+		v1pb.Issue_ROLE_GRANT:   {[]string{"do not file role requests", "whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
 		v1pb.Issue_ACCESS_GRANT: {[]string{v1connect.AccessGrantServiceCreateAccessGrantProcedure, "request_access_grant"}, mcpConsoleWayOut},
 	} {
 		t.Run("CreateIssue refuses "+issueType.String(), func(t *testing.T) {
@@ -2079,7 +2079,7 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		notWayOut string
 	}{
 		"an MCP session may not create a role grant": {mcpCtx, v1pb.Issue_ROLE_GRANT,
-			[]string{"whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
+			[]string{"do not file role requests", "whatever the approval rules say", "request_access_grant", "Bytebase console"}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},
 		"an MCP session may not create an access grant": {mcpCtx, v1pb.Issue_ACCESS_GRANT,
 			[]string{v1connect.AccessGrantServiceCreateAccessGrantProcedure, "request_access_grant"}, mcpConsoleWayOut},
 		"an MCP session may not create an unknown type": {mcpCtx, v1pb.Issue_Type(9999), []string{mcpConsoleWayOut}, v1connect.AccessGrantServiceCreateAccessGrantProcedure},

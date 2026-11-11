@@ -160,6 +160,7 @@ func signedIdentityState(t *testing.T, s *Server, body map[string]any, askedAt t
 	change, err := parseIdentityCreation(body)
 	require.NoError(t, err)
 	require.NoError(t, change.check(""))
+	change.fill()
 	alice := withOAuth2ClientID(withUserEmail(withWorkspaceID(context.Background(), "ws-test"), "alice@example.com"), "client-A")
 	form, err := identityForm(alice, change, "")
 	require.NoError(t, err)
@@ -186,7 +187,7 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	require.Equal(t, strings.Join([]string{
 		`The rule trusts the owner's name: if "example-org" is renamed or deleted, whoever registers the name can sign in as it.`,
 		`It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://token.actions.githubusercontent.com for audience "bytebase".`,
-		`GitOps Service Agent lets it create plans, releases and rollouts in this project and run their tasks; the project's settings decide whether a change waits for approval. Titled "HR migrations CI".`,
+		`GitOps Service Agent lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them. Titled "HR migrations CI".`,
 	}, "\n"), choiceDescription(t, asked))
 
 	creations, grants, _ := mock.calls()
@@ -203,7 +204,7 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 				"subjectPattern": "repo:example-org/hr-migrations:*"
 			}
 		}
-	}`, mustJSON(t, creations[0].body), "the tool sets the issuer")
+	}`, jsonString(t, creations[0].body), "the tool sets the issuer")
 	require.Equal(t, &auth.MCPConfirmedDecision{
 		Procedure: v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure,
 		Resource:  "workloadIdentities/" + journeyFourEmail,
@@ -219,7 +220,7 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 			],
 			"etag": "`+journeyFourEtag+`"
 		}
-	}`, mustJSON(t, grants[0].body), "the grant adds the identity and keeps every stored binding, with the etag it read")
+	}`, jsonString(t, grants[0].body), "the grant adds the identity and keeps every stored binding, with the etag it read")
 	require.Equal(t, &auth.MCPConfirmedDecision{Procedure: v1connect.ProjectServiceSetIamPolicyProcedure, Resource: "projects/hr"}, grants[0].confirmed)
 
 	text := `Created: workload identity "` + journeyFourEmail + `" in project "hr", with the GitOps Service Agent role there. ` +
@@ -230,13 +231,6 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 	require.NoError(t, err)
 	require.JSONEq(t, `{"operationId":"`+administerCreateIdentity+`","changed":true,
 		"message":`+jsonString(t, text)+`,"link":"https://bb.example.com/projects/hr/gitops"}`, string(output))
-}
-
-func mustJSON(t *testing.T, v any) string {
-	t.Helper()
-	encoded, err := json.Marshal(v)
-	require.NoError(t, err)
-	return string(encoded)
 }
 
 func TestAdministerIdentityFitsTheOtherShapesInFourLines(t *testing.T) {
@@ -278,13 +272,12 @@ func TestAdministerIdentityFitsTheOtherShapesInFourLines(t *testing.T) {
 }
 
 func TestAdministerIdentityWarnsOfTheOwnersNameOnlyWithNeitherID(t *testing.T) {
-	const warning = "The rule trusts the owner's name"
-	for pattern, warned := range map[string]bool{
-		"repo:example-org/hr-migrations:*":         true,
-		"repo:example-org@111/hr-migrations:*":     false,
-		"repo:example-org/hr-migrations@456:*":     false,
-		"repo:example-org@111/hr-migrations@456:*": false,
-		"project_path:example-org/hr-migrations:*": false,
+	for pattern, firstLine := range map[string]string{
+		"repo:example-org/hr-migrations:*":         `The rule trusts the owner's name: if "example-org" is renamed or deleted, whoever registers the name can sign in as it.`,
+		"repo:example-org@111/hr-migrations:*":     `The pattern pins owner ID "111", so a new account under a freed name cannot sign in as it.`,
+		"repo:example-org/hr-migrations@456:*":     `The pattern pins repository ID "456", so a new account under a freed name cannot sign in as it.`,
+		"repo:example-org@111/hr-migrations@456:*": `The pattern pins owner ID "111" and repository ID "456", so a new account under a freed name cannot sign in as it.`,
+		"project_path:example-org/hr-migrations:*": `It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://gitlab.com for audience "bytebase".`,
 	} {
 		t.Run(pattern, func(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
@@ -295,101 +288,71 @@ func TestAdministerIdentityWarnsOfTheOwnersNameOnlyWithNeitherID(t *testing.T) {
 					config["providerType"] = "GITLAB"
 				}
 			})))
-			require.Equal(t, warned, strings.HasPrefix(choiceDescription(t, user.lastParams(t)), warning))
+			first, _, _ := strings.Cut(choiceDescription(t, user.lastParams(t)), "\n")
+			require.Equal(t, firstLine, first)
 		})
 	}
 }
 
-func TestIdentityRepositoryTakesOneRepositoryWithEveryJob(t *testing.T) {
-	type taken struct {
-		path   string
-		pinned bool
-	}
+func TestReadIdentityRepositoryNamesTheRepositoryAndItsIDs(t *testing.T) {
 	github := v1pb.WorkloadIdentityConfig_GITHUB
-	gitlab := v1pb.WorkloadIdentityConfig_GITLAB
-	for pattern, want := range map[string]taken{
-		"repo:example-org/hr-migrations:*":         {"example-org/hr-migrations", false},
-		"repo:example-org@111/hr-migrations:*":     {"example-org/hr-migrations", true},
-		"repo:example-org/hr-migrations@456:*":     {"example-org/hr-migrations", true},
-		"repo:example-org@111/hr-migrations@456:*": {"example-org/hr-migrations", true},
+	for pattern, want := range map[string]identityRepository{
+		"repo:example-org/hr-migrations:*":         {github: true, path: "example-org/hr-migrations"},
+		"repo:example-org@111/hr-migrations:*":     {github: true, path: "example-org/hr-migrations", ownerID: "111"},
+		"repo:example-org/hr-migrations@456:*":     {github: true, path: "example-org/hr-migrations", repoID: "456"},
+		"repo:example-org@111/hr-migrations@456:*": {github: true, path: "example-org/hr-migrations", ownerID: "111", repoID: "456"},
 	} {
-		path, pinned, ok := identityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: github, SubjectPattern: pattern})
+		got, ok := readIdentityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: github, SubjectPattern: pattern})
 		require.True(t, ok, pattern)
-		require.Equal(t, want, taken{path, pinned}, pattern)
+		require.Equal(t, want, got, pattern)
 	}
-	for pattern, want := range map[string]string{
-		"project_path:acme/deploy:*":      "acme/deploy",
-		"project_path:acme/team/deploy:*": "acme/team/deploy",
+	got, ok := readIdentityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: v1pb.WorkloadIdentityConfig_GITLAB, SubjectPattern: "project_path:acme/team/deploy:*"})
+	require.True(t, ok)
+	require.Equal(t, identityRepository{path: "acme/team/deploy"}, got)
+	for provider, pattern := range map[v1pb.WorkloadIdentityConfig_ProviderType]string{
+		github:                             "project_path:acme/deploy:*",
+		v1pb.WorkloadIdentityConfig_GITLAB: "repo:acme/deploy:*",
+		v1pb.WorkloadIdentityConfig_OIDC:   "repo:example-org/hr-migrations:*",
+		v1pb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED: "repo:example-org/hr-migrations:*",
 	} {
-		path, pinned, ok := identityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: gitlab, SubjectPattern: pattern})
-		require.True(t, ok, pattern)
-		require.Equal(t, taken{want, false}, taken{path, pinned}, pattern)
+		_, ok := readIdentityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: provider, SubjectPattern: pattern})
+		require.False(t, ok, "%s %q", provider, pattern)
 	}
-	for provider, patterns := range map[v1pb.WorkloadIdentityConfig_ProviderType][]string{
-		github: {
-			"repo:example-org/*", "repo:example-org@111/*", "repo:example-org/hr*", "repo:example-org/hr-migrations",
-			"repo:example-org/hr-migrations:", "repo:example-org/hr-migrations:ref:refs/heads/main",
-			"repo:example-org/hr-migrations:environment:prod", "repo:example-org/hr-migrations:pull_request",
-			"repo:example-org/hr-migrations:*:ref:refs/heads/main", "repo:*/hr-migrations:*", "repo:example org/hr-migrations:*",
-			" repo:example-org/hr-migrations:*", "repo:example-org/hr-migrations:*\n", "project_path:acme/deploy:*", "",
-		},
-		gitlab: {
-			"project_path:acme/*", "project_path:acme/deploy*", "project_path:acme:*", "project_path:/deploy:*",
-			"project_path:acme/:*", "project_path:acme//deploy:*", "project_path:ac me/deploy:*",
-			"project_path:acme/deploy:ref_type:branch:ref:main", "project_path:acme/*:ref_type:branch:ref:main",
-			"project_path:acme/de@ploy:*", "project_path:ac*me/deploy:*", "project_path:acme:x/deploy:*",
-			"project_path:acme/deploy", "repo:acme/deploy:*", "",
-		},
-		v1pb.WorkloadIdentityConfig_OIDC: {"repo:example-org/hr-migrations:*"},
-	} {
-		for _, pattern := range patterns {
-			_, _, ok := identityRepository(&v1pb.WorkloadIdentityConfig{ProviderType: provider, SubjectPattern: pattern})
-			require.False(t, ok, "%s %q", provider, pattern)
-		}
-	}
-}
-
-// identityRefusalWords are words of the refusal that only its own check writes, for
-// the cases whose code another check shares.
-var identityRefusalWords = map[string]string{
-	"another provider":     "creates identities for GitHub Actions and GitLab CI",
-	"no provider":          "creates identities for GitHub Actions and GitLab CI",
-	"another issuer":       "the issuer administer_workspace sets",
-	"another audience":     "sets the audience",
-	"a second audience":    "sets the audience",
-	"a workspace identity": "creates a workload identity in a project",
-	"every project":        "creates a workload identity in a project",
-	"a branch pattern":     "does not name one repository with every job in it",
-	"every repository":     "does not name one repository with every job in it",
 }
 
 func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 	for name, tc := range map[string]struct {
 		edit func(request, config map[string]any)
 		code string
+		// words are the refusal's own, for the cases whose code another check
+		// shares.
+		words string
 	}{
-		"another provider": {func(_, config map[string]any) { config["providerType"] = "OIDC" }, "UNSUPPORTED_CHANGE"},
-		"no provider":      {func(_, config map[string]any) { delete(config, "providerType") }, "UNSUPPORTED_CHANGE"},
-		"another issuer":   {func(_, config map[string]any) { config["issuerUrl"] = "https://ghe.example.com/_services/token" }, "UNSUPPORTED_CHANGE"},
-		"a key URL":        {func(_, config map[string]any) { config["jwksUrl"] = "https://keys.example.com/jwks" }, "FIELD_NOT_SUPPORTED"},
+		"another provider": {func(_, config map[string]any) { config["providerType"] = "OIDC" }, "UNSUPPORTED_CHANGE", "creates identities for GitHub Actions and GitLab CI"},
+		"no provider":      {func(_, config map[string]any) { delete(config, "providerType") }, "UNSUPPORTED_CHANGE", "creates identities for GitHub Actions and GitLab CI"},
+		"another issuer": {func(_, config map[string]any) {
+			config["issuerUrl"] = "https://ghe.example.com/_services/token"
+		}, "UNSUPPORTED_CHANGE", "the issuer administer_workspace sets"},
+		"GitHub's issuer on GitLab": {func(_, config map[string]any) {
+			config["providerType"], config["subjectPattern"], config["issuerUrl"] = "GITLAB", "project_path:acme/deploy:*", "https://token.actions.githubusercontent.com"
+		}, "UNSUPPORTED_CHANGE", "the issuer administer_workspace sets for GITLAB"},
+		"a key URL": {func(_, config map[string]any) { config["jwksUrl"] = "https://keys.example.com/jwks" }, "FIELD_NOT_SUPPORTED", ""},
 		"an email": {func(request, _ map[string]any) {
 			request["workloadIdentity"].(map[string]any)["email"] = journeyFourEmail
-		}, "FIELD_NOT_SUPPORTED"},
-		"another audience":     {func(_, config map[string]any) { config["allowedAudiences"] = []any{"sts.amazonaws.com"} }, "UNSUPPORTED_CHANGE"},
-		"a second audience":    {func(_, config map[string]any) { config["allowedAudiences"] = []any{"bytebase", "sts.amazonaws.com"} }, "UNSUPPORTED_CHANGE"},
-		"a workspace identity": {func(request, _ map[string]any) { request["parent"] = "workspaces/ws-test" }, "UNSUPPORTED_CHANGE"},
-		"every project":        {func(request, _ map[string]any) { request["parent"] = "projects/-" }, "UNSUPPORTED_CHANGE"},
+		}, "FIELD_NOT_SUPPORTED", ""},
+		"another audience":     {func(_, config map[string]any) { config["allowedAudiences"] = []any{"sts.amazonaws.com"} }, "UNSUPPORTED_CHANGE", "sets the audience"},
+		"a second audience":    {func(_, config map[string]any) { config["allowedAudiences"] = []any{"bytebase", "sts.amazonaws.com"} }, "UNSUPPORTED_CHANGE", "sets the audience"},
+		"a workspace identity": {func(request, _ map[string]any) { request["parent"] = "workspaces/ws-test" }, "UNSUPPORTED_CHANGE", "creates a workload identity in a project"},
+		"every project":        {func(request, _ map[string]any) { request["parent"] = "projects/-" }, "UNSUPPORTED_CHANGE", "creates a workload identity in a project"},
 		"a branch pattern": {func(_, config map[string]any) {
 			config["subjectPattern"] = "repo:example-org/hr-migrations:ref:refs/heads/main"
-		}, "UNSUPPORTED_CHANGE"},
-		"every repository":    {func(_, config map[string]any) { config["subjectPattern"] = "repo:example-org/*" }, "UNSUPPORTED_CHANGE"},
-		"an invalid ID":       {func(request, _ map[string]any) { request["workloadIdentityId"] = "hr ci" }, "INVALID_REQUEST"},
-		"no ID":               {func(request, _ map[string]any) { delete(request, "workloadIdentityId") }, "INVALID_REQUEST"},
-		"a question too wide": {func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 35) }, "CHANGE_TOO_LONG"},
+		}, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
+		"every repository":    {func(_, config map[string]any) { config["subjectPattern"] = "repo:example-org/*" }, "UNSUPPORTED_CHANGE", "does not name one repository with every job in it"},
+		"a question too wide": {func(request, _ map[string]any) { request["workloadIdentityId"] = strings.Repeat("a", 35) }, "CHANGE_TOO_LONG", "the question naming identity"},
 		"a path too long to fit": {func(_, config map[string]any) {
 			config["subjectPattern"] = "repo:" + strings.Repeat("o", 20) + "/" + strings.Repeat("r", 22) + ":*"
-		}, "CHANGE_TOO_LONG"},
-		"an unknown request body": {func(request, _ map[string]any) { request["parent"] = 7 }, "INVALID_REQUEST"},
+		}, "CHANGE_TOO_LONG", "this workload identity needs 5 lines"},
+		"an unknown request body": {func(request, _ map[string]any) { request["parent"] = 7 }, "INVALID_REQUEST", ""},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newIdentityMock()
@@ -397,13 +360,33 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
 			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, tc.edit))))
 			require.Equal(t, tc.code, refusal.Code, refusal.Message)
-			if want, ok := identityRefusalWords[name]; ok {
-				require.Contains(t, refusal.Message, want)
+			if tc.words != "" {
+				require.Contains(t, refusal.Message, tc.words)
 			}
 			require.Zero(t, user.asked.Load(), "no form may be sent")
 			creations, grants, _ := mock.calls()
 			require.Empty(t, creations)
 			require.Empty(t, grants)
+		})
+	}
+}
+
+func TestAdministerIdentityOffersAShorterIDOnlyWhenOneFits(t *testing.T) {
+	for name, tc := range map[string]struct {
+		parent, id string
+		shorter    bool
+	}{
+		"an ID too long for its project":   {"projects/hr", strings.Repeat("a", 35), true},
+		"a project ID that leaves no room": {"projects/" + strings.Repeat("p", 36), "a", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := newIdentityMock()
+			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, func(request, _ map[string]any) {
+				request["parent"], request["workloadIdentityId"] = tc.parent, tc.id
+			}))))
+			require.Equal(t, "CHANGE_TOO_LONG", refusal.Code)
+			require.Equal(t, tc.shorter, strings.HasPrefix(refusal.Suggestion, "use a shorter identity ID"), refusal.Suggestion)
 		})
 	}
 }
@@ -485,9 +468,61 @@ func TestAdministerIdentityRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	refusal := resultToolError(t, callAdminister(t, session, params))
 	require.Equal(t, "STALE_CONFIRMATION", refusal.Code)
 	require.Contains(t, refusal.Message, "so no workload identity was created")
-	require.Equal(t, identitySubject{}.reread(), refusal.Suggestion)
+	require.Equal(t, creationSubject{}.reread(), refusal.Suggestion)
 	creations, _, _ := mock.calls()
 	require.Empty(t, creations)
+}
+
+// The form states the repository and not the owner ID it pins, so only the
+// request in the digest ties an answer to that ID.
+func TestAdministerIdentityRefusesAnAnswerOverAnotherOwnerID(t *testing.T) {
+	pinned := func(id string) map[string]any {
+		return identityBody(t, func(_, config map[string]any) {
+			config["subjectPattern"] = "repo:example-org@" + id + "/hr-migrations:*"
+		})
+	}
+	t.Run("another owner ID", func(t *testing.T) {
+		mock := newIdentityMock()
+		s, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+		params := identityParams(pinned("999"))
+		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
+		params.RequestState = signedIdentityState(t, s, pinned("111"), time.Now())
+		require.Equal(t, "STALE_CONFIRMATION", resultToolError(t, callAdminister(t, session, params)).Code)
+		creations, _, _ := mock.calls()
+		require.Empty(t, creations)
+	})
+	t.Run("the same request", func(t *testing.T) {
+		mock := newIdentityMock()
+		s, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{}).handle})
+		params := identityParams(pinned("111"))
+		params.InputResponses = mcp.InputResponseMap{confirmDecisionRequestID: confirmAnswer(confirmChoiceApply)}
+		params.RequestState = signedIdentityState(t, s, pinned("111"), time.Now())
+		res := callAdminister(t, session, params)
+		require.False(t, res.IsError, resultText(t, res))
+		creations, _, _ := mock.calls()
+		require.Len(t, creations, 1)
+	})
+}
+
+func TestAdministerIdentityCreatesAGitLabIdentityWithGitLabsIssuer(t *testing.T) {
+	mock := newIdentityMock()
+	user := &asker{answer: confirmAnswer(confirmChoiceApply)}
+	_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
+	res := callAdminister(t, session, identityParams(identityBody(t, func(_, config map[string]any) {
+		config["providerType"], config["subjectPattern"] = "GITLAB", "project_path:acme/team/deploy:*"
+	})))
+	require.False(t, res.IsError, resultText(t, res))
+	require.Contains(t, choiceDescription(t, user.lastParams(t)), "with tokens from https://gitlab.com for audience \"bytebase\".")
+	creations, grants, _ := mock.calls()
+	require.Len(t, creations, 1)
+	require.Len(t, grants, 1)
+	identity, ok := creations[0].body["workloadIdentity"].(map[string]any)
+	require.True(t, ok)
+	config, ok := identity["workloadIdentityConfig"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "https://gitlab.com", config["issuerUrl"])
+	require.Equal(t, []any{"bytebase"}, config["allowedAudiences"])
+	require.Equal(t, "project_path:acme/team/deploy:*", config["subjectPattern"])
 }
 
 func TestAdministerIdentityRefusesAnExpiredAnswer(t *testing.T) {
@@ -563,23 +598,31 @@ func TestAdministerIdentityGrantsNothingWhenTheCreateIsRefused(t *testing.T) {
 }
 
 func TestAdministerIdentityReportsARoleItCouldNotGrant(t *testing.T) {
-	for name, refuse := range map[string]func(*identityMock){
-		"the grant is refused":      func(m *identityMock) { m.grantRefusal = http.StatusBadRequest },
-		"the policy cannot be read": func(m *identityMock) { m.policyReadStatus = http.StatusForbidden },
+	for name, tc := range map[string]struct {
+		refuse func(*identityMock)
+		reason string
+		grants int
+	}{
+		"the grant is refused": {func(m *identityMock) { m.grantRefusal = http.StatusBadRequest }, "request.time is required", 1},
+		"the policy cannot be read": {func(m *identityMock) { m.policyReadStatus = http.StatusForbidden },
+			"the project's IAM policy could not be read: HTTP 403: permission denied", 0},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newIdentityMock()
-			refuse(mock)
+			tc.refuse(mock)
 			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 			res := callAdminister(t, session, identityParams(identityBody(t, nil)))
 			require.False(t, res.IsError, "the identity was created, so the result is not a refusal")
 			text := resultText(t, res)
 			require.True(t, strings.HasPrefix(text, `Created workload identity "`+journeyFourEmail+`" in project "hr", but Bytebase did not grant it the GitOps Service Agent role: `), text)
-			require.Contains(t, text, "It can sign in, and has no role in the project until one is granted signed in to the console.")
+			require.Contains(t, text, tc.reason)
+			require.Contains(t, text, "It can sign in, and it does not have that role until it is granted signed in to the console.")
 			require.True(t, strings.HasSuffix(text, "\nMembers: https://bb.example.com/projects/hr/members"), text)
 			output, err := json.Marshal(res.StructuredContent)
 			require.NoError(t, err)
 			require.Contains(t, string(output), `"changed":true`)
+			_, grants, _ := mock.calls()
+			require.Len(t, grants, tc.grants)
 		})
 	}
 }

@@ -203,7 +203,7 @@ wording an admin reads while choosing Read-write is the wrong place to be genero
 unconditionally is that no approval decision is made over MCP without a confirmation in the client.
 A Read-write session approves or rejects an issue only through the `decide_issue` tool. The tool
 decides database changes and access requests. It refuses role requests, because approving one grants
-a project role, and role grants stay in the console with the rest of access administration. It asks
+a project role; they are decided in the console with the rest of access administration. It asks
 the user through MCP form elicitation, inside the same tool call, and acts only on an accepted form
 with the box checked. A client that cannot show the form gets the issue's console link. The gate
 serves `ApproveIssue` and `RejectIssue` only to a request that carries the confirmation, so

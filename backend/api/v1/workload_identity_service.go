@@ -66,6 +66,12 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	if workloadIdentityID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_id is required"))
 	}
+	// The identity's name, workloadIdentities/{email}, is split on "/", so an
+	// identity whose ID holds one could be signed in as but never read, updated
+	// or deleted.
+	if strings.Contains(workloadIdentityID, "/") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_id %q must not contain \"/\"", workloadIdentityID))
+	}
 
 	wi := request.Msg.WorkloadIdentity
 	if wi == nil {
@@ -115,19 +121,19 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	return connect.NewResponse(convertToWorkloadIdentity(createdWI)), nil
 }
 
-// checkActiveProject refuses a project that is missing, archived or another
-// workspace's. The project cache is keyed by ID alone, so it can return another
-// workspace's project whatever workspace the lookup names.
+// checkActiveProject refuses a project that is missing or archived. The ACL
+// refuses a missing project, and another workspace's, before the handler, but it
+// lets an archived project through and authorizes "projects/-" at workspace
+// scope.
 func (s *WorkloadIdentityService) checkActiveProject(ctx context.Context, projectID string) error {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  workspaceID,
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectID,
 	})
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
 	}
-	if project == nil || project.Workspace != workspaceID || project.Deleted {
+	if project == nil || project.Deleted {
 		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", common.FormatProject(projectID)))
 	}
 	return nil

@@ -200,10 +200,35 @@ func TestParseGitHubRepositoryPattern(t *testing.T) {
 		"repo:*/deploy:*",
 		"repo:acme-corp@x1/deploy:*",
 		"repo:/deploy:*",
+		"repo:acme corp/deploy:*",
+		" repo:acme-corp/deploy:*",
+		"repo:acme-corp/deploy:*\n",
 		"project_path:acme/deploy:*",
 		"",
 	} {
 		_, ok := ParseGitHubRepositoryPattern(pattern)
+		require.False(t, ok, pattern)
+	}
+}
+
+func TestParseGitLabProjectPattern(t *testing.T) {
+	for pattern, want := range map[string]string{
+		"project_path:acme/deploy:*":      "acme/deploy",
+		"project_path:acme/team/deploy:*": "acme/team/deploy",
+	} {
+		got, ok := ParseGitLabProjectPattern(pattern)
+		require.True(t, ok, pattern)
+		require.Equal(t, want, got, pattern)
+		require.NoError(t, ValidateSubjectPattern(pattern), pattern)
+	}
+	for _, pattern := range []string{
+		"project_path:acme/*", "project_path:acme/deploy*", "project_path:acme:*", "project_path:/deploy:*",
+		"project_path:acme/:*", "project_path:acme//deploy:*", "project_path:ac me/deploy:*",
+		"project_path:acme/deploy:ref_type:branch:ref:main", "project_path:acme/*:ref_type:branch:ref:main",
+		"project_path:acme/de@ploy:*", "project_path:ac*me/deploy:*", "project_path:acme:x/deploy:*",
+		"project_path:acme/deploy", "repo:acme/deploy:*", "",
+	} {
+		_, ok := ParseGitLabProjectPattern(pattern)
 		require.False(t, ok, pattern)
 	}
 }

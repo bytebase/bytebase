@@ -920,9 +920,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		a.Contains(unavailable, "SettingService/"+method)
 	}
 
-	// WorkloadIdentityService keeps its reads and the create, which the gate
-	// serves only through administer_workspace. The update and the deletes stay
-	// refused, and off the menu.
 	served, unavailable = servedAndUnavailable("WorkloadIdentityService")
 	for _, method := range []string{"GetWorkloadIdentity", "ListWorkloadIdentities", "CreateWorkloadIdentity"} {
 		a.Contains(served, "WorkloadIdentityService/"+method, "the session reads identities and creates one through the tool")

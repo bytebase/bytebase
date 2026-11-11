@@ -361,9 +361,10 @@ const (
 		"and this request carries no such confirmation"
 	mcpIdentityCreationWayOut = "To create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, use the administer_workspace tool, " +
 		"which asks the user to confirm and grants the identity the GitOps Service Agent role in its project. Create other workload identities signed in to the Bytebase console"
-	mcpRoleGrantUnconfirmed = "over MCP, a project role is granted only to a workload identity that administer_workspace creates, after the user confirms it in the MCP client, " +
-		"and this request carries no such confirmation"
-	mcpRoleGrantWayOut = "To create a workload identity for CI with its role, use the administer_workspace tool. Grant other roles signed in to the Bytebase console"
+	mcpRoleGrantUnconfirmed = "a project's IAM policy changes over MCP only when administer_workspace grants a workload identity it creates its role, " +
+		"after the user confirms it in the MCP client, and this request carries no such confirmation"
+	mcpRoleGrantWayOut = "To create a workload identity for CI with its role, use the administer_workspace tool. " +
+		"Change other members, roles and conditions signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -460,8 +461,8 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
 		return reason, "Request the access with the request_access_grant tool instead"
 	case v1pb.Issue_ROLE_GRANT:
-		reason = "a ROLE_GRANT issue grants a project role once approved, and over MCP a project role is granted " +
-			"only to a workload identity that administer_workspace creates, whatever the approval rules say"
+		reason = "a ROLE_GRANT issue grants a project role once approved, and MCP sessions do not file role requests, " +
+			"whatever the approval rules say"
 		return reason, "To run a read-only statement, request an access grant with the request_access_grant tool; " +
 			"to get a role, request it signed in to the Bytebase console"
 	default:

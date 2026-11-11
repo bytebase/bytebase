@@ -362,9 +362,9 @@ func TestAdministerInstanceAddsJourneyOnesServer(t *testing.T) {
 		"message":`+jsonString(t, text)+`,"link":"https://bb.example.com/`+journeyOneInstance+`"}`, string(output))
 }
 
-func jsonString(t *testing.T, s string) string {
+func jsonString(t *testing.T, v any) string {
 	t.Helper()
-	encoded, err := json.Marshal(s)
+	encoded, err := json.Marshal(v)
 	require.NoError(t, err)
 	return string(encoded)
 }
@@ -761,7 +761,7 @@ func TestAdministerInstanceRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	require.True(t, res.IsError, resultText(t, res))
 	require.Contains(t, resultText(t, res), "STALE_CONFIRMATION")
 	require.Contains(t, resultText(t, res), "so no instance was added")
-	require.Contains(t, resultText(t, res), instanceSubject{}.reread())
+	require.Contains(t, resultText(t, res), creationSubject{nothing: "no instance was added"}.reread())
 	require.Empty(t, mock.calls())
 }
 
@@ -1023,9 +1023,9 @@ func TestConfirmAdminChangeNamesEachEntrysChange(t *testing.T) {
 			"read the rules again with call_api SettingService/GetSetting, make the user's change to them, and call administer_workspace with the result"},
 		"masking rules": {maskingRules, "the masking rules stay as they are", "the masking rules were not changed", "the revised rules",
 			"read the rules again with call_api OrgPolicyService/GetPolicy, make the user's change to them, and call administer_workspace with the result"},
-		"an instance": {instanceSubject{}, "no instance was added", "no instance was added", "the revised request",
+		"an instance": {creationSubject{nothing: "no instance was added"}, "no instance was added", "no instance was added", "the revised request",
 			"call administer_workspace again to ask the user about the request as it is now"},
-		"a workload identity": {identitySubject{}, "no workload identity was created", "no workload identity was created", "the revised request",
+		"a workload identity": {creationSubject{nothing: "no workload identity was created"}, "no workload identity was created", "no workload identity was created", "the revised request",
 			"call administer_workspace again to ask the user about the request as it is now"},
 	} {
 		t.Run(name, func(t *testing.T) {

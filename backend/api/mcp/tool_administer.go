@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // AdministerWorkspaceInput is the input for the administer_workspace tool.
@@ -59,7 +60,7 @@ A workload identity for CI jobs in one GitHub or GitLab repository: send Workloa
 
 The tool shows the user what changes and asks them to confirm in a form. It makes the change only when they accept; declining or cancelling changes nothing. Do not ask in chat first: the form is the question.
 
-Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. Adding an instance needs bb.instances.create, and a workload identity bb.workloadIdentities.create and bb.projects.setIamPolicy. call_api refuses each of these writes.`
+Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. Adding an instance needs bb.instances.create, and a workload identity bb.workloadIdentities.create, bb.projects.getIamPolicy and bb.projects.setIamPolicy. call_api refuses each of these writes.`
 
 func (s *Server) registerAdministerWorkspaceTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -119,6 +120,20 @@ func (r adminRules) unchanged() string { return r.name + " stay as they are" }
 func (r adminRules) notChanged() string { return r.name + " were not changed" }
 
 func (adminRules) revised() string { return "the revised rules" }
+
+// creationSubject is a create in confirmAdminChange's words. nothing says that
+// nothing was made, such as "no instance was added".
+type creationSubject struct{ nothing string }
+
+func (c creationSubject) unchanged() string { return c.nothing }
+
+func (c creationSubject) notChanged() string { return c.nothing }
+
+func (creationSubject) revised() string { return "the revised request" }
+
+func (creationSubject) reread() string {
+	return "call administer_workspace again to ask the user about the request as it is now"
+}
 
 // reread is the next step after the stored rules changed: the request was
 // built from the old ones, so sending it again would undo the other change.
@@ -535,6 +550,17 @@ func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 		names = append(names, fmt.Sprintf("%q", roleTitle(role)))
 	}
 	return strings.Join(names, " then ")
+}
+
+// roleTitle names a predefined role by its display name, as the console does,
+// and any other value as written.
+func roleTitle(role string) string {
+	if roleID, err := common.GetRoleID(role); err == nil {
+		if predefined := store.GetPredefinedRole(roleID); predefined != nil {
+			return predefined.Name
+		}
+	}
+	return role
 }
 
 // conditionText shows a condition between backquotes, as typed, when every

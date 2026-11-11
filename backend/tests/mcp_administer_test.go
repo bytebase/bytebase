@@ -259,10 +259,6 @@ func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
 	a.Equal("environments/test", database.Msg.GetEffectiveEnvironment())
 }
 
-// TestMCPCreatesAWorkloadIdentityAfterAConfirmation drives the identity entry
-// over a live session: call_api is refused for the create and for the grant,
-// the tool asks once, and the identity it creates holds the GitOps Service
-// Agent role in its project with no condition.
 func TestMCPCreatesAWorkloadIdentityAfterAConfirmation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

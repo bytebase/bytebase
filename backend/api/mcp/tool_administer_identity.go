@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
@@ -34,7 +33,10 @@ const identityAudience = "bytebase"
 
 // identityRole is the role the entry grants: the console's default, which the
 // GitOps workflows need.
-var identityRole = common.FormatRole(store.GitOpsServiceAgentRole)
+var (
+	identityRole      = common.FormatRole(store.GitOpsServiceAgentRole)
+	identityRoleTitle = roleTitle(identityRole)
+)
 
 // identityRequestFields are the CreateWorkloadIdentityRequest fields the
 // identity entry takes. A request that sets any other field is refused before
@@ -57,12 +59,6 @@ type identityCreation struct {
 	request   *v1pb.CreateWorkloadIdentityRequest
 	projectID string
 	email     string
-	// path is the repository whose jobs sign in, as "owner/repo" or
-	// "group/project".
-	path string
-	// pinned is whether an owner ID or a repository ID pins the GitHub
-	// repository, so a new account under a freed name cannot sign in.
-	pinned bool
 }
 
 func (*identityCreation) confirmedProcedure() string {
@@ -79,22 +75,26 @@ func (c *identityCreation) config() *v1pb.WorkloadIdentityConfig {
 	return c.request.GetWorkloadIdentity().GetWorkloadIdentityConfig()
 }
 
-func (c *identityCreation) github() bool {
-	return c.config().GetProviderType() == v1pb.WorkloadIdentityConfig_GITHUB
+// identityRepository is the one repository whose every job a subject pattern
+// admits. ownerID and repoID are the GitHub IDs the pattern pins, if any.
+type identityRepository struct {
+	github                bool
+	path, ownerID, repoID string
 }
 
-// identitySubject is a workload identity's creation in confirmAdminChange's
-// words.
-type identitySubject struct{}
-
-func (identitySubject) unchanged() string { return "no workload identity was created" }
-
-func (identitySubject) notChanged() string { return "no workload identity was created" }
-
-func (identitySubject) revised() string { return "the revised request" }
-
-func (identitySubject) reread() string {
-	return "call administer_workspace again to ask the user about the request as it is now"
+// readIdentityRepository reads a request's subject pattern with the handler's
+// own grammar, through wif.
+func readIdentityRepository(config *v1pb.WorkloadIdentityConfig) (identityRepository, bool) {
+	switch config.GetProviderType() {
+	case v1pb.WorkloadIdentityConfig_GITHUB:
+		repository, ok := wif.ParseGitHubRepositoryPattern(config.GetSubjectPattern())
+		return identityRepository{github: true, path: repository.Owner + "/" + repository.Name, ownerID: repository.OwnerID, repoID: repository.ID}, ok
+	case v1pb.WorkloadIdentityConfig_GITLAB:
+		path, ok := wif.ParseGitLabProjectPattern(config.GetSubjectPattern())
+		return identityRepository{path: path}, ok
+	default:
+		return identityRepository{}, false
+	}
 }
 
 func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
@@ -107,6 +107,7 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 	if err := change.check(link); err != nil {
 		return formatToolError(err), nil, nil
 	}
+	change.fill()
 	if !canShowConfirmation(req) {
 		return formatToolError(&toolError{
 			Code:       "CONFIRMATION_UNAVAILABLE",
@@ -124,7 +125,7 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, identitySubject{}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no workload identity was created"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 
@@ -140,14 +141,13 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 	if why := refusal(resp, err); why != "" {
 		return formatToolError(errors.Errorf("failed to create the workload identity: %s", why)), nil, nil
 	}
-	role := roleTitle(identityRole)
 	if why := s.grantIdentityRole(ctx, change); why != "" {
 		membersLink := s.consoleLink(ctx, project+"/members")
-		text := fmt.Sprintf("Created workload identity %q in project %q, but Bytebase did not grant it the %s role: %s. It can sign in, and has no role in the project until one is granted signed in to the console.\nMembers: %s", change.email, change.projectID, role, why, membersLink)
+		text := fmt.Sprintf("Created workload identity %q in project %q, but Bytebase did not grant it the %s role: %s. It can sign in, and it does not have that role until it is granted signed in to the console.\nMembers: %s", change.email, change.projectID, identityRoleTitle, why, membersLink)
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: membersLink}, nil
 	}
 	gitopsLink := s.consoleLink(ctx, project+"/gitops")
-	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use.\nGitOps: %s", change.email, change.projectID, role, gitopsLink)
+	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use.\nGitOps: %s", change.email, change.projectID, identityRoleTitle, gitopsLink)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: gitopsLink}, nil
 }
 
@@ -196,7 +196,7 @@ func addToRole(policy *v1pb.IamPolicy, role, member string) {
 // checkRoleExpiryLimit refuses when the workspace limits how long a role is
 // granted. The IAM policy then refuses a binding with no expiry for every role
 // but Project Owner (validateBindings), so the grant after the create would
-// fail and leave the identity with no role. The API refuses this setting's
+// fail and leave the identity without its role. The API refuses this setting's
 // read over MCP, so it is read from the store.
 func (s *Server) checkRoleExpiryLimit(ctx context.Context, link string) error {
 	profile, err := s.store.GetWorkspaceProfileSetting(ctx, getWorkspaceID(ctx))
@@ -208,7 +208,7 @@ func (s *Server) checkRoleExpiryLimit(ctx context.Context, link string) error {
 	}
 	return &toolError{
 		Code:       "ROLE_EXPIRY_REQUIRED",
-		Message:    fmt.Sprintf("this workspace limits how long a role can be granted, and administer_workspace grants the %s role with no expiry, so no workload identity was created", roleTitle(identityRole)),
+		Message:    fmt.Sprintf("this workspace limits how long a role can be granted, and administer_workspace grants the %s role with no expiry, so no workload identity was created", identityRoleTitle),
 		Suggestion: "create the identity signed in to the Bytebase console, and grant its role there with an expiry the limit allows: " + link,
 	}
 }
@@ -230,7 +230,7 @@ func parseIdentityCreation(body map[string]any) (*identityCreation, error) {
 		return nil, &toolError{
 			Code:       "UNSUPPORTED_CHANGE",
 			Message:    fmt.Sprintf("administer_workspace creates a workload identity in a project, and the request's parent is %q", parent),
-			Suggestion: `set parent to the project's name, such as "projects/hr"; create a workspace identity signed in to the Bytebase console`,
+			Suggestion: `set parent to the project's name, such as "projects/hr"`,
 		}
 	}
 	return &identityCreation{
@@ -240,9 +240,8 @@ func parseIdentityCreation(body map[string]any) (*identityCreation, error) {
 	}, nil
 }
 
-// check refuses what the form could not state or the create would refuse, and
-// then sets what the tool chooses: the provider's issuer, the audience, and a
-// title for a request that has none, as the console does.
+// check refuses what the form could not state. The create refuses the rest,
+// an identity ID it cannot keep among them, after the user confirms.
 func (c *identityCreation) check(link string) error {
 	if field := unlistedField(c.request.ProtoReflect(), "", identityRequestFields); field != "" {
 		return &toolError{
@@ -274,100 +273,57 @@ func (c *identityCreation) check(link string) error {
 			Suggestion: "leave allowedAudiences out, or set up another audience signed in to the Bytebase console: " + link,
 		}
 	}
-	path, pinned, ok := identityRepository(config)
-	if !ok {
+	if _, ok := readIdentityRepository(config); !ok {
 		return &toolError{
 			Code:       "UNSUPPORTED_CHANGE",
 			Message:    fmt.Sprintf("the subject pattern %q does not name one repository with every job in it, which is what administer_workspace creates an identity for", config.GetSubjectPattern()),
 			Suggestion: `send "repo:OWNER/REPO:*" for GitHub, with "@OWNER_ID" after the owner when you know it, or "project_path:GROUP/PROJECT:*" for GitLab. A pattern for a branch, an environment, pull requests or every repository of an owner is set up signed in to the Bytebase console: ` + link,
 		}
 	}
-	if err := common.ValidateEmail(c.email); err != nil || !common.IsWorkloadIdentityEmail(c.email) {
-		return &toolError{
-			Code:       "INVALID_REQUEST",
-			Message:    fmt.Sprintf("the identity ID %q does not make a valid email, %q", c.request.GetWorkloadIdentityId(), c.email),
-			Suggestion: `use letters, digits, ".", "_" and "-", starting and ending with a letter or digit, such as "hr-ci"`,
-		}
-	}
-	config.IssuerUrl = issuer
+	return nil
+}
+
+// fill sets what the tool chooses, after check has refused another choice: the
+// provider's issuer, the audience, and a title for a request that has none, as
+// the console does. It runs before the form and the digest, which state the
+// request as filled.
+func (c *identityCreation) fill() {
+	config := c.config()
+	config.IssuerUrl = identityIssuers[config.GetProviderType()]
 	config.AllowedAudiences = []string{identityAudience}
 	if identity := c.request.GetWorkloadIdentity(); strings.TrimSpace(identity.GetTitle()) == "" {
 		identity.Title = c.request.GetWorkloadIdentityId()
 	}
-	c.path, c.pinned = path, pinned
-	return nil
-}
-
-// identityRepository reads the one repository a subject pattern admits every
-// job of: GitHub's through the handler's own parser, and GitLab's by its path.
-// No name holds white space, so a pattern with any matches no job. pinned is
-// whether an owner ID or a repository ID pins a GitHub repository.
-func identityRepository(config *v1pb.WorkloadIdentityConfig) (path string, pinned bool, ok bool) {
-	pattern := config.GetSubjectPattern()
-	if strings.ContainsFunc(pattern, unicode.IsSpace) {
-		return "", false, false
-	}
-	switch config.GetProviderType() {
-	case v1pb.WorkloadIdentityConfig_GITHUB:
-		repository, parsed := wif.ParseGitHubRepositoryPattern(pattern)
-		if !parsed {
-			return "", false, false
-		}
-		return repository.Owner + "/" + repository.Name, repository.OwnerID != "" || repository.ID != "", true
-	case v1pb.WorkloadIdentityConfig_GITLAB:
-		projectPath, parsed := gitlabProjectPath(pattern)
-		return projectPath, false, parsed
-	default:
-		return "", false, false
-	}
-}
-
-// gitlabProjectPath reads "project_path:GROUP/PROJECT:*", where PROJECT may
-// name subgroups. The handler has no GitLab parser and matches the pattern by
-// prefix alone; ":" ends the path in GitLab's subject, so the pattern admits
-// that project and no other.
-func gitlabProjectPath(pattern string) (string, bool) {
-	body, ok := strings.CutPrefix(pattern, "project_path:")
-	if !ok {
-		return "", false
-	}
-	path, ok := strings.CutSuffix(body, ":*")
-	if !ok {
-		return "", false
-	}
-	segments := strings.Split(path, "/")
-	if len(segments) < 2 {
-		return "", false
-	}
-	for _, segment := range segments {
-		if segment == "" || strings.ContainsAny(segment, "*:@") {
-			return "", false
-		}
-	}
-	return path, true
 }
 
 // identityForm builds the form that asks to create the identity: who signs in
 // as it, and the role it gets.
 func identityForm(ctx context.Context, c *identityCreation, link string) (*adminForm, error) {
-	question := fmt.Sprintf("Create workload identity %q in %q", c.request.GetWorkloadIdentityId(), c.projectID)
+	question := func(identityID string) string {
+		return fmt.Sprintf("Create workload identity %q in %q", identityID, c.projectID)
+	}
 	// Only the account's email may run past a line, so the IDs must fit.
-	if lineColumns(question+"?") > messageLineWidth {
+	if lineColumns(question(c.request.GetWorkloadIdentityId())+"?") > messageLineWidth {
+		suggestion := "create it signed in to the Bytebase console: " + link
+		if lineColumns(question("a")+"?") <= messageLineWidth {
+			suggestion = "use a shorter identity ID, or " + suggestion
+		}
 		return nil, &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("the question naming identity %q and project %q is wider than one line of the confirmation form, so no workload identity was created", c.request.GetWorkloadIdentityId(), c.projectID),
-			Suggestion: "use a shorter identity ID, or create it signed in to the Bytebase console: " + link,
+			Suggestion: suggestion,
 		}
 	}
+	repository, _ := readIdentityRepository(c.config())
 	jobs := "GitLab CI"
-	if c.github() {
+	if repository.github {
 		jobs = "GitHub Actions"
 	}
 	changes := []formChange{
-		{text: fmt.Sprintf("Any %s job in %q signs in as it, and the MCP access policy does not limit it.", jobs, c.path)},
-		{text: fmt.Sprintf("Role: %s in this project. It lasts until removed.", roleTitle(identityRole))},
+		{text: fmt.Sprintf("Any %s job in %q signs in as it, and the MCP access policy does not limit it.", jobs, repository.path)},
+		{text: fmt.Sprintf("Role: %s in this project. It lasts until removed.", identityRoleTitle)},
 	}
-	return fitForm(ctx, question, changes, "", "", identityDescription(c), func(needed int, _ string) error {
+	return fitForm(ctx, question(c.request.GetWorkloadIdentityId()), changes, "", "", identityDescription(c, repository), func(needed int, _ string) error {
 		return &toolError{
 			Code:       "CHANGE_TOO_LONG",
 			Message:    fmt.Sprintf("this workload identity needs %d lines, more than the %d one confirmation form shows, so no workload identity was created", needed, messageLines),
@@ -376,28 +332,30 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 	})
 }
 
-// identityDescription is what the message leaves out. The owner warning comes
-// first, since fullscreen shows the description's first line only.
-func identityDescription(c *identityCreation) string {
+// identityDescription is what the message leaves out. Its first line is what
+// the pattern pins on GitHub, since fullscreen shows that line only.
+func identityDescription(c *identityCreation, repository identityRepository) string {
 	var sb strings.Builder
-	if c.github() && !c.pinned {
-		owner, _, _ := strings.Cut(c.path, "/")
-		fmt.Fprintf(&sb, "The rule trusts the owner's name: if %q is renamed or deleted, whoever registers the name can sign in as it.\n", owner)
-	}
-	config := c.config()
-	fmt.Fprintf(&sb, "It signs in as %s with tokens from %s for audience %q.", c.email, config.GetIssuerUrl(), identityAudience)
-	fmt.Fprintf(&sb, "\n%s lets it create plans, releases and rollouts in this project and run their tasks; the project's settings decide whether a change waits for approval.", roleTitle(identityRole))
-	fmt.Fprintf(&sb, " Titled %q.", c.request.GetWorkloadIdentity().GetTitle())
-	return sb.String()
-}
-
-// roleTitle names a role by its display name when it is predefined, as the
-// console does.
-func roleTitle(role string) string {
-	if roleID, err := common.GetRoleID(role); err == nil {
-		if predefined := store.GetPredefinedRole(roleID); predefined != nil {
-			return predefined.Name
+	if repository.github {
+		var pins []string
+		if repository.ownerID != "" {
+			pins = append(pins, fmt.Sprintf("owner ID %q", repository.ownerID))
+		}
+		if repository.repoID != "" {
+			pins = append(pins, fmt.Sprintf("repository ID %q", repository.repoID))
+		}
+		owner, _, _ := strings.Cut(repository.path, "/")
+		if len(pins) == 0 {
+			fmt.Fprintf(&sb, "The rule trusts the owner's name: if %q is renamed or deleted, whoever registers the name can sign in as it.\n", owner)
+		} else {
+			fmt.Fprintf(&sb, "The pattern pins %s, so a new account under a freed name cannot sign in as it.\n", strings.Join(pins, " and "))
 		}
 	}
-	return role
+	fmt.Fprintf(&sb, "It signs in as %s with tokens from %s for audience %q.", c.email, c.config().GetIssuerUrl(), identityAudience)
+	// The role holds bb.taskRuns.create, which runs tasks in every environment,
+	// and no issue permission, so its rollouts carry no issue; approval checks
+	// apply only to a rollout with an issue (RolloutService.CreateRollout).
+	fmt.Fprintf(&sb, "\n%s lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them.", identityRoleTitle)
+	fmt.Fprintf(&sb, " Titled %q.", c.request.GetWorkloadIdentity().GetTitle())
+	return sb.String()
 }
