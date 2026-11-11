@@ -187,10 +187,15 @@ today it is 8px. The Activity card keeps its full width. The frame is `rounded-l
 `shadow-md` in both places and for the composer. Today it is `rounded-sm`, and only the Changes
 section gives it a shadow, `shadow-sm`. The rounder corner and the stronger shadow make the card
 read as something laid on the statement and not as a panel of it. `docs/agents/frontend-ux.md`
-asks for `rounded-sm` on ordinary framed surfaces. The slice that sets the frame adds one
-exception there: a comment card, and a group frame that holds comment cards, use `rounded-lg`.
-The fields and buttons inside the card keep their own corners. Rejected: keeping the full width
-in the Changes section. A box as wide as the code reads as a band of the statement. Rejected:
+asks for `rounded-sm` on ordinary framed surfaces, and `frontend/scripts/check-ui-guideline.mjs`
+enforces it: `rounded-lg` is an off-scale radius there. The guideline says a rule changes in
+the guideline, the scanner and the scanner's tests together, and never through the baseline.
+So the slice that sets the frame changes all three. A comment card, and a group frame that
+holds comment cards, use `rounded-lg`, and the scanner allows it in the files that draw them,
+the way it already allows the lifecycle stamp its `rounded-full`. Every other surface keeps
+the scale. The fields and buttons inside the card keep their own corners. Rejected: keeping the
+full width in the Changes section. A box as wide as the code reads as a band of the statement.
+Rejected:
 12px corners. A folded thread becomes a pill, which in this product is a button or a tag, and
 only the fold control folds. Rejected: a pointer from the card to its line, a shape the product
 has nowhere else. Rejected: `shadow-lg`. A folded thread then looks like a floating menu.
@@ -277,8 +282,8 @@ bar then separates the card alone, and the card's body is the same white as the 
 
 ## Scope
 
-Frontend, and one line in the UX guideline. Six PRs. Each leaves main shippable, names what it
-depends on, and is opened after the one before it merges.
+Frontend, with one exception in the UX guideline and its scanner. Six PRs. Each leaves main
+shippable, names what it depends on, and is opened after the one before it merges.
 
 A slice is finished when the rows it names hold and no invariant is broken. Its tests assert every
 row and invariant it delivers, at least one case each, so a slice cannot pass while a row it
@@ -309,18 +314,19 @@ there.
    - Delivers, for a card in Activity: the three Activity rows of Title; every row of State
      labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
      drawn as today; the Activity row of Folding. For a card in both places: the frame,
-     `rounded-lg` and `shadow-md`, and the exception in the guideline. After this slice no card is
-     drawn without a bar, so invariants 3 and 8 hold in full, invariant 6 holds for every state
-     label, and `ThreadSummary` goes.
+     `rounded-lg` and `shadow-md`, with the exception in the guideline and in its scanner. After
+     this slice no card is drawn without a bar, so invariants 3 and 8 hold in full, invariant 6
+     holds for every state label, and `ThreadSummary` goes.
    - Files: `CommentThreadCard.tsx`, `StatementAnchorContext.tsx`, `ReviewActivityTimeline.tsx`,
-     `ThreadStack.tsx`, `docs/agents/frontend-ux.md`, and the five locale files for "Comment on
-     the plan".
+     `ThreadStack.tsx`, `docs/agents/frontend-ux.md`, `frontend/scripts/check-ui-guideline.mjs`
+     with its test, and the five locale files for "Comment on the plan".
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
      different names; the excerpt renders in the body and not in the bar; "Outdated" carries the
      warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
-     frame has the corners and the shadow in both places. E2E: `plan-detail-review.spec.ts` covers
-     folding and resolving in Activity.
+     frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
+     scanner accepts `rounded-lg` in a file that draws a comment card and still rejects it in
+     any other file. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
 3. **No line tints, the gray ground, and the width limit (D1, D2's width, D11).** Depends on
    slice 1, which gives every thread in the Changes section a title that names its lines.
    - Delivers: invariant 1, the statement's ground from invariant 2, and every row of On the
@@ -341,7 +347,8 @@ there.
      indented and the first comment is not.
 5. **Composer (D8).** Depends on slice 2, for the bar and the frame.
    - Delivers: the composer row of Title, and invariants 2 and 3 for the composer.
-   - Files: `InlineThreadComposer.tsx`.
+   - Files: `InlineThreadComposer.tsx`, and the scanner's list of files if the composer is not
+     on it yet.
    - Tests: a new `InlineThreadComposer.test.tsx`. They include: the composer has the frame,
      with its corners and shadow, and its avatar is in the body.
 6. **Priority and "Prod" in the bar (D4's markers).** Depends on slice 2, which puts the bar in
