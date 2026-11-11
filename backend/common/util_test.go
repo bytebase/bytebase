@@ -126,6 +126,12 @@ func TestSanitizeUTF8String(t *testing.T) {
 	require.Equal(t, "\u6d4b\u8bd5", SanitizeUTF8String("\u6d4b\u8bd5"), "valid UTF-8 must pass through unchanged")
 }
 
+func TestSanitizeJSONString(t *testing.T) {
+	require.Equal(t, "Unknown column 'a'", SanitizeJSONString("Unknown column 'a'\x00"))
+	require.Equal(t, "Tr\\xe1ng", SanitizeJSONString("Tr\xe1\x00ng"))
+	require.Equal(t, "\u6d4b\u8bd5", SanitizeJSONString("\u6d4b\u8bd5"))
+}
+
 func TestRoundRows(t *testing.T) {
 	require.Equal(t, int64(3), RoundRows(2.5))
 	require.Equal(t, int64(1000), RoundRows(999.6))
