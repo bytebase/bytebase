@@ -160,6 +160,15 @@ Labels combine: a thread that is outdated and resolved shows both. In the Change
 | Changes section | The first unresolved thread is unfolded. Every other thread is a margin marker. Clicking a marker opens its line with one thread unfolded and the line's other threads folded | The reader folds or unfolds it, or resolves it themselves, which folds it | `StatementThreadsLayer`, as today. Unfolding also selects the thread in the stepper and scrolls to it, and folding clears that selection. The card reports the click and keeps no state |
 | Activity | Unfolded when open, folded when resolved | The reader folds or unfolds it. It folds when it becomes resolved and unfolds when it is reopened | The card, as today |
 
+A click folds or unfolds a card when it lands on the bar, as follows. The fold control stays the
+one focusable control for it, with the name from invariant 5.
+
+| Place | Folds or unfolds | Does not |
+| --- | --- | --- |
+| Changes section | A click anywhere on the bar | The composer's bar, which has no fold |
+| Activity | A click on the fold control, the title, a marker or a state label | A click on the lines or on "View in Statement" |
+| Both | | A click on a control inside the bar, which keeps its own meaning, and a drag that selects text |
+
 ### On the statement
 
 | What | In this design |
@@ -196,8 +205,8 @@ the way it already allows the lifecycle stamp its `rounded-full`. Every other su
 the scale. The fields and buttons inside the card keep their own corners. Rejected: keeping the
 full width in the Changes section. A box as wide as the code reads as a band of the statement.
 Rejected:
-12px corners. A folded thread becomes a pill, which in this product is a button or a tag, and
-only the fold control folds. Rejected: a pointer from the card to its line, a shape the product
+12px corners. A folded thread becomes a pill, which in this product is a button or a tag.
+Rejected: a pointer from the card to its line, a shape the product
 has nowhere else. Rejected: `shadow-lg`. A folded thread then looks like a floating menu.
 
 **D3 · A title bar names the lines.** Every card starts with a bar, and its title says what the
@@ -221,9 +230,15 @@ the label. It makes the bar a third longer and repeats the "Applies to" row. Rej
 author's avatar and name. Rejected: a word or an icon that says whether the thread is a finding
 or a person's comment. The badge already marks a finding where it matters.
 
-**D5 · Any thread can be folded.** The fold control is an icon-only `Button size="xs"` at the left
-of the bar, with `aria-expanded`. It is the only part of the bar that folds, because in Activity
-the bar also holds a link. In the Changes section it replaces the close button in the author row.
+**D5 · Any thread can be folded, by a click on its bar.** The fold control is an icon-only
+`Button size="xs"` at the left of the bar, with `aria-expanded`. In the Changes section it
+replaces the close button in the author row. A click on the bar folds too, by the table under
+Folding: a folded bar is a full-width row with one job, and a 24px target on it reads as broken.
+In Activity the right end of the bar holds the lines and a link into the statement, so that end
+does not fold. The bar's click is a pointer shortcut. It adds no second focus stop, and the fold
+control keeps the name and the state for the keyboard and for screen readers. Rejected: the
+fold control as the only part that folds. Rejected: the whole bar in Activity. A click meant
+for the link that lands beside it would fold the card.
 Rejected: folding only resolved threads. A long open finding cannot be put away while reading the
 rest of the timeline.
 
@@ -304,8 +319,9 @@ there.
    - Tests: `CommentThreadCard.test.tsx`, `ThreadStack.test.tsx` and
      `StatementThreadsLayer.test.tsx`. They include: the bar is the same folded and unfolded, and
      a folded card shows nothing from the body, by invariant 4; folding from the bar updates the
-     layer's state and the stepper's selection; a resolved thread whose reader can neither reply
-     nor resolve has no footer; the bar and the footer are `bg-background`; nothing in the bar
+     layer's state and the stepper's selection; a click on the bar's title folds and unfolds, and
+     a drag that selects its text does not; a resolved thread whose reader can neither reply nor
+     resolve has no footer; the bar and the footer are `bg-background`; nothing in the bar
      carries `text-control-light`. E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
      reads `thread-row`, which this slice removes, and `plan-detail-review.spec.ts` covers folding
      and resolving in the Changes section.
@@ -322,7 +338,8 @@ there.
      with its test, and the five locale files for "Comment on the plan".
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
-     different names; the excerpt renders in the body and not in the bar; "Outdated" carries the
+     different names; a click on the change's label folds, and a click on the lines or on the
+     link does not; the excerpt renders in the body and not in the bar; "Outdated" carries the
      warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
      frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
      scanner accepts `rounded-lg` in a file that draws a comment card and still rejects it in
