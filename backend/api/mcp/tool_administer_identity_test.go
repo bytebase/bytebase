@@ -337,7 +337,8 @@ func TestIdentityRepositoryTakesOneRepositoryWithEveryJob(t *testing.T) {
 			"project_path:acme/*", "project_path:acme/deploy*", "project_path:acme:*", "project_path:/deploy:*",
 			"project_path:acme/:*", "project_path:acme//deploy:*", "project_path:ac me/deploy:*",
 			"project_path:acme/deploy:ref_type:branch:ref:main", "project_path:acme/*:ref_type:branch:ref:main",
-			"project_path:acme/de@ploy:*", "project_path:acme/deploy", "repo:acme/deploy:*", "",
+			"project_path:acme/de@ploy:*", "project_path:ac*me/deploy:*", "project_path:acme:x/deploy:*",
+			"project_path:acme/deploy", "repo:acme/deploy:*", "",
 		},
 		v1pb.WorkloadIdentityConfig_OIDC: {"repo:example-org/hr-migrations:*"},
 	} {
@@ -346,6 +347,20 @@ func TestIdentityRepositoryTakesOneRepositoryWithEveryJob(t *testing.T) {
 			require.False(t, ok, "%s %q", provider, pattern)
 		}
 	}
+}
+
+// identityRefusalWords are words of the refusal that only its own check writes, for
+// the cases whose code another check shares.
+var identityRefusalWords = map[string]string{
+	"another provider":     "creates identities for GitHub Actions and GitLab CI",
+	"no provider":          "creates identities for GitHub Actions and GitLab CI",
+	"another issuer":       "the issuer administer_workspace sets",
+	"another audience":     "sets the audience",
+	"a second audience":    "sets the audience",
+	"a workspace identity": "creates a workload identity in a project",
+	"every project":        "creates a workload identity in a project",
+	"a branch pattern":     "does not name one repository with every job in it",
+	"every repository":     "does not name one repository with every job in it",
 }
 
 func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
@@ -382,6 +397,9 @@ func TestAdministerIdentityRefusesBeforeAsking(t *testing.T) {
 			_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: user.handle})
 			refusal := resultToolError(t, callAdminister(t, session, identityParams(identityBody(t, tc.edit))))
 			require.Equal(t, tc.code, refusal.Code, refusal.Message)
+			if want, ok := identityRefusalWords[name]; ok {
+				require.Contains(t, refusal.Message, want)
+			}
 			require.Zero(t, user.asked.Load(), "no form may be sent")
 			creations, grants, _ := mock.calls()
 			require.Empty(t, creations)
@@ -575,4 +593,22 @@ func TestAdministerIdentityClassifiesEveryRequestField(t *testing.T) {
 		"workload_identity.workload_identity_config.jwks_url": true,
 	}
 	requireEveryFieldClassified(t, (&v1pb.CreateWorkloadIdentityRequest{}).ProtoReflect().Descriptor(), "", identityRequestFields, refused)
+}
+
+func TestAdministerIdentitySetsTheAudienceAndATitleItWasNotSent(t *testing.T) {
+	mock := newIdentityMock()
+	_, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
+	res := callAdminister(t, session, identityParams(identityBody(t, func(request, config map[string]any) {
+		delete(config, "allowedAudiences")
+		request["workloadIdentity"].(map[string]any)["title"] = " "
+	})))
+	require.False(t, res.IsError, resultText(t, res))
+	creations, _, _ := mock.calls()
+	require.Len(t, creations, 1)
+	identity, ok := creations[0].body["workloadIdentity"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "hr-migrations-ci", identity["title"], "a blank title takes the ID, as the console does")
+	config, ok := identity["workloadIdentityConfig"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, []any{"bytebase"}, config["allowedAudiences"])
 }
