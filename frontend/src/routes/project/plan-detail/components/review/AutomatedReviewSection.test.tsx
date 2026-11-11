@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { cloneElement, type ReactElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -19,6 +20,7 @@ import {
   Plan_ChangeDatabaseConfigSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { shownTimestampPrecisions } from "@/test-utils/humanizeTs";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import type { PlanReviewState } from "../../hooks/usePlanReviewState";
 import {
@@ -260,6 +262,16 @@ describe("AutomatedReviewSection", () => {
     expect(rule.textContent).not.toContain("P2");
     expect(screen.getByText("plan.automated-review.not-run")).toBeDefined();
     expect(screen.getByText("plan.automated-review.passed-on:2")).toBeDefined();
+  });
+
+  test("reads reviewer finish times to the minute", () => {
+    const { container } = renderSection([
+      row("rule", "passed", undefined, { time: timestampFromMs(1_000_000) }),
+      row("ai", "open", findings({ open: 1, p1: 1 }), {
+        time: timestampFromMs(1_008_000),
+      }),
+    ]);
+    expect(shownTimestampPrecisions(container)).toEqual(["minute", "minute"]);
   });
 
   test("a count opens the first finding of its priority and narrows the walker", () => {

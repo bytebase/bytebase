@@ -38,18 +38,30 @@ type RelativeUnit = {
   unit: Intl.RelativeTimeFormatUnit;
 };
 
-// The units a relative reading counts in, each from the age it takes over at.
-// Below the first, the reading is "now". Both `formatRelativeTime` and the
-// boundary that schedules it read this table, so the two cannot drift apart.
-const RELATIVE_UNITS: readonly RelativeUnit[] = [
-  { fromMs: NOW_THRESHOLD_MS, unitMs: SECOND_MS, unit: "second" },
+/** The finest unit a relative age counts in; below it the age reads "now". */
+export type RelativePrecision = "second" | "minute";
+
+const MINUTE_AND_COARSER_UNITS: readonly RelativeUnit[] = [
   { fromMs: MINUTE_MS, unitMs: MINUTE_MS, unit: "minute" },
   { fromMs: HOUR_MS, unitMs: HOUR_MS, unit: "hour" },
   { fromMs: DAY_MS, unitMs: DAY_MS, unit: "day" },
 ];
 
-const unitIndexForAge = (ageMs: number): number =>
-  RELATIVE_UNITS.findLastIndex((unit) => ageMs >= unit.fromMs);
+// The units a relative reading counts in, each from the age it takes over at.
+// Below the first, the reading is "now". Both `formatRelativeTime` and the
+// boundary that schedules it read this table, so the two cannot drift apart.
+const RELATIVE_UNITS: Record<RelativePrecision, readonly RelativeUnit[]> = {
+  second: [
+    { fromMs: NOW_THRESHOLD_MS, unitMs: SECOND_MS, unit: "second" },
+    ...MINUTE_AND_COARSER_UNITS,
+  ],
+  minute: MINUTE_AND_COARSER_UNITS,
+};
+
+const unitIndexForAge = (
+  ageMs: number,
+  units: readonly RelativeUnit[]
+): number => units.findLastIndex((unit) => ageMs >= unit.fromMs);
 
 // Building an Intl formatter costs tens of times more than formatting with one,
 // and these run in every table cell, so each is built once per locale. The time
@@ -84,7 +96,11 @@ export type TimeReading<Input, Value> = {
   nextChangeAt: (input: Input) => number;
 };
 
-function formatRelativeTime(timestampMs: number): string {
+function formatRelativeTime(
+  timestampMs: number,
+  precision: RelativePrecision
+): string {
+  const units = RELATIVE_UNITS[precision];
   const diffMs = Date.now() - timestampMs;
   const ageMs = Math.abs(diffMs);
   const rtf = cachedFormatter(
@@ -92,11 +108,11 @@ function formatRelativeTime(timestampMs: number): string {
     (locale) => new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
   );
 
-  const index = unitIndexForAge(ageMs);
+  const index = unitIndexForAge(ageMs, units);
   if (index < 0) {
     return rtf.format(0, "second");
   }
-  const { unitMs, unit } = RELATIVE_UNITS[index];
+  const { unitMs, unit } = units[index];
   const sign = diffMs >= 0 ? -1 : 1;
   return rtf.format(sign * Math.round(ageMs / unitMs), unit);
 }
@@ -130,11 +146,14 @@ function formatAbsoluteDate(timestampMs: number): string {
   return formatDateWithYear(timestampMs);
 }
 
-function formatQueueTime(timestampMs: number): string {
+function formatQueueTime(
+  timestampMs: number,
+  precision: RelativePrecision
+): string {
   if (Math.abs(Date.now() - timestampMs) >= RELATIVE_THRESHOLD_MS) {
     return formatAbsoluteDate(timestampMs);
   }
-  return formatRelativeTime(timestampMs);
+  return formatRelativeTime(timestampMs, precision);
 }
 
 function formatCompactDateTime(timestampMs: number): string {
@@ -228,21 +247,26 @@ export function dateTimeSegments(
   return undefined;
 }
 
-function relativeTimeChangeAt(timestampMs: number, nowMs: number): number {
+function relativeTimeChangeAt(
+  timestampMs: number,
+  nowMs: number,
+  precision: RelativePrecision
+): number {
+  const units = RELATIVE_UNITS[precision];
   const diffMs = nowMs - timestampMs;
   const ageMs = Math.abs(diffMs);
-  const index = unitIndexForAge(ageMs);
+  const index = unitIndexForAge(ageMs, units);
   // Inside the "now" window the reading holds across the timestamp itself,
   // until the past side leaves the window.
   if (index < 0) {
-    return Math.ceil(timestampMs + NOW_THRESHOLD_MS);
+    return Math.ceil(timestampMs + units[0].fromMs);
   }
   // The reading prints a rounded count, so it changes at every half unit as
   // well as where the unit switches.
-  const { fromMs, unitMs } = RELATIVE_UNITS[index];
+  const { fromMs, unitMs } = units[index];
   const count = Math.round(ageMs / unitMs);
   if (diffMs >= 0) {
-    const toMs = RELATIVE_UNITS[index + 1]?.fromMs ?? Number.POSITIVE_INFINITY;
+    const toMs = units[index + 1]?.fromMs ?? Number.POSITIVE_INFINITY;
     return Math.ceil(timestampMs + Math.min((count + 0.5) * unitMs, toMs));
   }
   // A future timestamp counts down: its reading changes the moment its age
@@ -263,17 +287,21 @@ function absoluteDateChangeAt(timestampMs: number, nowMs: number): number {
 
 /** A timestamp's age, as "5 minutes ago" or "in 2 days". */
 export const relativeTimeReading: TimeReading<number, string> = {
-  read: formatRelativeTime,
-  nextChangeAt: (timestampMs) => relativeTimeChangeAt(timestampMs, Date.now()),
+  read: (timestampMs) => formatRelativeTime(timestampMs, "second"),
+  nextChangeAt: (timestampMs) =>
+    relativeTimeChangeAt(timestampMs, Date.now(), "second"),
 };
 
-function nextQueueTimeChangeAt(timestampMs: number): number {
+function nextQueueTimeChangeAt(
+  timestampMs: number,
+  precision: RelativePrecision
+): number {
   const nowMs = Date.now();
   const diffMs = nowMs - timestampMs;
   if (Math.abs(diffMs) < RELATIVE_THRESHOLD_MS) {
     // A future timestamp's relative boundary always comes before the switch.
     return Math.min(
-      relativeTimeChangeAt(timestampMs, nowMs),
+      relativeTimeChangeAt(timestampMs, nowMs, precision),
       Math.ceil(timestampMs + RELATIVE_THRESHOLD_MS)
     );
   }
@@ -286,14 +314,21 @@ function nextQueueTimeChangeAt(timestampMs: number): number {
   return Math.min(reentersAtMs, absoluteDateChangeAt(timestampMs, nowMs));
 }
 
+const queueReading = (
+  precision: RelativePrecision
+): TimeReading<number, string> => ({
+  read: (timestampMs) => formatQueueTime(timestampMs, precision),
+  nextChangeAt: (timestampMs) => nextQueueTimeChangeAt(timestampMs, precision),
+});
+
 /**
  * A work-queue timestamp: its age within 30 days, a date beyond. Settles for
  * good once it reads as a date from another year.
  */
-export const queueTimeReading: TimeReading<number, string> = {
-  read: formatQueueTime,
-  nextChangeAt: nextQueueTimeChangeAt,
-};
+export const queueTimeReading = queueReading("second");
+
+/** The work-queue reading, with "now" in place of an age in seconds. */
+export const minuteQueueTimeReading = queueReading("minute");
 
 /** Local calendar-day labels become absolute after yesterday. */
 export const calendarTimeReading: TimeReading<number, string> = {
