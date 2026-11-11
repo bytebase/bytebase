@@ -2592,6 +2592,23 @@ describe("AgentWindow", () => {
     unmount();
   });
 
+  test("Continue preserves the diagnostic chat capability after completion", () => {
+    const store = useAgentStore.getState();
+    const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
+    const capability = { kind: "diagnostic" as const, resource };
+    const chat = store.createChat({ context: resource.project, capability });
+    store.startChatRun(chat.id, { path: "/projects/orders/plans/7", title: "Plan" });
+    store.finishChatRun(chat.id);
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+    act(() => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="agent-continue-action"]')?.click();
+    });
+    expect(getCurrentQueuedUserMessage()).toMatchObject({ chatId: chat.id, text: "What should I review next?" });
+    expect(store.getChat(chat.id)?.capability).toEqual(capability);
+    unmount();
+  });
+
   test("keeps the referenced project bound when sending a follow-up", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat(undefined, "projects/orders");

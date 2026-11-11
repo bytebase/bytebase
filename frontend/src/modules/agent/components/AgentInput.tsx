@@ -36,6 +36,7 @@ import {
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
 import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
@@ -1097,10 +1098,35 @@ export function AgentInput({
       skipReferencePreflight = false
     ) => {
       const store = useAgentStore.getState();
+      if (!store.getChat(chatId)) return;
       const maxTotalTokens = store.preferences.tokenLimitPerRun;
-      const references = getCurrentTurnResourceReferences(
+      const rawCapability = store.getChat(chatId)?.capability;
+      const capability = normalizeAgentDiagnosticCapability(rawCapability);
+      const turnReferences = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
       );
+      const scopeMismatch =
+        capability &&
+        turnReferences.some((reference) =>
+          reference.kind === "project"
+            ? reference.name !== capability.resource.project
+            : reference.kind !== capability.resource.kind ||
+              reference.name !== capability.resource.name ||
+              reference.project !== capability.resource.project
+        );
+      if ((rawCapability !== undefined && !capability) || scopeMismatch) {
+        store.addMessage({
+          chatId,
+          role: "assistant",
+          content: scopeMismatch
+            ? t("agent.diagnostic-help.scope-mismatch")
+            : t("agent.contextual-start.resource-unavailable"),
+          metadata: { route: page.path, runId },
+        });
+        store.finishChatRun(chatId);
+        return;
+      }
+      const references = capability ? [capability.resource] : turnReferences;
       const projectReference = references.find(
         (reference) => reference.kind === "project"
       );
@@ -1121,7 +1147,9 @@ export function AgentInput({
       const referencedDatabase = databaseReference?.name;
       const referencedIssue = issueReference?.name;
       const referencedPlan = planReference?.name;
-      const currentPageResource = getCurrentAgentPageResource();
+      const currentPageResource = capability
+        ? undefined
+        : getCurrentAgentPageResource();
       const maskingPage = isAgentMaskingPageResource(currentPageResource)
         ? currentPageResource
         : undefined;
@@ -1148,25 +1176,35 @@ export function AgentInput({
         instanceName,
         maskingPage,
         runMode,
+        ...(capability ? { capability } : {}),
       });
       const messages = store.getMessages(chatId);
-      const maskingResumeArgs = getMaskingResumeArgs(messages);
-      const maskingSections = new Set<MaskingSkillSection>([
-        ...getMaskingSectionsForPage(maskingPage),
-        ...getMaskingSectionsForTurn(messages),
-      ]);
+      const maskingResumeArgs = capability
+        ? undefined
+        : getMaskingResumeArgs(messages);
+      const maskingSections = new Set<MaskingSkillSection>(
+        capability
+          ? []
+          : [
+              ...getMaskingSectionsForPage(maskingPage),
+              ...getMaskingSectionsForTurn(messages),
+            ]
+      );
       const toolOptions = {
         runMode,
         referencedProject,
         instanceName,
         maskingPage,
+        ...(capability ? { capability } : {}),
       };
       const resolveRequestContext = () => ({
         tools: getToolDefinitions({
           ...toolOptions,
           maskingSections: [...maskingSections],
         }),
-        systemGuidance: getMaskingSkillGuidance([...maskingSections]),
+        systemGuidance: capability
+          ? ""
+          : getMaskingSkillGuidance([...maskingSections]),
       });
       const tools = resolveRequestContext().tools;
       const executor = createToolExecutor(router, {
@@ -1186,8 +1224,9 @@ export function AgentInput({
         referencedPlan,
         maskingPage,
         runMode,
+        ...(capability ? { capability } : {}),
         onSkillLoaded: (load) => {
-          if (load.name === "data-masking" && load.section) {
+          if (!capability && load.name === "data-masking" && load.section) {
             maskingSections.add(load.section);
           }
         },
@@ -1703,6 +1742,7 @@ export function AgentInput({
           useAgentStore.getState().getMessages(chatId)
         );
         const accessRequestDraft =
+          !capability &&
           outcome.kind === "completed" &&
           !outcome.success &&
           queryCalls.length === 1 &&
@@ -1724,11 +1764,20 @@ export function AgentInput({
           const handoff = outcome.success
             ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
             : undefined;
+          const proposedActions =
+            capability && Array.isArray(outcome.actions)
+              ? outcome.actions.filter(
+                  (action) =>
+                    action !== null &&
+                    typeof action === "object" &&
+                    (action.kind === "open" || action.kind === "continue")
+                )
+              : outcome.actions;
           const actions = outcome.success
             ? acceptAgentResponseActions(
-                outcome.actions,
+                proposedActions,
                 handoffCandidates,
-                verifiedDatabase && readDatabaseSchema
+                !capability && verifiedDatabase && readDatabaseSchema
                   ? { verifiedDatabase, answer: finalText }
                   : undefined,
                 maskingDraftIds,
@@ -1958,22 +2007,21 @@ export function AgentInput({
       const store = useAgentStore.getState();
       store.syncState();
       const currentStore = useAgentStore.getState();
-      if (
-        currentStore.getChat(chatId)?.archived ||
-        currentStore.remoteBusyChatIds[chatId]
-      ) {
+      const chat = currentStore.getChat(chatId);
+      if (!chat || chat.archived || currentStore.remoteBusyChatIds[chatId]) {
         return;
       }
       const references = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
       );
-      const hasResourceReference = references.some(
-        (reference) =>
-          reference.kind === "project" ||
-          reference.kind === "database" ||
-          reference.kind === "issue" ||
-          reference.kind === "plan"
-      );
+      const hasResourceReference =
+        references.some(
+          (reference) =>
+            reference.kind === "project" ||
+            reference.kind === "database" ||
+            reference.kind === "issue" ||
+            reference.kind === "plan"
+        ) || currentStore.getChat(chatId)?.capability !== undefined;
       const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
       store.updateChatPage(chatId, currentPage);
       store.startChatRun(chatId, currentPage, {
@@ -2398,6 +2446,7 @@ export function AgentInput({
           }
 
           const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
+          const capability = currentStore.getChat(chatId)?.capability;
           currentStore.setChatStatus(chatId, "running");
           approvalController = new AbortController();
           currentStore.setAbortController(chatId, approvalController);
@@ -2405,6 +2454,7 @@ export function AgentInput({
             ...permissionArgs,
             approved: confirmed && requestAvailable,
             signal: approvalController.signal,
+            ...(capability !== undefined ? { capability } : {}),
           });
           const currentChat = currentStore.getChat(chatId);
           if (

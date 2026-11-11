@@ -915,6 +915,213 @@ describe("masking overview tool", () => {
   });
 });
 
+describe("diagnostic capability", () => {
+  const capability = {
+    kind: "diagnostic" as const,
+    resource: {
+      kind: "plan" as const,
+      name: "projects/referenced/plans/12",
+      project: "projects/referenced",
+      label: "Selected Plan",
+    },
+  };
+
+  test("advertises only diagnostic tools even after loading draft skills", () => {
+    const tools = getToolDefinitions({
+      capability,
+      referencedProject: "projects/other",
+      instanceName: "instances/primary",
+      maskingSections: ["rule", "exemption", "semantic-type"],
+    });
+    expect(
+      tools.map(({ name }) => name).sort((a, b) => a.localeCompare(b))
+    ).toEqual([
+      "ask_user",
+      "call_api",
+      "done",
+      "get_database_overview",
+      "get_issue_overview",
+      "get_plan_overview",
+      "get_project_governance_overview",
+      "get_project_overview",
+      "get_skill",
+      "search_api",
+    ]);
+    expect(
+      tools.find(({ name }) => name === "call_api")?.description
+    ).toContain("projects/referenced");
+    expect(
+      tools.find(({ name }) => name === "call_api")?.description
+    ).not.toContain("may change data");
+  });
+
+  test("advertises only Open and Continue answer actions without changing normal drafts", () => {
+    const diagnostic = getToolDefinitions({ capability }).find(
+      ({ name }) => name === "done"
+    )!;
+    const normal = getToolDefinitions().find(({ name }) => name === "done")!;
+    expect(JSON.stringify(diagnostic)).not.toMatch(
+      /draft-|draftId|prepared masking/i
+    );
+    expect(diagnostic.parametersSchema).toMatchObject({
+      properties: {
+        actions: {
+          items: { properties: { kind: { enum: ["open", "continue"] } } },
+        },
+      },
+    });
+    expect(JSON.stringify(normal)).toContain("draft-plan");
+    expect(JSON.stringify(normal)).toContain("draft-issue-comment");
+  });
+
+  test.each([
+    "IssueService/ApproveIssue",
+    "RolloutService/BatchRunTasks",
+    "RolloutService/CreateRollout",
+    "SQLService/Query",
+    "SettingService/GetSetting",
+    "UnknownService/Unknown",
+  ])("rejects %s without dispatch or permission", async (operationId) => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      capability,
+      chatId: "diagnostic",
+      userName: "users/1",
+    });
+    const result = await executor(
+      "call_api",
+      { operationId, body: { name: capability.resource.name } },
+      "blocked"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/diagnostic/i),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+    expect(checkPreparedApiPermission).not.toHaveBeenCalled();
+  });
+
+  test.each(["PlanService/GetPlan", "RolloutService/GetTaskRun"])(
+    "allows scoped read %s and keeps the original project",
+    async (operationId) => {
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability,
+        referencedProject: "projects/other",
+        referencedPlan: "projects/other/plans/99",
+        context: "projects/other",
+      });
+      const name =
+        operationId === "PlanService/GetPlan"
+          ? capability.resource.name
+          : "projects/referenced/rollouts/12/stages/prod/tasks/1/taskRuns/1";
+      await expect(
+        executor("call_api", { operationId, body: { name } }, "read")
+      ).resolves.toEqual({ kind: "tool_result", result: "call_api" });
+      expect(dispatchPreparedApiCall).toHaveBeenCalledOnce();
+      expect(projectApi.getProject).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "projects/referenced" }),
+        expect.anything()
+      );
+    }
+  );
+
+  test("cannot substitute supplied project or a foreign API resource", async () => {
+    const executor = createToolExecutor({} as AppRouterInstance, {
+      capability,
+      referencedProject: "projects/other",
+      referencedPlan: "projects/other/plans/99",
+    });
+    const result = await executor(
+      "call_api",
+      {
+        operationId: "PlanService/GetPlan",
+        body: { name: "projects/other/plans/99" },
+      },
+      "foreign"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/outside.*referenced project/i),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+
+  test.each(["plan", "issue", "database"] as const)(
+    "binds the selected %s overview to the original resource",
+    async (kind) => {
+      const resource = {
+        ...capability.resource,
+        kind,
+        name:
+          kind === "database"
+            ? "instances/prod/databases/app"
+            : `projects/referenced/${kind}s/12`,
+      };
+      const executor = createToolExecutor({} as AppRouterInstance, {
+        capability: { kind: "diagnostic", resource },
+        referencedProject: "projects/other",
+        referencedPlan: "projects/other/plans/99",
+        referencedIssue: "projects/other/issues/99",
+        referencedDatabase: "instances/other/databases/other",
+      });
+      const tool = `get_${kind}_overview`;
+      const parameter = `${kind}Name`;
+      await expect(
+        executor(tool, { [parameter]: `${resource.name}-other` }, "wrong")
+      ).resolves.toMatchObject({
+        kind: "tool_result",
+        result: expect.stringMatching(/diagnostic/i),
+      });
+      await expect(
+        executor(tool, { [parameter]: resource.name }, "original")
+      ).resolves.toEqual({ kind: "tool_result", result: `${kind}_overview` });
+    }
+  );
+
+  test.each([
+    "navigate",
+    "dom_action",
+    "get_page_state",
+    "get_instance_overview",
+    "get_masking_rule_draft",
+    "prepare_masking_rule_draft",
+    "prepare_masking_exemption_draft",
+    "prepare_semantic_type_draft",
+  ])("rejects forged diagnostic %s calls", async (name) => {
+    const result = await createToolExecutor({} as AppRouterInstance, {
+      capability,
+    })(name, {}, "blocked");
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/diagnostic/i),
+    });
+  });
+
+  test("fails closed for malformed supplied capability", async () => {
+    const invalid = {
+      ...capability,
+      resource: { ...capability.resource, project: "projects/other" },
+    };
+    expect(
+      getToolDefinitions({ capability: invalid }).map(({ name }) => name)
+    ).toEqual(["ask_user", "done"]);
+    const result = await createToolExecutor({} as AppRouterInstance, {
+      capability: invalid,
+    })(
+      "call_api",
+      {
+        operationId: "PlanService/GetPlan",
+        body: { name: capability.resource.name },
+      },
+      "invalid"
+    );
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringMatching(/diagnostic/i),
+    });
+    expect(dispatchPreparedApiCall).not.toHaveBeenCalled();
+  });
+});
+
 describe("agent tools referenced project", () => {
   test("scopes bounded project reads to the reference for one executor only", async () => {
     const referencedExecutor = createToolExecutor({} as AppRouterInstance, {

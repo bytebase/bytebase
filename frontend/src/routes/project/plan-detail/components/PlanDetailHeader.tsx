@@ -20,13 +20,6 @@ import {
 } from "@/lib/plan/workflow";
 import { invalidateProjectPlansPagedDataCache } from "@/lib/projectPagedDataCache";
 import { cn } from "@/lib/utils";
-import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
-import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
-import {
-  buildPlanReviewPrompt,
-  canReviewWithAgent,
-} from "@/modules/agent/logic/planIssueAssistance";
-import { getPlanMentionLabel } from "@/modules/agent/logic/resourceMention";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
@@ -96,18 +89,6 @@ export function PlanDetailHeader() {
   const canUpdatePlan =
     page.plan.creator === currentUser.name ||
     hasProjectPermissionV2(project, "bb.plans.update");
-
-  const openPlanReview = () => {
-    if (!project || !page.plan.name || page.isCreating) return;
-    openAgentWithPrompt(buildPlanReviewPrompt(), [
-      {
-        kind: "plan",
-        name: page.plan.name,
-        project: project.name,
-        label: getPlanMentionLabel(page.plan),
-      },
-    ]);
-  };
 
   useEffect(() => {
     setTitle(persistedTitle);
@@ -639,15 +620,6 @@ export function PlanDetailHeader() {
         </div>
 
         <div className="ml-auto flex w-full min-w-0 max-w-full flex-wrap items-center justify-end gap-x-2 gap-y-2 sm:w-auto">
-          {!page.isCreating &&
-            canReviewWithAgent(page.issue, page.plan) &&
-            !page.rollout &&
-            project &&
-            page.plan.name && (
-              <AgentHelpButton onClick={openPlanReview} size="md">
-                {t("agent.plan-assistance.review")}
-              </AgentHelpButton>
-            )}
           {/* Lifecycle slot: one primary advance/status per state. Create and
               ready-for-review stay here (coupled to the title/create flow); all
               other states render through PlanLifecycleSlot. */}

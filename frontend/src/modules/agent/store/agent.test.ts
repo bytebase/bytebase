@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
-import type { AgentChat } from "../logic/types";
+import type { AgentChat, AgentDiagnosticCapability } from "../logic/types";
 import type { AgentState } from "./agent";
 import {
   AGENT_STATE_KEY,
@@ -76,6 +76,293 @@ const s = (store: StoreApi<AgentState>) => {
       state.setWorkspaceName(workspaceName, userEmail),
   };
 };
+
+describe("diagnostic chat capability", () => {
+  const workspaceName = "workspaces/alpha";
+  const diagnosticCapability = (): AgentDiagnosticCapability => ({
+    kind: "diagnostic",
+    resource: {
+      kind: "plan",
+      name: "projects/example/plans/42",
+      project: "projects/example",
+      label: "projects/example/plans/42",
+    },
+  });
+  const persistedState = () =>
+    JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!);
+
+  test("copies and normalizes the resource before storing a new chat", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const capability = diagnosticCapability();
+    capability.resource.label = " Example plan ";
+
+    const chat = s(store).createChat({ capability });
+
+    expect(chat.capability).toEqual(diagnosticCapability());
+    expect(chat.capability).not.toBe(capability);
+    expect(chat.capability?.resource).not.toBe(capability.resource);
+    capability.resource.name = "projects/example/plans/99";
+    expect(s(store).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+  });
+
+  test("creates an unrestricted context chat instead of reusing a diagnostic chat", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const diagnostic = s(store).createChat({
+      context: "projects/example",
+      workspaceName,
+      capability: diagnosticCapability(),
+    });
+
+    const selected = s(store).selectOrCreateChatForContext(
+      "projects/example",
+      { path: "/projects/example", title: "Example" },
+      workspaceName
+    );
+
+    expect(selected?.id).not.toBe(diagnostic.id);
+    expect(selected?.context).toBe("projects/example");
+    expect(selected?.capability).toBeUndefined();
+    expect(s(store).currentChatId).toBe(selected?.id);
+    expect(s(store).getChat(diagnostic.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+  });
+
+  test("reuses an unrestricted context chat instead of the current diagnostic chat", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const normal = s(store).createChat({
+      context: "projects/example",
+      workspaceName,
+    });
+    const diagnostic = s(store).createChat({
+      context: "projects/example",
+      workspaceName,
+      capability: diagnosticCapability(),
+    });
+
+    const selected = s(store).selectOrCreateChatForContext(
+      "projects/example",
+      undefined,
+      workspaceName
+    );
+
+    expect(selected?.id).toBe(normal.id);
+    expect(selected?.capability).toBeUndefined();
+    expect(s(store).currentChatId).toBe(normal.id);
+    expect(s(store).getChat(diagnostic.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+  });
+
+  test("skips the most recent diagnostic context chat when another context is selected", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const normal = s(store).createChat({
+      context: "projects/example",
+      workspaceName,
+    });
+    const diagnostic = s(store).createChat({
+      context: "projects/example",
+      workspaceName,
+      capability: diagnosticCapability(),
+    });
+    const other = s(store).createChat({
+      context: "projects/other",
+      workspaceName,
+    });
+    store.setState((state) => ({
+      chats: state.chats.map((chat) => ({
+        ...chat,
+        updatedTs: chat.id === diagnostic.id ? 2 : 1,
+      })),
+    }));
+
+    const selected = s(store).selectOrCreateChatForContext(
+      "projects/example",
+      undefined,
+      workspaceName
+    );
+
+    expect(selected?.id).toBe(normal.id);
+    expect(selected?.capability).toBeUndefined();
+    expect(s(store).currentChatId).toBe(normal.id);
+    expect(s(store).getChat(other.id)?.context).toBe("projects/other");
+    expect(s(store).getChat(diagnostic.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+  });
+
+  test("retains the capability after completion, cancellation, reload, and a new run", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ capability: diagnosticCapability() });
+    s(store).startChatRun(chat.id, undefined, { runMode: "read-only" });
+    s(store).finishChatRun(chat.id);
+    expect(s(store).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+    s(store).startChatRun(chat.id);
+    s(store).cancel(chat.id);
+    expect(s(store).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+    s(store).saveState();
+    expect(
+      persistedState().chats.find((item: AgentChat) => item.id === chat.id)
+        ?.capability
+    ).toEqual(diagnosticCapability());
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(s(reloaded).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+    s(reloaded).startChatRun(chat.id);
+    expect(s(reloaded).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+  });
+
+  test.each([null, {}, { kind: "unknown" }, { kind: "diagnostic" }])(
+    "rejects persisted malformed capability %j instead of creating a normal chat",
+    (capability) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName(workspaceName);
+      const chat = s(store).createChat({ title: "Invalid diagnostic" });
+      const normal = s(store).createChat({ title: "Normal chat" });
+      const saved = persistedState();
+      saved.chats.find((item: AgentChat) => item.id === chat.id).capability =
+        capability;
+      mockStorage.setItem(
+        getAgentStateKey(workspaceName),
+        JSON.stringify(saved)
+      );
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+
+      expect(s(reloaded).getChat(chat.id)).toBeNull();
+      expect(s(reloaded).getChat(normal.id)?.capability).toBeUndefined();
+    }
+  );
+
+  test("rejects malformed capability on creation without adding an ordinary chat", () => {
+    const store = createAgentStore();
+    const before = s(store).chats;
+    expect(() =>
+      s(store).createChat({
+        capability: { kind: "unknown" } as unknown as AgentDiagnosticCapability,
+      })
+    ).toThrow();
+    expect(s(store).chats).toBe(before);
+  });
+
+  test.each(["omitted", "different-resource"])(
+    "keeps an existing diagnostic scope when remote capability is %s",
+    (change) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName(workspaceName);
+      const chat = s(store).createChat({ capability: diagnosticCapability() });
+      s(store).saveState();
+      const saved = persistedState();
+      const incoming = saved.chats.find(
+        (item: AgentChat) => item.id === chat.id
+      );
+      if (change === "omitted") delete incoming.capability;
+      else
+        incoming.capability = {
+          ...diagnosticCapability(),
+          resource: {
+            ...diagnosticCapability().resource,
+            name: "projects/example/plans/99",
+          },
+        };
+      incoming.title = "Remote title";
+      mockStorage.setItem(
+        getAgentStateKey(workspaceName),
+        JSON.stringify(saved)
+      );
+
+      s(store).syncState();
+
+      expect(s(store).getChat(chat.id)?.title).toBe("Remote title");
+      expect(s(store).getChat(chat.id)?.capability).toEqual(
+        diagnosticCapability()
+      );
+      s(store).saveState();
+      expect(
+        persistedState().chats.find((item: AgentChat) => item.id === chat.id)
+          ?.capability
+      ).toEqual(diagnosticCapability());
+    }
+  );
+
+  test("imports remote diagnostic scope without taking ownership of queued work", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ capability: diagnosticCapability() });
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text: "Diagnose this plan",
+      page: { path: "/landing", title: "Home" },
+    });
+    s(store).saveState();
+
+    s(follower).syncState();
+
+    expect(s(follower).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+    expect(s(follower).remoteBusyChatIds[chat.id]).toBe(true);
+    expect(s(follower).takeQueuedUserMessage(chat.id)).toBeNull();
+  });
+
+  test("preserves capability while recovering an interrupted persisted run", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat({ capability: diagnosticCapability() });
+    s(store).startChatRun(chat.id);
+    s(store).saveState();
+
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+
+    expect(s(reloaded).getChat(chat.id)).toMatchObject({
+      capability: diagnosticCapability(),
+      status: "idle",
+      interrupted: true,
+    });
+  });
+
+  test("keeps remote capability when saving stale local execution", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    const chat = s(store).createChat();
+    s(store).startChatRun(chat.id);
+    const saved = persistedState();
+    saved.chats.find((item: AgentChat) => item.id === chat.id).capability =
+      diagnosticCapability();
+    mockStorage.setItem(getAgentStateKey(workspaceName), JSON.stringify(saved));
+
+    s(store).finishChatRun(chat.id);
+    s(store).saveState();
+
+    expect(s(store).getChat(chat.id)?.capability).toEqual(
+      diagnosticCapability()
+    );
+    expect(
+      persistedState().chats.find((item: AgentChat) => item.id === chat.id)
+        ?.capability
+    ).toEqual(diagnosticCapability());
+  });
+});
 
 describe("Agent preferences", () => {
   const defaults = {

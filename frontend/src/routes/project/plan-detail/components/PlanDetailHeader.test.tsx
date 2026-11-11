@@ -26,7 +26,6 @@ const mocks = vi.hoisted(() => ({
   patchState: vi.fn(),
   permissions: new Set<string>(),
   pushNotification: vi.fn(),
-  openAgentWithPrompt: vi.fn(),
   replaceRoute: vi.fn(),
   setCreationIssueLabels: vi.fn(),
   updateIssue: vi.fn(),
@@ -129,10 +128,6 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
 vi.mock("@/lib/projectPagedDataCache", () => ({
   invalidateProjectPlansPagedDataCache:
     mocks.invalidateProjectPlansPagedDataCache,
-}));
-
-vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
-  openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
 
 vi.mock("@/lib/utils", () => ({
@@ -283,36 +278,13 @@ beforeEach(() => {
 });
 
 describe("PlanDetailHeader draft ownership", () => {
-  test("opens the Agent with the Plan as the selected resource for review", async () => {
+  test("does not offer generic Agent review for a pending Plan", () => {
     mocks.page = makePage({ draft: false });
     render(<PlanDetailHeader />);
 
-    const reviewButton = screen.getByRole("button", {
-      name: "agent.plan-assistance.review",
-    });
-    expect(reviewButton).toHaveAttribute("data-button-size", "md");
-    expect(reviewButton).toHaveAttribute("data-button-appearance", "ghost");
-    expect(reviewButton.querySelector(".lucide-bot")).not.toBeNull();
-    expect(reviewButton).not.toHaveClass("whitespace-normal", "h-auto");
-    expect(reviewButton.parentElement).toHaveClass(
-      "w-full",
-      "flex-wrap",
-      "gap-y-2"
-    );
-    expect(reviewButton.parentElement?.parentElement).toHaveClass("flex-wrap");
-    fireEvent.click(reviewButton);
-
-    expect(mocks.openAgentWithPrompt).toHaveBeenCalledWith(
-      expect.stringContaining("Review this Plan"),
-      [
-        {
-          kind: "plan",
-          name: "projects/p1/plans/123",
-          project: "projects/p1",
-          label: "Plan title (#123)",
-        },
-      ]
-    );
+    expect(
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
   });
 
   test("does not offer Agent review for a closed Plan", () => {
@@ -343,12 +315,12 @@ describe("PlanDetailHeader draft ownership", () => {
     ).toBeNull();
   });
 
-  test("hides Agent review when rollout begins without changing approval status", () => {
+  test("does not reintroduce generic Agent review when rollout begins", () => {
     mocks.page = makePage({ draft: false });
     const { rerender } = render(<PlanDetailHeader />);
     expect(
-      screen.getByRole("button", { name: "agent.plan-assistance.review" })
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "agent.plan-assistance.review" })
+    ).toBeNull();
 
     mocks.page.plan.hasRollout = true;
     rerender(<PlanDetailHeader />);

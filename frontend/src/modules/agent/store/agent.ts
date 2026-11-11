@@ -6,6 +6,7 @@ import {
   getNameParentTokens,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import type {
   AgentExpressionDraftMode,
   AgentExpressionDraftTarget,
@@ -29,6 +30,7 @@ import type {
   AgentChat,
   AgentChatSnapshot,
   AgentChatStatus,
+  AgentDiagnosticCapability,
   AgentDraft,
   AgentInterruptionReason,
   AgentMentionRange,
@@ -88,6 +90,7 @@ interface CreateChatOptions {
   select?: boolean;
   title?: string;
   archived?: boolean;
+  capability?: AgentDiagnosticCapability;
 }
 
 interface AddMessageOptions extends Message {
@@ -146,6 +149,10 @@ const setLastUserInterruptionReason = (
 // --- Pure helper functions ---
 
 const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
+  const capability = normalizeAgentDiagnosticCapability(options.capability);
+  if (options.capability !== undefined && !capability) {
+    throw new Error("Invalid Agent diagnostic capability");
+  }
   const now = Date.now();
   return {
     id: uuidv4(),
@@ -162,6 +169,7 @@ const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
     requiresAIConfiguration: false,
     interrupted: false,
     runId: null,
+    ...(capability ? { capability } : {}),
   };
 };
 
@@ -577,6 +585,9 @@ const normalizeChat = (raw: unknown): AgentChat => {
       chat.runMode === "read-only" || chat.runMode === "default"
         ? chat.runMode
         : undefined,
+    ...(chat.capability !== undefined
+      ? { capability: normalizeAgentDiagnosticCapability(chat.capability) }
+      : {}),
   };
 };
 
@@ -621,7 +632,15 @@ const normalizePersistedState = (
     ? raw.draftsByChatId
     : {};
 
-  const chats = rawChats.map((chat) => normalizeChat(chat));
+  // Invalid capabilities must not restore as unrestricted chats.
+  const chats = rawChats
+    .filter(
+      (chat) =>
+        !isRecord(chat) ||
+        chat.capability === undefined ||
+        normalizeAgentDiagnosticCapability(chat.capability) !== undefined
+    )
+    .map((chat) => normalizeChat(chat));
   const messagesByChatId: Record<string, AgentMessage[]> = {};
   const pendingAskByChatId: Record<string, AgentPendingAsk> = {};
   const draftsByChatId: Record<string, AgentDraft> = {};
@@ -1431,6 +1450,9 @@ const rebasePersistedChanges = (
     const sourceChat = useLocal ? current : incoming;
     if (!sourceChat) continue;
     const chat = { ...sourceChat };
+    if (current?.capability || incoming?.capability) {
+      chat.capability = current?.capability ?? incoming?.capability;
+    }
     if (current && incoming && previous) {
       for (const key of [
         "title",
@@ -1927,6 +1949,7 @@ export const createAgentStore = () => {
 
           const isReusable = (chat: AgentChat) =>
             !chat.archived &&
+            chat.capability === undefined &&
             chat.status === "idle" &&
             !get().getPendingAsk(chat.id) &&
             !get().queuedUserMessagesByChatId[chat.id];

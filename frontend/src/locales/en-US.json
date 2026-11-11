@@ -114,6 +114,10 @@
     "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
+    "diagnostic-help": {
+      "ask-agent": "Ask Agent",
+      "scope-mismatch": "This diagnostic chat is bound to its original resource. Open a new help request for another resource."
+    },
     "empty-chat": {
       "project-heading": "How can I help with this project?",
       "suggestions": "Suggested questions",
@@ -149,9 +153,6 @@
     "input-processing-placeholder": "Processing...",
     "interrupted": "Interrupted",
     "interrupted-retry-hint": "The conversation was interrupted. You can retry or send a new message.",
-    "issue-assistance": {
-      "review": "Review with Agent"
-    },
     "issue-comment-draft": {
       "existing": "This issue already has an unsent comment. Review it before opening another draft.",
       "open": "Draft review comment",
@@ -245,8 +246,7 @@
       "issue-rejection": "Rejecting this issue stops its current approval flow. The rejection must be addressed before approval can continue."
     },
     "plan-assistance": {
-      "ask-draft-sql": "Ask Agent to draft SQL",
-      "review": "Review with Agent"
+      "ask-draft-sql": "Ask Agent to draft SQL"
     },
     "plan-draft": {
       "append-sql": "Append SQL",

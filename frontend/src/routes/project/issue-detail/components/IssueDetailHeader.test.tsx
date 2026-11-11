@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ButtonHTMLAttributes } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { ApprovalStatus, IssueStatus, State } from "@/types/proto-es/v1/common_pb";
@@ -8,7 +8,6 @@ import type { IssueDetailPageState } from "../hooks/useIssueDetailPage";
 import { IssueDetailHeader } from "./IssueDetailHeader";
 
 const mocks = vi.hoisted(() => ({
-  openAgentWithPrompt: vi.fn(),
   page: undefined as unknown as IssueDetailPageState,
 }));
 
@@ -31,9 +30,6 @@ vi.mock("@/components/ui/button", () => ({
       {children}
     </button>
   ),
-}));
-vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
-  openAgentWithPrompt: mocks.openAgentWithPrompt,
 }));
 vi.mock("../context/IssueDetailContext", () => ({
   useIssueDetailContext: () => mocks.page,
@@ -63,35 +59,12 @@ beforeEach(() => {
   } as unknown as IssueDetailPageState;
 });
 
-test("opens the Agent with this Issue as the selected resource for review", () => {
+test("does not offer generic Agent review for a pending Issue", () => {
   render(<IssueDetailHeader />);
 
-  const reviewButton = screen.getByRole("button", {
-    name: "agent.issue-assistance.review",
-  });
-  expect(reviewButton).toHaveAttribute("data-button-size", "md");
-  expect(reviewButton).toHaveAttribute("data-button-appearance", "ghost");
-  expect(reviewButton.querySelector(".lucide-bot")).not.toBeNull();
-  expect(reviewButton).not.toHaveClass("whitespace-normal", "h-auto");
-  expect(reviewButton.parentElement).toHaveClass(
-    "w-full",
-    "flex-wrap",
-    "gap-y-2"
-  );
-  expect(reviewButton.parentElement?.parentElement).toHaveClass("flex-wrap");
-  fireEvent.click(reviewButton);
-
-  expect(mocks.openAgentWithPrompt).toHaveBeenCalledWith(
-    expect.stringContaining("Review this Issue"),
-    [
-      {
-        kind: "issue",
-        name: "projects/example/issues/42",
-        project: "projects/example",
-        label: "Review database migration",
-      },
-    ]
-  );
+  expect(
+    screen.queryByRole("button", { name: "agent.issue-assistance.review" })
+  ).toBeNull();
 });
 
 test.each([
@@ -112,11 +85,11 @@ test.each([
   ).toBeNull();
 });
 
-test("hides Agent review when approval completes without navigating", () => {
+test("does not reintroduce generic Agent review when approval completes", () => {
   const { rerender } = render(<IssueDetailHeader />);
   expect(
-    screen.getByRole("button", { name: "agent.issue-assistance.review" })
-  ).toBeInTheDocument();
+    screen.queryByRole("button", { name: "agent.issue-assistance.review" })
+  ).toBeNull();
 
   mocks.page.issue = {
     ...mocks.page.issue!,
@@ -128,14 +101,14 @@ test("hides Agent review when approval completes without navigating", () => {
   ).toBeNull();
 });
 
-test("allows pending Issue review without a linked Plan", () => {
+test("does not offer generic Agent review without a linked Plan", () => {
   mocks.page.issue = { ...mocks.page.issue!, plan: "" };
   mocks.page.plan = { ...mocks.page.plan!, state: State.STATE_UNSPECIFIED };
   render(<IssueDetailHeader />);
 
   expect(
-    screen.getByRole("button", { name: "agent.issue-assistance.review" })
-  ).toBeInTheDocument();
+    screen.queryByRole("button", { name: "agent.issue-assistance.review" })
+  ).toBeNull();
 });
 
 test.each([{ state: State.DELETED }, { hasRollout: true }])(
