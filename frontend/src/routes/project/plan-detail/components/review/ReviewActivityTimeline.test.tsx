@@ -43,14 +43,16 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ActivityRowFrame: ({
     children,
+    compact = false,
     icon,
     id,
   }: {
     children: ReactNode;
+    compact?: boolean;
     icon: ReactNode;
     id?: string;
   }) => (
-    <li data-testid="thread-row" id={id}>
+    <li data-compact={compact} data-testid="thread-row" id={id}>
       {icon}
       {children}
     </li>
@@ -444,7 +446,7 @@ describe("ReviewActivityTimeline", () => {
     const comments = [
       completion("c0", 0n, 1),
       finding("discussed", 0n, true),
-      // A reply no longer keeps a hidden run's finding on the page.
+      // A reply does not keep a hidden run's finding on the page.
       create(IssueCommentSchema, {
         name: "projects/p1/issues/1/issueComments/discussed-reply",
         comment: "Fixed in the next change",
@@ -475,13 +477,13 @@ describe("ReviewActivityTimeline", () => {
     expect(cardsIn(groups()[0])).toEqual([]);
     expect(groups()[0].textContent).toContain("common.show");
     expect(cardsIn(groups()[1])).toEqual(["current"]);
-    // A finding sits in its review's row, with no timeline row of its own.
     expect(container.querySelectorAll("li")).toHaveLength(3);
     expect(groups()[1].closest("li")?.querySelectorAll("[data-testid='review-group']")).toHaveLength(1);
+    // The icon keeps its top inset, so it centers on the review line inside the frame.
+    expect(groups()[1].closest("li")?.getAttribute("data-compact")).toBe("false");
     // The review line has room inside the frame, folded or open.
     const line = groups()[0].firstElementChild as HTMLElement;
     for (const name of ["px-3", "py-2"]) expect(line.className.split(" ")).toContain(name);
-    // The group is a plain border, and the card inside keeps its own frame.
     const frame = groups()[1].className.split(" ");
     for (const name of ["border", "border-block-border", "rounded-lg"]) expect(frame).toContain(name);
     expect(frame.filter((name) => /^(shadow|bg-)/.test(name))).toEqual([]);

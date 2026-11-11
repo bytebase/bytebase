@@ -442,7 +442,7 @@ function ReviewRunActivityRow({
     return <ActivityRowShell header={header} icon={icon} isLast={isLast} />;
   }
   return (
-    <ActivityRowFrame compact icon={icon} isLast={isLast}>
+    <ActivityRowFrame icon={icon} isLast={isLast}>
       <div
         className="ml-3 rounded-lg border border-block-border"
         data-testid="review-group"

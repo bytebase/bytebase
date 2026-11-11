@@ -298,7 +298,6 @@ describe("StatementAnchorContext", () => {
       expect(row.className).toContain("pl-9");
       expect(row.className).toContain("sm:pl-10");
     }
-    // A current excerpt keeps its syntax colors.
     await waitFor(() => expect(container.querySelector("code span")).not.toBeNull());
     expect(container.querySelector("pre")?.className).not.toContain("opacity");
   });
