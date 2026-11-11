@@ -173,6 +173,13 @@ export const lineRangeLabel = (t: TFunction, range: LineRange): string =>
     range: formatLineRange(range),
   });
 
+// "Comment on line 2" or "Comment on lines 2–4".
+export const commentTitle = (t: TFunction, range: LineRange): string =>
+  t("plan.review.thread.comment-title", {
+    count: range.endLine - range.startLine + 1,
+    range: formatLineRange(range),
+  });
+
 // The whole lines a Monaco selection covers. An end at column 1 of a later
 // line covers nothing on that line.
 export const selectionLineRange = (selection: {

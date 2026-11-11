@@ -1,6 +1,7 @@
 import {
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Loader2,
   RotateCcw,
@@ -46,17 +47,17 @@ const FOLD_REPLIES_ABOVE = 4;
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer, where a resolved thread also says so. The reply composer
-// carries a checkbox that mirrors the thread state and, when toggled, settles
-// the thread after the reply is posted. Resolved threads collapse to a
-// summary row.
+// in the footer. The reply composer carries a checkbox that mirrors the thread
+// state and, when toggled, settles the thread after the reply is posted.
+// With a `bar`, the card starts with a title bar that holds the fold control
+// and the state, and folding leaves the bar alone; the owner keeps the fold
+// state. Without one, a resolved thread collapses to a summary row.
 export function CommentThreadCard({
+  bar,
   className,
   collapsible = true,
   renderContext,
   issue,
-  label,
-  onClose,
   onThreadStateChanged,
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
@@ -64,16 +65,13 @@ export function CommentThreadCard({
   spec,
   thread,
 }: {
+  bar?: ThreadBarProps;
   className?: string;
   // Whether a resolved thread may collapse to its summary row.
   collapsible?: boolean;
   // Full-width statement context above the root author and discussion.
   renderContext?: (onCollapse?: () => void) => ReactNode;
   issue: Issue;
-  // Extra header text after the timestamp (the anchored line range).
-  label?: ReactNode;
-  // Editor placement: closes the expanded thread back to its marker.
-  onClose?: () => void;
   // Fired only after this card successfully changes state, never on refresh.
   onThreadStateChanged?: (resolved: boolean) => void;
   replyDraft?: string;
@@ -190,7 +188,7 @@ export function CommentThreadCard({
     }
   };
 
-  if (collapsed) {
+  if (collapsed && !bar) {
     return (
       <div
         className={cn(
@@ -216,7 +214,8 @@ export function CommentThreadCard({
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {renderContext && (
+      {bar && <ThreadBar {...bar} resolved={thread.resolved} />}
+      {!bar?.folded && renderContext && (
         <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
           {renderContext(
             thread.resolved && collapsible
@@ -225,10 +224,13 @@ export function CommentThreadCard({
           )}
         </div>
       )}
-      <ThreadComment
-        actions={
-          <>
-            {thread.resolved && collapsible && !renderContext && (
+      {!bar?.folded && (
+        <ThreadComment
+          actions={
+            thread.resolved &&
+            collapsible &&
+            !bar &&
+            !renderContext && (
               <Button
                 aria-label={t("common.collapse")}
                 onClick={() => setCollapsed(true)}
@@ -237,26 +239,15 @@ export function CommentThreadCard({
               >
                 <ChevronUp className="size-3.5" />
               </Button>
-            )}
-            {onClose && (
-              <Button
-                aria-label={t("common.close")}
-                onClick={onClose}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-          </>
-        }
-        comment={thread.root}
-        label={label}
-        onEdit={actions.edit}
-        project={project}
-        spec={spec}
-      />
-      {(hiddenCount > 0 || visibleReplies.length > 0) && (
+            )
+          }
+          comment={thread.root}
+          onEdit={actions.edit}
+          project={project}
+          spec={spec}
+        />
+      )}
+      {!bar?.folded && (hiddenCount > 0 || visibleReplies.length > 0) && (
         <div
           className="bb-thread-replies bg-control-bg/50"
           data-testid="thread-replies"
@@ -287,108 +278,154 @@ export function CommentThreadCard({
           ))}
         </div>
       )}
-      {(allowReply || allowSettle || thread.resolved) && (
-        <div
-          className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
-          ref={replyFooterRef}
-          data-testid="thread-reply-footer"
-        >
-          {allowReply && (
-            <>
-              {replyOpen && (
-                <div
-                  className="hidden h-6 shrink-0 self-start items-center @xs/thread:flex"
-                  data-testid="reply-composer-avatar"
-                >
-                  <UserAvatar
-                    colorSeed={currentUser.email}
-                    size="xs"
-                    title={currentUser.title || currentUser.email}
-                  />
-                </div>
-              )}
-              {replyOpen ? (
-                <div className="flex min-w-0 flex-1 flex-col gap-y-2">
-                  <MarkdownEditor
-                    autoFocus
-                    compact
-                    content={replyDraft}
-                    onChange={setReplyDraft}
-                    onSubmit={() => void submitReply()}
-                    placeholder={t("plan.review.thread.reply-placeholder")}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    {allowSettle && (
-                      <div className="flex items-center gap-x-2">
-                        <Checkbox
-                          id={resolveCheckboxId}
-                          checked={settleWithReply}
-                          disabled={busy}
-                          onCheckedChange={setSettleWithReply}
-                        />
-                        <label
-                          htmlFor={resolveCheckboxId}
-                          className="cursor-pointer text-sm"
-                        >
-                          {thread.resolved
-                            ? t("plan.review.thread.reopen-thread")
-                            : t("plan.review.thread.resolve-thread")}
-                        </label>
-                      </div>
-                    )}
-                    <Button
-                      className="ml-auto"
-                      onClick={() => setReplyOpen(false)}
-                      size="sm"
-                      appearance="secondary"
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={busy || !replyDraft.trim()}
-                      onClick={() => void submitReply()}
-                    >
-                      {busy && <Loader2 className="size-4 animate-spin" />}
-                      {t("plan.review.thread.reply")}
-                    </Button>
+      {!bar?.folded &&
+        (allowReply || allowSettle || (!bar && thread.resolved)) && (
+          <div
+            className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
+            ref={replyFooterRef}
+            data-testid="thread-reply-footer"
+          >
+            {allowReply && (
+              <>
+                {replyOpen && (
+                  <div
+                    className="hidden h-6 shrink-0 self-start items-center @xs/thread:flex"
+                    data-testid="reply-composer-avatar"
+                  >
+                    <UserAvatar
+                      colorSeed={currentUser.email}
+                      size="xs"
+                      title={currentUser.title || currentUser.email}
+                    />
                   </div>
-                </div>
-              ) : (
-                <Button
-                  appearance="outline"
-                  className="min-w-20 flex-1 justify-start bg-background text-control-placeholder"
-                  onClick={() => setReplyOpen(true)}
-                  size="sm"
-                  type="button"
-                >
-                  {t("plan.review.thread.reply-placeholder")}
-                </Button>
-              )}
-            </>
-          )}
-          {!allowReply && <span className="flex-1" />}
-          {thread.resolved && !replyOpen && <ThreadStateBadge />}
-          {allowSettle && !replyOpen && (
-            <Button
-              appearance="outline"
-              className="ml-auto shrink-0 bg-background"
-              disabled={busy}
-              onClick={() => void settleThread()}
-              size="sm"
-            >
-              {thread.resolved ? (
-                <RotateCcw className="size-3.5" />
-              ) : (
-                <Check className="size-3.5" />
-              )}
-              {thread.resolved
-                ? t("common.reopen")
-                : t("plan.review.thread.resolve")}
-            </Button>
-          )}
-        </div>
+                )}
+                {replyOpen ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-y-2">
+                    <MarkdownEditor
+                      autoFocus
+                      compact
+                      content={replyDraft}
+                      onChange={setReplyDraft}
+                      onSubmit={() => void submitReply()}
+                      placeholder={t("plan.review.thread.reply-placeholder")}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      {allowSettle && (
+                        <div className="flex items-center gap-x-2">
+                          <Checkbox
+                            id={resolveCheckboxId}
+                            checked={settleWithReply}
+                            disabled={busy}
+                            onCheckedChange={setSettleWithReply}
+                          />
+                          <label
+                            htmlFor={resolveCheckboxId}
+                            className="cursor-pointer text-sm"
+                          >
+                            {thread.resolved
+                              ? t("plan.review.thread.reopen-thread")
+                              : t("plan.review.thread.resolve-thread")}
+                          </label>
+                        </div>
+                      )}
+                      <Button
+                        className="ml-auto"
+                        onClick={() => setReplyOpen(false)}
+                        size="sm"
+                        appearance="secondary"
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={busy || !replyDraft.trim()}
+                        onClick={() => void submitReply()}
+                      >
+                        {busy && <Loader2 className="size-4 animate-spin" />}
+                        {t("plan.review.thread.reply")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    appearance="outline"
+                    className="min-w-20 flex-1 justify-start bg-background text-control-placeholder"
+                    onClick={() => setReplyOpen(true)}
+                    size="sm"
+                    type="button"
+                  >
+                    {t("plan.review.thread.reply-placeholder")}
+                  </Button>
+                )}
+              </>
+            )}
+            {!allowReply && <span className="flex-1" />}
+            {!bar && thread.resolved && !replyOpen && <ThreadStateBadge />}
+            {allowSettle && !replyOpen && (
+              <Button
+                appearance="outline"
+                className="ml-auto shrink-0 bg-background"
+                disabled={busy}
+                onClick={() => void settleThread()}
+                size="sm"
+              >
+                {thread.resolved ? (
+                  <RotateCcw className="size-3.5" />
+                ) : (
+                  <Check className="size-3.5" />
+                )}
+                {thread.resolved
+                  ? t("common.reopen")
+                  : t("plan.review.thread.resolve")}
+              </Button>
+            )}
+          </div>
+        )}
+    </div>
+  );
+}
+
+type ThreadBarProps = {
+  // Names what the thread is on, and names the fold control.
+  title: string;
+  folded: boolean;
+  onToggleFold: () => void;
+};
+
+// Every word and icon in the bar is text-control: text-control-light falls
+// under the 4.5:1 contrast minimum on the bar's background.
+function ThreadBar({
+  folded,
+  onToggleFold,
+  resolved,
+  title,
+}: ThreadBarProps & { resolved: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-8 min-w-0 items-center gap-x-2 bg-control-bg px-2 text-xs text-control",
+        folded ? "rounded-sm" : "rounded-t-sm border-b border-block-border"
       )}
+      data-testid="thread-bar"
+    >
+      <Button
+        appearance="secondary"
+        aria-expanded={!folded}
+        aria-label={title}
+        className="shrink-0 hover:bg-control-bg-hover"
+        onClick={onToggleFold}
+        size="xs"
+      >
+        {folded ? (
+          <ChevronRight className="size-3.5" />
+        ) : (
+          <ChevronDown className="size-3.5" />
+        )}
+      </Button>
+      <span className="min-w-0 flex-1 truncate" title={title}>
+        {title}
+      </span>
+      {resolved && <ThreadStateBadge />}
     </div>
   );
 }

@@ -717,3 +717,86 @@ test("focuses and reveals the reply footer once when opened in Monaco", () => {
   render(view("Typing a reply"));
   expect(reveal).toHaveBeenCalledTimes(1);
 });
+
+describe("title bar", () => {
+  const bar = (folded: boolean, onToggleFold = vi.fn()) => ({
+    title: "plan.review.thread.comment-title:7",
+    folded,
+    onToggleFold,
+  });
+  const findingThread = (resolved = false) => {
+    const root = comment("root", "Missing WHERE clause.", { creator: "", resolved });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      runType: ReviewRun_Type.AI,
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+      title: "Add a WHERE clause",
+    });
+    return groupThreads([root, comment("r1", "A reply", { root: rootName })])[0];
+  };
+  const barNode = () => container.querySelector("[data-testid='thread-bar']");
+  const foldControl = () => barNode()?.querySelector("button");
+
+  test("is the same folded and unfolded, and a folded card shows nothing from the body", () => {
+    const thread = findingThread(true);
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={thread} />);
+    const unfolded = barNode()?.textContent;
+    expect(container.querySelector("[data-testid='thread-comment']")).not.toBeNull();
+
+    render(<CommentThreadCard bar={bar(true)} collapsible={false} issue={issue} project={project} thread={thread} />);
+    expect(barNode()?.textContent).toBe(unfolded);
+    expect(unfolded).toBe("plan.review.thread.comment-title:7plan.review.thread.resolved");
+    const card = container.querySelector("[data-testid='comment-thread']");
+    expect(card?.children).toHaveLength(1);
+    expect(card?.textContent).not.toContain("sql-review.ai-review.self");
+    expect(card?.textContent).not.toContain("Add a WHERE clause");
+    expect(card?.textContent).not.toContain("A reply");
+    expect(card?.querySelector("[data-testid='review-priority']")).toBeNull();
+    expect(card?.querySelector("[data-testid='thread-reply-footer']")).toBeNull();
+  });
+
+  test("names its fold control by the title and reports the click", () => {
+    const onToggleFold = vi.fn();
+    render(<CommentThreadCard bar={bar(true, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    expect(foldControl()?.getAttribute("aria-label")).toBe("plan.review.thread.comment-title:7");
+    expect(foldControl()?.getAttribute("aria-expanded")).toBe("false");
+    click(foldControl());
+    expect(onToggleFold).toHaveBeenCalledOnce();
+    // The owner keeps the fold state: the card stays folded until it says so.
+    expect(container.querySelector("[data-testid='thread-comment']")).toBeNull();
+
+    render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    expect(foldControl()?.getAttribute("aria-expanded")).toBe("true");
+    expect(container.querySelector('button[aria-label="common.close"]')).toBeNull();
+  });
+
+  test("says Resolved in the bar, never in the footer, and nothing for an open thread", () => {
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+    const states = container.querySelectorAll("[data-testid='thread-state']");
+    expect(states).toHaveLength(1);
+    expect(barNode()?.contains(states[0])).toBe(true);
+
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(false)} />);
+    expect(container.querySelector("[data-testid='thread-state']")).toBeNull();
+  });
+
+  test("carries no text-control-light, folded or not", () => {
+    for (const folded of [false, true]) {
+      render(<CommentThreadCard bar={bar(folded)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+      const nodes = [barNode()!, ...barNode()!.querySelectorAll("*")];
+      expect(nodes.filter((node) => node.getAttribute("class")?.includes("text-control-light"))).toEqual([]);
+      expect(barNode()?.className).toContain("text-control");
+    }
+  });
+
+  test.each([
+    { reply: false, settle: false, footer: false },
+    { reply: true, settle: false, footer: true },
+    { reply: false, settle: true, footer: true },
+  ])("has a footer only when the reader can act: %o", ({ reply, settle, footer }) => {
+    mocks.hasPermission.mockImplementation((_project: unknown, permission: unknown) =>
+      permission === "bb.issueComments.create" ? reply : settle
+    );
+    render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
+    expect(container.querySelector("[data-testid='thread-reply-footer']") !== null).toBe(footer);
+  });
+});
