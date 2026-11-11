@@ -91,9 +91,10 @@ even where it follows the tables.
    the lines where the bar shows them apart from the title. Whatever the title is, the control has
    a name.
 6. **Color in the bar is kept for what the reader must act on.** The bar's words and icons are
-   `text-control`. Besides the link, two things in it are colored: the badge of a P0 or P1
-   finding, and "Outdated". "Resolved" and "Statement unavailable" are text with an icon, and
-   "Prod" is an outlined label. None of the three has a color or a fill.
+   `text-control`. Besides the link, three things in it are colored: the badge of a P0 or P1
+   finding, "Prod", and "Outdated". The two markers are badges with a light fill and no
+   border. "Resolved" and "Statement unavailable" are text with an icon, with no color and no
+   fill.
 7. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
    sees none.
 8. **A place adds content, not a layout.** The Changes section and Activity fill the same bar and
@@ -223,7 +224,10 @@ the title the bar carries two markers, by the Markers table: the badge of a P0 o
 accepted by a person, so both need someone to act, and with several folded findings the markers
 say which to open first. The badge is the one `ReviewResult` draws beside the finding's title.
 That one stays, so an unfolded finding shows its priority twice. The bar cannot drop it on
-unfold without breaking invariant 4. "Prod" is an outlined label, `rounded-xs`, with no color.
+unfold without breaking invariant 4. "Prod" takes the same form as the priority badge, a light
+fill with no border: `Badge variant="secondary"`, the accent at 10% behind accent text. That is
+also how the product draws an environment in its default color. Rejected: an outlined "Prod"
+beside a filled priority badge. The two markers then read as different kinds of thing.
 Rejected: no markers. Nothing would say which folded finding must be fixed. Rejected: a badge for
 P2. It is advisory, and a marker on every finding marks nothing. Rejected: the database's name in
 the label. It makes the bar a third longer and repeats the "Applies to" row. Rejected: the
@@ -335,8 +339,9 @@ in the slice's own PR and reviewed there.
    form and D5 in Activity; the rest of D6; D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; the three priority rows
      of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the
-     excerpt still in the body and drawn as today; the Activity row of Folding. For a card in both places: the frame,
-     `rounded-lg` and `shadow-md`, with the exception in the guideline and in its scanner. After
+     excerpt still in the body and drawn as today; the Activity row of Folding. For a card in
+     both places: the frame, `rounded-lg` and `shadow-md`, with the exception in the guideline
+     and in its scanner. After
      this slice no thread card is drawn without a bar or the frame, so invariant 8 holds in full,
      invariant 3 holds for every card but the composer, which slice 5 finishes, and invariant 6
      holds for every state label, and `ThreadSummary` goes.
@@ -346,8 +351,8 @@ in the slice's own PR and reviewed there.
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
      different names; a folded P0 finding shows its badge; a click on the change's label folds,
-     and a click on the lines or on the link does not; the excerpt renders in the body and not in the bar; "Outdated" carries the
-     warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
+     and a click on the lines or on the link does not; the excerpt renders in the body and not
+     in the bar; "Outdated" carries the warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
      frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
      scanner accepts `rounded-lg` in a file that draws a comment card and still rejects it in
      any other file. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
