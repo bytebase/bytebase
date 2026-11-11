@@ -200,7 +200,7 @@ export function CommentThreadCard({
   return (
     <div
       className={cn(
-        "@container/thread flex min-w-0 flex-col rounded-sm border border-block-border bg-background shadow-sm",
+        "@container/thread flex min-w-0 flex-col rounded-lg border border-control-border bg-background",
         className
       )}
       data-testid="comment-thread"
@@ -268,7 +268,7 @@ export function CommentThreadCard({
       )}
       {!folded && (allowReply || allowSettle) && (
         <div
-          className="flex flex-wrap items-center gap-2 rounded-b-sm border-t border-block-border bg-background px-2 py-2 sm:px-3"
+          className="flex flex-wrap items-center gap-2 rounded-b-lg border-t border-block-border bg-background px-2 py-2 sm:px-3"
           ref={replyFooterRef}
           data-testid="thread-reply-footer"
         >
@@ -410,9 +410,9 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
   return <ReviewPriorityBadge priority={priority} />;
 }
 
-// Every word and icon in the bar is text-control: text-control-light falls
-// under the 4.5:1 contrast minimum on the bar's background. Only the link
-// takes the link color.
+// The bar's words and icons are text-control: text-control-light falls under
+// the 4.5:1 contrast minimum. Color is kept for what the reader must act on:
+// the badge of a P0 or P1 finding, "Outdated", and the link.
 function ThreadBar({
   anchorState,
   folded,
@@ -456,7 +456,7 @@ function ThreadBar({
     <div
       className={cn(
         "flex min-h-8 min-w-0 cursor-pointer items-center gap-x-2 bg-background px-2 text-xs text-control",
-        folded ? "rounded-sm" : "rounded-t-sm border-b border-block-border"
+        folded ? "rounded-lg" : "rounded-t-lg border-b border-block-border"
       )}
       data-anchor-state={anchorState}
       data-testid="thread-bar"

@@ -810,7 +810,7 @@ describe("Activity bar", () => {
     { state: "UNAVAILABLE", resolved: false, labels: ["plan.review.thread.anchor.statement-unavailable"] },
     { state: "PENDING", resolved: false, labels: [] },
     { state: "CURRENT", resolved: false, labels: [] },
-  ] as const)("a $state thread, resolved=$resolved, says $labels in the bar's one text color", ({ state, resolved, labels }) => {
+  ] as const)("a $state thread, resolved=$resolved, says $labels with no light gray and no badge", ({ state, resolved, labels }) => {
     render(<CommentThreadCard bar={activityBar({ anchorState: state })} issue={issue} project={project} thread={thread(resolved)} />);
     expect(barNode().getAttribute("data-anchor-state")).toBe(state);
     const shown = Array.from(barNode().querySelectorAll("[data-testid='thread-state']")).map((node) => node.textContent);
@@ -859,11 +859,41 @@ describe("Activity bar", () => {
     expect(container.querySelector("[data-testid='excerpt']")).toBeNull();
   });
 
-  test("every card has the frame with its shadow and a bar", () => {
-    render(<CommentThreadCard bar={activityBar()} issue={issue} project={project} thread={thread(true)} />);
+  test.each([
+    { place: "Activity", bar: () => activityBar() },
+    { place: "the Changes section", bar: () => ({ ...activityBar(), place: "changes" as const, folded: false, onToggleFold: () => {} }) },
+  ])("every card in $place has the frame, 8px corners and the darker border with no shadow, and a bar", ({ bar }) => {
+    render(<CommentThreadCard bar={bar()} issue={issue} project={project} thread={thread(false)} />);
     const card = container.querySelector("[data-testid='comment-thread']");
-    expect(card?.className).toContain("shadow-sm");
+    const classes = card?.className.split(" ") ?? [];
+    for (const name of ["rounded-lg", "border", "border-control-border", "bg-background"]) {
+      expect(classes).toContain(name);
+    }
+    expect(classes).not.toContain("rounded-sm");
+    expect(classes).not.toContain("border-block-border");
+    expect(classes.filter((name) => name.startsWith("shadow"))).toEqual([]);
+    expect(barNode().className.split(" ")).toContain("border-block-border");
     expect(card?.firstElementChild).toBe(barNode());
+  });
+
+  test("says Outdated in the warning color and Resolved and Statement unavailable in gray, none with a fill", () => {
+    render(<CommentThreadCard bar={activityBar({ anchorState: "OUTDATED" })} issue={issue} project={project} thread={thread(true)} />);
+    const label = (text: string) =>
+      Array.from(barNode().querySelectorAll("[data-testid='thread-state']")).find((node) => node.textContent === text) as HTMLElement;
+    const outdated = label("plan.review.thread.anchor.outdated");
+    expect(outdated.className.split(" ")).toContain("text-warning-hover");
+    const resolved = label("plan.review.thread.resolved");
+    expect(resolved.className.split(" ")).toContain("text-control");
+    act(() => root.unmount());
+    root = createRoot(container);
+    render(<CommentThreadCard bar={activityBar({ anchorState: "UNAVAILABLE" })} issue={issue} project={project} thread={thread(false)} />);
+    const unavailable = label("plan.review.thread.anchor.statement-unavailable");
+    for (const node of [outdated, resolved, unavailable]) {
+      expect(node.className).not.toMatch(/\bbg-/);
+    }
+    expect(unavailable.className.split(" ")).toContain("text-control");
+    expect(unavailable.className).not.toContain("warning");
+    expect(resolved.className).not.toContain("warning");
   });
 
   test("a resolved thread whose reader can neither reply nor reopen has no footer", () => {

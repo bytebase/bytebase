@@ -144,8 +144,15 @@ Use semantic utilities backed by CSS custom properties:
   badges, tags, and selected tokens. Use `rounded-sm` for ordinary framed
   surfaces, and `rounded-full` only for circular controls, avatars, and
   lifecycle status stamps that must remain distinct from adjacent actions.
+  A comment card, and a group frame that holds comment cards, use
+  `rounded-lg`, so the card reads as laid on the statement rather than as a
+  panel of it. The scanner allows `rounded-lg` only in the files that draw
+  them; every other surface keeps the scale.
 - Use `border-control-border` for controls and `border-block-border` for region
-  boundaries.
+  boundaries. The frame of a comment card is the one region boundary that
+  takes `border-control-border`, in the Changes section and in Activity, so
+  its edge shows on the gray statement without a shadow. A group frame keeps
+  `border-block-border`.
 - Interactive elements MUST have a visible keyboard focus state. Prefer the
   focus behavior owned by the shared primitive.
 - Use the `overlay`, `agent`, and `critical` semantic layer families described

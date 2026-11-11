@@ -17,6 +17,14 @@ const sourceRoot = resolve(frontendRoot, "src");
 const sharedPrimitivePrefix = "src/components/ui/";
 const lifecycleStampPath =
   "src/routes/project/plan-detail/components/lifecycle/LifecycleStamp.tsx";
+// The files that draw a comment card, or a group frame that holds comment
+// cards: the only places rounded-lg is on the scale.
+const commentCardPaths = new Set([
+  "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx",
+]);
+const isCommentCardRadius = (token, path) =>
+  commentCardPaths.has(path) &&
+  /^rounded(?:-[trblse]{1,2})?-lg$/.test(tailwindUtility(token) ?? "");
 
 const generatedPrefixes = ["src/types/proto-es/"];
 const nativeControls = new Set(["button", "input", "select", "textarea"]);
@@ -300,6 +308,9 @@ export function scanSource(source, path) {
   const scanTokenValue = (value) => {
     for (const token of classTokens(value)) {
       for (const rule of rulesForToken(token)) {
+        if (rule === "no-off-scale-radius" && isCommentCardRadius(token, path)) {
+          continue;
+        }
         addViolation(counts, path, rule, token);
       }
     }

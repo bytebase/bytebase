@@ -51,4 +51,29 @@ describe("check-ui-guideline", () => {
       )
     ).toEqual([]);
   });
+
+  test("allows the comment card's rounded-lg only in the file that draws it", () => {
+    const card =
+      'export const Card = () => <div className="rounded-lg border"><div className="rounded-t-lg" /></div>;';
+    expect(
+      scanSource(card, "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx")
+    ).toEqual([]);
+    expect(scanSource(card, "src/Elsewhere.tsx")).toEqual([
+      { path: "src/Elsewhere.tsx", rule: "no-off-scale-radius", token: "rounded-lg", count: 1 },
+      { path: "src/Elsewhere.tsx", rule: "no-off-scale-radius", token: "rounded-t-lg", count: 1 },
+    ]);
+    expect(
+      scanSource(
+        'export const Card = () => <div className="rounded-xl" />;',
+        "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx"
+      )
+    ).toEqual([
+      {
+        path: "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx",
+        rule: "no-off-scale-radius",
+        token: "rounded-xl",
+        count: 1,
+      },
+    ]);
+  });
 });
