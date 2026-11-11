@@ -169,7 +169,8 @@ state, as `TaskRun` and `PlanCheckRun` are.
 ## Storage
 
 - `review_run` holds one row for each issue. Today it holds one row for each issue and reviewer. A
-  migration leaves one row for each issue and drops the reviewer type from the key.
+  migration removes the rows of the two reviewers and drops the reviewer type from the table. An
+  issue left with no row gets its job from the next trigger.
 - A stored finding keeps its reviewer type. The API does not show it. It lets an engineer trace
   which reviewer found a finding, and the AI review uses it to find its own earlier findings.
 

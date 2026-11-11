@@ -15,8 +15,8 @@ import (
 const reviewRunLockOrderSeed = `
 	INSERT INTO issue (id, creator, project, name, status, type)
 	VALUES (301, 'admin@example.com', '%[1]s', 'Issue', 'OPEN', 'DATABASE_CHANGE');
-	INSERT INTO review_run (project, issue_id, type, attempt, status, replica_id)
-	VALUES ('%[1]s', 301, 'REVIEW', 0, 'RUNNING', 'replica-1');
+	INSERT INTO review_run (project, issue_id, attempt, status, replica_id)
+	VALUES ('%[1]s', 301, 0, 'RUNNING', 'replica-1');
 `
 
 // reviewRunPriorResultSeed adds a prior OPEN result, which gives the
@@ -78,7 +78,7 @@ func TestCompleteReviewRunLockOrder(t *testing.T) {
 		var status string
 		var attempt int64
 		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx,
-			`SELECT status, attempt FROM review_run WHERE project = 'default' AND issue_id = $1 AND type = 'REVIEW'`,
+			`SELECT status, attempt FROM review_run WHERE project = 'default' AND issue_id = $1`,
 			reviewResultIssue).Scan(&status, &attempt))
 		require.Equal(t, "AVAILABLE", status)
 		require.Equal(t, int64(1), attempt)

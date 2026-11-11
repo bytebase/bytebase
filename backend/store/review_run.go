@@ -15,11 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
-// reviewRunType is what every review run stores in review_run.type. An issue
-// has one review run, so the column no longer tells anything apart; rows of
-// another type are jobs from before that, and nothing reads them (BYT-10505).
-const reviewRunType = "REVIEW"
-
 // ReviewRunMessage is one review_run slot row: the current review run of one
 // issue, reset in place on re-run.
 type ReviewRunMessage struct {
@@ -54,13 +49,13 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO review_run (project, issue_id, type, status, payload)
-		SELECT issue.project, issue.id, ?, ?,
+		INSERT INTO review_run (project, issue_id, status, payload)
+		SELECT issue.project, issue.id, ?,
 			jsonb_strip_nulls(jsonb_build_object('approvalInputVersion', plan.config->'approvalInputVersion'))
 		FROM issue
 		LEFT JOIN plan ON plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE issue.project = ? AND issue.id = ?
-		ON CONFLICT (project, issue_id, type) DO UPDATE
+		ON CONFLICT (project, issue_id) DO UPDATE
 		SET status = EXCLUDED.status,
 			attempt = review_run.attempt + 1,
 			created_at = now(),
@@ -68,7 +63,7 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 			replica_id = NULL,
 			payload = EXCLUDED.payload
 		RETURNING attempt, payload, created_at, updated_at
-	`, reviewRunType, storepb.ReviewRun_AVAILABLE.String(), projectID, issueUID)
+	`, storepb.ReviewRun_AVAILABLE.String(), projectID, issueUID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -110,8 +105,8 @@ func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int
 	q := qb.Q().Space(`
 		SELECT attempt, status, payload, created_at, updated_at
 		FROM review_run
-		WHERE project = ? AND issue_id = ? AND type = ?
-	`, projectID, issueUID, reviewRunType)
+		WHERE project = ? AND issue_id = ?
+	`, projectID, issueUID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -163,17 +158,16 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 	q := qb.Q().Space(`
 		UPDATE review_run
 		SET status = ?, updated_at = now(), replica_id = ?
-		WHERE (project, issue_id, type) IN (
-			SELECT review_run.project, review_run.issue_id, review_run.type
+		WHERE (project, issue_id) IN (
+			SELECT review_run.project, review_run.issue_id
 			FROM review_run
 			JOIN project ON project.resource_id = review_run.project
 			WHERE review_run.status = ?
-			  AND review_run.type = ?
 			  AND project.deleted = FALSE
 			FOR UPDATE OF review_run SKIP LOCKED
 		)
 		RETURNING project, issue_id, attempt
-	`, storepb.ReviewRun_RUNNING.String(), replicaID, storepb.ReviewRun_AVAILABLE.String(), reviewRunType)
+	`, storepb.ReviewRun_RUNNING.String(), replicaID, storepb.ReviewRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -357,10 +351,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	q := qb.Q().Space(`
 		UPDATE review_run
 		SET status = ?, updated_at = now(), payload = `+keepApprovalInputVersion+`
-		WHERE project = ? AND issue_id = ? AND type = ?
+		WHERE project = ? AND issue_id = ?
 		  AND status = ? AND replica_id = ? AND attempt = ?
 	`, status.String(), string(payloadBytes),
-		claimed.ProjectID, claimed.IssueUID, reviewRunType,
+		claimed.ProjectID, claimed.IssueUID,
 		storepb.ReviewRun_RUNNING.String(), replicaID, claimed.Attempt)
 	query, args, err := q.ToSQL()
 	if err != nil {
