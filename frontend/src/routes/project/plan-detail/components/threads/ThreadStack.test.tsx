@@ -26,7 +26,8 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ bar, thread, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
+  CommentThreadCard: ({ bar, className, thread, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
+    className?: string;
     bar: { title: string; folded: boolean; onToggleFold: () => void };
     thread: EditorThread["thread"];
     onThreadStateChanged: (resolved: boolean) => void;
@@ -34,7 +35,7 @@ vi.mock("./CommentThreadCard", () => ({
     onReplyDraftChange: (draft: string) => void;
     spec?: { id: string };
   }) => (
-    <div data-thread-name={thread.root.name} data-folded={String(bar.folded)} data-title={bar.title} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
+    <div data-class-name={className ?? ""} data-thread-name={thread.root.name} data-folded={String(bar.folded)} data-title={bar.title} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
       <button onClick={bar.onToggleFold}>Fold</button>
       {!bar.folded && (
         <>
@@ -196,4 +197,10 @@ test("exposes the expanded card for editor reveal", () => {
   expect(ref.current?.querySelector('[data-thread-name="a"]')).not.toBeNull();
   rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a", "b"])} expandedThreadRef={ref} revealRoot="b" />);
   expect(ref.current?.querySelector('[data-thread-name="b"]')).not.toBeNull();
+});
+
+test("passes the card no classes, so its own frame stands in the Changes section", () => {
+  const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-class-name"))).toEqual(["", ""]);
 });

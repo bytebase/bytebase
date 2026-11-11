@@ -2392,12 +2392,13 @@
         },
         "applies-to": "Se aplica a",
         "comment-on-lines": "Comentar las líneas",
+        "comment-on-plan": "Comentario en el plan",
         "comment-title_one": "Comentario en la línea {{range}}",
         "comment-title_other": "Comentario en las líneas {{range}}",
+        "fold-label_one": "{{title}}, línea {{range}}",
+        "fold-label_other": "{{title}}, líneas {{range}}",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
-        "n-replies_one": "{{count}} respuesta",
-        "n-replies_other": "{{count}} respuestas",
         "priority": {
           "p1": "Peligroso pero legítimo. Una persona debe aceptarlo.",
           "p2": "Solo informativo."
