@@ -202,14 +202,20 @@ today it is 8px. The Activity card keeps its full width. The frame is `rounded-l
 `rounded-sm` with `border-block-border`, and the Changes section adds `shadow-sm`. The rounder
 corner and the darker border make the card read as something laid on the statement and not as a
 panel of it. The lines inside the card, under the bar and above the footer, stay
-`border-block-border`. `docs/agents/frontend-ux.md`
-asks for `rounded-sm` on ordinary framed surfaces, and `frontend/scripts/check-ui-guideline.mjs`
-enforces it: `rounded-lg` is an off-scale radius there. The guideline says a rule changes in
-the guideline, the scanner and the scanner's tests together, and never through the baseline.
-So the slice that sets the frame changes all three. A comment card, and a group frame that
-holds comment cards, use `rounded-lg`, and the scanner allows it in the files that draw them,
-the way it already allows the lifecycle stamp its `rounded-full`. Every other surface keeps
-the scale. The fields and buttons inside the card keep their own corners. Rejected: keeping the
+`border-block-border`. Both the corner and the border differ from `docs/agents/frontend-ux.md`,
+so the slice that sets the frame amends it for both. The guideline asks for `rounded-sm` on
+ordinary framed surfaces, and `frontend/scripts/check-ui-guideline.mjs` enforces it:
+`rounded-lg` is an off-scale radius there. The guideline says a rule changes in the guideline,
+the scanner and the scanner's tests together, and never through the baseline. So that slice
+changes all three. A comment card, and a group frame that holds comment cards, use
+`rounded-lg`, and the scanner allows it in the files that draw them, the way it already allows
+the lifecycle stamp its `rounded-full`. The guideline also keeps `border-control-border` for
+controls and asks for `border-block-border` on region boundaries. The frame of a comment card
+is the one region boundary that takes `border-control-border`, in both places by invariant 8,
+and the guideline says so. The scanner has no rule for border colors, so nothing changes
+there. A group frame keeps `border-block-border`. Every other surface keeps the scale and the
+border of its role. The fields and buttons inside the card keep their own corners. Rejected:
+keeping the
 full width in the Changes section. A box as wide as the code reads as a band of the statement.
 Rejected: 12px corners. A folded thread becomes a pill, which in this product is a button or a
 tag. Rejected: a pointer from the card to its line, a shape the product has nowhere else.
@@ -319,7 +325,8 @@ bar then separates the card alone, and the card's body is the same white as the 
 
 ## Scope
 
-Frontend, with one exception in the UX guideline and its scanner. Six PRs. Each leaves main
+Frontend, with one exception in the UX guideline, for the comment card's corner and border, and
+in its scanner, for the corner. Six PRs. Each leaves main
 shippable, names what it depends on, and is opened after the one before it merges.
 
 A slice is finished when the rows it names hold and no invariant is broken. Its tests assert every
@@ -358,9 +365,11 @@ in the slice's own PR and reviewed there.
    form and D5 in Activity; the rest of D6; D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; the three priority rows
      of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the
-     excerpt still in the body and drawn as today; the Activity row of Folding. For a card in
+     excerpt still in the body and drawn as today; the Activity row of Folding; the white bar
+     and footer of invariant 2; invariants 5 and 7. For a card in
      both places: the frame, `rounded-lg` and `border-control-border` with no shadow, with the
-     exception for the corner in the guideline and in its scanner. After
+     exception for the corner and the border in the guideline, and for the corner in its
+     scanner. After
      this slice no thread card is drawn without a bar or the frame, so invariant 8 holds in full,
      invariant 3 holds for every card but the composer, which slice 5 finishes, and invariant 6
      holds for every state label, and `ThreadSummary` goes.
@@ -379,8 +388,9 @@ in the slice's own PR and reviewed there.
      covers folding and resolving in Activity.
 3. **No line tints, the gray ground, and the width limit (D1, D2's width, D11).** Depends on
    slice 1, which gives every thread in the Changes section a title that names its lines.
-   - Delivers: invariant 1, the statement's ground from invariant 2, and every row of On the
-     statement.
+   - Delivers: invariant 1 for the statement, the statement's ground from invariant 2, and
+     every row of On the statement. The excerpt in an Activity card keeps its tinted lines and
+     its white ground until Excerpt 1, which finishes both invariants.
    - Files: `StatementThreadsLayer.tsx`, `statementThreads.css`, the statement editor's wrapper,
      and `tailwind.css` for the rule that makes the editor's base layers transparent.
    - Tests: `StatementThreadsLayer.test.tsx`. They include: no line is decorated for an open, an
@@ -431,6 +441,20 @@ The two sibling docs add three more PRs. Across all three docs the order is:
 | Excerpt 1: the SQL excerpt | Card 4, for the comment's text column |
 | Group 1: Show and Hide in the link color | Nothing |
 | Group 2: findings grouped under their review | Card 2, for the finding card's bar and corners |
+
+No invariant is delivered by one PR alone unless this table says so. Each holds in full only
+after the last PR in its row has merged, and until then it holds where the earlier ones reach.
+
+| Invariant | Delivered by | Holds in full after |
+| --- | --- | --- |
+| 1. No thread paints the SQL | Card 3 for the statement, Excerpt 1 for the excerpt in an Activity card | Excerpt 1 |
+| 2. SQL is on gray and the card is white | Card 1 for the bar and footer in the Changes section, Card 2 for them in Activity, Card 3 for the statement's ground, Card 5 for the composer, Excerpt 1 for the excerpt's ground | Card 5 and Excerpt 1 |
+| 3. Every card has the frame and a bar | Card 2 for every thread card, Card 5 for the composer | Card 5 |
+| 4. The bar is the same folded and unfolded | Card 1 in the Changes section, Card 2 in Activity, Card 6 for the production badge | Card 6 |
+| 5. The fold control is named by the bar's text | Card 1 in the Changes section, Card 2 in Activity | Card 2 |
+| 6. Color in the bar is kept for what the reader must act on | Card 1 for the priority badge and "Resolved", Card 2 for the other state labels, Card 6 for the production badge | Card 6 |
+| 7. The footer is there only when the reader can act | Card 1 in the Changes section, Card 2 in Activity | Card 2 |
+| 8. A place adds content, not a layout | Card 2 | Card 2 |
 
 ## Not in this PR
 
