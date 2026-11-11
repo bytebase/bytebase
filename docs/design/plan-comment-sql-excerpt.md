@@ -6,7 +6,7 @@ In the Activity timeline, a comment thread on lines of SQL shows those lines abo
 a reader can tell what the comment is about without opening the statement. Today every commented
 line in that excerpt is tinted, whatever the comment says, and the comment starts on the same left
 edge as the line numbers, so it reads as more lines of the statement. The rule this doc lands on:
-**the excerpt sits on grey inside the white card, marks the commented lines with a bar beside the
+**the excerpt sits on gray inside the white card, marks the commented lines with a bar beside the
 line numbers, tints no line, and sits inset from the comment below it.**
 
 This is the second of three docs, each in its own PR. [Plan comment card](plan-comment-card.md)
@@ -34,7 +34,7 @@ recorded lines of the sheet revision a thread was made on.
 
 ## Principle
 
-> The SQL in a comment card is a quotation. Set it on the statement's grey, mark what the comment
+> The SQL in a comment card is a quotation. Set it on the statement's gray, mark what the comment
 > is about with a rule in the margin, the way a quotation is marked, and keep the quotation
 > visibly apart from the comment.
 
@@ -43,7 +43,7 @@ recorded lines of the sheet revision a thread was made on.
 **D1 · Two lines of context stay, in normal colors.** The excerpt keeps `CONTEXT_LINES_BEFORE = 2`
 and the context lines keep their syntax colors. Rejected: showing only the commented lines. A range
 that starts mid-statement, such as an `ADD COLUMN` line, is hard to read without the `ALTER TABLE`
-above it. Rejected: grey context lines with no other marker. The reader has to compare text colors
+above it. Rejected: gray context lines with no other marker. The reader has to compare text colors
 to find the range, and a context of one short line barely differs.
 
 **D2 · A bar beside the line numbers marks the range.** Rows inside the range carry a 3px bar in
@@ -65,16 +65,16 @@ box that starts at the code column. Inside a review's group it would be a third 
 the Plan review findings group doc rules out. Rejected: indenting the
 comment instead of the SQL. The comment loses width and still sits in the code's column.
 
-**D4 · An outdated or unavailable excerpt is grey, not faded.** `opacity-60` goes. The lines render
+**D4 · An outdated or unavailable excerpt is gray, not faded.** `opacity-60` goes. The lines render
 in `text-control` without syntax colors, which is 7:1 on the excerpt's ground. The lighter
 `text-control-light` is 4.4:1 there, under the minimum. The missing syntax colors are what say
 the lines are no longer current. The bar from D2 still marks the range.
 
-**D5 · The excerpt sits on grey.** Its ground is `bg-control-bg`, and the card around it is
-white. This is the rule of [Plan comment card](plan-comment-card.md) that SQL is on grey and the
+**D5 · The excerpt sits on gray.** Its ground is `bg-control-bg`, and the card around it is
+white. This is the rule of [Plan comment card](plan-comment-card.md) that SQL is on gray and the
 card is white, applied inside the card. The statement in the Changes section takes the lighter
 `bg-control-bg/50`. The excerpt is a small band inside a white card on a white page, and the
-lighter grey barely shows there. The ground and the inset from D3 work together: the ground
+lighter gray barely shows there. The ground and the inset from D3 work together: the ground
 says which rows are SQL, and the inset lines the numbers up with the comment's text. Rejected:
 a white excerpt set apart by the inset alone. The SQL and the comment are still one sheet.
 Rejected: `bg-control-bg/50`, for the reason above.
@@ -88,9 +88,9 @@ the sheet's preview holds. This doc changes only how it is drawn.
 | Anchor state | Excerpt |
 | --- | --- |
 | `CURRENT` | Context and range in syntax colors, bar on the range |
-| `OUTDATED` | The recorded lines in grey, bar on the range |
-| `UNAVAILABLE`, the recorded sheet loaded | The recorded lines in grey, bar on the range |
-| `UNAVAILABLE`, a large sheet's preview ends inside the range | The lines the preview holds, in grey, as today |
+| `OUTDATED` | The recorded lines in gray, bar on the range |
+| `UNAVAILABLE`, the recorded sheet loaded | The recorded lines in gray, bar on the range |
+| `UNAVAILABLE`, a large sheet's preview ends inside the range | The lines the preview holds, in gray, as today |
 | `UNAVAILABLE`, the recorded sheet did not load | No excerpt |
 | `PENDING` | No excerpt until the sheet loads; it loads when the card nears the viewport, as today |
 | Range starts on line 1 or 2 | Fewer than two context lines, as today |
