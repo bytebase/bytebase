@@ -53,7 +53,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	q.ctx = ctx
 	q.statement = statement
 
-	list, err := ParseTiDBOmni(statement)
+	list, err := ParseTiDB(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -658,7 +658,7 @@ func (q *querySpanExtractor) deriveFieldName(expr ast.ExprNode) string {
 	if columnRef, ok := expr.(*ast.ColumnRef); ok && !columnRef.Star {
 		return columnRef.Column
 	}
-	if loc, ok := omniExprLoc(expr); ok && loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(q.statement) {
+	if loc, ok := exprLoc(expr); ok && loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(q.statement) {
 		return strings.TrimSpace(q.statement[loc.Start:loc.End])
 	}
 	return ""

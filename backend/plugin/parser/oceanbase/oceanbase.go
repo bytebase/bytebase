@@ -31,9 +31,9 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, omniErr := ParseOceanBase(stmt.Text)
-		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+		list, err := ParseOceanBase(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 		if list == nil || len(list.Items) == 0 {
 			continue
@@ -42,7 +42,7 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 		for _, node := range list.Items {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          node,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -54,8 +54,8 @@ func parseStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *omniparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

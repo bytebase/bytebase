@@ -55,7 +55,7 @@ type IndexTotalNumberLimitAdvisor struct{}
 // `ConstrIndex` (verified empirically). Single-arm port covers all
 // 6 pingcap constraint forms mechanically.
 func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,18 +94,18 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 				}
 				switch cmd.Type {
 				case ast.ATAddColumn:
-					if slices.ContainsFunc(addColumnTargets(cmd), omniColumnCreatesIndex) {
+					if slices.ContainsFunc(addColumnTargets(cmd), columnCreatesIndex) {
 						lineForTable[tableName] = stmtLine
 					}
 				case ast.ATAddConstraint, ast.ATAddIndex:
 					// Cumulative #17 sibling-parity convention: dual
 					// arm preserved for forward-compat per established
 					// pattern in utils.go collectIndexFamilyAlterTable.
-					if omniConstraintCreatesIndex(cmd.Constraint) {
+					if constraintCreatesIndex(cmd.Constraint) {
 						lineForTable[tableName] = stmtLine
 					}
 				case ast.ATChangeColumn, ast.ATModifyColumn:
-					if omniColumnCreatesIndex(cmd.Column) {
+					if columnCreatesIndex(cmd.Column) {
 						lineForTable[tableName] = stmtLine
 					}
 				default:
@@ -157,13 +157,13 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 	return adviceList, nil
 }
 
-// omniConstraintCreatesIndex reports whether the given table-level
+// constraintCreatesIndex reports whether the given table-level
 // constraint declares a new index. Mirrors pre-omni `createIndex(*ast.Constraint)`:
 // PRIMARY KEY / UNIQUE (all 3 pingcap variants unified to ConstrUnique)
 // / KEY+INDEX (both unified to ConstrIndex) / FULLTEXT KEY are
 // index-creating. FOREIGN KEY and CHECK are NOT (pre-omni explicitly
 // excluded). SPATIAL was also NOT in pre-omni's list — preserved.
-func omniConstraintCreatesIndex(c *ast.Constraint) bool {
+func constraintCreatesIndex(c *ast.Constraint) bool {
 	if c == nil {
 		return false
 	}
@@ -175,14 +175,14 @@ func omniConstraintCreatesIndex(c *ast.Constraint) bool {
 	}
 }
 
-// omniColumnCreatesIndex reports whether the given column definition
+// columnCreatesIndex reports whether the given column definition
 // declares an inline PRIMARY KEY or UNIQUE constraint, which creates
 // an index implicitly. Mirrors pre-omni's `createIndex(*ast.ColumnDef)`
 // arm checking `ColumnOptionPrimaryKey` / `ColumnOptionUniqKey`. Omni
 // represents column-level constraints as `column.Constraints
 // []*ColumnConstraint` with `ColConstrPrimaryKey` / `ColConstrUnique`
 // type values (verified empirically against parsenodes.go:404-412).
-func omniColumnCreatesIndex(col *ast.ColumnDef) bool {
+func columnCreatesIndex(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}

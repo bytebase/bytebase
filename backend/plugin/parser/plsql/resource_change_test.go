@@ -41,7 +41,7 @@ func TestExtractChangedResources(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
-func TestExtractChangedResourcesOmniSyntax(t *testing.T) {
+func TestExtractChangedResourcesSyntax(t *testing.T) {
 	statement := `CREATE TABLE IF NOT EXISTS t1 (c1 INT);
 DROP TABLE IF EXISTS t2;`
 	changedResources := model.NewChangedResources(nil /* dbMetadata */)
@@ -163,7 +163,7 @@ END;`
 	require.NoError(t, err)
 	asts := base.ExtractASTs(stmts)
 	require.Len(t, asts, 1)
-	_, ok := asts[0].(*OmniAST)
+	_, ok := asts[0].(*AST)
 	require.True(t, ok)
 
 	asts = append(asts, testAST{})

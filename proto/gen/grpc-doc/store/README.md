@@ -37,6 +37,7 @@
   
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
+    - [FederatedIdentity](#bytebase-store-FederatedIdentity)
     - [MCPDelegation](#bytebase-store-MCPDelegation)
     - [RequestMetadata](#bytebase-store-RequestMetadata)
   
@@ -839,6 +840,24 @@ Status represents the approver&#39;s decision state.
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | The service-specific data about the request, response, and other activities. |
 | request_metadata | [RequestMetadata](#bytebase-store-RequestMetadata) |  | Metadata about the operation. |
 | mcp_delegation | [MCPDelegation](#bytebase-store-MCPDelegation) |  | MCP delegation provenance. Present exactly when the entry belongs to MCP: the audited call arrived through the MCP server&#39;s delegated credential, or it is one of the two MCP doors that sit outside the API — the /mcp connection gate and the OAuth2 consent that mints the credential it checks. Never set for public API calls. Presence of this message is the MCP-origin marker. |
+| federated_identity | [FederatedIdentity](#bytebase-store-FederatedIdentity) |  | The external workload behind a workload identity. Set on a successful token exchange and on every call made with the token it issued. |
+
+
+
+
+
+
+<a name="bytebase-store-FederatedIdentity"></a>
+
+### FederatedIdentity
+The verified OIDC identity a workload identity token was exchanged for.
+Recorded for audit and never read for authorization.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issuer | [string](#string) |  | The token&#39;s &#34;iss&#34; claim, e.g. &#34;https://token.actions.githubusercontent.com&#34;. |
+| subject | [string](#string) |  | The token&#39;s &#34;sub&#34; claim, e.g. &#34;repo:my-org/app:ref:refs/heads/main&#34;. |
 
 
 

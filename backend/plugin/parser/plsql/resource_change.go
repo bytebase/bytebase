@@ -17,7 +17,7 @@ func init() {
 func extractChangedResources(currentDatabase string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	changedResources := model.NewChangedResources(dbMetadata)
-	extractor := &omniChangedResourceExtractor{
+	extractor := &changedResourceExtractor{
 		currentSchema:    currentDatabase,
 		dbMetadata:       dbMetadata,
 		changedResources: changedResources,
@@ -25,11 +25,11 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, ast := range asts {
-		omniAST, ok := ast.(*OmniAST)
+		wrapped, ok := ast.(*AST)
 		if !ok {
 			continue
 		}
-		extractor.extract(omniAST)
+		extractor.extract(wrapped)
 	}
 
 	return &base.ChangeSummary{
@@ -40,7 +40,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}, nil
 }
 
-type omniChangedResourceExtractor struct {
+type changedResourceExtractor struct {
 	currentSchema    string
 	dbMetadata       *model.DatabaseMetadata
 	changedResources *model.ChangedResources
@@ -50,7 +50,7 @@ type omniChangedResourceExtractor struct {
 	insertCount      int
 }
 
-func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
+func (e *changedResourceExtractor) extract(a *AST) {
 	if a == nil || a.Node == nil {
 		return
 	}
@@ -60,12 +60,12 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 		e.addTable(n.Name, false)
 	case *oracleast.DropStmt:
 		if n.ObjectType == oracleast.OBJECT_TABLE {
-			for _, name := range omniObjectNameList(n.Names) {
+			for _, name := range objectNameList(n.Names) {
 				e.addTable(name, true)
 			}
 		}
 		if n.ObjectType == oracleast.OBJECT_INDEX {
-			for _, name := range omniObjectNameList(n.Names) {
+			for _, name := range objectNameList(n.Names) {
 				e.addIndexTable(name)
 			}
 		}
@@ -74,14 +74,14 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 			oracleast.OBJECT_PROCEDURE, oracleast.OBJECT_FUNCTION, oracleast.OBJECT_TRIGGER,
 			oracleast.OBJECT_PACKAGE, oracleast.OBJECT_PACKAGE_BODY, oracleast.OBJECT_TYPE,
 			oracleast.OBJECT_TYPE_BODY, oracleast.OBJECT_MATERIALIZED_VIEW, oracleast.OBJECT_CLUSTER:
-			for _, name := range omniObjectNameList(n.Names) {
+			for _, name := range objectNameList(n.Names) {
 				e.addObjectDatabase(name)
 			}
 		default:
 		}
 	case *oracleast.AlterTableStmt:
 		affected := true
-		for _, cmd := range omniAlterTableCmdList(n.Actions) {
+		for _, cmd := range alterTableCmdList(n.Actions) {
 			if cmd.Action == oracleast.AT_RENAME {
 				affected = false
 				break
@@ -143,11 +143,11 @@ func (e *omniChangedResourceExtractor) extract(a *OmniAST) {
 	}
 }
 
-func (e *omniChangedResourceExtractor) extractInsert(stmt *oracleast.InsertStmt, text string) {
+func (e *changedResourceExtractor) extractInsert(stmt *oracleast.InsertStmt, text string) {
 	if stmt.Table != nil {
 		e.addTable(stmt.Table, false)
 	}
-	for _, item := range omniInsertIntoList(stmt.MultiTable) {
+	for _, item := range insertIntoList(stmt.MultiTable) {
 		e.addTable(item.Table, false)
 	}
 
@@ -162,13 +162,13 @@ func (e *omniChangedResourceExtractor) extractInsert(stmt *oracleast.InsertStmt,
 // procedure, function, trigger, sequence, synonym) ONLY when its name carries an explicit schema
 // qualifier (Oracle's schema maps to a database). An unqualified name records nothing, keeping
 // the request-database fallback. See SUP-222 / BYT-9698.
-func (e *omniChangedResourceExtractor) addObjectDatabase(name *oracleast.ObjectName) {
+func (e *changedResourceExtractor) addObjectDatabase(name *oracleast.ObjectName) {
 	if name != nil && name.Schema != "" {
 		e.changedResources.AddDatabase(name.Schema)
 	}
 }
 
-func (e *omniChangedResourceExtractor) addTable(name *oracleast.ObjectName, affected bool) {
+func (e *changedResourceExtractor) addTable(name *oracleast.ObjectName, affected bool) {
 	if name == nil || name.Name == "" {
 		return
 	}
@@ -186,7 +186,7 @@ func (e *omniChangedResourceExtractor) addTable(name *oracleast.ObjectName, affe
 	)
 }
 
-func (e *omniChangedResourceExtractor) addIndexTable(name *oracleast.ObjectName) {
+func (e *changedResourceExtractor) addIndexTable(name *oracleast.ObjectName) {
 	if e.dbMetadata == nil || name == nil || name.Name == "" {
 		return
 	}
@@ -212,12 +212,12 @@ func (e *omniChangedResourceExtractor) addIndexTable(name *oracleast.ObjectName)
 	)
 }
 
-func (e *omniChangedResourceExtractor) trackDML(text string) {
+func (e *changedResourceExtractor) trackDML(text string) {
 	e.dmlCount++
-	e.dmlStatements = append(e.dmlStatements, omniStatementText(text))
+	e.dmlStatements = append(e.dmlStatements, statementText(text))
 }
 
-func omniStatementText(text string) string {
+func statementText(text string) string {
 	text = strings.TrimSpace(text)
 	if strings.HasSuffix(text, ";") {
 		return text
@@ -225,7 +225,7 @@ func omniStatementText(text string) string {
 	return text + ";"
 }
 
-func omniObjectNameList(list *oracleast.List) []*oracleast.ObjectName {
+func objectNameList(list *oracleast.List) []*oracleast.ObjectName {
 	if list == nil {
 		return nil
 	}
@@ -238,7 +238,7 @@ func omniObjectNameList(list *oracleast.List) []*oracleast.ObjectName {
 	return names
 }
 
-func omniAlterTableCmdList(list *oracleast.List) []*oracleast.AlterTableCmd {
+func alterTableCmdList(list *oracleast.List) []*oracleast.AlterTableCmd {
 	if list == nil {
 		return nil
 	}
@@ -251,7 +251,7 @@ func omniAlterTableCmdList(list *oracleast.List) []*oracleast.AlterTableCmd {
 	return cmds
 }
 
-func omniInsertIntoList(list *oracleast.List) []*oracleast.InsertIntoClause {
+func insertIntoList(list *oracleast.List) []*oracleast.InsertIntoClause {
 	if list == nil {
 		return nil
 	}

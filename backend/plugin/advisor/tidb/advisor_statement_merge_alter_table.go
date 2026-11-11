@@ -33,7 +33,7 @@ type StatementMergeAlterTableAdvisor struct{}
 
 // Check flags tables modified more than once across the reviewed statements.
 func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

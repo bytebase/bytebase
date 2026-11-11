@@ -113,18 +113,18 @@ INSERT INTO t3 VALUES (1, 2);`,
 	}
 }
 
-func TestParsePLSQLStatementsOmniFirst(t *testing.T) {
+func TestParsePLSQLStatementsFirst(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, "SELECT * FROM T;")
 	require.NoError(t, err)
 	require.Len(t, stmts, 1)
 
-	omniAST, ok := stmts[0].AST.(*OmniAST)
+	wrapped, ok := stmts[0].AST.(*AST)
 	require.True(t, ok)
-	require.Equal(t, "SELECT * FROM T", omniAST.Text)
-	require.IsType(t, &ast.SelectStmt{}, omniAST.Node)
+	require.Equal(t, "SELECT * FROM T", wrapped.Text)
+	require.IsType(t, &ast.SelectStmt{}, wrapped.Node)
 }
 
-func TestParsePLSQLStatementsParsesTriggerReferencingWithOmni(t *testing.T) {
+func TestParsePLSQLStatementsParsesTriggerReferencingWith(t *testing.T) {
 	stmts, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT * FROM T;
 CREATE OR REPLACE TRIGGER trg
 BEFORE INSERT OR UPDATE OF col1, col2 ON tbl
@@ -137,19 +137,19 @@ END;`)
 	require.NoError(t, err)
 	require.Len(t, stmts, 2)
 
-	_, ok := stmts[0].AST.(*OmniAST)
+	_, ok := stmts[0].AST.(*AST)
 	require.True(t, ok)
 
-	omniAST, ok := stmts[1].AST.(*OmniAST)
+	wrapped, ok := stmts[1].AST.(*AST)
 	require.True(t, ok)
-	trigger, ok := omniAST.Node.(*ast.CreateTriggerStmt)
+	trigger, ok := wrapped.Node.(*ast.CreateTriggerStmt)
 	require.True(t, ok)
 	require.NotNil(t, trigger.Referencing)
 	require.Equal(t, "O", trigger.Referencing.OldAlias)
 	require.Equal(t, "N", trigger.Referencing.NewAlias)
 }
 
-func TestParsePLSQLStatementsOmniErrorUsesOriginalLine(t *testing.T) {
+func TestParsePLSQLStatementsErrorUsesOriginalLine(t *testing.T) {
 	_, err := base.ParseStatements(storepb.Engine_ORACLE, `SELECT *
 FROM T;
 CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA
@@ -169,7 +169,7 @@ BROKEN`)
 	require.Equal(t, int32(11), syntaxErr.Position.Line)
 }
 
-func TestParsePLSQLStatementsOmniErrorUsesOriginalColumn(t *testing.T) {
+func TestParsePLSQLStatementsErrorUsesOriginalColumn(t *testing.T) {
 	statement := `SELECT * FROM T; CREATE TABLE GCP.LEAD_DROP_MC_NATIVE_DATA (TXN_DATE DATE) PARTITION BY RANGE (TXN_DATE) INTERVAL (NUMTODSINTERVAL(1,'DAY')) (PARTITION P0 VALUES LESS THAN (DATE '2026-01-01') BROKEN`
 
 	_, err := base.ParseStatements(storepb.Engine_ORACLE, statement)

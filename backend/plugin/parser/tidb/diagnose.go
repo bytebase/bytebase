@@ -14,7 +14,7 @@ func init() {
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
-	_, err := ParseTiDB(statement, "", "")
+	_, err := parseTiDBStatements(statement)
 	var syntaxError *base.SyntaxError
 	if err != nil {
 		if errors.As(err, &syntaxError) {

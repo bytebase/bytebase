@@ -428,6 +428,11 @@
     },
     "export-finished": "Exportación finalizada",
     "export-tooltip": "Debe seleccionar hora de inicio y fin dentro de 30 días",
+    "federated-identity": {
+      "issuer": "Emisor",
+      "origin": "Sesión iniciada desde una carga de trabajo externa",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "ID de cliente",
@@ -2334,16 +2339,18 @@
       },
       "approval-after-submit": "La aprobación empieza cuando envías a revisión.",
       "approval-flow": {
-        "and-n-more_one": "y {{count}} más",
-        "and-n-more_other": "y {{count}} más",
         "approved-by": "Aprobado por {{user}}",
+        "clear-search": "Borrar búsqueda",
+        "copy-email": "Copiar el correo de {{user}}",
         "current": "Actual",
         "n-approved": "{{n}} aprobados",
         "n-pending": "{{n}} pendientes",
         "n-reviewers_one": "{{count}} revisor",
         "n-reviewers_other": "{{count}} revisores",
+        "no-matching-reviewers": "Ningún revisor coincide con «{{query}}»",
         "no-reviewers": "Sin revisores",
-        "rejected-by": "Rechazado por {{user}}"
+        "rejected-by": "Rechazado por {{user}}",
+        "search-placeholder": "Buscar por nombre o correo"
       },
       "candidate-last-changed-plan": "No puede aprobar — fue la última persona en modificar este plan",
       "comment-required-to-reject": "Se requiere un comentario para rechazar",

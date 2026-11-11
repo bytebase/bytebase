@@ -31,25 +31,25 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &tableDisallowPartitionOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDisallowPartitionRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDisallowPartitionOmniRule struct {
-	OmniBaseRule
+type tableDisallowPartitionRule struct {
+	BaseRule
 }
 
-func (*tableDisallowPartitionOmniRule) Name() string {
+func (*tableDisallowPartitionRule) Name() string {
 	return "TableDisallowPartitionRule"
 }
 
-func (r *tableDisallowPartitionOmniRule) OnStatement(node ast.Node) {
+func (r *tableDisallowPartitionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -59,7 +59,7 @@ func (r *tableDisallowPartitionOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableDisallowPartitionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableDisallowPartitionRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Partitions != nil {
 		r.AddAdvice(&storepb.Advice{
 			Status:        r.Level,
@@ -71,7 +71,7 @@ func (r *tableDisallowPartitionOmniRule) checkCreateTable(n *ast.CreateTableStmt
 	}
 }
 
-func (r *tableDisallowPartitionOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableDisallowPartitionRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
 			continue

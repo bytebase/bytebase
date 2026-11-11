@@ -145,5 +145,5 @@ func (*foreignAST) ASTStartPosition() *storepb.Position { return nil }
 
 func TestExtractChangedResourcesRejectsForeignAST(t *testing.T) {
 	_, err := extractChangedResources("db", "", nil, []base.AST{&foreignAST{}}, "")
-	require.ErrorContains(t, err, "expected omniAST for StarRocks")
+	require.ErrorContains(t, err, "expected astNode for StarRocks")
 }

@@ -227,10 +227,10 @@ func TestGetQuerySpanFallbackKeepsFunctionAccesses(t *testing.T) {
 	require.NotNil(t, span.UnresolvedColumnsError, "t, read only inside the function, was synced with no columns")
 }
 
-func newFallbackTestExtractor(t *testing.T) *omniQuerySpanExtractor {
+func newFallbackTestExtractor(t *testing.T) *querySpanExtractor {
 	t.Helper()
 	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{healthySchema()})
-	e := newOmniQuerySpanExtractor("db", nil, base.GetQuerySpanContext{GetDatabaseMetadataFunc: getter, ListDatabaseNamesFunc: lister})
+	e := newQuerySpanExtractor("db", nil, base.GetQuerySpanContext{GetDatabaseMetadataFunc: getter, ListDatabaseNamesFunc: lister})
 	e.ctx = context.Background()
 	require.NoError(t, e.initCatalog())
 	return e

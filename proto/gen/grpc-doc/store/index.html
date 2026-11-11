@@ -307,6 +307,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.FederatedIdentity"><span class="badge">M</span>FederatedIdentity</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.MCPDelegation"><span class="badge">M</span>MCPDelegation</a>
                 </li>
               
@@ -2920,6 +2924,45 @@ it is one of the two MCP doors that sit outside the API — the /mcp
 connection gate and the OAuth2 consent that mints the credential it checks.
 Never set for public API calls. Presence of this message is the MCP-origin
 marker. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>federated_identity</td>
+                  <td><a href="#bytebase.store.FederatedIdentity">FederatedIdentity</a></td>
+                  <td></td>
+                  <td><p>The external workload behind a workload identity. Set on a successful
+token exchange and on every call made with the token it issued. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.FederatedIdentity">FederatedIdentity</h3>
+        <p>The verified OIDC identity a workload identity token was exchanged for.</p><p>Recorded for audit and never read for authorization.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>issuer</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The token&#39;s &#34;iss&#34; claim, e.g. &#34;https://token.actions.githubusercontent.com&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>subject</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The token&#39;s &#34;sub&#34; claim, e.g. &#34;repo:my-org/app:ref:refs/heads/main&#34;. </p></td>
                 </tr>
               
             </tbody>

@@ -36,7 +36,7 @@ func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext
 	}
 	dbName := d.GetProto().GetName()
 	precheck := firstMySQLWalkThroughAdvice(
-		precheckMySQLOmniWalkThrough(d, asts),
+		precheckMySQLWalkThrough(d, asts),
 		precheckMySQLRawWalkThrough(d, wtCtx.RawSQL, asts),
 	)
 
@@ -211,7 +211,7 @@ func precheckMySQLRawWalkThrough(d *model.DatabaseMetadata, rawSQL string, asts 
 		if !isMySQLCreateTableAsStatement(text) {
 			continue
 		}
-		if mySQLOmniASTSkipsCreateTableAsAdvice(d, asts, currentIndex) {
+		if mySQLASTSkipsCreateTableAsAdvice(d, asts, currentIndex) {
 			continue
 		}
 		content := fmt.Sprintf("CREATE TABLE AS statement is used in \"%s\"", text)
@@ -229,16 +229,16 @@ func precheckMySQLRawWalkThrough(d *model.DatabaseMetadata, rawSQL string, asts 
 	return mySQLWalkThroughAdvice{}
 }
 
-func mySQLOmniASTSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int) bool {
+func mySQLASTSkipsCreateTableAsAdvice(d *model.DatabaseMetadata, asts []base.AST, index int) bool {
 	if index >= len(asts) {
 		return false
 	}
-	node, ok := oceanbaseparser.GetOmniNode(asts[index])
+	node, ok := oceanbaseparser.GetNode(asts[index])
 	if !ok {
 		return false
 	}
 	createTable, ok := node.(*ast.CreateTableStmt)
-	return ok && createTable.Select != nil && createTable.IfNotExists && mySQLOmniTableExistsInCurrentDatabase(d, createTable.Table)
+	return ok && createTable.Select != nil && createTable.IfNotExists && mySQLTableExistsInCurrentDatabase(d, createTable.Table)
 }
 
 func isMySQLCreateTableAsStatement(statement string) bool {
@@ -331,9 +331,9 @@ func isMySQLIdentifierChar(ch byte) bool {
 	return ch == '_' || ch == '$' || ch >= '0' && ch <= '9' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'
 }
 
-func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) mySQLWalkThroughAdvice {
+func precheckMySQLWalkThrough(d *model.DatabaseMetadata, asts []base.AST) mySQLWalkThroughAdvice {
 	for i, unifiedAST := range asts {
-		node, ok := oceanbaseparser.GetOmniNode(unifiedAST)
+		node, ok := oceanbaseparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}
@@ -341,7 +341,7 @@ func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) my
 		if source, ok := unifiedAST.(interface{ ASTSource() string }); ok {
 			text = strings.TrimSpace(source.ASTSource())
 		}
-		if advice := precheckMySQLOmniNode(d, node, text); advice != nil {
+		if advice := precheckMySQLNode(d, node, text); advice != nil {
 			advice.StartPosition = mySQLStatementStartPosition(unifiedAST.ASTStartPosition())
 			return mySQLWalkThroughAdvice{index: i, advice: advice}
 		}
@@ -349,7 +349,7 @@ func precheckMySQLOmniWalkThrough(d *model.DatabaseMetadata, asts []base.AST) my
 	return mySQLWalkThroughAdvice{}
 }
 
-func precheckMySQLOmniNode(d *model.DatabaseMetadata, node ast.Node, text string) *storepb.Advice {
+func precheckMySQLNode(d *model.DatabaseMetadata, node ast.Node, text string) *storepb.Advice {
 	switch n := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		if n.Name != "" && !isCurrentDatabase(d, n.Name) {
@@ -377,7 +377,7 @@ func precheckMySQLOmniNode(d *model.DatabaseMetadata, node ast.Node, text string
 		if advice := precheckMySQLTableRefDatabase(d, n.Table); advice != nil {
 			return advice
 		}
-		if n.IfNotExists && mySQLOmniTableExistsInCurrentDatabase(d, n.Table) {
+		if n.IfNotExists && mySQLTableExistsInCurrentDatabase(d, n.Table) {
 			return nil
 		}
 		if n.Select != nil {
@@ -441,7 +441,7 @@ func mysqlRenameTargetDatabases(d *model.DatabaseMetadata, asts []base.AST) []st
 		targets = append(targets, targetTable.Schema)
 	}
 	for _, unifiedAST := range asts {
-		node, ok := oceanbaseparser.GetOmniNode(unifiedAST)
+		node, ok := oceanbaseparser.GetNode(unifiedAST)
 		if !ok {
 			continue
 		}
@@ -484,7 +484,7 @@ func precheckMySQLTableRefDatabase(d *model.DatabaseMetadata, table *ast.TableRe
 	return notCurrentMySQLDatabaseAdvice(d, table.Schema)
 }
 
-func mySQLOmniTableExistsInCurrentDatabase(d *model.DatabaseMetadata, table *ast.TableRef) bool {
+func mySQLTableExistsInCurrentDatabase(d *model.DatabaseMetadata, table *ast.TableRef) bool {
 	if table == nil || (table.Schema != "" && !isCurrentDatabase(d, table.Schema)) {
 		return false
 	}
@@ -737,7 +737,7 @@ func tableToProto(t *catalog.Table) *metadatapb.TableMetadata {
 			// "AUTO_INCREMENT" as the default (see backend/plugin/db/mysql/sync.go).
 			colMeta.Default = "AUTO_INCREMENT"
 		case col.Default != nil:
-			colMeta.Default = normalizeOmniDefault(*col.Default, col.DefaultKind)
+			colMeta.Default = normalizeDefault(*col.Default, col.DefaultKind)
 		case col.Nullable:
 			// Match the driver convention: a nullable column without an explicit
 			// default has an implicit default of NULL.
@@ -843,11 +843,11 @@ func tableToProto(t *catalog.Table) *metadatapb.TableMetadata {
 	return table
 }
 
-// normalizeOmniDefault converts an omni catalog default value to the driver
+// normalizeDefault converts an omni catalog default value to the driver
 // representation produced by SyncDBSchema (see backend/plugin/db/mysql/sync.go):
 // static defaults are kept single-quoted for mysqldump compatibility and
 // expression defaults are wrapped in parentheses.
-func normalizeOmniDefault(value string, kind catalog.ColumnDefaultKind) string {
+func normalizeDefault(value string, kind catalog.ColumnDefaultKind) string {
 	switch kind {
 	case catalog.ColumnDefaultConstant:
 		if strings.EqualFold(value, "NULL") {

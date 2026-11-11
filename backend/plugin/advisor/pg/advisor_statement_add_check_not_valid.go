@@ -30,17 +30,17 @@ func (*StatementAddCheckNotValidAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	rule := &statementAddCheckNotValidRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementAddCheckNotValidRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementAddCheckNotValidRule) Name() string {
@@ -53,7 +53,7 @@ func (r *statementAddCheckNotValidRule) OnStatement(node ast.Node) {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(alter) {
+	for _, cmd := range alterTableCmds(alter) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
 			continue
 		}

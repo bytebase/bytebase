@@ -35,7 +35,7 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 
 	rule := NewColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnRequireDefaultRule is the rule implementation for column default requirement.
@@ -64,14 +64,14 @@ func (*ColumnRequireDefaultRule) Name() string {
 func (r *ColumnRequireDefaultRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, col := range omniColumnDefs(n.Columns) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, col := range columnDefs(n.Columns) {
 			r.recordNoDefaultColumn(tableName, col)
 		}
 	case *ast.AlterTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, cmd := range omniAlterTableCmds(n) {
-			for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, cmd := range alterTableCmds(n) {
+			for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
 				if col == nil {
 					continue
 				}

@@ -13,9 +13,9 @@ import (
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	sqlTypeSet := make(map[storepb.StatementType]bool)
 	for _, a := range asts {
-		node, ok := GetOmniNode(a)
+		node, ok := GetNode(a)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MariaDB")
+			return nil, errors.New("expected AST for MariaDB")
 		}
 		t := classifyStatementType(node)
 		sqlTypeSet[t] = true
@@ -48,11 +48,11 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 
 	var results []StatementTypeWithPosition
 	for _, a := range asts {
-		omniAST, ok := a.(*OmniAST)
+		node, ok := a.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MySQL")
+			return nil, errors.New("expected AST for MySQL")
 		}
-		if omniAST.Node == nil {
+		if node.Node == nil {
 			continue
 		}
 
@@ -60,22 +60,22 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 		// does not know — GRANT, SET, PREPARE, …) are INCLUDED, with their positions and
 		// text, so the SDL statement-type gate fails closed: dropping them here would
 		// let an unclassified statement bypass the release-check allowlist entirely.
-		stmtType := classifyStatementType(omniAST.Node)
+		stmtType := classifyStatementType(node.Node)
 
 		line := 0
-		if omniAST.StartPosition != nil {
-			line = int(omniAST.StartPosition.Line)
+		if node.StartPosition != nil {
+			line = int(node.StartPosition.Line)
 		}
 		// End line = start line + embedded newlines in the statement text.
 		endLine := line
-		if omniAST.Text != "" {
-			endLine += strings.Count(omniAST.Text, "\n")
+		if node.Text != "" {
+			endLine += strings.Count(node.Text, "\n")
 		}
 
 		results = append(results, StatementTypeWithPosition{
 			Type: stmtType,
 			Line: endLine,
-			Text: omniAST.Text,
+			Text: node.Text,
 		})
 	}
 

@@ -8,27 +8,27 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// OmniAST wraps an omni AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni AST node and implements the base.AST interface.
+type AST struct {
 	Node          ast.Node
 	Text          string
 	StartPosition *storepb.Position
 }
 
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	node, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return node.Node, true
 }
 
 // ParseCQL parses CQL using omni's parser and returns omni Statement objects.

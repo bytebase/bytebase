@@ -9,12 +9,12 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 )
 
-type omniIdentifier struct {
+type identifier struct {
 	name string
 	loc  ast.Loc
 }
 
-func omniObjectName(name *ast.ObjectName, currentSchema string) string {
+func objectName(name *ast.ObjectName, currentSchema string) string {
 	if name == nil {
 		return ""
 	}
@@ -28,14 +28,14 @@ func omniObjectName(name *ast.ObjectName, currentSchema string) string {
 	return fmt.Sprintf("%s.%s", schema, name.Name)
 }
 
-func omniLastObjectName(name *ast.ObjectName) string {
+func lastObjectName(name *ast.ObjectName) string {
 	if name == nil {
 		return ""
 	}
 	return name.Name
 }
 
-func omniListStrings(list *ast.List) []string {
+func listStrings(list *ast.List) []string {
 	if list == nil {
 		return nil
 	}
@@ -59,7 +59,7 @@ func listItems(list *ast.List) []ast.Node {
 	return list.Items
 }
 
-func omniColumnDefs(list *ast.List) []*ast.ColumnDef {
+func columnDefs(list *ast.List) []*ast.ColumnDef {
 	if list == nil {
 		return nil
 	}
@@ -72,7 +72,7 @@ func omniColumnDefs(list *ast.List) []*ast.ColumnDef {
 	return result
 }
 
-func omniTableConstraints(list *ast.List) []*ast.TableConstraint {
+func tableConstraints(list *ast.List) []*ast.TableConstraint {
 	if list == nil {
 		return nil
 	}
@@ -85,7 +85,7 @@ func omniTableConstraints(list *ast.List) []*ast.TableConstraint {
 	return result
 }
 
-func omniAlterTableCmds(stmt *ast.AlterTableStmt) []*ast.AlterTableCmd {
+func alterTableCmds(stmt *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	if stmt == nil || stmt.Actions == nil {
 		return nil
 	}
@@ -98,7 +98,7 @@ func omniAlterTableCmds(stmt *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	return result
 }
 
-func omniColumnConstraints(col *ast.ColumnDef) []*ast.ColumnConstraint {
+func columnConstraints(col *ast.ColumnDef) []*ast.ColumnConstraint {
 	if col == nil || col.Constraints == nil {
 		return nil
 	}
@@ -111,8 +111,8 @@ func omniColumnConstraints(col *ast.ColumnDef) []*ast.ColumnConstraint {
 	return result
 }
 
-func omniTypeName(tn *ast.TypeName) string {
-	parts := omniListStrings(tnNames(tn))
+func typeName(tn *ast.TypeName) string {
+	parts := listStrings(tnNames(tn))
 	return strings.ToUpper(strings.Join(parts, "."))
 }
 
@@ -123,7 +123,7 @@ func tnNames(tn *ast.TypeName) *ast.List {
 	return tn.Names
 }
 
-func omniFirstTypeModInt(tn *ast.TypeName) (int, bool) {
+func firstTypeModInt(tn *ast.TypeName) (int, bool) {
 	if tn == nil || tn.TypeMods == nil || len(tn.TypeMods.Items) == 0 {
 		return 0, false
 	}
@@ -137,8 +137,8 @@ func omniFirstTypeModInt(tn *ast.TypeName) (int, bool) {
 	return 0, false
 }
 
-func omniColumnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
-	for _, c := range omniColumnConstraints(col) {
+func columnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
+	for _, c := range columnConstraints(col) {
 		if c.Type == typ {
 			return true
 		}
@@ -146,13 +146,13 @@ func omniColumnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
 	return false
 }
 
-// omniIdentifiers returns the names a statement defines: created objects and
+// identifiers returns the names a statement defines: created objects and
 // their columns, constraints, and partitions; aliases and CTEs; rename targets;
 // and PL/SQL declarations. References are excluded because the author did not
 // choose those names, including built-ins such as COUNT, coll.COUNT,
 // SQL%ROWCOUNT, and SQLCODE.
-func omniIdentifiers(node ast.Node) []omniIdentifier {
-	var result []omniIdentifier
+func identifiers(node ast.Node) []identifier {
+	var result []identifier
 	seen := make(map[string]bool)
 	add := func(name string, loc ast.Loc) {
 		if name == "" {
@@ -163,7 +163,7 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 			return
 		}
 		seen[key] = true
-		result = append(result, omniIdentifier{name: name, loc: loc})
+		result = append(result, identifier{name: name, loc: loc})
 	}
 	addObject := func(name *ast.ObjectName) {
 		if name != nil {
@@ -171,19 +171,19 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 		}
 	}
 	addStrings := func(list *ast.List, loc ast.Loc) {
-		for _, name := range omniListStrings(list) {
+		for _, name := range listStrings(list) {
 			add(name, loc)
 		}
 	}
 	// A TableConstraint node also names the target of DROP CONSTRAINT, so
 	// constraint names are taken from the statements that define them.
 	addTableConstraints := func(list *ast.List) {
-		for _, c := range omniTableConstraints(list) {
+		for _, c := range tableConstraints(list) {
 			add(c.Name, c.Loc)
 		}
 	}
-	omniWalk(node, func(n ast.Node) {
-		add(omniCreatedName(n))
+	walk(node, func(n ast.Node) {
+		add(createdName(n))
 		switch x := n.(type) {
 		case *ast.CreateTableStmt:
 			addTableConstraints(x.Constraints)
@@ -250,9 +250,9 @@ func omniIdentifiers(node ast.Node) []omniIdentifier {
 	return result
 }
 
-// omniCreatedName returns the Name field of any omni Create*Stmt node, so
+// createdName returns the Name field of any omni Create*Stmt node, so
 // CREATE statements omni adds later are checked without being listed here.
-func omniCreatedName(node ast.Node) (string, ast.Loc) {
+func createdName(node ast.Node) (string, ast.Loc) {
 	value := reflect.ValueOf(node)
 	if value.Kind() != reflect.Pointer || value.IsNil() {
 		return "", ast.Loc{}
@@ -286,14 +286,14 @@ func omniCreatedName(node ast.Node) (string, ast.Loc) {
 	return "", ast.Loc{}
 }
 
-func omniWalk(node ast.Node, visit func(ast.Node)) {
+func walk(node ast.Node, visit func(ast.Node)) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		visit(n)
 		return true
 	})
 }
 
-func omniWalkPLSQLBlockStatements(block *ast.PLSQLBlock, visit func(ast.StmtNode) bool) {
+func walkPLSQLBlockStatements(block *ast.PLSQLBlock, visit func(ast.StmtNode) bool) {
 	if block == nil {
 		return
 	}

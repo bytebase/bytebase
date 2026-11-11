@@ -32,17 +32,17 @@ func (*StatementWhereRequiredSelectAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	rule := &statementWhereRequiredSelectRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementWhereRequiredSelectRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementWhereRequiredSelectRule) Name() string {

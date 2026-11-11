@@ -750,7 +750,7 @@ func processColumnDef(col *ast.ColumnDef, fileText, schemaName, tableName string
 		return
 	}
 
-	dt := extractOmniDataType(col.TypeName)
+	dt := extractDataType(col.TypeName)
 
 	// Check for NOT NULL: either via IsNotNull flag or via column constraints
 	notNull := col.IsNotNull
@@ -921,8 +921,8 @@ func processViewStmt(n *ast.ViewStmt, fileText string, st *symbolTable) {
 	st.addView(schemaName, viewName, n.Query, line)
 }
 
-// extractOmniDataType extracts data type information from an omni TypeName.
-func extractOmniDataType(tn *ast.TypeName) *dataType {
+// extractDataType extracts data type information from an omni TypeName.
+func extractDataType(tn *ast.TypeName) *dataType {
 	if tn == nil {
 		return &dataType{baseType: "UNKNOWN"}
 	}
@@ -930,7 +930,7 @@ func extractOmniDataType(tn *ast.TypeName) *dataType {
 	dt := &dataType{}
 
 	// Build the type name from Names list
-	typeName := omniTypeNameStr(tn)
+	typeName := typeNameStr(tn)
 	dt.baseType = strings.ToUpper(typeName)
 
 	// Extract length/precision from Typmods
@@ -972,8 +972,8 @@ func extractIntValue(item ast.Node) int {
 	return -1
 }
 
-// omniTypeNameStr builds a type name string from a TypeName node.
-func omniTypeNameStr(tn *ast.TypeName) string {
+// typeNameStr builds a type name string from a TypeName node.
+func typeNameStr(tn *ast.TypeName) string {
 	if tn == nil || tn.Names == nil {
 		return "UNKNOWN"
 	}

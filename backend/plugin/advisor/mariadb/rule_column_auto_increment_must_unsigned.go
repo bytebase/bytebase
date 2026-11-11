@@ -31,8 +31,8 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 		return nil, err
 	}
 
-	rule := &columnAutoIncrementMustUnsignedOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnAutoIncrementMustUnsignedRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -42,7 +42,7 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -53,15 +53,15 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 	return rule.GetAdviceList(), nil
 }
 
-type columnAutoIncrementMustUnsignedOmniRule struct {
-	OmniBaseRule
+type columnAutoIncrementMustUnsignedRule struct {
+	BaseRule
 }
 
-func (*columnAutoIncrementMustUnsignedOmniRule) Name() string {
+func (*columnAutoIncrementMustUnsignedRule) Name() string {
 	return "ColumnAutoIncrementMustUnsignedRule"
 }
 
-func (r *columnAutoIncrementMustUnsignedOmniRule) OnStatement(node ast.Node) {
+func (r *columnAutoIncrementMustUnsignedRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -71,8 +71,8 @@ func (r *columnAutoIncrementMustUnsignedOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnAutoIncrementMustUnsignedOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementMustUnsignedRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -81,20 +81,20 @@ func (r *columnAutoIncrementMustUnsignedOmniRule) checkCreateTable(n *ast.Create
 	}
 }
 
-func (r *columnAutoIncrementMustUnsignedOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementMustUnsignedRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		for _, col := range omniGetColumnsFromCmd(cmd) {
+		for _, col := range getColumnsFromCmd(cmd) {
 			r.checkColumn(tableName, col)
 		}
 	}
 }
 
-func (r *columnAutoIncrementMustUnsignedOmniRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !omniIsAutoIncrement(col) {
+func (r *columnAutoIncrementMustUnsignedRule) checkColumn(tableName string, col *ast.ColumnDef) {
+	if !isAutoIncrement(col) {
 		return
 	}
 	if col.TypeName == nil || (!col.TypeName.Unsigned && !col.TypeName.Zerofill) {

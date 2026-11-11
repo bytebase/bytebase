@@ -35,7 +35,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		mismatchCode:       code.NamingUKConventionMismatch,
 		typeNoun:           "Unique key",
 		internalErrorTitle: "Internal error for unique key naming convention rule",
-	}, func(ostmt OmniStmt) []*indexMetaData {
+	}, func(ostmt Stmt) []*indexMetaData {
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateTableStmt:
 			return collectUKCreateTable(ostmt, n)
@@ -53,7 +53,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 // `UNIQUE`, `UNIQUE KEY`, and `UNIQUE INDEX`. Omni unifies all three under
 // `ast.ConstrUnique`. The single switch arm here covers all three forms.
 // Per Phase 1.5 cumulative shape-divergence table item #2.
-func collectUKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaData {
+func collectUKCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -65,7 +65,7 @@ func collectUKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaDa
 		}
 		columnList := constraint.Columns
 		if len(columnList) == 0 {
-			columnList = omniIndexColumns(constraint.IndexColumns)
+			columnList = indexColumns(constraint.IndexColumns)
 		}
 		metaData := map[string]string{
 			advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
@@ -81,7 +81,7 @@ func collectUKCreateTable(ostmt OmniStmt, n *ast.CreateTableStmt) []*indexMetaDa
 	return res
 }
 
-func collectUKAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
+func collectUKAlterTable(ostmt Stmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
 	if n.Table == nil {
 		return nil
 	}
@@ -101,7 +101,7 @@ func collectUKAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetadata
 			}
 			columnList := cmd.Constraint.Columns
 			if len(columnList) == 0 {
-				columnList = omniIndexColumns(cmd.Constraint.IndexColumns)
+				columnList = indexColumns(cmd.Constraint.IndexColumns)
 			}
 			metaData := map[string]string{
 				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
@@ -143,7 +143,7 @@ func collectUKAlterTable(ostmt OmniStmt, n *ast.AlterTableStmt, originalMetadata
 	return res
 }
 
-func collectUKCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []*indexMetaData {
+func collectUKCreateIndex(ostmt Stmt, n *ast.CreateIndexStmt) []*indexMetaData {
 	if !n.Unique {
 		return nil
 	}
@@ -151,7 +151,7 @@ func collectUKCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []*indexMetaDa
 		return nil
 	}
 	tableName := n.Table.Name
-	columnList := omniIndexColumns(n.Columns)
+	columnList := indexColumns(n.Columns)
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
 		advisor.TableNameTemplateToken:  tableName,

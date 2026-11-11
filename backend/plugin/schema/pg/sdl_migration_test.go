@@ -44,9 +44,9 @@ func diffPostgresSDL(t *testing.T, fromSDL, toSDL string) string {
 	return sql
 }
 
-// omniSDLMigration is a test helper that runs the omni SDL migration pipeline:
+// sDLMigration is a test helper that runs the omni SDL migration pipeline:
 // from = LoadSDL(fromSDL), to = LoadSDL(toSDL), Diff, GenerateMigration.
-func omniSDLMigration(t *testing.T, fromSDL, toSDL string) string {
+func sDLMigration(t *testing.T, fromSDL, toSDL string) string {
 	t.Helper()
 	from, err := catalog.LoadSDL(strings.TrimSpace(fromSDL))
 	require.NoError(t, err)
@@ -60,8 +60,8 @@ func omniSDLMigration(t *testing.T, fromSDL, toSDL string) string {
 	return plan.SQL()
 }
 
-func TestOmniSDLMigration_CreateTable(t *testing.T) {
-	sql := omniSDLMigration(t, "", `
+func TestSDLMigration_CreateTable(t *testing.T) {
+	sql := sDLMigration(t, "", `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
@@ -73,8 +73,8 @@ func TestOmniSDLMigration_CreateTable(t *testing.T) {
 	require.Contains(t, sql, "users")
 }
 
-func TestOmniSDLMigration_DropTable(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_DropTable(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE old_table (
 			id INTEGER PRIMARY KEY,
 			data TEXT
@@ -84,8 +84,8 @@ func TestOmniSDLMigration_DropTable(t *testing.T) {
 	require.Contains(t, sql, "old_table")
 }
 
-func TestOmniSDLMigration_AddColumn(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_AddColumn(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL
@@ -101,8 +101,8 @@ func TestOmniSDLMigration_AddColumn(t *testing.T) {
 	require.Contains(t, sql, "email")
 }
 
-func TestOmniSDLMigration_DropColumn(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_DropColumn(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
@@ -119,8 +119,8 @@ func TestOmniSDLMigration_DropColumn(t *testing.T) {
 	require.Contains(t, sql, "email")
 }
 
-func TestOmniSDLMigration_CreateView(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_CreateView(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
@@ -138,8 +138,8 @@ func TestOmniSDLMigration_CreateView(t *testing.T) {
 	require.Contains(t, sql, "active_users")
 }
 
-func TestOmniSDLMigration_DropView(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_DropView(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
@@ -157,7 +157,7 @@ func TestOmniSDLMigration_DropView(t *testing.T) {
 	require.Contains(t, sql, "active_users")
 }
 
-func TestOmniSDLMigration_RecordReturningFunctionView(t *testing.T) {
+func TestSDLMigration_RecordReturningFunctionView(t *testing.T) {
 	sdl := `
 CREATE FUNCTION public.record_pair(OUT id integer, OUT name text)
 RETURNS record
@@ -170,12 +170,12 @@ CREATE VIEW public.record_pair_view AS
 SELECT *
 FROM public.record_pair();
 `
-	sql := omniSDLMigration(t, sdl, sdl)
+	sql := sDLMigration(t, sdl, sdl)
 	require.Empty(t, sql)
 }
 
-func TestOmniSDLMigration_CreateFunction(t *testing.T) {
-	sql := omniSDLMigration(t, "", `
+func TestSDLMigration_CreateFunction(t *testing.T) {
+	sql := sDLMigration(t, "", `
 		CREATE FUNCTION add_numbers(a INTEGER, b INTEGER) RETURNS INTEGER
 		LANGUAGE plpgsql AS $$
 		BEGIN
@@ -187,24 +187,24 @@ func TestOmniSDLMigration_CreateFunction(t *testing.T) {
 	require.Contains(t, sql, "add_numbers")
 }
 
-func TestOmniSDLMigration_CreateSequence(t *testing.T) {
-	sql := omniSDLMigration(t, "", `
+func TestSDLMigration_CreateSequence(t *testing.T) {
+	sql := sDLMigration(t, "", `
 		CREATE SEQUENCE order_seq INCREMENT BY 1 MINVALUE 1 START WITH 1;
 	`)
 	require.Contains(t, sql, "CREATE SEQUENCE")
 	require.Contains(t, sql, "order_seq")
 }
 
-func TestOmniSDLMigration_CreateEnum(t *testing.T) {
-	sql := omniSDLMigration(t, "", `
+func TestSDLMigration_CreateEnum(t *testing.T) {
+	sql := sDLMigration(t, "", `
 		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
 	`)
 	require.Contains(t, sql, "CREATE TYPE")
 	require.Contains(t, sql, "mood")
 }
 
-func TestOmniSDLMigration_AlterEnum_AddValue(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_AlterEnum_AddValue(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
 	`, `
 		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy', 'ecstatic');
@@ -212,8 +212,8 @@ func TestOmniSDLMigration_AlterEnum_AddValue(t *testing.T) {
 	require.Contains(t, sql, "ecstatic")
 }
 
-func TestOmniSDLMigration_CreateIndex(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_CreateIndex(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			email VARCHAR(255) NOT NULL
@@ -229,8 +229,8 @@ func TestOmniSDLMigration_CreateIndex(t *testing.T) {
 	require.Contains(t, sql, "idx_users_email")
 }
 
-func TestOmniSDLMigration_CreateTrigger(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_CreateTrigger(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			updated_at TIMESTAMP
@@ -262,7 +262,7 @@ func TestOmniSDLMigration_CreateTrigger(t *testing.T) {
 	require.Contains(t, sql, "trg_update_timestamp")
 }
 
-func TestOmniSDLMigration_EventTriggerSourceSDL(t *testing.T) {
+func TestSDLMigration_EventTriggerSourceSDL(t *testing.T) {
 	sdl := `
 		CREATE FUNCTION audit_ddl() RETURNS event_trigger
 		LANGUAGE plpgsql AS $$
@@ -275,7 +275,7 @@ func TestOmniSDLMigration_EventTriggerSourceSDL(t *testing.T) {
 			WHEN TAG IN ('CREATE TABLE')
 			EXECUTE FUNCTION audit_ddl();
 	`
-	sql := omniSDLMigration(t, sdl, sdl)
+	sql := sDLMigration(t, sdl, sdl)
 	require.Empty(t, sql)
 }
 
@@ -325,8 +325,8 @@ func TestDiffSDLMigration_EventTriggerChanges(t *testing.T) {
 	}
 }
 
-func TestOmniSDLMigration_Comment(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_Comment(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY
 		);
@@ -340,8 +340,8 @@ func TestOmniSDLMigration_Comment(t *testing.T) {
 	require.Contains(t, sql, "User accounts")
 }
 
-func TestOmniSDLMigration_NoChange(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_NoChange(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL
@@ -355,8 +355,8 @@ func TestOmniSDLMigration_NoChange(t *testing.T) {
 	require.Empty(t, sql)
 }
 
-func TestOmniSDLMigration_CreateSchema(t *testing.T) {
-	sql := omniSDLMigration(t, "", `
+func TestSDLMigration_CreateSchema(t *testing.T) {
+	sql := sDLMigration(t, "", `
 		CREATE SCHEMA analytics;
 		CREATE TABLE analytics.events (
 			id SERIAL PRIMARY KEY,
@@ -368,8 +368,8 @@ func TestOmniSDLMigration_CreateSchema(t *testing.T) {
 	require.Contains(t, sql, "CREATE TABLE")
 }
 
-func TestOmniSDLMigration_AddConstraint(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_AddConstraint(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE orders (
 			id SERIAL PRIMARY KEY,
 			total DECIMAL(10,2)
@@ -384,8 +384,8 @@ func TestOmniSDLMigration_AddConstraint(t *testing.T) {
 	require.Contains(t, sql, "chk_total")
 }
 
-func TestOmniSDLMigration_AddForeignKey(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_AddForeignKey(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE categories (
 			id SERIAL PRIMARY KEY,
 			name TEXT NOT NULL
@@ -409,8 +409,8 @@ func TestOmniSDLMigration_AddForeignKey(t *testing.T) {
 	require.Contains(t, sql, "FOREIGN KEY")
 }
 
-func TestOmniSDLMigration_MultipleChanges(t *testing.T) {
-	sql := omniSDLMigration(t, `
+func TestSDLMigration_MultipleChanges(t *testing.T) {
+	sql := sDLMigration(t, `
 		CREATE TABLE users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL
@@ -435,9 +435,9 @@ func TestOmniSDLMigration_MultipleChanges(t *testing.T) {
 	require.Contains(t, sql, "new_table")
 }
 
-// TestOmniFilter_BbdataarchiveSchemaFiltered verifies that objects in the
+// TestFilter_BbdataarchiveSchemaFiltered verifies that objects in the
 // bbdataarchive schema are excluded from migration output.
-func TestOmniFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
+func TestFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 	// Source has tables in both public and bbdataarchive schemas.
 	sourceMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -472,9 +472,9 @@ func TestOmniFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 	require.Contains(t, sql, "users")
 }
 
-// TestOmniFilter_SkipBackupSchemaInSDLGeneration verifies that MetadataToSDL
+// TestFilter_SkipBackupSchemaInSDLGeneration verifies that MetadataToSDL
 // excludes the backup schema entirely from generated SDL text.
-func TestOmniFilter_SkipBackupSchemaInSDLGeneration(t *testing.T) {
+func TestFilter_SkipBackupSchemaInSDLGeneration(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
@@ -501,9 +501,9 @@ func TestOmniFilter_SkipBackupSchemaInSDLGeneration(t *testing.T) {
 	require.Contains(t, sdl, "t1")
 }
 
-// TestOmniFilter_SkipDumpObjectsExcluded verifies that objects marked with
+// TestFilter_SkipDumpObjectsExcluded verifies that objects marked with
 // SkipDump (e.g., extension-created objects) are excluded from SDL generation.
-func TestOmniFilter_SkipDumpObjectsExcluded(t *testing.T) {
+func TestFilter_SkipDumpObjectsExcluded(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
@@ -530,18 +530,18 @@ func TestOmniFilter_SkipDumpObjectsExcluded(t *testing.T) {
 	require.NotContains(t, sdl, "ext_func")
 }
 
-// TestOmniFilter_ExtensionPreservedWhenArchiveFiltered verifies that extension
+// TestFilter_ExtensionPreservedWhenArchiveFiltered verifies that extension
 // operations are preserved even when bbdataarchive objects are filtered.
-func TestOmniFilter_ExtensionPreservedWhenArchiveFiltered(t *testing.T) {
-	sql := omniSDLMigration(t, "", `CREATE EXTENSION IF NOT EXISTS "citext";`)
+func TestFilter_ExtensionPreservedWhenArchiveFiltered(t *testing.T) {
+	sql := sDLMigration(t, "", `CREATE EXTENSION IF NOT EXISTS "citext";`)
 	// Extension creation should not be filtered.
 	require.Contains(t, sql, "citext")
 }
 
-// TestOmniFilter_NoChangesForIdenticalSchemas verifies that two identical
+// TestFilter_NoChangesForIdenticalSchemas verifies that two identical
 // schemas with backup objects produce no migration (backup objects are
 // excluded from both sides consistently).
-func TestOmniFilter_NoChangesForIdenticalSchemas(t *testing.T) {
+func TestFilter_NoChangesForIdenticalSchemas(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
 			{

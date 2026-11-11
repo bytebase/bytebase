@@ -34,7 +34,7 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 
 	rule := NewWhereNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // WhereNoLeadingWildcardLikeRule is the rule implementation for no leading wildcard LIKE.
@@ -59,7 +59,7 @@ func (*WhereNoLeadingWildcardLikeRule) Name() string {
 
 // OnStatement checks LIKE predicates in the omni AST.
 func (r *WhereNoLeadingWildcardLikeRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		like, ok := n.(*ast.LikeExpr)
 		if !ok {
 			return

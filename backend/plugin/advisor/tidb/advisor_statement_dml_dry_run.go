@@ -29,7 +29,7 @@ type StatementDmlDryRunAdvisor struct {
 
 // Check checks for DML dry run.
 func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ type statementDmlDryRunChecker struct {
 // *ast.{Insert,Update,Delete}Stmt — both top-level here, so a walk is
 // unnecessary. EXPLAIN-wrapped DML (e.g. "EXPLAIN DELETE ...") is degenerate
 // input for a dry-run advisor and intentionally not descended into.
-func (c *statementDmlDryRunChecker) check(ostmt OmniStmt) {
+func (c *statementDmlDryRunChecker) check(ostmt Stmt) {
 	switch node := ostmt.Node.(type) {
 	case *ast.BatchStmt:
 		c.checkBatch(ostmt, node)
@@ -94,7 +94,7 @@ func (c *statementDmlDryRunChecker) check(ostmt OmniStmt) {
 // "BATCH ON id LIMIT 5000 DELETE ...":
 //  1. Run "BATCH ... DRY RUN ..." to validate the batch-splitting logic.
 //  2. EXPLAIN the inner DML to validate the DML itself.
-func (c *statementDmlDryRunChecker) checkBatch(ostmt OmniStmt, node *ast.BatchStmt) {
+func (c *statementDmlDryRunChecker) checkBatch(ostmt Stmt, node *ast.BatchStmt) {
 	c.explainCount++
 
 	// Step 1: validate batch splitting via TiDB's native BATCH DRY RUN. omni
@@ -124,13 +124,13 @@ func (c *statementDmlDryRunChecker) checkBatch(ostmt OmniStmt, node *ast.BatchSt
 // explain runs EXPLAIN on sql and records advice if it fails. The advice text
 // is the full original statement (ostmt), matching the pre-omni behavior where
 // BATCH advices reported the whole BATCH statement, not the inner DML.
-func (c *statementDmlDryRunChecker) explain(ostmt OmniStmt, sql string) {
+func (c *statementDmlDryRunChecker) explain(ostmt Stmt, sql string) {
 	if _, err := advisor.Query(c.ctx, advisor.QueryContext{}, c.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
 		c.appendFailure(ostmt, err.Error())
 	}
 }
 
-func (c *statementDmlDryRunChecker) appendFailure(ostmt OmniStmt, reason string) {
+func (c *statementDmlDryRunChecker) appendFailure(ostmt Stmt, reason string) {
 	c.adviceList = append(c.adviceList, &storepb.Advice{
 		Status:        c.level,
 		Code:          code.StatementDMLDryRunFailed.Int32(),
@@ -172,7 +172,7 @@ func (c *statementDmlDryRunChecker) queryInAutoCommit(statement string) error {
 //
 // If the source already specifies a dry-run mode, it is run as-is; injecting
 // again would yield "DRY RUN DRY RUN".
-func dmlDryRunBatchSQL(ostmt OmniStmt, node *ast.BatchStmt) (string, bool) {
+func dmlDryRunBatchSQL(ostmt Stmt, node *ast.BatchStmt) (string, bool) {
 	if node.DryRun != ast.BatchDryRunNone {
 		return ostmt.Text, true
 	}
@@ -185,7 +185,7 @@ func dmlDryRunBatchSQL(ostmt OmniStmt, node *ast.BatchStmt) (string, bool) {
 
 // dmlDryRunInnerSQL slices the inner DML out of the original BATCH statement
 // text via the inner DML node's Loc (statement-relative byte offsets).
-func dmlDryRunInnerSQL(ostmt OmniStmt, node *ast.BatchStmt) (string, bool) {
+func dmlDryRunInnerSQL(ostmt Stmt, node *ast.BatchStmt) (string, bool) {
 	loc, ok := dmlDryRunInnerLoc(node.DML)
 	if !ok || loc.Start <= 0 || loc.Start > len(ostmt.Text) {
 		return "", false

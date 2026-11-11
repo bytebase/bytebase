@@ -33,27 +33,27 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingTypeOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnDisallowChangingTypeRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnDisallowChangingTypeOmniRule struct {
-	OmniBaseRule
+type columnDisallowChangingTypeRule struct {
+	BaseRule
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (*columnDisallowChangingTypeOmniRule) Name() string {
+func (*columnDisallowChangingTypeRule) Name() string {
 	return "ColumnDisallowChangingTypeRule"
 }
 
-func (r *columnDisallowChangingTypeOmniRule) OnStatement(node ast.Node) {
+func (r *columnDisallowChangingTypeRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.AlterTableStmt)
 	if !ok || n.Table == nil {
 		return
@@ -115,7 +115,7 @@ func normalizeColumnType(tp string) string {
 	}
 }
 
-func (r *columnDisallowChangingTypeOmniRule) checkColumnType(tableName, columnName string, dt *ast.DataType, loc ast.Loc) {
+func (r *columnDisallowChangingTypeRule) checkColumnType(tableName, columnName string, dt *ast.DataType, loc ast.Loc) {
 	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column == nil {
 		return

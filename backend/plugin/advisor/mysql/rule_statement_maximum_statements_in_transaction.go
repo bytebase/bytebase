@@ -31,22 +31,22 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(_ context.Context, 
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	rule := &maxStmtsInTxnOmniRule{
-		OmniBaseRule: OmniBaseRule{},
+	rule := &maxStmtsInTxnRule{
+		BaseRule: BaseRule{},
 	}
 
 	// This rule was a no-op in ANTLR (OnEnter only stored text, no advice generated).
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type maxStmtsInTxnOmniRule struct {
-	OmniBaseRule
+type maxStmtsInTxnRule struct {
+	BaseRule
 }
 
-func (*maxStmtsInTxnOmniRule) Name() string {
+func (*maxStmtsInTxnRule) Name() string {
 	return "StatementMaximumStatementsInTransactionRule"
 }
 
-func (*maxStmtsInTxnOmniRule) OnStatement(_ ast.Node) {
+func (*maxStmtsInTxnRule) OnStatement(_ ast.Node) {
 	// The original ANTLR rule only stored query text but never generated advice.
 }

@@ -30,22 +30,22 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		omniStmts, omniErr := ParseTSQL(stmt.Text)
-		if omniErr != nil {
-			return nil, convertOmniError(omniErr, stmt)
+		stmts, err := ParseTSQL(stmt.Text)
+		if err != nil {
+			return nil, convertError(err, stmt)
 		}
 
-		if len(omniStmts) == 0 {
+		if len(stmts) == 0 {
 			continue
 		}
 
-		for _, os := range omniStmts {
+		for _, os := range stmts {
 			if os.Empty() {
 				continue
 			}
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          os.AST,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,
@@ -57,8 +57,8 @@ func parseTSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-// convertOmniError converts an omni parser error to a base.SyntaxError with proper line:column position.
-func convertOmniError(err error, stmt base.Statement) error {
+// convertError converts an omni parser error to a base.SyntaxError with proper line:column position.
+func convertError(err error, stmt base.Statement) error {
 	var parseErr *mssqlparser.ParseError
 	if !errors.As(err, &parseErr) {
 		return err

@@ -438,7 +438,7 @@ func TestGetAccessTables(t *testing.T) {
 		require.NotEmpty(t, results.Items)
 		raw, ok := results.Items[0].(*oracleast.RawStmt)
 		require.True(t, ok)
-		local, linked := collectOmniAccessTables("DB", raw.Stmt)
+		local, linked := collectAccessTables("DB", raw.Stmt)
 		require.Equal(t, test.expected, local, test.statement)
 		require.Equal(t, test.linked, linked, test.statement)
 	}

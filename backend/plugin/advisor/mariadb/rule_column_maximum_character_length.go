@@ -37,8 +37,8 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, errors.New("number_payload is required for column maximum character length rule")
 	}
 
-	rule := &columnMaximumCharacterLengthOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnMaximumCharacterLengthRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -49,7 +49,7 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -60,16 +60,16 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	return rule.GetAdviceList(), nil
 }
 
-type columnMaximumCharacterLengthOmniRule struct {
-	OmniBaseRule
+type columnMaximumCharacterLengthRule struct {
+	BaseRule
 	maximum int
 }
 
-func (*columnMaximumCharacterLengthOmniRule) Name() string {
+func (*columnMaximumCharacterLengthRule) Name() string {
 	return "ColumnMaximumCharacterLengthRule"
 }
 
-func (r *columnMaximumCharacterLengthOmniRule) OnStatement(node ast.Node) {
+func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -79,13 +79,13 @@ func (r *columnMaximumCharacterLengthOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnMaximumCharacterLengthOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnMaximumCharacterLengthRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, col := range n.Columns {
-		charLength := getCharLengthFromOmni(col.TypeName)
+		charLength := getCharLengthFrom(col.TypeName)
 		if r.maximum > 0 && charLength > r.maximum {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.Level,
@@ -100,15 +100,15 @@ func (r *columnMaximumCharacterLengthOmniRule) checkCreateTable(n *ast.CreateTab
 	}
 }
 
-func (r *columnMaximumCharacterLengthOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnMaximumCharacterLengthRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		cols := omniGetColumnsFromCmd(cmd)
+		cols := getColumnsFromCmd(cmd)
 		for _, col := range cols {
-			charLength := getCharLengthFromOmni(col.TypeName)
+			charLength := getCharLengthFrom(col.TypeName)
 			if r.maximum > 0 && charLength > r.maximum {
 				r.AddAdvice(&storepb.Advice{
 					Status:  r.Level,
@@ -124,7 +124,7 @@ func (r *columnMaximumCharacterLengthOmniRule) checkAlterTable(n *ast.AlterTable
 	}
 }
 
-func getCharLengthFromOmni(dt *ast.DataType) int {
+func getCharLengthFrom(dt *ast.DataType) int {
 	if dt == nil {
 		return 0
 	}

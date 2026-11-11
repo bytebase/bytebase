@@ -31,17 +31,17 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 	}
 
 	rule := &insertMustSpecifyColumnRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type insertMustSpecifyColumnRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*insertMustSpecifyColumnRule) Name() string {

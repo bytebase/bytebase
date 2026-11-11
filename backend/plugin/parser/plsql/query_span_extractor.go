@@ -24,6 +24,10 @@ type querySpanExtractor struct {
 	outerTableSources []base.TableSource
 	tableSourcesFrom  []base.TableSource
 	linkedDatabases   map[string]linkedDatabaseResolution
+
+	// source is the original SQL text, used to slice expression names via Loc.
+	source                   string
+	topLevelTableSourcesFrom []base.TableSource
 }
 
 func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
@@ -279,8 +283,8 @@ func (q *querySpanExtractor) getColumnsForView(instanceID, defaultDatabase, defi
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newOmniQuerySpanExtractor(defaultDatabase, newContext)
-	span, err := newQ.getOmniQuerySpan(q.ctx, definition)
+	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
 	}
@@ -297,8 +301,8 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDa
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newOmniQuerySpanExtractor(defaultDatabase, newContext)
-	span, err := newQ.getOmniQuerySpan(q.ctx, definition)
+	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)
 	}
@@ -308,20 +312,7 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDa
 	return span.Results, nil
 }
 
-type omniQuerySpanExtractor struct {
-	*querySpanExtractor
-
-	source                   string
-	topLevelTableSourcesFrom []base.TableSource
-}
-
-func newOmniQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *omniQuerySpanExtractor {
-	return &omniQuerySpanExtractor{
-		querySpanExtractor: newQuerySpanExtractor(connectionDatabase, gCtx),
-	}
-}
-
-func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 	q.source = statement
 
@@ -340,13 +331,13 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 		return nil, nil
 	}
 
-	accessTables, linkedTables := collectOmniAccessTables(q.defaultDatabase, raw.Stmt)
+	accessTables, linkedTables := collectAccessTables(q.defaultDatabase, raw.Stmt)
 	allSystem, mixed := isMixedQuery(accessTables, linkedTables)
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryType := omniQueryType(raw.Stmt, allSystem)
+	queryType := queryType(raw.Stmt, allSystem)
 	if queryType != base.Select {
 		sourceColumns := make(base.SourceColumnSet)
 		for _, resource := range accessTables {
@@ -380,7 +371,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if !ok {
 		return nil, errors.Errorf("expected SELECT statement, got %T", raw.Stmt)
 	}
-	tableSource, err := q.extractOmniSelect(selectStmt)
+	tableSource, err := q.extractSelect(selectStmt)
 	if err != nil {
 		var resourceNotFound *base.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
@@ -402,7 +393,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	if tableSource != nil {
 		results = tableSource.GetQuerySpanResult()
 	}
-	if resourceNotFound := q.findMissingOmniAccessTable(raw.Stmt, accessTables); resourceNotFound != nil {
+	if resourceNotFound := q.findMissingAccessTable(raw.Stmt, accessTables); resourceNotFound != nil {
 		if len(columnSet) == 0 {
 			columnSet[base.ColumnResource{
 				Database: q.defaultDatabase,
@@ -422,7 +413,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 	}, nil
 }
 
-func omniQueryType(stmt oracleast.StmtNode, allSystem bool) base.QueryType {
+func queryType(stmt oracleast.StmtNode, allSystem bool) base.QueryType {
 	if stmt == nil {
 		return base.QueryTypeUnknown
 	}
@@ -482,7 +473,7 @@ func omniQueryType(stmt oracleast.StmtNode, allSystem bool) base.QueryType {
 // linkedAccessColumn authorizes the name as written, not looked up in connected-instance
 // metadata, which would drop a remote table or keep a same-named local one as the wrong
 // resource. A link that resolves to nothing yields Server set and Instance empty.
-func (q *omniQuerySpanExtractor) linkedAccessColumn(resource base.SchemaResource) (base.ColumnResource, error) {
+func (q *querySpanExtractor) linkedAccessColumn(resource base.SchemaResource) (base.ColumnResource, error) {
 	column := base.ColumnResource{
 		Server:   resource.LinkedServer,
 		Database: resource.Database,
@@ -500,8 +491,8 @@ func (q *omniQuerySpanExtractor) linkedAccessColumn(resource base.SchemaResource
 	return column, nil
 }
 
-func (q *omniQuerySpanExtractor) findMissingOmniAccessTable(stmt oracleast.StmtNode, accessTables []base.SchemaResource) *base.ResourceNotFoundError {
-	cteNames := collectOmniCTENames(stmt)
+func (q *querySpanExtractor) findMissingAccessTable(stmt oracleast.StmtNode, accessTables []base.SchemaResource) *base.ResourceNotFoundError {
+	cteNames := collectCTENames(stmt)
 	for _, resource := range accessTables {
 		if cteNames[resource.Table] || q.existsTableMetadata(resource) {
 			continue
@@ -519,7 +510,7 @@ func (q *omniQuerySpanExtractor) findMissingOmniAccessTable(stmt oracleast.StmtN
 	return nil
 }
 
-func collectOmniCTENames(stmt oracleast.StmtNode) map[string]bool {
+func collectCTENames(stmt oracleast.StmtNode) map[string]bool {
 	result := make(map[string]bool)
 	oracleast.Inspect(stmt, func(node oracleast.Node) bool {
 		cte, ok := node.(*oracleast.CTE)
@@ -531,30 +522,30 @@ func collectOmniCTENames(stmt oracleast.StmtNode) map[string]bool {
 	return result
 }
 
-// isOmniDual reports whether a name is Oracle's DUAL pseudo-table: SYS.DUAL, "PUBLIC".DUAL,
+// isDual reports whether a name is Oracle's DUAL pseudo-table: SYS.DUAL, "PUBLIC".DUAL,
 // or an unqualified local DUAL. A schema may own a real table named DUAL, which a qualified
 // name resolves to; an unqualified name through a link resolves in the link user's schema
 // first, so it is a table there. The unqualified local case assumes the session schema
 // owns no DUAL table, as the extractor always has.
-func isOmniDual(name *oracleast.ObjectName) bool {
+func isDual(name *oracleast.ObjectName) bool {
 	if name.Name != "DUAL" {
 		return false
 	}
 	return (name.Schema == "" && name.DBLink == "") || name.Schema == "SYS" || name.Schema == "PUBLIC"
 }
 
-func omniDualTable() base.TableSource {
+func dualTable() base.TableSource {
 	return &base.PseudoTable{
 		Name:    "DUAL",
 		Columns: []base.QuerySpanResult{},
 	}
 }
 
-// omniTableLink is the database link a table reference names, as Oracle identifies it. A
+// tableLink is the database link a table reference names, as Oracle identifies it. A
 // connection qualifier is part of the name: `t@link@q` reaches the link LINK@Q, which omni
 // splits between ObjectName.DBLink and TableRef.Dblink. TableRef.Dblink alone names no
 // link: omni fills it for a link after a partition clause, which Oracle rejects (ORA-03048).
-func omniTableLink(ref *oracleast.TableRef) string {
+func tableLink(ref *oracleast.TableRef) string {
 	if ref.Name == nil {
 		return ""
 	}
@@ -566,10 +557,10 @@ func omniTableLink(ref *oracleast.TableRef) string {
 
 // A linked table keeps the schema as written; an unqualified one lives in the link user's
 // schema, which the resolver supplies.
-func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (local, linked []base.SchemaResource) {
+func collectAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (local, linked []base.SchemaResource) {
 	seen := make(map[base.SchemaResource]bool)
 	addResource := func(name *oracleast.ObjectName, link string) {
-		if name == nil || isOmniDual(name) {
+		if name == nil || isDual(name) {
 			return
 		}
 		database := name.Schema
@@ -599,7 +590,7 @@ func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (l
 	oracleast.Inspect(stmt, func(node oracleast.Node) bool {
 		switch node := node.(type) {
 		case *oracleast.TableRef:
-			addResource(node.Name, omniTableLink(node))
+			addResource(node.Name, tableLink(node))
 		case *oracleast.ContainersExpr:
 			addTarget(node.Name)
 		// A DML target is an ObjectName, not a TableRef, so it is named here.
@@ -620,16 +611,13 @@ func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (l
 	return local, linked
 }
 
-func (q *omniQuerySpanExtractor) clone() *omniQuerySpanExtractor {
-	copyExtractor := *q.querySpanExtractor
-	return &omniQuerySpanExtractor{
-		querySpanExtractor:       &copyExtractor,
-		source:                   q.source,
-		topLevelTableSourcesFrom: cloneTableSourceSlice(q.topLevelTableSourcesFrom),
-	}
+func (q *querySpanExtractor) clone() *querySpanExtractor {
+	copyExtractor := *q
+	copyExtractor.topLevelTableSourcesFrom = cloneTableSourceSlice(q.topLevelTableSourcesFrom)
+	return &copyExtractor
 }
 
-func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
+func (q *querySpanExtractor) extractSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
 	if stmt == nil {
 		return nil, nil
 	}
@@ -641,7 +629,7 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 			if !ok {
 				continue
 			}
-			table, err := q.extractOmniCTE(cte)
+			table, err := q.extractCTE(cte)
 			if err != nil {
 				q.ctes = oldCTEs
 				return nil, err
@@ -654,19 +642,19 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 	}()
 
 	if stmt.Op != 0 {
-		return q.extractOmniSetSelect(stmt)
+		return q.extractSetSelect(stmt)
 	}
 	// omni wraps a parenthesized query that ORDER BY or a row limit follows,
 	// or a WITH clause precedes; the wrapper has no select list of its own.
 	if stmt.Larg != nil {
-		return q.extractOmniSelect(stmt.Larg)
+		return q.extractSelect(stmt.Larg)
 	}
 	if stmt.ModelClause != nil {
-		source, err := q.extractOmniModelSelect(stmt)
+		source, err := q.extractModelSelect(stmt)
 		if err != nil {
 			return nil, err
 		}
-		return q.projectOmniTransformedSelect(stmt, source)
+		return q.projectTransformedSelect(stmt, source)
 	}
 
 	oldFrom := q.tableSourcesFrom
@@ -683,7 +671,7 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 		if !ok {
 			continue
 		}
-		tableSource, err := q.extractOmniTableExpr(tableExpr)
+		tableSource, err := q.extractTableExpr(tableExpr)
 		if err != nil {
 			return nil, err
 		}
@@ -693,7 +681,7 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 		}
 	}
 
-	results, err := q.extractOmniTargetList(stmt.TargetList)
+	results, err := q.extractTargetList(stmt.TargetList)
 	if err != nil {
 		return nil, err
 	}
@@ -702,7 +690,7 @@ func (q *omniQuerySpanExtractor) extractOmniSelect(stmt *oracleast.SelectStmt) (
 	}, nil
 }
 
-func (q *omniQuerySpanExtractor) projectOmniTransformedSelect(stmt *oracleast.SelectStmt, source base.TableSource) (base.TableSource, error) {
+func (q *querySpanExtractor) projectTransformedSelect(stmt *oracleast.SelectStmt, source base.TableSource) (base.TableSource, error) {
 	oldFrom := q.tableSourcesFrom
 	oldTopLevelFrom := q.topLevelTableSourcesFrom
 	q.tableSourcesFrom = nil
@@ -716,26 +704,26 @@ func (q *omniQuerySpanExtractor) projectOmniTransformedSelect(stmt *oracleast.Se
 		q.topLevelTableSourcesFrom = oldTopLevelFrom
 	}()
 
-	results, err := q.extractOmniTargetList(stmt.TargetList)
+	results, err := q.extractTargetList(stmt.TargetList)
 	if err != nil {
 		return nil, err
 	}
 	return &base.PseudoTable{Columns: results}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniSetSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
-	left, err := q.extractOmniSelect(omniSetLeftSelect(stmt))
+func (q *querySpanExtractor) extractSetSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
+	left, err := q.extractSelect(setLeftSelect(stmt))
 	if err != nil {
 		return nil, err
 	}
-	right, err := q.extractOmniSelect(stmt.Rarg)
+	right, err := q.extractSelect(stmt.Rarg)
 	if err != nil {
 		return nil, err
 	}
-	return mergeOmniSetTableSources(left, right)
+	return mergeSetTableSources(left, right)
 }
 
-func mergeOmniSetTableSources(left, right base.TableSource) (base.TableSource, error) {
+func mergeSetTableSources(left, right base.TableSource) (base.TableSource, error) {
 	if left == nil {
 		return right, nil
 	}
@@ -759,21 +747,21 @@ func mergeOmniSetTableSources(left, right base.TableSource) (base.TableSource, e
 	return &base.PseudoTable{Columns: result}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniCTE(cte *oracleast.CTE) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractCTE(cte *oracleast.CTE) (*base.PseudoTable, error) {
 	if cte == nil {
 		return nil, nil
 	}
 	name := cte.Name
-	columnNames := omniStringList(cte.Columns)
+	columnNames := stringList(cte.Columns)
 
 	selectStmt, ok := cte.Query.(*oracleast.SelectStmt)
 	if ok && selectStmt.Op != 0 && len(columnNames) > 0 {
-		initialSource, err := q.extractOmniSelect(omniSetLeftSelect(selectStmt))
+		initialSource, err := q.extractSelect(setLeftSelect(selectStmt))
 		if err != nil {
 			return nil, err
 		}
 		initial := cloneQuerySpanResults(initialSource.GetQuerySpanResult())
-		applyOmniColumnAliases(initial, columnNames)
+		applyColumnAliases(initial, columnNames)
 
 		placeholder := &base.PseudoTable{Name: name, Columns: initial}
 		q.ctes = append(q.ctes, placeholder)
@@ -784,16 +772,16 @@ func (q *omniQuerySpanExtractor) extractOmniCTE(cte *oracleast.CTE) (*base.Pseud
 		columns := initial
 		for range 16 {
 			placeholder.Columns = columns
-			rightSource, err := q.extractOmniSelect(selectStmt.Rarg)
+			rightSource, err := q.extractSelect(selectStmt.Rarg)
 			if err != nil {
 				return nil, err
 			}
-			mergedSource, err := mergeOmniSetTableSources(&base.PseudoTable{Columns: initial}, rightSource)
+			mergedSource, err := mergeSetTableSources(&base.PseudoTable{Columns: initial}, rightSource)
 			if err != nil {
 				return nil, err
 			}
 			next := cloneQuerySpanResults(mergedSource.GetQuerySpanResult())
-			applyOmniColumnAliases(next, columnNames)
+			applyColumnAliases(next, columnNames)
 			if querySpanResultsEqual(columns, next) {
 				return &base.PseudoTable{Name: name, Columns: next}, nil
 			}
@@ -803,26 +791,26 @@ func (q *omniQuerySpanExtractor) extractOmniCTE(cte *oracleast.CTE) (*base.Pseud
 	}
 
 	child := q.clone()
-	tableSource, err := child.extractOmniStmt(cte.Query)
+	tableSource, err := child.extractStmt(cte.Query)
 	if err != nil {
 		return nil, err
 	}
 	columns := cloneQuerySpanResults(tableSource.GetQuerySpanResult())
-	applyOmniColumnAliases(columns, columnNames)
+	applyColumnAliases(columns, columnNames)
 	return &base.PseudoTable{Name: name, Columns: columns}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniStmt(stmt oracleast.StmtNode) (base.TableSource, error) {
+func (q *querySpanExtractor) extractStmt(stmt oracleast.StmtNode) (base.TableSource, error) {
 	selectStmt, ok := stmt.(*oracleast.SelectStmt)
 	if !ok {
 		return nil, errors.Errorf("unsupported statement in query span extractor: %T", stmt)
 	}
-	return q.extractOmniSelect(selectStmt)
+	return q.extractSelect(selectStmt)
 }
 
-func (q *omniQuerySpanExtractor) extractOmniTargetList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractTargetList(list *oracleast.List) ([]base.QuerySpanResult, error) {
 	if list == nil || list.Len() == 0 {
-		return q.expandOmniAsterisk("", "")
+		return q.expandAsterisk("", "")
 	}
 
 	var results []base.QuerySpanResult
@@ -831,8 +819,8 @@ func (q *omniQuerySpanExtractor) extractOmniTargetList(list *oracleast.List) ([]
 		if !ok || target.Expr == nil {
 			continue
 		}
-		if isOmniStar(target.Expr) {
-			expanded, err := q.expandOmniAsterisk("", "")
+		if isStar(target.Expr) {
+			expanded, err := q.expandAsterisk("", "")
 			if err != nil {
 				return nil, err
 			}
@@ -840,7 +828,7 @@ func (q *omniQuerySpanExtractor) extractOmniTargetList(list *oracleast.List) ([]
 			continue
 		}
 		if ref, ok := target.Expr.(*oracleast.ColumnRef); ok && ref.Column == "*" {
-			expanded, err := q.expandOmniAsterisk(ref.Schema, ref.Table)
+			expanded, err := q.expandAsterisk(ref.Schema, ref.Table)
 			if err != nil {
 				return nil, err
 			}
@@ -848,7 +836,7 @@ func (q *omniQuerySpanExtractor) extractOmniTargetList(list *oracleast.List) ([]
 			continue
 		}
 
-		name, sourceColumns, err := q.extractOmniExpr(target.Expr)
+		name, sourceColumns, err := q.extractExpr(target.Expr)
 		if err != nil {
 			return nil, err
 		}
@@ -864,35 +852,35 @@ func (q *omniQuerySpanExtractor) extractOmniTargetList(list *oracleast.List) ([]
 	return results, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniTableExpr(expr oracleast.TableExpr) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableExpr(expr oracleast.TableExpr) (base.TableSource, error) {
 	switch expr := expr.(type) {
 	case *oracleast.TableRef:
 		if expr.Name == nil {
 			return nil, nil
 		}
-		if isOmniDual(expr.Name) {
-			return aliasOmniTableSource(omniDualTable(), expr.Alias), nil
+		if isDual(expr.Name) {
+			return aliasTableSource(dualTable(), expr.Alias), nil
 		}
-		dbLink := omniTableLink(expr)
+		dbLink := tableLink(expr)
 		database := expr.Name.Schema
 		if database == "" && dbLink == "" {
 			database = q.defaultDatabase
 		}
-		tableSource, err := q.plsqlFindTableSchema(splitOmniDBLink(dbLink), database, expr.Name.Name)
+		tableSource, err := q.plsqlFindTableSchema(splitDBLink(dbLink), database, expr.Name.Name)
 		if err != nil {
 			return nil, err
 		}
-		return aliasOmniTableSource(tableSource, expr.Alias), nil
+		return aliasTableSource(tableSource, expr.Alias), nil
 	case *oracleast.SubqueryRef:
 		child := q.clone()
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return nil, err
 		}
-		return aliasOmniTableSource(tableSource, expr.Alias), nil
+		return aliasTableSource(tableSource, expr.Alias), nil
 	case *oracleast.SubqueryExpr:
 		child := q.clone()
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return nil, err
 		}
@@ -900,37 +888,37 @@ func (q *omniQuerySpanExtractor) extractOmniTableExpr(expr oracleast.TableExpr) 
 	case *oracleast.LateralRef:
 		child := q.clone()
 		child.outerTableSources = append(cloneTableSourceSlice(child.outerTableSources), q.tableSourcesFrom...)
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return nil, err
 		}
-		return aliasOmniTableSource(tableSource, expr.Alias), nil
+		return aliasTableSource(tableSource, expr.Alias), nil
 	case *oracleast.JoinClause:
-		left, err := q.extractOmniTableExpr(expr.Left)
+		left, err := q.extractTableExpr(expr.Left)
 		if err != nil {
 			return nil, err
 		}
 		if left != nil {
 			q.tableSourcesFrom = append(q.tableSourcesFrom, left)
 		}
-		right, err := q.extractOmniTableExpr(expr.Right)
+		right, err := q.extractTableExpr(expr.Right)
 		if err != nil {
 			return nil, err
 		}
 		if right != nil {
 			q.tableSourcesFrom = append(q.tableSourcesFrom, right)
 		}
-		return mergeOmniJoinTableSource(expr, left, right)
+		return mergeJoinTableSource(expr, left, right)
 	case *oracleast.XmlTableRef:
-		return q.extractOmniXMLTable(expr)
+		return q.extractXMLTable(expr)
 	case *oracleast.JsonTableRef:
-		return q.extractOmniJSONTable(expr)
+		return q.extractJSONTable(expr)
 	case *oracleast.ContainersExpr:
 		if expr.Name == nil {
 			return nil, nil
 		}
-		if isOmniDual(expr.Name) {
-			return aliasOmniTableSource(omniDualTable(), expr.Alias), nil
+		if isDual(expr.Name) {
+			return aliasTableSource(dualTable(), expr.Alias), nil
 		}
 		database := expr.Name.Schema
 		if database == "" {
@@ -940,23 +928,23 @@ func (q *omniQuerySpanExtractor) extractOmniTableExpr(expr oracleast.TableExpr) 
 		if err != nil {
 			return nil, err
 		}
-		return aliasOmniTableSource(tableSource, expr.Alias), nil
+		return aliasTableSource(tableSource, expr.Alias), nil
 	case *oracleast.InlineExternalTable:
-		return extractOmniInlineExternalTable(expr), nil
+		return extractInlineExternalTable(expr), nil
 	case *oracleast.TableCollectionExpr:
-		return q.extractOmniTableCollection(expr)
+		return q.extractTableCollection(expr)
 	case *oracleast.PivotClause:
-		return q.extractOmniPivot(expr)
+		return q.extractPivot(expr)
 	case *oracleast.UnpivotClause:
-		return q.extractOmniUnpivot(expr)
+		return q.extractUnpivot(expr)
 	case *oracleast.MatchRecognizeClause:
-		return q.extractOmniMatchRecognize(expr)
+		return q.extractMatchRecognize(expr)
 	default:
 		return nil, errors.Errorf("unsupported oracle table source: %T", expr)
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) (base.TableSource, error) {
+func (q *querySpanExtractor) extractPivot(pivot *oracleast.PivotClause) (base.TableSource, error) {
 	if pivot == nil {
 		return nil, nil
 	}
@@ -967,7 +955,7 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 	defer func() {
 		q.tableSourcesFrom = oldFrom
 	}()
-	source, err := q.extractOmniTableExpr(pivot.Source)
+	source, err := q.extractTableExpr(pivot.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -983,8 +971,8 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 
 	excluded := make(map[string]bool)
 	pivotSources := make(base.SourceColumnSet)
-	for _, expr := range omniExprList(pivot.ForColumns) {
-		name, sourceColumns, err := q.extractOmniExpr(expr)
+	for _, expr := range exprList(pivot.ForColumns) {
+		name, sourceColumns, err := q.extractExpr(expr)
 		if err != nil {
 			return nil, err
 		}
@@ -1009,12 +997,12 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 
 	aggregateSources := make([]base.SourceColumnSet, len(aggregates))
 	for i, aggregate := range aggregates {
-		_, sourceColumns, err := q.extractOmniExpr(aggregate.Expr)
+		_, sourceColumns, err := q.extractExpr(aggregate.Expr)
 		if err != nil {
 			return nil, err
 		}
 		aggregateSources[i] = sourceColumns
-		excludeOmniColumnRefNames(excluded, aggregate.Expr)
+		excludeColumnRefNames(excluded, aggregate.Expr)
 		excludeSourceColumnNames(excluded, sourceColumns)
 	}
 
@@ -1037,10 +1025,10 @@ func (q *omniQuerySpanExtractor) extractOmniPivot(pivot *oracleast.PivotClause) 
 			})
 		}
 	}
-	return aliasOmniTableSource(&base.PseudoTable{Columns: results}, pivot.Alias), nil
+	return aliasTableSource(&base.PseudoTable{Columns: results}, pivot.Alias), nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotClause) (base.TableSource, error) {
+func (q *querySpanExtractor) extractUnpivot(unpivot *oracleast.UnpivotClause) (base.TableSource, error) {
 	if unpivot == nil {
 		return nil, nil
 	}
@@ -1051,7 +1039,7 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 	defer func() {
 		q.tableSourcesFrom = oldFrom
 	}()
-	source, err := q.extractOmniTableExpr(unpivot.Source)
+	source, err := q.extractTableExpr(unpivot.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -1065,7 +1053,7 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 		q.tableSourcesFrom = []base.TableSource{source}
 	}
 
-	valueColumns := omniExprList(unpivot.ValueColumns)
+	valueColumns := exprList(unpivot.ValueColumns)
 	inputSources := make([]base.SourceColumnSet, len(valueColumns))
 	excluded := make(map[string]bool)
 	for _, item := range listItems(unpivot.InputMappings) {
@@ -1073,8 +1061,8 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 		if !ok {
 			continue
 		}
-		for i, input := range omniExprList(mapping.InputColumns) {
-			name, sourceColumns, err := q.extractOmniExpr(input)
+		for i, input := range exprList(mapping.InputColumns) {
+			name, sourceColumns, err := q.extractExpr(input)
 			if err != nil {
 				return nil, err
 			}
@@ -1094,7 +1082,7 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 		}
 	}
 	for i, expr := range valueColumns {
-		name, _, err := q.extractOmniExpr(expr)
+		name, _, err := q.extractExpr(expr)
 		if err != nil {
 			return nil, err
 		}
@@ -1105,7 +1093,7 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 		})
 	}
 	if unpivot.PivotColumn != nil {
-		name, _, err := q.extractOmniExpr(unpivot.PivotColumn)
+		name, _, err := q.extractExpr(unpivot.PivotColumn)
 		if err != nil {
 			return nil, err
 		}
@@ -1115,10 +1103,10 @@ func (q *omniQuerySpanExtractor) extractOmniUnpivot(unpivot *oracleast.UnpivotCl
 			IsPlainField:  false,
 		})
 	}
-	return aliasOmniTableSource(&base.PseudoTable{Columns: results}, unpivot.Alias), nil
+	return aliasTableSource(&base.PseudoTable{Columns: results}, unpivot.Alias), nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniModelSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
+func (q *querySpanExtractor) extractModelSelect(stmt *oracleast.SelectStmt) (base.TableSource, error) {
 	oldFrom := q.tableSourcesFrom
 	oldTopLevelFrom := q.topLevelTableSourcesFrom
 	q.tableSourcesFrom = nil
@@ -1133,7 +1121,7 @@ func (q *omniQuerySpanExtractor) extractOmniModelSelect(stmt *oracleast.SelectSt
 		if !ok {
 			continue
 		}
-		tableSource, err := q.extractOmniTableExpr(tableExpr)
+		tableSource, err := q.extractTableExpr(tableExpr)
 		if err != nil {
 			return nil, err
 		}
@@ -1150,7 +1138,7 @@ func (q *omniQuerySpanExtractor) extractOmniModelSelect(stmt *oracleast.SelectSt
 			if list == nil {
 				continue
 			}
-			extracted, err := q.extractOmniTargetList(list)
+			extracted, err := q.extractTargetList(list)
 			if err != nil {
 				return nil, err
 			}
@@ -1160,12 +1148,12 @@ func (q *omniQuerySpanExtractor) extractOmniModelSelect(stmt *oracleast.SelectSt
 	return &base.PseudoTable{Columns: results}, nil
 }
 
-func (*omniQuerySpanExtractor) extractOmniTableCollection(ref *oracleast.TableCollectionExpr) (base.TableSource, error) {
+func (*querySpanExtractor) extractTableCollection(ref *oracleast.TableCollectionExpr) (base.TableSource, error) {
 	if ref == nil {
 		return nil, nil
 	}
 	var columns []base.QuerySpanResult
-	for _, name := range omniStringList(ref.ColumnAliases) {
+	for _, name := range stringList(ref.ColumnAliases) {
 		columns = append(columns, base.QuerySpanResult{
 			Name:          name,
 			SourceColumns: base.SourceColumnSet{},
@@ -1175,10 +1163,10 @@ func (*omniQuerySpanExtractor) extractOmniTableCollection(ref *oracleast.TableCo
 	if len(columns) == 0 {
 		return nil, errors.Errorf("unsupported oracle table collection without column aliases")
 	}
-	return aliasOmniTableSource(&base.PseudoTable{Columns: columns}, ref.Alias), nil
+	return aliasTableSource(&base.PseudoTable{Columns: columns}, ref.Alias), nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchRecognizeClause) (base.TableSource, error) {
+func (q *querySpanExtractor) extractMatchRecognize(ref *oracleast.MatchRecognizeClause) (base.TableSource, error) {
 	if ref == nil {
 		return nil, nil
 	}
@@ -1189,7 +1177,7 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 	defer func() {
 		q.tableSourcesFrom = oldFrom
 	}()
-	source, err := q.extractOmniTableExpr(ref.Source)
+	source, err := q.extractTableExpr(ref.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -1203,11 +1191,11 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 		q.tableSourcesFrom = []base.TableSource{source}
 	}
 
-	partitionResults, err := q.extractOmniResultList(ref.PartitionBy)
+	partitionResults, err := q.extractResultList(ref.PartitionBy)
 	if err != nil {
 		return nil, err
 	}
-	measureResults, err := q.extractOmniMatchRecognizeMeasureList(ref.Measures)
+	measureResults, err := q.extractMatchRecognizeMeasureList(ref.Measures)
 	if err != nil {
 		return nil, err
 	}
@@ -1218,18 +1206,18 @@ func (q *omniQuerySpanExtractor) extractOmniMatchRecognize(ref *oracleast.MatchR
 		results = append(results, partitionResults...)
 	}
 	results = append(results, measureResults...)
-	return aliasOmniTableSource(&base.PseudoTable{Columns: results}, ref.Alias), nil
+	return aliasTableSource(&base.PseudoTable{Columns: results}, ref.Alias), nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniResultList(list *oracleast.List) ([]base.QuerySpanResult, error) {
-	return q.extractOmniResultListWithSourceColumns(list, nil)
+func (q *querySpanExtractor) extractResultList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+	return q.extractResultListWithSourceColumns(list, nil)
 }
 
-func (q *omniQuerySpanExtractor) extractOmniMatchRecognizeMeasureList(list *oracleast.List) ([]base.QuerySpanResult, error) {
-	return q.extractOmniResultListWithSourceColumns(list, q.extractOmniMatchRecognizeMeasureSourceColumns)
+func (q *querySpanExtractor) extractMatchRecognizeMeasureList(list *oracleast.List) ([]base.QuerySpanResult, error) {
+	return q.extractResultListWithSourceColumns(list, q.extractMatchRecognizeMeasureSourceColumns)
 }
 
-func (q *omniQuerySpanExtractor) extractOmniResultListWithSourceColumns(list *oracleast.List, sourceColumnsExtractor func(oracleast.ExprNode) (base.SourceColumnSet, error)) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) extractResultListWithSourceColumns(list *oracleast.List, sourceColumnsExtractor func(oracleast.ExprNode) (base.SourceColumnSet, error)) ([]base.QuerySpanResult, error) {
 	var results []base.QuerySpanResult
 	for _, node := range listItems(list) {
 		var expr oracleast.ExprNode
@@ -1247,7 +1235,7 @@ func (q *omniQuerySpanExtractor) extractOmniResultListWithSourceColumns(list *or
 			continue
 		}
 
-		extractedName, sourceColumns, err := q.extractOmniExpr(expr)
+		extractedName, sourceColumns, err := q.extractExpr(expr)
 		if err != nil {
 			return nil, err
 		}
@@ -1269,17 +1257,17 @@ func (q *omniQuerySpanExtractor) extractOmniResultListWithSourceColumns(list *or
 	return results, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniMatchRecognizeMeasureSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
-	return q.extractOmniExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
-		sourceColumns := q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column)
+func (q *querySpanExtractor) extractMatchRecognizeMeasureSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
+	return q.extractExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
+		sourceColumns := q.getFieldColumnSource(node.Schema, node.Table, node.Column)
 		if len(sourceColumns) == 0 && node.Schema == "" && node.Table != "" {
-			sourceColumns = q.getOmniFieldColumnSource("", "", node.Column)
+			sourceColumns = q.getFieldColumnSource("", "", node.Column)
 		}
 		return sourceColumns
 	})
 }
 
-func omniSetLeftSelect(stmt *oracleast.SelectStmt) *oracleast.SelectStmt {
+func setLeftSelect(stmt *oracleast.SelectStmt) *oracleast.SelectStmt {
 	if stmt == nil {
 		return nil
 	}
@@ -1294,7 +1282,7 @@ func omniSetLeftSelect(stmt *oracleast.SelectStmt) *oracleast.SelectStmt {
 	return &body
 }
 
-func mergeOmniJoinTableSource(join *oracleast.JoinClause, left, right base.TableSource) (base.TableSource, error) {
+func mergeJoinTableSource(join *oracleast.JoinClause, left, right base.TableSource) (base.TableSource, error) {
 	if left == nil {
 		return right, nil
 	}
@@ -1314,7 +1302,7 @@ func mergeOmniJoinTableSource(join *oracleast.JoinClause, left, right base.Table
 		rightIndex[field.Name] = i
 	}
 
-	if isOmniNaturalJoin(join.Type) {
+	if isNaturalJoin(join.Type) {
 		for _, field := range leftResults {
 			if rightIdx, ok := rightIndex[field.Name]; ok {
 				field.SourceColumns, _ = base.MergeSourceColumnSet(field.SourceColumns, rightResults[rightIdx].SourceColumns)
@@ -1361,7 +1349,7 @@ func mergeOmniJoinTableSource(join *oracleast.JoinClause, left, right base.Table
 	return result, nil
 }
 
-func isOmniNaturalJoin(joinType oracleast.JoinType) bool {
+func isNaturalJoin(joinType oracleast.JoinType) bool {
 	switch joinType {
 	case oracleast.JOIN_NATURAL_INNER, oracleast.JOIN_NATURAL_LEFT, oracleast.JOIN_NATURAL_RIGHT, oracleast.JOIN_NATURAL_FULL:
 		return true
@@ -1370,7 +1358,7 @@ func isOmniNaturalJoin(joinType oracleast.JoinType) bool {
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (string, base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractExpr(expr oracleast.ExprNode) (string, base.SourceColumnSet, error) {
 	if expr == nil {
 		return "", base.SourceColumnSet{}, nil
 	}
@@ -1380,55 +1368,55 @@ func (q *omniQuerySpanExtractor) extractOmniExpr(expr oracleast.ExprNode) (strin
 		if expr.Column == "*" {
 			return "*", base.SourceColumnSet{}, nil
 		}
-		return expr.Column, q.getOmniFieldColumnSource(expr.Schema, expr.Table, expr.Column), nil
+		return expr.Column, q.getFieldColumnSource(expr.Schema, expr.Table, expr.Column), nil
 	case *oracleast.Star:
 		return "*", base.SourceColumnSet{}, nil
 	case *oracleast.NumberLiteral:
-		return q.omniExprName(expr.Loc, expr.Val), base.SourceColumnSet{}, nil
+		return q.exprName(expr.Loc, expr.Val), base.SourceColumnSet{}, nil
 	case *oracleast.StringLiteral:
-		return q.omniExprName(expr.Loc, expr.Val), base.SourceColumnSet{}, nil
+		return q.exprName(expr.Loc, expr.Val), base.SourceColumnSet{}, nil
 	case *oracleast.NullLiteral:
-		return q.omniExprName(expr.Loc, "NULL"), base.SourceColumnSet{}, nil
+		return q.exprName(expr.Loc, "NULL"), base.SourceColumnSet{}, nil
 	case *oracleast.DateTimeLiteral:
-		return q.omniExprName(expr.Loc, expr.TypeName+" "+expr.Val), base.SourceColumnSet{}, nil
+		return q.exprName(expr.Loc, expr.TypeName+" "+expr.Val), base.SourceColumnSet{}, nil
 	case *oracleast.SubqueryExpr:
 		child := q.clone()
 		child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return "", nil, err
 		}
-		return q.omniExprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
+		return q.exprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
 	case *oracleast.ExistsExpr:
 		child := q.clone()
 		child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return "", nil, err
 		}
-		return q.omniExprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
+		return q.exprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
 	case *oracleast.CursorExpr:
 		child := q.clone()
 		child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-		tableSource, err := child.extractOmniStmt(expr.Subquery)
+		tableSource, err := child.extractStmt(expr.Subquery)
 		if err != nil {
 			return "", nil, err
 		}
-		return q.omniExprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
+		return q.exprName(expr.Loc, ""), mergeSourceColumnsFromResults(tableSource.GetQuerySpanResult()), nil
 	default:
-		name := q.omniExprName(getOmniExprFullLoc(expr), oracleast.NodeToString(expr))
-		sourceColumns, err := q.extractOmniExprSourceColumns(expr)
+		name := q.exprName(getExprFullLoc(expr), oracleast.NodeToString(expr))
+		sourceColumns, err := q.extractExprSourceColumns(expr)
 		return name, sourceColumns, err
 	}
 }
 
-func (q *omniQuerySpanExtractor) extractOmniExprSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
-	return q.extractOmniExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
-		return q.getOmniFieldColumnSource(node.Schema, node.Table, node.Column)
+func (q *querySpanExtractor) extractExprSourceColumns(expr oracleast.ExprNode) (base.SourceColumnSet, error) {
+	return q.extractExprSourceColumnsWithResolver(expr, func(node *oracleast.ColumnRef) base.SourceColumnSet {
+		return q.getFieldColumnSource(node.Schema, node.Table, node.Column)
 	})
 }
 
-func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr oracleast.ExprNode, resolveColumn func(*oracleast.ColumnRef) base.SourceColumnSet) (base.SourceColumnSet, error) {
+func (q *querySpanExtractor) extractExprSourceColumnsWithResolver(expr oracleast.ExprNode, resolveColumn func(*oracleast.ColumnRef) base.SourceColumnSet) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)
 	var walkErr error
 	oracleast.Inspect(expr, func(node oracleast.Node) bool {
@@ -1446,7 +1434,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr o
 		case *oracleast.SubqueryExpr:
 			child := q.clone()
 			child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-			tableSource, err := child.extractOmniStmt(node.Subquery)
+			tableSource, err := child.extractStmt(node.Subquery)
 			if err != nil {
 				walkErr = err
 				return false
@@ -1456,7 +1444,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr o
 		case *oracleast.ExistsExpr:
 			child := q.clone()
 			child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-			tableSource, err := child.extractOmniStmt(node.Subquery)
+			tableSource, err := child.extractStmt(node.Subquery)
 			if err != nil {
 				walkErr = err
 				return false
@@ -1466,7 +1454,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr o
 		case *oracleast.CursorExpr:
 			child := q.clone()
 			child.outerTableSources = append(cloneTableSourceSlice(q.outerTableSources), q.tableSourcesFrom...)
-			tableSource, err := child.extractOmniStmt(node.Subquery)
+			tableSource, err := child.extractStmt(node.Subquery)
 			if err != nil {
 				walkErr = err
 				return false
@@ -1480,7 +1468,7 @@ func (q *omniQuerySpanExtractor) extractOmniExprSourceColumnsWithResolver(expr o
 	return result, walkErr
 }
 
-func (q *omniQuerySpanExtractor) getOmniFieldColumnSource(schemaName, tableName, columnName string) base.SourceColumnSet {
+func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, columnName string) base.SourceColumnSet {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
 		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
@@ -1509,18 +1497,18 @@ func (q *omniQuerySpanExtractor) getOmniFieldColumnSource(schemaName, tableName,
 	return base.SourceColumnSet{}
 }
 
-// expandOmniAsterisk returns the columns * stands for. It leaves out invisible
+// expandAsterisk returns the columns * stands for. It leaves out invisible
 // columns, as Oracle does; including one would shift every result after it,
 // and the masking applied to each.
-func (q *omniQuerySpanExtractor) expandOmniAsterisk(schemaName, tableName string) ([]base.QuerySpanResult, error) {
-	results, err := q.expandOmniAsteriskWithInvisible(schemaName, tableName)
+func (q *querySpanExtractor) expandAsterisk(schemaName, tableName string) ([]base.QuerySpanResult, error) {
+	results, err := q.expandAsteriskWithInvisible(schemaName, tableName)
 	if err != nil {
 		return nil, err
 	}
 	return slices.DeleteFunc(results, func(result base.QuerySpanResult) bool { return result.Invisible }), nil
 }
 
-func (q *omniQuerySpanExtractor) expandOmniAsteriskWithInvisible(schemaName, tableName string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) expandAsteriskWithInvisible(schemaName, tableName string) ([]base.QuerySpanResult, error) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
 		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
@@ -1568,8 +1556,8 @@ func cloneQuerySpanResultsFromTableSources(tableSources []base.TableSource) []ba
 	return result
 }
 
-func (q *omniQuerySpanExtractor) extractOmniXMLTable(ref *oracleast.XmlTableRef) (base.TableSource, error) {
-	_, sourceColumns, err := q.extractOmniExpr(ref.Passing)
+func (q *querySpanExtractor) extractXMLTable(ref *oracleast.XmlTableRef) (base.TableSource, error) {
+	_, sourceColumns, err := q.extractExpr(ref.Passing)
 	if err != nil {
 		return nil, err
 	}
@@ -1596,12 +1584,12 @@ func (q *omniQuerySpanExtractor) extractOmniXMLTable(ref *oracleast.XmlTableRef)
 	return &base.PseudoTable{Name: name, Columns: columns}, nil
 }
 
-func (q *omniQuerySpanExtractor) extractOmniJSONTable(ref *oracleast.JsonTableRef) (base.TableSource, error) {
-	_, sourceColumns, err := q.extractOmniExpr(ref.Expr)
+func (q *querySpanExtractor) extractJSONTable(ref *oracleast.JsonTableRef) (base.TableSource, error) {
+	_, sourceColumns, err := q.extractExpr(ref.Expr)
 	if err != nil {
 		return nil, err
 	}
-	columns := extractOmniJSONTableColumns(ref.Columns, sourceColumns)
+	columns := extractJSONTableColumns(ref.Columns, sourceColumns)
 	name := ""
 	if ref.Alias != nil {
 		name = ref.Alias.Name
@@ -1609,7 +1597,7 @@ func (q *omniQuerySpanExtractor) extractOmniJSONTable(ref *oracleast.JsonTableRe
 	return &base.PseudoTable{Name: name, Columns: columns}, nil
 }
 
-func extractOmniJSONTableColumns(list *oracleast.List, sourceColumns base.SourceColumnSet) []base.QuerySpanResult {
+func extractJSONTableColumns(list *oracleast.List, sourceColumns base.SourceColumnSet) []base.QuerySpanResult {
 	var columns []base.QuerySpanResult
 	for _, node := range listItems(list) {
 		column, ok := node.(*oracleast.JsonTableColumn)
@@ -1617,7 +1605,7 @@ func extractOmniJSONTableColumns(list *oracleast.List, sourceColumns base.Source
 			continue
 		}
 		if column.Nested != nil {
-			columns = append(columns, extractOmniJSONTableColumns(column.Nested.Columns, sourceColumns)...)
+			columns = append(columns, extractJSONTableColumns(column.Nested.Columns, sourceColumns)...)
 			continue
 		}
 		columnSource := sourceColumns
@@ -1633,7 +1621,7 @@ func extractOmniJSONTableColumns(list *oracleast.List, sourceColumns base.Source
 	return columns
 }
 
-func extractOmniInlineExternalTable(ref *oracleast.InlineExternalTable) base.TableSource {
+func extractInlineExternalTable(ref *oracleast.InlineExternalTable) base.TableSource {
 	var columns []base.QuerySpanResult
 	for _, node := range listItems(ref.Columns) {
 		column, ok := node.(*oracleast.ColumnDef)
@@ -1653,19 +1641,19 @@ func extractOmniInlineExternalTable(ref *oracleast.InlineExternalTable) base.Tab
 	return &base.PseudoTable{Name: name, Columns: columns}
 }
 
-func aliasOmniTableSource(tableSource base.TableSource, alias *oracleast.Alias) base.TableSource {
+func aliasTableSource(tableSource base.TableSource, alias *oracleast.Alias) base.TableSource {
 	if tableSource == nil || alias == nil || alias.Name == "" {
 		return tableSource
 	}
 	columns := cloneQuerySpanResults(tableSource.GetQuerySpanResult())
-	applyOmniColumnAliases(columns, omniStringList(alias.Cols))
+	applyColumnAliases(columns, stringList(alias.Cols))
 	return &base.PseudoTable{
 		Name:    alias.Name,
 		Columns: columns,
 	}
 }
 
-func applyOmniColumnAliases(columns []base.QuerySpanResult, names []string) {
+func applyColumnAliases(columns []base.QuerySpanResult, names []string) {
 	for i, name := range names {
 		if i >= len(columns) {
 			return
@@ -1709,7 +1697,7 @@ func excludeSourceColumnNames(excluded map[string]bool, source base.SourceColumn
 	}
 }
 
-func excludeOmniColumnRefNames(excluded map[string]bool, expr oracleast.ExprNode) {
+func excludeColumnRefNames(excluded map[string]bool, expr oracleast.ExprNode) {
 	oracleast.Inspect(expr, func(node oracleast.Node) bool {
 		columnRef, ok := node.(*oracleast.ColumnRef)
 		if ok && columnRef.Schema == "" && columnRef.Table == "" && columnRef.Column != "*" {
@@ -1762,7 +1750,7 @@ func listItems(list *oracleast.List) []oracleast.Node {
 	return list.Items
 }
 
-func omniExprList(list *oracleast.List) []oracleast.ExprNode {
+func exprList(list *oracleast.List) []oracleast.ExprNode {
 	var result []oracleast.ExprNode
 	for _, node := range listItems(list) {
 		expr, ok := node.(oracleast.ExprNode)
@@ -1773,7 +1761,7 @@ func omniExprList(list *oracleast.List) []oracleast.ExprNode {
 	return result
 }
 
-func omniStringList(list *oracleast.List) []string {
+func stringList(list *oracleast.List) []string {
 	var result []string
 	for _, node := range listItems(list) {
 		switch node := node.(type) {
@@ -1787,7 +1775,7 @@ func omniStringList(list *oracleast.List) []string {
 	return result
 }
 
-func pivotInItemName(q *omniQuerySpanExtractor, item *oracleast.PivotInItem) string {
+func pivotInItemName(q *querySpanExtractor, item *oracleast.PivotInItem) string {
 	if item == nil {
 		return ""
 	}
@@ -1795,8 +1783,8 @@ func pivotInItemName(q *omniQuerySpanExtractor, item *oracleast.PivotInItem) str
 		return item.Alias
 	}
 	var parts []string
-	for _, expr := range omniExprList(item.Values) {
-		name, _, err := q.extractOmniExpr(expr)
+	for _, expr := range exprList(item.Values) {
+		name, _, err := q.extractExpr(expr)
 		if err != nil {
 			continue
 		}
@@ -1817,12 +1805,12 @@ func pivotColumnName(inName, aggregateAlias string, _ int) string {
 	return inName + "_" + aggregateAlias
 }
 
-func isOmniStar(expr oracleast.ExprNode) bool {
+func isStar(expr oracleast.ExprNode) bool {
 	_, ok := expr.(*oracleast.Star)
 	return ok
 }
 
-func splitOmniDBLink(dbLink string) []string {
+func splitDBLink(dbLink string) []string {
 	if dbLink == "" {
 		return nil
 	}
@@ -1835,7 +1823,7 @@ func cloneTableSourceSlice(sources []base.TableSource) []base.TableSource {
 	return cloned
 }
 
-func (q *omniQuerySpanExtractor) omniExprName(loc oracleast.Loc, fallback string) string {
+func (q *querySpanExtractor) exprName(loc oracleast.Loc, fallback string) string {
 	if !loc.IsUnknown() && loc.Start >= 0 && loc.End <= len(q.source) && loc.Start < loc.End {
 		return removeWhitespace(q.source[loc.Start:loc.End])
 	}
@@ -1851,7 +1839,7 @@ func removeWhitespace(s string) string {
 	}, s)
 }
 
-func getOmniNodeLoc(node oracleast.Node) oracleast.Loc {
+func getNodeLoc(node oracleast.Node) oracleast.Loc {
 	value := reflect.ValueOf(node)
 	if value.Kind() != reflect.Pointer || value.IsNil() {
 		return oracleast.NoLoc()
@@ -1868,64 +1856,64 @@ func getOmniNodeLoc(node oracleast.Node) oracleast.Loc {
 	return loc
 }
 
-func getOmniExprFullLoc(expr oracleast.ExprNode) oracleast.Loc {
+func getExprFullLoc(expr oracleast.ExprNode) oracleast.Loc {
 	switch expr := expr.(type) {
 	case *oracleast.BinaryExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Left), getOmniExprFullLoc(expr.Right), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Left), getExprFullLoc(expr.Right), getNodeLoc(expr))
 	case *oracleast.UnaryExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniExprFullLoc(expr.Operand))
+		return mergeLoc(getNodeLoc(expr), getExprFullLoc(expr.Operand))
 	case *oracleast.BoolExpr:
-		return mergeOmniListLoc(expr.Args, getOmniNodeLoc(expr))
+		return mergeListLoc(expr.Args, getNodeLoc(expr))
 	case *oracleast.FuncCallExpr:
-		return getOmniNodeLoc(expr)
+		return getNodeLoc(expr)
 	case *oracleast.CaseExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniListLastLoc(expr.Whens), getOmniExprFullLoc(expr.Default))
+		return mergeLoc(getNodeLoc(expr), getListLastLoc(expr.Whens), getExprFullLoc(expr.Default))
 	case *oracleast.CaseWhen:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniExprFullLoc(expr.Condition), getOmniExprFullLoc(expr.Result))
+		return mergeLoc(getNodeLoc(expr), getExprFullLoc(expr.Condition), getExprFullLoc(expr.Result))
 	case *oracleast.DecodeExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniListLastLoc(expr.Pairs), getOmniExprFullLoc(expr.Default))
+		return mergeLoc(getNodeLoc(expr), getListLastLoc(expr.Pairs), getExprFullLoc(expr.Default))
 	case *oracleast.DecodePair:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Search), getOmniExprFullLoc(expr.Result), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Search), getExprFullLoc(expr.Result), getNodeLoc(expr))
 	case *oracleast.BetweenExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Expr), getOmniExprFullLoc(expr.Low), getOmniExprFullLoc(expr.High), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Expr), getExprFullLoc(expr.Low), getExprFullLoc(expr.High), getNodeLoc(expr))
 	case *oracleast.InExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Expr), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Expr), getNodeLoc(expr))
 	case *oracleast.LikeExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Expr), getOmniExprFullLoc(expr.Pattern), getOmniExprFullLoc(expr.Escape), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Expr), getExprFullLoc(expr.Pattern), getExprFullLoc(expr.Escape), getNodeLoc(expr))
 	case *oracleast.IsExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Expr), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Expr), getNodeLoc(expr))
 	case *oracleast.CastExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniExprFullLoc(expr.Arg))
+		return mergeLoc(getNodeLoc(expr), getExprFullLoc(expr.Arg))
 	case *oracleast.MultisetExpr:
-		return mergeOmniLoc(getOmniExprFullLoc(expr.Left), getOmniExprFullLoc(expr.Right), getOmniNodeLoc(expr))
+		return mergeLoc(getExprFullLoc(expr.Left), getExprFullLoc(expr.Right), getNodeLoc(expr))
 	case *oracleast.CursorExpr:
-		return getOmniNodeLoc(expr)
+		return getNodeLoc(expr)
 	case *oracleast.TreatExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniExprFullLoc(expr.Expr))
+		return mergeLoc(getNodeLoc(expr), getExprFullLoc(expr.Expr))
 	case *oracleast.ParenExpr:
-		return mergeOmniLoc(getOmniNodeLoc(expr), getOmniExprFullLoc(expr.Expr))
+		return mergeLoc(getNodeLoc(expr), getExprFullLoc(expr.Expr))
 	default:
-		return getOmniNodeLoc(expr)
+		return getNodeLoc(expr)
 	}
 }
 
-func mergeOmniListLoc(list *oracleast.List, fallback oracleast.Loc) oracleast.Loc {
+func mergeListLoc(list *oracleast.List, fallback oracleast.Loc) oracleast.Loc {
 	loc := fallback
 	for _, node := range listItems(list) {
-		loc = mergeOmniLoc(loc, getOmniNodeLoc(node))
+		loc = mergeLoc(loc, getNodeLoc(node))
 	}
 	return loc
 }
 
-func getOmniListLastLoc(list *oracleast.List) oracleast.Loc {
+func getListLastLoc(list *oracleast.List) oracleast.Loc {
 	var loc oracleast.Loc
 	for _, node := range listItems(list) {
-		loc = mergeOmniLoc(loc, getOmniNodeLoc(node))
+		loc = mergeLoc(loc, getNodeLoc(node))
 	}
 	return loc
 }
 
-func mergeOmniLoc(locs ...oracleast.Loc) oracleast.Loc {
+func mergeLoc(locs ...oracleast.Loc) oracleast.Loc {
 	result := oracleast.NoLoc()
 	for _, loc := range locs {
 		if loc.IsUnknown() || loc.Start < 0 || loc.End < loc.Start {

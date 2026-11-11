@@ -428,6 +428,11 @@
     },
     "export-finished": "Xuất hoàn tất",
     "export-tooltip": "Phải chọn thời gian bắt đầu và kết thúc trong vòng 30 ngày",
+    "federated-identity": {
+      "issuer": "Nhà phát hành",
+      "origin": "Đăng nhập từ một khối lượng công việc bên ngoài",
+      "subject": "Subject"
+    },
     "mcp": {
       "badge": "MCP",
       "client-id": "ID máy khách",
@@ -2334,16 +2339,18 @@
       },
       "approval-after-submit": "Phê duyệt bắt đầu khi bạn gửi để đánh giá.",
       "approval-flow": {
-        "and-n-more_one": "và {{count}} người khác",
-        "and-n-more_other": "và {{count}} người khác",
         "approved-by": "Được phê duyệt bởi {{user}}",
+        "clear-search": "Xóa tìm kiếm",
+        "copy-email": "Sao chép email của {{user}}",
         "current": "Hiện tại",
         "n-approved": "{{n}} đã phê duyệt",
         "n-pending": "{{n}} đang chờ",
         "n-reviewers_one": "{{count}} người xét duyệt",
         "n-reviewers_other": "{{count}} người xét duyệt",
+        "no-matching-reviewers": "Không có người xét duyệt nào khớp với “{{query}}”",
         "no-reviewers": "Không có người xét duyệt",
-        "rejected-by": "Bị từ chối bởi {{user}}"
+        "rejected-by": "Bị từ chối bởi {{user}}",
+        "search-placeholder": "Tìm theo tên hoặc email"
       },
       "candidate-last-changed-plan": "Không thể phê duyệt — là người thay đổi kế hoạch gần đây nhất",
       "comment-required-to-reject": "Cần có bình luận để từ chối",

@@ -37,7 +37,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 
 	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnTypeDisallowListRule is the rule implementation for column type disallow list.
@@ -64,12 +64,12 @@ func (*ColumnTypeDisallowListRule) Name() string {
 
 // OnStatement checks column data types in the omni AST.
 func (r *ColumnTypeDisallowListRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		col, ok := n.(*ast.ColumnDef)
 		if !ok || col.TypeName == nil {
 			return
 		}
-		typeName := omniTypeName(col.TypeName)
+		typeName := typeName(col.TypeName)
 		for _, disallowType := range r.disallowList {
 			if strings.EqualFold(typeName, disallowType) {
 				r.AddAdvice(

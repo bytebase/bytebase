@@ -81,7 +81,7 @@ func TestRestore(t *testing.T) {
 	}
 }
 
-func TestRestoreOmniBoundaryCases(t *testing.T) {
+func TestRestoreBoundaryCases(t *testing.T) {
 	t.Run("multi-line update", func(t *testing.T) {
 		input := `UPDATE test
 SET c1 = 1

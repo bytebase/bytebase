@@ -54,7 +54,7 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	rule := &namingUKConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -64,11 +64,11 @@ func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingUKConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	format           string
 	maxLength        int
@@ -101,8 +101,8 @@ func (r *namingUKConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 	}
 
 	indexName := n.Idxname
-	tableName := omniTableName(n.Relation)
-	columnList := omniIndexColumns(n)
+	tableName := rangeVarTableName(n.Relation)
+	columnList := indexColumns(n)
 
 	metaData := map[string]string{
 		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
@@ -112,13 +112,13 @@ func (r *namingUKConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 }
 
 func (r *namingUKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
-	cols, constraints := omniTableElements(n)
+	tableName := rangeVarTableName(n.Relation)
+	cols, constraints := tableElements(n)
 
 	// Check table-level UNIQUE constraints
 	for _, c := range constraints {
 		if c.Contype == ast.CONSTR_UNIQUE && c.Conname != "" {
-			columnList := omniConstraintColumns(c)
+			columnList := constraintColumns(c)
 
 			// UNIQUE USING INDEX
 			if c.Indexname != "" {
@@ -135,7 +135,7 @@ func (r *namingUKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 
 	// Check column-level UNIQUE constraints
 	for _, col := range cols {
-		for _, c := range omniColumnConstraints(col) {
+		for _, c := range columnConstraints(col) {
 			if c.Contype == ast.CONSTR_UNIQUE && c.Conname != "" {
 				metaData := map[string]string{
 					advisor.ColumnListTemplateToken: col.Colname,
@@ -148,9 +148,9 @@ func (r *namingUKConventionRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *namingUKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
 			c, ok := cmd.Def.(*ast.Constraint)
 			if !ok || c.Contype != ast.CONSTR_UNIQUE {
@@ -159,7 +159,7 @@ func (r *namingUKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 			if c.Conname == "" {
 				continue
 			}
-			columnList := omniConstraintColumns(c)
+			columnList := constraintColumns(c)
 
 			// UNIQUE USING INDEX
 			if c.Indexname != "" {
@@ -179,7 +179,7 @@ func (r *namingUKConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 			if !ok {
 				continue
 			}
-			for _, c := range omniColumnConstraints(colDef) {
+			for _, c := range columnConstraints(colDef) {
 				if c.Contype == ast.CONSTR_UNIQUE && c.Conname != "" {
 					metaData := map[string]string{
 						advisor.ColumnListTemplateToken: colDef.Colname,
@@ -214,7 +214,7 @@ func (r *namingUKConventionRule) handleRenameStmt(n *ast.RenameStmt) {
 
 	// ALTER TABLE ... RENAME CONSTRAINT
 	if n.RenameType == ast.OBJECT_TABCONSTRAINT && r.originalMetadata != nil {
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		schemaName := ""
 		if n.Relation != nil {
 			schemaName = n.Relation.Schemaname

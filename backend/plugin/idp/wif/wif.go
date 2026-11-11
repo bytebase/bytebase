@@ -12,6 +12,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+// maxSubjectLength bounds the subject, which the issued token carries on every
+// request and the audit log records on every row.
+const maxSubjectLength = 1024
+
 // TokenClaims represents the claims from an OIDC token.
 type TokenClaims struct {
 	Issuer   string   `json:"iss"`
@@ -69,6 +73,10 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 	// Validate subject pattern
 	if !matchSubject(claims.Subject, config.SubjectPattern, payload) {
 		return nil, errors.Errorf("subject mismatch: expected pattern %q, got %q", config.SubjectPattern, claims.Subject)
+	}
+
+	if len(claims.Subject) > maxSubjectLength {
+		return nil, errors.Errorf("subject is %d bytes, longer than the %d allowed", len(claims.Subject), maxSubjectLength)
 	}
 
 	// Validate expiry

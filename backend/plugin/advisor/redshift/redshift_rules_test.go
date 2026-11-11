@@ -12,7 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 )
 
-func TestRedshiftTableDropNamingConventionUsesOmniAST(t *testing.T) {
+func TestRedshiftTableDropNamingConventionUsesAST(t *testing.T) {
 	sm := sheet.NewManager()
 	rule := &storepb.SQLReviewRule{
 		Type:   storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION,

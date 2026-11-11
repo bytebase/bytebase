@@ -119,6 +119,7 @@ type SearchAuditLogsRequest struct {
 	//   - create_time: support ">=" and "<=" operator.
 	//   - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
 	//   - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+	//   - federated_subject: the external subject behind a workload identity, taken from an entry's federated_identity.subject. Support "==" operator.
 	//
 	// For example:
 	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
@@ -127,6 +128,7 @@ type SearchAuditLogsRequest struct {
 	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
 	//   - filter = "mcp == true"
 	//   - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
+	//   - filter = "federated_subject == 'repo:my-org/app:ref:refs/heads/main'"
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The order by of the log.
 	// Only support order by create_time. The default sorting order is ascending.
@@ -460,8 +462,11 @@ type AuditLog struct {
 	// through the MCP server's delegated credential; never set for public API
 	// calls. Presence of this message is the MCP-origin marker.
 	McpDelegation *MCPDelegation `protobuf:"bytes,13,opt,name=mcp_delegation,json=mcpDelegation,proto3" json:"mcp_delegation,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The external workload behind a workload identity. Set on a successful
+	// token exchange and on every call made with the token it issued.
+	FederatedIdentity *FederatedIdentity `protobuf:"bytes,14,opt,name=federated_identity,json=federatedIdentity,proto3" json:"federated_identity,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *AuditLog) Reset() {
@@ -581,6 +586,13 @@ func (x *AuditLog) GetRequestMetadata() *RequestMetadata {
 func (x *AuditLog) GetMcpDelegation() *MCPDelegation {
 	if x != nil {
 		return x.McpDelegation
+	}
+	return nil
+}
+
+func (x *AuditLog) GetFederatedIdentity() *FederatedIdentity {
+	if x != nil {
+		return x.FederatedIdentity
 	}
 	return nil
 }
@@ -769,6 +781,61 @@ func (x *MCPDelegation) GetCorrelationId() string {
 	return ""
 }
 
+// The verified OIDC identity a workload identity token was exchanged for.
+type FederatedIdentity struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The token's "iss" claim, e.g. "https://token.actions.githubusercontent.com".
+	Issuer string `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	// The token's "sub" claim, e.g. "repo:my-org/app:ref:refs/heads/main".
+	Subject       string `protobuf:"bytes,2,opt,name=subject,proto3" json:"subject,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FederatedIdentity) Reset() {
+	*x = FederatedIdentity{}
+	mi := &file_v1_audit_log_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FederatedIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FederatedIdentity) ProtoMessage() {}
+
+func (x *FederatedIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_audit_log_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FederatedIdentity.ProtoReflect.Descriptor instead.
+func (*FederatedIdentity) Descriptor() ([]byte, []int) {
+	return file_v1_audit_log_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *FederatedIdentity) GetIssuer() string {
+	if x != nil {
+		return x.Issuer
+	}
+	return ""
+}
+
+func (x *FederatedIdentity) GetSubject() string {
+	if x != nil {
+		return x.Subject
+	}
+	return ""
+}
+
 var File_v1_audit_log_service_proto protoreflect.FileDescriptor
 
 const file_v1_audit_log_service_proto_rawDesc = "" +
@@ -795,7 +862,7 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"a\n" +
 	"\x17ExportAuditLogsResponse\x12\x1e\n" +
 	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xdd\x05\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb2\x06\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x04name\x18\x01 \x01(\tB\x04\xe2A\x01\x03R\x04name\x12A\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
@@ -811,7 +878,8 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x12=\n" +
 	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyB\x04\xd0\xea0\x02R\vserviceData\x12G\n" +
 	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\x12G\n" +
-	"\x0emcp_delegation\x18\r \x01(\v2\x1a.bytebase.v1.MCPDelegationB\x04\xe2A\x01\x03R\rmcpDelegation\"\x85\x01\n" +
+	"\x0emcp_delegation\x18\r \x01(\v2\x1a.bytebase.v1.MCPDelegationB\x04\xe2A\x01\x03R\rmcpDelegation\x12S\n" +
+	"\x12federated_identity\x18\x0e \x01(\v2\x1e.bytebase.v1.FederatedIdentityB\x04\xe2A\x01\x03R\x11federatedIdentity\"\x85\x01\n" +
 	"\bSeverity\x12\x18\n" +
 	"\x14SEVERITY_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05DEBUG\x10\x01\x12\b\n" +
@@ -832,7 +900,10 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\x05scope\x18\x01 \x01(\tR\x05scope\x12\x1a\n" +
 	"\bresource\x18\x02 \x01(\tR\bresource\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12%\n" +
-	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationId2\xbd\x03\n" +
+	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationId\"E\n" +
+	"\x11FederatedIdentity\x12\x16\n" +
+	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x18\n" +
+	"\asubject\x18\x02 \x01(\tR\asubject2\xbd\x03\n" +
 	"\x0fAuditLogService\x12\xd3\x01\n" +
 	"\x0fSearchAuditLogs\x12#.bytebase.v1.SearchAuditLogsRequest\x1a$.bytebase.v1.SearchAuditLogsResponse\"u\x8a\xea0\x13bb.auditLogs.search\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:search\"(/v1/{parent=projects/*}/auditLogs:search\x12\xd3\x01\n" +
 	"\x0fExportAuditLogs\x12#.bytebase.v1.ExportAuditLogsRequest\x1a$.bytebase.v1.ExportAuditLogsResponse\"u\x8a\xea0\x13bb.auditLogs.export\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:export\"(/v1/{parent=projects/*}/auditLogs:exportB\xaa\x01\n" +
@@ -851,7 +922,7 @@ func file_v1_audit_log_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_audit_log_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_audit_log_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_v1_audit_log_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_v1_audit_log_service_proto_goTypes = []any{
 	(AuditLog_Severity)(0),          // 0: bytebase.v1.AuditLog.Severity
 	(*SearchAuditLogsRequest)(nil),  // 1: bytebase.v1.SearchAuditLogsRequest
@@ -862,33 +933,35 @@ var file_v1_audit_log_service_proto_goTypes = []any{
 	(*AuditData)(nil),               // 6: bytebase.v1.AuditData
 	(*RequestMetadata)(nil),         // 7: bytebase.v1.RequestMetadata
 	(*MCPDelegation)(nil),           // 8: bytebase.v1.MCPDelegation
-	(ExportFormat)(0),               // 9: bytebase.v1.ExportFormat
-	(*timestamppb.Timestamp)(nil),   // 10: google.protobuf.Timestamp
-	(*status.Status)(nil),           // 11: google.rpc.Status
-	(*durationpb.Duration)(nil),     // 12: google.protobuf.Duration
-	(*anypb.Any)(nil),               // 13: google.protobuf.Any
-	(*PolicyDelta)(nil),             // 14: bytebase.v1.PolicyDelta
+	(*FederatedIdentity)(nil),       // 9: bytebase.v1.FederatedIdentity
+	(ExportFormat)(0),               // 10: bytebase.v1.ExportFormat
+	(*timestamppb.Timestamp)(nil),   // 11: google.protobuf.Timestamp
+	(*status.Status)(nil),           // 12: google.rpc.Status
+	(*durationpb.Duration)(nil),     // 13: google.protobuf.Duration
+	(*anypb.Any)(nil),               // 14: google.protobuf.Any
+	(*PolicyDelta)(nil),             // 15: bytebase.v1.PolicyDelta
 }
 var file_v1_audit_log_service_proto_depIdxs = []int32{
 	5,  // 0: bytebase.v1.SearchAuditLogsResponse.audit_logs:type_name -> bytebase.v1.AuditLog
-	9,  // 1: bytebase.v1.ExportAuditLogsRequest.format:type_name -> bytebase.v1.ExportFormat
-	10, // 2: bytebase.v1.AuditLog.create_time:type_name -> google.protobuf.Timestamp
+	10, // 1: bytebase.v1.ExportAuditLogsRequest.format:type_name -> bytebase.v1.ExportFormat
+	11, // 2: bytebase.v1.AuditLog.create_time:type_name -> google.protobuf.Timestamp
 	0,  // 3: bytebase.v1.AuditLog.severity:type_name -> bytebase.v1.AuditLog.Severity
-	11, // 4: bytebase.v1.AuditLog.status:type_name -> google.rpc.Status
-	12, // 5: bytebase.v1.AuditLog.latency:type_name -> google.protobuf.Duration
-	13, // 6: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
+	12, // 4: bytebase.v1.AuditLog.status:type_name -> google.rpc.Status
+	13, // 5: bytebase.v1.AuditLog.latency:type_name -> google.protobuf.Duration
+	14, // 6: bytebase.v1.AuditLog.service_data:type_name -> google.protobuf.Any
 	7,  // 7: bytebase.v1.AuditLog.request_metadata:type_name -> bytebase.v1.RequestMetadata
 	8,  // 8: bytebase.v1.AuditLog.mcp_delegation:type_name -> bytebase.v1.MCPDelegation
-	14, // 9: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
-	1,  // 10: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
-	3,  // 11: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
-	2,  // 12: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
-	4,  // 13: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
-	12, // [12:14] is the sub-list for method output_type
-	10, // [10:12] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	9,  // 9: bytebase.v1.AuditLog.federated_identity:type_name -> bytebase.v1.FederatedIdentity
+	15, // 10: bytebase.v1.AuditData.policy_delta:type_name -> bytebase.v1.PolicyDelta
+	1,  // 11: bytebase.v1.AuditLogService.SearchAuditLogs:input_type -> bytebase.v1.SearchAuditLogsRequest
+	3,  // 12: bytebase.v1.AuditLogService.ExportAuditLogs:input_type -> bytebase.v1.ExportAuditLogsRequest
+	2,  // 13: bytebase.v1.AuditLogService.SearchAuditLogs:output_type -> bytebase.v1.SearchAuditLogsResponse
+	4,  // 14: bytebase.v1.AuditLogService.ExportAuditLogs:output_type -> bytebase.v1.ExportAuditLogsResponse
+	13, // [13:15] is the sub-list for method output_type
+	11, // [11:13] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_v1_audit_log_service_proto_init() }
@@ -905,7 +978,7 @@ func file_v1_audit_log_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_audit_log_service_proto_rawDesc), len(file_v1_audit_log_service_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

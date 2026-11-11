@@ -14,13 +14,13 @@ import (
 // aggregate FILTER conditions, LIMIT and OFFSET, and the arguments of
 // set-returning functions. The database evaluates conditions on unmasked values, so these columns
 // decide which rows come back even when their values are masked.
-func (e *omniQuerySpanExtractor) collectPredicateColumns(q *catalog.Query) {
+func (e *querySpanExtractor) collectPredicateColumns(q *catalog.Query) {
 	e.collectPredicateColumnsInStack([]*catalog.Query{q}, make(map[*catalog.Query]bool))
 }
 
 // collectStatementPredicateColumns records the predicate columns of sel,
 // analyzed as query, that reads accesses.
-func (e *omniQuerySpanExtractor) collectStatementPredicateColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
+func (e *querySpanExtractor) collectStatementPredicateColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
 	e.collectPredicateColumns(query)
 	// The analyzer leaves a set operation's LIMIT and OFFSET out of its tree,
 	// so they are resolved by name.
@@ -46,7 +46,7 @@ func (e *omniQuerySpanExtractor) collectStatementPredicateColumns(query *catalog
 // collectDiscardedOutputColumns records the columns a SELECT whose rows are
 // discarded reads in its output. It still evaluates the output, so those
 // columns decide how long it takes. query is nil when sel failed analysis.
-func (e *omniQuerySpanExtractor) collectDiscardedOutputColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
+func (e *querySpanExtractor) collectDiscardedOutputColumns(query *catalog.Query, sel *ast.SelectStmt, accesses base.SourceColumnSet) {
 	if query != nil {
 		for _, set := range e.extractFuncLineage(query) {
 			mergeSourceColumnSetInto(e.predicateColumns, set)
@@ -61,7 +61,7 @@ func (e *omniQuerySpanExtractor) collectDiscardedOutputColumns(query *catalog.Qu
 	e.recordPredicateNames(r, accesses)
 }
 
-func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*catalog.Query, visited map[*catalog.Query]bool) {
+func (e *querySpanExtractor) collectPredicateColumnsInStack(queryStack []*catalog.Query, visited map[*catalog.Query]bool) {
 	q := currentQuery(queryStack)
 	if q == nil || visited[q] {
 		return
@@ -129,7 +129,7 @@ func (e *omniQuerySpanExtractor) collectPredicateColumnsInStack(queryStack []*ca
 	}
 }
 
-func (e *omniQuerySpanExtractor) collectJoinConditionColumns(queryStack []*catalog.Query, node catalog.JoinNode, visited map[*catalog.Query]bool) {
+func (e *querySpanExtractor) collectJoinConditionColumns(queryStack []*catalog.Query, node catalog.JoinNode, visited map[*catalog.Query]bool) {
 	join, ok := node.(*catalog.JoinExprNode)
 	if !ok || join == nil {
 		return
@@ -142,7 +142,7 @@ func (e *omniQuerySpanExtractor) collectJoinConditionColumns(queryStack []*catal
 
 // collectConditionColumns records every column condition reads, including the
 // output columns of its subqueries, and the conditions nested in it.
-func (e *omniQuerySpanExtractor) collectConditionColumns(queryStack []*catalog.Query, condition catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
+func (e *querySpanExtractor) collectConditionColumns(queryStack []*catalog.Query, condition catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
 	if condition == nil {
 		return
 	}
@@ -154,7 +154,7 @@ func (e *omniQuerySpanExtractor) collectConditionColumns(queryStack []*catalog.Q
 // FILTER of an aggregate or window function, the arguments of a set-returning
 // function, which decide how many rows it returns, and the conditions of its
 // subqueries.
-func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
+func (e *querySpanExtractor) collectNestedPredicateColumns(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, visited map[*catalog.Query]bool) {
 	catalog.WalkAnalyzedExpr(expr, func(n catalog.AnalyzedExpr) bool {
 		var inputs []catalog.AnalyzedExpr
 		switch v := n.(type) {
@@ -185,7 +185,7 @@ func (e *omniQuerySpanExtractor) collectNestedPredicateColumns(queryStack []*cat
 // which merges the body's predicates, as walkExpr does for an analyzed call.
 // Without argument types the overload is unknown, so every one of the name is
 // analyzed.
-func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
+func (e *querySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		if call, ok := n.(*ast.FuncCall); ok {
 			for _, proc := range e.userProcsNamed(astStrings(call.Funcname)) {
@@ -199,7 +199,7 @@ func (e *omniQuerySpanExtractor) analyzeFunctionsCalledIn(node ast.Node) {
 // userProcsCalled returns the user function an analyzed call invokes. An
 // opaque call, which the analyzer could not match to a function (as for a
 // stand-in), may invoke any user function of its name.
-func (e *omniQuerySpanExtractor) userProcsCalled(call *catalog.FuncCallExpr) []*catalog.UserProc {
+func (e *querySpanExtractor) userProcsCalled(call *catalog.FuncCallExpr) []*catalog.UserProc {
 	if proc := e.cat.GetUserProcByOID(call.FuncOID); proc != nil {
 		return []*catalog.UserProc{proc}
 	}
@@ -211,7 +211,7 @@ func (e *omniQuerySpanExtractor) userProcsCalled(call *catalog.FuncCallExpr) []*
 
 // userProcsNamed returns every user function, overloads included, that a
 // possibly schema-qualified name may call.
-func (e *omniQuerySpanExtractor) userProcsNamed(names []string) []*catalog.UserProc {
+func (e *querySpanExtractor) userProcsNamed(names []string) []*catalog.UserProc {
 	if len(names) == 0 {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (e *omniQuerySpanExtractor) userProcsNamed(names []string) []*catalog.UserP
 
 // namedFunctionReturnsSet reports whether a function of that name is known to
 // return a set.
-func (e *omniQuerySpanExtractor) namedFunctionReturnsSet(name string) bool {
+func (e *querySpanExtractor) namedFunctionReturnsSet(name string) bool {
 	for _, proc := range e.userProcsNamed([]string{name}) {
 		if proc.RetSet {
 			return true
@@ -251,7 +251,7 @@ func (e *omniQuerySpanExtractor) namedFunctionReturnsSet(name string) bool {
 
 // returnsSet reports whether the function is known to return a set. An
 // unknown function, analyzed opaquely, is not.
-func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
+func (e *querySpanExtractor) returnsSet(oid uint32) bool {
 	if proc := e.cat.GetUserProcByOID(oid); proc != nil {
 		return proc.RetSet
 	}
@@ -264,7 +264,7 @@ func (e *omniQuerySpanExtractor) returnsSet(oid uint32) bool {
 // collectFallbackPredicateColumns stands in for collectPredicateColumns when
 // analysis fails. Without scopes it over-approximates by name, so that an
 // analysis failure never lets a condition on a masked column through.
-func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) {
+func (e *querySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) {
 	e.analyzeFunctionsCalledIn(stmt)
 	r := newPredicateNameResolver(stmt, e.namedFunctionReturnsSet)
 	for _, name := range r.usingNames {
@@ -285,12 +285,12 @@ func (e *omniQuerySpanExtractor) collectFallbackPredicateColumns(stmt ast.Node, 
 	e.recordPredicateNames(r, accesses)
 }
 
-func (e *omniQuerySpanExtractor) recordPredicateNames(r *predicateNameResolver, accesses base.SourceColumnSet) {
+func (e *querySpanExtractor) recordPredicateNames(r *predicateNameResolver, accesses base.SourceColumnSet) {
 	mergeSourceColumnSetInto(e.predicateColumns, e.columnsNamed(r, accesses))
 }
 
 // columnsNamed returns the columns of accesses that r's names match.
-func (e *omniQuerySpanExtractor) columnsNamed(r *predicateNameResolver, accesses base.SourceColumnSet) base.SourceColumnSet {
+func (e *querySpanExtractor) columnsNamed(r *predicateNameResolver, accesses base.SourceColumnSet) base.SourceColumnSet {
 	columns := make(base.SourceColumnSet)
 	for resource := range accesses {
 		rel := e.cat.GetRelation(resource.Schema, resource.Table)
@@ -316,7 +316,7 @@ func (e *omniQuerySpanExtractor) columnsNamed(r *predicateNameResolver, accesses
 // returningLineage returns, for each column a DML statement's RETURNING list
 // outputs, the columns of accesses it reads, matched by name. It returns nil
 // for a statement without RETURNING.
-func (e *omniQuerySpanExtractor) returningLineage(stmt ast.Node, accesses base.SourceColumnSet) []base.SourceColumnSet {
+func (e *querySpanExtractor) returningLineage(stmt ast.Node, accesses base.SourceColumnSet) []base.SourceColumnSet {
 	var returning *ast.List
 	var target *ast.RangeVar
 	switch v := stmt.(type) {

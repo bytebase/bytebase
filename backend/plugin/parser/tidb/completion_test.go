@@ -242,7 +242,7 @@ func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
 // BATCH is TiDB-only grammar (added to omni in #157); the mysql ANTLR grammar
 // cannot produce it. Its presence for Engine_TIDB and absence for Engine_MYSQL
 // proves Engine_TIDB now routes through the omni shim, not the mysql completer.
-func TestCompletion_TiDBRoutesThroughOmni(t *testing.T) {
+func TestCompletion_TiDBRoutesThrough(t *testing.T) {
 	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
 		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},

@@ -8,44 +8,44 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// OmniAST wraps an omni CosmosDB AST node and implements the base.AST interface.
-type OmniAST struct {
+// AST wraps an omni CosmosDB AST node and implements the base.AST interface.
+type AST struct {
 	Node          ast.Node
 	Text          string
 	StartPosition *storepb.Position
 }
 
 // ASTStartPosition implements base.AST.
-func (a *OmniAST) ASTStartPosition() *storepb.Position {
+func (a *AST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// GetOmniNode extracts the omni AST node from a base.AST interface.
-func GetOmniNode(a base.AST) (ast.Node, bool) {
+// GetNode extracts the omni AST node from a base.AST interface.
+func GetNode(a base.AST) (ast.Node, bool) {
 	if a == nil {
 		return nil, false
 	}
-	omniAST, ok := a.(*OmniAST)
+	wrapped, ok := a.(*AST)
 	if !ok {
 		return nil, false
 	}
-	return omniAST.Node, true
+	return wrapped.Node, true
 }
 
 // ParseCosmosDB parses the given CosmosDB SQL statement using omni's parser.
-func ParseCosmosDB(statement string) ([]*OmniAST, error) {
+func ParseCosmosDB(statement string) ([]*AST, error) {
 	stmts, err := omnicosmosdb.Parse(statement)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*OmniAST
+	var result []*AST
 	positionMapper := base.NewByteOffsetPositionMapper(statement)
 	for _, stmt := range stmts {
 		if stmt.Empty() {
 			continue
 		}
-		result = append(result, &OmniAST{
+		result = append(result, &AST{
 			Node:          stmt.AST,
 			Text:          stmt.Text,
 			StartPosition: positionMapper.Position(stmt.ByteStart),

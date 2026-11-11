@@ -29,7 +29,7 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 		return nil, errors.New("no parse results")
 	}
 
-	extractor := &oracleOmniMetadataExtractor{
+	extractor := &oracleMetadataExtractor{
 		tables:            make(map[string]*metadatapb.TableMetadata),
 		views:             make(map[string]*metadatapb.ViewMetadata),
 		materializedViews: make(map[string]*metadatapb.MaterializedViewMetadata),
@@ -54,7 +54,7 @@ func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata,
 	return extractor.databaseMetadata(), nil
 }
 
-type oracleOmniMetadataExtractor struct {
+type oracleMetadataExtractor struct {
 	currentDatabase   string
 	currentSchema     string
 	tables            map[string]*metadatapb.TableMetadata
@@ -70,7 +70,7 @@ type oracleOmniMetadataExtractor struct {
 	schemaText        string
 }
 
-func (e *oracleOmniMetadataExtractor) databaseMetadata() *metadatapb.DatabaseSchemaMetadata {
+func (e *oracleMetadataExtractor) databaseMetadata() *metadatapb.DatabaseSchemaMetadata {
 	e.resolveForeignKeyReferencedColumns()
 
 	schemaMetadata := &metadatapb.DatabaseSchemaMetadata{
@@ -157,7 +157,7 @@ func (e *oracleOmniMetadataExtractor) databaseMetadata() *metadatapb.DatabaseSch
 	return schemaMetadata
 }
 
-func (e *oracleOmniMetadataExtractor) getOrCreateTable(tableName string) *metadatapb.TableMetadata {
+func (e *oracleMetadataExtractor) getOrCreateTable(tableName string) *metadatapb.TableMetadata {
 	if table, ok := e.tables[tableName]; ok {
 		return table
 	}
@@ -174,7 +174,7 @@ func (e *oracleOmniMetadataExtractor) getOrCreateTable(tableName string) *metada
 	return table
 }
 
-func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
+func (e *oracleMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 	switch n := stmt.(type) {
 	case *ast.CreateTableStmt:
 		e.extractCreateTable(n)
@@ -208,7 +208,7 @@ func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateSchema(n *ast.CreateSchemaStmt) {
+func (e *oracleMetadataExtractor) extractCreateSchema(n *ast.CreateSchemaStmt) {
 	if n.SchemaName != "" {
 		e.currentSchema = n.SchemaName
 	}
@@ -221,7 +221,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateSchema(n *ast.CreateSchemaStm
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
+func (e *oracleMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 	tableName := objectName(n.Name)
 	if tableName == "" {
 		return
@@ -247,7 +247,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt)
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata) {
+func (e *oracleMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata) {
 	column := &metadatapb.ColumnMetadata{
 		Name:     n.Name,
 		Type:     "VARCHAR2(100)",
@@ -298,7 +298,7 @@ func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *met
 	table.Columns = append(table.Columns, column)
 }
 
-func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConstraint, table *metadatapb.TableMetadata, column *metadatapb.ColumnMetadata) {
+func (e *oracleMetadataExtractor) extractColumnConstraint(n *ast.ColumnConstraint, table *metadatapb.TableMetadata, column *metadatapb.ColumnMetadata) {
 	switch n.Type {
 	case ast.CONSTRAINT_NOT_NULL:
 		column.Nullable = false
@@ -341,7 +341,7 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstraint, table *metadatapb.TableMetadata) {
+func (e *oracleMetadataExtractor) extractTableConstraint(n *ast.TableConstraint, table *metadatapb.TableMetadata) {
 	columns := stringList(n.Columns)
 	switch n.Type {
 	case ast.CONSTRAINT_PRIMARY:
@@ -378,7 +378,7 @@ func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstra
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractAlterTable(n *ast.AlterTableStmt) {
+func (e *oracleMetadataExtractor) extractAlterTable(n *ast.AlterTableStmt) {
 	tableName := objectName(n.Name)
 	if tableName == "" {
 		return
@@ -410,7 +410,7 @@ func (e *oracleOmniMetadataExtractor) extractAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, name string, expr ast.ExprNode) {
+func (e *oracleMetadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, name string, expr ast.ExprNode) {
 	if expr == nil {
 		return
 	}
@@ -421,14 +421,14 @@ func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *metadatapb.Ta
 	})
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintName(table *metadatapb.TableMetadata, name string, fallback string) string {
+func (e *oracleMetadataExtractor) checkConstraintName(table *metadatapb.TableMetadata, name string, fallback string) string {
 	if name != "" {
 		return name
 	}
 	return e.uniqueCheckConstraintName(table, fallback)
 }
 
-func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *metadatapb.TableMetadata, fallback string) string {
+func (e *oracleMetadataExtractor) uniqueCheckConstraintName(table *metadatapb.TableMetadata, fallback string) string {
 	used := e.checkConstraintNameSet(table)
 	if !used[fallback] {
 		return fallback
@@ -448,11 +448,11 @@ func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *metadatap
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) reserveCheckConstraintName(table *metadatapb.TableMetadata, name string) {
+func (e *oracleMetadataExtractor) reserveCheckConstraintName(table *metadatapb.TableMetadata, name string) {
 	e.checkConstraintNameSet(table)[name] = true
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *metadatapb.TableMetadata) map[string]bool {
+func (e *oracleMetadataExtractor) checkConstraintNameSet(table *metadatapb.TableMetadata) map[string]bool {
 	used := e.checkNames[table.Name]
 	if used != nil {
 		return used
@@ -465,7 +465,7 @@ func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *metadatapb.T
 	return used
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *metadatapb.TableMetadata) map[string]int {
+func (e *oracleMetadataExtractor) checkConstraintNameNextSet(table *metadatapb.TableMetadata) map[string]int {
 	next := e.checkNameNext[table.Name]
 	if next != nil {
 		return next
@@ -475,7 +475,7 @@ func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *metadata
 	return next
 }
 
-func (*oracleOmniMetadataExtractor) appendForeignKey(table *metadatapb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, onDelete string) {
+func (*oracleMetadataExtractor) appendForeignKey(table *metadatapb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, onDelete string) {
 	referencedTable := objectName(refTable)
 	referencedColumns := stringList(refColumns)
 	if len(columns) == 0 || referencedTable == "" {
@@ -491,7 +491,7 @@ func (*oracleOmniMetadataExtractor) appendForeignKey(table *metadatapb.TableMeta
 	table.ForeignKeys = append(table.ForeignKeys, foreignKey)
 }
 
-func (e *oracleOmniMetadataExtractor) resolveForeignKeyReferencedColumns() {
+func (e *oracleMetadataExtractor) resolveForeignKeyReferencedColumns() {
 	for _, table := range e.tables {
 		var foreignKeys []*metadatapb.ForeignKeyMetadata
 		for _, foreignKey := range table.ForeignKeys {
@@ -508,7 +508,7 @@ func (e *oracleOmniMetadataExtractor) resolveForeignKeyReferencedColumns() {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
+func (e *oracleMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
 	tableName := objectName(n.Table)
 	indexName := objectName(n.Name)
 	if tableName == "" || indexName == "" {
@@ -565,7 +565,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt)
 	table.Indexes = append(table.Indexes, index)
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
+func (e *oracleMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 	viewName := objectName(n.Name)
 	if viewName == "" {
 		return
@@ -603,7 +603,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 	e.views[viewName] = view
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
+func (e *oracleMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
 	sequenceName := objectName(n.Name)
 	if sequenceName == "" {
 		return
@@ -618,7 +618,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenc
 	e.sequences[sequenceName] = sequence
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreatePackage(name string, n *ast.CreatePackageStmt) {
+func (e *oracleMetadataExtractor) extractCreatePackage(name string, n *ast.CreatePackageStmt) {
 	definition := e.definitionText(n)
 	if definition == "" {
 		return
@@ -635,7 +635,7 @@ func (e *oracleOmniMetadataExtractor) extractCreatePackage(name string, n *ast.C
 	pkg.Definition += "\n\n" + definition
 }
 
-func (e *oracleOmniMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerStmt) {
+func (e *oracleMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerStmt) {
 	triggerName := objectName(n.Name)
 	tableName := objectName(n.Table)
 	if triggerName == "" || tableName == "" {
@@ -658,7 +658,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerS
 	table.Triggers = append(table.Triggers, trigger)
 }
 
-func (e *oracleOmniMetadataExtractor) extractComment(n *ast.CommentStmt) {
+func (e *oracleMetadataExtractor) extractComment(n *ast.CommentStmt) {
 	if n.Column != "" {
 		table := e.tables[objectName(n.Object)]
 		if table == nil {
@@ -691,7 +691,7 @@ func (e *oracleOmniMetadataExtractor) extractComment(n *ast.CommentStmt) {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) indexExpression(expr ast.ExprNode) string {
+func (e *oracleMetadataExtractor) indexExpression(expr ast.ExprNode) string {
 	switch n := expr.(type) {
 	case *ast.ColumnRef:
 		return n.Column
@@ -700,7 +700,7 @@ func (e *oracleOmniMetadataExtractor) indexExpression(expr ast.ExprNode) string 
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
+func (e *oracleMetadataExtractor) exprText(expr ast.ExprNode) string {
 	switch n := expr.(type) {
 	case *ast.BinaryExpr:
 		return e.exprText(n.Left) + n.Op + e.exprText(n.Right)
@@ -775,7 +775,7 @@ func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) exprListText(list *ast.List) []string {
+func (e *oracleMetadataExtractor) exprListText(list *ast.List) []string {
 	var result []string
 	for _, item := range listItems(list) {
 		expr, ok := item.(ast.ExprNode)
@@ -787,7 +787,7 @@ func (e *oracleOmniMetadataExtractor) exprListText(list *ast.List) []string {
 	return result
 }
 
-func (e *oracleOmniMetadataExtractor) functionDefinitionText(node ast.Node) string {
+func (e *oracleMetadataExtractor) functionDefinitionText(node ast.Node) string {
 	definition := e.definitionText(node)
 	upper := strings.ToUpper(definition)
 	if strings.HasPrefix(upper, "CREATE OR REPLACE ") {
@@ -801,7 +801,7 @@ func (e *oracleOmniMetadataExtractor) functionDefinitionText(node ast.Node) stri
 	return definition
 }
 
-func (e *oracleOmniMetadataExtractor) definitionText(node ast.Node) string {
+func (e *oracleMetadataExtractor) definitionText(node ast.Node) string {
 	loc := ast.NodeLoc(node)
 	if loc.Start < 0 || loc.End < 0 || loc.Start > loc.End || loc.End > len(e.schemaText) {
 		return ""
@@ -821,7 +821,7 @@ func (e *oracleOmniMetadataExtractor) definitionText(node ast.Node) string {
 	return strings.TrimSpace(e.schemaText[loc.Start:end])
 }
 
-func (e *oracleOmniMetadataExtractor) nodeText(node ast.Node) string {
+func (e *oracleMetadataExtractor) nodeText(node ast.Node) string {
 	loc := ast.NodeLoc(node)
 	if loc.Start < 0 || loc.End < 0 || loc.Start > loc.End || loc.End > len(e.schemaText) {
 		return ""

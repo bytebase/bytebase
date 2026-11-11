@@ -28,7 +28,7 @@ type NamingTableConventionAdvisor struct {
 
 // Check checks for table naming convention.
 func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ type namingTableConventionChecker struct {
 	maxLength  int
 }
 
-func (c *namingTableConventionChecker) checkStmt(ostmt OmniStmt) {
+func (c *namingTableConventionChecker) checkStmt(ostmt Stmt) {
 	var tableNames []string
 	var line int
 	switch n := ostmt.Node.(type) {

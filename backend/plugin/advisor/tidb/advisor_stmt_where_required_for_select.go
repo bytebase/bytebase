@@ -37,7 +37,7 @@ type WhereRequirementForSelectAdvisor struct {
 // would silently regress on this case — same shape of bug as batch 3's
 // no_select_all round-1 missed-qualified-wildcard.
 func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

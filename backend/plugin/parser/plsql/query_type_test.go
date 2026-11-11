@@ -9,7 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestOracleOmniQueryTypeDDLClassification(t *testing.T) {
+func TestOracleQueryTypeDDLClassification(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
@@ -56,7 +56,7 @@ func TestOracleOmniQueryTypeDDLClassification(t *testing.T) {
 			require.True(t, ok)
 			require.NotNil(t, raw.Stmt)
 
-			require.Equal(t, test.want, omniQueryType(raw.Stmt, false))
+			require.Equal(t, test.want, queryType(raw.Stmt, false))
 		})
 	}
 }

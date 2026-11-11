@@ -50,7 +50,7 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 
 	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, format, maxLength)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // NamingTableRule is the rule implementation for table naming convention.
@@ -81,9 +81,9 @@ func (*NamingTableRule) Name() string {
 func (r *NamingTableRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		r.checkTableName(omniLastObjectName(n.Name), n.Loc)
+		r.checkTableName(lastObjectName(n.Name), n.Loc)
 	case *ast.AlterTableStmt:
-		for _, cmd := range omniAlterTableCmds(n) {
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Action == ast.AT_RENAME && cmd.NewName != "" {
 				r.checkTableName(cmd.NewName, cmd.Loc)
 			}

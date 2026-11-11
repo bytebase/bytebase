@@ -36,7 +36,7 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	if schema != "" {
 		searchPath = searchPathForSelectedSchema(schema, searchPath)
 	}
-	extractor := newOmniQuerySpanExtractor(database, searchPath, gCtx)
+	extractor := newQuerySpanExtractor(database, searchPath, gCtx)
 
 	querySpan, err := extractor.getQuerySpan(ctx, stmt.Text)
 	if err != nil {
@@ -45,9 +45,9 @@ func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.
 	return querySpan, nil
 }
 
-// omniQuerySpanExtractor extracts query span information using the omni parser
+// querySpanExtractor extracts query span information using the omni parser
 // and catalog.
-type omniQuerySpanExtractor struct {
+type querySpanExtractor struct {
 	ctx             context.Context
 	gCtx            base.GetQuerySpanContext
 	defaultDatabase string
@@ -80,12 +80,12 @@ type omniQuerySpanExtractor struct {
 	fallbackCTEAliases map[string][]string
 }
 
-// newOmniQuerySpanExtractor creates a new omni-based query span extractor.
-func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *omniQuerySpanExtractor {
+// newQuerySpanExtractor creates a new omni-based query span extractor.
+func newQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"}
 	}
-	return &omniQuerySpanExtractor{
+	return &querySpanExtractor{
 		defaultDatabase:   defaultDatabase,
 		searchPath:        searchPath,
 		gCtx:              gCtx,
@@ -99,7 +99,7 @@ func newOmniQuerySpanExtractor(defaultDatabase string, searchPath []string, gCtx
 }
 
 // getDatabaseMetadata returns cached database metadata, fetching it if not yet cached.
-func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
+func (e *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
 	if meta, ok := e.metaCache[database]; ok {
 		return meta, nil
 	}
@@ -114,7 +114,7 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 // initCatalog loads the database metadata into a new omni catalog. An object
 // that fails to install gets a text-typed stand-in or is left out; either way
 // the rest of the catalog still loads.
-func (e *omniQuerySpanExtractor) initCatalog() error {
+func (e *querySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get database metadata for catalog init")
@@ -202,7 +202,7 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 // unresolvedColumnsError checks stored metadata independently of column lineage.
 // Accesses are conservative: CTE names can match physical tables, so this may
 // refuse a CTE-only query. Reads missing from the access set remain unchecked.
-func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
+func (e *querySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
 	for access := range accesses {
@@ -230,7 +230,7 @@ func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColu
 // table columns, and GetTable resolves partitions to their parent.
 // A legal zero-column table is indistinguishable from degraded metadata and
 // remains blocked even after re-syncing.
-func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
+func (e *querySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
 	meta, err := e.getDatabaseMetadata(relation.Database)
 	if err != nil || meta == nil {
 		return false
@@ -244,11 +244,11 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.
-func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
+func (e *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
 
 	// Step 1: Parse with omni.
-	omniStmts, err := ParsePg(stmt)
+	stmts, err := ParsePg(stmt)
 	if err != nil {
 		// Convert omni parse error to *base.SyntaxError with position info
 		// so the SQL service can populate DetailedError.SyntaxError.
@@ -262,8 +262,8 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		}
 		return nil, syntaxErr
 	}
-	if len(omniStmts) != 1 {
-		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(omniStmts))
+	if len(stmts) != 1 {
+		return nil, errors.Errorf("expected exactly 1 statement, got %d", len(stmts))
 	}
 
 	// Step 2: Extract access tables (non-fatal on error — some statement
@@ -291,7 +291,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}
 
 	// Step 4: Classify query type.
-	queryType, isExplainAnalyze := classifyQueryType(omniStmts[0].AST, allSystems)
+	queryType, isExplainAnalyze := classifyQueryType(stmts[0].AST, allSystems)
 
 	// Step 5: Return early for non-SELECT queries, keeping the tables the
 	// statement touches and no result columns. EXPLAIN ANALYZE runs its query
@@ -300,7 +300,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	if queryType != base.Select || isExplainAnalyze {
 		var unresolved *base.UnresolvedColumnsError
 		if isExplainAnalyze {
-			if err := e.collectExplainedPredicateColumns(omniStmts[0].AST, accessesMap); err != nil {
+			if err := e.collectExplainedPredicateColumns(stmts[0].AST, accessesMap); err != nil {
 				return nil, err
 			}
 			e.mergeFunctionAccesses(accessesMap)
@@ -319,7 +319,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}
 
 	// Step 6: Cast to SelectStmt, init catalog, analyze.
-	selStmt, ok := omniStmts[0].AST.(*ast.SelectStmt)
+	selStmt, ok := stmts[0].AST.(*ast.SelectStmt)
 	if !ok {
 		// Not a SelectStmt (e.g., SET, SHOW classified as Select type).
 		return &base.QuerySpan{
@@ -372,7 +372,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}, nil
 }
 
-func (e *omniQuerySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) error {
+func (e *querySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node, accesses base.SourceColumnSet) error {
 	explain, ok := stmt.(*ast.ExplainStmt)
 	if !ok {
 		return nil
@@ -394,7 +394,7 @@ func (e *omniQuerySpanExtractor) collectExplainedPredicateColumns(stmt ast.Node,
 
 // mergeFunctionAccesses adds the tables the analyzed function bodies read to
 // accesses, so access checks and the unresolved-columns signal see them.
-func (e *omniQuerySpanExtractor) mergeFunctionAccesses(accesses base.SourceColumnSet) {
+func (e *querySpanExtractor) mergeFunctionAccesses(accesses base.SourceColumnSet) {
 	for col := range e.funcSourceColumns {
 		accesses[col] = true
 	}
@@ -403,7 +403,7 @@ func (e *omniQuerySpanExtractor) mergeFunctionAccesses(accesses base.SourceColum
 // analyzeSelect analyzes sel for lineage. A function the synced schema does not
 // define, such as one from an extension, stays an opaque call over its
 // arguments instead of failing the statement into the parse-tree fallback.
-func (e *omniQuerySpanExtractor) analyzeSelect(sel *ast.SelectStmt) (*catalog.Query, error) {
+func (e *querySpanExtractor) analyzeSelect(sel *ast.SelectStmt) (*catalog.Query, error) {
 	return e.cat.AnalyzeSelectStmtWithOptions(sel, catalog.AnalyzeOptions{OpaqueUnknownFunctions: true})
 }
 
@@ -419,11 +419,11 @@ func outputColumn(q *catalog.Query, attNum int) *catalog.TargetEntry {
 // extractLineage extracts the result column lineage from an analyzed query.
 // selStmt is the original parse tree, used to determine IsPlainField
 // (which is true only for columns that came from * expansion).
-func (e *omniQuerySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractLineage(q *catalog.Query, selStmt *ast.SelectStmt) []base.QuerySpanResult {
 	return e.extractLineageWithVisited(q, selStmt, make(map[*catalog.Query]bool))
 }
 
-func (e *omniQuerySpanExtractor) extractLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
 	if q == nil {
 		return nil
 	}
@@ -693,7 +693,7 @@ func countStarColumnsFromRTE(q *catalog.Query, targets []*catalog.TargetEntry, s
 	return count
 }
 
-func (e *omniQuerySpanExtractor) extractSetOpLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractSetOpLineageWithVisited(q *catalog.Query, selStmt *ast.SelectStmt, visited map[*catalog.Query]bool) []base.QuerySpanResult {
 	if q.LArg == nil || q.RArg == nil {
 		return nil
 	}
@@ -731,11 +731,11 @@ func (e *omniQuerySpanExtractor) extractSetOpLineageWithVisited(q *catalog.Query
 
 // walkExpr recursively walks an analyzed expression tree and collects all
 // source column references into the result set.
-func (e *omniQuerySpanExtractor) walkExpr(q *catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet) {
+func (e *querySpanExtractor) walkExpr(q *catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet) {
 	e.walkExprWithVisited([]*catalog.Query{q}, expr, result, make(map[queryExprKey]bool))
 }
 
-func (e *omniQuerySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
+func (e *querySpanExtractor) walkExprWithVisited(queryStack []*catalog.Query, expr catalog.AnalyzedExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
 	if expr == nil {
 		return
 	}
@@ -811,7 +811,7 @@ func appendQuery(queryStack []*catalog.Query, q *catalog.Query) []*catalog.Query
 }
 
 // resolveVar resolves a VarExpr to its ultimate source column(s).
-func (e *omniQuerySpanExtractor) resolveVar(queryStack []*catalog.Query, v *catalog.VarExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
+func (e *querySpanExtractor) resolveVar(queryStack []*catalog.Query, v *catalog.VarExpr, result base.SourceColumnSet, visited map[queryExprKey]bool) {
 	q := currentQuery(queryStack)
 	effectiveStack := queryStack
 	if v.LevelsUp > 0 {
@@ -925,7 +925,7 @@ func findCTEForRangeTableEntry(queryStack []*catalog.Query, rte *catalog.RangeTa
 // extractFallbackColumns attempts to extract column names and lineage from the parse tree
 // when AnalyzeSelectStmt fails. It walks the AST to find column references and resolves
 // them against tables in the FROM clause.
-func (e *omniQuerySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractFallbackColumns(selStmt *ast.SelectStmt) []base.QuerySpanResult {
 	if selStmt == nil {
 		return nil
 	}
@@ -1040,7 +1040,7 @@ func figureResTargetName(rt *ast.ResTarget) string {
 // For RangeFunction, it uses function name or alias column names.
 // analyzer and fromTables are optional (may be nil) and used for resolving
 // function argument column refs in the fallback path.
-func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractColumnsFromFromItem(item ast.Node, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
 	if item == nil {
 		return nil
 	}
@@ -1107,7 +1107,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromFromItem(item ast.Node, analy
 
 // extractColumnsFromRangeVar looks up a table in the catalog and returns its columns with lineage.
 // If the table name matches a CTE in fallbackCTEMap, it extracts columns from the CTE definition.
-func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []base.QuerySpanResult {
 	// Check if this is a CTE reference.
 	if rv.Schemaname == "" && e.fallbackCTEMap != nil {
 		if cteSel, ok := e.fallbackCTEMap[strings.ToLower(rv.Relname)]; ok {
@@ -1155,7 +1155,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeVar(rv *ast.RangeVar) []
 // extractColumnsFromCTE extracts columns from a CTE definition.
 // For UNION CTEs, it uses the left branch (the non-recursive term) for column names
 // and merges lineage from both branches.
-func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *ast.SelectStmt) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *ast.SelectStmt) []base.QuerySpanResult {
 	if cteSel == nil {
 		return nil
 	}
@@ -1213,7 +1213,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromCTE(cteName string, cteSel *a
 }
 
 // extractCTEBranchColumns extracts column names and lineage from a single CTE branch.
-func (*omniQuerySpanExtractor) extractCTEBranchColumns(analyzer *plpgsqlAnalyzer, sel *ast.SelectStmt) []base.QuerySpanResult {
+func (*querySpanExtractor) extractCTEBranchColumns(analyzer *plpgsqlAnalyzer, sel *ast.SelectStmt) []base.QuerySpanResult {
 	if sel == nil || sel.TargetList == nil {
 		return nil
 	}
@@ -1241,7 +1241,7 @@ func (*omniQuerySpanExtractor) extractCTEBranchColumns(analyzer *plpgsqlAnalyzer
 }
 
 // getCTEColumnAliases returns the column aliases defined on a CTE (e.g., t1(cc1, cc2, cc3)).
-func (e *omniQuerySpanExtractor) getCTEColumnAliases(cteName string) []string {
+func (e *querySpanExtractor) getCTEColumnAliases(cteName string) []string {
 	if e.fallbackCTEAliases == nil {
 		return nil
 	}
@@ -1280,7 +1280,7 @@ func nodeReferencesTable(node ast.Node, tableName string) bool {
 // mergeRecursiveCTELineage tracks which CTE columns each expression in the
 // recursive term depends on, then resolves those to source columns from the
 // non-recursive term results.
-func (*omniQuerySpanExtractor) mergeRecursiveCTELineage(results []base.QuerySpanResult, recursiveSel *ast.SelectStmt, _ string, cteColNames []string) {
+func (*querySpanExtractor) mergeRecursiveCTELineage(results []base.QuerySpanResult, recursiveSel *ast.SelectStmt, _ string, cteColNames []string) {
 	if recursiveSel == nil || recursiveSel.TargetList == nil {
 		return
 	}
@@ -1376,7 +1376,7 @@ func collectCTEAliases(selStmt *ast.SelectStmt) map[string][]string {
 // extractColumnsFromRangeFunction extracts columns from a function in FROM clause.
 // It first tries to look up user-defined functions in the catalog for lineage tracing.
 // analyzer and fromTables are optional and used for resolving function argument column refs.
-func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
+func (e *querySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource) []base.QuerySpanResult {
 	// Try to resolve user-defined function for lineage tracing.
 	funcName := extractFuncNameFromRange(rf)
 	if funcName != "" && e.cat != nil {
@@ -1422,7 +1422,7 @@ func (e *omniQuerySpanExtractor) extractColumnsFromRangeFunction(rf *ast.RangeFu
 // enrichFuncResultsWithArgLineage resolves column references from function arguments
 // and adds them as source columns to all function result columns.
 // For built-in functions like jsonb_each(a), the output depends on the input column a.
-func (*omniQuerySpanExtractor) enrichFuncResultsWithArgLineage(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource, results []base.QuerySpanResult) {
+func (*querySpanExtractor) enrichFuncResultsWithArgLineage(rf *ast.RangeFunction, analyzer *plpgsqlAnalyzer, fromTables map[string]base.ColumnResource, results []base.QuerySpanResult) {
 	if analyzer == nil || fromTables == nil || rf.Functions == nil || len(results) == 0 {
 		return
 	}
@@ -1520,7 +1520,7 @@ func extractFuncColumnNames(rf *ast.RangeFunction, _ *ast.Alias) []base.QuerySpa
 // cannot resolve these as table sources, so we look up the function manually,
 // analyze its body for lineage, and construct the result.
 // Returns nil if this case doesn't apply.
-func (e *omniQuerySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+func (e *querySpanExtractor) tryUserFuncTableSource(selStmt *ast.SelectStmt, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
 	if selStmt == nil || selStmt.FromClause == nil {
 		return nil
 	}
@@ -1588,7 +1588,7 @@ func extractFuncNameFromRange(rf *ast.RangeFunction) string {
 
 // lookupUserProcByName finds a user-defined function by name in the catalog,
 // searching through schemas in the search path.
-func (e *omniQuerySpanExtractor) lookupUserProcByName(name string) *catalog.UserProc {
+func (e *querySpanExtractor) lookupUserProcByName(name string) *catalog.UserProc {
 	lowerName := strings.ToLower(name)
 	for _, schemaName := range e.searchPath {
 		for _, row := range e.cat.QueryPgProc(schemaName) {
@@ -1616,7 +1616,7 @@ func getOutputParamNames(proc *catalog.UserProc) []string {
 
 // buildFuncResults constructs QuerySpanResults from output parameter names and
 // function body lineage analysis, and populates table-level access in accessesMap.
-func (*omniQuerySpanExtractor) buildFuncResults(outNames []string, bodySets []base.SourceColumnSet, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+func (*querySpanExtractor) buildFuncResults(outNames []string, bodySets []base.SourceColumnSet, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
 	for _, colSet := range bodySets {
 		for k, v := range colSet {
 			accessesMap[base.ColumnResource{
@@ -1647,7 +1647,7 @@ func (*omniQuerySpanExtractor) buildFuncResults(outNames []string, bodySets []ba
 // (not the catalog). This handles cases where the catalog can't resolve the
 // function — either because the metadata function name differs from the DDL name,
 // or because RETURNS TABLE functions can't be loaded into the catalog.
-func (e *omniQuerySpanExtractor) tryMetadataFuncLookup(funcName string, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
+func (e *querySpanExtractor) tryMetadataFuncLookup(funcName string, accessesMap base.SourceColumnSet) []base.QuerySpanResult {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil || meta == nil {
 		return nil

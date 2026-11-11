@@ -31,25 +31,25 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	rule := &tableNoFKOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableNoFKRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableNoFKOmniRule struct {
-	OmniBaseRule
+type tableNoFKRule struct {
+	BaseRule
 }
 
-func (*tableNoFKOmniRule) Name() string {
+func (*tableNoFKRule) Name() string {
 	return "TableNoFKRule"
 }
 
-func (r *tableNoFKOmniRule) OnStatement(node ast.Node) {
+func (r *tableNoFKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -59,7 +59,7 @@ func (r *tableNoFKOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableNoFKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableNoFKRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (r *tableNoFKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *tableNoFKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableNoFKRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}

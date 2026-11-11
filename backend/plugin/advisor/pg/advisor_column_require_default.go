@@ -32,17 +32,17 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 	}
 
 	rule := &columnRequireDefaultRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnRequireDefaultRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*columnRequireDefaultRule) Name() string {
@@ -60,12 +60,12 @@ func (r *columnRequireDefaultRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnRequireDefaultRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		if !r.hasDefault(col) {
 			r.AddAdvice(&storepb.Advice{
@@ -83,12 +83,12 @@ func (r *columnRequireDefaultRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnRequireDefaultRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
 			continue
 		}
@@ -120,7 +120,7 @@ func (*columnRequireDefaultRule) hasDefault(col *ast.ColumnDef) bool {
 	}
 
 	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
-	typeName := omniTypeName(col.TypeName)
+	typeName := typeName(col.TypeName)
 	lower := strings.ToLower(typeName)
 	if lower == "serial" || lower == "bigserial" || lower == "smallserial" ||
 		lower == "serial4" || lower == "serial8" || lower == "serial2" {
@@ -128,7 +128,7 @@ func (*columnRequireDefaultRule) hasDefault(col *ast.ColumnDef) bool {
 	}
 
 	// Check for explicit DEFAULT constraint in the constraints list
-	for _, c := range omniColumnConstraints(col) {
+	for _, c := range columnConstraints(col) {
 		if c.Contype == ast.CONSTR_DEFAULT {
 			return true
 		}

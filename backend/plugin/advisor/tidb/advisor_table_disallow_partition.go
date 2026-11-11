@@ -26,7 +26,7 @@ type TableDisallowPartitionAdvisor struct {
 
 // Check checks for disallow table partition.
 func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 // are NOT covered by this rule in either era; long-standing
 // pre-omni behavior preserved per invariant #10. Mysql analog
 // (mysql/rule_table_disallow_partition.go) has identical scope.
-func checkStmtForPartition(ostmt OmniStmt, level storepb.Advice_Status, title string) *storepb.Advice {
+func checkStmtForPartition(ostmt Stmt, level storepb.Advice_Status, title string) *storepb.Advice {
 	text := ostmt.TrimmedText()
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:

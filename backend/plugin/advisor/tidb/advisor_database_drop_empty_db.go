@@ -27,7 +27,7 @@ type DatabaseAllowDropIfEmptyAdvisor struct {
 
 // Check checks for drop table naming convention.
 func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ type allowDropEmptyDBChecker struct {
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (c *allowDropEmptyDBChecker) checkStmt(ostmt OmniStmt) {
+func (c *allowDropEmptyDBChecker) checkStmt(ostmt Stmt) {
 	node, ok := ostmt.Node.(*ast.DropDatabaseStmt)
 	if !ok {
 		return

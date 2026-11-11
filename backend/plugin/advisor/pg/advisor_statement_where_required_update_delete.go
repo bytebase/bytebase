@@ -31,17 +31,17 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 	}
 
 	rule := &statementWhereRequiredUpdateDeleteRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementWhereRequiredUpdateDeleteRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*statementWhereRequiredUpdateDeleteRule) Name() string {

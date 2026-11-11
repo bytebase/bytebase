@@ -39,28 +39,28 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, errors.New("string_array_payload is required for column required rule")
 	}
 
-	rule := &columnRequireOmniRule{
-		OmniBaseRule:   OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+	rule := &columnRequireRule{
+		BaseRule:       BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		requireColumns: make(map[string]any),
 	}
 	for _, col := range stringArrayPayload.List {
 		rule.requireColumns[col] = true
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnRequireOmniRule struct {
-	OmniBaseRule
+type columnRequireRule struct {
+	BaseRule
 
 	requireColumns map[string]any
 }
 
-func (*columnRequireOmniRule) Name() string {
-	return "ColumnRequireOmniRule"
+func (*columnRequireRule) Name() string {
+	return "ColumnRequireRule"
 }
 
-func (r *columnRequireOmniRule) OnStatement(node ast.Node) {
+func (r *columnRequireRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.handleCreateTable(n)
@@ -70,7 +70,7 @@ func (r *columnRequireOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnRequireOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
+func (r *columnRequireRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
@@ -108,7 +108,7 @@ func (r *columnRequireOmniRule) handleCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *columnRequireOmniRule) handleAlterTable(n *ast.AlterTableStmt) {
+func (r *columnRequireRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Name == nil || n.Actions == nil {
 		return
 	}

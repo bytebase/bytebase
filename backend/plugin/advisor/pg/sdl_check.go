@@ -100,12 +100,12 @@ func checkCreateStmt(statement string, n *ast.CreateStmt, stmtLine int32, advice
 		})
 	}
 
-	cols, tableConstraints := omniTableElements(n)
+	cols, tableConstraints := tableElements(n)
 
 	// Check column-level constraints
 	for _, col := range cols {
 		columnName := col.Colname
-		constraints := omniColumnConstraints(col)
+		constraints := columnConstraints(col)
 
 		var disallowedTypes []string
 		var firstConstraintLine int32
@@ -387,8 +387,8 @@ func checkCreateSeqStmt(n *ast.CreateSeqStmt, stmtLine int32, adviceList []*stor
 }
 
 func checkCreateFunctionStmt(n *ast.CreateFunctionStmt, stmtLine int32, adviceList []*storepb.Advice) []*storepb.Advice {
-	schemaName := omniExtractSchemaFromFuncname(n.Funcname)
-	parts := omniListStrings(n.Funcname)
+	schemaName := extractSchemaFromFuncname(n.Funcname)
+	parts := listStrings(n.Funcname)
 	functionName := ""
 	if len(parts) > 0 {
 		functionName = parts[len(parts)-1]

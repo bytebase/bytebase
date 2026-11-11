@@ -15,7 +15,7 @@ func GetQueryType(statement string) base.QueryType {
 		return base.DML
 	}
 
-	node, ok := GetOmniNode(stmts[0].AST)
+	node, ok := GetNode(stmts[0].AST)
 	if !ok || node == nil {
 		return base.DML
 	}
@@ -25,11 +25,11 @@ func GetQueryType(statement string) base.QueryType {
 		return base.DML
 	}
 
-	return omniOperationToQueryType(a)
+	return operationToQueryType(a)
 }
 
-// omniOperationToQueryType maps an omni StatementAnalysis to a base.QueryType.
-func omniOperationToQueryType(a *analysis.StatementAnalysis) base.QueryType {
+// operationToQueryType maps an omni StatementAnalysis to a base.QueryType.
+func operationToQueryType(a *analysis.StatementAnalysis) base.QueryType {
 	switch a.Operation {
 	case analysis.OpFind, analysis.OpFindOne, analysis.OpCount, analysis.OpDistinct:
 		return base.Select

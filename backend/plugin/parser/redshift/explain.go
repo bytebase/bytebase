@@ -22,7 +22,7 @@ func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 	}
 	planned := statement
 	if explain, ok := node.(*redshiftast.ExplainStmt); ok {
-		if hasOmniExplainAnalyze(explain) {
+		if hasExplainAnalyze(explain) {
 			return "", base.ErrExplainAnalyzeExecutes
 		}
 		if inner, ok := explainedText(explain, statement); ok {

@@ -32,27 +32,27 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
 
-	rule := &tableCommentConventionOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableCommentConventionRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		payload: commentPayload,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableCommentConventionOmniRule struct {
-	OmniBaseRule
+type tableCommentConventionRule struct {
+	BaseRule
 	payload *storepb.SQLReviewRule_CommentConventionRulePayload
 }
 
-func (*tableCommentConventionOmniRule) Name() string {
+func (*tableCommentConventionRule) Name() string {
 	return "TableCommentConventionRule"
 }
 
-func (r *tableCommentConventionOmniRule) OnStatement(node ast.Node) {
+func (r *tableCommentConventionRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateTableStmt)
 	if !ok {
 		return
@@ -60,13 +60,13 @@ func (r *tableCommentConventionOmniRule) OnStatement(node ast.Node) {
 	r.checkCreateTable(n)
 }
 
-func (r *tableCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableCommentConventionRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
 	tableName := n.Table.Name
 
-	comment := omniTableOptionValue(n.Options, "COMMENT")
+	comment := tableOptionValue(n.Options, "COMMENT")
 	exists := comment != ""
 	// Check if any COMMENT option exists (even empty string).
 	for _, opt := range n.Options {

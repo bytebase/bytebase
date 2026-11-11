@@ -31,17 +31,17 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 	}
 
 	rule := &compatibilityRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type compatibilityRule struct {
-	OmniBaseRule
+	BaseRule
 
 	lastCreateTable string
 }
@@ -70,7 +70,7 @@ func (r *compatibilityRule) OnStatement(node ast.Node) {
 
 func (r *compatibilityRule) handleCreateStmt(n *ast.CreateStmt) {
 	if n.Relation != nil {
-		r.lastCreateTable = omniTableName(n.Relation)
+		r.lastCreateTable = rangeVarTableName(n.Relation)
 	}
 }
 
@@ -114,7 +114,7 @@ func (r *compatibilityRule) handleRenameStmt(n *ast.RenameStmt) {
 	case ast.OBJECT_COLUMN:
 		// RENAME COLUMN - check if not on last created table
 		if n.Relation != nil {
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			if r.lastCreateTable != tableName {
 				code = advisorcode.CompatibilityRenameColumn
 			}
@@ -143,14 +143,14 @@ func (r *compatibilityRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	if n.Relation == nil {
 		return
 	}
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 
 	// Skip if this is the table we just created
 	if r.lastCreateTable == tableName {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		code := advisorcode.Ok
 
 		switch ast.AlterTableType(cmd.Subtype) {
@@ -205,7 +205,7 @@ func (r *compatibilityRule) handleIndexStmt(n *ast.IndexStmt) {
 	if n.Relation == nil {
 		return
 	}
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 
 	// Skip if this is the table we just created
 	if r.lastCreateTable == tableName {

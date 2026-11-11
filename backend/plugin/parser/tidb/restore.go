@@ -127,7 +127,7 @@ func getNormalColumnsLower(ctx context.Context, rCtx base.RestoreContext, databa
 // columns; rolling back only the first stmt's columns leaves later
 // columns mutated. See Codex P1 catch on PR #20345.
 func findMatchingDMLs(statement, database, table string, targetCols map[string]bool) ([]ast.Node, error) {
-	stmtList, err := ParseTiDBOmni(statement)
+	stmtList, err := ParseTiDB(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
 	}
@@ -489,7 +489,7 @@ func extractStatement(statement string, backupItem *storepb.PriorBackupDetail_It
 
 	var result []string
 	for i := start; i <= end; i++ {
-		stmtList, err := ParseTiDBOmni(list[i].Text)
+		stmtList, err := ParseTiDB(list[i].Text)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to parse sql")
 		}

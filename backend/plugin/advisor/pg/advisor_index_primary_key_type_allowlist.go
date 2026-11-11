@@ -33,18 +33,18 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
 
 	rule := &indexPrimaryKeyTypeAllowlistRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowlist: stringArrayPayload.List,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type indexPrimaryKeyTypeAllowlistRule struct {
-	OmniBaseRule
+	BaseRule
 
 	allowlist []string
 }
@@ -62,16 +62,16 @@ func (r *indexPrimaryKeyTypeAllowlistRule) OnStatement(node ast.Node) {
 }
 
 func (r *indexPrimaryKeyTypeAllowlistRule) handleCreateStmt(n *ast.CreateStmt) {
-	cols, constraints := omniTableElements(n)
+	cols, constraints := tableElements(n)
 
 	// Build column name -> type mapping
 	columnTypes := make(map[string]string)
 	for _, col := range cols {
-		typeName := normalizePostgreSQLType(omniTypeNameFull(col.TypeName))
+		typeName := normalizePostgreSQLType(typeNameFull(col.TypeName))
 		columnTypes[col.Colname] = typeName
 
 		// Check column-level PRIMARY KEY constraint
-		for _, c := range omniColumnConstraints(col) {
+		for _, c := range columnConstraints(col) {
 			if c.Contype == ast.CONSTR_PRIMARY {
 				if !isTypeInList(typeName, r.allowlist) {
 					r.addTypeAdvice(col.Colname, typeName, r.FindLineByName(col.Colname))
@@ -85,7 +85,7 @@ func (r *indexPrimaryKeyTypeAllowlistRule) handleCreateStmt(n *ast.CreateStmt) {
 		if c.Contype != ast.CONSTR_PRIMARY {
 			continue
 		}
-		for _, colName := range omniConstraintColumns(c) {
+		for _, colName := range constraintColumns(c) {
 			if colType, ok := columnTypes[colName]; ok {
 				if !isTypeInList(colType, r.allowlist) {
 					r.addTypeAdvice(colName, colType, r.FindLineByName(colName))

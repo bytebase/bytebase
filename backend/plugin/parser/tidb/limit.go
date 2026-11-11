@@ -29,7 +29,7 @@ func statementWithResultLimit(statement string, limit int, _ string) string {
 }
 
 func statementWithResultLimitInline(statement string, limit int) (string, error) {
-	list, err := ParseTiDBOmni(statement)
+	list, err := ParseTiDB(statement)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", statement)
 	}

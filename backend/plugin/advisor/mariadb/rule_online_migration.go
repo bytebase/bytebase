@@ -60,8 +60,8 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		}
 	}
 
-	rule := &onlineMigrationOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &onlineMigrationRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: title,
 		},
@@ -72,7 +72,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		changedResources: make(map[string]base.SchemaResource),
 	}
 
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	adviceList := rule.GetAdviceList()
 
@@ -117,8 +117,8 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 	return nil, nil
 }
 
-type onlineMigrationOmniRule struct {
-	OmniBaseRule
+type onlineMigrationRule struct {
+	BaseRule
 	minRows          int64
 	dbMetadata       *model.DatabaseMetadata
 	checkCtx         advisor.Context
@@ -126,11 +126,11 @@ type onlineMigrationOmniRule struct {
 	changedResources map[string]base.SchemaResource
 }
 
-func (*onlineMigrationOmniRule) Name() string {
+func (*onlineMigrationRule) Name() string {
 	return "OnlineMigrationRule"
 }
 
-func (r *onlineMigrationOmniRule) OnStatement(node ast.Node) {
+func (r *onlineMigrationRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return

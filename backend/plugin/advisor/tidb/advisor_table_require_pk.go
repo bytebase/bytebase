@@ -32,7 +32,7 @@ type TableRequirePKAdvisor struct {
 
 // Check checks table requires PK.
 func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ type tableRequirePKChecker struct {
 	finalMetadata    *model.DatabaseMetadata
 }
 
-func (c *tableRequirePKChecker) checkStmt(ostmt OmniStmt) {
+func (c *tableRequirePKChecker) checkStmt(ostmt Stmt) {
 	switch n := ostmt.Node.(type) {
 	case *ast.CreateTableStmt:
 		c.handleCreateTable(n, ostmt)
@@ -83,7 +83,7 @@ func (c *tableRequirePKChecker) checkStmt(ostmt OmniStmt) {
 	}
 }
 
-func (c *tableRequirePKChecker) handleCreateTable(n *ast.CreateTableStmt, ostmt OmniStmt) {
+func (c *tableRequirePKChecker) handleCreateTable(n *ast.CreateTableStmt, ostmt Stmt) {
 	if n.Table == nil {
 		return
 	}
@@ -95,7 +95,7 @@ func (c *tableRequirePKChecker) handleCreateTable(n *ast.CreateTableStmt, ostmt 
 	c.line[n.Table.Name] = ostmt.AbsoluteLine(n.Loc.Start)
 }
 
-func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt OmniStmt) {
+func (c *tableRequirePKChecker) handleAlterTable(n *ast.AlterTableStmt, ostmt Stmt) {
 	if n.Table == nil {
 		return
 	}

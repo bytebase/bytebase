@@ -34,7 +34,7 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 
 	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // WhereRequireForSelectRule is the rule implementation for WHERE clause requirement in SELECT.
@@ -59,7 +59,7 @@ func (*WhereRequireForSelectRule) Name() string {
 
 // OnStatement checks SELECT statements with FROM clauses in the omni AST.
 func (r *WhereRequireForSelectRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		selectStmt, ok := n.(*ast.SelectStmt)
 		if !ok {
 			return

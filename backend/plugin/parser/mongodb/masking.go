@@ -35,7 +35,7 @@ func AnalyzeMaskingStatement(statement string) (*MaskingAnalysis, error) {
 		return nil, nil
 	}
 
-	node, ok := GetOmniNode(stmts[0].AST)
+	node, ok := GetNode(stmts[0].AST)
 	if !ok || node == nil {
 		return nil, nil
 	}
@@ -45,12 +45,12 @@ func AnalyzeMaskingStatement(statement string) (*MaskingAnalysis, error) {
 		return nil, nil
 	}
 
-	return omniAnalysisToMasking(a)
+	return analysisToMasking(a)
 }
 
-// omniAnalysisToMasking converts an omni StatementAnalysis to a MaskingAnalysis.
+// analysisToMasking converts an omni StatementAnalysis to a MaskingAnalysis.
 // Returns nil,nil for non-read operations (not relevant to masking).
-func omniAnalysisToMasking(a *analysis.StatementAnalysis) (*MaskingAnalysis, error) {
+func analysisToMasking(a *analysis.StatementAnalysis) (*MaskingAnalysis, error) {
 	if !a.Operation.IsRead() {
 		return nil, nil
 	}

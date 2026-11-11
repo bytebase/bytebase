@@ -40,7 +40,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
 
 	if checkCtx.Driver != nil {
-		return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+		return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 	}
 
 	return rule.GetAdviceList()

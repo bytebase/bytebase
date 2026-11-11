@@ -37,8 +37,8 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &columnCurrentTimeCountLimitOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnCurrentTimeCountLimitRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -49,7 +49,7 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -69,16 +69,16 @@ type currentTimeTableData struct {
 	line                     int
 }
 
-type columnCurrentTimeCountLimitOmniRule struct {
-	OmniBaseRule
+type columnCurrentTimeCountLimitRule struct {
+	BaseRule
 	tableSet map[string]currentTimeTableData
 }
 
-func (*columnCurrentTimeCountLimitOmniRule) Name() string {
+func (*columnCurrentTimeCountLimitRule) Name() string {
 	return "ColumnCurrentTimeCountLimitRule"
 }
 
-func (r *columnCurrentTimeCountLimitOmniRule) OnStatement(node ast.Node) {
+func (r *columnCurrentTimeCountLimitRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -88,27 +88,27 @@ func (r *columnCurrentTimeCountLimitOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnCurrentTimeCountLimitOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnCurrentTimeCountLimitRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, col := range n.Columns {
-		if col.TypeName == nil || !omniIsTimeType(col.TypeName) {
+		if col.TypeName == nil || !isTimeType(col.TypeName) {
 			continue
 		}
 		r.checkTimeColumn(tableName, col)
 	}
 }
 
-func (r *columnCurrentTimeCountLimitOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnCurrentTimeCountLimitRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		for _, col := range omniGetColumnsFromCmd(cmd) {
-			if col.TypeName == nil || !omniIsTimeType(col.TypeName) {
+		for _, col := range getColumnsFromCmd(cmd) {
+			if col.TypeName == nil || !isTimeType(col.TypeName) {
 				continue
 			}
 			r.checkTimeColumn(tableName, col)
@@ -116,8 +116,8 @@ func (r *columnCurrentTimeCountLimitOmniRule) checkAlterTable(n *ast.AlterTableS
 	}
 }
 
-func (r *columnCurrentTimeCountLimitOmniRule) checkTimeColumn(tableName string, col *ast.ColumnDef) {
-	if omniIsDefaultCurrentTime(col) {
+func (r *columnCurrentTimeCountLimitRule) checkTimeColumn(tableName string, col *ast.ColumnDef) {
+	if isDefaultCurrentTime(col) {
 		table, exists := r.tableSet[tableName]
 		if !exists {
 			table = currentTimeTableData{tableName: tableName}
@@ -126,7 +126,7 @@ func (r *columnCurrentTimeCountLimitOmniRule) checkTimeColumn(tableName string, 
 		table.line = r.BaseLine + int(r.LocToLine(col.Loc))
 		r.tableSet[tableName] = table
 	}
-	if omniIsOnUpdateCurrentTime(col) {
+	if isOnUpdateCurrentTime(col) {
 		table, exists := r.tableSet[tableName]
 		if !exists {
 			table = currentTimeTableData{tableName: tableName}
@@ -137,7 +137,7 @@ func (r *columnCurrentTimeCountLimitOmniRule) checkTimeColumn(tableName string, 
 	}
 }
 
-func (r *columnCurrentTimeCountLimitOmniRule) generateAdvice() {
+func (r *columnCurrentTimeCountLimitRule) generateAdvice() {
 	var tableList []currentTimeTableData
 	for _, table := range r.tableSet {
 		tableList = append(tableList, table)

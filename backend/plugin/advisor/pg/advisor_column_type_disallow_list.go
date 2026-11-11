@@ -39,18 +39,18 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	}
 
 	rule := &columnTypeDisallowListRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		typeRestriction: typeRestriction,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnTypeDisallowListRule struct {
-	OmniBaseRule
+	BaseRule
 
 	typeRestriction map[string]bool
 }
@@ -70,12 +70,12 @@ func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		if col.TypeName != nil {
 			r.checkType(tableName, col.Colname, col.TypeName, col.Colname)
@@ -84,12 +84,12 @@ func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnTypeDisallowListRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		switch ast.AlterTableType(cmd.Subtype) {
 		case ast.AT_AddColumn:
 			colDef, ok := cmd.Def.(*ast.ColumnDef)
@@ -110,7 +110,7 @@ func (r *columnTypeDisallowListRule) handleAlterTableStmt(n *ast.AlterTableStmt)
 
 func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, tn *ast.TypeName, searchName string) {
 	// Build a type text from the TypeName for equivalence checking
-	typeText := omniTypeName(tn)
+	typeText := typeName(tn)
 
 	var matchedDisallowedType string
 	for disallowedType := range r.typeRestriction {

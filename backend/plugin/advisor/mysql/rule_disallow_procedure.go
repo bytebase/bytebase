@@ -31,25 +31,25 @@ func (*ProcedureDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &procedureDisallowCreateOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &procedureDisallowCreateRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type procedureDisallowCreateOmniRule struct {
-	OmniBaseRule
+type procedureDisallowCreateRule struct {
+	BaseRule
 }
 
-func (*procedureDisallowCreateOmniRule) Name() string {
+func (*procedureDisallowCreateRule) Name() string {
 	return "ProcedureDisallowCreateRule"
 }
 
-func (r *procedureDisallowCreateOmniRule) OnStatement(node ast.Node) {
+func (r *procedureDisallowCreateRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateFunctionStmt)
 	if !ok || !n.IsProcedure {
 		return

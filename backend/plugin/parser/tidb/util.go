@@ -4,10 +4,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 )
 
-// omniExprLoc returns the source range of an expression node. omni stores the
+// exprLoc returns the source range of an expression node. omni stores the
 // range in each node's named Loc field, which is not method-promoted, so the
 // range is read per type.
-func omniExprLoc(expr ast.ExprNode) (ast.Loc, bool) {
+func exprLoc(expr ast.ExprNode) (ast.Loc, bool) {
 	switch e := expr.(type) {
 	case *ast.ColumnRef:
 		return e.Loc, true

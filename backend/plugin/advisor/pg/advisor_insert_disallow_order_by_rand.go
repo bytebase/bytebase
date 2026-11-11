@@ -32,17 +32,17 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 	}
 
 	rule := &insertDisallowOrderByRandRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type insertDisallowOrderByRandRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*insertDisallowOrderByRandRule) Name() string {
@@ -97,7 +97,7 @@ func (r *insertDisallowOrderByRandRule) hasOrderByRandom(sel *ast.SelectStmt) bo
 		if !ok {
 			continue
 		}
-		funcName := omniListStrings(fc.Funcname)
+		funcName := listStrings(fc.Funcname)
 		for _, name := range funcName {
 			lower := strings.ToLower(name)
 			if lower == "random" || lower == "random_between" {

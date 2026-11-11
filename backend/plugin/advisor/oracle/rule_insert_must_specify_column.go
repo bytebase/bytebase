@@ -33,7 +33,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 
 	rule := NewInsertMustSpecifyColumnRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // InsertMustSpecifyColumnRule is the rule implementation for enforcing column specification in INSERT.
@@ -87,7 +87,7 @@ func (r *InsertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 }
 
 func (r *InsertMustSpecifyColumnRule) checkPLSQLBlock(block *ast.PLSQLBlock) {
-	omniWalkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
+	walkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
 		insertStmt, ok := stmt.(*ast.InsertStmt)
 		if !ok {
 			return true

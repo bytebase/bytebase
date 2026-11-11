@@ -32,7 +32,7 @@ type ColumnCurrentTimeCountLimitAdvisor struct {
 
 // Check checks for current time column count limit.
 func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,14 +100,14 @@ type currentTimeTableData struct {
 }
 
 // countCurrentTimeColumn increments the per-table counts for a single
-// column. Only DATETIME/TIMESTAMP columns are counted; the omniIsTimeType
+// column. Only DATETIME/TIMESTAMP columns are counted; the isTimeType
 // gate matches pingcap-typed predecessor's TypeDatetime/TypeTimestamp
 // switch.
 func countCurrentTimeColumn(tableSet map[string]currentTimeTableData, tableName string, column *ast.ColumnDef, line int) {
-	if column == nil || !omniIsTimeType(column.TypeName) {
+	if column == nil || !isTimeType(column.TypeName) {
 		return
 	}
-	if omniIsDefaultCurrentTime(column) {
+	if isDefaultCurrentTime(column) {
 		table, exists := tableSet[tableName]
 		if !exists {
 			table = currentTimeTableData{tableName: tableName}
@@ -116,7 +116,7 @@ func countCurrentTimeColumn(tableSet map[string]currentTimeTableData, tableName 
 		table.line = line
 		tableSet[tableName] = table
 	}
-	if omniIsOnUpdateCurrentTime(column) {
+	if isOnUpdateCurrentTime(column) {
 		table, exists := tableSet[tableName]
 		if !exists {
 			table = currentTimeTableData{tableName: tableName}

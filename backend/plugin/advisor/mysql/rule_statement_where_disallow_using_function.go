@@ -31,8 +31,8 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 		return nil, err
 	}
 
-	rule := &whereDisallowFuncOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &whereDisallowFuncRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -41,19 +41,19 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 		rule.dbMetadata = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type whereDisallowFuncOmniRule struct {
-	OmniBaseRule
+type whereDisallowFuncRule struct {
+	BaseRule
 	dbMetadata *model.DatabaseMetadata
 }
 
-func (*whereDisallowFuncOmniRule) Name() string {
+func (*whereDisallowFuncRule) Name() string {
 	return "StatementWhereDisallowUsingFunctionRule"
 }
 
-func (r *whereDisallowFuncOmniRule) OnStatement(node ast.Node) {
+func (r *whereDisallowFuncRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
 		r.checkSelect(n)
@@ -75,7 +75,7 @@ func (r *whereDisallowFuncOmniRule) OnStatement(node ast.Node) {
 
 // onInsert handles INSERT [... SELECT | ... VALUES (...) | ... SET ... | ... ON DUPLICATE KEY UPDATE].
 // Each of SELECT/VALUES/SET/ON DUPLICATE KEY can embed scalar subqueries with their own WHERE.
-func (r *whereDisallowFuncOmniRule) onInsert(n *ast.InsertStmt) {
+func (r *whereDisallowFuncRule) onInsert(n *ast.InsertStmt) {
 	if n.Select != nil {
 		r.checkSelect(n.Select)
 	}
@@ -88,19 +88,19 @@ func (r *whereDisallowFuncOmniRule) onInsert(n *ast.InsertStmt) {
 	r.recurseAssignmentValues(n.OnDuplicateKey, nil)
 }
 
-func (r *whereDisallowFuncOmniRule) onCreateTable(n *ast.CreateTableStmt) {
+func (r *whereDisallowFuncRule) onCreateTable(n *ast.CreateTableStmt) {
 	if n.Select != nil {
 		r.checkSelect(n.Select)
 	}
 }
 
-func (r *whereDisallowFuncOmniRule) onCreateView(n *ast.CreateViewStmt) {
+func (r *whereDisallowFuncRule) onCreateView(n *ast.CreateViewStmt) {
 	if n.Select != nil {
 		r.checkSelect(n.Select)
 	}
 }
 
-func (r *whereDisallowFuncOmniRule) onAlterView(n *ast.AlterViewStmt) {
+func (r *whereDisallowFuncRule) onAlterView(n *ast.AlterViewStmt) {
 	if n.Select != nil {
 		r.checkSelect(n.Select)
 	}
@@ -108,7 +108,7 @@ func (r *whereDisallowFuncOmniRule) onAlterView(n *ast.AlterViewStmt) {
 
 // onUpdate handles UPDATE WHERE and any scalar subqueries hidden in SET expressions
 // or derived tables in the table list (e.g. JOIN (SELECT ... WHERE ...) s).
-func (r *whereDisallowFuncOmniRule) onUpdate(n *ast.UpdateStmt) {
+func (r *whereDisallowFuncRule) onUpdate(n *ast.UpdateStmt) {
 	tables := r.collectTableNames(n.Tables)
 	r.checkWhere(n.Where, tables)
 	for _, te := range n.Tables {
@@ -119,7 +119,7 @@ func (r *whereDisallowFuncOmniRule) onUpdate(n *ast.UpdateStmt) {
 
 // onDelete handles DELETE WHERE, including multi-table DELETE ... USING and derived
 // tables that carry their own WHERE clauses.
-func (r *whereDisallowFuncOmniRule) onDelete(n *ast.DeleteStmt) {
+func (r *whereDisallowFuncRule) onDelete(n *ast.DeleteStmt) {
 	tables := r.collectTableNames(n.Tables)
 	for alias, ref := range r.collectTableNames(n.Using) {
 		tables[alias] = ref
@@ -135,7 +135,7 @@ func (r *whereDisallowFuncOmniRule) onDelete(n *ast.DeleteStmt) {
 
 // recurseAssignmentValues walks the RHS of each assignment (UPDATE SET, INSERT SET,
 // INSERT ... ON DUPLICATE KEY UPDATE) for scalar subqueries.
-func (r *whereDisallowFuncOmniRule) recurseAssignmentValues(assignments []*ast.Assignment, outer tablesByAlias) {
+func (r *whereDisallowFuncRule) recurseAssignmentValues(assignments []*ast.Assignment, outer tablesByAlias) {
 	for _, a := range assignments {
 		if a != nil && a.Value != nil {
 			r.recurseIntoNestedSelectsInNode(a.Value, outer)
@@ -143,7 +143,7 @@ func (r *whereDisallowFuncOmniRule) recurseAssignmentValues(assignments []*ast.A
 	}
 }
 
-func (r *whereDisallowFuncOmniRule) checkSelect(sel *ast.SelectStmt) {
+func (r *whereDisallowFuncRule) checkSelect(sel *ast.SelectStmt) {
 	r.checkSelectInScope(sel, nil)
 }
 
@@ -151,7 +151,7 @@ func (r *whereDisallowFuncOmniRule) checkSelect(sel *ast.SelectStmt) {
 // so that correlated subqueries can resolve references to outer aliases. Local
 // (inner) tables take precedence for unqualified columns per SQL name resolution;
 // outer tables are consulted only for qualified references (e.g. outer_alias.col).
-func (r *whereDisallowFuncOmniRule) checkSelectInScope(sel *ast.SelectStmt, outer tablesByAlias) {
+func (r *whereDisallowFuncRule) checkSelectInScope(sel *ast.SelectStmt, outer tablesByAlias) {
 	if sel == nil {
 		return
 	}
@@ -191,7 +191,7 @@ func (r *whereDisallowFuncOmniRule) checkSelectInScope(sel *ast.SelectStmt, oute
 // derived tables (subqueries in FROM), and plain tables absent from metadata.
 // When true, we must not fall back to outer scope for unqualified columns,
 // because the inner source likely owns the name.
-func (r *whereDisallowFuncOmniRule) localHasUnresolvedSources(from []ast.TableExpr, local tablesByAlias) bool {
+func (r *whereDisallowFuncRule) localHasUnresolvedSources(from []ast.TableExpr, local tablesByAlias) bool {
 	for _, te := range from {
 		derivedFound := false
 		ast.Inspect(te, func(n ast.Node) bool {
@@ -219,7 +219,7 @@ func (r *whereDisallowFuncOmniRule) localHasUnresolvedSources(from []ast.TableEx
 
 // recurseIntoNestedSelectsInNode walks the given AST node and recurses into any
 // nested *ast.SelectStmt, threading the given outer scope.
-func (r *whereDisallowFuncOmniRule) recurseIntoNestedSelectsInNode(n ast.Node, outer tablesByAlias) {
+func (r *whereDisallowFuncRule) recurseIntoNestedSelectsInNode(n ast.Node, outer tablesByAlias) {
 	if n == nil {
 		return
 	}
@@ -234,7 +234,7 @@ func (r *whereDisallowFuncOmniRule) recurseIntoNestedSelectsInNode(n ast.Node, o
 
 // recurseIntoNestedSelects finds nested *ast.SelectStmt nodes in the non-WHERE parts of
 // the given SELECT and recursively invokes checkSelectInScope on them with outer scope.
-func (r *whereDisallowFuncOmniRule) recurseIntoNestedSelects(sel *ast.SelectStmt, outer tablesByAlias) {
+func (r *whereDisallowFuncRule) recurseIntoNestedSelects(sel *ast.SelectStmt, outer tablesByAlias) {
 	visit := func(n ast.Node) {
 		if n == nil {
 			return
@@ -280,7 +280,7 @@ type tablesByAlias = map[string]tableRef
 // as an opaque tableRef{} entry so qualifier-based resolution can still tell it apart
 // from an outer alias of the same name.
 // Alias keys are normalized per IsObjectCaseSensitive.
-func (r *whereDisallowFuncOmniRule) collectTableNames(tableExprs []ast.TableExpr) tablesByAlias {
+func (r *whereDisallowFuncRule) collectTableNames(tableExprs []ast.TableExpr) tablesByAlias {
 	tables := make(tablesByAlias)
 	for _, from := range tableExprs {
 		ast.Inspect(from, func(n ast.Node) bool {
@@ -323,7 +323,7 @@ func (r *whereDisallowFuncOmniRule) collectTableNames(tableExprs []ast.TableExpr
 }
 
 // normalizeIdent lowercases identifiers when the DB is configured case-insensitive.
-func (r *whereDisallowFuncOmniRule) normalizeIdent(name string) string {
+func (r *whereDisallowFuncRule) normalizeIdent(name string) string {
 	if r.dbMetadata != nil && r.dbMetadata.GetIsObjectCaseSensitive() {
 		return name
 	}
@@ -332,7 +332,7 @@ func (r *whereDisallowFuncOmniRule) normalizeIdent(name string) string {
 
 // tableMetadata fetches the store-model table for the given ref, applying the
 // cross-DB guard. Returns nil when not resolvable.
-func (r *whereDisallowFuncOmniRule) tableMetadata(ref tableRef) *model.TableMetadata {
+func (r *whereDisallowFuncRule) tableMetadata(ref tableRef) *model.TableMetadata {
 	if r.dbMetadata == nil {
 		return nil
 	}
@@ -344,7 +344,7 @@ func (r *whereDisallowFuncOmniRule) tableMetadata(ref tableRef) *model.TableMeta
 }
 
 // indexedColumns returns indexed column names for the given table reference.
-func (r *whereDisallowFuncOmniRule) indexedColumns(ref tableRef) map[string]bool {
+func (r *whereDisallowFuncRule) indexedColumns(ref tableRef) map[string]bool {
 	table := r.tableMetadata(ref)
 	if table == nil {
 		return nil
@@ -362,7 +362,7 @@ func (r *whereDisallowFuncOmniRule) indexedColumns(ref tableRef) map[string]bool
 }
 
 // allColumns returns every column name defined for the given table reference.
-func (r *whereDisallowFuncOmniRule) allColumns(ref tableRef) map[string]bool {
+func (r *whereDisallowFuncRule) allColumns(ref tableRef) map[string]bool {
 	table := r.tableMetadata(ref)
 	if table == nil {
 		return nil
@@ -401,7 +401,7 @@ func (s scopeIndexed) empty() bool {
 }
 
 // resolveIndexedColumns builds a per-alias map of indexed columns.
-func (r *whereDisallowFuncOmniRule) resolveIndexedColumns(tables tablesByAlias) indexedByAlias {
+func (r *whereDisallowFuncRule) resolveIndexedColumns(tables tablesByAlias) indexedByAlias {
 	all := make(indexedByAlias)
 	for alias, ref := range tables {
 		if cols := r.indexedColumns(ref); cols != nil {
@@ -415,7 +415,7 @@ func (r *whereDisallowFuncOmniRule) resolveIndexedColumns(tables tablesByAlias) 
 }
 
 // resolveAllColumns builds a per-alias map of every known column for each table.
-func (r *whereDisallowFuncOmniRule) resolveAllColumns(tables tablesByAlias) indexedByAlias {
+func (r *whereDisallowFuncRule) resolveAllColumns(tables tablesByAlias) indexedByAlias {
 	all := make(indexedByAlias)
 	for alias, ref := range tables {
 		if cols := r.allColumns(ref); cols != nil {
@@ -434,7 +434,7 @@ func (r *whereDisallowFuncOmniRule) resolveAllColumns(tables tablesByAlias) inde
 //   - Unqualified: if any local table declares the column, local wins (flag only if
 //     that local table has it indexed). If no local table declares the column, fall
 //     back to outer indexed columns (supports correlated subqueries).
-func (r *whereDisallowFuncOmniRule) isIndexed(ref *ast.ColumnRef, s scopeIndexed) bool {
+func (r *whereDisallowFuncRule) isIndexed(ref *ast.ColumnRef, s scopeIndexed) bool {
 	if ref == nil || s.empty() {
 		return false
 	}
@@ -481,11 +481,11 @@ func (r *whereDisallowFuncOmniRule) isIndexed(ref *ast.ColumnRef, s scopeIndexed
 	return false
 }
 
-func (r *whereDisallowFuncOmniRule) checkWhere(where ast.ExprNode, tables tablesByAlias) {
+func (r *whereDisallowFuncRule) checkWhere(where ast.ExprNode, tables tablesByAlias) {
 	r.checkWhereWithScopes(where, tables, nil, false)
 }
 
-func (r *whereDisallowFuncOmniRule) checkWhereWithScopes(where ast.ExprNode, local, outer tablesByAlias, localUnresolved bool) {
+func (r *whereDisallowFuncRule) checkWhereWithScopes(where ast.ExprNode, local, outer tablesByAlias, localUnresolved bool) {
 	if where == nil {
 		return
 	}
@@ -521,7 +521,7 @@ func (r *whereDisallowFuncOmniRule) checkWhereWithScopes(where ast.ExprNode, loc
 	})
 }
 
-func (r *whereDisallowFuncOmniRule) checkWhereNode(n ast.Node, indexed scopeIndexed) {
+func (r *whereDisallowFuncRule) checkWhereNode(n ast.Node, indexed scopeIndexed) {
 	switch expr := n.(type) {
 	case *ast.FuncCallExpr:
 		if col := r.findIndexedColumnInArgs(expr.Args, indexed); col != "" {
@@ -545,7 +545,7 @@ func (r *whereDisallowFuncOmniRule) checkWhereNode(n ast.Node, indexed scopeInde
 	}
 }
 
-func (r *whereDisallowFuncOmniRule) addFunctionAdvice(funcName, col string, loc ast.Loc) {
+func (r *whereDisallowFuncRule) addFunctionAdvice(funcName, col string, loc ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
@@ -555,7 +555,7 @@ func (r *whereDisallowFuncOmniRule) addFunctionAdvice(funcName, col string, loc 
 	})
 }
 
-func (r *whereDisallowFuncOmniRule) addCalculationAdvice(col string, loc ast.Loc) {
+func (r *whereDisallowFuncRule) addCalculationAdvice(col string, loc ast.Loc) {
 	r.AddAdviceAbsolute(&storepb.Advice{
 		Status:        r.Level,
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
@@ -570,7 +570,7 @@ func (r *whereDisallowFuncOmniRule) addCalculationAdvice(col string, loc ast.Loc
 // `UPPER((name))` and `UPPER(CAST(name AS CHAR))` are still flagged.
 // BinaryExpr/UnaryExpr (arithmetic) are NOT crossed — those are handled by the
 // calculation advice path, so `ABS(id + 1)` is reported once as a calculation.
-func (r *whereDisallowFuncOmniRule) findIndexedColumnInArgs(args []ast.ExprNode, indexed scopeIndexed) string {
+func (r *whereDisallowFuncRule) findIndexedColumnInArgs(args []ast.ExprNode, indexed scopeIndexed) string {
 	for _, arg := range args {
 		if col := r.unwrapAndFindIndexedColumn(arg, indexed); col != "" {
 			return col
@@ -581,7 +581,7 @@ func (r *whereDisallowFuncOmniRule) findIndexedColumnInArgs(args []ast.ExprNode,
 
 // unwrapAndFindIndexedColumn peels ParenExpr/CastExpr wrappers off expr and, if the
 // inner expression is an indexed ColumnRef, returns its name. Returns "" otherwise.
-func (r *whereDisallowFuncOmniRule) unwrapAndFindIndexedColumn(expr ast.ExprNode, indexed scopeIndexed) string {
+func (r *whereDisallowFuncRule) unwrapAndFindIndexedColumn(expr ast.ExprNode, indexed scopeIndexed) string {
 	for expr != nil {
 		switch e := expr.(type) {
 		case *ast.ColumnRef:

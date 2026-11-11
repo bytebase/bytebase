@@ -54,7 +54,7 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	}
 
 	rule := &namingIndexConventionRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -64,11 +64,11 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		originalMetadata: checkCtx.OriginalMetadata,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type namingIndexConventionRule struct {
-	OmniBaseRule
+	BaseRule
 
 	format           string
 	maxLength        int
@@ -102,12 +102,12 @@ func (r *namingIndexConventionRule) handleIndexStmt(n *ast.IndexStmt) {
 		return
 	}
 
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	columnList := omniIndexColumns(n)
+	columnList := indexColumns(n)
 	r.checkIndexName(indexName, tableName, columnList)
 }
 

@@ -37,7 +37,7 @@ type ColumnDisallowSetCharsetAdvisor struct {
 // Closes BYT-9412 (getColumnCharset cleanup) by being the last consumer
 // of the pingcap-typed getColumnCharset helper.
 func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx adviso
 // clause) and "binary" (used for JSON-like types) are allowed; everything
 // else is a violation.
 func columnCharsetAllowed(col *ast.ColumnDef) bool {
-	cs := omniColumnCharset(col)
+	cs := columnCharset(col)
 	switch cs {
 	case "", "binary":
 		return true

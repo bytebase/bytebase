@@ -38,8 +38,8 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 		return nil, errors.New("number_payload is required for column auto increment initial value rule")
 	}
 
-	rule := &columnAutoIncrementInitialValueOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnAutoIncrementInitialValueRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -50,7 +50,7 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mariadbparser.GetOmniNode(stmt.AST)
+		node, ok := mariadbparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -61,16 +61,16 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 	return rule.GetAdviceList(), nil
 }
 
-type columnAutoIncrementInitialValueOmniRule struct {
-	OmniBaseRule
+type columnAutoIncrementInitialValueRule struct {
+	BaseRule
 	value int
 }
 
-func (*columnAutoIncrementInitialValueOmniRule) Name() string {
+func (*columnAutoIncrementInitialValueRule) Name() string {
 	return "ColumnAutoIncrementInitialValueRule"
 }
 
-func (r *columnAutoIncrementInitialValueOmniRule) OnStatement(node ast.Node) {
+func (r *columnAutoIncrementInitialValueRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -80,16 +80,16 @@ func (r *columnAutoIncrementInitialValueOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnAutoIncrementInitialValueOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementInitialValueRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	r.checkOptions(tableName, n.Options, r.LocToLine(n.Loc))
 }
 
-func (r *columnAutoIncrementInitialValueOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnAutoIncrementInitialValueRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -100,7 +100,7 @@ func (r *columnAutoIncrementInitialValueOmniRule) checkAlterTable(n *ast.AlterTa
 	}
 }
 
-func (r *columnAutoIncrementInitialValueOmniRule) checkOptions(tableName string, opts []*ast.TableOption, line int32) {
+func (r *columnAutoIncrementInitialValueRule) checkOptions(tableName string, opts []*ast.TableOption, line int32) {
 	for _, opt := range opts {
 		if strings.EqualFold(opt.Name, "AUTO_INCREMENT") {
 			r.checkOptionValue(tableName, opt.Value, line)
@@ -108,7 +108,7 @@ func (r *columnAutoIncrementInitialValueOmniRule) checkOptions(tableName string,
 	}
 }
 
-func (r *columnAutoIncrementInitialValueOmniRule) checkOptionValue(tableName, valueStr string, line int32) {
+func (r *columnAutoIncrementInitialValueRule) checkOptionValue(tableName, valueStr string, line int32) {
 	value, err := strconv.ParseUint(valueStr, 10, 0)
 	if err != nil {
 		return

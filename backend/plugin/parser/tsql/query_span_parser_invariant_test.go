@@ -12,12 +12,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TestOmniQuerySpanParserInvariants verifies that the omni MSSQL parser can
+// TestQuerySpanParserInvariants verifies that the omni MSSQL parser can
 // handle every statement used by the query-span fixtures, and that the AST
 // continues to populate the fields the query-span extractor depends on. Run with
 //
-//	go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/tsql -run ^TestOmniQuerySpanParserInvariants$
-func TestOmniQuerySpanParserInvariants(t *testing.T) {
+//	go test -v -count=1 github.com/bytebase/bytebase/backend/plugin/parser/tsql -run ^TestQuerySpanParserInvariants$
+func TestQuerySpanParserInvariants(t *testing.T) {
 	t.Run("FixtureParseCoverage", querySpanFixtureParseCoverage)
 	t.Run("StructuralInvariants", querySpanStructuralInvariants)
 }

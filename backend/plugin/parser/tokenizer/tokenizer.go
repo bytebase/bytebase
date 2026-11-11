@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"strings"
 	"unicode"
 
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
@@ -53,150 +51,6 @@ func NewTokenizer(statement string) *Tokenizer {
 	t.bufferByteOffset = append(t.bufferByteOffset, len(statement))
 
 	return t
-}
-
-func (t *Tokenizer) SetLineForMySQLCreateTableStmt(node *tidbast.CreateTableStmt, firstLine int) error {
-	// We assume that the parser will parse the columns and table constraints according to the order of the raw SQL statements
-	// and the identifiers don't equal any keywords in CREATE TABLE statements.
-	// If it breaks our assumption, we set the line for columns and table constraints to the first line of the CREATE TABLE statement.
-	for _, col := range node.Cols {
-		col.SetOriginTextPosition(node.OriginTextPosition())
-	}
-	for _, cons := range node.Constraints {
-		cons.SetOriginTextPosition(node.OriginTextPosition())
-	}
-
-	columnPos := 0
-	constraintPos := 0
-	// find the '(' for CREATE TABLE ... ( ... )
-	if err := t.scanTo([]rune{'('}); err != nil {
-		return err
-	}
-
-	// parentheses is the flag for matching parentheses.
-	parentheses := 1
-	t.skipBlank()
-	startPos := t.pos()
-	for {
-		switch {
-		case t.char(0) == '\n':
-			t.line++
-			t.skip(1)
-		case t.char(0) == '/' && t.char(1) == '*':
-			if err := t.scanComment(); err != nil {
-				return err
-			}
-		case t.char(0) == '-' && t.char(1) == '-':
-			if err := t.scanComment(); err != nil {
-				return err
-			}
-		case t.char(0) == '#':
-			if err := t.scanComment(); err != nil {
-				return err
-			}
-		case t.char(0) == '\'' || t.char(0) == '"':
-			if err := t.scanString(t.char(0)); err != nil {
-				return err
-			}
-		case t.char(0) == '`':
-			if err := t.scanIdentifier('`'); err != nil {
-				return err
-			}
-		case t.char(0) == '(':
-			parentheses++
-			t.skip(1)
-		case t.char(0) == ')':
-			parentheses--
-			if parentheses == 0 {
-				// This means we find the corresponding ')' for the first '(' in CREATE TABLE statements.
-				// We need to check the definition and return.
-				def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
-				if columnPos < len(node.Cols) &&
-					strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
-					// Consider this text:
-					// CREATE TABLE t(
-					//   a int
-					// )
-					//
-					// Our current location is ')'.
-					// The line (t.line + firstLine - 1) is the line of ')',
-					// but we want to get the line of 'a int'.
-					// So we need minus the aboveNonBlankLineDistance.
-					node.Cols[columnPos].SetOriginTextPosition(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
-				} else if constraintPos < len(node.Constraints) &&
-					matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
-					// Consider this text:
-					// CREATE TABLE t(
-					//   a int,
-					//   UNIQUE (a)
-					// )
-					//
-					// Our current location is ')'.
-					// The line (t.line + firstLine - 1) is the line of ')',
-					// but we want to get the line of 'UNIQUE (a)'.
-					// So we need minus the aboveNonBlankLineDistance.
-					node.Constraints[constraintPos].SetOriginTextPosition(t.line + firstLine - 1 - t.aboveNonBlankLineDistance())
-				}
-				return nil
-			}
-			t.skip(1)
-		case t.char(0) == ',':
-			// e.g. CREATE TABLE t(
-			//   a int,
-			//   b int,
-			//   UNIQUE(a, b),
-			//   UNIQUE(b)
-			// )
-			// We don't need to consider the ',' in UNIQUE(a, b)
-			if parentheses > 1 {
-				t.skip(1)
-				continue
-			}
-			def := strings.ToLower(t.getString(startPos, t.pos()-startPos))
-			if columnPos < len(node.Cols) &&
-				strings.Contains(def, node.Cols[columnPos].Name.Name.L) {
-				node.Cols[columnPos].SetOriginTextPosition(t.line + firstLine - 1)
-				columnPos++
-			} else if constraintPos < len(node.Constraints) &&
-				matchMySQLTableConstraint(def, node.Constraints[constraintPos]) {
-				node.Constraints[constraintPos].SetOriginTextPosition(t.line + firstLine - 1)
-				constraintPos++
-			}
-			t.skip(1)
-			t.skipBlank()
-			startPos = t.pos()
-		case t.char(0) == eofRune:
-			return nil
-		default:
-			t.skip(1)
-		}
-	}
-}
-
-func matchMySQLTableConstraint(text string, cons *tidbast.Constraint) bool {
-	text = strings.ToLower(text)
-	if cons.Name != "" {
-		return strings.Contains(text, strings.ToLower(cons.Name))
-	}
-	switch cons.Tp {
-	case tidbast.ConstraintCheck:
-		return strings.Contains(text, "check")
-	case tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex:
-		return strings.Contains(text, "unique")
-	case tidbast.ConstraintPrimaryKey:
-		return strings.Contains(text, "primary key")
-	case tidbast.ConstraintForeignKey:
-		return strings.Contains(text, "foreign key")
-	case tidbast.ConstraintIndex:
-		notUnique := !strings.Contains(text, "unique")
-		notPrimary := !strings.Contains(text, "primary key")
-		notForeign := !strings.Contains(text, "foreign key")
-		isIndex := strings.Contains(text, "index") || strings.Contains(text, "key")
-		return notUnique && notPrimary && notForeign && isIndex
-	default:
-		// Unknown constraint type
-		return false
-	}
 }
 
 func (t *Tokenizer) aboveNonBlankLineDistance() int {
@@ -558,59 +412,6 @@ func (t *Tokenizer) scanComment() error {
 		// Not a comment
 	}
 	return errors.Errorf("no comment found")
-}
-
-// scanTo scans to delimiter. Use KMP algorithm.
-func (t *Tokenizer) scanTo(delimiter []rune) error {
-	if len(delimiter) == 0 {
-		return errors.Errorf("scanTo failed: delimiter cannot be nil")
-	}
-
-	// KMP algorithm.
-	// Build the next array.
-	var next []int
-	next = append(next, 0)
-	now := 0
-	i := 1
-	for i < len(delimiter) {
-		if delimiter[i] == delimiter[now] {
-			now++
-			next = append(next, now)
-			i++
-			continue
-		}
-		if now == 0 {
-			next = append(next, 0)
-			i++
-			continue
-		}
-		now = next[now-1]
-	}
-
-	// Search delimiter
-	pos := 0
-	for {
-		// find delimiter successfully
-		if pos == len(delimiter) {
-			return nil
-		}
-		if t.char(0) == eofRune {
-			return errors.Errorf("scanTo failed: delimiter %q not found", string(delimiter))
-		}
-		if t.char(0) == '\n' {
-			t.line++
-		}
-		if t.char(0) == delimiter[pos] {
-			pos++
-			t.skip(1)
-		} else {
-			if pos == 0 {
-				t.skip(1)
-			} else {
-				pos = next[pos-1]
-			}
-		}
-	}
 }
 
 func (t *Tokenizer) scan() {

@@ -68,8 +68,8 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 }
 
 // nolint:unused
-// omniTableName extracts the table name from a TableRef.
-func omniTableName(ref *ast.TableRef) string {
+// tableName extracts the table name from a TableRef.
+func tableName(ref *ast.TableRef) string {
 	if ref == nil {
 		return ""
 	}
@@ -77,8 +77,8 @@ func omniTableName(ref *ast.TableRef) string {
 }
 
 // nolint:unused
-// omniColumnNames extracts column name list from a table-level constraint.
-func omniColumnNames(constraint *ast.Constraint) []string {
+// columnNames extracts column name list from a table-level constraint.
+func columnNames(constraint *ast.Constraint) []string {
 	if constraint == nil {
 		return nil
 	}
@@ -86,9 +86,9 @@ func omniColumnNames(constraint *ast.Constraint) []string {
 }
 
 // nolint:unused
-// omniIndexColumns extracts column names from an index column list.
+// indexColumns extracts column names from an index column list.
 // For expression-based index columns, it falls back to the column reference name.
-func omniIndexColumns(cols []*ast.IndexColumn) []string {
+func indexColumns(cols []*ast.IndexColumn) []string {
 	if len(cols) == 0 {
 		return nil
 	}
@@ -102,8 +102,8 @@ func omniIndexColumns(cols []*ast.IndexColumn) []string {
 }
 
 // nolint:unused
-// omniDataTypeName extracts the normalized (upper-case) type name string from a DataType.
-func omniDataTypeName(dt *ast.DataType) string {
+// dataTypeName extracts the normalized (upper-case) type name string from a DataType.
+func dataTypeName(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
@@ -111,9 +111,9 @@ func omniDataTypeName(dt *ast.DataType) string {
 }
 
 // nolint:unused
-// omniIsNullable checks if a column allows NULL.
+// isNullable checks if a column allows NULL.
 // A column is nullable unless it has a NOT NULL constraint or is a PRIMARY KEY.
-func omniIsNullable(col *ast.ColumnDef) bool {
+func isNullable(col *ast.ColumnDef) bool {
 	if col == nil {
 		return true
 	}
@@ -126,8 +126,8 @@ func omniIsNullable(col *ast.ColumnDef) bool {
 }
 
 // nolint:unused
-// omniHasDefault checks if a column has a DEFAULT value.
-func omniHasDefault(col *ast.ColumnDef) bool {
+// hasDefault checks if a column has a DEFAULT value.
+func hasDefault(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -143,8 +143,8 @@ func omniHasDefault(col *ast.ColumnDef) bool {
 }
 
 // nolint:unused
-// omniIsAutoIncrement checks if a column has AUTO_INCREMENT.
-func omniIsAutoIncrement(col *ast.ColumnDef) bool {
+// isAutoIncrement checks if a column has AUTO_INCREMENT.
+func isAutoIncrement(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -152,8 +152,8 @@ func omniIsAutoIncrement(col *ast.ColumnDef) bool {
 }
 
 // nolint:unused
-// omniColumnComment extracts the COMMENT string from a column definition.
-func omniColumnComment(col *ast.ColumnDef) string {
+// columnComment extracts the COMMENT string from a column definition.
+func columnComment(col *ast.ColumnDef) string {
 	if col == nil {
 		return ""
 	}
@@ -161,8 +161,8 @@ func omniColumnComment(col *ast.ColumnDef) string {
 }
 
 // nolint:unused
-// omniTableOptionValue extracts a table option value by name (case-insensitive).
-func omniTableOptionValue(opts []*ast.TableOption, name string) string {
+// tableOptionValue extracts a table option value by name (case-insensitive).
+func tableOptionValue(opts []*ast.TableOption, name string) string {
 	for _, opt := range opts {
 		if strings.EqualFold(opt.Name, name) {
 			return opt.Value
@@ -172,8 +172,8 @@ func omniTableOptionValue(opts []*ast.TableOption, name string) string {
 }
 
 // nolint:unused
-// omniConstraintsByType filters constraints by the given type.
-func omniConstraintsByType(constraints []*ast.Constraint, typ ast.ConstraintType) []*ast.Constraint {
+// constraintsByType filters constraints by the given type.
+func constraintsByType(constraints []*ast.Constraint, typ ast.ConstraintType) []*ast.Constraint {
 	var result []*ast.Constraint
 	for _, c := range constraints {
 		if c.Type == typ {
@@ -183,25 +183,25 @@ func omniConstraintsByType(constraints []*ast.Constraint, typ ast.ConstraintType
 	return result
 }
 
-// omniConstraintName returns the CONSTRAINT symbol, else the name written after
+// constraintName returns the CONSTRAINT symbol, else the name written after
 // FOREIGN KEY, which omni keeps in IndexName.
-func omniConstraintName(c *ast.Constraint) string {
+func constraintName(c *ast.Constraint) string {
 	if c.Name != "" {
 		return c.Name
 	}
 	return c.IndexName
 }
 
-// omniDataTypeNameCompact returns a compact, lowercase type name string.
-func omniDataTypeNameCompact(dt *ast.DataType) string {
+// dataTypeNameCompact returns a compact, lowercase type name string.
+func dataTypeNameCompact(dt *ast.DataType) string {
 	if dt == nil {
 		return ""
 	}
 	return strings.ToLower(dt.Name)
 }
 
-// omniIsIntegerType checks if the data type is an integer type.
-func omniIsIntegerType(dt *ast.DataType) bool {
+// isIntegerType checks if the data type is an integer type.
+func isIntegerType(dt *ast.DataType) bool {
 	if dt == nil {
 		return false
 	}
@@ -213,8 +213,8 @@ func omniIsIntegerType(dt *ast.DataType) bool {
 	}
 }
 
-// omniIsTimeType checks if the data type is DATETIME or TIMESTAMP.
-func omniIsTimeType(dt *ast.DataType) bool {
+// isTimeType checks if the data type is DATETIME or TIMESTAMP.
+func isTimeType(dt *ast.DataType) bool {
 	if dt == nil {
 		return false
 	}
@@ -226,16 +226,16 @@ func omniIsTimeType(dt *ast.DataType) bool {
 	}
 }
 
-// omniIsDefaultCurrentTime checks if a column has DEFAULT CURRENT_TIMESTAMP / NOW().
-func omniIsDefaultCurrentTime(col *ast.ColumnDef) bool {
+// isDefaultCurrentTime checks if a column has DEFAULT CURRENT_TIMESTAMP / NOW().
+func isDefaultCurrentTime(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
 	return isCurrentTimeFuncCall(col.DefaultValue)
 }
 
-// omniIsOnUpdateCurrentTime checks if a column has ON UPDATE CURRENT_TIMESTAMP / NOW().
-func omniIsOnUpdateCurrentTime(col *ast.ColumnDef) bool {
+// isOnUpdateCurrentTime checks if a column has ON UPDATE CURRENT_TIMESTAMP / NOW().
+func isOnUpdateCurrentTime(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -259,8 +259,8 @@ func isCurrentTimeFuncCall(expr ast.ExprNode) bool {
 	}
 }
 
-// omniGetColumnsFromCmd extracts column definitions from an AlterTableCmd.
-func omniGetColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
+// getColumnsFromCmd extracts column definitions from an AlterTableCmd.
+func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 	if cmd == nil {
 		return nil
 	}
@@ -280,15 +280,15 @@ func omniGetColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 }
 
 // nolint:unused
-// omniColumnName returns the effective column name for a command.
-func omniColumnName(cmd *ast.AlterTableCmd) string {
+// alterCmdColumnName returns the effective column name for a command.
+func alterCmdColumnName(cmd *ast.AlterTableCmd) string {
 	if cmd.Column != nil {
 		return cmd.Column.Name
 	}
 	return cmd.Name
 }
 
-func omniRenameTableName(cmd *ast.AlterTableCmd) string {
+func renameTableName(cmd *ast.AlterTableCmd) string {
 	if cmd == nil || cmd.Type != ast.ATRenameTable {
 		return ""
 	}
@@ -298,8 +298,8 @@ func omniRenameTableName(cmd *ast.AlterTableCmd) string {
 	return cmd.NewName
 }
 
-// omniIsPrimaryKey checks if a column has a PRIMARY KEY constraint.
-func omniIsPrimaryKey(col *ast.ColumnDef) bool {
+// isPrimaryKey checks if a column has a PRIMARY KEY constraint.
+func isPrimaryKey(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -311,11 +311,11 @@ func omniIsPrimaryKey(col *ast.ColumnDef) bool {
 	return false
 }
 
-// omniPKColumnNames returns a set of column names that are part of a primary key.
-func omniPKColumnNames(columns []*ast.ColumnDef, constraints []*ast.Constraint) map[string]bool {
+// pKColumnNames returns a set of column names that are part of a primary key.
+func pKColumnNames(columns []*ast.ColumnDef, constraints []*ast.Constraint) map[string]bool {
 	result := make(map[string]bool)
 	for _, col := range columns {
-		if omniIsPrimaryKey(col) {
+		if isPrimaryKey(col) {
 			result[col.Name] = true
 		}
 	}
@@ -329,18 +329,18 @@ func omniPKColumnNames(columns []*ast.ColumnDef, constraints []*ast.Constraint) 
 	return result
 }
 
-// omniColumnNeedDefault checks if a column is NOT NULL and needs a DEFAULT.
+// columnNeedDefault checks if a column is NOT NULL and needs a DEFAULT.
 // nolint:unused
-func omniColumnNeedDefault(col *ast.ColumnDef) bool {
+func columnNeedDefault(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
-	return !omniIsNullable(col) && !omniHasDefault(col) && !omniIsPrimaryKey(col)
+	return !isNullable(col) && !hasDefault(col) && !isPrimaryKey(col)
 }
 
-// omniIsDefaultExemptType checks if a column type is exempt from requiring DEFAULT
+// isDefaultExemptType checks if a column type is exempt from requiring DEFAULT
 // (BLOB, TEXT, JSON, GEOMETRY and spatial types).
-func omniIsDefaultExemptType(col *ast.ColumnDef) bool {
+func isDefaultExemptType(col *ast.ColumnDef) bool {
 	if col == nil || col.TypeName == nil {
 		return false
 	}
@@ -356,13 +356,13 @@ func omniIsDefaultExemptType(col *ast.ColumnDef) bool {
 	}
 }
 
-// omniColumnNeedDefaultNotNull checks if a NOT NULL column needs a DEFAULT value
+// columnNeedDefaultNotNull checks if a NOT NULL column needs a DEFAULT value
 // (excludes BLOB, TEXT, JSON, GEOMETRY, and AUTO_INCREMENT columns).
-func omniColumnNeedDefaultNotNull(col *ast.ColumnDef) bool {
+func columnNeedDefaultNotNull(col *ast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
-	if omniIsNullable(col) || omniHasDefault(col) || omniIsPrimaryKey(col) || col.AutoIncrement {
+	if isNullable(col) || hasDefault(col) || isPrimaryKey(col) || col.AutoIncrement {
 		return false
 	}
 	if col.TypeName != nil {

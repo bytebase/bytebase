@@ -37,7 +37,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 
 	rule := NewColumnNoNullRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ColumnNoNullRule is the rule implementation for column no NULL value.
@@ -66,24 +66,24 @@ func (*ColumnNoNullRule) Name() string {
 func (r *ColumnNoNullRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, col := range omniColumnDefs(n.Columns) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, col := range columnDefs(n.Columns) {
 			r.recordNullableColumn(tableName, col)
 		}
-		for _, c := range omniTableConstraints(n.Constraints) {
+		for _, c := range tableConstraints(n.Constraints) {
 			if c.Type == ast.CONSTRAINT_PRIMARY {
-				for _, columnName := range omniListStrings(c.Columns) {
+				for _, columnName := range listStrings(c.Columns) {
 					delete(r.nullableColumns, fmt.Sprintf("%s.%s", tableName, columnName))
 				}
 			}
 		}
 	case *ast.AlterTableStmt:
-		tableName := omniObjectName(n.Name, r.currentDatabase)
-		for _, cmd := range omniAlterTableCmds(n) {
+		tableName := objectName(n.Name, r.currentDatabase)
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Action != ast.AT_MODIFY_COLUMN && cmd.Action != ast.AT_ADD_COLUMN {
 				continue
 			}
-			for _, col := range append(omniColumnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
+			for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
 				if col != nil {
 					r.recordNullableColumn(tableName, col)
 				}
@@ -98,7 +98,7 @@ func (r *ColumnNoNullRule) recordNullableColumn(tableName string, col *ast.Colum
 		return
 	}
 	columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
-	if col.NotNull || omniColumnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) || omniColumnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
+	if col.NotNull || columnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) || columnHasConstraint(col, ast.CONSTRAINT_PRIMARY) {
 		delete(r.nullableColumns, columnID)
 		return
 	}

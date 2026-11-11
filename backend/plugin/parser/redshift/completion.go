@@ -27,11 +27,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 
 	sql, line, offset := completionStatementAtCaret(statement, caretLine, caretOffset)
 	byteOffset := caretToByteOffset(sql, line, offset)
-	omniCandidates := redshiftcompletion.Complete(sql, byteOffset, cat)
+	candidates := redshiftcompletion.Complete(sql, byteOffset, cat)
 
-	result := make([]base.Candidate, 0, len(omniCandidates))
-	seen := make(map[string]bool, len(omniCandidates))
-	for _, c := range omniCandidates {
+	result := make([]base.Candidate, 0, len(candidates))
+	seen := make(map[string]bool, len(candidates))
+	for _, c := range candidates {
 		candidate := base.Candidate{
 			Text:       completionCandidateText(c),
 			Type:       convertCandidateType(c.Type),

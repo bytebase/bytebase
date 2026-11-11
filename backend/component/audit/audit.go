@@ -136,6 +136,12 @@ func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	}
 
 	attrs = append(attrs, mcpDelegationAttrs(p.McpDelegation)...)
+	if f := p.FederatedIdentity; f != nil {
+		attrs = append(attrs,
+			slog.String("federated_issuer", f.Issuer),
+			slog.String("federated_subject", f.Subject),
+		)
+	}
 
 	// Include request payload (truncated to 100KB for log manageability)
 	// Request is already redacted for sensitive data by getRequestString()

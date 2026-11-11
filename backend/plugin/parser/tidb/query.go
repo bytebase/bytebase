@@ -22,7 +22,7 @@ func validateQuery(statement string) (bool, bool, error) {
 	hasExecute := false
 	readOnly := true
 	for _, stmt := range stmts {
-		node, ok := GetOmniNode(stmt.AST)
+		node, ok := GetNode(stmt.AST)
 		if !ok {
 			// An empty or comment-only statement carries no AST.
 			continue

@@ -37,8 +37,8 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	rule := &tableRequirePKOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableRequirePKRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -48,7 +48,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	// Walk all statements.
-	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []Rule{rule})
 
 	// Generate advice after walking all statements.
 	rule.generateAdviceList()
@@ -56,18 +56,18 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	return rule.GetAdviceList(), nil
 }
 
-type tableRequirePKOmniRule struct {
-	OmniBaseRule
+type tableRequirePKRule struct {
+	BaseRule
 	tables           map[string]columnSet
 	line             map[string]int
 	originalMetadata *model.DatabaseMetadata
 }
 
-func (*tableRequirePKOmniRule) Name() string {
+func (*tableRequirePKRule) Name() string {
 	return "TableRequirePKRule"
 }
 
-func (r *tableRequirePKOmniRule) OnStatement(node ast.Node) {
+func (r *tableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -79,7 +79,7 @@ func (r *tableRequirePKOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *tableRequirePKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *tableRequirePKRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -107,7 +107,7 @@ func (r *tableRequirePKOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *tableRequirePKOmniRule) checkDropTable(n *ast.DropTableStmt) {
+func (r *tableRequirePKRule) checkDropTable(n *ast.DropTableStmt) {
 	for _, ref := range n.Tables {
 		if ref != nil {
 			delete(r.tables, ref.Name)
@@ -115,7 +115,7 @@ func (r *tableRequirePKOmniRule) checkDropTable(n *ast.DropTableStmt) {
 	}
 }
 
-func (r *tableRequirePKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *tableRequirePKRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -172,7 +172,7 @@ func (r *tableRequirePKOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (r *tableRequirePKOmniRule) handleColumnDef(tableName string, col *ast.ColumnDef) {
+func (r *tableRequirePKRule) handleColumnDef(tableName string, col *ast.ColumnDef) {
 	if col == nil {
 		return
 	}
@@ -183,7 +183,7 @@ func (r *tableRequirePKOmniRule) handleColumnDef(tableName string, col *ast.Colu
 	}
 }
 
-func (r *tableRequirePKOmniRule) generateAdviceList() {
+func (r *tableRequirePKRule) generateAdviceList() {
 	tableList := r.getTableList()
 	for _, tableName := range tableList {
 		if len(r.tables[tableName]) == 0 {
@@ -198,7 +198,7 @@ func (r *tableRequirePKOmniRule) generateAdviceList() {
 	}
 }
 
-func (r *tableRequirePKOmniRule) changeColumn(tableName string, oldColumn string, newColumn string) bool {
+func (r *tableRequirePKRule) changeColumn(tableName string, oldColumn string, newColumn string) bool {
 	if r.dropColumn(tableName, oldColumn) {
 		pk := r.tables[tableName]
 		pk[newColumn] = true
@@ -207,7 +207,7 @@ func (r *tableRequirePKOmniRule) changeColumn(tableName string, oldColumn string
 	return false
 }
 
-func (r *tableRequirePKOmniRule) dropColumn(tableName string, colName string) bool {
+func (r *tableRequirePKRule) dropColumn(tableName string, colName string) bool {
 	if _, ok := r.tables[tableName]; !ok {
 		pk := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(primaryKeyName)
 		if pk == nil {
@@ -222,11 +222,11 @@ func (r *tableRequirePKOmniRule) dropColumn(tableName string, colName string) bo
 	return columnInPk
 }
 
-func (r *tableRequirePKOmniRule) initEmptyTable(name string) {
+func (r *tableRequirePKRule) initEmptyTable(name string) {
 	r.tables[name] = make(columnSet)
 }
 
-func (r *tableRequirePKOmniRule) getTableList() []string {
+func (r *tableRequirePKRule) getTableList() []string {
 	var tableList []string
 	for tableName := range r.tables {
 		tableList = append(tableList, tableName)

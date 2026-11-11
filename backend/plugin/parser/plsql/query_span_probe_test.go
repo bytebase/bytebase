@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestOracleOmniParsesQuerySpanFixtureCorpus(t *testing.T) {
+func TestOracleParsesQuerySpanFixtureCorpus(t *testing.T) {
 	type testCase struct {
 		Description string `yaml:"description,omitempty"`
 		Statement   string `yaml:"statement,omitempty"`
@@ -38,7 +38,7 @@ func TestOracleOmniParsesQuerySpanFixtureCorpus(t *testing.T) {
 	}
 }
 
-func TestOracleOmniQuerySpanMigrationProbe(t *testing.T) {
+func TestOracleQuerySpanMigrationProbe(t *testing.T) {
 	tests := []struct {
 		name          string
 		statement     string
@@ -170,7 +170,7 @@ func TestOracleOmniQuerySpanMigrationProbe(t *testing.T) {
 			raw, ok := list.Items[0].(*ast.RawStmt)
 			require.True(t, ok)
 
-			nodeTypes := collectOracleOmniNodeTypes(raw)
+			nodeTypes := collectOracleNodeTypes(raw)
 			for _, expectedNode := range test.expectedNodes {
 				require.Contains(t, nodeTypes, expectedNode)
 			}
@@ -181,7 +181,7 @@ func TestOracleOmniQuerySpanMigrationProbe(t *testing.T) {
 	}
 }
 
-func collectOracleOmniNodeTypes(node ast.Node) map[string]bool {
+func collectOracleNodeTypes(node ast.Node) map[string]bool {
 	result := make(map[string]bool)
 	ast.Inspect(node, func(node ast.Node) bool {
 		if node == nil {

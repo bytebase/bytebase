@@ -32,25 +32,25 @@ func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &whereRequirementForSelectOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &whereRequirementForSelectRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type whereRequirementForSelectOmniRule struct {
-	OmniBaseRule
+type whereRequirementForSelectRule struct {
+	BaseRule
 }
 
-func (*whereRequirementForSelectOmniRule) Name() string {
+func (*whereRequirementForSelectRule) Name() string {
 	return "WhereRequirementForSelectRule"
 }
 
-func (r *whereRequirementForSelectOmniRule) OnStatement(node ast.Node) {
+func (r *whereRequirementForSelectRule) OnStatement(node ast.Node) {
 	sel, ok := node.(*ast.SelectStmt)
 	if !ok {
 		return
@@ -59,7 +59,7 @@ func (r *whereRequirementForSelectOmniRule) OnStatement(node ast.Node) {
 	r.checkSelectStmt(sel, text)
 }
 
-func (r *whereRequirementForSelectOmniRule) checkSelectStmt(sel *ast.SelectStmt, text string) {
+func (r *whereRequirementForSelectRule) checkSelectStmt(sel *ast.SelectStmt, text string) {
 	if sel == nil {
 		return
 	}

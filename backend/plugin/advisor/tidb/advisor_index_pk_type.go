@@ -31,7 +31,7 @@ type IndexPkTypeAdvisor struct {
 
 // Check checks for correct type of PK.
 func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		title:            checkCtx.Rule.Type.String(),
 		line:             make(map[string]int),
 		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableNewOmniColumn),
+		tablesNewColumns: make(tableNewColumn),
 	}
 
 	for _, ostmt := range stmts {
@@ -55,22 +55,22 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 	return checker.adviceList, nil
 }
 
-// tableNewOmniColumn tracks per-review column definitions by table+name
+// tableNewColumn tracks per-review column definitions by table+name
 // for the index-family advisors that need to resolve column types referenced
 // later in the same review (e.g. an ALTER TABLE ADD INDEX over a column
 // just added). Shared by advisor_index_pk_type, advisor_index_type_no_blob,
 // and advisor_index_primary_key_type_allowlist.
-type omniColumnNameToColumnDef map[string]*ast.ColumnDef
-type tableNewOmniColumn map[string]omniColumnNameToColumnDef
+type columnNameToColumnDef map[string]*ast.ColumnDef
+type tableNewColumn map[string]columnNameToColumnDef
 
-func (t tableNewOmniColumn) set(tableName, columnName string, colDef *ast.ColumnDef) {
+func (t tableNewColumn) set(tableName, columnName string, colDef *ast.ColumnDef) {
 	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(omniColumnNameToColumnDef)
+		t[tableName] = make(columnNameToColumnDef)
 	}
 	t[tableName][columnName] = colDef
 }
 
-func (t tableNewOmniColumn) get(tableName, columnName string) (colDef *ast.ColumnDef, ok bool) {
+func (t tableNewColumn) get(tableName, columnName string) (colDef *ast.ColumnDef, ok bool) {
 	if _, ok := t[tableName]; !ok {
 		return nil, false
 	}
@@ -78,7 +78,7 @@ func (t tableNewOmniColumn) get(tableName, columnName string) (colDef *ast.Colum
 	return col, ok
 }
 
-func (t tableNewOmniColumn) delete(tableName, columnName string) {
+func (t tableNewColumn) delete(tableName, columnName string) {
 	if _, ok := t[tableName]; !ok {
 		return
 	}
@@ -91,7 +91,7 @@ type indexPkTypeChecker struct {
 	title            string
 	line             map[string]int
 	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableNewOmniColumn
+	tablesNewColumns tableNewColumn
 }
 
 type pkData struct {
@@ -101,7 +101,7 @@ type pkData struct {
 	line       int
 }
 
-func (c *indexPkTypeChecker) checkStmt(ostmt OmniStmt) {
+func (c *indexPkTypeChecker) checkStmt(ostmt Stmt) {
 	cb := indexFamilyCallbacks{
 		onColumn:       c.addNewColumn,
 		onConstraint:   c.addConstraint,

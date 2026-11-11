@@ -49,7 +49,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		checkCtx.IsObjectCaseSensitive,
 	)
 	rule.currentDatabase = checkCtx.CurrentDatabase
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // ---- Types ---------------------------------------------------------------
@@ -130,31 +130,31 @@ func (*WhereDisallowFunctionsAndCalculationsRule) Name() string {
 func (r *WhereDisallowFunctionsAndCalculationsRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
-		r.checkOmniSelect(n, nil)
+		r.checkSelect(n, nil)
 	case *ast.UpdateStmt:
-		local := r.collectOmniDMLTargetTables(n.Target)
-		r.checkOmniWhere(n.WhereClause, local)
-		r.checkOmniNestedSubqueries(n, local)
+		local := r.collectDMLTargetTables(n.Target)
+		r.checkWhere(n.WhereClause, local)
+		r.checkNestedSubqueries(n, local)
 	case *ast.DeleteStmt:
-		local := r.collectOmniDMLTargetTables(n.Target)
-		r.checkOmniWhere(n.WhereClause, local)
-		r.checkOmniNestedSubqueries(n, local)
+		local := r.collectDMLTargetTables(n.Target)
+		r.checkWhere(n.WhereClause, local)
+		r.checkNestedSubqueries(n, local)
 	case *ast.InsertStmt:
 		if n.Select != nil {
-			r.checkOmniSelect(n.Select, nil)
+			r.checkSelect(n.Select, nil)
 		}
 		if subquery, ok := n.Subquery.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(subquery, nil)
-			sourceTables := r.collectOmniTables(subquery.FromClause)
+			r.checkSelect(subquery, nil)
+			sourceTables := r.collectTables(subquery.FromClause)
 			for _, item := range listItems(n.MultiTable) {
 				clause, ok := item.(*ast.InsertIntoClause)
 				if !ok {
 					continue
 				}
-				r.checkOmniWhere(clause.When, sourceTables)
+				r.checkWhere(clause.When, sourceTables)
 			}
 		}
-		r.checkOmniNestedSubqueries(n, nil)
+		r.checkNestedSubqueries(n, nil)
 	case *ast.MergeStmt:
 		local := tablesByAlias{}
 		if n.Target != nil {
@@ -180,7 +180,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) OnStatement(node ast.Node) {
 			}
 		case *ast.SubqueryRef:
 			if selectStmt, ok := source.Subquery.(*ast.SelectStmt); ok {
-				r.checkOmniSelect(selectStmt, nil)
+				r.checkSelect(selectStmt, nil)
 			}
 			if source.Alias != nil && source.Alias.Name != "" {
 				local[r.normalizeIdent(source.Alias.Name)] = tableRef{}
@@ -190,39 +190,39 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) OnStatement(node ast.Node) {
 			}
 		default:
 		}
-		r.checkOmniWhere(n.On, local)
+		r.checkWhere(n.On, local)
 		for _, item := range listItems(n.Clauses) {
 			clause, ok := item.(*ast.MergeClause)
 			if !ok {
 				continue
 			}
-			r.checkOmniWhere(clause.Condition, local)
-			r.checkOmniWhere(clause.UpdateWhere, local)
-			r.checkOmniWhere(clause.DeleteWhere, local)
-			r.checkOmniWhere(clause.InsertWhere, local)
-			r.checkOmniNestedSubqueries(clause, local)
+			r.checkWhere(clause.Condition, local)
+			r.checkWhere(clause.UpdateWhere, local)
+			r.checkWhere(clause.DeleteWhere, local)
+			r.checkWhere(clause.InsertWhere, local)
+			r.checkNestedSubqueries(clause, local)
 		}
 	case *ast.CreateTableStmt:
 		if selectStmt, ok := n.AsQuery.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(selectStmt, nil)
+			r.checkSelect(selectStmt, nil)
 		}
 	case *ast.CreateViewStmt:
 		if selectStmt, ok := n.Query.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(selectStmt, nil)
+			r.checkSelect(selectStmt, nil)
 		}
 	case *ast.PLSQLBlock:
-		r.checkOmniPLSQLBlock(n)
+		r.checkPLSQLBlock(n)
 	default:
 	}
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniPLSQLBlock(block *ast.PLSQLBlock) {
-	omniWalkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
-		return !r.checkOmniPLSQLQueryStatement(stmt)
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkPLSQLBlock(block *ast.PLSQLBlock) {
+	walkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
+		return !r.checkPLSQLQueryStatement(stmt)
 	})
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniPLSQLQueryStatement(stmt ast.StmtNode) bool {
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkPLSQLQueryStatement(stmt ast.StmtNode) bool {
 	switch stmt.(type) {
 	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.MergeStmt, *ast.CreateTableStmt, *ast.CreateViewStmt:
 		r.OnStatement(stmt)
@@ -232,7 +232,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniPLSQLQueryStatement
 	}
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniDMLTargetTables(target ast.TableExpr) tablesByAlias {
+func (r *WhereDisallowFunctionsAndCalculationsRule) collectDMLTargetTables(target ast.TableExpr) tablesByAlias {
 	switch n := target.(type) {
 	case *ast.TableRef:
 		ref := oracleTableRefFromObjectName(n.Name)
@@ -246,7 +246,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniDMLTargetTables(t
 		return tables
 	case *ast.SubqueryRef:
 		if selectStmt, ok := n.Subquery.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(selectStmt, nil)
+			r.checkSelect(selectStmt, nil)
 		}
 		if n.Alias != nil && n.Alias.Name != "" {
 			return tablesByAlias{r.normalizeIdent(n.Alias.Name): tableRef{}}
@@ -256,16 +256,16 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniDMLTargetTables(t
 	return nil
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniNestedSubqueries(node ast.Node, outer tablesByAlias) {
-	omniWalk(node, func(n ast.Node) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkNestedSubqueries(node ast.Node, outer tablesByAlias) {
+	walk(node, func(n ast.Node) {
 		switch subquery := n.(type) {
 		case *ast.SubqueryExpr:
 			if selectStmt, ok := subquery.Subquery.(*ast.SelectStmt); ok {
-				r.checkOmniSelect(selectStmt, outer)
+				r.checkSelect(selectStmt, outer)
 			}
 		case *ast.ExistsExpr:
 			if selectStmt, ok := subquery.Subquery.(*ast.SelectStmt); ok {
-				r.checkOmniSelect(selectStmt, outer)
+				r.checkSelect(selectStmt, outer)
 			}
 		default:
 		}
@@ -279,7 +279,7 @@ func oracleTableRefFromObjectName(name *ast.ObjectName) tableRef {
 	return tableRef{schema: name.Schema, name: name.Name}
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniSelect(stmt *ast.SelectStmt, outer tablesByAlias) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkSelect(stmt *ast.SelectStmt, outer tablesByAlias) {
 	if stmt == nil {
 		return
 	}
@@ -293,48 +293,48 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniSelect(stmt *ast.Se
 				continue
 			}
 			cteName := r.normalizeIdent(cte.Name)
-			if r.omniQueryIsRecursiveCTE(cte.Query, cteName) {
+			if r.queryIsRecursiveCTE(cte.Query, cteName) {
 				names[cteName] = true
 			}
 			if query, ok := cte.Query.(*ast.SelectStmt); ok {
-				r.checkOmniSelect(query, outer)
+				r.checkSelect(query, outer)
 			}
 			names[cteName] = true
 		}
 	}
 	if stmt.Larg != nil {
-		r.checkOmniSelect(stmt.Larg, outer)
+		r.checkSelect(stmt.Larg, outer)
 	}
 	if stmt.Rarg != nil {
-		r.checkOmniSelect(stmt.Rarg, outer)
+		r.checkSelect(stmt.Rarg, outer)
 	}
-	local := r.collectOmniTables(stmt.FromClause)
+	local := r.collectTables(stmt.FromClause)
 	tables := mergeTableAliases(outer, local)
-	r.checkOmniWhere(stmt.WhereClause, tables)
+	r.checkWhere(stmt.WhereClause, tables)
 	if stmt.Hierarchical != nil {
-		r.checkOmniWhere(stmt.Hierarchical.StartWith, tables)
-		r.checkOmniWhere(stmt.Hierarchical.ConnectBy, tables)
+		r.checkWhere(stmt.Hierarchical.StartWith, tables)
+		r.checkWhere(stmt.Hierarchical.ConnectBy, tables)
 	}
 	for _, item := range listItems(stmt.FromClause) {
-		r.checkOmniJoinPredicates(item, tables)
+		r.checkJoinPredicates(item, tables)
 	}
-	omniWalk(stmt, func(n ast.Node) {
+	walk(stmt, func(n ast.Node) {
 		subquery, ok := n.(*ast.SubqueryExpr)
 		if ok {
 			if nested, ok := subquery.Subquery.(*ast.SelectStmt); ok {
-				r.checkOmniSelect(nested, mergeTableAliases(outer, local))
+				r.checkSelect(nested, mergeTableAliases(outer, local))
 			}
 		}
 	})
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) omniQueryIsRecursiveCTE(node ast.Node, tableName string) bool {
+func (r *WhereDisallowFunctionsAndCalculationsRule) queryIsRecursiveCTE(node ast.Node, tableName string) bool {
 	selectStmt, ok := node.(*ast.SelectStmt)
 	if !ok || (selectStmt.Larg == nil && selectStmt.Rarg == nil) {
 		return false
 	}
 	found := false
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		if found {
 			return
 		}
@@ -347,21 +347,21 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) omniQueryIsRecursiveCTE(node
 	return found
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniJoinPredicates(node ast.Node, tables tablesByAlias) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkJoinPredicates(node ast.Node, tables tablesByAlias) {
 	join, ok := node.(*ast.JoinClause)
 	if !ok {
 		return
 	}
-	r.checkOmniWhere(join.On, tables)
+	r.checkWhere(join.On, tables)
 	if left, ok := join.Left.(ast.Node); ok {
-		r.checkOmniJoinPredicates(left, tables)
+		r.checkJoinPredicates(left, tables)
 	}
 	if right, ok := join.Right.(ast.Node); ok {
-		r.checkOmniJoinPredicates(right, tables)
+		r.checkJoinPredicates(right, tables)
 	}
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniTables(from *ast.List) tablesByAlias {
+func (r *WhereDisallowFunctionsAndCalculationsRule) collectTables(from *ast.List) tablesByAlias {
 	tables := make(tablesByAlias)
 	for _, item := range listItems(from) {
 		switch n := item.(type) {
@@ -385,7 +385,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniTables(from *ast.
 				tables[""] = ref
 			}
 		case *ast.JoinClause:
-			for alias, ref := range r.collectOmniJoinTables(n) {
+			for alias, ref := range r.collectJoinTables(n) {
 				tables[alias] = ref
 			}
 		default:
@@ -394,7 +394,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniTables(from *ast.
 	return tables
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniJoinTables(join *ast.JoinClause) tablesByAlias {
+func (r *WhereDisallowFunctionsAndCalculationsRule) collectJoinTables(join *ast.JoinClause) tablesByAlias {
 	tables := make(tablesByAlias)
 	for _, item := range []ast.TableExpr{join.Left, join.Right} {
 		switch n := item.(type) {
@@ -412,7 +412,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) collectOmniJoinTables(join *
 				tables[r.normalizeIdent(n.Alias.Name)] = ref
 			}
 		case *ast.JoinClause:
-			for alias, ref := range r.collectOmniJoinTables(n) {
+			for alias, ref := range r.collectJoinTables(n) {
 				tables[alias] = ref
 			}
 		default:
@@ -432,7 +432,7 @@ func mergeTableAliases(a, b tablesByAlias) tablesByAlias {
 	return merged
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniWhere(expr ast.ExprNode, tables tablesByAlias) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) checkWhere(expr ast.ExprNode, tables tablesByAlias) {
 	if expr == nil || len(tables) == 0 {
 		return
 	}
@@ -441,63 +441,63 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) checkOmniWhere(expr ast.Expr
 	if len(indexed) == 0 {
 		return
 	}
-	r.walkOmniWhere(expr, scopeIndexed{local: indexed, localAll: allCols, localAliases: map[string]bool{}}, tables)
+	r.walkWhere(expr, scopeIndexed{local: indexed, localAll: allCols, localAliases: map[string]bool{}}, tables)
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) walkOmniWhere(expr ast.ExprNode, scope scopeIndexed, tables tablesByAlias) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) walkWhere(expr ast.ExprNode, scope scopeIndexed, tables tablesByAlias) {
 	switch n := expr.(type) {
 	case *ast.FuncCallExpr:
-		if col := r.findIndexedColumnInOmniExprList(n.Args, scope); col != "" {
-			r.addOmniFunctionAdvice(n.FuncName.Name, col, n.Loc)
+		if col := r.findIndexedColumnInExprList(n.Args, scope); col != "" {
+			r.addFunctionAdvice(n.FuncName.Name, col, n.Loc)
 		}
 	case *ast.BinaryExpr:
 		if n.Op != "=" && n.Op != "<>" && n.Op != "!=" && n.Op != "<" && n.Op != ">" && n.Op != "<=" && n.Op != ">=" {
-			if col := r.findIndexedColumnInOmniExpr(n, scope); col != "" {
-				r.addOmniCalculationAdvice(col, n.Loc)
+			if col := r.findIndexedColumnInExpr(n, scope); col != "" {
+				r.addCalculationAdvice(col, n.Loc)
 			}
 		}
 	case *ast.UnaryExpr:
 		if n.Op == "-" || n.Op == "+" {
-			if col := r.findIndexedColumnInOmniExpr(n, scope); col != "" {
-				r.addOmniCalculationAdvice(col, n.Loc)
+			if col := r.findIndexedColumnInExpr(n, scope); col != "" {
+				r.addCalculationAdvice(col, n.Loc)
 			}
 		}
 	case *ast.SubqueryExpr:
 		if selectStmt, ok := n.Subquery.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(selectStmt, tables)
+			r.checkSelect(selectStmt, tables)
 		}
 	case *ast.ExistsExpr:
 		if selectStmt, ok := n.Subquery.(*ast.SelectStmt); ok {
-			r.checkOmniSelect(selectStmt, tables)
+			r.checkSelect(selectStmt, tables)
 		}
 	default:
 	}
-	omniWalk(expr, func(child ast.Node) {
+	walk(expr, func(child ast.Node) {
 		if child == expr {
 			return
 		}
 		if e, ok := child.(ast.ExprNode); ok {
 			switch e.(type) {
 			case *ast.FuncCallExpr, *ast.BinaryExpr, *ast.UnaryExpr, *ast.SubqueryExpr, *ast.ExistsExpr:
-				r.walkOmniWhere(e, scope, tables)
+				r.walkWhere(e, scope, tables)
 			default:
 			}
 		}
 	})
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInOmniExprList(list *ast.List, scope scopeIndexed) string {
+func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInExprList(list *ast.List, scope scopeIndexed) string {
 	for _, item := range listItems(list) {
 		switch expr := item.(type) {
 		case *ast.ColumnRef:
 			qualifier := r.normalizeIdent(expr.Table)
 			column := r.normalizeIdent(expr.Column)
-			if r.isOmniIndexedColumn(qualifier, column, scope) {
+			if r.isIndexedColumn(qualifier, column, scope) {
 				return column
 			}
 		case *ast.UnaryExpr:
 			if expr.Op == "PRIOR" {
-				if col := r.findDirectIndexedColumnInOmniExpr(expr.Operand, scope); col != "" {
+				if col := r.findDirectIndexedColumnInExpr(expr.Operand, scope); col != "" {
 					return col
 				}
 			}
@@ -507,22 +507,22 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInOmniExprL
 	return ""
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) findDirectIndexedColumnInOmniExpr(expr ast.ExprNode, scope scopeIndexed) string {
+func (r *WhereDisallowFunctionsAndCalculationsRule) findDirectIndexedColumnInExpr(expr ast.ExprNode, scope scopeIndexed) string {
 	col, ok := expr.(*ast.ColumnRef)
 	if !ok {
 		return ""
 	}
 	qualifier := r.normalizeIdent(col.Table)
 	column := r.normalizeIdent(col.Column)
-	if r.isOmniIndexedColumn(qualifier, column, scope) {
+	if r.isIndexedColumn(qualifier, column, scope) {
 		return column
 	}
 	return ""
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInOmniExpr(expr ast.ExprNode, scope scopeIndexed) string {
+func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInExpr(expr ast.ExprNode, scope scopeIndexed) string {
 	var found string
-	omniWalk(expr, func(n ast.Node) {
+	walk(expr, func(n ast.Node) {
 		if found != "" {
 			return
 		}
@@ -532,14 +532,14 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) findIndexedColumnInOmniExpr(
 		}
 		qualifier := r.normalizeIdent(col.Table)
 		column := r.normalizeIdent(col.Column)
-		if r.isOmniIndexedColumn(qualifier, column, scope) {
+		if r.isIndexedColumn(qualifier, column, scope) {
 			found = column
 		}
 	})
 	return found
 }
 
-func (*WhereDisallowFunctionsAndCalculationsRule) isOmniIndexedColumn(qualifier, column string, scope scopeIndexed) bool {
+func (*WhereDisallowFunctionsAndCalculationsRule) isIndexedColumn(qualifier, column string, scope scopeIndexed) bool {
 	if qualifier != "" {
 		return scope.local[qualifier][column]
 	}
@@ -554,10 +554,10 @@ func (*WhereDisallowFunctionsAndCalculationsRule) isOmniIndexedColumn(qualifier,
 	return scope.local[""][column]
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniFunctionAdvice(funcName, col string, loc ast.Loc) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) addFunctionAdvice(funcName, col string, loc ast.Loc) {
 	content := fmt.Sprintf("Function %q is applied to indexed column %q in the WHERE clause, which prevents index usage", funcName, col)
 	line := r.locLine(loc)
-	if r.hasOmniAdvice(content, line) {
+	if r.hasAdvice(content, line) {
 		return
 	}
 	r.adviceList = append(r.adviceList, &storepb.Advice{
@@ -569,10 +569,10 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniFunctionAdvice(funcNa
 	})
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniCalculationAdvice(col string, loc ast.Loc) {
+func (r *WhereDisallowFunctionsAndCalculationsRule) addCalculationAdvice(col string, loc ast.Loc) {
 	content := fmt.Sprintf("Calculation is applied to indexed column %q in the WHERE clause, which prevents index usage", col)
 	line := r.locLine(loc)
-	if r.hasOmniAdvice(content, line) {
+	if r.hasAdvice(content, line) {
 		return
 	}
 	r.adviceList = append(r.adviceList, &storepb.Advice{
@@ -584,7 +584,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniCalculationAdvice(col
 	})
 }
 
-func (r *WhereDisallowFunctionsAndCalculationsRule) hasOmniAdvice(content string, line int) bool {
+func (r *WhereDisallowFunctionsAndCalculationsRule) hasAdvice(content string, line int) bool {
 	for _, advice := range r.adviceList {
 		if advice.Content == content && advice.GetStartPosition().GetLine() == int32(line) {
 			return true

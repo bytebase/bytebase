@@ -31,25 +31,25 @@ func (*ColumnRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &columnRequireCharsetOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnRequireCharsetRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type columnRequireCharsetOmniRule struct {
-	OmniBaseRule
+type columnRequireCharsetRule struct {
+	BaseRule
 }
 
-func (*columnRequireCharsetOmniRule) Name() string {
+func (*columnRequireCharsetRule) Name() string {
 	return "ColumnRequireCharsetRule"
 }
 
-func (r *columnRequireCharsetOmniRule) OnStatement(node ast.Node) {
+func (r *columnRequireCharsetRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -59,7 +59,7 @@ func (r *columnRequireCharsetOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *columnRequireCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -67,7 +67,7 @@ func (r *columnRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) 
 		if col == nil || col.TypeName == nil {
 			continue
 		}
-		if omniIsCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
+		if isCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
 			r.AddAdvice(&storepb.Advice{
 				Status:        r.Level,
 				Code:          code.NoCharset.Int32(),
@@ -79,7 +79,7 @@ func (r *columnRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) 
 	}
 }
 
-func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *columnRequireCharsetRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -89,7 +89,7 @@ func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 		}
 		// Single column ADD.
 		if cmd.Column != nil && cmd.Column.TypeName != nil {
-			if omniIsCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Charset == "" {
+			if isCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Charset == "" {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.Level,
 					Code:          code.NoCharset.Int32(),
@@ -104,7 +104,7 @@ func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 			if col == nil || col.TypeName == nil {
 				continue
 			}
-			if omniIsCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
+			if isCharsetDataType(col.TypeName) && col.TypeName.Charset == "" {
 				r.AddAdvice(&storepb.Advice{
 					Status:        r.Level,
 					Code:          code.NoCharset.Int32(),
@@ -117,8 +117,8 @@ func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-// omniIsCharsetDataType checks if a data type supports character sets.
-func omniIsCharsetDataType(dt *ast.DataType) bool {
+// isCharsetDataType checks if a data type supports character sets.
+func isCharsetDataType(dt *ast.DataType) bool {
 	if dt == nil {
 		return false
 	}

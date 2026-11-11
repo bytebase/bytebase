@@ -32,17 +32,17 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 	}
 
 	rule := &columnDisallowChangingTypeRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnDisallowChangingTypeRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*columnDisallowChangingTypeRule) Name() string {
@@ -55,7 +55,7 @@ func (r *columnDisallowChangingTypeRule) OnStatement(node ast.Node) {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_AlterColumnType {
 			stmtText := strings.TrimSpace(r.StmtText)
 			// Remove trailing semicolons for cleaner display

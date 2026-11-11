@@ -29,14 +29,14 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	}
 
 	rule := &tableDisallowDDLRule{
-		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
+		BaseRule:     BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		disallowList: stringArrayPayload.List,
 	}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type tableDisallowDDLRule struct {
-	OmniBaseRule
+	BaseRule
 	disallowList []string
 }
 

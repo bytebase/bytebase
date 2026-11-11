@@ -68,14 +68,14 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	}
 
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		wrapped, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for PostgreSQL")
+			return nil, errors.New("expected AST for PostgreSQL")
 		}
-		if omniAST.Node == nil {
+		if wrapped.Node == nil {
 			continue
 		}
-		node, text := UnwrapExplainAnalyze(omniAST.Node, omniAST.Text)
+		node, text := UnwrapExplainAnalyze(wrapped.Node, wrapped.Text)
 
 		switch n := node.(type) {
 		case *ast.TransactionStmt:
@@ -133,9 +133,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			objType := ast.ObjectType(n.RemoveType)
 			switch objType {
 			case ast.OBJECT_INDEX:
-				handleDropIndexOmni(n, database, searchPath, dbMetadata, changedResources)
+				handleDropIndex(n, database, searchPath, dbMetadata, changedResources)
 			case ast.OBJECT_TABLE, ast.OBJECT_MATVIEW:
-				handleDropTableOmni(n, database, searchPath, dbMetadata, changedResources)
+				handleDropTable(n, database, searchPath, dbMetadata, changedResources)
 			default:
 			}
 
@@ -233,7 +233,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		case *ast.SelectStmt:
 			// SELECT ... INTO target_table is a write (classified DDL via the INTO clause,
 			// which may sit on the first arm of a set operation).
-			if into := omniIntoClause(n); into != nil && into.Rel != nil {
+			if into := intoClause(n); into != nil && into.Rel != nil {
 				db, schema, table := extractNewRangeVarNames(into.Rel, database, searchPath, dbMetadata)
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
@@ -371,8 +371,8 @@ func searchRelationObject(dbMetadata *model.DatabaseMetadata, searchPath []strin
 	return ""
 }
 
-// handleDropTableOmni handles DROP TABLE/MATERIALIZED VIEW.
-func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
+// handleDropTable handles DROP TABLE/MATERIALIZED VIEW.
+func handleDropTable(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
 	if n.Objects == nil {
 		return
 	}
@@ -396,8 +396,8 @@ func handleDropTableOmni(n *ast.DropStmt, database string, searchPath []string, 
 	}
 }
 
-// handleDropIndexOmni handles DROP INDEX.
-func handleDropIndexOmni(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
+// handleDropIndex handles DROP INDEX.
+func handleDropIndex(n *ast.DropStmt, database string, searchPath []string, dbMetadata *model.DatabaseMetadata, changedResources *model.ChangedResources) {
 	if n.Objects == nil {
 		return
 	}

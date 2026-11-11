@@ -107,7 +107,7 @@ func TestCompletion(t *testing.T) {
 	}
 }
 
-func TestCompletionOmniTableRefRule(t *testing.T) {
+func TestCompletionTableRefRule(t *testing.T) {
 	statement, caretLine, caretPosition := getCaretPosition("TRUNCATE TABLE |")
 	getter, lister := buildMockDatabaseMetadataGetterLister()
 	results, err := Completion(context.Background(), base.CompletionContext{

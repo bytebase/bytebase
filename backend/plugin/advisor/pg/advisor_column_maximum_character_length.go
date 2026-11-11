@@ -42,18 +42,18 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	}
 
 	rule := &columnMaximumCharacterLengthRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		maximum: int(numberPayload.Number),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnMaximumCharacterLengthRule struct {
-	OmniBaseRule
+	BaseRule
 
 	maximum int
 }
@@ -73,12 +73,12 @@ func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnMaximumCharacterLengthRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniFormatTableName(n.Relation)
+	tableName := formatTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		if col.TypeName == nil {
 			continue
@@ -92,12 +92,12 @@ func (r *columnMaximumCharacterLengthRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnMaximumCharacterLengthRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniFormatTableName(n.Relation)
+	tableName := formatTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		switch ast.AlterTableType(cmd.Subtype) {
 		case ast.AT_AddColumn:
 			colDef, ok := cmd.Def.(*ast.ColumnDef)
@@ -127,7 +127,7 @@ func (r *columnMaximumCharacterLengthRule) handleAlterTableStmt(n *ast.AlterTabl
 // getCharLength returns the character length if the type is CHAR/CHARACTER/NCHAR (without VARYING).
 // Returns 0 for non-character types or VARCHAR types.
 func (*columnMaximumCharacterLengthRule) getCharLength(tn *ast.TypeName) int {
-	name := strings.ToLower(omniTypeName(tn))
+	name := strings.ToLower(typeName(tn))
 
 	// Only check fixed-length char types (char, character, bpchar, nchar)
 	// Skip varchar, character varying, text
@@ -164,8 +164,8 @@ func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName, sear
 	})
 }
 
-// omniFormatTableName formats a RangeVar as a quoted table name string for display.
-func omniFormatTableName(rv *ast.RangeVar) string {
+// formatTableName formats a RangeVar as a quoted table name string for display.
+func formatTableName(rv *ast.RangeVar) string {
 	if rv == nil || rv.Relname == "" {
 		return ""
 	}

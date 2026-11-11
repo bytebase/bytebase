@@ -22,7 +22,7 @@ func validateQuery(statement string) (bool, bool, error) {
 
 	list, err := ParsePLSQL(statement)
 	if err != nil {
-		return false, false, convertOmniError(err, base.Statement{Text: statement})
+		return false, false, convertError(err, base.Statement{Text: statement})
 	}
 	if list == nil || len(list.Items) == 0 {
 		return false, false, nil

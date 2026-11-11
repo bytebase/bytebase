@@ -33,7 +33,7 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 
 	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // SelectNoSelectAllRule is the rule implementation for no select all.
@@ -58,7 +58,7 @@ func (*SelectNoSelectAllRule) Name() string {
 
 // OnStatement checks SELECT targets in the omni AST.
 func (r *SelectNoSelectAllRule) OnStatement(node ast.Node) {
-	omniWalk(node, func(n ast.Node) {
+	walk(node, func(n ast.Node) {
 		target, ok := n.(*ast.ResTarget)
 		if !ok {
 			return

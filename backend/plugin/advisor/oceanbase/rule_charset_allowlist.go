@@ -38,27 +38,27 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		allowList[strings.ToLower(charset)] = true
 	}
 
-	rule := &charsetAllowlistOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &charsetAllowlistRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowList: allowList,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type charsetAllowlistOmniRule struct {
-	OmniBaseRule
+type charsetAllowlistRule struct {
+	BaseRule
 	allowList map[string]bool
 }
 
-func (*charsetAllowlistOmniRule) Name() string {
+func (*charsetAllowlistRule) Name() string {
 	return "CharsetAllowlistRule"
 }
 
-func (r *charsetAllowlistOmniRule) OnStatement(node ast.Node) {
+func (r *charsetAllowlistRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		r.checkCreateDatabase(n)
@@ -72,7 +72,7 @@ func (r *charsetAllowlistOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *charsetAllowlistOmniRule) checkCharset(charset string, line int) {
+func (r *charsetAllowlistRule) checkCharset(charset string, line int) {
 	charset = strings.ToLower(charset)
 	if charset != "" && !r.allowList[charset] {
 		r.AddAdvice(&storepb.Advice{
@@ -85,7 +85,7 @@ func (r *charsetAllowlistOmniRule) checkCharset(charset string, line int) {
 	}
 }
 
-func (r *charsetAllowlistOmniRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
+func (r *charsetAllowlistRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
 			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
@@ -94,7 +94,7 @@ func (r *charsetAllowlistOmniRule) checkCreateDatabase(n *ast.CreateDatabaseStmt
 	}
 }
 
-func (r *charsetAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *charsetAllowlistRule) checkCreateTable(n *ast.CreateTableStmt) {
 	// Check table-level charset option.
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") {
@@ -113,7 +113,7 @@ func (r *charsetAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (r *charsetAllowlistOmniRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
+func (r *charsetAllowlistRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
 	for _, opt := range n.Options {
 		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
 			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
@@ -121,14 +121,14 @@ func (r *charsetAllowlistOmniRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) 
 	}
 }
 
-func (r *charsetAllowlistOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *charsetAllowlistRule) checkAlterTable(n *ast.AlterTableStmt) {
 	for _, cmd := range n.Commands {
 		if cmd == nil {
 			continue
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				if col == nil || col.TypeName == nil {
 					continue
 				}

@@ -26,7 +26,7 @@ type CompatibilityAdvisor struct {
 
 // Check checks schema backward compatibility.
 func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ type compatibilityChecker struct {
 	lastCreateTable string
 }
 
-func (c *compatibilityChecker) checkStmt(ostmt OmniStmt) {
+func (c *compatibilityChecker) checkStmt(ostmt Stmt) {
 	// Line and code captured in the same arm so they cannot drift.
 	code := advisorcode.Ok
 	line := 0

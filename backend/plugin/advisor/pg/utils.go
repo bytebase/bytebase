@@ -100,8 +100,8 @@ func hasDataModifyingCTE(with *ast.WithClause) bool {
 }
 
 // nolint:unused
-// omniTableName extracts the table name from a RangeVar.
-func omniTableName(rv *ast.RangeVar) string {
+// rangeVarTableName extracts the table name from a RangeVar.
+func rangeVarTableName(rv *ast.RangeVar) string {
 	if rv == nil {
 		return ""
 	}
@@ -109,8 +109,8 @@ func omniTableName(rv *ast.RangeVar) string {
 }
 
 // nolint:unused
-// omniSchemaName extracts the schema name from a RangeVar, defaulting to "public".
-func omniSchemaName(rv *ast.RangeVar) string {
+// schemaName extracts the schema name from a RangeVar, defaulting to "public".
+func schemaName(rv *ast.RangeVar) string {
 	if rv == nil || rv.Schemaname == "" {
 		return "public"
 	}
@@ -118,8 +118,8 @@ func omniSchemaName(rv *ast.RangeVar) string {
 }
 
 // nolint:unused
-// omniConstraintColumns extracts column names from a Constraint's Keys list.
-func omniConstraintColumns(c *ast.Constraint) []string {
+// constraintColumns extracts column names from a Constraint's Keys list.
+func constraintColumns(c *ast.Constraint) []string {
 	if c == nil || c.Keys == nil {
 		return nil
 	}
@@ -133,8 +133,8 @@ func omniConstraintColumns(c *ast.Constraint) []string {
 }
 
 // nolint:unused
-// omniColumnConstraints iterates over a ColumnDef's constraint list.
-func omniColumnConstraints(col *ast.ColumnDef) []*ast.Constraint {
+// columnConstraints iterates over a ColumnDef's constraint list.
+func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	if col == nil || col.Constraints == nil {
 		return nil
 	}
@@ -148,9 +148,9 @@ func omniColumnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 }
 
 // nolint:unused
-// omniTableElements iterates over a CreateStmt's table elements,
+// tableElements iterates over a CreateStmt's table elements,
 // returning column defs and table constraints separately.
-func omniTableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
+func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
 	if create.TableElts == nil {
 		return nil, nil
 	}
@@ -169,8 +169,8 @@ func omniTableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constra
 }
 
 // nolint:unused
-// omniAlterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
-func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
+// alterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
+func alterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	if alter.Cmds == nil {
 		return nil
 	}
@@ -203,7 +203,7 @@ type sessionSetting struct {
 func (s *sessionSettings) add(node ast.Node, text string) {
 	switch n := node.(type) {
 	case *ast.VariableSetStmt:
-		if omniIsRoleOrSearchPathSet(n) {
+		if isRoleOrSearchPathSet(n) {
 			if n.Kind == ast.VAR_SET_CURRENT && !n.IsLocal {
 				// SET ... FROM CURRENT keeps the value a SET LOCAL gave the setting after the transaction ends.
 				for i := range s.settings {
@@ -247,9 +247,9 @@ func (s *sessionSettings) statements() []string {
 	return statements
 }
 
-// omniIsRoleOrSearchPathSet checks if a VariableSetStmt sets the role or search path, including a
+// isRoleOrSearchPathSet checks if a VariableSetStmt sets the role or search path, including a
 // RESET ALL.
-func omniIsRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
+func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	if stmt == nil {
 		return false
 	}
@@ -258,8 +258,8 @@ func omniIsRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 }
 
 // nolint:unused
-// omniTypeName extracts the type name string from a TypeName node.
-func omniTypeName(tn *ast.TypeName) string {
+// typeName extracts the type name string from a TypeName node.
+func typeName(tn *ast.TypeName) string {
 	if tn == nil || tn.Names == nil {
 		return ""
 	}
@@ -275,10 +275,10 @@ func omniTypeName(tn *ast.TypeName) string {
 	return ""
 }
 
-// omniTypeNameFull extracts the full type name with modifiers from a TypeName node.
+// typeNameFull extracts the full type name with modifiers from a TypeName node.
 // For example, "character varying(20)" instead of just "character varying".
-func omniTypeNameFull(tn *ast.TypeName) string {
-	name := omniTypeName(tn)
+func typeNameFull(tn *ast.TypeName) string {
+	name := typeName(tn)
 	if name == "" {
 		return ""
 	}
@@ -305,8 +305,8 @@ func omniTypeNameFull(tn *ast.TypeName) string {
 	return name
 }
 
-// omniListStrings extracts string values from an ast.List.
-func omniListStrings(list *ast.List) []string {
+// listStrings extracts string values from an ast.List.
+func listStrings(list *ast.List) []string {
 	if list == nil {
 		return nil
 	}
@@ -319,8 +319,8 @@ func omniListStrings(list *ast.List) []string {
 	return result
 }
 
-// omniIndexColumns extracts column names from an IndexStmt's IndexParams list.
-func omniIndexColumns(idx *ast.IndexStmt) []string {
+// indexColumns extracts column names from an IndexStmt's IndexParams list.
+func indexColumns(idx *ast.IndexStmt) []string {
 	if idx == nil || idx.IndexParams == nil {
 		return nil
 	}
@@ -333,9 +333,9 @@ func omniIndexColumns(idx *ast.IndexStmt) []string {
 	return cols
 }
 
-// omniDropObjectNames extracts object names from a DropStmt.
+// dropObjectNames extracts object names from a DropStmt.
 // Returns list of qualified name string slices.
-func omniDropObjectNames(drop *ast.DropStmt) [][]string {
+func dropObjectNames(drop *ast.DropStmt) [][]string {
 	if drop.Objects == nil {
 		return nil
 	}
@@ -358,21 +358,21 @@ func omniDropObjectNames(drop *ast.DropStmt) [][]string {
 	return result
 }
 
-// omniCollectFromClauseRangeVars recursively collects RangeVar nodes from a FROM clause list.
-func omniCollectFromClauseRangeVars(fromClause *ast.List) []*ast.RangeVar {
+// collectFromClauseRangeVars recursively collects RangeVar nodes from a FROM clause list.
+func collectFromClauseRangeVars(fromClause *ast.List) []*ast.RangeVar {
 	if fromClause == nil {
 		return nil
 	}
 	var result []*ast.RangeVar
 	for _, item := range fromClause.Items {
-		result = append(result, omniCollectRangeVars(item)...)
+		result = append(result, collectRangeVars(item)...)
 	}
 	return result
 }
 
-// omniCollectRangeVars recursively collects RangeVar nodes from a node,
+// collectRangeVars recursively collects RangeVar nodes from a node,
 // including those inside subqueries.
-func omniCollectRangeVars(node ast.Node) []*ast.RangeVar {
+func collectRangeVars(node ast.Node) []*ast.RangeVar {
 	if node == nil {
 		return nil
 	}
@@ -381,13 +381,13 @@ func omniCollectRangeVars(node ast.Node) []*ast.RangeVar {
 		return []*ast.RangeVar{n}
 	case *ast.JoinExpr:
 		var result []*ast.RangeVar
-		result = append(result, omniCollectRangeVars(n.Larg)...)
-		result = append(result, omniCollectRangeVars(n.Rarg)...)
+		result = append(result, collectRangeVars(n.Larg)...)
+		result = append(result, collectRangeVars(n.Rarg)...)
 		return result
 	case *ast.RangeSubselect:
 		// Recurse into subquery
 		if sel, ok := n.Subquery.(*ast.SelectStmt); ok {
-			return omniCollectFromClauseRangeVars(sel.FromClause)
+			return collectFromClauseRangeVars(sel.FromClause)
 		}
 		return nil
 	default:
@@ -396,9 +396,9 @@ func omniCollectRangeVars(node ast.Node) []*ast.RangeVar {
 }
 
 // nolint:unused
-// omniDropObjects extracts object names from a DropStmt.
+// dropObjects extracts object names from a DropStmt.
 // Returns list of (schema, name) pairs.
-func omniDropObjects(drop *ast.DropStmt) [][2]string {
+func dropObjects(drop *ast.DropStmt) [][2]string {
 	if drop.Objects == nil {
 		return nil
 	}

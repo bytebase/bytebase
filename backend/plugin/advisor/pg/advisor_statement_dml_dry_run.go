@@ -46,7 +46,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	}
 
 	rule := &statementDMLDryRunRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -55,11 +55,11 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		tenantMode: checkCtx.TenantMode,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type statementDMLDryRunRule struct {
-	OmniBaseRule
+	BaseRule
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int

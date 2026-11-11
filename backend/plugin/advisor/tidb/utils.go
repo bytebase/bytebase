@@ -56,10 +56,10 @@ func (t tablePK) tableList() []string {
 	return tableList
 }
 
-// OmniStmt bundles an omni/tidb AST node with the source text and base line of
+// Stmt bundles an omni/tidb AST node with the source text and base line of
 // the statement it came from. The base line is needed to convert byte offsets
 // inside Text into absolute line numbers in the original full SQL.
-type OmniStmt struct {
+type Stmt struct {
 	Node     omniast.Node
 	Text     string
 	BaseLine int // 0-based line index of the first line of Text in the original SQL
@@ -67,7 +67,7 @@ type OmniStmt struct {
 
 // AbsoluteLine converts a byte offset within s.Text into a 1-based line number
 // in the original SQL.
-func (s OmniStmt) AbsoluteLine(byteOffset int) int {
+func (s Stmt) AbsoluteLine(byteOffset int) int {
 	pos := tidbparser.ByteOffsetToRunePosition(s.Text, byteOffset)
 	return s.BaseLine + int(pos.Line)
 }
@@ -76,7 +76,7 @@ func (s OmniStmt) AbsoluteLine(byteOffset int) int {
 // for embedding the statement text into advice content; raw Text may
 // include leading/trailing newlines from the original multi-statement
 // split.
-func (s OmniStmt) TrimmedText() string {
+func (s Stmt) TrimmedText() string {
 	return strings.TrimSpace(s.Text)
 }
 
@@ -86,7 +86,7 @@ func (s OmniStmt) TrimmedText() string {
 // keeps comments as part of the statement, so its reported line points
 // at the first comment OR keyword. Used as the StartPosition for
 // statement-level advices.
-func (s OmniStmt) FirstTokenLine() int {
+func (s Stmt) FirstTokenLine() int {
 	for i, r := range s.Text {
 		if !unicode.IsSpace(r) {
 			return s.AbsoluteLine(i)
@@ -112,16 +112,16 @@ func (s OmniStmt) FirstTokenLine() int {
 // authors avoid the silent-regression failure mode where mechanically
 // using only the canonical name misses the shorthand form.
 var (
-	omniOptionNamesCharset = []string{"CHARACTER SET", "CHARSET"}
-	omniOptionNamesCollate = []string{"COLLATE"}
-	omniOptionNamesComment = []string{"COMMENT"}
+	optionNamesCharset = []string{"CHARACTER SET", "CHARSET"}
+	optionNamesCollate = []string{"COLLATE"}
+	optionNamesComment = []string{"COMMENT"}
 )
 
-// omniDatabaseOption returns the lowercased value of the first option
+// databaseOption returns the lowercased value of the first option
 // whose Name matches any in `names` (case-insensitive), or "" if none
 // match. For case-insensitive identifiers (charset/collation names);
 // user-content values like COMMENT should use *Present variants.
-func omniDatabaseOption(opts []*omniast.DatabaseOption, names []string) string {
+func databaseOption(opts []*omniast.DatabaseOption, names []string) string {
 	for _, opt := range opts {
 		if opt == nil {
 			continue
@@ -135,10 +135,10 @@ func omniDatabaseOption(opts []*omniast.DatabaseOption, names []string) string {
 	return ""
 }
 
-// omniTableOption returns the lowercased value of the first option whose
+// tableOption returns the lowercased value of the first option whose
 // Name matches any in `names` (case-insensitive), or "" if none match.
-// Case-insensitive-identifier semantics (see omniDatabaseOption).
-func omniTableOption(opts []*omniast.TableOption, names []string) string {
+// Case-insensitive-identifier semantics (see databaseOption).
+func tableOption(opts []*omniast.TableOption, names []string) string {
 	for _, opt := range opts {
 		if opt == nil {
 			continue
@@ -152,11 +152,11 @@ func omniTableOption(opts []*omniast.TableOption, names []string) string {
 	return ""
 }
 
-// omniTableOptionPresent reports whether any option whose Name matches
+// tableOptionPresent reports whether any option whose Name matches
 // any in `names` is in the slice; returns its raw value (case preserved —
 // user content). Distinguishes "no clause" from "clause with empty value"
 // (e.g. COMMENT ”).
-func omniTableOptionPresent(opts []*omniast.TableOption, names []string) (string, bool) {
+func tableOptionPresent(opts []*omniast.TableOption, names []string) (string, bool) {
 	for _, opt := range opts {
 		if opt == nil {
 			continue
@@ -170,10 +170,10 @@ func omniTableOptionPresent(opts []*omniast.TableOption, names []string) (string
 	return "", false
 }
 
-// omniOptionNameMatches reports whether `optName` (case-insensitively)
+// optionNameMatches reports whether `optName` (case-insensitively)
 // matches any name in `names`. Used for single-option checks where the
 // option is already plucked from a slice (e.g. AlterTableCmd.Option).
-func omniOptionNameMatches(optName string, names []string) bool {
+func optionNameMatches(optName string, names []string) bool {
 	for _, n := range names {
 		if strings.EqualFold(optName, n) {
 			return true
@@ -182,32 +182,32 @@ func omniOptionNameMatches(optName string, names []string) bool {
 	return false
 }
 
-// omniColumnCharset returns the column-level CHARACTER SET (lowercased)
+// columnCharset returns the column-level CHARACTER SET (lowercased)
 // from ColumnDef.TypeName.Charset. Empty if no clause.
-func omniColumnCharset(col *omniast.ColumnDef) string {
+func columnCharset(col *omniast.ColumnDef) string {
 	if col == nil || col.TypeName == nil {
 		return ""
 	}
 	return strings.ToLower(col.TypeName.Charset)
 }
 
-// omniColumnCollate returns the column-level COLLATE (lowercased) from
+// columnCollate returns the column-level COLLATE (lowercased) from
 // ColumnDef.TypeName.Collate. Empty if no clause. Note: omni stores
 // column-level COLLATE on the DataType, NOT in Constraints[] — the
 // ColConstrCollate enum value exists but isn't populated by the parser
 // for this form.
-func omniColumnCollate(col *omniast.ColumnDef) string {
+func columnCollate(col *omniast.ColumnDef) string {
 	if col == nil || col.TypeName == nil {
 		return ""
 	}
 	return strings.ToLower(col.TypeName.Collate)
 }
 
-// omniColumnHasComment reports whether the column has a COMMENT clause.
+// columnHasComment reports whether the column has a COMMENT clause.
 // The value is in col.Comment, but the "clause was written" signal lives
 // in Constraints[] as ColConstrComment — needed to distinguish
 // "COMMENT ”" (present, empty) from no COMMENT clause at all.
-func omniColumnHasComment(col *omniast.ColumnDef) bool {
+func columnHasComment(col *omniast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -219,7 +219,7 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 	return false
 }
 
-// collectColumnViolations walks an OmniStmt's CREATE TABLE columns and
+// collectColumnViolations walks an Stmt's CREATE TABLE columns and
 // ALTER TABLE ADD/CHANGE/MODIFY COLUMN commands, returning a columnData
 // entry for every column where isViolation returns true. Line for
 // CREATE TABLE columns is the column's start; for ALTER TABLE commands,
@@ -238,7 +238,7 @@ func omniColumnHasComment(col *omniast.ColumnDef) bool {
 // (advisor_column_require_default's table-level PK exemption) or those
 // that read non-column structures (advisor_column_auto_increment_initial_value's
 // table options).
-func collectColumnViolations(ostmt OmniStmt, isViolation func(*omniast.ColumnDef) bool) []columnData {
+func collectColumnViolations(ostmt Stmt, isViolation func(*omniast.ColumnDef) bool) []columnData {
 	if isViolation == nil {
 		return nil
 	}
@@ -319,11 +319,11 @@ func firstAlterCommandMatching(n *omniast.AlterTableStmt, matcher func(*omniast.
 	return -1
 }
 
-// omniIsTimeType reports whether the column type is DATETIME or
+// isTimeType reports whether the column type is DATETIME or
 // TIMESTAMP. Pingcap dispatched on `mysql.TypeDatetime` /
 // `mysql.TypeTimestamp` — distinct type bytes, no unification.
 // omni surfaces both as their own DataType.Name with no aliasing.
-func omniIsTimeType(dt *omniast.DataType) bool {
+func isTimeType(dt *omniast.DataType) bool {
 	if dt == nil {
 		return false
 	}
@@ -335,37 +335,37 @@ func omniIsTimeType(dt *omniast.DataType) bool {
 	}
 }
 
-// omniIsDefaultCurrentTime reports whether a column has
+// isDefaultCurrentTime reports whether a column has
 // `DEFAULT CURRENT_TIMESTAMP` (or one of its synonyms: NOW(),
 // LOCALTIME, LOCALTIMESTAMP). The omni AST puts the default
 // expression on `col.DefaultValue` (as an ExprNode); a function-call
 // default surfaces as `*omniast.FuncCallExpr` with `Name` carrying
 // the function token.
-func omniIsDefaultCurrentTime(col *omniast.ColumnDef) bool {
+func isDefaultCurrentTime(col *omniast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
-	return omniIsCurrentTimeFuncCall(col.DefaultValue)
+	return isCurrentTimeFuncCall(col.DefaultValue)
 }
 
-// omniIsOnUpdateCurrentTime reports whether a column has
+// isOnUpdateCurrentTime reports whether a column has
 // `ON UPDATE CURRENT_TIMESTAMP` (or its synonyms). Omni surfaces
 // the on-update expression on `col.OnUpdate` — a separate top-level
 // field on ColumnDef (NOT inside Constraints[]).
-func omniIsOnUpdateCurrentTime(col *omniast.ColumnDef) bool {
+func isOnUpdateCurrentTime(col *omniast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
-	return omniIsCurrentTimeFuncCall(col.OnUpdate)
+	return isCurrentTimeFuncCall(col.OnUpdate)
 }
 
-// omniIsCurrentTimeFuncCall checks whether the given expression is a
+// isCurrentTimeFuncCall checks whether the given expression is a
 // function call to one of the CURRENT_TIMESTAMP synonyms:
 // CURRENT_TIMESTAMP, NOW, LOCALTIME, LOCALTIMESTAMP. Pingcap
 // canonicalized these to lowercase via `FnName.L`; omni keeps the
 // user's original case in `FuncCallExpr.Name`, so we compare
 // case-insensitively.
-func omniIsCurrentTimeFuncCall(expr omniast.ExprNode) bool {
+func isCurrentTimeFuncCall(expr omniast.ExprNode) bool {
 	if expr == nil {
 		return false
 	}
@@ -381,7 +381,7 @@ func omniIsCurrentTimeFuncCall(expr omniast.ExprNode) bool {
 	}
 }
 
-// omniIsRandFuncCall checks whether the given expression is a
+// isRandFuncCall checks whether the given expression is a
 // function call to RAND(). Used by insert_disallow_order_by_rand.
 // Pingcap-tidb compared via `FnName.L == ast.Rand` (lowercase
 // canonicalization); omni keeps the user's original case in
@@ -389,7 +389,7 @@ func omniIsCurrentTimeFuncCall(expr omniast.ExprNode) bool {
 // accepts an optional integer seed argument; we match regardless
 // of arity (matching pingcap's predecessor — which type-asserted
 // the function call but didn't inspect Args).
-func omniIsRandFuncCall(expr omniast.ExprNode) bool {
+func isRandFuncCall(expr omniast.ExprNode) bool {
 	if expr == nil {
 		return false
 	}
@@ -400,7 +400,7 @@ func omniIsRandFuncCall(expr omniast.ExprNode) bool {
 	return strings.EqualFold(fc.Name, "RAND")
 }
 
-// omniIsCharOrBinaryType reports whether the column type is a
+// isCharOrBinaryType reports whether the column type is a
 // fixed-length character/binary type (CHAR or BINARY). Pingcap-tidb
 // dispatched on `mysql.TypeString` which covered BOTH `CHAR` and
 // `BINARY` via charset distinction (charset-pair unification, same
@@ -410,7 +410,7 @@ func omniIsRandFuncCall(expr omniast.ExprNode) bool {
 // Mysql analog only matches CHAR (long-standing mysql gap; pre-omni
 // mysql used ANTLR token symbols and never matched BINARY either —
 // NOT a regression).
-func omniIsCharOrBinaryType(dt *omniast.DataType) bool {
+func isCharOrBinaryType(dt *omniast.DataType) bool {
 	if dt == nil {
 		return false
 	}
@@ -422,7 +422,7 @@ func omniIsCharOrBinaryType(dt *omniast.DataType) bool {
 	}
 }
 
-// omniCharLength returns the declared length of a CHAR/BINARY column,
+// charLength returns the declared length of a CHAR/BINARY column,
 // applying the MySQL default of 1 when no explicit length is given.
 // Pingcap's `column.Tp.GetFlen()` returned the canonical default
 // width for bare CHAR / BARE BINARY; omni keeps Length=0 in that
@@ -430,9 +430,9 @@ func omniIsCharOrBinaryType(dt *omniast.DataType) bool {
 // rendering.
 //
 // Returns 0 for non-CHAR/BINARY types — callers gate on
-// omniIsCharOrBinaryType first.
-func omniCharLength(dt *omniast.DataType) int {
-	if dt == nil || !omniIsCharOrBinaryType(dt) {
+// isCharOrBinaryType first.
+func charLength(dt *omniast.DataType) int {
+	if dt == nil || !isCharOrBinaryType(dt) {
 		return 0
 	}
 	if dt.Length == 0 {
@@ -442,7 +442,7 @@ func omniCharLength(dt *omniast.DataType) int {
 	return dt.Length
 }
 
-// omniIsIntegerType reports whether the column type is an integer type
+// isIntegerType reports whether the column type is an integer type
 // from the perspective of pingcap-tidb's `isInteger` helper. Pingcap
 // dispatched on `mysql.TypeTiny`/`TypeShort`/`TypeInt24`/`TypeLong`/`TypeLonglong`
 // (5 type bytes), and crucially `mysql.TypeTiny` was shared by TINYINT,
@@ -453,11 +453,11 @@ func omniCharLength(dt *omniast.DataType) int {
 // defensive alias even though omni pre-normalizes INTEGER → INT per
 // cumulative #7). Cumulative #20 documents the TINYINT/BOOLEAN split.
 //
-// NOTE: this diverges from `mysql/utils.go`'s `omniIsIntegerType`,
+// NOTE: this diverges from `mysql/utils.go`'s `isIntegerType`,
 // which currently omits "BOOLEAN". Pre-omni mysql ANTLR did not treat
 // BOOL as TINYINT — that's a long-standing mysql behavior gap, NOT a
 // regression introduced by mysql's omni migration. Out of scope here.
-func omniIsIntegerType(dt *omniast.DataType) bool {
+func isIntegerType(dt *omniast.DataType) bool {
 	if dt == nil {
 		return false
 	}
@@ -469,7 +469,7 @@ func omniIsIntegerType(dt *omniast.DataType) bool {
 	}
 }
 
-// omniConstraintAdviceName returns the constraint name suitable for
+// constraintAdviceName returns the constraint name suitable for
 // embedding in advice content. Falls back to "PRIMARY" for unnamed
 // PRIMARY KEY constraints (cumulative #28: pingcap-tidb accepted the
 // non-standard `PRIMARY KEY index_name (cols)` extension and captured
@@ -481,11 +481,11 @@ func omniIsIntegerType(dt *omniast.DataType) bool {
 // Promoted to utils.go in batch 18 (originally file-local in batch
 // 17's advisor_index_key_number_limit.go) when a second consumer
 // (advisor_index_no_duplicate_column) needed the same fallback.
-func omniConstraintAdviceName(c *omniast.Constraint) string {
+func constraintAdviceName(c *omniast.Constraint) string {
 	if c == nil {
 		return ""
 	}
-	if name := omniConstraintName(c); name != "" {
+	if name := constraintName(c); name != "" {
 		return name
 	}
 	if c.Type == omniast.ConstrPrimaryKey {
@@ -494,21 +494,21 @@ func omniConstraintAdviceName(c *omniast.Constraint) string {
 	return ""
 }
 
-// omniConstraintName returns the CONSTRAINT symbol, else the name written after
+// constraintName returns the CONSTRAINT symbol, else the name written after
 // FOREIGN KEY, which omni keeps in IndexName.
-func omniConstraintName(c *omniast.Constraint) string {
+func constraintName(c *omniast.Constraint) string {
 	if c.Name != "" {
 		return c.Name
 	}
 	return c.IndexName
 }
 
-// omniDataTypeNameCompact returns a compact, lowercase type-name string
+// dataTypeNameCompact returns a compact, lowercase type-name string
 // for use in advice content + allowlist comparisons. Mirrors the mysql
 // helper of the same name (mysql/utils.go). Length/scale info is
 // intentionally omitted — pingcap's `tidbparser.TypeString` and the
 // canonical fixture rendering both elide it (e.g. `varchar(5)` → "varchar").
-func omniDataTypeNameCompact(dt *omniast.DataType) string {
+func dataTypeNameCompact(dt *omniast.DataType) string {
 	if dt == nil {
 		return ""
 	}
@@ -554,7 +554,7 @@ type indexFamilyCallbacks struct {
 // Line positions: column line is the column's start; constraint line is
 // the constraint's start. Returns the concatenated pkData; advice
 // formatting/emission stays in the caller.
-func collectIndexFamilyCreateTable(ostmt OmniStmt, n *omniast.CreateTableStmt, cb indexFamilyCallbacks) []pkData {
+func collectIndexFamilyCreateTable(ostmt Stmt, n *omniast.CreateTableStmt, cb indexFamilyCallbacks) []pkData {
 	if n == nil || n.Table == nil {
 		return nil
 	}
@@ -585,7 +585,7 @@ func collectIndexFamilyCreateTable(ostmt OmniStmt, n *omniast.CreateTableStmt, c
 // ignored. The line for every command is the top-level statement's start
 // (matching pingcap-typed visitors that read `node.OriginTextPosition()`
 // for ALTER TABLE specs). Returns the concatenated pkData.
-func collectIndexFamilyAlterTable(ostmt OmniStmt, n *omniast.AlterTableStmt, cb indexFamilyCallbacks) []pkData {
+func collectIndexFamilyAlterTable(ostmt Stmt, n *omniast.AlterTableStmt, cb indexFamilyCallbacks) []pkData {
 	if n == nil || n.Table == nil {
 		return nil
 	}
@@ -646,7 +646,7 @@ func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 	return nil
 }
 
-// omniNeedDefault reports whether a column needs a DEFAULT clause to be
+// needDefault reports whether a column needs a DEFAULT clause to be
 // considered "well-formed" by the column_set_default_for_not_null and
 // column_require_default rules. Returns false (default not needed) when:
 //   - column is auto-increment (auto-generated value)
@@ -655,7 +655,7 @@ func addColumnTargets(cmd *omniast.AlterTableCmd) []*omniast.ColumnDef {
 //   - column type is BLOB/TEXT (omni stores TEXT as a separate name from
 //     BLOB; pingcap unified them under TypeBlob — both must be checked)
 //   - column type is JSON or geometry (no meaningful default)
-func omniNeedDefault(col *omniast.ColumnDef) bool {
+func needDefault(col *omniast.ColumnDef) bool {
 	if col == nil {
 		return false
 	}
@@ -681,24 +681,22 @@ func omniNeedDefault(col *omniast.ColumnDef) bool {
 	return true
 }
 
-// omniStmtsCacheKey is the advisor.Context.Memo key for the per-review
+// stmtsCacheKey is the advisor.Context.Memo key for the per-review
 // omni-parse result. All migrated tidb advisors share one parse pass through
 // this cache.
-const omniStmtsCacheKey = "tidb.omniStmts"
+const stmtsCacheKey = "tidb.stmts"
 
-// getTiDBOmniNodes returns omni-parsed statements for migrated advisors. The
+// getTiDBNodes returns omni-parsed statements for migrated advisors. The
 // dispatcher has already parsed and populated stmt.AST; this helper unwraps the
 // nodes and memoizes the result on checkCtx.Memo (one parse per review).
 //
 // Type switch over stmt.AST:
-//   - *tidbparser.OmniAST: omni accepted — collect the node.
-//   - *tidbparser.AST: dispatcher fell back to pingcap (omni rejected the
-//     statement). Skip — migrated advisors emit no advice for omni-rejected SQL.
-//   - default: unknown AST type — warn (a future third tidb AST type shouldn't
+//   - *tidbparser.AST: omni accepted — collect the node.
+//   - default: unknown AST type — warn (a future tidb AST type shouldn't
 //     silently drop statements).
-func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
-	if cached, ok := checkCtx.Memo(omniStmtsCacheKey); ok {
-		if stmts, typeOK := cached.([]OmniStmt); typeOK {
+func getTiDBNodes(checkCtx advisor.Context) ([]Stmt, error) {
+	if cached, ok := checkCtx.Memo(stmtsCacheKey); ok {
+		if stmts, typeOK := cached.([]Stmt); typeOK {
 			return stmts, nil
 		}
 	}
@@ -707,30 +705,25 @@ func getTiDBOmniNodes(checkCtx advisor.Context) ([]OmniStmt, error) {
 		return nil, errors.New("ParsedStatements is not provided in context")
 	}
 
-	var result []OmniStmt
+	var result []Stmt
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.Empty || stmt.AST == nil {
 			continue
 		}
 		switch a := stmt.AST.(type) {
-		case *tidbparser.OmniAST:
-			result = append(result, OmniStmt{
+		case *tidbparser.AST:
+			result = append(result, Stmt{
 				Node:     a.Node,
 				Text:     a.Text,
 				BaseLine: stmt.BaseLine(),
 			})
-		case *tidbparser.AST:
-			// omni is the sole TiDB parser, so this bridge AST no longer
-			// reaches here; kept defensively. Advisors emit no advice for a
-			// statement omni did not produce, so skip it.
-			continue
 		default:
 			slog.Warn("unexpected stmt.AST type for tidb dispatcher",
 				slog.String("type", fmt.Sprintf("%T", a)))
 		}
 	}
 
-	checkCtx.SetMemo(omniStmtsCacheKey, result)
+	checkCtx.SetMemo(stmtsCacheKey, result)
 	return result, nil
 }
 
@@ -755,14 +748,14 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 	return regexp.Compile(template)
 }
 
-// omniIndexColumns extracts column names from an omni IndexColumn list.
+// indexColumns extracts column names from an omni IndexColumn list.
 // Expression-based parts that are not bare column refs are silently
 // skipped — e.g., functional indexes like `INDEX idx ((LOWER(name)))`
 // contribute no name to the column-list substitution. This matches the
 // mysql omni analog and the pingcap-typed naming rules' historical
 // "name-only" behavior; any future rule that needs to inspect index
 // expressions should not route through this helper.
-func omniIndexColumns(cols []*omniast.IndexColumn) []string {
+func indexColumns(cols []*omniast.IndexColumn) []string {
 	if len(cols) == 0 {
 		return nil
 	}
@@ -811,9 +804,9 @@ type namingRuleConfig struct {
 func runNamingConventionRule(
 	checkCtx advisor.Context,
 	cfg namingRuleConfig,
-	collect func(OmniStmt) []*indexMetaData,
+	collect func(Stmt) []*indexMetaData,
 ) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}

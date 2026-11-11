@@ -42,27 +42,27 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	rule := &tableDropNamingConventionOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &tableDropNamingConventionRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		format: format,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type tableDropNamingConventionOmniRule struct {
-	OmniBaseRule
+type tableDropNamingConventionRule struct {
+	BaseRule
 	format *regexp.Regexp
 }
 
-func (*tableDropNamingConventionOmniRule) Name() string {
+func (*tableDropNamingConventionRule) Name() string {
 	return "TableDropNamingConventionRule"
 }
 
-func (r *tableDropNamingConventionOmniRule) OnStatement(node ast.Node) {
+func (r *tableDropNamingConventionRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.DropTableStmt)
 	if !ok {
 		return

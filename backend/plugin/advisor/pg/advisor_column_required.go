@@ -47,18 +47,18 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &columnRequirementRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		requiredColumnsMap: requiredColumnsMap,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type columnRequirementRule struct {
-	OmniBaseRule
+	BaseRule
 
 	requiredColumnsMap columnSet
 }
@@ -80,7 +80,7 @@ func (r *columnRequirementRule) OnStatement(node ast.Node) {
 }
 
 func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
@@ -91,7 +91,7 @@ func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
 		required[col] = true
 	}
 
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		delete(required, col.Colname)
 	}
@@ -117,12 +117,12 @@ func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
 }
 
 func (r *columnRequirementRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}
 
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		if ast.AlterTableType(cmd.Subtype) == ast.AT_DropColumn {
 			colName := cmd.Name
 			if r.requiredColumnsMap[colName] {
@@ -146,7 +146,7 @@ func (r *columnRequirementRule) handleRenameStmt(n *ast.RenameStmt) {
 		return
 	}
 
-	tableName := omniTableName(n.Relation)
+	tableName := rangeVarTableName(n.Relation)
 	if tableName == "" {
 		return
 	}

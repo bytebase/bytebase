@@ -26,7 +26,7 @@ type ColumnAutoIncrementMustIntegerAdvisor struct {
 
 // Check checks for auto-increment column type.
 func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +62,9 @@ type columnData struct {
 	line   int
 }
 
-func (c *columnAutoIncrementMustIntegerChecker) checkStmt(ostmt OmniStmt) {
+func (c *columnAutoIncrementMustIntegerChecker) checkStmt(ostmt Stmt) {
 	cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
-		return !autoIncrementColumnIsIntegerOmni(col)
+		return !autoIncrementColumnIsInteger(col)
 	})
 	for _, col := range cols {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -77,16 +77,16 @@ func (c *columnAutoIncrementMustIntegerChecker) checkStmt(ostmt OmniStmt) {
 	}
 }
 
-// autoIncrementColumnIsIntegerOmni returns true unless the column is
+// autoIncrementColumnIsInteger returns true unless the column is
 // AUTO_INCREMENT with a non-integer type. Mirrors pingcap-typed
 // autoIncrementColumnIsInteger semantics: the rule fires only on
 // auto-increment columns; everything else passes through.
-func autoIncrementColumnIsIntegerOmni(col *ast.ColumnDef) bool {
+func autoIncrementColumnIsInteger(col *ast.ColumnDef) bool {
 	if col == nil {
 		return true
 	}
 	if !col.AutoIncrement {
 		return true
 	}
-	return omniIsIntegerType(col.TypeName)
+	return isIntegerType(col.TypeName)
 }

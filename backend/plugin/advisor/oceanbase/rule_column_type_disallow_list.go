@@ -38,8 +38,8 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		typeRestriction[strings.ToUpper(tp)] = true
 	}
 
-	rule := &columnTypeDisallowListOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &columnTypeDisallowListRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -50,7 +50,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := oceanbaseparser.GetOmniNode(stmt.AST)
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -61,16 +61,16 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 	return rule.GetAdviceList(), nil
 }
 
-type columnTypeDisallowListOmniRule struct {
-	OmniBaseRule
+type columnTypeDisallowListRule struct {
+	BaseRule
 	typeRestriction map[string]bool
 }
 
-func (*columnTypeDisallowListOmniRule) Name() string {
+func (*columnTypeDisallowListRule) Name() string {
 	return "ColumnTypeDisallowListRule"
 }
 
-func (r *columnTypeDisallowListOmniRule) OnStatement(node ast.Node) {
+func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -80,8 +80,8 @@ func (r *columnTypeDisallowListOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *columnTypeDisallowListOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnTypeDisallowListRule) checkCreateTable(n *ast.CreateTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
@@ -90,23 +90,23 @@ func (r *columnTypeDisallowListOmniRule) checkCreateTable(n *ast.CreateTableStmt
 	}
 }
 
-func (r *columnTypeDisallowListOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Table)
+func (r *columnTypeDisallowListRule) checkAlterTable(n *ast.AlterTableStmt) {
+	tableName := tableName(n.Table)
 	if tableName == "" {
 		return
 	}
 	for _, cmd := range n.Commands {
-		for _, col := range omniGetColumnsFromCmd(cmd) {
+		for _, col := range getColumnsFromCmd(cmd) {
 			r.checkColumnType(tableName, col.Name, col.TypeName, col.Loc)
 		}
 	}
 }
 
-func (r *columnTypeDisallowListOmniRule) checkColumnType(tableName, colName string, dt *ast.DataType, loc ast.Loc) {
+func (r *columnTypeDisallowListRule) checkColumnType(tableName, colName string, dt *ast.DataType, loc ast.Loc) {
 	if dt == nil {
 		return
 	}
-	columnType := strings.ToUpper(omniDataTypeNameCompact(dt))
+	columnType := strings.ToUpper(dataTypeNameCompact(dt))
 	if _, exists := r.typeRestriction[columnType]; exists {
 		r.AddAdvice(&storepb.Advice{
 			Status:  r.Level,

@@ -28,29 +28,29 @@ func GetStatementTypesWithPosition(asts []base.AST) ([]StatementTypeWithPosition
 
 	var allResults []StatementTypeWithPosition
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		wrapped, ok := unifiedAST.(*AST)
 		if !ok {
 			return nil, errors.New("expected Redshift omni AST")
 		}
-		if omniAST.Node == nil {
+		if wrapped.Node == nil {
 			continue
 		}
 
-		stmtType := classifyOmniStatementType(omniAST.Node)
+		stmtType := classifyStatementType(wrapped.Node)
 		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
 			continue
 		}
 
 		line := 0
-		if omniAST.StartPosition != nil {
-			line = int(omniAST.StartPosition.Line)
+		if wrapped.StartPosition != nil {
+			line = int(wrapped.StartPosition.Line)
 		}
-		line += strings.Count(omniAST.Text, "\n")
+		line += strings.Count(wrapped.Text, "\n")
 
 		allResults = append(allResults, StatementTypeWithPosition{
 			Type: stmtType,
 			Line: line,
-			Text: omniAST.Text,
+			Text: wrapped.Text,
 		})
 	}
 
@@ -71,7 +71,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return types, nil
 }
 
-func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
+func classifyStatementType(node redshiftast.Node) storepb.StatementType {
 	switch n := node.(type) {
 	case *redshiftast.CreateStmt:
 		return storepb.StatementType_CREATE_TABLE
@@ -95,7 +95,7 @@ func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
 	case *redshiftast.DropdbStmt:
 		return storepb.StatementType_DROP_DATABASE
 	case *redshiftast.DropStmt:
-		return classifyOmniDropStatementType(redshiftast.ObjectType(n.RemoveType))
+		return classifyDropStatementType(redshiftast.ObjectType(n.RemoveType))
 	case *redshiftast.AlterTableStmt:
 		if redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_VIEW || redshiftast.ObjectType(n.ObjType) == redshiftast.OBJECT_MATVIEW {
 			return storepb.StatementType_ALTER_VIEW
@@ -104,7 +104,7 @@ func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
 	case *redshiftast.AlterSeqStmt:
 		return storepb.StatementType_ALTER_SEQUENCE
 	case *redshiftast.RenameStmt:
-		return classifyOmniRenameStatementType(n.RenameType)
+		return classifyRenameStatementType(n.RenameType)
 	case *redshiftast.CommentStmt:
 		return storepb.StatementType_COMMENT
 	case *redshiftast.TruncateStmt:
@@ -121,13 +121,13 @@ func classifyOmniStatementType(node redshiftast.Node) storepb.StatementType {
 	case *redshiftast.CallStmt, *redshiftast.ExecuteStmt:
 		return storepb.StatementType_EXECUTE
 	case *redshiftast.RedshiftObjectStmt:
-		return classifyOmniRedshiftObjectStatementType(n.Command, n.ObjectType)
+		return classifyRedshiftObjectStatementType(n.Command, n.ObjectType)
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
 }
 
-func classifyOmniDropStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
+func classifyDropStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
 	switch objectType {
 	case redshiftast.OBJECT_TABLE:
 		return storepb.StatementType_DROP_TABLE
@@ -148,7 +148,7 @@ func classifyOmniDropStatementType(objectType redshiftast.ObjectType) storepb.St
 	}
 }
 
-func classifyOmniRenameStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
+func classifyRenameStatementType(objectType redshiftast.ObjectType) storepb.StatementType {
 	switch objectType {
 	case redshiftast.OBJECT_INDEX:
 		return storepb.StatementType_RENAME_INDEX
@@ -165,7 +165,7 @@ func classifyOmniRenameStatementType(objectType redshiftast.ObjectType) storepb.
 	}
 }
 
-func classifyOmniRedshiftObjectStatementType(command, objectType string) storepb.StatementType {
+func classifyRedshiftObjectStatementType(command, objectType string) storepb.StatementType {
 	switch strings.ToLower(command) {
 	case "create":
 		switch strings.ToLower(objectType) {

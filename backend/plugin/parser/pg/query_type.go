@@ -22,7 +22,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 	// SELECT: check for INTO clause (becomes DDL)
 	case *ast.SelectStmt:
-		if hasOmniIntoClause(n) {
+		if hasIntoClause(n) {
 			return base.DDL, false
 		}
 		// A data-modifying CTE writes, so the SELECT needs DML permission.
@@ -44,7 +44,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 	// EXPLAIN: check for ANALYZE option
 	case *ast.ExplainStmt:
-		if isExplainAnalyzeOmni(n) {
+		if isExplainAnalyzeStmt(n) {
 			qt := classifyExplainedQuery(n.Query)
 			return qt, true
 		}
@@ -104,29 +104,29 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 	}
 }
 
-// hasOmniIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
-func hasOmniIntoClause(n *ast.SelectStmt) bool {
-	return omniIntoClause(n) != nil
+// hasIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
+func hasIntoClause(n *ast.SelectStmt) bool {
+	return intoClause(n) != nil
 }
 
-// omniIntoClause returns the INTO clause of n, searching set-operation arms
+// intoClause returns the INTO clause of n, searching set-operation arms
 // (UNION/INTERSECT/EXCEPT) — the parser attaches INTO to the first arm, not the root.
-func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
+func intoClause(n *ast.SelectStmt) *ast.IntoClause {
 	if n == nil {
 		return nil
 	}
 	if n.IntoClause != nil {
 		return n.IntoClause
 	}
-	if c := omniIntoClause(n.Larg); c != nil {
+	if c := intoClause(n.Larg); c != nil {
 		return c
 	}
-	return omniIntoClause(n.Rarg)
+	return intoClause(n.Rarg)
 }
 
-// isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
+// isExplainAnalyzeStmt reports whether an ExplainStmt executes its query: its last ANALYZE option
 // is not FALSE, OFF, or 0, the values PostgreSQL reads as false.
-func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
+func isExplainAnalyzeStmt(n *ast.ExplainStmt) bool {
 	if n.Options == nil {
 		return false
 	}
@@ -152,7 +152,7 @@ func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 // within text, the text of the EXPLAIN. It returns any other node and text unchanged.
 func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
 	explain, ok := node.(*ast.ExplainStmt)
-	if !ok || !isExplainAnalyzeOmni(explain) {
+	if !ok || !isExplainAnalyzeStmt(explain) {
 		return node, text
 	}
 	inner, ok := explainedText(explain, text)
@@ -175,7 +175,7 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 	}
 	switch n := query.(type) {
 	case *ast.SelectStmt:
-		if hasOmniIntoClause(n) {
+		if hasIntoClause(n) {
 			return base.DDL
 		}
 		if containsWriteCTE(n) {

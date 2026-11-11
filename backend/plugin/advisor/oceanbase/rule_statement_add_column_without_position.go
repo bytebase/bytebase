@@ -31,25 +31,25 @@ func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkC
 		return nil, err
 	}
 
-	rule := &addColumnWithoutPositionOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &addColumnWithoutPositionRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type addColumnWithoutPositionOmniRule struct {
-	OmniBaseRule
+type addColumnWithoutPositionRule struct {
+	BaseRule
 }
 
-func (*addColumnWithoutPositionOmniRule) Name() string {
+func (*addColumnWithoutPositionRule) Name() string {
 	return "StatementAddColumnWithoutPositionRule"
 }
 
-func (r *addColumnWithoutPositionOmniRule) OnStatement(node ast.Node) {
+func (r *addColumnWithoutPositionRule) OnStatement(node ast.Node) {
 	alter, ok := node.(*ast.AlterTableStmt)
 	if !ok {
 		return

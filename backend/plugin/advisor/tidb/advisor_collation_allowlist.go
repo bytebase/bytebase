@@ -29,7 +29,7 @@ type CollationAllowlistAdvisor struct {
 // CharsetAllowlistAdvisor: EXPLAIN-DDL doesn't parse, the matched stmt
 // types can't nest themselves.
 func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,19 +62,19 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		stmtLine := ostmt.FirstTokenLine()
 		switch n := ostmt.Node.(type) {
 		case *ast.CreateDatabaseStmt:
-			if c := omniDatabaseOption(n.Options, omniOptionNamesCollate); c != "" {
+			if c := databaseOption(n.Options, optionNamesCollate); c != "" {
 				if _, ok := allowlist[c]; !ok {
 					emit(text, c, stmtLine)
 				}
 			}
 		case *ast.AlterDatabaseStmt:
-			if c := omniDatabaseOption(n.Options, omniOptionNamesCollate); c != "" {
+			if c := databaseOption(n.Options, optionNamesCollate); c != "" {
 				if _, ok := allowlist[c]; !ok {
 					emit(text, c, stmtLine)
 				}
 			}
 		case *ast.CreateTableStmt:
-			if c := omniTableOption(n.Options, omniOptionNamesCollate); c != "" {
+			if c := tableOption(n.Options, optionNamesCollate); c != "" {
 				if _, ok := allowlist[c]; !ok {
 					emit(text, c, stmtLine)
 					continue
@@ -84,7 +84,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 				if col == nil {
 					continue
 				}
-				c := omniColumnCollate(col)
+				c := columnCollate(col)
 				if c == "" {
 					continue
 				}
@@ -107,7 +107,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 					if cmd.Option == nil {
 						continue
 					}
-					if !omniOptionNameMatches(cmd.Option.Name, omniOptionNamesCollate) {
+					if !optionNameMatches(cmd.Option.Name, optionNamesCollate) {
 						continue
 					}
 					c := strings.ToLower(cmd.Option.Value)
@@ -138,7 +138,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 						if col == nil {
 							continue
 						}
-						c := omniColumnCollate(col)
+						c := columnCollate(col)
 						if c == "" {
 							continue
 						}
@@ -151,7 +151,7 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 					if cmd.Column == nil {
 						continue
 					}
-					c := omniColumnCollate(cmd.Column)
+					c := columnCollate(cmd.Column)
 					if c == "" {
 						continue
 					}

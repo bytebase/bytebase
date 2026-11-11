@@ -42,7 +42,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 	}
 
 	rule := &tableRequirePKRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -57,7 +57,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := pgparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -82,7 +82,7 @@ type tableMention struct {
 }
 
 type tableRequirePKRule struct {
-	OmniBaseRule
+	BaseRule
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
 
@@ -164,7 +164,7 @@ func (r *tableRequirePKRule) mention(schema, tableName string) *tableMention {
 
 // recordMention points the table's advice attribution at the current statement.
 func (r *tableRequirePKRule) recordMention(rv *ast.RangeVar) *tableMention {
-	tableName := omniTableName(rv)
+	tableName := rangeVarTableName(rv)
 	if tableName == "" {
 		return nil
 	}
@@ -177,7 +177,7 @@ func (r *tableRequirePKRule) recordMention(rv *ast.RangeVar) *tableMention {
 // renameMention carries the batch state of rv over to newName and remembers
 // the pre-batch name so the original metadata can still be found.
 func (r *tableRequirePKRule) renameMention(rv *ast.RangeVar, newName string) {
-	oldName := omniTableName(rv)
+	oldName := rangeVarTableName(rv)
 	if oldName == "" || newName == "" {
 		return
 	}

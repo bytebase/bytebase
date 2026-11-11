@@ -23,13 +23,13 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
 	for _, a := range asts {
-		node, ok := GetOmniNode(a)
+		node, ok := GetNode(a)
 		if !ok {
 			return nil, errors.New("expected TiDB AST")
 		}
 		recordResourceChanges(database, node, summary.ChangedResources)
-		if omniAST, ok := a.(*OmniAST); ok {
-			countOmniDML(summary, omniAST)
+		if wrapped, ok := a.(*AST); ok {
+			countDML(summary, wrapped)
 		}
 	}
 	return summary, nil
@@ -135,8 +135,8 @@ func addDMLTables(addTable func(*omniast.TableRef, bool), tableExprs []omniast.T
 	}
 }
 
-func countOmniDML(summary *base.ChangeSummary, omniAST *OmniAST) {
-	switch n := omniAST.Node.(type) {
+func countDML(summary *base.ChangeSummary, wrapped *AST) {
+	switch n := wrapped.Node.(type) {
 	case *omniast.InsertStmt:
 		switch {
 		case len(n.Values) > 0:
@@ -144,13 +144,13 @@ func countOmniDML(summary *base.ChangeSummary, omniAST *OmniAST) {
 		case len(n.SetList) > 0:
 			summary.InsertCount++
 		default:
-			addSampleDML(summary, omniAST.Text)
+			addSampleDML(summary, wrapped.Text)
 		}
 	case *omniast.UpdateStmt, *omniast.DeleteStmt:
-		addSampleDML(summary, omniAST.Text)
+		addSampleDML(summary, wrapped.Text)
 	case *omniast.BatchStmt:
 		if n.DryRun == omniast.BatchDryRunNone {
-			addBatchSampleDML(summary, omniAST)
+			addBatchSampleDML(summary, wrapped)
 		}
 	default:
 	}
@@ -159,19 +159,19 @@ func countOmniDML(summary *base.ChangeSummary, omniAST *OmniAST) {
 // addBatchSampleDML samples the DML inside a BATCH statement, because EXPLAIN rejects the
 // BATCH syntax. A BATCH without an omni AST is counted but not sampled.
 func addBatchSampleDML(summary *base.ChangeSummary, ast base.AST) {
-	omniAST, ok := ast.(*OmniAST)
+	wrapped, ok := ast.(*AST)
 	if !ok {
 		summary.DMLCount++
 		return
 	}
-	batch, ok := omniAST.Node.(*omniast.BatchStmt)
+	batch, ok := wrapped.Node.(*omniast.BatchStmt)
 	if !ok {
 		summary.DMLCount++
 		return
 	}
 	// The parser reads the body of an executable comment, so the DML's location can fall inside one
 	// and the slice would leave the comment unclosed.
-	if strings.Contains(omniAST.Text, "/*!") || strings.Contains(omniAST.Text, "/*T!") || strings.Contains(omniAST.Text, "/*M!") {
+	if strings.Contains(wrapped.Text, "/*!") || strings.Contains(wrapped.Text, "/*T!") || strings.Contains(wrapped.Text, "/*M!") {
 		summary.DMLCount++
 		return
 	}
@@ -188,14 +188,14 @@ func addBatchSampleDML(summary *base.ChangeSummary, ast base.AST) {
 		return
 	}
 	end := loc.End
-	if end <= loc.Start || end > len(omniAST.Text) {
-		end = len(omniAST.Text)
+	if end <= loc.Start || end > len(wrapped.Text) {
+		end = len(wrapped.Text)
 	}
 	if loc.Start <= 0 || loc.Start >= end {
 		summary.DMLCount++
 		return
 	}
-	addSampleDML(summary, omniAST.Text[loc.Start:end])
+	addSampleDML(summary, wrapped.Text[loc.Start:end])
 }
 
 func addSampleDML(summary *base.ChangeSummary, text string) {

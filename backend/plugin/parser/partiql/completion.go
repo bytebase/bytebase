@@ -38,11 +38,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	pos := lineOffsetToBytePos(statement, caretLine, caretOffset)
 
 	// Get omni completion candidates.
-	omniCandidates := completion.Complete(statement, pos, cat)
+	candidates := completion.Complete(statement, pos, cat)
 
 	// Convert to base.Candidate format.
 	candidateMap := make(map[string]base.Candidate)
-	for _, c := range omniCandidates {
+	for _, c := range candidates {
 		var candidateType base.CandidateType
 		switch c.Kind {
 		case "keyword":

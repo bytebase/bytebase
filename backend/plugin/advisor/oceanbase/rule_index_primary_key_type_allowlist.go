@@ -39,8 +39,8 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		allowlist[strings.ToLower(tp)] = true
 	}
 
-	rule := &indexPrimaryKeyTypeAllowlistOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &indexPrimaryKeyTypeAllowlistRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
@@ -49,21 +49,21 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type indexPrimaryKeyTypeAllowlistOmniRule struct {
-	OmniBaseRule
+type indexPrimaryKeyTypeAllowlistRule struct {
+	BaseRule
 	allowlist        map[string]bool
 	originalMetadata *model.DatabaseMetadata
 	tablesNewColumns tableColumnTypes
 }
 
-func (*indexPrimaryKeyTypeAllowlistOmniRule) Name() string {
+func (*indexPrimaryKeyTypeAllowlistRule) Name() string {
 	return "IndexPrimaryKeyTypeAllowlistRule"
 }
 
-func (r *indexPrimaryKeyTypeAllowlistOmniRule) OnStatement(node ast.Node) {
+func (r *indexPrimaryKeyTypeAllowlistRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		r.checkCreateTable(n)
@@ -73,7 +73,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) OnStatement(node ast.Node) {
 	}
 }
 
-func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkCreateTable(n *ast.CreateTableStmt) {
+func (r *indexPrimaryKeyTypeAllowlistRule) checkCreateTable(n *ast.CreateTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -82,7 +82,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkCreateTable(n *ast.CreateTab
 		if col == nil || col.TypeName == nil {
 			continue
 		}
-		columnType := omniDataTypeNameCompact(col.TypeName)
+		columnType := dataTypeNameCompact(col.TypeName)
 		for _, c := range col.Constraints {
 			if c.Type == ast.ColConstrPrimaryKey {
 				if _, exists := r.allowlist[columnType]; !exists {
@@ -106,7 +106,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkCreateTable(n *ast.CreateTab
 	}
 }
 
-func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
+func (r *indexPrimaryKeyTypeAllowlistRule) checkAlterTable(n *ast.AlterTableStmt) {
 	if n.Table == nil {
 		return
 	}
@@ -117,11 +117,11 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 		}
 		switch cmd.Type {
 		case ast.ATAddColumn:
-			for _, col := range omniGetColumnsFromCmd(cmd) {
+			for _, col := range getColumnsFromCmd(cmd) {
 				if col == nil || col.TypeName == nil {
 					continue
 				}
-				columnType := omniDataTypeNameCompact(col.TypeName)
+				columnType := dataTypeNameCompact(col.TypeName)
 				for _, c := range col.Constraints {
 					if c.Type == ast.ColConstrPrimaryKey {
 						if _, exists := r.allowlist[columnType]; !exists {
@@ -140,7 +140,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 		case ast.ATModifyColumn:
 			if cmd.Column != nil && cmd.Column.TypeName != nil {
 				col := cmd.Column
-				columnType := omniDataTypeNameCompact(col.TypeName)
+				columnType := dataTypeNameCompact(col.TypeName)
 				for _, c := range col.Constraints {
 					if c.Type == ast.ColConstrPrimaryKey {
 						if _, exists := r.allowlist[columnType]; !exists {
@@ -160,7 +160,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 			r.tablesNewColumns.delete(tableName, cmd.Name)
 			if cmd.Column != nil && cmd.Column.TypeName != nil {
 				col := cmd.Column
-				columnType := omniDataTypeNameCompact(col.TypeName)
+				columnType := dataTypeNameCompact(col.TypeName)
 				for _, c := range col.Constraints {
 					if c.Type == ast.ColConstrPrimaryKey {
 						if _, exists := r.allowlist[columnType]; !exists {
@@ -185,7 +185,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkAlterTable(n *ast.AlterTable
 	}
 }
 
-func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
+func (r *indexPrimaryKeyTypeAllowlistRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
 	if constraint.Type != ast.ConstrPrimaryKey {
 		return
 	}
@@ -207,7 +207,7 @@ func (r *indexPrimaryKeyTypeAllowlistOmniRule) checkConstraint(tableName string,
 	}
 }
 
-func (r *indexPrimaryKeyTypeAllowlistOmniRule) getPKColumnType(tableName string, columnName string) (string, error) {
+func (r *indexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, columnName string) (string, error) {
 	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
 		return columnType, nil
 	}

@@ -517,9 +517,9 @@ darwin/arm64, one run, with `INPUT_ONLY` standing in for the annotation set.
   unchanged — it is still called from `createAuditLog`, not `WrapUnary`, which is
   what keeps the streaming path covered. The row itself is **not** walked as a
   whole: `service_data` and `status` are redacted where they are assigned, by
-  `redactAuditServiceData` and `redactAuditStatus`, and `request_metadata` and
-  `mcp_delegation` are assigned untouched because nothing under them is
-  annotated. `TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads` asserts that
+  `redactAuditServiceData` and `redactAuditStatus`, and `request_metadata`,
+  `mcp_delegation` and `federated_identity` are assigned untouched because
+  nothing under them is annotated. `TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads` asserts that
   stays true.
 - **`Any` registry** — `backend/api/v1/audit_redact.go`, keyed by
   destination field rather than by type, so `Status.details` and `service_data`

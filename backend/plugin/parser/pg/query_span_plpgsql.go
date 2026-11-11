@@ -29,14 +29,14 @@ type funcBodyAnalysis struct {
 // source column sets. Results are cached by function OID on the extractor.
 // A nil value in the cache means analysis is in progress (recursion sentinel).
 // On parse errors, it degrades gracefully by returning empty sets.
-func (e *omniQuerySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
+func (e *querySpanExtractor) analyzeFunctionBody(proc *catalog.UserProc) []base.SourceColumnSet {
 	analysis := e.analyzeFunctionBodyForProc(proc)
 	e.mergeFunctionSourceTables(analysis.sourceColumns)
 	mergeSourceColumnSetInto(e.predicateColumns, analysis.predicateColumns)
 	return analysis.sourceColumns
 }
 
-func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserProc) *funcBodyAnalysis {
+func (e *querySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserProc) *funcBodyAnalysis {
 	// Check cache.
 	if cached, ok := e.funcBodyCache[proc.OID]; ok {
 		if cached == nil {
@@ -107,7 +107,7 @@ func (e *omniQuerySpanExtractor) analyzeFunctionBodyForProc(proc *catalog.UserPr
 	return e.funcBodyCache[proc.OID]
 }
 
-func (e *omniQuerySpanExtractor) analyzeBodyAs(proc *catalog.UserProc, def snapshotFunc) ([]base.SourceColumnSet, error) {
+func (e *querySpanExtractor) analyzeBodyAs(proc *catalog.UserProc, def snapshotFunc) ([]base.SourceColumnSet, error) {
 	switch strings.ToLower(def.language) {
 	case "plpgsql":
 		return e.analyzePLpgSQLBody(proc, def.body)
@@ -133,7 +133,7 @@ func mergeSourceColumnSetInto(dst, src base.SourceColumnSet) {
 	}
 }
 
-func (e *omniQuerySpanExtractor) mergeFunctionSourceTables(bodySets []base.SourceColumnSet) {
+func (e *querySpanExtractor) mergeFunctionSourceTables(bodySets []base.SourceColumnSet) {
 	for _, colSet := range bodySets {
 		for k := range colSet {
 			e.funcSourceColumns[base.ColumnResource{
@@ -168,7 +168,7 @@ func countOutputParams(proc *catalog.UserProc) int {
 	return count
 }
 
-func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColumnSet, error) {
+func (e *querySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColumnSet, error) {
 	if body == "" {
 		return nil, nil
 	}
@@ -238,7 +238,7 @@ func (e *omniQuerySpanExtractor) analyzeSQLBody(body string) ([]base.SourceColum
 	return result, nil
 }
 
-func (e *omniQuerySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
+func (e *querySpanExtractor) extractFuncLineage(q *catalog.Query) []base.SourceColumnSet {
 	var result []base.SourceColumnSet
 	for _, te := range q.TargetList {
 		if te.ResJunk {
@@ -296,7 +296,7 @@ func (s *variableScope) merge(name string, sources base.SourceColumnSet) {
 
 // plpgsqlAnalyzer holds state for analyzing a single PL/pgSQL function body.
 type plpgsqlAnalyzer struct {
-	extractor *omniQuerySpanExtractor
+	extractor *querySpanExtractor
 	scope     *variableScope
 	// returnResults collects per-column source sets from all RETURN QUERY paths.
 	returnResults [][]base.SourceColumnSet
@@ -315,7 +315,7 @@ type cteResolveKey struct {
 	col string
 }
 
-func (e *omniQuerySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc, body string) ([]base.SourceColumnSet, error) {
+func (e *querySpanExtractor) analyzePLpgSQLBody(proc *catalog.UserProc, body string) ([]base.SourceColumnSet, error) {
 	if body == "" {
 		return makeEmptySets(proc), nil
 	}
@@ -908,7 +908,7 @@ func (a *plpgsqlAnalyzer) collectAccessTablesFromSQL(sql string) base.SourceColu
 }
 
 // accessTablesOf returns the tables sql reads, or none when it cannot tell.
-func (e *omniQuerySpanExtractor) accessTablesOf(sql string) base.SourceColumnSet {
+func (e *querySpanExtractor) accessTablesOf(sql string) base.SourceColumnSet {
 	accesses := make(base.SourceColumnSet)
 	accessTables, err := ExtractAccessTables(sql, ExtractAccessTablesOption{
 		DefaultDatabase:        e.defaultDatabase,

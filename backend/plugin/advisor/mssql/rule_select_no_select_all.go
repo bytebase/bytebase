@@ -21,12 +21,12 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
-	rule := &selectNoSelectAllRule{OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	rule := &selectNoSelectAllRule{BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type selectNoSelectAllRule struct {
-	OmniBaseRule
+	BaseRule
 }
 
 func (*selectNoSelectAllRule) Name() string {

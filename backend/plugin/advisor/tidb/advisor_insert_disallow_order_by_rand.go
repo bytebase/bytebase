@@ -26,7 +26,7 @@ type InsertDisallowOrderByRandAdvisor struct {
 
 // Check checks for to disallow order by rand in INSERT statements.
 func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 // parenthesized UNION arms, if/when omni grammar accepts that
 // syntax in INSERT position — currently rejected) remains
 // uncovered, matching pingcap-tidb's per-arm behavior.
-func checkStmtForOrderByRand(ostmt OmniStmt, level storepb.Advice_Status, title string) *storepb.Advice {
+func checkStmtForOrderByRand(ostmt Stmt, level storepb.Advice_Status, title string) *storepb.Advice {
 	ins, ok := ostmt.Node.(*ast.InsertStmt)
 	if !ok {
 		return nil
@@ -82,7 +82,7 @@ func checkStmtForOrderByRand(ostmt OmniStmt, level storepb.Advice_Status, title 
 		if item == nil {
 			continue
 		}
-		if omniIsRandFuncCall(item.Expr) {
+		if isRandFuncCall(item.Expr) {
 			return &storepb.Advice{
 				Status:        level,
 				Code:          advisorcode.InsertUseOrderByRand.Int32(),

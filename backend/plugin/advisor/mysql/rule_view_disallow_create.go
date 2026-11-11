@@ -31,25 +31,25 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	rule := &viewDisallowCreateOmniRule{
-		OmniBaseRule: OmniBaseRule{
+	rule := &viewDisallowCreateRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
-type viewDisallowCreateOmniRule struct {
-	OmniBaseRule
+type viewDisallowCreateRule struct {
+	BaseRule
 }
 
-func (*viewDisallowCreateOmniRule) Name() string {
+func (*viewDisallowCreateRule) Name() string {
 	return "ViewDisallowCreateRule"
 }
 
-func (r *viewDisallowCreateOmniRule) OnStatement(node ast.Node) {
+func (r *viewDisallowCreateRule) OnStatement(node ast.Node) {
 	n, ok := node.(*ast.CreateViewStmt)
 	if !ok {
 		return

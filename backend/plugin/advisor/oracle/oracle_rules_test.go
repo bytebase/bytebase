@@ -44,7 +44,7 @@ func TestOracleRules(t *testing.T) {
 	}
 }
 
-func TestOracleAdvisorUsesOmniWithoutANTLRFallback(t *testing.T) {
+func TestOracleAdvisorUsesWithoutANTLRFallback(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string

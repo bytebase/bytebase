@@ -64,14 +64,14 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		}
 		return storepb.StatementType_CREATE_TABLE
 	case *ast.SelectStmt:
-		if hasOmniIntoClause(n) {
+		if hasIntoClause(n) {
 			return storepb.StatementType_CREATE_TABLE
 		}
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 
 	// DDL - DROP
 	case *ast.DropStmt:
-		return getDropStatementTypeFromOmni(n)
+		return getDropStatementTypeFrom(n)
 	case *ast.DropdbStmt:
 		return storepb.StatementType_DROP_DATABASE
 	case *ast.TruncateStmt:
@@ -120,8 +120,8 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 	}
 }
 
-// getDropStatementTypeFromOmni determines the specific DROP statement type from omni AST.
-func getDropStatementTypeFromOmni(n *ast.DropStmt) storepb.StatementType {
+// getDropStatementTypeFrom determines the specific DROP statement type from omni AST.
+func getDropStatementTypeFrom(n *ast.DropStmt) storepb.StatementType {
 	objType := ast.ObjectType(n.RemoveType)
 	switch objType {
 	case ast.OBJECT_TABLE:

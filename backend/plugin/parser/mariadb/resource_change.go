@@ -32,18 +32,18 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}
 
 	for _, unifiedAST := range asts {
-		omniAST, ok := unifiedAST.(*OmniAST)
+		node, ok := unifiedAST.(*AST)
 		if !ok {
-			return nil, errors.New("expected OmniAST for MariaDB")
+			return nil, errors.New("expected AST for MariaDB")
 		}
-		if omniAST.Node == nil {
+		if node.Node == nil {
 			continue
 		}
 
-		switch n := omniAST.Node.(type) {
+		switch n := node.Node.(type) {
 		case *ast.CreateTableStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				// CREATE OR REPLACE drops the existing table first, so its rows go
 				// with it and have to be counted. A plain CREATE affects none.
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, n.OrReplace)
@@ -51,55 +51,55 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 
 		case *ast.DropTableStmt:
 			for _, ref := range n.Tables {
-				db, table := omniTableRef(ref, currentDatabase)
+				db, table := tableRef(ref, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
 		case *ast.TruncateStmt:
 			for _, ref := range n.Tables {
-				db, table := omniTableRef(ref, currentDatabase)
+				db, table := tableRef(ref, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
 		case *ast.LoadDataStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.AlterTableStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, true)
 			}
 
 		case *ast.RenameTableStmt:
 			for _, pair := range n.Pairs {
 				if pair.Old != nil {
-					db, table := omniTableRef(pair.Old, currentDatabase)
+					db, table := tableRef(pair.Old, currentDatabase)
 					changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 				}
 				if pair.New != nil {
-					db, table := omniTableRef(pair.New, currentDatabase)
+					db, table := tableRef(pair.New, currentDatabase)
 					changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 				}
 			}
 
 		case *ast.CreateIndexStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.DropIndexStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 			}
 
 		case *ast.InsertStmt:
 			if n.Table != nil {
-				db, table := omniTableRef(n.Table, currentDatabase)
+				db, table := tableRef(n.Table, currentDatabase)
 				changedResources.AddTable(db, "", &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			if len(n.Values) > 0 {
@@ -112,14 +112,14 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				continue
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, statementText(node))
 
 		case *ast.UpdateStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, statementText(node))
 
 		case *ast.DeleteStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
@@ -129,7 +129,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
+			dmlStatements = append(dmlStatements, statementText(node))
 
 		// Non-table object DDL: gate by the object's own explicit database qualifier only.
 		// CREATE TRIGGER is intentionally skipped — its AST name is unqualified (a bare string);
@@ -163,8 +163,8 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	}, nil
 }
 
-// omniTableRef extracts database and table name from an omni TableRef.
-func omniTableRef(ref *ast.TableRef, defaultDB string) (string, string) {
+// tableRef extracts database and table name from an omni TableRef.
+func tableRef(ref *ast.TableRef, defaultDB string) (string, string) {
 	if ref == nil {
 		return defaultDB, ""
 	}
@@ -191,7 +191,7 @@ func extractTableExpr(expr ast.TableExpr, defaultDB string) []base.SchemaResourc
 	}
 	switch n := expr.(type) {
 	case *ast.TableRef:
-		db, table := omniTableRef(n, defaultDB)
+		db, table := tableRef(n, defaultDB)
 		return []base.SchemaResource{{Database: db, Table: table}}
 	case *ast.JoinClause:
 		var res []base.SchemaResource
@@ -203,8 +203,8 @@ func extractTableExpr(expr ast.TableExpr, defaultDB string) []base.SchemaResourc
 	}
 }
 
-// omniStatementText returns the text of a statement, ensuring it ends with a semicolon.
-func omniStatementText(a *OmniAST) string {
+// statementText returns the text of a statement, ensuring it ends with a semicolon.
+func statementText(a *AST) string {
 	text := strings.TrimSpace(a.Text)
 	if !strings.HasSuffix(text, ";") {
 		text += ";"

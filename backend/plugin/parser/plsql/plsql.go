@@ -34,7 +34,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 
 		list, err := ParsePLSQL(stmt.Text)
 		if err != nil {
-			return nil, convertOmniError(err, stmt)
+			return nil, convertError(err, stmt)
 		}
 		if list == nil || len(list.Items) == 0 {
 			result = append(result, base.ParsedStatement{Statement: stmt})
@@ -47,7 +47,7 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 			}
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &OmniAST{
+				AST: &AST{
 					Node:          raw.Stmt,
 					Text:          stmt.Text,
 					StartPosition: stmt.Start,

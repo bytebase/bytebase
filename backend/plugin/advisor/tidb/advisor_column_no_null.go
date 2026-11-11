@@ -28,7 +28,7 @@ type ColumnNoNullAdvisor struct {
 
 // Check checks for column no NULL value.
 func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ type columnNoNullChecker struct {
 	finalMetadata *model.DatabaseMetadata
 }
 
-func (c *columnNoNullChecker) checkCreateTable(n *ast.CreateTableStmt, ostmt OmniStmt) {
+func (c *columnNoNullChecker) checkCreateTable(n *ast.CreateTableStmt, ostmt Stmt) {
 	if n.Table == nil {
 		return
 	}
@@ -86,7 +86,7 @@ func (c *columnNoNullChecker) checkCreateTable(n *ast.CreateTableStmt, ostmt Omn
 	}
 }
 
-func (c *columnNoNullChecker) checkAlterTable(n *ast.AlterTableStmt, ostmt OmniStmt) {
+func (c *columnNoNullChecker) checkAlterTable(n *ast.AlterTableStmt, ostmt Stmt) {
 	if n.Table == nil {
 		return
 	}

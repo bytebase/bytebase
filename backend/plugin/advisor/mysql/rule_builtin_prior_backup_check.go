@@ -52,12 +52,12 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
 
-		if isOmniDDL(node) {
+		if isDDL(node) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Title:         title,
@@ -117,7 +117,7 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
@@ -138,8 +138,8 @@ func prepareTransformation(databaseName string, parsedStatements []base.ParsedSt
 	return result, nil
 }
 
-// isOmniDDL returns true if the omni AST node represents a DDL statement.
-func isOmniDDL(node ast.Node) bool {
+// isDDL returns true if the omni AST node represents a DDL statement.
+func isDDL(node ast.Node) bool {
 	switch node.(type) {
 	case *ast.CreateTableStmt, *ast.CreateDatabaseStmt, *ast.CreateIndexStmt,
 		*ast.CreateViewStmt, *ast.CreateTriggerStmt, *ast.CreateEventStmt,

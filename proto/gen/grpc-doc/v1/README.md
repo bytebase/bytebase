@@ -319,6 +319,7 @@
     - [AuditLog](#bytebase-v1-AuditLog)
     - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
     - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [FederatedIdentity](#bytebase-v1-FederatedIdentity)
     - [MCPDelegation](#bytebase-v1-MCPDelegation)
     - [RequestMetadata](#bytebase-v1-RequestMetadata)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
@@ -5645,6 +5646,7 @@ Audit log entry recording system activity or API call.
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | Service-specific metadata about the request, response, and activities. |
 | request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the request context. |
 | mcp_delegation | [MCPDelegation](#bytebase-v1-MCPDelegation) |  | MCP delegation provenance. Present exactly when the audited call arrived through the MCP server&#39;s delegated credential; never set for public API calls. Presence of this message is the MCP-origin marker. |
+| federated_identity | [FederatedIdentity](#bytebase-v1-FederatedIdentity) |  | The external workload behind a workload identity. Set on a successful token exchange and on every call made with the token it issued. |
 
 
 
@@ -5681,6 +5683,22 @@ Response message for exporting audit logs.
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  | The exported audit log content in the requested format. |
 | next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-FederatedIdentity"></a>
+
+### FederatedIdentity
+The verified OIDC identity a workload identity token was exchanged for.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issuer | [string](#string) |  | The token&#39;s &#34;iss&#34; claim, e.g. &#34;https://token.actions.githubusercontent.com&#34;. |
+| subject | [string](#string) |  | The token&#39;s &#34;sub&#34; claim, e.g. &#34;repo:my-org/app:ref:refs/heads/main&#34;. |
 
 
 
@@ -5735,9 +5753,9 @@ Request message for searching audit logs.
 | parent | [string](#string) |  |  |
 | filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - actor: the actor, in users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} format. Support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - actor: the actor, in users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} format. Support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here. - federated_subject: the external subject behind a workload identity, taken from an entry&#39;s federated_identity.subject. Support &#34;==&#34; operator.
 
-For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; actor == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; |
+For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; actor == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; - filter = &#34;federated_subject == &#39;repo:my-org/app:ref:refs/heads/main&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |

@@ -29,7 +29,7 @@ type IndexTypeNoBlobAdvisor struct {
 
 // Check checks for index type no blob.
 func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (*IndexTypeNoBlobAdvisor) Check(_ context.Context, checkCtx advisor.Context
 		level:            level,
 		title:            checkCtx.Rule.Type.String(),
 		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableNewOmniColumn),
+		tablesNewColumns: make(tableNewColumn),
 	}
 
 	for _, ostmt := range stmts {
@@ -57,10 +57,10 @@ type indexTypeNoBlobChecker struct {
 	level            storepb.Advice_Status
 	title            string
 	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableNewOmniColumn
+	tablesNewColumns tableNewColumn
 }
 
-func (c *indexTypeNoBlobChecker) checkStmt(ostmt OmniStmt) {
+func (c *indexTypeNoBlobChecker) checkStmt(ostmt Stmt) {
 	cb := indexFamilyCallbacks{
 		onColumn:       c.addNewColumn,
 		onConstraint:   c.addConstraint,
@@ -97,14 +97,14 @@ func (c *indexTypeNoBlobChecker) checkStmt(ostmt OmniStmt) {
 // from the BLOB check, even though the mysql omni rule does. Preserve
 // pingcap behavior; aligning to mysql's stricter exclusion is a separate
 // intentional behavior change (cumulative #9 territory).
-func (c *indexTypeNoBlobChecker) collectCreateIndex(ostmt OmniStmt, n *ast.CreateIndexStmt) []pkData {
+func (c *indexTypeNoBlobChecker) collectCreateIndex(ostmt Stmt, n *ast.CreateIndexStmt) []pkData {
 	if n.Table == nil {
 		return nil
 	}
 	tableName := n.Table.Name
 	stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
 	var pkDataList []pkData
-	for _, columnName := range omniIndexColumns(n.Columns) {
+	for _, columnName := range indexColumns(n.Columns) {
 		columnType, err := c.getColumnType(tableName, columnName)
 		if err != nil {
 			continue
@@ -128,7 +128,7 @@ func (c *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef
 	// CREATE TABLE is NOT flagged by the pingcap version. Preserve that
 	// behavior. The change-column path checks both (matching the pingcap
 	// inconsistency); replicate as-is.
-	tp := omniDataTypeNameCompact(colDef.TypeName)
+	tp := dataTypeNameCompact(colDef.TypeName)
 	for _, constraint := range colDef.Constraints {
 		if constraint != nil && constraint.Type == ast.ColConstrUnique {
 			if isBlobType(tp) {
@@ -148,7 +148,7 @@ func (c *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef
 func (c *indexTypeNoBlobChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
 	var pkDataList []pkData
 	c.tablesNewColumns.delete(tableName, oldColumnName)
-	tp := omniDataTypeNameCompact(newColumnDef.TypeName)
+	tp := dataTypeNameCompact(newColumnDef.TypeName)
 	for _, constraint := range newColumnDef.Constraints {
 		if constraint != nil && (constraint.Type == ast.ColConstrPrimaryKey || constraint.Type == ast.ColConstrUnique) {
 			if isBlobType(tp) {
@@ -201,7 +201,7 @@ func (c *indexTypeNoBlobChecker) addConstraint(tableName string, line int, const
 // the catalog.
 func (c *indexTypeNoBlobChecker) getColumnType(tableName, columnName string) (string, error) {
 	if colDef, ok := c.tablesNewColumns.get(tableName, columnName); ok {
-		return omniDataTypeNameCompact(colDef.TypeName), nil
+		return dataTypeNameCompact(colDef.TypeName), nil
 	}
 	column := c.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
 	if column != nil {

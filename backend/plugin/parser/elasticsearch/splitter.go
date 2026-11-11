@@ -15,11 +15,11 @@ func init() {
 
 // SplitMultiSQL splits the input into individual ElasticSearch REST API requests.
 func SplitMultiSQL(statement string) ([]base.Statement, error) {
-	omniStmts, err := es.SplitMultiSQL(statement)
+	stmts, err := es.SplitMultiSQL(statement)
 	if err != nil {
 		return nil, err
 	}
-	if len(omniStmts) == 0 {
+	if len(stmts) == 0 {
 		if len(strings.TrimSpace(statement)) == 0 {
 			return nil, nil
 		}
@@ -27,7 +27,7 @@ func SplitMultiSQL(statement string) ([]base.Statement, error) {
 	}
 
 	var statements []base.Statement
-	for _, s := range omniStmts {
+	for _, s := range stmts {
 		statements = append(statements, base.Statement{
 			Text:  s.Text,
 			Empty: s.Empty,

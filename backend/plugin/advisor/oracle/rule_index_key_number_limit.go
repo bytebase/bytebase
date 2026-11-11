@@ -43,7 +43,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 
 	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, int(numberPayload.Number))
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
 }
 
 // IndexKeyNumberLimitRule is the rule implementation for index key number limit.
@@ -81,11 +81,11 @@ func (r *IndexKeyNumberLimitRule) OnStatement(node ast.Node) {
 			)
 		}
 	case *ast.CreateTableStmt:
-		for _, c := range omniTableConstraints(n.Constraints) {
+		for _, c := range tableConstraints(n.Constraints) {
 			r.checkConstraint(c)
 		}
 	case *ast.AlterTableStmt:
-		for _, cmd := range omniAlterTableCmds(n) {
+		for _, cmd := range alterTableCmds(n) {
 			if cmd.Constraint != nil {
 				r.checkConstraint(cmd.Constraint)
 			}

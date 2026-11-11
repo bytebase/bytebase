@@ -79,9 +79,9 @@ func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 // statement at a time: both the drivers and the API gate split a multi-statement
 // request first.
 func singleStatement(text string) (omniast.Node, error) {
-	list, err := ParseTiDBOmni(text)
+	list, err := ParseTiDB(text)
 	if err != nil {
-		return nil, convertOmniParseError(err, base.Statement{Text: text})
+		return nil, convertParseError(err, base.Statement{Text: text})
 	}
 	if list == nil || len(list.Items) == 0 {
 		return nil, errors.New("EXPLAIN needs a statement to plan")

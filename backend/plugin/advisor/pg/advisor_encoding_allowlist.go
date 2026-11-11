@@ -39,18 +39,18 @@ func (*EncodingAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &encodingAllowlistRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowlist: allowlist,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type encodingAllowlistRule struct {
-	OmniBaseRule
+	BaseRule
 
 	allowlist map[string]bool
 }

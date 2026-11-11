@@ -49,7 +49,7 @@ type IndexNoDuplicateColumnAdvisor struct{}
 //
 // Cumulative #28: PRIMARY KEY with the non-standard `PRIMARY KEY
 // pk (cols)` syntax has empty Name in omni (parser drops it).
-// Advice content uses `omniConstraintAdviceName` (utils.go) which
+// Advice content uses `constraintAdviceName` (utils.go) which
 // falls back to "PRIMARY" canonical.
 //
 // Cumulative #29 (parser-quirk false-NEGATIVE silently fixed):
@@ -63,7 +63,7 @@ type IndexNoDuplicateColumnAdvisor struct{}
 // spec: single-paren is grouping (flattened at parse time to
 // inner ColumnRef); double-paren `((expr))` is the functional-
 // index syntax. The `*ColumnRef`-only type-assert in
-// `omniIndexColumns` correctly skips real functional indexes
+// `indexColumns` correctly skips real functional indexes
 // (`((a + 1))` → `*BinaryOperationExpr`, not ColumnRef) while
 // catching paren-wrapped column duplicates. NOT a regression;
 // inverse direction of cumulative #21 (#21 was a parser-quirk
@@ -74,7 +74,7 @@ type IndexNoDuplicateColumnAdvisor struct{}
 // Cumulative #17 sibling-parity: ATAddConstraint + ATAddIndex
 // dual arm preserved per established convention.
 func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	stmts, err := getTiDBOmniNodes(checkCtx)
+	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +101,14 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 				continue
 			}
 			for _, c := range n.Constraints {
-				if c == nil || !omniConstraintIsIndexFamily(c.Type) {
+				if c == nil || !constraintIsIndexFamily(c.Type) {
 					continue
 				}
-				if dup, found := omniHasDuplicateString(omniConstraintColumnNames(c)); found {
+				if dup, found := hasDuplicateString(constraintColumnNames(c)); found {
 					hits = append(hits, hit{
-						tp:     omniIndexTypeString(c.Type),
+						tp:     indexTypeString(c.Type),
 						table:  n.Table.Name,
-						index:  omniConstraintAdviceName(c),
+						index:  constraintAdviceName(c),
 						column: dup,
 						line:   ostmt.AbsoluteLine(c.Loc.Start),
 					})
@@ -118,7 +118,7 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 			if n.Table == nil {
 				continue
 			}
-			if dup, found := omniHasDuplicateString(omniIndexColumns(n.Columns)); found {
+			if dup, found := hasDuplicateString(indexColumns(n.Columns)); found {
 				hits = append(hits, hit{
 					tp:     "INDEX",
 					table:  n.Table.Name,
@@ -143,14 +143,14 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 					continue
 				}
 				c := cmd.Constraint
-				if !omniConstraintIsIndexFamily(c.Type) {
+				if !constraintIsIndexFamily(c.Type) {
 					continue
 				}
-				if dup, found := omniHasDuplicateString(omniConstraintColumnNames(c)); found {
+				if dup, found := hasDuplicateString(constraintColumnNames(c)); found {
 					hits = append(hits, hit{
-						tp:     omniIndexTypeString(c.Type),
+						tp:     indexTypeString(c.Type),
 						table:  n.Table.Name,
-						index:  omniConstraintAdviceName(c),
+						index:  constraintAdviceName(c),
 						column: dup,
 						line:   stmtLine,
 					})
@@ -173,14 +173,14 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 	return adviceList, nil
 }
 
-// omniConstraintIsIndexFamily reports whether the constraint type
+// constraintIsIndexFamily reports whether the constraint type
 // participates in the duplicate-column check: PRIMARY KEY, UNIQUE,
 // INDEX/KEY, or FOREIGN KEY. Omni's `ConstrUnique` unifies the 3
 // pingcap UNIQUE syntactic forms (parser produces ConstraintUniq=4
 // for bare UNIQUE / UNIQUE KEY / UNIQUE INDEX; UniqKey=5 / UniqIndex=6
 // are defined enum values but parser-unreachable — see top-level
 // docstring's cumulative #2 note). Mechanical port.
-func omniConstraintIsIndexFamily(t ast.ConstraintType) bool {
+func constraintIsIndexFamily(t ast.ConstraintType) bool {
 	switch t {
 	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrForeignKey:
 		return true
@@ -189,12 +189,12 @@ func omniConstraintIsIndexFamily(t ast.ConstraintType) bool {
 	}
 }
 
-// omniIndexTypeString returns the display string for the given
+// indexTypeString returns the display string for the given
 // constraint type, used in the duplicate-column advice content.
 // Mirrors pre-omni `indexTypeString`. Pre-omni had 3 separate UNIQUE
 // cases all mapping to "UNIQUE KEY" — omni's unified ConstrUnique
 // renders identically.
-func omniIndexTypeString(t ast.ConstraintType) string {
+func indexTypeString(t ast.ConstraintType) string {
 	switch t {
 	case ast.ConstrPrimaryKey:
 		return "PRIMARY KEY"
@@ -209,33 +209,33 @@ func omniIndexTypeString(t ast.ConstraintType) string {
 	}
 }
 
-// omniConstraintColumnNames extracts the plain-column names for the
+// constraintColumnNames extracts the plain-column names for the
 // duplicate-column check. Omni splits the storage by constraint type:
 //   - INDEX / PK / UNIQUE store keys in `IndexColumns []*IndexColumn`;
 //     each may carry an `Expr` that's either `*ColumnRef` (plain
 //     column) or another expression (functional index). The pre-omni
 //     filter `if key.Expr == nil` maps to "skip non-ColumnRef Exprs"
-//     in omni; we reuse the existing `omniIndexColumns` helper which
+//     in omni; we reuse the existing `indexColumns` helper which
 //     applies that filter.
 //   - FOREIGN KEY stores its local columns in `Columns []string`
 //     (verified empirically against omni parser source — FK
 //     `constr.Columns = cols` is the only population path; IndexColumns
 //     stays nil). Return those directly.
-func omniConstraintColumnNames(c *ast.Constraint) []string {
+func constraintColumnNames(c *ast.Constraint) []string {
 	if c == nil {
 		return nil
 	}
 	if c.Type == ast.ConstrForeignKey {
 		return c.Columns
 	}
-	return omniIndexColumns(c.IndexColumns)
+	return indexColumns(c.IndexColumns)
 }
 
-// omniHasDuplicateString returns the first repeating name in the
+// hasDuplicateString returns the first repeating name in the
 // slice, or "" / false if no duplicates. Used by
 // index_no_duplicate_column to detect repeated column refs in index
-// key lists after omniConstraintColumnNames normalization.
-func omniHasDuplicateString(names []string) (string, bool) {
+// key lists after constraintColumnNames normalization.
+func hasDuplicateString(names []string) (string, bool) {
 	seen := make(map[string]bool)
 	for _, name := range names {
 		if seen[name] {

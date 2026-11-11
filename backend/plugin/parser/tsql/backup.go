@@ -266,7 +266,7 @@ func prepareTransformation(databaseName, statement string, caseSensitive bool) (
 
 	var dmls []statementInfo
 	for _, parsedStatement := range parsedStatements {
-		node, ok := GetOmniNode(parsedStatement.AST)
+		node, ok := GetNode(parsedStatement.AST)
 		if !ok || node == nil {
 			continue
 		}
@@ -655,7 +655,7 @@ func dmlNodeLoc(node ast.Node) ast.Loc {
 	case *ast.SetExpr:
 		return n.Loc
 	default:
-		loc := omniNodeLoc(node)
+		loc := nodeLoc(node)
 		if loc.Start >= 0 {
 			return loc
 		}

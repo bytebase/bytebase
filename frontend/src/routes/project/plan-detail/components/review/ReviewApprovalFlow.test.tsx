@@ -77,6 +77,20 @@ vi.mock("@/lib/role", () => ({
   displayRoleTitleFromList: (role: string) => role,
 }));
 
+// jsdom has no layout, so the real virtualizer renders no rows.
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: (options: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: options.count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * 40,
+      })),
+    getTotalSize: () => options.count * 40,
+    measureElement: () => {},
+  }),
+}));
+
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
 import type { ApprovalCandidates } from "../../../useApprovalCandidates";
 
@@ -111,6 +125,134 @@ afterEach(() => {
   mocks.approvalCandidates = NO_CANDIDATES;
   mocks.projectPoliciesByName = {};
   mocks.principals = {};
+  document.body.innerHTML = "";
+});
+
+const withCandidates = (count: number) => {
+  mocks.projectPoliciesByName = { "projects/p1": {} };
+  mocks.approvalCandidates = {
+    ...NO_CANDIDATES,
+    candidates: Array.from({ length: count }, (_, i) => ({
+      canApprove: true,
+      canReview: true,
+      ineligibilities: [],
+      user: {
+        email: `person${i + 1}@example.com`,
+        name: `users/person${i + 1}@example.com`,
+        title: `Person ${i + 1}`,
+      },
+    })),
+  } as unknown as ApprovalCandidates;
+};
+
+const reviewerTrigger = (container: HTMLElement) => {
+  const trigger = [...container.querySelectorAll("button")].find((button) =>
+    button.textContent?.includes("plan.review.approval-flow.n-reviewers")
+  );
+  if (!trigger) throw new Error("no reviewer trigger");
+  return trigger;
+};
+
+describe("ReviewApprovalFlow reviewer list", () => {
+  test("opens on click, not on hover, stays open when the pointer leaves, and lists every reviewer", async () => {
+    withCandidates(120);
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewApprovalFlow issue={makeIssue()} />
+    );
+    document.body.appendChild(container);
+    render();
+    const trigger = reviewerTrigger(container);
+    // Screen readers name the button by its count, not by the avatar initials.
+    expect(trigger.querySelector('[aria-hidden="true"]')?.textContent).toBe(
+      "PePePe+117"
+    );
+
+    await act(async () => {
+      for (const type of ["pointerover", "pointerenter", "pointermove"]) {
+        trigger.dispatchEvent(
+          new PointerEvent(type, { bubbles: true, pointerType: "mouse" })
+        );
+      }
+      for (const type of ["mouseover", "mouseenter", "mousemove"]) {
+        trigger.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(document.body.querySelector('[role="list"]')).toBeNull();
+
+    await act(async () => {
+      trigger.click();
+    });
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(
+      document.body.querySelector(
+        'input[aria-label="plan.review.approval-flow.search-placeholder"]'
+      )
+    ).not.toBeNull();
+    expect(document.body.querySelectorAll('[role="listitem"]')).toHaveLength(120);
+    expect(document.body.textContent).not.toContain("and-n-more");
+
+    await act(async () => {
+      for (const type of ["pointerout", "pointerleave"]) {
+        trigger.dispatchEvent(
+          new PointerEvent(type, { bubbles: true, pointerType: "mouse" })
+        );
+      }
+      for (const type of ["mouseout", "mouseleave"]) {
+        trigger.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+    unmount();
+  });
+
+  test.each([
+    [12, "the search box"],
+    [3, "the popup"],
+  ])("with %i reviewers, opening moves focus to %s", async (count, target) => {
+    withCandidates(count);
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewApprovalFlow issue={makeIssue()} />
+    );
+    document.body.appendChild(container);
+    render();
+
+    await act(async () => {
+      reviewerTrigger(container).click();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    const focused = document.activeElement as HTMLElement;
+    if (target === "the search box") {
+      expect(focused.getAttribute("aria-label")).toBe(
+        "plan.review.approval-flow.search-placeholder"
+      );
+    } else {
+      expect(focused.getAttribute("role")).toBe("dialog");
+      expect(focused.querySelector('[role="list"]')).not.toBeNull();
+    }
+
+    unmount();
+  });
+
+  test("the overflow pill counts every reviewer past the third and widens to fit", () => {
+    withCandidates(1200);
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewApprovalFlow issue={makeIssue()} />
+    );
+    render();
+
+    const pill = [...container.querySelectorAll("span")].find(
+      (span) => span.textContent === "+1197"
+    );
+    expect(pill).toBeDefined();
+    expect(pill?.className).toContain("min-w-5");
+    expect(pill?.className).not.toContain("size-5");
+
+    unmount();
+  });
 });
 
 describe("ReviewApprovalFlow", () => {

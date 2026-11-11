@@ -30,18 +30,18 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	}
 
 	rule := &indexCreateConcurrentlyRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		newlyCreatedTables: make(map[string]bool),
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type indexCreateConcurrentlyRule struct {
-	OmniBaseRule
+	BaseRule
 
 	newlyCreatedTables map[string]bool
 }
@@ -53,13 +53,13 @@ func (*indexCreateConcurrentlyRule) Name() string {
 func (r *indexCreateConcurrentlyRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		tableName := omniTableName(n.Relation)
+		tableName := rangeVarTableName(n.Relation)
 		if tableName != "" {
 			r.newlyCreatedTables[tableName] = true
 		}
 	case *ast.IndexStmt:
 		if !n.Concurrent {
-			tableName := omniTableName(n.Relation)
+			tableName := rangeVarTableName(n.Relation)
 			if r.newlyCreatedTables[tableName] {
 				return
 			}

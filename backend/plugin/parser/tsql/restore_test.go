@@ -102,7 +102,7 @@ func TestRestoreIdentityHandling(t *testing.T) {
 	a.NotContains(restoreSQL, "SELECT * FROM")
 }
 
-func TestRestoreOmniBoundaryCases(t *testing.T) {
+func TestRestoreBoundaryCases(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string

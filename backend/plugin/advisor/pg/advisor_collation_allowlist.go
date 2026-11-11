@@ -38,18 +38,18 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	}
 
 	rule := &collationAllowlistRule{
-		OmniBaseRule: OmniBaseRule{
+		BaseRule: BaseRule{
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
 		allowlist: allowlist,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
 }
 
 type collationAllowlistRule struct {
-	OmniBaseRule
+	BaseRule
 
 	allowlist map[string]bool
 }
@@ -69,14 +69,14 @@ func (r *collationAllowlistRule) OnStatement(node ast.Node) {
 }
 
 func (r *collationAllowlistRule) handleCreateStmt(n *ast.CreateStmt) {
-	cols, _ := omniTableElements(n)
+	cols, _ := tableElements(n)
 	for _, col := range cols {
 		r.checkColumnCollation(col)
 	}
 }
 
 func (r *collationAllowlistRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	for _, cmd := range omniAlterTableCmds(n) {
+	for _, cmd := range alterTableCmds(n) {
 		switch ast.AlterTableType(cmd.Subtype) {
 		case ast.AT_AddColumn:
 			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
