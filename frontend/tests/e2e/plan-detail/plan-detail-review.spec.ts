@@ -1492,14 +1492,14 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
-    // The selection is the one highlight, in the neutral grey token. It stays
+    // The selection is the one highlight, in the neutral gray token. It stays
     // translucent so Monaco's own text selection still shows through.
     const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
     await expect(selected).toBeVisible();
-    const grey = await page.evaluate(
+    const gray = await page.evaluate(
       () => `rgba(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")}, 0.6)`,
     );
-    await expect(selected).toHaveCSS("background-color", grey);
+    await expect(selected).toHaveCSS("background-color", gray);
     await planPage.clickAddThreadGlyph();
     const composer = planPage.inlineComposer;
     await expect(composer).toBeVisible();
@@ -1514,6 +1514,28 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await rangeCard.scrollIntoViewIfNeeded();
     await expect(rangeCard.getByTestId("thread-bar")).toContainText("Lines 2–3", { timeout: 15_000 });
     await expect(rangeCard).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("the statement sits on its gray ground on every line, with or without a thread", async () => {
+    const ground = page.locator("#plan-phase-changes [data-testid='statement-ground']").first();
+    await expect(ground).toBeVisible();
+    // Tailwind computes the token's opacity in its own color space, so the
+    // expected value comes from a probe drawn with the same utility.
+    const groundColor = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.className = "bg-control-bg/50";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    });
+    await expect(ground).toHaveCSS("background-color", groundColor);
+    // Monaco's own layers are transparent, so the ground shows behind every
+    // line: the commented ones and the rest alike.
+    for (const layer of [".monaco-editor-background", ".margin"]) {
+      await expect(planPage.statementEditor.locator(layer).first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    }
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
   });
 
   test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {

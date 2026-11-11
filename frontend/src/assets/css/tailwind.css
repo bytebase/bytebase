@@ -469,12 +469,17 @@ body[data-bb-screenshot-active] [data-screenshot-hide] {
    Covers every editor under the SQL Editor root (`.sqleditor--wrapper`) plus any
    SQL-Editor Monaco that portals OUTSIDE that subtree (e.g. the access-request
    drawer's editor, which mounts in the overlay root) and so opts in explicitly
-   via the `sqleditor--monaco-transparent` marker class on its container. */
+   via the `sqleditor--monaco-transparent` marker class on its container.
+   A plan's statement opts in the same way with
+   `plan-statement--monaco-transparent`, so its gray ground shows. */
 .sqleditor--wrapper .monaco-editor,
 .sqleditor--wrapper .monaco-editor .monaco-editor-background,
 .sqleditor--wrapper .monaco-editor .margin,
 .sqleditor--monaco-transparent .monaco-editor,
 .sqleditor--monaco-transparent .monaco-editor .monaco-editor-background,
-.sqleditor--monaco-transparent .monaco-editor .margin {
+.sqleditor--monaco-transparent .monaco-editor .margin,
+.plan-statement--monaco-transparent .monaco-editor,
+.plan-statement--monaco-transparent .monaco-editor .monaco-editor-background,
+.plan-statement--monaco-transparent .monaco-editor .margin {
   background-color: transparent !important;
 }

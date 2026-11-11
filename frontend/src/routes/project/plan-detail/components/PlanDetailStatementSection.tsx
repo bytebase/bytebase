@@ -802,11 +802,15 @@ export function PlanDetailStatementSection({
         </div>
       ) : isEditing || showsReadonlyEditor ? (
         <div className="flex flex-col">
+          {/* The statement being read sits on gray, so a comment card, which
+              is white, stands apart from the SQL without any line tint. */}
           <div
             className={cn(
               "relative overflow-hidden rounded-sm border border-control-border",
-              showsAffectedRows && "rounded-b-none"
+              showsAffectedRows && "rounded-b-none",
+              !isEditing && "plan-statement--monaco-transparent bg-control-bg/50"
             )}
+            data-testid={isEditing ? undefined : "statement-ground"}
           >
             {isEditing ? (
               <MonacoEditor
