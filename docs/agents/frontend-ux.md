@@ -28,8 +28,21 @@ composition.
 - Make primary and destructive actions unambiguous.
 - Avoid decorative cards, oversized page headings, and visual effects that do
   not communicate state or hierarchy.
-- Do not put cards inside cards. A page section is an unframed layout region;
-  cards are for repeated items or genuinely framed tools.
+- Do not put cards inside cards, with one exception. A **group frame** MAY
+  hold the cards that belong to one parent entry in a list or timeline when
+  all of the following hold:
+  - The frame's first line names the parent and carries the control that
+    shows or hides the group.
+  - The frame is a border only: `border-block-border`, with the corners of the
+    cards it holds and with no shadow, no fill and no title bar. The cards
+    inside keep their own.
+  - Nesting stops there. A card inside a group frame MUST NOT contain another
+    framed box.
+  - Only a parent that has cards gets a frame. Hiding them folds the frame to
+    its first line. A parent with no cards is a plain line.
+
+  A page section is an unframed layout region; cards are for repeated items or
+  genuinely framed tools.
 
 ## Implementation Ownership
 

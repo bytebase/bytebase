@@ -146,17 +146,21 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => ({
 vi.mock("../threads/CommentThreadCard", () => ({
   CommentThreadCard: ({
     bar,
+    className,
     excerpt,
     spec,
     thread,
   }: {
     bar: { foldLabel: string };
+    className?: string;
     excerpt?: ReactNode;
     spec?: { id: string };
     thread: { root: { name: string }; replies: { name: string }[] };
   }) => (
     <div
+      data-class-name={className ?? ""}
       data-fold-label={bar.foldLabel}
+      id={thread.root.name}
       data-replies={thread.replies.length}
       data-root={thread.root.name}
       data-spec={spec?.id}
@@ -419,6 +423,124 @@ describe("ReviewActivityTimeline", () => {
     expect(cards()).toEqual(["old"]);
     expect(mocks.requestThreadFocus).not.toHaveBeenCalled();
     act(() => root.unmount());
+  });
+
+  test("a review groups its findings in one frame, folds to its line when hidden, and a review with no findings has no frame", () => {
+    const completion = (id: string, attempt: bigint, postedCount: number) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        event: {
+          case: "reviewRunCompletion",
+          value: create(IssueComment_ReviewRunCompletionSchema, { runType: ReviewRun_Type.RULE, attempt, postedCount }),
+        },
+      });
+    const finding = (id: string, attempt: bigint, superseded: boolean) =>
+      create(IssueCommentSchema, {
+        name: `projects/p1/issues/1/issueComments/${id}`,
+        comment: "No WHERE clause",
+        threadState: superseded ? IssueComment_ThreadState.RESOLVED : IssueComment_ThreadState.OPEN,
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, superseded, attempt }),
+      });
+    const comments = [
+      completion("c0", 0n, 1),
+      finding("discussed", 0n, true),
+      // A reply no longer keeps a hidden run's finding on the page.
+      create(IssueCommentSchema, {
+        name: "projects/p1/issues/1/issueComments/discussed-reply",
+        comment: "Fixed in the next change",
+        root: "projects/p1/issues/1/issueComments/discussed",
+      }),
+      completion("c1", 1n, 1),
+      finding("current", 1n, false),
+      completion("c2", 2n, 0),
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const draw = () =>
+      act(() => {
+        root.render(
+          <ReviewActivityTimeline
+            comments={comments}
+            issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+            plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+          />
+        );
+      });
+    draw();
+    const groups = () => [...container.querySelectorAll("[data-testid='review-group']")];
+    const cardsIn = (group: Element) =>
+      [...group.querySelectorAll("[data-testid='thread-card']")].map((card) => card.getAttribute("data-root")?.split("/").pop());
+    // Hidden by default (superseded) and open (current); the empty run has no group.
+    expect(groups()).toHaveLength(2);
+    expect(cardsIn(groups()[0])).toEqual([]);
+    expect(groups()[0].textContent).toContain("common.show");
+    expect(cardsIn(groups()[1])).toEqual(["current"]);
+    // A finding sits in its review's row, with no timeline row of its own.
+    expect(container.querySelectorAll("li")).toHaveLength(3);
+    expect(groups()[1].closest("li")?.querySelectorAll("[data-testid='review-group']")).toHaveLength(1);
+    // The review line has room inside the frame, folded or open.
+    const line = groups()[0].firstElementChild as HTMLElement;
+    for (const name of ["px-3", "py-2"]) expect(line.className.split(" ")).toContain(name);
+    // The group is a plain border, and the card inside keeps its own frame.
+    const frame = groups()[1].className.split(" ");
+    for (const name of ["border", "border-block-border", "rounded-lg"]) expect(frame).toContain(name);
+    expect(frame.filter((name) => /^(shadow|bg-)/.test(name))).toEqual([]);
+    expect(groups()[1].querySelector("[data-testid='thread-card']")?.getAttribute("data-class-name")).toBe("");
+    act(() => root.unmount());
+  });
+
+  test("a focus request for a finding in a hidden review opens the group and scrolls to the card", () => {
+    const name = "projects/p1/issues/1/issueComments/discussed";
+    const comments = [
+      create(IssueCommentSchema, {
+        name: "projects/p1/issues/1/issueComments/c0",
+        event: {
+          case: "reviewRunCompletion",
+          value: create(IssueComment_ReviewRunCompletionSchema, { runType: ReviewRun_Type.RULE, attempt: 0n, postedCount: 1 }),
+        },
+      }),
+      create(IssueCommentSchema, {
+        name,
+        comment: "No WHERE clause",
+        threadState: IssueComment_ThreadState.RESOLVED,
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, superseded: true, attempt: 0n }),
+      }),
+    ];
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const draw = () =>
+      act(() => {
+        root.render(
+          <ReviewActivityTimeline
+            comments={comments}
+            issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+            plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+          />
+        );
+      });
+    // Clearing a request drops it, as the store does.
+    mocks.clearActivityFocus.mockImplementation((nonce: number) => {
+      if (mocks.activityFocus?.nonce === nonce) mocks.activityFocus = undefined;
+    });
+    // An earlier request has already unfolded the long history.
+    mocks.activityFocus = { commentName: "projects/p1/issues/1/issueComments/c0", nonce: 1 };
+    draw();
+    expect(document.getElementById(name)).toBeNull();
+    mocks.activityFocus = { commentName: name, nonce: 2 };
+    draw();
+    const card = document.getElementById(name);
+    expect(card).not.toBeNull();
+    expect(scrollIntoView.mock.contexts).toContain(card);
+    expect(mocks.clearActivityFocus).toHaveBeenCalledWith(2);
+    mocks.activityFocus = undefined;
+    mocks.clearActivityFocus.mockReset();
+    act(() => root.unmount());
+    container.remove();
+    Element.prototype.scrollIntoView = original;
   });
 
   test("unfolds the timeline to reach a card asked for from elsewhere", () => {

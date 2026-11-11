@@ -23,6 +23,7 @@ const commentCardPaths = new Set([
   "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx",
   "src/routes/project/plan-detail/components/threads/statementThreads.css",
   "src/routes/project/plan-detail/components/threads/InlineThreadComposer.tsx",
+  "src/routes/project/plan-detail/components/review/ReviewActivityTimeline.tsx",
 ]);
 const isCommentCardRadius = (token, path) =>
   commentCardPaths.has(path) &&

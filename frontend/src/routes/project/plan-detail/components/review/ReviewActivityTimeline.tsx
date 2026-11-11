@@ -54,11 +54,8 @@ import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
   groupThreads,
-  isShownInEditor,
-  needsActivityCard,
   targetSha256OfSpec,
 } from "../threads/threadModel";
-import { usePreviewEndLines } from "../threads/useUnresolvedThreadCounts";
 import { consolidateConsecutive } from "./consolidateTimeline";
 import { foldTimeline } from "./foldTimeline";
 import { ReviewCommentComposer } from "./ReviewCommentComposer";
@@ -124,36 +121,6 @@ export function ReviewActivityTimeline({
     if (activityFocus) setExpanded(true);
   }, [activityFocus]);
 
-  // Under SQL Review V2, Activity records each run as one line.
-  const placements = usePlanDetailStore((s) => s.placements);
-  const placementTargets = usePlanDetailStore((s) => s.placementTargets);
-  const previewEndLines = usePreviewEndLines(
-    plan.specs,
-    `${projectNamePrefix}${page.projectId}`
-  );
-  const keepFindingCard = useMemo(() => {
-    if (!sqlReviewV2Enabled()) return undefined;
-    return (root: IssueComment) => {
-      const thread = threads.find((candidate) => candidate.root === root);
-      if (!thread) return true;
-      return needsActivityCard(
-        thread,
-        isShownInEditor(
-          root,
-          plan.specs,
-          (commentName, specId, sheetSha256) =>
-            placementOf(
-              { placements, placementTargets },
-              commentName,
-              specId,
-              sheetSha256
-            ),
-          (specId) => previewEndLines.get(specId)
-        )
-      );
-    };
-  }, [placementTargets, placements, plan.specs, previewEndLines, threads]);
-
   const entries = useMemo(
     () =>
       buildTimelineEntries({
@@ -163,7 +130,7 @@ export function ReviewActivityTimeline({
         issueCreateTime: issue.createTime,
         issueDraft: issue.draft,
         comments,
-        keepFindingCard,
+        sqlReviewV2: sqlReviewV2Enabled(),
         runToggles,
       }),
     [
@@ -171,7 +138,6 @@ export function ReviewActivityTimeline({
       issue.createTime,
       issue.creator,
       issue.draft,
-      keepFindingCard,
       plan.createTime,
       plan.creator,
       runToggles,
@@ -182,13 +148,32 @@ export function ReviewActivityTimeline({
     const consolidated = consolidateConsecutive(renderable);
     return foldTimeline(consolidated, expanded);
   }, [entries, expanded]);
+  // A card asked for from elsewhere may be a finding of a hidden run, which
+  // shows no cards, so its run opens first and the scroll waits for it.
+  const hiddenRunOfFocus = useMemo(
+    () =>
+      activityFocus
+        ? entries.find(
+            (entry) =>
+              entry.source.type === "review-run" &&
+              !entry.source.open &&
+              entry.source.findings.some(
+                (finding) => finding.name === activityFocus.commentName
+              )
+          )
+        : undefined,
+    [activityFocus, entries]
+  );
   useEffect(() => {
-    if (!activityFocus || !expanded) return;
+    if (hiddenRunOfFocus) toggleRun(hiddenRunOfFocus.id, true);
+  }, [hiddenRunOfFocus, toggleRun]);
+  useEffect(() => {
+    if (!activityFocus || !expanded || hiddenRunOfFocus) return;
     document
       .getElementById(activityFocus.commentName)
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
     clearActivityFocus(activityFocus.nonce);
-  }, [activityFocus, clearActivityFocus, expanded, items]);
+  }, [activityFocus, clearActivityFocus, expanded, hiddenRunOfFocus, items]);
   // Permission-gated only — comments are allowed regardless of issue status
   // (the backend and the issue-detail list allow commenting on done issues).
   const allowComment = Boolean(
@@ -308,8 +293,30 @@ function ActivityRow({
 }) {
   const source = entry.source;
   if (source.type === "review-run") {
+    const cards = (entry.children ?? []).flatMap((child) => {
+      const thread =
+        child.source.type === "comment"
+          ? threads.find(
+              (candidate) =>
+                child.source.type === "comment" &&
+                candidate.root.name === child.source.comment.name
+            )
+          : undefined;
+      return thread
+        ? [
+            <ThreadActivityCard
+              changeReferenceResources={changeReferenceResources}
+              issue={issue}
+              key={thread.root.name}
+              plan={plan}
+              thread={thread}
+            />,
+          ]
+        : [];
+    });
     return (
       <ReviewRunActivityRow
+        cards={cards}
         isLast={isLast}
         onToggle={() => onToggleRun(entry.id, !source.open)}
         source={source}
@@ -355,13 +362,16 @@ function ActivityRow({
   );
 }
 
-// One line per completed run: what it found. "Show" opens the cards of the
-// findings it posted below it.
+// One line per completed run: what it found. A run with findings is a group,
+// a border holding the line and, while open, the card of every finding it
+// posted; Show and Hide fold it to the line. A run with none is a plain line.
 function ReviewRunActivityRow({
+  cards,
   isLast,
   onToggle,
   source,
 }: {
+  cards: ReactNode[];
   isLast: boolean;
   onToggle: () => void;
   source: Extract<TimelineSource, { type: "review-run" }>;
@@ -396,44 +406,55 @@ function ReviewRunActivityRow({
       ].filter((part) => part !== false);
   if (open > 0)
     summary.push(t("plan.automated-review.n-open", { count: open }));
-  return (
-    <ActivityRowShell
-      header={
-        <>
-          <span className="font-medium text-main">
-            {reviewerName(t, runType)}
-          </span>
-          <span className="wrap-break-word min-w-0 text-control-light">
-            {t("plan.review.activity.reviewed-the-sql")}
-          </span>
-          <span className="text-control-light">·</span>
-          <span className="text-control">
-            {summary.join(t("plan.findings.separator"))}
-          </span>
-          <HumanizeTs
-            className="text-xs text-control-light"
-            tsMs={getTimeForPbTimestampProtoEs(source.time)}
-          />
-          {source.findings.length > 0 && (
-            <Button
-              aria-expanded={source.open}
-              appearance="link"
-              onClick={onToggle}
-              size="xs"
-            >
-              {source.open ? t("common.hide") : t("common.show")}
-            </Button>
-          )}
-        </>
-      }
-      icon={
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<ReviewerIcon className="size-4" runType={runType} />}
-        />
-      }
-      isLast={isLast}
+  const header = (
+    <>
+      <span className="font-medium text-main">{reviewerName(t, runType)}</span>
+      <span className="wrap-break-word min-w-0 text-control-light">
+        {t("plan.review.activity.reviewed-the-sql")}
+      </span>
+      <span className="text-control-light">·</span>
+      <span className="text-control">
+        {summary.join(t("plan.findings.separator"))}
+      </span>
+      <HumanizeTs
+        className="text-xs text-control-light"
+        tsMs={getTimeForPbTimestampProtoEs(source.time)}
+      />
+      {source.findings.length > 0 && (
+        <Button
+          aria-expanded={source.open}
+          appearance="link"
+          onClick={onToggle}
+          size="xs"
+        >
+          {source.open ? t("common.hide") : t("common.show")}
+        </Button>
+      )}
+    </>
+  );
+  const icon = (
+    <CommentIconBadge
+      className="bg-control-bg text-control"
+      icon={<ReviewerIcon className="size-4" runType={runType} />}
     />
+  );
+  if (source.findings.length === 0) {
+    return <ActivityRowShell header={header} icon={icon} isLast={isLast} />;
+  }
+  return (
+    <ActivityRowFrame compact icon={icon} isLast={isLast}>
+      <div
+        className="ml-3 rounded-lg border border-block-border"
+        data-testid="review-group"
+      >
+        <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-x-2 px-3 py-2 text-sm">
+          {header}
+        </div>
+        {cards.length > 0 && (
+          <div className="flex flex-col gap-y-2 px-3 pb-3">{cards}</div>
+        )}
+      </div>
+    </ActivityRowFrame>
   );
 }
 
@@ -645,6 +666,42 @@ function ThreadActivityRow({
   plan: Plan;
   thread: CommentThread;
 }) {
+  return (
+    <ActivityRowFrame
+      icon={
+        <CommentIconBadge
+          className="bg-control-bg text-control"
+          icon={<MessagesSquare className="size-4" />}
+        />
+      }
+      id={thread.root.name}
+      isLast={isLast}
+    >
+      <ThreadActivityCard
+        changeReferenceResources={changeReferenceResources}
+        className="ml-3"
+        issue={issue}
+        plan={plan}
+        thread={thread}
+      />
+    </ActivityRowFrame>
+  );
+}
+
+// A thread's card in Activity, as its own entry or inside its review's group.
+function ThreadActivityCard({
+  changeReferenceResources,
+  className,
+  issue,
+  plan,
+  thread,
+}: {
+  changeReferenceResources: PlanChangeReferenceResources;
+  className?: string;
+  issue: Issue;
+  plan: Plan;
+  thread: CommentThread;
+}) {
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const { focusInStatement } = useFocusThread();
@@ -667,36 +724,25 @@ function ThreadActivityRow({
     );
 
   return (
-    <ActivityRowFrame
-      icon={
-        <CommentIconBadge
-          className="bg-control-bg text-control"
-          icon={<MessagesSquare className="size-4" />}
-        />
-      }
-      id={thread.root.name}
-      isLast={isLast}
+    <StatementAnchorContext
+      anchor={anchor}
+      changeReferenceResources={changeReferenceResources}
+      onViewInStatement={viewInStatement}
+      placement={placement}
+      plan={plan}
+      project={project}
     >
-      <StatementAnchorContext
-        anchor={anchor}
-        changeReferenceResources={changeReferenceResources}
-        onViewInStatement={viewInStatement}
-        placement={placement}
-        plan={plan}
-        project={project}
-      >
-        {({ bar, excerpt }) => (
-          <CommentThreadCard
-            bar={bar}
-            className="ml-3"
-            excerpt={excerpt}
-            issue={issue}
-            project={project}
-            spec={spec}
-            thread={thread}
-          />
-        )}
-      </StatementAnchorContext>
-    </ActivityRowFrame>
+      {({ bar, excerpt }) => (
+        <CommentThreadCard
+          bar={bar}
+          className={className}
+          excerpt={excerpt}
+          issue={issue}
+          project={project}
+          spec={spec}
+          thread={thread}
+        />
+      )}
+    </StatementAnchorContext>
   );
 }
