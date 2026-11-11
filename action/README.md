@@ -37,6 +37,14 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 
 -   **`--url`**: The Bytebase instance URL. Required.
 
+-   **`--workload-identity`**: The workload identity email. The action signs in as it with the CI job's ID token, so the job stores no secret. This is the recommended sign-in.
+    -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_WORKLOAD_IDENTITY` environment variable.
+    -   See [Sign-in](#sign-in) for where the ID token comes from.
+
+-   **`--workload-identity-audience`**: The audience of the ID token requested from GitHub.
+    -   Default: `bytebase`. If not provided via flag, reads from the `BYTEBASE_WORKLOAD_IDENTITY_AUDIENCE` environment variable.
+    -   It must be one of the audiences the workload identity allows.
+
 -   **`--service-account`**: The service account email.
     -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT` environment variable.
 
@@ -44,11 +52,16 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_SERVICE_ACCOUNT_SECRET` environment variable.
     -   *Note: Setting the environment variable `BYTEBASE_SERVICE_ACCOUNT_SECRET` is the recommended way to handle the secret.*
 
+-   **`--access-token`**: A Bytebase access token to use as given.
+    -   Default: `""` (empty string). If not provided via flag, reads from the `BYTEBASE_ACCESS_TOKEN` environment variable.
+    -   The action cannot renew it, so a run that outlasts the token fails.
+
 -   **`--custom-header`**: A custom HTTP header to include in Bytebase API requests.
     -   Format: `Name: value`
     -   Can be specified multiple times.
     -   This is useful when the Bytebase URL is protected by a header-based access proxy such as Cloudflare Access.
     -   Example: `--custom-header="Cookie: CF_Authorization=${CF_AUTHORIZATION_COOKIE}"`
+    -   The headers are sent to Bytebase only, not to GitHub's ID token endpoint.
 
 -   **`--project`**: The target Bytebase project name.
     -   Format: `projects/{project}`
@@ -117,6 +130,54 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 -   **`--plan`**: The specific plan to rollout.
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
+
+## Sign-in
+
+The action signs in once, before any other request. It uses the first of these that is set:
+
+1.  An access token, from `--access-token` or `BYTEBASE_ACCESS_TOKEN`.
+2.  `--workload-identity`, the flag.
+3.  A service account, from `--service-account` and `--service-account-secret` or their environment variables.
+4.  `BYTEBASE_WORKLOAD_IDENTITY`, the environment variable.
+
+A workload identity needs the CI job's ID token:
+
+-   **GitHub Actions**: give the job `permissions: id-token: write`. The action requests the token itself.
+
+    ```yaml
+    jobs:
+      sql-review:
+        permissions:
+          id-token: write
+        runs-on: ubuntu-latest
+        container:
+          image: bytebase/bytebase-action
+        env:
+          BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
+        steps:
+          - uses: actions/checkout@v4
+          - run: bytebase-action check --url=https://bytebase.example.com --project=projects/example --targets=instances/example/databases/example --file-pattern="migrations/*.sql"
+    ```
+
+-   **GitLab CI and other OIDC issuers**: put the ID token in `BYTEBASE_ID_TOKEN`. Its `aud` must be one of the audiences the workload identity allows.
+
+    ```yaml
+    sql-review:
+      image: bytebase/bytebase-action
+      id_tokens:
+        BYTEBASE_ID_TOKEN:
+          aud: bytebase
+      variables:
+        BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
+      script:
+        - bytebase-action check --url=https://bytebase.example.com --project=projects/example --targets=instances/example/databases/example --file-pattern="migrations/*.sql"
+    ```
+
+`BYTEBASE_ID_TOKEN` is also read on GitHub, and wins over the token GitHub would issue.
+
+A failed sign-in ends the run with one line, `sign in as <identity>: <reason>`.
+
+When a request is rejected as unauthenticated, the action signs in again. A workload identity can do so only while the CI still has a valid ID token: GitLab's expires at the job timeout.
 
 ## Using Declarative Mode
 
