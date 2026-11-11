@@ -92,8 +92,8 @@ even where it follows the tables.
    a name.
 6. **Color in the bar is kept for what the reader must act on.** The bar's words and icons are
    `text-control`. Besides the link, two things in it have a color of their own: the badge of a
-   P0 or P1 finding, and "Outdated". "Prod" is a badge too, with a light tint of its
-   environment's color behind the bar's own text color, so it marks without calling.
+   P0 or P1 finding, and "Outdated". The badge of a production environment has a light tint
+   of that environment's color behind the bar's own text color, so it marks without calling.
    "Resolved" and "Statement unavailable" are text with an icon, with no color and no fill.
 7. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
    sees none.
@@ -123,14 +123,15 @@ Markers follow the title, in this order, in both places and whether the card is 
 | The thread is a review finding with priority P0 | The "P0" badge, the one drawn beside the finding's title |
 | The thread is a review finding with priority P1 | The "P1" badge |
 | The thread is a P2 finding, or comes from a person | No badge |
-| The thread is a review finding that applies to at least one database in a production environment | "Prod", with no database name |
+| The thread is a review finding that applies to at least one database in a production environment | That environment's badge: its name on a light tint of its color, with no database name |
 
-A production environment is one `isProtectedEnvironment` accepts, the tag the product already
-calls "Production environment". It needs the environment-tier feature, so without that feature no
-thread shows "Prod". A thread from a person has no list of databases, so it never shows it.
-The badge is tinted with the color the workspace gave that environment, or the default color
-when it gave none. When a finding applies to several production environments, the tint is
-that of the first one in the workspace's environment order.
+A production environment is one the workspace marked with "Mark as production environment" in
+its environment settings, which is what `isProtectedEnvironment` reads. The setting needs the
+environment-tier feature, so without that feature no thread shows the badge. A thread from a
+person has no list of databases, so it never shows it. The badge carries the name the
+workspace gave that environment and the color it gave it, or the default color when it gave
+none. A finding that applies to several production environments shows one badge for each, in
+the workspace's environment order.
 
 ### State labels, lines and link
 
@@ -223,20 +224,22 @@ leave most threads with nothing saying which lines they are on.
 **D4 · A folded thread is its title bar, and the bar says how urgent the thread is.**
 `CollapsedThreadRow` and `ThreadSummary`, the two folded rows of today, are both deleted. After
 the title the bar carries two markers, by the Markers table: the badge of a P0 or P1 finding, and
-"Prod" when the finding applies to a production database. A P0 must change and a P1 must be
+the badge of a production environment the finding applies to. A P0 must change and a P1 must be
 accepted by a person, so both need someone to act, and with several folded findings the markers
 say which to open first. The badge is the one `ReviewResult` draws beside the finding's title.
 That one stays, so an unfolded finding shows its priority twice. The bar cannot drop it on
-unfold without breaking invariant 4. "Prod" takes the same form as the priority badge, a light
-fill with no border. The fill is a 10% tint of the environment's own color, the way
-`EnvironmentBadge` tints an environment: `environment.color`, or the default color when the
-workspace chose none. A workspace colors its environments to tell them apart, and the badge
-should say the same thing the environment's badge says elsewhere. Its text stays the bar's
-`text-control`. Rejected: an outlined "Prod" beside a filled priority badge. The two markers
-then read as different kinds of thing. Rejected: one fixed tint for every workspace. It ignores
-the color the workspace chose. Rejected: text in the environment's color, as the environment
-badge has. "Prod" is context, and it would be the most saturated text in the bar. A workspace
-that colors production red would also get a badge that reads as a second P0.
+unfold without breaking invariant 4. The production badge takes the same form as the priority
+badge, a light fill with no border. It is the environment's own badge: its name on a 10% tint
+of its color, the way `EnvironmentBadge` draws an environment, from `environment.title` and
+`environment.color`, or the default color when the workspace chose none. A workspace names
+and colors its environments to tell them apart, and the bar should say what the environment's
+badge says elsewhere. Its text stays the bar's `text-control`. Rejected: the fixed word
+"Prod". A workspace may call its production environment something else, and may have more
+than one. Rejected: an outlined badge beside a filled priority badge. The two markers then
+read as different kinds of thing. Rejected: one fixed tint for every workspace. It ignores the
+color the workspace chose. Rejected: text in the environment's color, as the environment
+badge has. The environment is context, and its name would be the most saturated text in the
+bar. A workspace that colors production red would also get a badge that reads as a second P0.
 Rejected: no markers. Nothing would say which folded finding must be fixed. Rejected: a badge for
 P2. It is advisory, and a marker on every finding marks nothing. Rejected: the database's name in
 the label. It makes the bar a third longer and repeats the "Applies to" row. Rejected: the
@@ -281,7 +284,8 @@ shape when it is posted.
 **D9 · The "Applies to" row is unchanged, and stays in the body.** The bar does not name or count
 a finding's databases. They are part of what the finding says, so by invariant 4 they show when
 the card is unfolded and are hidden when it is folded, whether the thread is open or resolved.
-The one thing the bar says about them is "Prod", from D4, which is the label BYT-10514 asks for.
+The one thing the bar says about them is the badge of a production environment, from D4, which
+is the label BYT-10514 asks for.
 Rejected: a count or the database names in the bar. The bar stops being simple and long lists do
 not fit.
 
@@ -326,7 +330,8 @@ in the slice's own PR and reviewed there.
    - Delivers, for a card in the Changes section: the first row of Title; the three priority
      rows of Markers; "Resolved" from State labels; the Footer row; the Changes section row of
      Folding; the white bar and footer of invariant 2; invariants 5 and 7; invariant 4 apart
-     from "Prod", which slice 6 adds; and invariant 6 for the badge and for "Resolved".
+     from the production badge, which slice 6 adds; and invariant 6 for the priority badge and
+     for "Resolved".
      `CollapsedThreadRow` goes, and it is what shows a folded finding's priority today, so the
      badge moves into the bar in this slice. Until slice 2 the Activity card is untouched,
      apart from the color of "Resolved", which both places draw with `ThreadStateBadge`.
@@ -390,19 +395,20 @@ in the slice's own PR and reviewed there.
      on it yet.
    - Tests: a new `InlineThreadComposer.test.tsx`. They include: the composer has the frame,
      with its corners and shadow, and its avatar is in the body.
-6. **"Prod" in the bar (D4's production marker).** Depends on slice 2, which puts the bar in
-   both places. It adds a signal the page does not have today, so nothing waits on it.
-   - Delivers: the "Prod" row of Markers, which completes invariant 4, and invariant 6 for
-     "Prod".
-   - Files: `CommentThreadCard.tsx`, a helper beside `threadModel.ts` that returns the
-     production environment a finding's databases include, if any, and the five locale files
-     for "Prod".
-   - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: "Prod" shows
-     when one of the finding's databases is in a production environment, and does not when
-     none is, when the environment-tier feature is off, or on a person's thread; the badge
-     holds no database name, and has the tint of its environment's color, the bar's text color
-     and no border; an environment with no color gets the default tint; with two production
-     environments the badge takes the first one's color.
+6. **The production badge in the bar (D4's production marker).** Depends on slice 2, which puts
+   the bar in both places. It adds a signal the page does not have today, so nothing waits on
+   it.
+   - Delivers: the production row of Markers, which completes invariant 4, and invariant 6 for
+     the production badge.
+   - Files: `CommentThreadCard.tsx`, and a helper beside `threadModel.ts` that returns the
+     production environments a finding's databases include. The badge shows the environment's
+     own name, so no locale string is added.
+   - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: the badge
+     shows when one of the finding's databases is in a production environment, and does not
+     when none is, when the environment-tier feature is off, or on a person's thread; it
+     carries the environment's name on a tint of its color, with the bar's text color, no
+     border and no database name; an environment with no color gets the default tint; a
+     finding on two production environments shows a badge for each, in environment order.
 
 D9 changes nothing, so no slice carries it.
 
@@ -415,7 +421,7 @@ The two sibling docs add three more PRs. Across all three docs the order is:
 | Card 3: no line tints, the gray ground, and the width limit | Card 1 |
 | Card 4: comment column and replies | Nothing |
 | Card 5: composer | Card 2 |
-| Card 6: "Prod" in the bar | Card 2 |
+| Card 6: the production badge in the bar | Card 2 |
 | Excerpt 1: the SQL excerpt | Card 4, for the comment's text column |
 | Group 1: Show and Hide in the link color | Nothing |
 | Group 2: findings grouped under their review | Card 2, for the finding card's bar and corners |
