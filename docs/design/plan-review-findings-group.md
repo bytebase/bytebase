@@ -39,11 +39,12 @@ bordered group, and the finding cards sit inside it. The findings lose their own
 review keeps its icon on the timeline. Show and Hide keep their place on the review line and now
 act on a visible group. Rejected: indenting the findings under their review line with nothing
 joining them. It leaves two card edges on the page, the indented findings and a person's comment
-further left, and reads as a misalignment. Rejected: a vertical line down the indented findings, which is what GitHub
-draws for the threads of a review. It adds a second vertical line beside the timeline's own and
-keeps two card edges. Rejected: giving every thread a line of its own, such as "commented on the
-SQL", so that no card is indented. It costs a line for each comment from a person and shows
-ownership less plainly than a group does. It is the fallback if D4 is not accepted.
+further left, and reads as a misalignment. Rejected: a vertical line down the indented findings,
+which is what GitHub draws for the threads of a review. It adds a second vertical line beside
+the timeline's own and keeps two card edges. Rejected: giving every thread a line of its own,
+such as "commented on the SQL", so that no card is indented. It costs a line for each comment
+from a person and shows ownership less plainly than a group does. It is the fallback if D4 is
+not accepted.
 
 **D2 · The group is a border and nothing else.** `border-block-border`, with the corners of the
 cards it holds and with no shadow, no fill and no title bar. A comment card is `rounded-lg` in
@@ -52,9 +53,9 @@ cards reads as two unrelated boxes. That doc changes the guideline and its scann
 corner in the files that draw a comment card, and the slice that builds the group adds the
 group's file to them. The cards inside keep their title bar and their darker border,
 `border-control-border`. The two levels look different, so it stays clear that the finding is
-the unit and the group only says where it belongs. The review line sits inside the border with `px-3 py-2`, so a folded group has
-8px above and below its text and does not read as crowded. The cards sit below the line with 12px
-on each side and 8px between them.
+the unit and the group only says where it belongs. The review line sits inside the border with
+`px-3 py-2`, so a folded group has 8px above and below its text and does not read as crowded.
+The cards sit below the line with 12px on each side and 8px between them.
 
 **D3 · A person's comment stays a top-level entry.** Its card starts on the group's left edge, so
 the page has one outer edge. Findings sit 12px inside it, and the border explains why.
