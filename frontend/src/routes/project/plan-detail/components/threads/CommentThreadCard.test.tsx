@@ -788,6 +788,15 @@ describe("title bar", () => {
     }
   });
 
+  test("draws the bar and the footer white, with no gray of their own", () => {
+    render(<CommentThreadCard bar={bar(false)} issue={issue} project={project} thread={findingThread(false)} />);
+    const footer = container.querySelector("[data-testid='thread-reply-footer']") as HTMLElement;
+    for (const part of [barNode() as HTMLElement, footer]) {
+      expect(part.className.split(" ")).toContain("bg-background");
+      expect(part.className).not.toMatch(/\bbg-control-bg/);
+    }
+  });
+
   test.each([
     { reply: false, settle: false, footer: false },
     { reply: true, settle: false, footer: true },

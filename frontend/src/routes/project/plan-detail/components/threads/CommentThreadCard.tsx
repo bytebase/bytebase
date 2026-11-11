@@ -281,7 +281,10 @@ export function CommentThreadCard({
       {!bar?.folded &&
         (allowReply || allowSettle || (!bar && thread.resolved)) && (
           <div
-            className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
+            className={cn(
+              "flex flex-wrap items-center gap-2 rounded-b-sm border-t border-block-border px-2 py-2 sm:px-3",
+              bar ? "bg-background" : "bg-control-bg/50"
+            )}
             ref={replyFooterRef}
             data-testid="thread-reply-footer"
           >
@@ -403,7 +406,7 @@ function ThreadBar({
   return (
     <div
       className={cn(
-        "flex min-h-8 min-w-0 items-center gap-x-2 bg-control-bg px-2 text-xs text-control",
+        "flex min-h-8 min-w-0 items-center gap-x-2 bg-background px-2 text-xs text-control",
         folded ? "rounded-sm" : "rounded-t-sm border-b border-block-border"
       )}
       data-testid="thread-bar"
@@ -412,7 +415,7 @@ function ThreadBar({
         appearance="secondary"
         aria-expanded={!folded}
         aria-label={title}
-        className="shrink-0 hover:bg-control-bg-hover"
+        className="shrink-0"
         onClick={onToggleFold}
         size="xs"
       >
