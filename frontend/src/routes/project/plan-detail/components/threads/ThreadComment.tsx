@@ -1,5 +1,5 @@
 import { Loader2, Pencil } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { canEditIssueComment } from "@/components/issue-activity/IssueCommentActivity";
@@ -16,20 +16,14 @@ import { ReviewHeading, ReviewTargets, useCommentAuthor } from "./ReviewResult";
 // beside it the author row, then for a review result its targets and its
 // priority and rule, then the text.
 export function ThreadComment({
-  actions,
   className,
   comment,
-  label,
   onEdit,
   project,
   spec,
 }: {
-  // Header actions after the edit button (thread collapse or close).
-  actions?: ReactNode;
   className?: string;
   comment: IssueComment;
-  // Extra header text after the timestamp (the anchored line range).
-  label?: ReactNode;
   onEdit: (issueCommentName: string, comment: string) => Promise<unknown>;
   project: Project | undefined;
   // The plan spec the thread sits on, when the owner knows it.
@@ -97,7 +91,6 @@ export function ThreadComment({
                 ({t("common.edited")})
               </span>
             )}
-            {label}
           </div>
           <div className="flex shrink-0 items-center gap-x-1">
             {allowEdit && !isEditing && (
@@ -113,7 +106,6 @@ export function ThreadComment({
                 <Pencil className="size-3.5" />
               </Button>
             )}
-            {actions}
           </div>
         </div>
         {review && (

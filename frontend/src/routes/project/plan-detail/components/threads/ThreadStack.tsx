@@ -98,6 +98,7 @@ export function ThreadStack({
       {ordered.map((entry) => {
         const rootName = entry.thread.root.name;
         const expanded = expandedRoots.has(rootName);
+        const title = commentTitle(t, entry.range);
         return (
           <div
             className={cn(flashRoot === rootName && "bb-thread-card--flash")}
@@ -111,13 +112,12 @@ export function ThreadStack({
           >
             <CommentThreadCard
               bar={{
-                title: commentTitle(t, entry.range),
+                title,
+                foldLabel: title,
                 folded: !expanded,
                 onToggleFold: () =>
                   expanded ? onCollapse(rootName) : onExpand(rootName),
               }}
-              className="shadow-sm"
-              collapsible={false}
               issue={issue}
               // Only the reader's own Resolve folds the card; a remote resolve
               // must not shift the editor under them.

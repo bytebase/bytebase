@@ -1,12 +1,13 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { cleanup, render, waitFor } from "@testing-library/react";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Plan_ChangeDatabaseConfigSchema, Plan_SpecSchema, PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { current, OUTDATED, UNAVAILABLE, UNAVAILABLE_SIZE_LIMIT } from "./placement/place";
 import { StatementAnchorContext } from "./StatementAnchorContext";
+import type { LineRange } from "./threadModel";
 import { buildWholeLineAnchor } from "./threadModel";
 
 const mocks = vi.hoisted(() => ({
@@ -16,8 +17,17 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({t: (key: string, options?: { count?: number; range: string }) =>
-    options ? `${(options.count ?? 1) > 1 ? "Lines" : "Line"} ${options.range}` : key}),
+  useTranslation: () => ({
+    t: (key: string, options?: { count?: number; range?: string; title?: string }) => {
+      if (key === "plan.review.thread.anchor.line") {
+        return `${(options?.count ?? 1) > 1 ? "Lines" : "Line"} ${options?.range}`;
+      }
+      if (key === "plan.review.thread.fold-label") {
+        return `${options?.title}, ${(options?.count ?? 1) > 1 ? "lines" : "line"} ${options?.range}`;
+      }
+      return key;
+    },
+  }),
 }));
 vi.mock("@/components/monaco/core", () => ({ colorizeStatement: (text: string) => mocks.colorize(text) }));
 vi.mock("@/components/ui/tooltip", () => ({
@@ -45,7 +55,10 @@ const original = "/* original revision\ncomment line\ncomment line 2\n*/\nSELECT
 const project = create(ProjectSchema, { name: "projects/p" });
 const plan = create(PlanSchema, { specs: [create(Plan_SpecSchema, {
   id: "spec",
-  config: { case: "changeDatabaseConfig", value: create(Plan_ChangeDatabaseConfigSchema, { sheet: currentName }) },
+  config: { case: "changeDatabaseConfig", value: create(Plan_ChangeDatabaseConfigSchema, {
+    sheet: currentName,
+    targets: ["instances/prod/databases/alpha_prod"],
+  }) },
 })] });
 const anchor = (startLine: number, endLine: number) => buildWholeLineAnchor({
   spec: "spec", sheetSha256: savedHash, startLine, endLine,
@@ -54,8 +67,45 @@ const props = {
   plan,
   project,
   onViewInStatement: vi.fn(),
-  renderPlanChangeReference: () => <span>Change 1</span>,
+  changeReferenceResources: { databasesByName: {}, databaseGroupsByName: {}, environmentList: [] },
 };
+
+// Prints what the context hands the card, so a test reads the bar's facts and
+// sees the excerpt apart from them.
+const renderAnchor = (
+  overrides: Partial<ComponentProps<typeof StatementAnchorContext>> &
+    Pick<ComponentProps<typeof StatementAnchorContext>, "anchor" | "placement">
+) => {
+  const ui = (o: typeof overrides) => (
+    <StatementAnchorContext {...props} {...o}>
+      {({ bar, excerpt }) => (
+        <div>
+          <div
+            data-testid="bar"
+            data-anchor-state={bar.anchorState}
+            data-fold-label={bar.foldLabel}
+            data-lines={bar.lines ? rangeText(bar.lines) : undefined}
+            data-link={bar.onViewInStatement ? "yes" : undefined}
+            data-tooltip-text={bar.stateTooltip}
+          >
+            {bar.title}
+          </div>
+          <div data-testid="body">{excerpt}</div>
+        </div>
+      )}
+    </StatementAnchorContext>
+  );
+  const result = render(ui(overrides));
+  const bar = () => result.container.querySelector("[data-testid='bar']") as HTMLElement;
+  return {
+    ...result,
+    bar,
+    state: () => bar().getAttribute("data-anchor-state"),
+    body: () => result.container.querySelector("[data-testid='body']") as HTMLElement,
+    rerenderAnchor: (o: typeof overrides) => result.rerender(ui(o)),
+  };
+};
+const rangeText = (range: LineRange) => `${range.startLine}-${range.endLine}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -67,32 +117,51 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("StatementAnchorContext", () => {
-  test("places the collapse action in the statement context header", () => {
-    const onCollapse = vi.fn();
-    const { container, getByRole } = render(
-      <StatementAnchorContext
-        {...props}
-        anchor={anchor(2, 2)}
-        onCollapse={onCollapse}
-        placement={OUTDATED}
-      />
-    );
-    const button = getByRole("button", { name: "common.collapse" });
-    expect(container.querySelector("[data-testid='statement-anchor']")?.firstElementChild?.contains(button)).toBe(true);
-    fireEvent.click(button);
-    expect(onCollapse).toHaveBeenCalledOnce();
+  test("titles a thread that is not on lines for the plan, with no lines, state or excerpt", () => {
+    const { bar, body } = renderAnchor({ anchor: undefined, placement: undefined });
+    expect(bar().textContent).toBe("plan.review.thread.comment-on-plan");
+    expect(bar().getAttribute("data-fold-label")).toBe("plan.review.thread.comment-on-plan");
+    expect(bar().getAttribute("data-lines")).toBeNull();
+    expect(bar().getAttribute("data-anchor-state")).toBeNull();
+    expect(bar().getAttribute("data-link")).toBeNull();
+    expect(body().textContent).toBe("");
+  });
+
+  test("titles a thread on a deleted change as such and names its fold control with its lines", () => {
+    const deleted = buildWholeLineAnchor({ spec: "gone", sheetSha256: savedHash, startLine: 4, endLine: 5 });
+    const { bar } = renderAnchor({ anchor: deleted, placement: undefined });
+    expect(bar().textContent).toBe("plan.review.thread.anchor.unavailable-change");
+    expect(bar().getAttribute("data-fold-label")).toBe("plan.review.thread.anchor.unavailable-change, lines 4–5");
+    expect(bar().getAttribute("data-lines")).toBe("4-5");
+  });
+
+  test("titles a thread on a change by the change's label, and two threads on it get different fold names", () => {
+    const first = renderAnchor({ anchor: anchor(4, 5), placement: OUTDATED });
+    expect(first.bar().textContent).toContain("alpha_prod");
+    expect(first.bar().querySelector("[data-plan-change-reference]")?.className ?? "").not.toContain("text-control-light");
+    const firstName = first.bar().getAttribute("data-fold-label");
+    expect(firstName).toBe("alpha_prod, lines 4–5");
+    cleanup();
+    const second = renderAnchor({ anchor: anchor(2, 2), placement: OUTDATED });
+    expect(second.bar().getAttribute("data-fold-label")).toBe("alpha_prod, line 2");
+  });
+
+  test("hands the excerpt to the body and keeps it out of the bar", () => {
+    const { bar, body } = renderAnchor({ anchor: anchor(4, 5), placement: OUTDATED });
+    expect(body().querySelector("[data-line-number]")).not.toBeNull();
+    expect(bar().querySelector("[data-line-number]")).toBeNull();
   });
 
   test.each([
-    { start: 1, end: 1, displayed: [1], selected: [1], label: "Line 1" },
-    { start: 2, end: 2, displayed: [1, 2], selected: [2], label: "Line 2" },
-    { start: 4, end: 5, displayed: [2, 3, 4, 5], selected: [4, 5], label: "Lines 4–5" },
-  ])("adds at most two preceding lines to $label without expanding the anchor", async ({start, end, displayed, selected, label}) => {
-    const { container, getByText } = render(<StatementAnchorContext {...props} anchor={anchor(start, end)} placement={OUTDATED} />);
+    { start: 1, end: 1, displayed: [1], selected: [1], lines: "1-1" },
+    { start: 2, end: 2, displayed: [1, 2], selected: [2], lines: "2-2" },
+    { start: 4, end: 5, displayed: [2, 3, 4, 5], selected: [4, 5], lines: "4-5" },
+  ])("adds at most two preceding lines to lines $lines without expanding the anchor", async ({start, end, displayed, selected, lines}) => {
+    const { container, bar } = renderAnchor({ anchor: anchor(start, end), placement: OUTDATED });
     const numbers = (selector: string) => Array.from(container.querySelectorAll(selector)).map((el) => Number(el.getAttribute("data-line-number")));
     expect(numbers("[data-line-number]")).toEqual(displayed);
     expect(numbers('[data-selected="true"]')).toEqual(selected);
-    expect(getByText(label)).toBeTruthy();
+    expect(bar().getAttribute("data-lines")).toBe(lines);
     // Colorized from the recorded revision, never the current one.
     await waitFor(() => expect(container.querySelector("code span")).not.toBeNull());
     expect(container.textContent).not.toContain("CURRENT REVISION");
@@ -104,12 +173,12 @@ describe("StatementAnchorContext", () => {
     const name = `projects/p/sheets/${hash}`;
     mocks.sheets[name] = create(SheetSchema, { name, content: new TextEncoder().encode(original) });
     const shared = buildWholeLineAnchor({ spec: "spec", sheetSha256: hash, startLine: 5, endLine: 5 });
-    const { container } = render(
-      <>
-        <StatementAnchorContext {...props} anchor={shared} placement={OUTDATED} />
-        <StatementAnchorContext {...props} anchor={shared} placement={OUTDATED} />
-      </>
+    const card = () => (
+      <StatementAnchorContext {...props} anchor={shared} placement={OUTDATED}>
+        {({ excerpt }) => excerpt}
+      </StatementAnchorContext>
     );
+    const { container } = render(<>{card()}{card()}</>);
     await waitFor(() => expect(container.querySelectorAll("code span").length).toBeGreaterThan(0));
     expect(mocks.colorize).toHaveBeenCalledTimes(1);
     // Only through the excerpt's last line, from the document start.
@@ -119,26 +188,21 @@ describe("StatementAnchorContext", () => {
   });
 
   test("mapped placements still render context from the recorded revision", () => {
-    const { container, getByText } = render(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={current(10, 11)} />);
-    expect(getByText("Lines 4–5")).toBeTruthy();
-    expect(getByText("plan.review.thread.anchor.view-in-statement")).toBeTruthy();
+    const { container, bar } = renderAnchor({ anchor: anchor(4, 5), placement: current(10, 11) });
+    expect(bar().getAttribute("data-lines")).toBe("4-5");
+    expect(bar().getAttribute("data-link")).toBe("yes");
     expect(container.textContent).toContain("comment line");
     expect(container.textContent).not.toContain("CURRENT REVISION");
   });
 
-  test("shows Outdated with a reason when the comparison exceeds the limit", () => {
-    const { container, rerender } = render(
-      <StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE_SIZE_LIMIT} />
-    );
-    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("OUTDATED");
-    expect(container.textContent).toContain("plan.review.thread.anchor.outdated");
-    expect(container.textContent).not.toContain("plan.review.thread.anchor.view-in-statement");
-    expect(container.querySelector("[data-tooltip]")?.getAttribute("data-tooltip")).toBe(
-      "plan.review.thread.anchor.comparison-size-limit"
-    );
-    rerender(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE} />);
-    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("OUTDATED");
-    expect(container.querySelector("[data-tooltip]")).toBeNull();
+  test("is Outdated with a reason when the comparison exceeds the limit", () => {
+    const { bar, state, rerenderAnchor } = renderAnchor({ anchor: anchor(4, 5), placement: UNAVAILABLE_SIZE_LIMIT });
+    expect(state()).toBe("OUTDATED");
+    expect(bar().getAttribute("data-link")).toBeNull();
+    expect(bar().getAttribute("data-tooltip-text")).toBe("plan.review.thread.anchor.comparison-size-limit");
+    rerenderAnchor({ anchor: anchor(4, 5), placement: UNAVAILABLE });
+    expect(state()).toBe("OUTDATED");
+    expect(bar().getAttribute("data-tooltip-text")).toBeNull();
   });
 
   test("keeps the anchor unavailable when its original lines are outside the preview", () => {
@@ -146,12 +210,9 @@ describe("StatementAnchorContext", () => {
       name: savedName,
       content: new TextEncoder().encode("SELECT 1;"),
     });
-    const { container } = render(
-      <StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={UNAVAILABLE_SIZE_LIMIT} />
-    );
-    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe("UNAVAILABLE");
-    expect(container.textContent).toContain("plan.review.thread.anchor.statement-unavailable");
-    expect(container.querySelector("[data-tooltip]")).toBeNull();
+    const { bar, state } = renderAnchor({ anchor: anchor(4, 5), placement: UNAVAILABLE_SIZE_LIMIT });
+    expect(state()).toBe("UNAVAILABLE");
+    expect(bar().getAttribute("data-tooltip-text")).toBeNull();
   });
 
   test.each([
@@ -160,7 +221,7 @@ describe("StatementAnchorContext", () => {
     { sheet: "partial preview line", text: "SELECT 1;\nSELECT", extra: 1, start: 2, end: 2, state: "UNAVAILABLE", action: false },
     { sheet: "range crossing the preview end", text: "SELECT 1;\nSELECT", extra: 1, start: 1, end: 2, state: "UNAVAILABLE", action: false },
     { sheet: "empty", text: "", extra: 0, start: 1, end: 1, state: "UNAVAILABLE", action: false },
-  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, start, end, state, action }) => {
+  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, start, end, state: expected, action }) => {
     const content = new TextEncoder().encode(text);
     mocks.sheets[currentName] = create(SheetSchema, {
       name: currentName,
@@ -168,9 +229,9 @@ describe("StatementAnchorContext", () => {
       contentSize: BigInt(content.byteLength + extra),
     });
     const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: start, endLine: end });
-    const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
-    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe(state);
-    expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);
+    const { bar, state } = renderAnchor({ anchor: onCurrent, placement: undefined });
+    expect(state()).toBe(expected);
+    expect(bar().getAttribute("data-link") !== null).toBe(action);
   });
 
   test("a hash-matched anchor stays pending until its sheet has loaded", async () => {
@@ -179,17 +240,16 @@ describe("StatementAnchorContext", () => {
     delete mocks.sheets[currentName];
     mocks.fetchSheet.mockResolvedValueOnce(sheet);
     const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 1, endLine: 1 });
-    const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
-    const state = () => container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state");
+    const { bar, state } = renderAnchor({ anchor: onCurrent, placement: undefined });
     expect(state()).toBe("PENDING");
-    expect(queryByText("plan.review.thread.anchor.view-in-statement")).toBeNull();
+    expect(bar().getAttribute("data-link")).toBeNull();
     await waitFor(() => expect(state()).toBe("CURRENT"));
-    expect(queryByText("plan.review.thread.anchor.view-in-statement")).not.toBeNull();
+    expect(bar().getAttribute("data-link")).toBe("yes");
   });
 
   test("fetches a missing recorded revision instead of using the current SQL", async () => {
     delete mocks.sheets[savedName];
-    const { container } = render(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={OUTDATED} />);
+    const { container } = renderAnchor({ anchor: anchor(4, 5), placement: OUTDATED });
     await waitFor(() => expect(mocks.fetchSheet).toHaveBeenCalledWith(savedName));
     expect(container.querySelector("[data-line-number]")).toBeNull();
     expect(container.textContent).not.toContain("CURRENT REVISION");

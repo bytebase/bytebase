@@ -1,61 +1,66 @@
-import { Ban, ChevronUp, ExternalLink, History } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PlanChangeReferenceRenderer } from "@/components/issue-activity/IssueCommentActivity";
 import { colorizeStatement } from "@/components/monaco/core";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
 import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { useSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
 import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  derivePlanChangeReference,
+  type PlanChangeReferenceResources,
+} from "../../utils/changeReference";
+import { PlanChangeReference } from "../PlanChangeReference";
+import type { ThreadBarProps } from "./CommentThreadCard";
 import { tokenizeLines } from "./placement/lineTokens";
 import { anchorLineRange, type Placement } from "./placement/place";
 import {
   type AnchorState,
   completePreviewLineCount,
   excerptLines,
+  formatLineRange,
   type LineRange,
-  lineRangeLabel,
   resolveAnchorState,
   sheetNameOfSha256,
   targetSha256OfSpec,
 } from "./threadModel";
 
-// The recorded context of an anchored comment in the Review Activity
-// timeline: the change, the originally selected lines, the placement state,
-// and the SQL excerpt of the recorded sheet revision. The editor never
-// renders this block; there the anchor is a gutter marker and a line
-// highlight at the comment's current placement.
+// What an Activity card shows about where its thread is: the bar's title,
+// lines, placement state and link, and the SQL excerpt of the recorded sheet
+// revision for the body. The wrapper is observed so the recorded revision is
+// fetched only once the card nears the viewport, folded or not. The editor
+// never renders this; there the anchor is a gutter marker.
 export function StatementAnchorContext({
   anchor,
-  onCollapse,
+  changeReferenceResources,
+  children,
   onViewInStatement,
   placement,
   plan,
   project,
-  renderPlanChangeReference,
 }: {
-  anchor: StatementAnchor;
-  onCollapse?: () => void;
+  anchor: StatementAnchor | undefined;
+  changeReferenceResources: PlanChangeReferenceResources;
+  children: (anchored: {
+    bar: ThreadBarProps;
+    excerpt?: ReactNode;
+  }) => ReactNode;
   onViewInStatement?: () => void;
   placement: Placement | undefined;
   plan: Plan;
   project: Project | undefined;
-  renderPlanChangeReference: PlanChangeReferenceRenderer;
 }) {
   const { t } = useTranslation();
-  const range = anchorLineRange(anchor);
-  const spec = plan.specs.find((candidate) => candidate.id === anchor.spec);
-  const sheetName = project
-    ? sheetNameOfSha256(project.name, anchor.sheetSha256)
-    : "";
-  // The recorded revision is downloaded only once the card nears the
-  // viewport, so a long timeline fetches sheets as the reader reaches them
-  // rather than all at once when the fold opens.
+  const range = anchor ? anchorLineRange(anchor) : undefined;
+  const specIndex = plan.specs.findIndex(
+    (candidate) => candidate.id === anchor?.spec
+  );
+  const spec = specIndex < 0 ? undefined : plan.specs[specIndex];
+  const sheetName =
+    project && anchor
+      ? sheetNameOfSha256(project.name, anchor.sheetSha256)
+      : "";
   const { ref, inView } = useInViewOnce<HTMLDivElement>();
   const enabled = sheetName !== "" && inView;
   const { statement, isLoading, isTruncated } = useSheetStatement({
@@ -63,9 +68,7 @@ export function StatementAnchorContext({
     sheetName,
   });
   const loaded = enabled && !isLoading;
-  const resolved = resolveAnchorState(anchor, plan, placement);
   const targetSha256 = targetSha256OfSpec(spec);
-  const onCurrentSheet = anchor.sheetSha256 === targetSha256;
   const previewEndLine = useMemo(
     () => completePreviewLineCount(statement, isTruncated),
     [isTruncated, statement]
@@ -73,127 +76,79 @@ export function StatementAnchorContext({
   const recordedLinesVisible = Boolean(
     statement && range && range.endLine <= previewEndLine
   );
-  let state: AnchorState = resolved;
-  // A hash match is current only when its complete lines are in the preview.
-  if (resolved === "CURRENT" && onCurrentSheet) {
-    if (!loaded) state = "PENDING";
-    else if (!recordedLinesVisible) state = "UNAVAILABLE";
+  let state: AnchorState | undefined;
+  if (anchor) {
+    const resolved = resolveAnchorState(anchor, plan, placement);
+    const onCurrentSheet = anchor.sheetSha256 === targetSha256;
+    state = resolved;
+    // A hash match is current only when its complete lines are in the preview.
+    if (resolved === "CURRENT" && onCurrentSheet) {
+      if (!loaded) state = "PENDING";
+      else if (!recordedLinesVisible) state = "UNAVAILABLE";
+    }
+    // A prior revision with visible original lines remains discoverable as
+    // Outdated when a comparison cannot establish a current position.
+    if (
+      resolved === "UNAVAILABLE" &&
+      project &&
+      targetSha256 &&
+      !onCurrentSheet
+    ) {
+      if (!loaded) state = "PENDING";
+      else if (recordedLinesVisible) state = "OUTDATED";
+    }
   }
-  // A prior revision with visible original lines remains discoverable as
-  // Outdated when a comparison cannot establish a current position.
-  if (
-    resolved === "UNAVAILABLE" &&
-    project &&
-    targetSha256 &&
-    !onCurrentSheet
-  ) {
-    if (!loaded) state = "PENDING";
-    else if (recordedLinesVisible) state = "OUTDATED";
-  }
-  const statusTooltip =
+  const stateTooltip =
     state === "OUTDATED" &&
     placement?.state === "UNAVAILABLE" &&
     placement.reason === "SIZE_LIMIT"
       ? t("plan.review.thread.anchor.comparison-size-limit")
       : undefined;
 
-  return (
-    <div
-      ref={ref}
-      className="@container/anchor flex min-w-0 flex-col"
-      data-anchor-state={state}
-      data-testid="statement-anchor"
-    >
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-b border-block-border bg-control-bg/50 px-3 py-1.5 text-xs">
-        <div className="flex min-w-0 flex-1 basis-full @sm/anchor:basis-0">
-          {spec ? (
-            renderPlanChangeReference({ siblings: plan.specs, spec })
-          ) : (
-            <span className="truncate font-medium text-control-light">
-              {t("plan.review.thread.anchor.unavailable-change")}
-            </span>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
-          {range && (
-            <span className="shrink-0 text-control-light">
-              {lineRangeLabel(t, range)}
-            </span>
-          )}
-          <AnchorStatePill
-            onViewInStatement={onViewInStatement}
-            state={state}
-            statusTooltip={statusTooltip}
-          />
-          {onCollapse && (
-            <Button
-              aria-label={t("common.collapse")}
-              onClick={onCollapse}
-              size="xs"
-              appearance="secondary"
-            >
-              <ChevronUp className="size-3.5" />
-            </Button>
-          )}
-        </div>
-      </div>
-      {!isLoading && statement && range && (
-        <SqlExcerpt
-          sheetName={sheetName}
-          dimmed={state === "OUTDATED" || state === "UNAVAILABLE"}
-          statement={statement}
-          range={range}
-        />
-      )}
-    </div>
-  );
-}
-
-function AnchorStatePill({
-  onViewInStatement,
-  state,
-  statusTooltip,
-}: {
-  onViewInStatement?: () => void;
-  state: AnchorState;
-  statusTooltip?: string;
-}) {
-  const { t } = useTranslation();
-  if (state === "CURRENT") {
-    if (!onViewInStatement) return null;
-    return (
-      <Button
-        className="h-auto shrink-0 p-0 text-xs"
-        onClick={onViewInStatement}
-        size="xs"
-        appearance="link"
-      >
-        {t("plan.review.thread.anchor.view-in-statement")}
-        <ExternalLink className="size-3" />
-      </Button>
-    );
-  }
-  if (state === "PENDING") return null;
-  const badge =
-    state === "OUTDATED" ? (
-      <Badge className="gap-x-1 px-2 text-xs" variant="warning">
-        <History className="size-3" />
-        {t("plan.review.thread.anchor.outdated")}
-      </Badge>
+  const reference = spec
+    ? derivePlanChangeReference({
+        index: specIndex,
+        resources: changeReferenceResources,
+        siblings: plan.specs,
+        spec,
+        t,
+      })
+    : undefined;
+  const titleText = !anchor
+    ? t("plan.review.thread.comment-on-plan")
+    : (reference?.label ?? t("plan.review.thread.anchor.unavailable-change"));
+  const bar: ThreadBarProps = {
+    title: reference ? (
+      <PlanChangeReference reference={reference} tone="control" />
     ) : (
-      <Badge className="gap-x-1 px-2 text-xs" variant="default">
-        <Ban className="size-3" />
-        {t("plan.review.thread.anchor.statement-unavailable")}
-      </Badge>
-    );
-  if (!statusTooltip) return badge;
+      titleText
+    ),
+    foldLabel: range
+      ? t("plan.review.thread.fold-label", {
+          title: titleText,
+          count: range.endLine - range.startLine + 1,
+          range: formatLineRange(range),
+        })
+      : titleText,
+    lines: range,
+    anchorState: state,
+    stateTooltip,
+    onViewInStatement: state === "CURRENT" ? onViewInStatement : undefined,
+  };
+  const excerpt =
+    !isLoading && statement && range ? (
+      <SqlExcerpt
+        sheetName={sheetName}
+        dimmed={state === "OUTDATED" || state === "UNAVAILABLE"}
+        statement={statement}
+        range={range}
+      />
+    ) : undefined;
+
   return (
-    <Tooltip
-      content={statusTooltip}
-      render={<span className="inline-flex" tabIndex={0} />}
-    >
-      {badge}
-    </Tooltip>
+    <div ref={ref} className="min-w-0">
+      {children({ bar, excerpt })}
+    </div>
   );
 }
 

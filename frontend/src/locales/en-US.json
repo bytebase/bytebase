@@ -2393,12 +2393,13 @@
         },
         "applies-to": "Applies to",
         "comment-on-lines": "Comment on lines",
+        "comment-on-plan": "Comment on the plan",
         "comment-title_one": "Comment on line {{range}}",
         "comment-title_other": "Comment on lines {{range}}",
+        "fold-label_one": "{{title}}, line {{range}}",
+        "fold-label_other": "{{title}}, lines {{range}}",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
-        "n-replies_one": "{{count}} reply",
-        "n-replies_other": "{{count}} replies",
         "priority": {
           "p1": "Dangerous but legitimate. A person must accept it.",
           "p2": "Advisory only."
