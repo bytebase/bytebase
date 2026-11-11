@@ -575,27 +575,27 @@ func (s *LicenseService) CountActiveReplicas(ctx context.Context) int {
 	return count
 }
 
-// CheckReplicaLimit checks if the current replica count exceeds the allowed limit.
-// Returns error if HA is not allowed and there are multiple active replicas.
-// CheckReplicaLimit checks if the deployment exceeds the replica limit.
-// In SaaS mode, replica limits are managed by the operator — skip this check.
+// CheckReplicaLimit returns an error when more than one Bytebase server replica
+// shares the metadata database without an HA license. SaaS skips the check
+// because the operator manages replicas there.
 func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 	if s.saas {
 		return nil
 	}
 	workspaceID, _ := s.store.GetWorkspaceID(ctx)
 	if s.LoadEffectiveSubscription(ctx, workspaceID).Ha {
-		return nil // HA license, no limit
+		return nil
 	}
+	return checkReplicaLimit(s.CountActiveReplicas(ctx))
+}
 
-	count := s.CountActiveReplicas(ctx)
+func checkReplicaLimit(count int) error {
 	if count > 1 {
 		return errors.Errorf(
-			"multiple replicas detected (%d) but HA is not enabled in license",
+			"multiple Bytebase server replicas detected (%d) sharing the metadata database, but HA is not enabled in license; scale Bytebase server down to 1 replica or upgrade to an HA license",
 			count,
 		)
 	}
-
 	return nil
 }
 

@@ -313,3 +313,12 @@ func TestGetUserLimitUncached(t *testing.T) {
 	_, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
 	require.Error(t, err)
 }
+
+func TestCheckReplicaLimit(t *testing.T) {
+	require.NoError(t, checkReplicaLimit(1))
+	require.EqualError(
+		t,
+		checkReplicaLimit(3),
+		"multiple Bytebase server replicas detected (3) sharing the metadata database, but HA is not enabled in license; scale Bytebase server down to 1 replica or upgrade to an HA license",
+	)
+}
