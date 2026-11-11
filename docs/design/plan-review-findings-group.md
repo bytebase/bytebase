@@ -48,7 +48,9 @@ ownership less plainly than a group does. It is the fallback if D4 is not accept
 **D2 · The group is a border and nothing else.** `border-block-border`, with the corners of the
 cards it holds and with no shadow, no fill and no title bar. A comment card is `rounded-lg` in
 [Plan comment card](plan-comment-card.md), so the group is too: a sharper frame around rounder
-cards reads as two unrelated boxes. The cards inside keep their title bar and shadow. The two
+cards reads as two unrelated boxes. That doc changes the guideline and its scanner to allow the
+corner in the files that draw a comment card, and the slice that builds the group adds the
+group's file to them. The cards inside keep their title bar and shadow. The two
 levels look different, so it stays clear that the finding is the unit and the group only says
 where it belongs. The review line sits inside the
 border with `px-3`, and the cards below it with 12px on each side and 8px between them.
@@ -126,6 +128,8 @@ Frontend and one guideline file. Two PRs. Each leaves main shippable and names w
    - `foldTimeline.ts`: a group stays together when a long history folds, as an open run's line
      and cards do today.
    - `docs/agents/frontend-ux.md`: the exception in D4.
+   - `frontend/scripts/check-ui-guideline.mjs` and its test: the group's file joins the files the
+     scanner allows `rounded-lg`.
    - Tests: `timelineEvents.test.ts` (the kept-card rule in D5, unchanged cases plus the
      grouping), `ReviewActivityTimeline.test.tsx` (a finding renders inside its review's group and
      without a timeline icon; a hidden review with a kept finding still renders a group; a review
