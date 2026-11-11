@@ -93,6 +93,20 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 // rows it returns count towards limit. It reads the rows past maxRows without keeping them,
 // leaving rows at the end of the result set.
 func RowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64, maxRows int) (*v1pb.QueryResult, error) {
+	return rowsToLimitedQueryResult(rows, valueMaker, func(_ int, typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+		return rowValueConverter(typeName, columnType, value)
+	}, limit, maxRows)
+}
+
+// RowsToQueryResultIndexed is RowsToQueryResult whose converter also receives the zero-based
+// column index. It lets a driver supply per-column metadata that the database/sql ColumnType
+// cannot carry, such as PostgreSQL fractional-seconds precision read from the native field
+// descriptions (see util.PgColumnTypeModifiers).
+func RowsToQueryResultIndexed(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(int, string, *sql.ColumnType, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+	return rowsToLimitedQueryResult(rows, valueMaker, rowValueConverter, limit, 0)
+}
+
+func rowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(int, string, *sql.ColumnType, any) *v1pb.RowValue, limit int64, maxRows int) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -129,7 +143,7 @@ func RowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.Colum
 
 			row := &v1pb.QueryRow{}
 			for i := range columnLength {
-				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], columnTypes[i], values[i]))
+				row.Values = append(row.Values, rowValueConverter(i, columnTypeNames[i], columnTypes[i], values[i]))
 			}
 
 			result.Rows = append(result.Rows, row)

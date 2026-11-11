@@ -651,6 +651,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
 				location := util.PgSessionLocation(conn)
+				typeModifiers := util.PgColumnTypeModifiers(ctx, conn, statement)
 				var r *v1pb.QueryResult
 				if err := crdb.Execute(func() error {
 					rows, err := conn.QueryContext(ctx, statement)
@@ -658,7 +659,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 						return err
 					}
 					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
+					r, err = util.RowsToQueryResultIndexed(rows, makeValueByTypeName, convertValueIn(location, typeModifiers), queryContext.MaximumSQLResultSize)
 					if err != nil {
 						return err
 					}

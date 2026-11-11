@@ -353,7 +353,5 @@ require (
 replace (
 	github.com/github/gh-ost => github.com/bytebase/gh-ost2 v1.1.7-0.20261102125703-6ff100bb26d5
 
-	github.com/jackc/pgx/v5 => github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4
-
 	github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b
 )
