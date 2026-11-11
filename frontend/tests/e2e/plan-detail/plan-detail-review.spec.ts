@@ -1492,6 +1492,13 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
+    // The selection is the one highlight, in the neutral grey token.
+    const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
+    await expect(selected).toBeVisible();
+    const grey = await page.evaluate(
+      () => `rgb(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")})`,
+    );
+    await expect(selected).toHaveCSS("background-color", grey);
     await planPage.clickAddThreadGlyph();
     const composer = planPage.inlineComposer;
     await expect(composer).toBeVisible();
@@ -1506,6 +1513,17 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await rangeCard.scrollIntoViewIfNeeded();
     await expect(rangeCard.getByTestId("thread-bar")).toContainText("Lines 2–3", { timeout: 15_000 });
     await expect(rangeCard).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {
+    const card = planPage.threadCardIn("changes", rangeRoot);
+    await expect(card).toBeVisible();
+    // No thread paints its lines.
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+    const [cardBox, editorBox] = await Promise.all([card.boundingBox(), planPage.statementEditor.boundingBox()]);
+    if (!cardBox || !editorBox) throw new Error("no box");
+    expect(cardBox.width).toBeLessThanOrEqual(768);
+    expect(editorBox.x + editorBox.width - (cardBox.x + cardBox.width)).toBeGreaterThanOrEqual(16);
   });
 
   test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {
