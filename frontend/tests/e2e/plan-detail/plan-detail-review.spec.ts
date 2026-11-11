@@ -1314,8 +1314,6 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     const firstAvatar = await box(comments.first().getByTestId("comment-avatar"));
     const firstText = await box(comments.first().getByTestId("comment-content"));
     const replyAvatar = await box(comments.nth(1).getByTestId("comment-avatar"));
-    // The avatar has a column of its own, and a reply starts where the first
-    // comment's text does.
     expect(firstText.x).toBeGreaterThanOrEqual(firstAvatar.x + firstAvatar.width);
     expect(Math.abs(replyAvatar.x - firstText.x)).toBeLessThanOrEqual(1);
     const rail = await box(card.getByTestId("thread-replies-rail"));
