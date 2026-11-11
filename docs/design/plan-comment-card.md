@@ -324,8 +324,9 @@ in the slice's own PR and reviewed there.
      `StatementThreadsLayer.test.tsx`. They include: the bar is the same folded and unfolded, and
      a folded card shows nothing from the body, by invariant 4; a P0 and a P1 finding show the
      badge in the bar, folded and unfolded, and a P2 finding and a person's thread show none;
-     folding from the bar updates the layer's state and the stepper's selection; a click on the bar's title folds and unfolds, and
-     a drag that selects its text does not; a resolved thread whose reader can neither reply nor
+     folding from the bar updates the layer's state and the stepper's selection; a click on the
+     bar's title folds and unfolds, and a drag that selects its text does not; a resolved thread
+     whose reader can neither reply nor
      resolve has no footer; the bar and the footer are `bg-background`; nothing in the bar
      carries `text-control-light`. E2E: `frontend/tests/e2e/plan-detail/plan-detail.page.ts`
      reads `thread-row`, which this slice removes, and `plan-detail-review.spec.ts` covers folding
@@ -333,8 +334,8 @@ in the slice's own PR and reviewed there.
 2. **The Activity card takes the bar, and the frame (the corners and shadow of D2; D3, D4's folded
    form and D5 in Activity; the rest of D6; D10).** Depends on slice 1.
    - Delivers, for a card in Activity: the three Activity rows of Title; the three priority rows
-     of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the excerpt still in the body and
-     drawn as today; the Activity row of Folding. For a card in both places: the frame,
+     of Markers; every row of State labels, lines and link; the Excerpt and Footer rows, with the
+     excerpt still in the body and drawn as today; the Activity row of Folding. For a card in both places: the frame,
      `rounded-lg` and `shadow-md`, with the exception in the guideline and in its scanner. After
      this slice no thread card is drawn without a bar or the frame, so invariant 8 holds in full,
      invariant 3 holds for every card but the composer, which slice 5 finishes, and invariant 6
@@ -344,8 +345,8 @@ in the slice's own PR and reviewed there.
      with its test, and the five locale files for "Comment on the plan".
    - Tests: `CommentThreadCard.test.tsx` and `StatementAnchorContext.test.tsx`. They include: a
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
-     different names; a folded P0 finding shows its badge; a click on the change's label folds, and a click on the lines or on the
-     link does not; the excerpt renders in the body and not in the bar; "Outdated" carries the
+     different names; a folded P0 finding shows its badge; a click on the change's label folds,
+     and a click on the lines or on the link does not; the excerpt renders in the body and not in the bar; "Outdated" carries the
      warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
      frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
      scanner accepts `rounded-lg` in a file that draws a comment card and still rejects it in
