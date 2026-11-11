@@ -731,9 +731,12 @@ function ConclusionText({
     "resolved",
     findings.resolved
   );
+  // Reviewer rows finish seconds apart, so ages in seconds would tick out of
+  // step on adjacent lines.
   const time = row.time && (
     <HumanizeTs
       className="text-control-light"
+      precision="minute"
       tsMs={getTimeForPbTimestampProtoEs(row.time)}
     />
   );

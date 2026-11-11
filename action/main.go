@@ -8,8 +8,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/command"
+	"github.com/bytebase/bytebase/action/github"
 	"github.com/bytebase/bytebase/action/world"
 )
 
@@ -31,7 +34,16 @@ func main() {
 	cmd := command.NewRootCommand(w)
 
 	if err := cmd.ExecuteContext(ctx); err != nil {
-		slog.Error("failed to execute command", "error", fmt.Sprintf("%+v", err))
+		// Cobra has printed the message. A failed sign-in needs no stack trace
+		// after it.
+		var signInErr *command.SignInError
+		if errors.As(err, &signInErr) {
+			if world.GetJobPlatform() == world.GitHub {
+				_, _ = fmt.Println(github.ErrorCommand(signInErr.Error()))
+			}
+		} else {
+			slog.Error("failed to execute command", "error", fmt.Sprintf("%+v", err))
+		}
 		os.Exit(1)
 	}
 }

@@ -228,10 +228,6 @@ github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
 github.com/bytebase/omni v0.0.0-20261110092136-ba78a66ac1bd h1:lUBg/+PNCDuX1z4SfciSCkVgSsY6WLBFTZ4yGBd7mPw=
 github.com/bytebase/omni v0.0.0-20261110092136-ba78a66ac1bd/go.mod h1:/v6gra/bwwzLFkbHwnUbW5nUTidVf9SWD3uJsU+lBbo=
-github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4 h1:CVgGkwGGV1wLd9Fju0XcY1cac2sf7IKOLA80bWGUwG8=
-github.com/bytebase/pgx/v5 v5.0.0-20261103142809-663c807705c4/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
-github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b h1:TJweAUQzFg8ZqIVk780o7k7nTDkYtKQU/44s4Ukv7vk=
-github.com/bytebase/tidb/pkg/parser v0.0.0-20251104040057-d29df9dd1b3b/go.mod h1:F7q7Qh9lNJyVS5ZliB1hA4uioJN1tOfnNf9KleLZVqo=
 github.com/caarlos0/env/v11 v11.4.1 h1:fYwH0sWEsBSMPG7t4e/PEfTFzrWrpjyygXyUnWiSwEw=
 github.com/caarlos0/env/v11 v11.4.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
 github.com/cenkalti/backoff/v3 v3.0.0/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
@@ -274,6 +270,8 @@ github.com/containerd/platforms v0.2.1 h1:zvwtM3rz2YHPQsF2CHYM8+KtB5dvhISiXh5ZpS
 github.com/containerd/platforms v0.2.1/go.mod h1:XHCb+2/hzowdiut9rkudds9bE5yJ7npe7dG/wG+uFPw=
 github.com/coreos/go-oidc v2.5.0+incompatible h1:6W0vGJR3Tu0r0PwfmjOrRZSlfxeEln8dsejt3ZWIvwo=
 github.com/coreos/go-oidc v2.5.0+incompatible/go.mod h1:CgnwVTmzoESiwO9qyAFEMiHoZ1nMCKZlZ9V6mm3/LKc=
+github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
+github.com/coreos/go-semver v0.3.1/go.mod h1:irMmmIw/7yzSRPWryHsK7EYSg09caPQL03VsM8rvUec=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/cpuguy83/dockercfg v0.3.2 h1:DlJTyZGBDlXqUZ2Dk2Q3xHs/FtnooJJVaad2S9GKorA=
@@ -549,6 +547,8 @@ github.com/jackc/pgx/v4 v4.12.1-0.20210724153913-640aa07df17c/go.mod h1:1QD0+tgS
 github.com/jackc/pgx/v4 v4.18.2/go.mod h1:Ey4Oru5tH5sB6tV7hDmfWFahwF15Eb7DNXlRKx2CkVw=
 github.com/jackc/pgx/v4 v4.18.3 h1:dE2/TrEsGX3RBprb3qryqSV9Y60iZN1C6i8IrmW9/BA=
 github.com/jackc/pgx/v4 v4.18.3/go.mod h1:Ey4Oru5tH5sB6tV7hDmfWFahwF15Eb7DNXlRKx2CkVw=
+github.com/jackc/pgx/v5 v5.12.0 h1:hWwax8YiGT0YiN50U1oIDn5kgR7KC2tG3rmavwpPkxY=
+github.com/jackc/pgx/v5 v5.12.0/go.mod h1:u2Fi6no03HCSBYE+ZVdLxbwdu3xyi2vU+K/YNJioSds=
 github.com/jackc/puddle v0.0.0-20190413234325-e4ced69a3a2b/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v0.0.0-20190608224051-11cab39313c9/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
 github.com/jackc/puddle v1.1.3/go.mod h1:m4B5Dj62Y0fbyuIc15OsIqK0+JU8nkqQjsgx7dvjSWk=
@@ -702,6 +702,8 @@ github.com/pingcap/errors v0.11.5-0.20260310054046-9c8b3586e4b2 h1:cLgCk5mwDG9lD
 github.com/pingcap/errors v0.11.5-0.20260310054046-9c8b3586e4b2/go.mod h1:ktAJCA9lxrHHjVyVl2pKJFvzBnq2eZbb+CUOjBRPlXo=
 github.com/pingcap/log v1.1.1-0.20260227082333-572e590d08f1 h1:A2bEfgSb7hLwR9mxDszgGKweF+xY9YoTDG+8RjdFjDE=
 github.com/pingcap/log v1.1.1-0.20260227082333-572e590d08f1/go.mod h1:pxfz2oJfAuhwrb3/rcLqD//GS/5gRP4gD022iP3cEO0=
+github.com/pingcap/tidb/pkg/parser v0.0.0-20260504140133-511dba1dbe17 h1:cfAVPis6GP6lxQgm1WGaNGi4rVXTB4KDvYf96LjqRCM=
+github.com/pingcap/tidb/pkg/parser v0.0.0-20260504140133-511dba1dbe17/go.mod h1:zDLDsfNBU5+L6T4J9/OgWAHc/WZvMUjbpgHqQ/t3yKo=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c/go.mod h1:7rwL4CYBLnjLxUqIJNnCWiEdr3bn6IUYi15bNlnbCCU=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=

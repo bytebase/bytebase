@@ -8,11 +8,13 @@ export const humanizeTsStub = () => ({
   HumanizeTs: ({
     tsMs,
     mode = "queue",
+    precision = "second",
     className,
     truncate = false,
   }: {
     tsMs: number | undefined;
     mode?: string;
+    precision?: string;
     className?: string;
     truncate?: boolean;
   }) =>
@@ -22,6 +24,7 @@ export const humanizeTsStub = () => ({
       <span
         data-testid="humanize-ts"
         data-mode={mode}
+        data-precision={precision}
         data-truncate={truncate}
         className={className}
       >
@@ -36,6 +39,10 @@ const shown = (root: ParentNode) =>
 /** The form each timestamp was asked for, in document order. */
 export const shownTimestampModes = (root: ParentNode) =>
   shown(root).map((node) => node.dataset.mode);
+
+/** The finest unit each timestamp's age was asked to count in, in document order. */
+export const shownTimestampPrecisions = (root: ParentNode) =>
+  shown(root).map((node) => node.dataset.precision);
 
 /** The instant each timestamp was given, in document order. */
 export const shownTimestampInstants = (root: ParentNode) =>

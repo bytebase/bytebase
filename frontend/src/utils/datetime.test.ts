@@ -28,6 +28,7 @@ import {
   daysLeftReading,
   displayableInstantMs,
   formatAbsoluteDateTime,
+  minuteQueueTimeReading,
   operationalTimeReading,
   passedReading,
   queueTimeReading,
@@ -143,6 +144,47 @@ describe("the work-queue reading", () => {
         "1月31日"
       );
     });
+  });
+});
+
+describe("the minute-precision work-queue reading", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("reads 'now' through the first minute instead of counting seconds", () => {
+    expect(minuteQueueTimeReading.read(Date.now() - 30 * SECOND_MS)).toBe(
+      "now"
+    );
+    expect(minuteQueueTimeReading.read(Date.now() - 59 * SECOND_MS)).toBe(
+      "now"
+    );
+    expect(minuteQueueTimeReading.read(Date.now() + 30 * SECOND_MS)).toBe(
+      "now"
+    );
+  });
+
+  test("holds 'now' until the timestamp is a minute old", () => {
+    const timestampMs = Date.now() - 30 * SECOND_MS;
+    expect(minuteQueueTimeReading.nextChangeAt(timestampMs)).toBe(
+      timestampMs + MINUTE_MS
+    );
+  });
+
+  test("reads minutes and beyond as the work-queue reading does", () => {
+    for (const ageMs of [MINUTE_MS, 5 * MINUTE_MS, 6 * DAY_MS]) {
+      expect(minuteQueueTimeReading.read(Date.now() - ageMs)).toBe(
+        queueTimeReading.read(Date.now() - ageMs)
+      );
+    }
+    expect(
+      minuteQueueTimeReading.read(Date.now() - RELATIVE_THRESHOLD_MS)
+    ).toBe("Jan 31");
   });
 });
 
@@ -417,6 +459,7 @@ describe("reading boundaries", () => {
 
   describe.each([
     ["work-queue", queueTimeReading],
+    ["minute-precision work-queue", minuteQueueTimeReading],
     ["relative", relativeTimeReading],
   ])("%s", (_name, reading) => {
     test.each(boundaryCases(SAMPLED_AGES_MS))(

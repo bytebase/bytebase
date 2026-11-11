@@ -325,7 +325,7 @@ func (c *instanceCreation) invalidValue() (why, suggestion string) {
 }
 
 // validPort reports whether the PostgreSQL driver reads port as a port: digits
-// in base 10, from 1 to 65535 (parsePort in Bytebase's pgx fork).
+// in base 10, from 1 to 65535 (parsePort in pgx's pgconn config parsing).
 func validPort(port string) bool {
 	n, err := strconv.ParseUint(port, 10, 16)
 	return err == nil && n >= 1
