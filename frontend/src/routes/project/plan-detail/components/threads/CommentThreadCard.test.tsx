@@ -774,6 +774,11 @@ describe("title bar", () => {
     const states = container.querySelectorAll("[data-testid='thread-state']");
     expect(states).toHaveLength(1);
     expect(barNode()?.contains(states[0])).toBe(true);
+    // State labels follow the title, before the spacer, in every place.
+    const title = barNode()?.querySelector("button")?.nextElementSibling;
+    expect(title?.className).not.toContain("flex-1");
+    expect(title?.nextElementSibling).toBe(states[0]);
+    expect(states[0].nextElementSibling?.className).toContain("flex-1");
 
     render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(false)} />);
     expect(container.querySelector("[data-testid='thread-state']")).toBeNull();

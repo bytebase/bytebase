@@ -425,10 +425,11 @@ function ThreadBar({
           <ChevronDown className="size-3.5" />
         )}
       </Button>
-      <span className="min-w-0 flex-1 truncate" title={title}>
+      <span className="min-w-0 truncate" title={title}>
         {title}
       </span>
       {resolved && <ThreadStateBadge />}
+      <span className="flex-1" />
     </div>
   );
 }
