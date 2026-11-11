@@ -150,29 +150,31 @@ export function createPlanSqlFixTarget({
       });
       if (candidates.length !== 1) return undefined;
       const spec = candidates[0];
-      let targets = expandTargets(spec);
-      if (context.kind === "review-finding") {
-        const recordedTargets = hint.targets;
-        if (
-          !Array.isArray(recordedTargets) ||
-          recordedTargets.length === 0 ||
-          new Set(recordedTargets).size !== recordedTargets.length ||
-          !recordedTargets.every((target) =>
-            normalizeAgentDiagnosticCapability({
-              kind: "diagnostic",
-              resource: {
-                kind: "database",
-                name: target,
-                project: page.project.name,
-                label: target,
-              },
-            })
-          )
+      // A result may cover only part of a spec; never infer unchecked targets.
+      const recordedTargets =
+        context.kind === "review-finding"
+          ? hint.targets
+          : context.kind === "sql-check" && hint.target
+            ? [hint.target]
+            : undefined;
+      if (
+        !Array.isArray(recordedTargets) ||
+        recordedTargets.length === 0 ||
+        new Set(recordedTargets).size !== recordedTargets.length ||
+        !recordedTargets.every((target) =>
+          normalizeAgentDiagnosticCapability({
+            kind: "diagnostic",
+            resource: {
+              kind: "database",
+              name: target,
+              project: page.project.name,
+              label: target,
+            },
+          })
         )
-          return undefined;
-        // Findings may cover only part of a spec; never infer unchecked targets.
-        targets = [...recordedTargets];
-      }
+      )
+        return undefined;
+      const targets = [...recordedTargets];
       if (
         (context.resource.kind === "plan" &&
           context.resource.name !== page.plan.name) ||

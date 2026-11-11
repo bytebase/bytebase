@@ -40,7 +40,7 @@ test("does not finish revealing a different saved spec when the leave guard canc
     expandPhase: vi.fn(),
   } as unknown as PlanDetailPageState;
   render(<PlanDetailProvider value={page}><PlanSqlFixTargetProvider selectedSpecId="spec-1" onSelectedSpecIdChange={() => {}}>Editor</PlanSqlFixTargetProvider></PlanDetailProvider>);
-  const source = await mocks.adapter!.capture({ resource: { kind: "plan", name: page.plan.name, project: "projects/example", label: "Plan" }, sourceId: `${page.plan.name}/planCheckRun`, kind: "sql-check", summary: "Warning", sqlFixSource: { specId: "spec-2", sha256: SHA256(sql).toString() } });
+  const source = await mocks.adapter!.capture({ resource: { kind: "plan", name: page.plan.name, project: "projects/example", label: "Plan" }, sourceId: `${page.plan.name}/planCheckRun`, kind: "sql-check", summary: "Warning", sqlFixSource: { specId: "spec-2", sha256: SHA256(sql).toString(), target: "instances/main/databases/books" } });
   mocks.push.mockResolvedValueOnce(undefined);
   expect(await mocks.adapter!.reveal(source!)).toBe(false);
   expect(mocks.push).toHaveBeenCalledWith({ name: expect.any(String), params: { projectId: "example", planId: "42", specId: "spec-2" } }, { preventScrollReset: true });
@@ -67,7 +67,7 @@ test("does not reveal a route-selected source over another pending change's edit
   }
   const selectSpec = vi.fn();
   const view = render(<PlanDetailProvider value={page}><PlanSqlFixTargetProvider selectedSpecId="spec-1" onSelectedSpecIdChange={selectSpec}><PendingEditor /></PlanSqlFixTargetProvider></PlanDetailProvider>);
-  const source = await mocks.adapter!.capture({ resource: { kind: "plan", name: page.plan.name, project: "projects/example", label: "Plan" }, sourceId: `${page.plan.name}/planCheckRun`, kind: "sql-check", summary: "Warning", sqlFixSource: { specId: "spec-1", sha256: SHA256(sql).toString() } });
+  const source = await mocks.adapter!.capture({ resource: { kind: "plan", name: page.plan.name, project: "projects/example", label: "Plan" }, sourceId: `${page.plan.name}/planCheckRun`, kind: "sql-check", summary: "Warning", sqlFixSource: { specId: "spec-1", sha256: SHA256(sql).toString(), target: targets[0] } });
   expect(await mocks.adapter!.reveal(source!)).toBe(false);
   expect(mocks.push).not.toHaveBeenCalled();
   expect(selectSpec).not.toHaveBeenCalled();

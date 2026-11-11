@@ -267,6 +267,75 @@ describe("createPlanSqlFixTarget", () => {
     expect(f.adapter.apply(source!, "SELECT 1;")).toBe(false);
   });
 
+  test.each(["saved", "draft"])(
+    "does not extend a %s SQL check to newly added targets",
+    async (sourceKind) => {
+      const f = fixture();
+      if (sourceKind === "draft") {
+        f.context.sql = {
+          source: "draft",
+          text: sql,
+          sheet,
+          sha256: SHA256(sql).toString(),
+        };
+        f.context.sqlFixSource!.specId = f.spec.id;
+      }
+      if (f.spec.config.case === "changeDatabaseConfig") {
+        f.spec.config.value.targets = [
+          database,
+          "instances/main/databases/new-target",
+        ];
+      }
+
+      const source = await f.adapter.capture(f.context);
+
+      expect(source?.targets).toEqual([database]);
+      expect(f.adapter.inspect(source!)).toEqual({ status: "stale" });
+      expect(f.adapter.apply(source!, "SELECT 1;")).toBe(false);
+      expect(f.applied).toEqual([]);
+    }
+  );
+
+  test("does not apply one database's check to an unchanged multi-target spec", async () => {
+    const f = fixture();
+    if (f.spec.config.case === "changeDatabaseConfig") {
+      f.spec.config.value.targets = [
+        database,
+        "instances/main/databases/other",
+      ];
+    }
+
+    const source = await f.adapter.capture(f.context);
+
+    expect(source?.targets).toEqual([database]);
+    expect(f.adapter.inspect(source!)).toEqual({ status: "stale" });
+    expect(f.adapter.apply(source!, "SELECT 1;")).toBe(false);
+    expect(f.applied).toEqual([]);
+  });
+
+  test.each([
+    undefined,
+    "",
+    "projects/example/databaseGroups/group",
+    "invalid-database",
+  ])(
+    "does not capture a SQL check with invalid target provenance %s",
+    async (target) => {
+      const f = fixture();
+      f.context.sqlFixSource = {
+        specId: f.spec.id,
+        sha256: SHA256(sql).toString(),
+        target,
+      };
+      if (target && f.spec.config.case === "changeDatabaseConfig") {
+        f.spec.config.value.targets = [target];
+      }
+
+      expect(await f.adapter.capture(f.context)).toBeUndefined();
+      expect(f.fetchSheet).not.toHaveBeenCalled();
+    }
+  );
+
   test.each([
     { targets: ["instances/main/databases/other"] },
     { targets: [database, "instances/main/databases/other"] },
@@ -361,8 +430,10 @@ describe("createPlanSqlFixTarget", () => {
     };
     const source = await f.adapter.capture(f.context);
     expect(source?.sql).toBe(draft);
+    expect(source?.targets).toEqual([database]);
     expect(f.fetchSheet).not.toHaveBeenCalled();
     expect(f.adapter.inspect(source!).status).toBe("ready");
+    expect(f.adapter.apply(source!, "SELECT 1;")).toBe(true);
   });
 
   test("does not swap newly edited SQL into checked draft evidence", async () => {
@@ -386,7 +457,11 @@ describe("createPlanSqlFixTarget", () => {
     const bomSheet = `${project}/sheets/${hash}`;
     if (f.spec.config.case === "changeDatabaseConfig")
       f.spec.config.value.sheet = bomSheet;
-    f.context.sqlFixSource = { specId: "spec-1", sha256: hash };
+    f.context.sqlFixSource = {
+      specId: "spec-1",
+      sha256: hash,
+      target: database,
+    };
     f.fetchSheet.mockResolvedValue(
       create(SheetSchema, {
         name: bomSheet,
