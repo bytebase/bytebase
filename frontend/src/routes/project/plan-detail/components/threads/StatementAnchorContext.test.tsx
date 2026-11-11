@@ -138,7 +138,16 @@ describe("StatementAnchorContext", () => {
   test("titles a thread on a change by the change's label, and two threads on it get different fold names", () => {
     const first = renderAnchor({ anchor: anchor(4, 5), placement: OUTDATED });
     expect(first.bar().textContent).toContain("alpha_prod");
-    expect(first.bar().querySelector("[data-plan-change-reference]")?.className ?? "").not.toContain("text-control-light");
+    // The visible label (not its hidden measuring copy) draws icon and index
+    // in the bar's text color.
+    const visible = Array.from(first.bar().querySelectorAll("[data-plan-change-reference] *")).filter(
+      (node) => !node.closest("[aria-hidden='true']")
+    );
+    expect(visible.length).toBeGreaterThan(0);
+    const muted = visible.filter((node) =>
+      /\btext-control-(light|placeholder)\b/.test(node.getAttribute("class") ?? "")
+    );
+    expect(muted).toEqual([]);
     const firstName = first.bar().getAttribute("data-fold-label");
     expect(firstName).toBe("alpha_prod, lines 4–5");
     cleanup();
