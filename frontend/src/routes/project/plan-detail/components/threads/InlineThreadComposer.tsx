@@ -33,11 +33,11 @@ export function InlineThreadComposer({
 
   return (
     <div
-      className="flex flex-col rounded-sm border border-block-border bg-background shadow-sm"
+      className="flex flex-col rounded-lg border border-control-border bg-background"
       data-testid="inline-thread-composer"
     >
       <div
-        className="flex min-h-8 min-w-0 items-center rounded-t-sm border-b border-block-border bg-control-bg px-3 text-xs text-control"
+        className="flex min-h-8 min-w-0 items-center rounded-t-lg border-b border-block-border bg-background px-3 text-xs text-control"
         data-testid="thread-bar"
       >
         <span className="min-w-0 truncate">

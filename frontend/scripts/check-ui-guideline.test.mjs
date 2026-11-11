@@ -58,6 +58,9 @@ describe("check-ui-guideline", () => {
     expect(
       scanSource(card, "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx")
     ).toEqual([]);
+    expect(
+      scanSource(card, "src/routes/project/plan-detail/components/threads/InlineThreadComposer.tsx")
+    ).toEqual([]);
     expect(scanSource(card, "src/Elsewhere.tsx")).toEqual([
       { path: "src/Elsewhere.tsx", rule: "no-off-scale-radius", token: "rounded-lg", count: 1 },
       { path: "src/Elsewhere.tsx", rule: "no-off-scale-radius", token: "rounded-t-lg", count: 1 },

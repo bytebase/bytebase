@@ -30,12 +30,15 @@ const props = {
 };
 
 describe("InlineThreadComposer", () => {
-  test("has the card's frame, shadow included", () => {
+  test("has the card's frame: its corners and darker border, and no shadow", () => {
     const { getByTestId } = render(<InlineThreadComposer {...props} />);
-    const frame = getByTestId("inline-thread-composer");
-    for (const name of ["border", "border-block-border", "rounded-sm", "shadow-sm", "bg-background"]) {
-      expect(frame.className.split(" ")).toContain(name);
+    const classes = getByTestId("inline-thread-composer").className.split(" ");
+    for (const name of ["border", "border-control-border", "rounded-lg", "bg-background"]) {
+      expect(classes).toContain(name);
     }
+    expect(classes).not.toContain("border-block-border");
+    expect(classes.filter((name) => name.startsWith("shadow"))).toEqual([]);
+    expect(getByTestId("thread-bar").className.split(" ")).toContain("border-block-border");
   });
 
   test.each([
@@ -46,8 +49,9 @@ describe("InlineThreadComposer", () => {
     const bar = getByTestId("thread-bar");
     expect(getByTestId("inline-thread-composer").firstElementChild).toBe(bar);
     expect(bar.textContent).toBe(title);
-    expect(bar.className).toContain("bg-control-bg");
-    expect(bar.className).toContain("text-control");
+    expect(bar.className.split(" ")).toContain("bg-background");
+    expect(bar.className).not.toMatch(/\bbg-control-bg/);
+    expect(bar.className.split(" ")).toContain("text-control");
     expect([bar, ...bar.querySelectorAll("*")].filter((node) => node.getAttribute("class")?.includes("text-control-light"))).toEqual([]);
     expect(bar.querySelector("button")).toBeNull();
   });

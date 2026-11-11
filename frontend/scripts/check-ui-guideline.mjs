@@ -22,6 +22,7 @@ const lifecycleStampPath =
 const commentCardPaths = new Set([
   "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx",
   "src/routes/project/plan-detail/components/threads/statementThreads.css",
+  "src/routes/project/plan-detail/components/threads/InlineThreadComposer.tsx",
 ]);
 const isCommentCardRadius = (token, path) =>
   commentCardPaths.has(path) &&
