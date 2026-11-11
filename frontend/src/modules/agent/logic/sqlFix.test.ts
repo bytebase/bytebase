@@ -69,6 +69,11 @@ describe("SQL fix proposal", () => {
     expect(extractAgentSqlFixSQL("~~~SQL\nSELECT 1;\n\n~~~")).toBe(
       "SELECT 1;\n"
     );
+    expect(
+      extractAgentSqlFixSQL(
+        "```sql replacement\nINSERT INTO books(note) VALUES ('first\r\n  second');\n```"
+      )
+    ).toBe("INSERT INTO books(note) VALUES ('first\r\n  second');");
   });
 
   test("selects the explicit replacement instead of explanatory SQL snippets", () => {
@@ -81,6 +86,20 @@ describe("SQL fix proposal", () => {
       extractAgentSqlFixSQL("~~~SQL replacement\n  SELECT 2;  \r\n~~~")
     ).toBe("  SELECT 2;  ");
   });
+
+  test.each([1, 2, 3])(
+    "rejects top-level fences indented by %i spaces instead of changing literal contents",
+    (spaces) => {
+      const indent = " ".repeat(spaces);
+      for (const fence of ["```sql", "~~~sql replacement"]) {
+        expect(
+          extractAgentSqlFixSQL(
+            `${indent}${fence}\n${indent}INSERT INTO books(note) VALUES ('first\n${indent}second');\n${indent}${fence.slice(0, 3)}`
+          )
+        ).toBeUndefined();
+      }
+    }
+  );
 
   test.each([
     "```sql\nUPDATE books SET price = 2;",

@@ -497,6 +497,7 @@ function findingDiagnosticContext(
           sqlFixSource: {
             specId: anchor.spec,
             sha256: anchor.sheetSha256,
+            targets: [...review.targets],
           },
         }
       : {}),

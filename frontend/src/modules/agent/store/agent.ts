@@ -1565,7 +1565,6 @@ export const createAgentStore = () => {
         return Boolean(
           chat?.capability &&
             !chat.archived &&
-            state.currentChatId === chatId &&
             !state.remoteBusyChatIds[chatId] &&
             chat.workspaceName === state.workspaceName &&
             isCurrentAgentSqlFixSource(source, chat.capability.resource) &&
@@ -2237,7 +2236,11 @@ export const createAgentStore = () => {
         },
 
         setSqlFixSource: (chatId, source) => {
-          if (!canUseSqlFixSource(chatId, source)) return;
+          if (
+            get().currentChatId !== chatId ||
+            !canUseSqlFixSource(chatId, source)
+          )
+            return;
           set((state) => {
             clearSqlFixDrafts(state, chatId);
             state.sqlFixSourcesByChatId[chatId] = {

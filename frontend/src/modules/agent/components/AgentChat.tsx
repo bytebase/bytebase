@@ -830,6 +830,7 @@ export function AgentChat({
   onContinueAction,
 }: AgentChatProps) {
   const { t } = useTranslation();
+  const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [
     isAIConfigurationRecoveryDismissed,
@@ -1081,11 +1082,19 @@ export function AgentChat({
         const actions = normalizeAgentResponseActions(msg.metadata?.actions);
         const openAction = actions.find((action) => action.kind === "open");
         const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
-        const handoff =
+        const diagnosticIssueRoute =
           currentChat?.capability?.kind === "diagnostic" &&
           (currentChat.capability.resource.kind === "issue" ||
             currentChat.capability.resource.kind === "plan") &&
           proposedHandoff?.kind === "open-issue"
+            ? resolveAgentHandoffRoute(proposedHandoff)
+            : undefined;
+        const handoff =
+          diagnosticIssueRoute &&
+          sameRoutePathname(
+            currentRoute.fullPath,
+            router.resolve(diagnosticIssueRoute).fullPath
+          )
             ? undefined
             : proposedHandoff;
         const planDraftAction = actions.find(

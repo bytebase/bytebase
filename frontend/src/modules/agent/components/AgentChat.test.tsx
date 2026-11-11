@@ -1527,6 +1527,8 @@ describe("AgentChat", () => {
       (["actions", "handoff", "both"] as const).map((format) => ({ kind, format }))
     )
   )("hides redundant Issue navigation in a $kind diagnostic with $format metadata", ({ kind, format }) => {
+    mocks.currentPath = "/projects/sample/issues/7?panel=checks#comments";
+    mocks.resolvedPath = "/projects/sample/issues/7";
     const store = useAgentStore.getState();
     const chat = store.createChat({
       context: "projects/sample",
@@ -1569,6 +1571,70 @@ describe("AgentChat", () => {
     expect(followUp?.textContent).toContain(prompt);
     act(() => followUp?.click());
     expect(onContinueAction).toHaveBeenCalledWith(chat.id, prompt, []);
+    expect(store.getMessages(chat.id)[0].metadata).toEqual(metadata);
+    unmount();
+  });
+
+  test.each(["issue", "plan"] as const)("keeps navigation to another Issue in a %s diagnostic", (kind) => {
+    mocks.currentPath = `/projects/sample/${kind}s/7`;
+    mocks.resolvedPath = "/projects/sample/issues/8";
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: { kind, name: `projects/sample/${kind}s/7`, project: "projects/sample", label: "Selected problem" },
+      },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Inspect the related issue.",
+      metadata: { actions: [{ kind: "open", target: { kind: "open-issue", issue: "projects/sample/issues/8" } }] },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")?.getAttribute("href")).toBe(
+      "/projects/sample/issues/8"
+    );
+    unmount();
+  });
+
+  test("restores the diagnostic Issue handoff after navigating away", () => {
+    mocks.currentPath = "/projects/sample/issues/7";
+    mocks.resolvedPath = "/projects/sample/issues/7";
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: { kind: "issue", name: "projects/sample/issues/7", project: "projects/sample", label: "Selected issue" },
+      },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Return to the issue.",
+      metadata: { handoff: { kind: "open-issue", issue: "projects/sample/issues/7" } },
+    });
+    const metadata = structuredClone(store.getMessages(chat.id)[0].metadata);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")).toBeNull();
+    act(() => {
+      mocks.currentPath = "/projects/sample/plans/9";
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(container.querySelector("[data-agent-action-open]")?.getAttribute("href")).toBe(
+      "/projects/sample/issues/7"
+    );
+    act(() => {
+      mocks.currentPath = "/projects/sample/issues/7?panel=checks";
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(container.querySelector("[data-agent-action-open]")).toBeNull();
     expect(store.getMessages(chat.id)[0].metadata).toEqual(metadata);
     unmount();
   });

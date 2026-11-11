@@ -156,6 +156,39 @@ describe("runtime SQL fix drafts", () => {
     );
   });
 
+  test("prepares a local background chat's SQL fix without changing selection", () => {
+    const { store, chat } = setup();
+    s(store).setSqlFixSource(chat.id, source());
+    s(store).startChatRun(chat.id, {
+      path: "/projects/example/plans/7",
+      title: "Plan",
+    });
+    const selected = s(store).createChat();
+
+    const action = s(store).prepareSqlFixDraft(
+      chat.id,
+      "```sql replacement\nUPDATE books SET price = 2;\n```"
+    );
+
+    expect(action?.kind).toBe("review-sql-fix");
+    expect(s(store).sqlFixDraftsById[action!.draftId]).toMatchObject({
+      chatId: chat.id,
+      sql: "UPDATE books SET price = 2;",
+    });
+    expect(s(store).currentChatId).toBe(selected.id);
+    s(store).setCurrentChat(chat.id);
+    expect(s(store).sqlFixDraftsById[action!.draftId]).toBeDefined();
+  });
+
+  test("does not capture a SQL fix source for an unselected chat", () => {
+    const { store, chat } = setup();
+    s(store).createChat();
+
+    s(store).setSqlFixSource(chat.id, source());
+
+    expect(s(store).sqlFixSourcesByChatId[chat.id]).toBeUndefined();
+  });
+
   test("persists opaque review IDs without persisting source or proposal SQL", () => {
     const { store, chat } = setup();
     s(store).setSqlFixSource(chat.id, source());
@@ -188,29 +221,24 @@ describe("runtime SQL fix drafts", () => {
     ).toBeUndefined();
   });
 
-  test.each([
-    "missing",
-    "resource",
-    "identity",
-    "unselected",
-    "remote",
-    "archived",
-  ])("rejects %s source or ownership", (reason) => {
-    const { store, chat } = setup();
-    const original = source();
-    if (reason === "resource")
-      original.resource = { ...resource, name: "projects/example/plans/8" };
-    if (reason === "identity") original.identity = "another identity";
-    if (reason !== "missing") s(store).setSqlFixSource(chat.id, original);
-    if (reason === "unselected") s(store).createChat();
-    if (reason === "remote")
-      store.setState({ remoteBusyChatIds: { [chat.id]: true } });
-    if (reason === "archived") s(store).archiveChat(chat.id);
-    expect(
-      s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
-    ).toBeUndefined();
-    expect(s(store).sqlFixDraftsById).toEqual({});
-  });
+  test.each(["missing", "resource", "identity", "remote", "archived"])(
+    "rejects %s source or ownership",
+    (reason) => {
+      const { store, chat } = setup();
+      const original = source();
+      if (reason === "resource")
+        original.resource = { ...resource, name: "projects/example/plans/8" };
+      if (reason === "identity") original.identity = "another identity";
+      if (reason !== "missing") s(store).setSqlFixSource(chat.id, original);
+      if (reason === "remote")
+        store.setState({ remoteBusyChatIds: { [chat.id]: true } });
+      if (reason === "archived") s(store).archiveChat(chat.id);
+      expect(
+        s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
+      ).toBeUndefined();
+      expect(s(store).sqlFixDraftsById).toEqual({});
+    }
+  );
 
   test("rejects unchanged SQL and a changed signed-in actor", () => {
     const { store, chat } = setup();

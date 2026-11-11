@@ -5006,15 +5006,17 @@ describe("AgentInput", () => {
   );
 
   test.each([
-    { trusted: true, success: true },
-    { trusted: false, success: true },
-    { trusted: true, success: false },
-  ])("synthesizes SQL fix actions only for a trusted successful answer: $trusted/$success", async ({ trusted, success }) => {
+    { trusted: true, success: true, background: false },
+    { trusted: false, success: true, background: false },
+    { trusted: true, success: false, background: false },
+    { trusted: true, success: true, background: true },
+  ])("synthesizes SQL fix actions only for a trusted successful answer: $trusted/$success/$background", async ({ trusted, success, background }) => {
     const resource = { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "projects/orders/plans/7" };
     const answer = "Complete replacement:\n```sql\nUPDATE books SET price = 2;\n```";
     const followUp = { kind: "continue", prompt: "Why is this predicate needed?" };
     mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: resource.project, plan: { status: "available", name: resource.name, state: "ACTIVE" } }) });
     mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+      if (background) useAgentStore.getState().createChat({ context: "projects/other" });
       callbacks.onText(answer);
       return { kind: "completed", success, totalTokensUsed: 0, actions: [{ kind: "review-sql-fix", draftId: "model-invented" }, followUp] };
     });

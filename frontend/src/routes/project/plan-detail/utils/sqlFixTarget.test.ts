@@ -49,6 +49,10 @@ function fixture() {
     create(SheetSchema, { name, content, contentSize: BigInt(content.length) })
   );
   const reveal = vi.fn();
+  const expandTargets = (candidate: typeof spec) =>
+    candidate.config.case === "changeDatabaseConfig"
+      ? candidate.config.value.targets
+      : [];
   const readEditor = (): PlanSqlFixEditor | undefined =>
     mounted
       ? {
@@ -57,7 +61,7 @@ function fixture() {
             plan: page.plan.name,
             specId: spec.id,
             sheet,
-            targets: [database],
+            targets: expandTargets(spec),
             currentSql,
             status: editorStatus,
           }),
@@ -74,10 +78,7 @@ function fixture() {
     getIdentity: () => currentIdentity,
     getEditor: readEditor,
     getDraftSql: () => currentSql,
-    expandTargets: (candidate) =>
-      candidate.config.case === "changeDatabaseConfig"
-        ? candidate.config.value.targets
-        : [],
+    expandTargets,
     fetchSheet,
     reveal,
   });
@@ -256,6 +257,7 @@ describe("createPlanSqlFixTarget", () => {
     const f = fixture();
     f.context.kind = "review-finding";
     f.context.sqlFixSource!.specId = "spec-1";
+    f.context.sqlFixSource!.targets = [database];
     if (f.spec.config.case === "changeDatabaseConfig")
       f.spec.config.value.sheet = `${project}/sheets/${"d".repeat(64)}`;
     const source = await f.adapter.capture(f.context);
@@ -264,6 +266,77 @@ describe("createPlanSqlFixTarget", () => {
     expect(f.adapter.inspect(source!)).toEqual({ status: "stale" });
     expect(f.adapter.apply(source!, "SELECT 1;")).toBe(false);
   });
+
+  test.each([
+    { targets: ["instances/main/databases/other"] },
+    { targets: [database, "instances/main/databases/other"] },
+  ])(
+    "does not rebind a finding to the current target set $targets",
+    async ({ targets }) => {
+      const f = fixture();
+      f.context.kind = "review-finding";
+      f.context.sqlFixSource = {
+        specId: "spec-1",
+        sha256: SHA256(sql).toString(),
+        targets: [database],
+      };
+      if (f.spec.config.case === "changeDatabaseConfig")
+        f.spec.config.value.targets = targets;
+
+      const source = await f.adapter.capture(f.context);
+
+      expect(source?.targets).toEqual([database]);
+      expect(f.adapter.inspect(source!)).toEqual({ status: "stale" });
+      expect(f.adapter.apply(source!, "SELECT 1;")).toBe(false);
+      expect(f.applied).toEqual([]);
+    }
+  );
+
+  test("allows a finding only when its recorded targets exactly match the current spec", async () => {
+    const f = fixture();
+    const targets = [database, "instances/main/databases/other"];
+    f.context.kind = "review-finding";
+    f.context.sqlFixSource = {
+      specId: "spec-1",
+      sha256: SHA256(sql).toString(),
+      targets,
+    };
+    if (f.spec.config.case === "changeDatabaseConfig")
+      f.spec.config.value.targets = [...targets].reverse();
+
+    const source = await f.adapter.capture(f.context);
+    targets.push("instances/main/databases/later");
+
+    expect(source?.targets).toEqual([
+      database,
+      "instances/main/databases/other",
+    ]);
+    expect(f.adapter.inspect(source!).status).toBe("ready");
+    expect(f.adapter.apply(source!, "SELECT 1;")).toBe(true);
+    expect(f.applied).toEqual(["SELECT 1;"]);
+  });
+
+  test.each([
+    { targets: undefined },
+    { targets: [] },
+    { targets: ["projects/example/databaseGroups/group"] },
+    { targets: [database, database] },
+  ])(
+    "does not capture a finding without unambiguous database targets $targets",
+    async ({ targets }) => {
+      const f = fixture();
+      f.context.kind = "review-finding";
+      f.context.sqlFixSource = {
+        specId: "spec-1",
+        sha256: SHA256(sql).toString(),
+        targets,
+      };
+
+      expect(await f.adapter.capture(f.context)).toBeUndefined();
+      expect(f.fetchSheet).not.toHaveBeenCalled();
+      expect(f.applied).toEqual([]);
+    }
+  );
 
   test("captures checked draft SQL rather than fetching saved SQL", async () => {
     const f = fixture();

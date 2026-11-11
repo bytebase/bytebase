@@ -23,6 +23,7 @@ export interface AgentSqlFixSourceHint {
   specId?: string;
   sha256: string;
   target?: string;
+  targets?: string[];
 }
 
 export interface AgentSqlFixDraft {
@@ -151,14 +152,16 @@ export function extractAgentSqlFixSQL(answer: string): string | undefined {
   const candidates = replacements.length ? replacements : blocks;
   if (candidates.length !== 1) return undefined;
   const block = candidates[0];
-  // Container indentation can change literal SQL bytes in a raw Markdown slice.
-  if (!tree.children.includes(block)) return undefined;
+  // Container and fence indentation can change literal SQL bytes in a raw slice.
+  if (!tree.children.includes(block) || block.position?.start.column !== 1)
+    return undefined;
   const raw = answer.slice(
     block.position?.start.offset,
     block.position?.end.offset
   );
-  const opening =
-    /^ {0,3}(`{3,}|~{3,})sql(?:[ \t]+replacement)?[ \t]*\r?\n/i.exec(raw);
+  const opening = /^(`{3,}|~{3,})sql(?:[ \t]+replacement)?[ \t]*\r?\n/i.exec(
+    raw
+  );
   if (!opening) return undefined;
   const closing = new RegExp(
     `(?:^|\\r?\\n) {0,3}${opening[1][0]}{${opening[1].length},}[ \\t]*$`

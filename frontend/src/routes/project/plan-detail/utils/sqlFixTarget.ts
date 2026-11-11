@@ -1,4 +1,5 @@
 import { SHA256 } from "crypto-js";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
 import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
 import type {
   AgentSqlFixSource,
@@ -149,7 +150,29 @@ export function createPlanSqlFixTarget({
       });
       if (candidates.length !== 1) return undefined;
       const spec = candidates[0];
-      const targets = expandTargets(spec);
+      let targets = expandTargets(spec);
+      if (context.kind === "review-finding") {
+        const recordedTargets = hint.targets;
+        if (
+          !Array.isArray(recordedTargets) ||
+          recordedTargets.length === 0 ||
+          new Set(recordedTargets).size !== recordedTargets.length ||
+          !recordedTargets.every((target) =>
+            normalizeAgentDiagnosticCapability({
+              kind: "diagnostic",
+              resource: {
+                kind: "database",
+                name: target,
+                project: page.project.name,
+                label: target,
+              },
+            })
+          )
+        )
+          return undefined;
+        // Findings may cover only part of a spec; never infer unchecked targets.
+        targets = [...recordedTargets];
+      }
       if (
         (context.resource.kind === "plan" &&
           context.resource.name !== page.plan.name) ||

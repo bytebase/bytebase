@@ -115,6 +115,8 @@ vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) =>
       selector({
+        databasesByName: {},
+        environmentList: [],
         getUserByIdentifier: (principal: string) => ({
           name: principal,
           email: principal.replace(/^users\//, ""),
@@ -276,7 +278,7 @@ describe("automated finding diagnostic help", () => {
     ]));
     expect(snapshot.facts).toContainEqual({ label: "Evidence", value: "Partial: original SQL snapshot unavailable; use the original revision identifiers, not current SQL." });
     expect(snapshot.sql).toBeUndefined();
-    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash });
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash, targets: ["instances/main/databases/books"] });
     expect(JSON.stringify(snapshot)).not.toContain("b".repeat(64));
     expect(mocks.createIssueComment).not.toHaveBeenCalled();
     expect(mocks.updateIssueComment).not.toHaveBeenCalled();
@@ -295,7 +297,7 @@ describe("automated finding diagnostic help", () => {
     click(buttonByText("agent.diagnostic-help.ask-agent"));
     expect(diagnosticSnapshot().references).toEqual([{ kind: "issue", name: ISSUE, project: "projects/p", label: ISSUE }]);
     expect(diagnosticSnapshot().snapshot.facts).toContainEqual({ label: "Original sheet SHA256", value: originalHash });
-    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash });
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash, targets: ["instances/main/databases/books"] });
     findingRoot.threadState = IssueComment_ThreadState.RESOLVED;
     render(view());
     expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
@@ -323,6 +325,22 @@ describe("automated finding diagnostic help", () => {
     expect(snapshot.facts.some((fact: { label: string }) => fact.label === "Original sheet SHA256")).toBe(false);
     expect(snapshot.sql).toBeUndefined();
     expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toBeUndefined();
+  });
+
+  test("retains the finding's database targets instead of its retargeted spec", () => {
+    const { root: findingRoot, spec } = finding();
+    if (spec.config.case === "changeDatabaseConfig")
+      spec.config.value.targets = ["instances/main/databases/other"];
+    render(<CommentThreadCard issue={issue} project={project} spec={spec} thread={groupThreads([findingRoot])[0]} />);
+
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+    findingRoot.reviewMetadata!.targets.push("instances/main/databases/later");
+
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({
+      specId: "spec-1",
+      sha256: originalHash,
+      targets: ["instances/main/databases/books"],
+    });
   });
 
   test.each(["missing-spec", "missing-hash", "invalid-hash"])("keeps incomplete anchor %s diagnose-only", (missing) => {
