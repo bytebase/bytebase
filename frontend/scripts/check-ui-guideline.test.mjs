@@ -52,11 +52,17 @@ describe("check-ui-guideline", () => {
     ).toEqual([]);
   });
 
-  test("allows the comment card's rounded-lg only in the file that draws it", () => {
+  test("allows rounded-lg only in the files that draw a comment card or its group frame", () => {
     const card =
       'export const Card = () => <div className="rounded-lg border"><div className="rounded-t-lg" /></div>;';
     expect(
       scanSource(card, "src/routes/project/plan-detail/components/threads/CommentThreadCard.tsx")
+    ).toEqual([]);
+    expect(
+      scanSource(card, "src/routes/project/plan-detail/components/threads/InlineThreadComposer.tsx")
+    ).toEqual([]);
+    expect(
+      scanSource(card, "src/routes/project/plan-detail/components/review/ReviewActivityTimeline.tsx")
     ).toEqual([]);
     expect(scanSource(card, "src/Elsewhere.tsx")).toEqual([
       { path: "src/Elsewhere.tsx", rule: "no-off-scale-radius", token: "rounded-lg", count: 1 },
