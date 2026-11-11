@@ -473,8 +473,8 @@ func TestAdministerIdentityRefusesAnAnswerToAnotherRequest(t *testing.T) {
 	require.Empty(t, creations)
 }
 
-// The form states the repository and not the owner ID it pins, so only the
-// request in the digest ties an answer to that ID.
+// An answer is acted on only for the request it was asked about, so a request
+// signed with another owner ID is refused, and the one asked about is created.
 func TestAdministerIdentityRefusesAnAnswerOverAnotherOwnerID(t *testing.T) {
 	pinned := func(id string) map[string]any {
 		return identityBody(t, func(_, config map[string]any) {

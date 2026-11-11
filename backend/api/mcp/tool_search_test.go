@@ -340,7 +340,8 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		text := searchText(t, s, SearchInput{OperationID: "WorkloadIdentityService/CreateWorkloadIdentity"})
 		for _, want := range []string{
 			"through the administer_workspace tool", "workloadIdentityId", "providerType GITHUB or GITLAB",
-			`\"repo:{owner}/{repo}:*\"`, "without it or the repository's ID", "no approval rule holds them", "Request Body",
+			`\"repo:{owner}/{repo}:*\"`, `\"project_path:{group}/{project}:*\"`, "without it or the repository's ID", "no approval rule holds them",
+			"The pattern admits every job in the repository, which the GitOps workflows need", "say so when the user asked for one branch", "Request Body",
 		} {
 			require.Contains(t, text, strings.ReplaceAll(want, `\"`, `"`))
 		}
