@@ -33,12 +33,6 @@ const (
 
 // journeyFourBody is journey 4's request as an agent writes it from the
 // search_api note: camelCase, the provider by name, no issuer.
-const journeyFourResult = `Created: workload identity "` + journeyFourEmail + `" in project "hr", with the GitOps Service Agent role there. ` +
-	"A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. " +
-	"MCP cannot change or remove a workload identity: change or remove it in the console.\n" +
-	"GitOps: https://bb.example.com/projects/hr/gitops\n" +
-	"Workload identities: https://bb.example.com/projects/hr/workload-identities"
-
 const journeyFourBody = `{
   "parent": "projects/hr",
   "workloadIdentityId": "hr-migrations-ci",
@@ -51,6 +45,13 @@ const journeyFourBody = `{
     }
   }
 }`
+
+// journeyFourResult is what the entry returns once both writes are made.
+const journeyFourResult = `Created: workload identity "` + journeyFourEmail + `" in project "hr", with the GitOps Service Agent role there. ` +
+	"A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. " +
+	"MCP cannot change or remove a workload identity: change or remove it in the console.\n" +
+	"GitOps: https://bb.example.com/projects/hr/gitops\n" +
+	"Workload identities: https://bb.example.com/projects/hr/workload-identities"
 
 // identityMock is the internal API behind the identity entry: the create, and
 // the project's IAM policy the grant reads and writes, each write recorded with
