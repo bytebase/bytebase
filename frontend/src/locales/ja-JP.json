@@ -2392,12 +2392,13 @@
         },
         "applies-to": "対象",
         "comment-on-lines": "選択行にコメント",
+        "comment-on-plan": "プランへのコメント",
         "comment-title_one": "{{range}} 行目へのコメント",
         "comment-title_other": "{{range}} 行目へのコメント",
+        "fold-label_one": "{{title}}、{{range}} 行目",
+        "fold-label_other": "{{title}}、{{range}} 行目",
         "n-replies-hidden_one": "{{count}} 件の返信が非表示",
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
-        "n-replies_one": "{{count}} 件の返信",
-        "n-replies_other": "{{count}} 件の返信",
         "priority": {
           "p1": "危険ですが正当な変更です。担当者による承認が必要です。",
           "p2": "参考情報です。"

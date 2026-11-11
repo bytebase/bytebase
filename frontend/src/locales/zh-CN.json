@@ -2392,12 +2392,13 @@
         },
         "applies-to": "适用于",
         "comment-on-lines": "评论所选行",
+        "comment-on-plan": "对计划的评论",
         "comment-title_one": "第 {{range}} 行的评论",
         "comment-title_other": "第 {{range}} 行的评论",
+        "fold-label_one": "{{title}}，第 {{range}} 行",
+        "fold-label_other": "{{title}}，第 {{range}} 行",
         "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
-        "n-replies_one": "{{count}} 条回复",
-        "n-replies_other": "{{count}} 条回复",
         "priority": {
           "p1": "有风险但合理，需要有人确认接受。",
           "p2": "仅供参考。"

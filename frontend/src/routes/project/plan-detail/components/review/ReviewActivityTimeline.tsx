@@ -46,6 +46,7 @@ import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceDa
 import { placementOf } from "../../shared/stores/placementSlice";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import type { PlanChangeReferenceResources } from "../../utils/changeReference";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
 import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
@@ -215,6 +216,7 @@ export function ReviewActivityTimeline({
             .some((next) => next.type !== "fold");
           return (
             <ActivityRow
+              changeReferenceResources={changeReferenceResources}
               entry={item.entry}
               issue={issue}
               isLast={isLast}
@@ -286,6 +288,7 @@ function TornSeparator({
 }
 
 function ActivityRow({
+  changeReferenceResources,
   entry,
   issue,
   isLast,
@@ -294,6 +297,7 @@ function ActivityRow({
   renderPlanChangeReference,
   threads,
 }: {
+  changeReferenceResources: PlanChangeReferenceResources;
   entry: TimelineEntry;
   issue: Issue;
   isLast: boolean;
@@ -319,10 +323,10 @@ function ActivityRow({
     if (thread) {
       return (
         <ThreadActivityRow
+          changeReferenceResources={changeReferenceResources}
           isLast={isLast}
           issue={issue}
           plan={plan}
-          renderPlanChangeReference={renderPlanChangeReference}
           thread={thread}
         />
       );
@@ -626,16 +630,16 @@ function ReviewCommentRow({
 // A thread occupies one timeline entry at its root's position: the root with
 // its statement anchor, the replies, and the thread footer, in one card.
 function ThreadActivityRow({
+  changeReferenceResources,
   isLast,
   issue,
   plan,
-  renderPlanChangeReference,
   thread,
 }: {
+  changeReferenceResources: PlanChangeReferenceResources;
   isLast: boolean;
   issue: Issue;
   plan: Plan;
-  renderPlanChangeReference: PlanChangeReferenceRenderer;
   thread: CommentThread;
 }) {
   const page = usePlanDetailContext();
@@ -670,28 +674,26 @@ function ThreadActivityRow({
       id={thread.root.name}
       isLast={isLast}
     >
-      <CommentThreadCard
-        className="ml-3"
-        renderContext={
-          anchor
-            ? (onCollapse) => (
-                <StatementAnchorContext
-                  anchor={anchor}
-                  onCollapse={onCollapse}
-                  onViewInStatement={viewInStatement}
-                  placement={placement}
-                  plan={plan}
-                  renderPlanChangeReference={renderPlanChangeReference}
-                  project={project}
-                />
-              )
-            : undefined
-        }
-        issue={issue}
+      <StatementAnchorContext
+        anchor={anchor}
+        changeReferenceResources={changeReferenceResources}
+        onViewInStatement={viewInStatement}
+        placement={placement}
+        plan={plan}
         project={project}
-        spec={spec}
-        thread={thread}
-      />
+      >
+        {({ bar, excerpt }) => (
+          <CommentThreadCard
+            bar={bar}
+            className="ml-3"
+            excerpt={excerpt}
+            issue={issue}
+            project={project}
+            spec={spec}
+            thread={thread}
+          />
+        )}
+      </StatementAnchorContext>
     </ActivityRowFrame>
   );
 }
