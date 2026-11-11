@@ -25,6 +25,7 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs } from "@/types";
@@ -235,57 +236,65 @@ export function CommentThreadCard({
         </div>
       )}
       {!bar?.folded && (
-        <ThreadComment
-          actions={
-            thread.resolved &&
-            collapsible &&
-            !bar &&
-            !renderContext && (
-              <Button
-                aria-label={t("common.collapse")}
-                onClick={() => setCollapsed(true)}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )
-          }
-          comment={thread.root}
-          onEdit={actions.edit}
-          project={project}
-          spec={spec}
-        />
-      )}
-      {!bar?.folded && (hiddenCount > 0 || visibleReplies.length > 0) && (
-        <div
-          className="bb-thread-replies bg-control-bg/50"
-          data-testid="thread-replies"
-        >
-          {hiddenCount > 0 && (
-            <div className="flex justify-center py-1">
-              <Button
-                onClick={() => setShowAllReplies(true)}
-                size="xs"
-                appearance="link"
-              >
-                <ChevronDown className="size-3.5" />
-                {t("plan.review.thread.n-replies-hidden", {
-                  count: hiddenCount,
-                })}
-                <span className="text-control-placeholder">·</span>
-                {t("plan.review.activity.show-all")}
-              </Button>
+        <div className="relative">
+          <ThreadComment
+            actions={
+              thread.resolved &&
+              collapsible &&
+              !bar &&
+              !renderContext && (
+                <Button
+                  aria-label={t("common.collapse")}
+                  onClick={() => setCollapsed(true)}
+                  size="xs"
+                  appearance="secondary"
+                >
+                  <ChevronUp className="size-3.5" />
+                </Button>
+              )
+            }
+            comment={thread.root}
+            onEdit={actions.edit}
+            project={project}
+            spec={spec}
+          />
+          {(hiddenCount > 0 || visibleReplies.length > 0) && (
+            <div
+              className="bb-thread-replies ml-7"
+              data-testid="thread-replies"
+            >
+              {/* Joins the replies to the first comment, under its avatar. */}
+              <Separator
+                className="absolute top-9 bottom-2 left-4.5 h-auto sm:left-5.5"
+                data-testid="thread-replies-rail"
+                orientation="vertical"
+              />
+              {hiddenCount > 0 && (
+                <div className="flex justify-center py-1">
+                  <Button
+                    onClick={() => setShowAllReplies(true)}
+                    size="xs"
+                    appearance="link"
+                  >
+                    <ChevronDown className="size-3.5" />
+                    {t("plan.review.thread.n-replies-hidden", {
+                      count: hiddenCount,
+                    })}
+                    <span className="text-control-placeholder">·</span>
+                    {t("plan.review.activity.show-all")}
+                  </Button>
+                </div>
+              )}
+              {visibleReplies.map((reply) => (
+                <ThreadComment
+                  comment={reply}
+                  key={reply.name}
+                  onEdit={actions.edit}
+                  project={project}
+                />
+              ))}
             </div>
           )}
-          {visibleReplies.map((reply) => (
-            <ThreadComment
-              comment={reply}
-              key={reply.name}
-              onEdit={actions.edit}
-              project={project}
-            />
-          ))}
         </div>
       )}
       {!bar?.folded &&

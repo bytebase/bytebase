@@ -386,23 +386,35 @@ describe("CommentThreadCard", () => {
     expect(container.querySelector("[data-testid='preview']")).toBeNull();
   });
 
-  test("roots and replies share header avatars and a full-width body", () => {
+  test("indents replies by the avatar column and joins them to the first comment by a line", () => {
     const [thread] = groupThreads([comment("root", "Root"), comment("r1", "Reply", { root: rootName })]);
     render(<CommentThreadCard issue={issue} project={project} thread={thread} />);
-    const comments = container.querySelectorAll("[data-testid='thread-comment']");
-    for (const comment of comments) {
-      const content = comment.querySelector("[data-testid='comment-content']");
-      const avatar = comment.querySelector("[data-testid='comment-avatar']");
-      expect(content?.firstElementChild?.contains(avatar)).toBe(true);
-      expect(content?.querySelector("[data-testid='preview']")).not.toBeNull();
+    const [first, reply] = Array.from(container.querySelectorAll("[data-testid='thread-comment']"));
+    const replies = container.querySelector("[data-testid='thread-replies']");
+    expect(replies?.contains(first)).toBe(false);
+    expect(replies?.contains(reply)).toBe(true);
+    expect(replies?.className).toContain("ml-7");
+    expect(replies?.className).not.toContain("bg-control-bg");
+    const rail = container.querySelector("[data-testid='thread-replies-rail']");
+    expect(rail?.getAttribute("aria-orientation")).toBe("vertical");
+    for (const node of [first, reply]) {
+      const avatar = node.querySelector("[data-testid='comment-avatar']");
+      expect(avatar?.nextElementSibling?.getAttribute("data-testid")).toBe("comment-content");
     }
+
+    render(<CommentThreadCard issue={issue} project={project} thread={groupThreads([comment("root", "Root")])[0]} />);
+    expect(container.querySelector("[data-testid='thread-replies']")).toBeNull();
+    expect(container.querySelector("[data-testid='thread-replies-rail']")).toBeNull();
+  });
+
+  test("the reply composer shows the reader's avatar only while open", () => {
+    const [thread] = groupThreads([comment("root", "Root")]);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} />);
     expect(container.querySelector("[data-testid='reply-composer-avatar']")).toBeNull();
     click(buttonByText("plan.review.thread.reply-placeholder"));
     expect(container.querySelector("[data-testid='reply-composer-avatar']")).not.toBeNull();
     click(buttonByText("common.cancel"));
     expect(container.querySelector("[data-testid='reply-composer-avatar']")).toBeNull();
-    render(<CommentThreadCard issue={issue} project={project} thread={thread} />);
-    expect(container.querySelector("[data-testid='thread-comment'] [data-testid='comment-avatar']")).not.toBeNull();
   });
 
   test("new replies do not hide replies already visible in a short thread", () => {
