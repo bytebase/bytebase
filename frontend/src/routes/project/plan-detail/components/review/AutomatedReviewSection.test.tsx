@@ -1,5 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { cloneElement, type ReactElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
@@ -249,14 +256,16 @@ describe("AutomatedReviewSection", () => {
       screen.getByText("plan.automated-review.needs-attention:2")
     ).toBeDefined();
     const rule = screen.getByTestId("automated-review-rule");
-    expect(
-      screen.getByRole("button", { name: "plan.findings.n-priority:1" })
-        .textContent
-    ).toBe("P01");
-    expect(
-      screen.getByRole("button", { name: "plan.findings.n-priority:2" })
-        .textContent
-    ).toBe("P12");
+    const p0 = screen.getByRole("button", {
+      name: "plan.findings.n-priority:1",
+    });
+    expect(within(p0).getByText("P0").textContent).toBe("P0");
+    expect(within(p0).getByText("1")).toBeDefined();
+    const p1 = screen.getByRole("button", {
+      name: "plan.findings.n-priority:2",
+    });
+    expect(within(p1).getByText("P1").textContent).toBe("P1");
+    expect(within(p1).getByText("2")).toBeDefined();
     expect(rule.textContent).not.toContain("P2");
     expect(screen.getByText("plan.automated-review.not-run")).toBeDefined();
     expect(screen.getByText("plan.automated-review.passed-on:2")).toBeDefined();
