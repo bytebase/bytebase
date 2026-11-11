@@ -16,10 +16,10 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 70 | served to a read-only session and above |
-| WRITE | 44 | served to a read-write session only |
-| EXCLUDED | 73 | served by no ceiling this phase ships |
-| FORBIDDEN | 33 | never served, whatever the ceiling |
+| READ | 72 | served to a read-only session and above |
+| WRITE | 46 | served to a read-write session only |
+| EXCLUDED | 70 | served by no ceiling this phase ships |
+| FORBIDDEN | 32 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **220** | |
 
@@ -134,7 +134,7 @@ served by no ceiling.
 | ProjectService/ListProjects | READ | — | bb.projects.list |
 | ProjectService/RemoveWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
 | ProjectService/SearchProjects | READ | — | — |
-| ProjectService/SetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.setIamPolicy |
+| ProjectService/SetIamPolicy | WRITE | — | bb.projects.setIamPolicy |
 | ProjectService/TestWebhook | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | bb.projects.update |
 | ProjectService/UndeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.undelete |
 | ProjectService/UpdateProject | WRITE | — | bb.projects.update |
@@ -231,10 +231,10 @@ served by no ceiling.
 | UserService/UndeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | UserService/UpdateEmail | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.updateEmail |
 | UserService/UpdateUser | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
-| WorkloadIdentityService/CreateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.create |
+| WorkloadIdentityService/CreateWorkloadIdentity | WRITE | — | bb.workloadIdentities.create |
 | WorkloadIdentityService/DeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.delete |
-| WorkloadIdentityService/GetWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.get |
-| WorkloadIdentityService/ListWorkloadIdentities | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.list |
+| WorkloadIdentityService/GetWorkloadIdentity | READ | — | bb.workloadIdentities.get |
+| WorkloadIdentityService/ListWorkloadIdentities | READ | — | bb.workloadIdentities.list |
 | WorkloadIdentityService/UndeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.undelete |
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |

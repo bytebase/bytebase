@@ -291,6 +291,12 @@ func choiceDescription(t *testing.T, asked *mcp.ElicitParams) string {
 	return form.Properties[confirmChoiceField].Description
 }
 
+// Claude Code cuts a tool's description at 4,096 characters, so text past that
+// never reaches the agent.
+func TestAdministerWorkspaceDescriptionFitsClaudeCode(t *testing.T) {
+	require.LessOrEqual(t, utf8.RuneCountInString(administerWorkspaceDescription), 4096)
+}
+
 func TestAdministerWorkspaceTakesTheFullOperationID(t *testing.T) {
 	mock := &approvalMock{}
 	mock.setStored(fallbackRule())

@@ -172,3 +172,38 @@ func TestValidateTokenAcceptsIDBasedGitHubSubject(t *testing.T) {
 		signGitHubToken(t, key, "repo:evil-corp@999/deploy@998:ref:refs/heads/main", evil), config)
 	require.ErrorContains(t, err, "subject mismatch")
 }
+
+func TestParseGitHubRepositoryPattern(t *testing.T) {
+	for pattern, want := range map[string]GitHubRepository{
+		"repo:acme-corp/deploy:*":         {Owner: "acme-corp", Name: "deploy"},
+		"repo:acme-corp@111/deploy:*":     {Owner: "acme-corp", OwnerID: "111", Name: "deploy"},
+		"repo:acme-corp/deploy@222:*":     {Owner: "acme-corp", Name: "deploy", ID: "222"},
+		"repo:acme-corp@111/deploy@222:*": {Owner: "acme-corp", OwnerID: "111", Name: "deploy", ID: "222"},
+	} {
+		got, ok := ParseGitHubRepositoryPattern(pattern)
+		require.True(t, ok, pattern)
+		require.Equal(t, want, got, pattern)
+		require.NoError(t, ValidateSubjectPattern(pattern), pattern)
+	}
+	for _, pattern := range []string{
+		"repo:acme-corp/*",
+		"repo:acme-corp@111/*",
+		"repo:acme-corp/deploy*",
+		"repo:acme-corp/deploy",
+		"repo:acme-corp/deploy:",
+		"repo:acme-corp/deploy:ref:refs/heads/main",
+		"repo:acme-corp/deploy:ref:refs/heads/*",
+		"repo:acme-corp/deploy:environment:prod",
+		"repo:acme-corp/deploy:pull_request",
+		"repo:acme-corp/deploy:*:ref:refs/heads/main",
+		"repo:acme-corp/de*ploy:*",
+		"repo:*/deploy:*",
+		"repo:acme-corp@x1/deploy:*",
+		"repo:/deploy:*",
+		"project_path:acme/deploy:*",
+		"",
+	} {
+		_, ok := ParseGitHubRepositoryPattern(pattern)
+		require.False(t, ok, pattern)
+	}
+}

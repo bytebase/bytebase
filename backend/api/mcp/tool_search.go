@@ -186,6 +186,20 @@ func endpointNote(ep *EndpointInfo) string {
 	case v1connect.InstanceServiceCreateInstanceProcedure:
 		return "MCP sessions add a PostgreSQL instance that signs in with a user name and password to a project, through the administer_workspace tool, " +
 			"which asks the user to confirm first. call_api is refused for every instance."
+	case v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure:
+		return "MCP sessions create a workload identity for GitHub Actions or GitLab CI in a project through the administer_workspace tool, " +
+			"which asks the user to confirm first and then grants it the GitOps Service Agent role in the project. " +
+			"Send parent \"projects/{project}\", workloadIdentityId (the name of its email, such as \"hr-ci\"), and workloadIdentity with title and " +
+			"workloadIdentityConfig: providerType GITHUB or GITLAB, and subjectPattern \"repo:{owner}/{repo}:*\" or \"project_path:{group}/{project}:*\". " +
+			"The tool sets the issuer and the audience \"bytebase\". Put the owner's ID in the pattern when you know it, as \"repo:{owner}@{id}/{repo}:*\" " +
+			"(gh api users/{owner} --jq .id): without it, whoever registers the owner's name after it is freed can sign in. " +
+			"The pattern admits every job in the repository, which the GitOps workflows need: their checks run on pull requests and their deploys in " +
+			"environments, and the workflow's triggers decide which branch deploys; say so when the user asked for one branch. " +
+			"A workflow signs in with the identity's email. Patterns for a branch, an environment or every repository of an owner, other providers " +
+			"and other roles are set up in the console. call_api is refused for every workload identity write."
+	case v1connect.ProjectServiceSetIamPolicyProcedure:
+		return "MCP sessions grant a project role only to a workload identity that administer_workspace creates, which grants it the GitOps Service Agent role " +
+			"after the user confirms. call_api is refused; grant other roles signed in to the Bytebase console."
 	case v1connect.SettingServiceGetSettingProcedure:
 	default:
 		return ""

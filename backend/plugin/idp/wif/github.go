@@ -94,6 +94,26 @@ func parseGitHubSubjectPattern(pattern string) (githubSubjectPattern, bool) {
 	}, true
 }
 
+// GitHubRepository is the one repository a GitHub subject pattern names, when
+// the pattern admits every job in it.
+type GitHubRepository struct {
+	Owner   string
+	OwnerID string
+	Name    string
+	ID      string
+}
+
+// ParseGitHubRepositoryPattern reads "repo:OWNER[@OWNER_ID]/REPO[@REPO_ID]:*"
+// with the grammar the token match uses. It reports false for every other
+// pattern, one that names every repository of an owner included.
+func ParseGitHubRepositoryPattern(pattern string) (GitHubRepository, bool) {
+	p, ok := parseGitHubSubjectPattern(pattern)
+	if !ok || p.repo == "" || p.rest != ":*" {
+		return GitHubRepository{}, false
+	}
+	return GitHubRepository{Owner: p.owner, OwnerID: p.ownerID, Name: p.repo, ID: p.repoID}, true
+}
+
 // splitNameAndID splits "name" or "name@123". The name must be non-empty and
 // free of wildcards, and the ID, when present, must be all digits.
 func splitNameAndID(s string) (string, string, bool) {

@@ -183,7 +183,7 @@ func refuseIssueType(issue issueView, decision *issueDecision, link string) *too
 	case "ROLE_GRANT":
 		return &toolError{
 			Code: "ROLE_GRANT_NOT_SUPPORTED",
-			Message: fmt.Sprintf("approving a role request grants a project role, which MCP does not do yet, so %s was not %s and nothing changed",
+			Message: fmt.Sprintf("approving a role request grants a project role, which MCP does only for the workload identities administer_workspace creates, so %s was not %s and nothing changed",
 				decision.issue, decision.pastTense()),
 			Suggestion: "decide it signed in to the Bytebase console: " + link,
 		}

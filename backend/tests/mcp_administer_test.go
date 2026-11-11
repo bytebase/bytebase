@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -256,4 +257,92 @@ func TestMCPAddsAPostgreSQLInstanceAfterAConfirmation(t *testing.T) {
 	a.NoError(err)
 	a.Equal(ctl.project.Name, database.Msg.Project)
 	a.Equal("environments/test", database.Msg.GetEffectiveEnvironment())
+}
+
+// TestMCPCreatesAWorkloadIdentityAfterAConfirmation drives the identity entry
+// over a live session: call_api is refused for the create and for the grant,
+// the tool asks once, and the identity it creates holds the GitOps Service
+// Agent role in its project with no condition.
+func TestMCPCreatesAWorkloadIdentityAfterAConfirmation(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
+	var asked atomic.Int32
+	session := openMCPSessionWithOptions(ctx, t, ctl, ctl.authInterceptor.token, &mcp.ClientOptions{
+		ElicitationHandler: func(context.Context, *mcp.ElicitRequest) (*mcp.ElicitResult, error) {
+			asked.Add(1)
+			return &mcp.ElicitResult{Action: "accept", Content: map[string]any{"choice": "apply"}}, nil
+		},
+	})
+	defer session.Close()
+
+	projectID := strings.TrimPrefix(ctl.project.Name, "projects/")
+	email := "deploy-ci@" + projectID + ".workload.bytebase.com"
+	member := "workloadIdentity:" + email
+	body := map[string]any{
+		"parent":             ctl.project.Name,
+		"workloadIdentityId": "deploy-ci",
+		"workloadIdentity": map[string]any{
+			"title": "Deploy CI",
+			"workloadIdentityConfig": map[string]any{
+				"providerType":   "GITHUB",
+				"subjectPattern": "repo:acme-corp/deploy:*",
+			},
+		},
+	}
+	created := func() *v1pb.WorkloadIdentity {
+		resp, err := ctl.workloadIdentityServiceClient.GetWorkloadIdentity(ctx, connect.NewRequest(&v1pb.GetWorkloadIdentityRequest{Name: "workloadIdentities/" + email}))
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return nil
+		}
+		a.NoError(err)
+		return resp.Msg
+	}
+	granted := func() bool {
+		policy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: ctl.project.Name}))
+		a.NoError(err)
+		for _, binding := range policy.Msg.Bindings {
+			if binding.Role == "roles/gitopsServiceAgent" && binding.GetCondition().GetExpression() == "" && slices.Contains(binding.Members, member) {
+				return true
+			}
+		}
+		return false
+	}
+
+	direct := callAPIOnSession(ctx, t, session, "WorkloadIdentityService/CreateWorkloadIdentity", body)
+	a.Equal(http.StatusForbidden, direct.Status, direct.Error)
+	a.Contains(direct.Error, "administer_workspace")
+	a.Nil(created(), "call_api created nothing")
+
+	policy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: ctl.project.Name}))
+	a.NoError(err)
+	policy.Msg.Bindings = append(policy.Msg.Bindings, &v1pb.Binding{Role: "roles/projectOwner", Members: []string{member}})
+	encoded, err := protojson.Marshal(&v1pb.SetIamPolicyRequest{Resource: ctl.project.Name, Policy: policy.Msg})
+	a.NoError(err)
+	var grantBody map[string]any
+	a.NoError(json.Unmarshal(encoded, &grantBody))
+	grant := callAPIOnSession(ctx, t, session, "ProjectService/SetIamPolicy", grantBody)
+	a.Equal(http.StatusForbidden, grant.Status, grant.Error)
+	a.Contains(grant.Error, "administer_workspace")
+
+	failed, text := callToolOnSession(ctx, t, session, "administer_workspace", map[string]any{
+		"operationId": "WorkloadIdentityService/CreateWorkloadIdentity",
+		"body":        body,
+	})
+	a.False(failed, text)
+	a.Contains(text, `Created: workload identity "`+email+`" in project "`+projectID+`", with the GitOps Service Agent role there.`)
+	a.Equal(int32(1), asked.Load())
+	identity := created()
+	a.NotNil(identity)
+	a.Equal("https://token.actions.githubusercontent.com", identity.GetWorkloadIdentityConfig().GetIssuerUrl())
+	a.Equal([]string{"bytebase"}, identity.GetWorkloadIdentityConfig().GetAllowedAudiences())
+	a.Equal("repo:acme-corp/deploy:*", identity.GetWorkloadIdentityConfig().GetSubjectPattern())
+	a.True(granted(), "the identity holds the GitOps Service Agent role with no condition")
+
+	listed := callAPIOnSession(ctx, t, session, "WorkloadIdentityService/ListWorkloadIdentities", map[string]any{"parent": ctl.project.Name})
+	a.Equal(http.StatusOK, listed.Status, listed.Error)
+	a.Contains(listed.RawResponse, email, "the reads are served, so the agent sees what exists")
 }

@@ -992,6 +992,109 @@ func TestMCPGateServesAnInstanceCreationOnlyWithItsConfirmation(t *testing.T) {
 	})
 }
 
+func TestMCPGateServesAnIdentityCreationOnlyWithItsConfirmation(t *testing.T) {
+	const identity = "workloadIdentities/hr-ci@hr.workload.bytebase.com"
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	procedure := v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure
+	request := func(parent, id string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{Parent: parent, WorkloadIdentityId: id, WorkloadIdentity: &v1pb.WorkloadIdentity{}})
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: name})
+	}
+
+	t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request("projects/hr", "hr-ci"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), "administer_workspace", "the denial must name the tool that can confirm")
+		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where other identities are created")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("the confirmed request is served", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, identity), t, readWriteCeiling(), write, procedure, request("projects/hr", "hr-ci"))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	for name, refused := range map[string]connect.AnyRequest{
+		"a confirmation for another identity ID is refused":      request("projects/hr", "finance-ci"),
+		"a confirmation for another project is refused":          request("projects/finance", "hr-ci"),
+		"a workspace identity with the confirmed ID is refused":  request("workspaces/ws-test", "hr-ci"),
+		"a parent that names no project matches no confirmation": request("hr", "hr-ci"),
+		"an empty identity ID matches no confirmation":           request("projects/hr", ""),
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := invokeMCPGateFrom(confirmed(procedure, identity), t, readWriteCeiling(), write, procedure, refused)
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+			require.False(t, got.dispatched)
+		})
+	}
+
+	t.Run("a confirmation naming the parent is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/hr"), t, readWriteCeiling(), write, procedure, request("projects/hr", "hr-ci"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another procedure is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.ProjectServiceSetIamPolicyProcedure, identity), t, readWriteCeiling(), write, procedure, request("projects/hr", "hr-ci"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, identity), t, readOnlyCeiling(), write, procedure, request("projects/hr", "hr-ci"))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
+func TestMCPGateServesARoleGrantOnlyWithItsConfirmation(t *testing.T) {
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+	procedure := v1connect.ProjectServiceSetIamPolicyProcedure
+	request := func(resource string) connect.AnyRequest {
+		return connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: resource, Policy: &v1pb.IamPolicy{}})
+	}
+	confirmed := func(procedure, name string) context.Context {
+		return auth.WithMCPConfirmedDecision(context.Background(), auth.MCPConfirmedDecision{Procedure: procedure, Resource: name})
+	}
+
+	t.Run("an unconfirmed request, as call_api sends it, is refused", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, procedure, request("projects/hr"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), "administer_workspace", "the denial must name the tool that grants a role")
+		require.Contains(t, got.err.Error(), "Bytebase console", "the denial must name where other roles are granted")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("the confirmed request is served", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/hr"), t, readWriteCeiling(), write, procedure, request("projects/hr"))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for another project is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/hr"), t, readWriteCeiling(), write, procedure, request("projects/finance"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmation for the identity's create is refused", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure, "projects/hr"), t, readWriteCeiling(), write, procedure, request("projects/hr"))
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.False(t, got.dispatched)
+	})
+
+	t.Run("a confirmed request is still held to the ceiling", func(t *testing.T) {
+		got := invokeMCPGateFrom(confirmed(procedure, "projects/hr"), t, readOnlyCeiling(), write, procedure, request("projects/hr"))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
 // TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod pins the three
 // query-history RPCs that SQLService still carries as deprecated aliases of
 // QueryHistoryService. They have no HTTP binding, but the MCP surface indexes

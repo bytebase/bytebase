@@ -3375,6 +3375,10 @@
             "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
             "title": "Phê duyệt hoặc từ chối Issue"
           },
+          "ci-identities": {
+            "details": "Tạo một danh tính khối lượng công việc mà các job GitHub Actions hoặc GitLab CI trong một kho mã dùng để đăng nhập, với vai trò Tác nhân Dịch vụ GitOps trong một dự án · Mỗi danh tính được xác nhận trong ứng dụng MCP của người dùng trước khi được tạo · Chính sách này không giới hạn những gì nó làm, và nó tồn tại cho đến khi bị xóa",
+            "title": "Tạo danh tính CI"
+          },
           "export": {
             "details": "Xuất kết quả dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
@@ -3396,7 +3400,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-access": {
-            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Quy tắc phê duyệt, môi trường, loại ngữ nghĩa và phân loại dữ liệu · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt",
+            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Quy tắc phê duyệt, môi trường, loại ngữ nghĩa và phân loại dữ liệu · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt · Danh tính CI và ai có thể đăng nhập bằng chúng",
             "title": "Đọc thành viên, vai trò và chính sách"
           },
           "read-data": {

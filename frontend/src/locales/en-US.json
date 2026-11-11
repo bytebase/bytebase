@@ -3375,6 +3375,10 @@
             "details": "Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console",
             "title": "Approve or reject issues"
           },
+          "ci-identities": {
+            "details": "Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed",
+            "title": "Create CI identities"
+          },
           "export": {
             "details": "Export results as files. Data leaves Bytebase.",
             "title": "Export query results"
@@ -3396,7 +3400,7 @@
             "title": "Propose changes"
           },
           "read-access": {
-            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Access grants, including pending requests",
+            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Access grants, including pending requests · CI identities and who can sign in as them",
             "title": "Read members, roles and policies"
           },
           "read-data": {

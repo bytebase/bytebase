@@ -309,18 +309,18 @@ func TestSearchAPINamesWhatMCPCannotDo(t *testing.T) {
 		require.Contains(t, unavailable, "whatever the user's permissions")
 		require.Contains(t, unavailable, "Bytebase console")
 		require.NotContains(t, unavailable, "Request Body")
-		_, block, ok := strings.Cut(unavailable, "- **WorkloadIdentityService**")
+		_, block, ok := strings.Cut(unavailable, "- **ServiceAccountService**")
 		require.True(t, ok)
 		block, _, _ = strings.Cut(block, "\n- **")
-		require.Equal(t, ": manages workload identities for external CI/CD integrations.\n"+
+		require.Equal(t, ": manages service accounts for API integrations.\n"+
 			"  - Refused because "+mintsForOthers+".\n"+
-			"  - Refused because "+administers+".\n", block, "the service's reasons sit under it")
+			"  - Refused because "+administers+".", strings.TrimSuffix(block, "\n"), "the service's reasons sit under it")
 	})
 
 	t.Run("a service MCP cannot call is not reported as missing", func(t *testing.T) {
-		text := searchText(t, s, SearchInput{Service: "WorkloadIdentityService"})
-		require.Contains(t, text, "WorkloadIdentityService is not available over MCP")
-		require.Contains(t, text, "- WorkloadIdentityService/CreateWorkloadIdentity, WorkloadIdentityService/UpdateWorkloadIdentity: refused because "+mintsForOthers+".\n",
+		text := searchText(t, s, SearchInput{Service: "ServiceAccountService"})
+		require.Contains(t, text, "ServiceAccountService is not available over MCP")
+		require.Contains(t, text, "- ServiceAccountService/CreateServiceAccount, ServiceAccountService/UpdateServiceAccount: refused because "+mintsForOthers+".\n",
 			"operations refused for one reason share one line")
 		require.NotContains(t, text, "Unknown service")
 		require.NotContains(t, text, "Request Body")

@@ -1025,6 +1025,8 @@ func TestConfirmAdminChangeNamesEachEntrysChange(t *testing.T) {
 			"read the rules again with call_api OrgPolicyService/GetPolicy, make the user's change to them, and call administer_workspace with the result"},
 		"an instance": {instanceSubject{}, "no instance was added", "no instance was added", "the revised request",
 			"call administer_workspace again to ask the user about the request as it is now"},
+		"a workload identity": {identitySubject{}, "no workload identity was created", "no workload identity was created", "the revised request",
+			"call administer_workspace again to ask the user about the request as it is now"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			require.Equal(t, tc.unchanged, tc.subject.unchanged())
