@@ -9,7 +9,7 @@ gets reviewed, approved and run, and a comment helps someone judge it. Today the
 comment with its strongest signals instead: the commented lines are tinted, a folded thread is a
 dense status row, and the box is as wide as the statement. The two places also draw the thread
 differently. The rule this doc lands on: **a comment thread is one white card in both places, set
-on a grey statement, with no color on the SQL, a title bar that names its lines and says how
+on a gray statement, with no color on the SQL, a title bar that names its lines and says how
 urgent the thread is, and the same folded form everywhere.**
 
 This is the first of three docs, each in its own PR. The second, Plan comment SQL excerpt,
@@ -24,7 +24,7 @@ overwhelm the statement (BYT-10373). The causes are in how the thread is drawn, 
 `frontend/src/routes/project/plan-detail/components/threads/`:
 
 - **Color sits on the SQL.** `StatementThreadsLayer.tsx` paints every line an open thread covers:
-  `bb-thread-line--passive` (grey) for a comment from a person, `--attention` (amber) for a P1 or
+  `bb-thread-line--passive` (gray) for a comment from a person, `--attention` (amber) for a P1 or
   P2 finding, `--blocking` (red) for a P0. Unfolding a thread repaints its lines with
   `bb-thread-line` (accent), so a finding's color changes when it is opened.
 - **The box reads as part of the statement.** The view zone starts at the code column and is
@@ -77,9 +77,9 @@ even where it follows the tables.
 
 1. **No thread paints the SQL.** Nothing about a thread's existence, state or priority colors a
    line. The one highlight is the reader's own selection while writing a new comment. It is
-   neutral grey and ends with the selection.
-2. **SQL is on grey and the card is white.** The statement in the Changes section and the excerpt
-   in an Activity card sit on a grey ground, the same on every line. The card's bar, body and
+   neutral gray and ends with the selection.
+2. **SQL is on gray and the card is white.** The statement in the Changes section and the excerpt
+   in an Activity card sit on a gray ground, the same on every line. The card's bar, body and
    footer are `bg-background`. The ground is what sets a comment apart from the code.
 3. **Every card has the frame and a bar.** That includes the new-comment composer and a thread that
    is not on lines.
@@ -167,12 +167,12 @@ Labels combine: a thread that is outdated and resolved shows both. In the Change
 | Ground | `bg-control-bg/50` behind the whole statement, by invariant 2 |
 | Margin marker | Unchanged. It is the only mark on the statement at rest |
 | Line tint for a thread | None, by invariant 1 |
-| Highlight of the reader's selection | Neutral grey, while selecting lines or writing the comment |
+| Highlight of the reader's selection | Neutral gray, while selecting lines or writing the comment |
 | Width of a card | At most 48rem, and 16px clear of the editor's right edge |
 
 ## Decisions
 
-**D1 · No color on commented lines.** The four at-rest tints go: grey, amber, red, and the accent
+**D1 · No color on commented lines.** The four at-rest tints go: gray, amber, red, and the accent
 tint of an unfolded thread. The highlight of the reader's selection (`bb-thread-line--selecting`)
 stays, because it is feedback on an action and ends with it. Its color changes from
 `--color-info`, a blue, to the neutral `--color-control-bg-hover`. Severity is said by the badge
@@ -228,10 +228,10 @@ text with no fill. Its color changes from `text-control-light` to the bar's `tex
 "Outdated" and "Statement unavailable" take the same form in the same place. "Outdated" is
 `text-warning-hover`, the text color of the `attention` badge, which is 5:1 on the card. It is
 the one state that tells the reader to doubt the comment, because the lines it was written about
-have changed. "Statement unavailable" stays grey: it says the card cannot show where the thread
+have changed. "Statement unavailable" stays gray: it says the card cannot show where the thread
 is, not that the comment may be wrong. Today "Outdated" is a filled amber badge. Rejected:
 keeping the fill. A filled badge is the form of a priority, and "Outdated" is a state. Rejected:
-grey "Outdated", like "Resolved". It is easy to miss on a comment that may no longer apply.
+gray "Outdated", like "Resolved". It is easy to miss on a comment that may no longer apply.
 Rejected: "Resolved by" with the name. `IssueComment` records `thread_state` and nothing about
 who set it, so the name needs a backend field first.
 
@@ -261,7 +261,7 @@ has no exception and the card has one layout. Rejected: keeping today's card wit
 Every other rule would then need a second version. Rejected: never folding it. A resolved one
 could not be put away.
 
-**D11 · The statement is on grey and the card is white.** Today the statement is on white, and
+**D11 · The statement is on gray and the card is white.** Today the statement is on white, and
 the card's replies and footer are on `bg-control-bg/50`. This swaps them. In the Changes section
 the statement's ground is `bg-control-bg/50` on every line, commented or not, and the card is
 `bg-background` from its bar to its footer. The card then stands out from the statement by its
@@ -270,9 +270,9 @@ its background from the editor theme. The SQL Editor already overrides that with
 that makes the editor's base layers transparent, so that its wrapper's background shows
 (`sqleditor--monaco-transparent` in `tailwind.css`). The statement editor takes its ground the
 same way. Rejected: the stronger `bg-control-bg` behind the statement. It recolors the largest
-surface of the page on every plan, and a grey that strong can read as a locked field. The
-excerpt in an Activity card is a small band inside a white card, so it takes the stronger grey,
-which the Plan comment SQL excerpt doc covers. Rejected: a grey bar on a white statement. The
+surface of the page on every plan, and a gray that strong can read as a locked field. The
+excerpt in an Activity card is a small band inside a white card, so it takes the stronger gray,
+which the Plan comment SQL excerpt doc covers. Rejected: a gray bar on a white statement. The
 bar then separates the card alone, and the card's body is the same white as the code.
 
 ## Scope
@@ -321,7 +321,7 @@ there.
      warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
      frame has the corners and the shadow in both places. E2E: `plan-detail-review.spec.ts` covers
      folding and resolving in Activity.
-3. **No line tints, the grey ground, and the width limit (D1, D2's width, D11).** Depends on
+3. **No line tints, the gray ground, and the width limit (D1, D2's width, D11).** Depends on
    slice 1, which gives every thread in the Changes section a title that names its lines.
    - Delivers: invariant 1, the statement's ground from invariant 2, and every row of On the
      statement.
@@ -331,7 +331,7 @@ there.
      unfolded or a resolved thread; a selection and an open composer are still highlighted; the
      wrapper of a thread and the wrapper of the composer both carry the width limit and the 16px
      clearance. E2E: `plan-detail-review.spec.ts` asserts that a selected line's background is
-     the grey token, that the statement's background is its ground with and without a thread, and
+     the gray token, that the statement's background is its ground with and without a thread, and
      that an unfolded card is at most 768px wide and ends 16px or more before the editor's right
      edge.
 4. **Comment column and replies (D7).** Depends on nothing.
@@ -364,7 +364,7 @@ The two sibling docs add three more PRs. Across all three docs the order is:
 | --- | --- |
 | Card 1: bar and folding in the Changes section | Nothing |
 | Card 2: the Activity card takes the bar, and the frame | Card 1 |
-| Card 3: no line tints, the grey ground, and the width limit | Card 1 |
+| Card 3: no line tints, the gray ground, and the width limit | Card 1 |
 | Card 4: comment column and replies | Nothing |
 | Card 5: composer | Card 2 |
 | Card 6: priority and "Prod" in the bar | Card 2 |
