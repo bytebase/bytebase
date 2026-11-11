@@ -46,6 +46,7 @@
 import {
   test,
   expect,
+  type Locator,
   type Page,
   type BrowserContext,
 } from "@playwright/test";
@@ -1298,6 +1299,28 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
       timeout: 15_000,
     });
     await expect(planPage.specUnresolvedCounts).toHaveText("3");
+  });
+
+  test("a reply sits in the first comment's text column, joined to it by a line", async () => {
+    const card = planPage.threadCardIn("review", rootA);
+    await card.scrollIntoViewIfNeeded();
+    const comments = card.getByTestId("thread-comment");
+    await expect(comments).toHaveCount(4);
+    const box = async (locator: Locator) => {
+      const found = await locator.boundingBox();
+      if (!found) throw new Error("no box");
+      return found;
+    };
+    const firstAvatar = await box(comments.first().getByTestId("comment-avatar"));
+    const firstText = await box(comments.first().getByTestId("comment-content"));
+    const replyAvatar = await box(comments.nth(1).getByTestId("comment-avatar"));
+    // The avatar has a column of its own, and a reply starts where the first
+    // comment's text does.
+    expect(firstText.x).toBeGreaterThanOrEqual(firstAvatar.x + firstAvatar.width);
+    expect(Math.abs(replyAvatar.x - firstText.x)).toBeLessThanOrEqual(1);
+    const rail = await box(card.getByTestId("thread-replies-rail"));
+    expect(rail.x).toBeGreaterThan(firstAvatar.x);
+    expect(rail.x).toBeLessThan(firstAvatar.x + firstAvatar.width);
   });
 
   test("resolving every placed thread removes the walker and the tab count, and reopening restores them", async () => {
