@@ -147,7 +147,9 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: membersLink}, nil
 	}
 	gitopsLink := s.consoleLink(ctx, project+"/gitops")
-	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use.\nGitOps: %s", change.email, change.projectID, identityRoleTitle, gitopsLink)
+	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. "+
+		"MCP cannot change or remove a workload identity, so a later change, such as an ID added to its pattern, is made in the console.\nGitOps: %s\nWorkload identities: %s",
+		change.email, change.projectID, identityRoleTitle, gitopsLink, link)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: gitopsLink}, nil
 }
 
