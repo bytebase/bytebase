@@ -11,7 +11,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -345,7 +344,6 @@ describe("CommentThreadCard", () => {
       resolved: true,
     });
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType: ReviewRun_Type.AI,
       priority: IssueComment_ReviewMetadata_Priority.P1,
       title: "Add a WHERE clause",
     });
@@ -357,7 +355,7 @@ describe("CommentThreadCard", () => {
       />
     );
     const summary = buttonByText("plan.review.thread.resolved");
-    expect(summary?.textContent).toContain("sql-review.ai-review.self");
+    expect(summary?.textContent).toContain("sql-review.reviewer");
     expect(summary?.querySelector("[data-testid='review-priority']")?.textContent).toBe("P1");
     expect(summary?.textContent).toContain("Add a WHERE clause");
     expect(summary?.textContent).not.toContain("Missing WHERE clause.");
@@ -739,7 +737,6 @@ describe("title bar", () => {
   const findingThread = (resolved = false) => {
     const root = comment("root", "Missing WHERE clause.", { creator: "", resolved });
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType: ReviewRun_Type.AI,
       priority: IssueComment_ReviewMetadata_Priority.P1,
       title: "Add a WHERE clause",
     });
@@ -759,7 +756,7 @@ describe("title bar", () => {
     expect(unfolded).toBe("plan.review.thread.comment-title:7P1plan.review.thread.resolved");
     const card = container.querySelector("[data-testid='comment-thread']");
     expect(card?.children).toHaveLength(1);
-    expect(card?.textContent).not.toContain("sql-review.ai-review.self");
+    expect(card?.textContent).not.toContain("sql-review.reviewer");
     expect(card?.textContent).not.toContain("Add a WHERE clause");
     expect(card?.textContent).not.toContain("A reply");
     // The bar says how urgent the thread is; nothing else of the finding shows.
@@ -858,7 +855,7 @@ describe("title bar", () => {
 describe("priority in the bar", () => {
   const finding = (priority: IssueComment_ReviewMetadata_Priority) => {
     const root = comment("root", "Drops a table.", { creator: "" });
-    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { priority });
     return groupThreads([root])[0];
   };
   const changesBar = (folded: boolean) => ({ title: "Comment on line 3", folded, onToggleFold: () => {} });

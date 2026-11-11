@@ -363,8 +363,7 @@ function ReviewRunActivityRow({
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
-  const { runType, postedCount, keptCount, supersededCount } =
-    source.completion;
+  const { postedCount, keptCount, supersededCount } = source.completion;
   // A run with nothing earlier to compare reads as a first review, with how
   // many of its findings are still open. A later one says only what changed:
   // an open count beside "still found" would read as covering those too.
@@ -396,9 +395,7 @@ function ReviewRunActivityRow({
     <ActivityRowShell
       header={
         <>
-          <span className="font-medium text-main">
-            {reviewerName(t, runType)}
-          </span>
+          <span className="font-medium text-main">{reviewerName(t)}</span>
           <span className="wrap-break-word min-w-0 text-control-light">
             {t("plan.review.activity.reviewed-the-sql")}
           </span>
@@ -425,7 +422,7 @@ function ReviewRunActivityRow({
       icon={
         <CommentIconBadge
           className="bg-control-bg text-control"
-          icon={<ReviewerIcon className="size-4" runType={runType} />}
+          icon={<ReviewerIcon className="size-4" />}
         />
       }
       isLast={isLast}

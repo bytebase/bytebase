@@ -824,7 +824,6 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ReviewConfig.name",
 	"bytebase.v1.ReviewConfig.resources",
 	"bytebase.v1.ReviewConfig.title",
-	"bytebase.v1.ReviewRun.error",
 	"bytebase.v1.ReviewRun.name",
 	"bytebase.v1.Revision.deleter",
 	"bytebase.v1.Revision.file",

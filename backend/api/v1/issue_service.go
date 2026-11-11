@@ -529,7 +529,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 	// the rollout: a rule slot already in place holds it until that review is
 	// done.
 	if created {
-		startReviews(ctx, s.profile, s.store, s.bus, issue, store.ReviewRunTypeRule, store.ReviewRunTypeAI)
+		startReviews(ctx, s.profile, s.store, s.bus, issue, store.ReviewRunTypeAI, store.ReviewRunTypeRule)
 	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)

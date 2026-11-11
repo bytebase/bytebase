@@ -1,9 +1,5 @@
 import type { StateCreator } from "zustand";
-import type {
-  Issue,
-  IssueComment,
-  ReviewRun_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Plan,
   Plan_Spec,
@@ -84,10 +80,9 @@ export interface ThreadFocusRequest {
   nonce: number;
 }
 
-// Narrows the statement editor's walker to one group of one reviewer's
+// Narrows the statement editor's walker to one group of the review's
 // findings, as a click on a finding count asks for.
 export interface WalkerFilter {
-  runType: ReviewRun_Type;
   group: FindingGroup;
 }
 

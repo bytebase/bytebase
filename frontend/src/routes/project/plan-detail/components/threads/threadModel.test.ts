@@ -7,7 +7,6 @@ import {
   IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
-  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -15,6 +14,7 @@ import {
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
   buildWholeLineAnchor,
@@ -283,7 +283,6 @@ describe("needsActivityCard", () => {
     create(IssueCommentSchema, {
       ...root(id, { resolved: opts.resolved }),
       reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-        runType: ReviewRun_Type.RULE,
         superseded: opts.superseded ?? false,
       }),
     });
@@ -419,28 +418,30 @@ describe("editor placement", () => {
 describe("editor placement of review results", () => {
   const result = (
     id: string,
-    runType: ReviewRun_Type,
+    ruleType: ReviewRuleType,
     opts: { superseded?: boolean; resolved?: boolean } = {}
   ) => {
     const comment = root(id, { anchor: anchor(2, 2), resolved: opts.resolved });
     comment.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType,
+      ruleType,
       superseded: opts.superseded ?? false,
     });
     return comment;
   };
+  const RULE = ReviewRuleType.REQUIRE_WHERE;
+  const NO_RULE = ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
   const placedNames = (comments: ReturnType<typeof root>[]) =>
     selectEditorThreads(groupThreads(comments), {
       specId: "spec-1",
       sheetSha256: SHA,
     }).map((entry) => entry.thread.root.comment);
 
-  test("shows the latest standard rule review, resolved or not", () => {
+  test("shows the latest results of the standard rules, resolved or not", () => {
     expect(
       placedNames([
-        result("latest-open", ReviewRun_Type.RULE),
-        result("latest-resolved", ReviewRun_Type.RULE, { resolved: true }),
-        result("earlier", ReviewRun_Type.RULE, {
+        result("latest-open", RULE),
+        result("latest-resolved", RULE, { resolved: true }),
+        result("earlier", RULE, {
           superseded: true,
           resolved: true,
         }),
@@ -450,22 +451,20 @@ describe("editor placement of review results", () => {
 
   test("keeps a superseded result someone reopened, since it holds the rollout", () => {
     expect(
-      placedNames([
-        result("reopened", ReviewRun_Type.RULE, { superseded: true }),
-      ])
+      placedNames([result("reopened", RULE, { superseded: true })])
     ).toEqual(["root reopened"]);
   });
 
-  test("leaves AI results and human threads as they are", () => {
+  test("leaves results no rule names and human threads as they are", () => {
     expect(
       placedNames([
-        result("ai-earlier", ReviewRun_Type.AI, {
+        result("earlier-untitled", NO_RULE, {
           superseded: true,
           resolved: true,
         }),
         root("human", { anchor: anchor(2, 2), resolved: true }),
       ])
-    ).toEqual(["root ai-earlier", "root human"]);
+    ).toEqual(["root earlier-untitled", "root human"]);
   });
 });
 

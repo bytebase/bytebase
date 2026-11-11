@@ -35,7 +35,7 @@ export function AffectedRowsStrip({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
-  const ruleReview = useSqlReviewV2()?.ruleReview;
+  const review = useSqlReviewV2()?.review;
   const [detailsState, setDetailsState] = useState<{
     open: boolean;
     filter: AffectedRowsFilter;
@@ -160,7 +160,7 @@ export function AffectedRowsStrip({
       {showRerun && (
         <InlineAction
           disabled={isRunningChecks}
-          onClick={() => void runChecks().then(() => ruleReview?.reload())}
+          onClick={() => void runChecks().then(() => review?.reload())}
         >
           {t("plan.affected-rows.rerun")}
         </InlineAction>

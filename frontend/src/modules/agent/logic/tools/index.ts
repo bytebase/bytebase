@@ -555,7 +555,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     },
     {
       name: "get_issue_overview",
-      description: `Get a bounded, read-only overview of one Issue in ${projectScope}. It includes the Issue's approval state, linked Plan and plan-check state, rule and AI review-run state, plus Rollout, up to ten currently failed Tasks, and up to ten task-run statuses when available. A failed Task Run can be historical; use the Rollout's failedTasks for current failures. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. ${projectScopeRestriction} This tool cannot take action.`,
+      description: `Get a bounded, read-only overview of one Issue in ${projectScope}. It includes the Issue's approval state, linked Plan and plan-check state, review-run state, plus Rollout, up to ten currently failed Tasks, and up to ten task-run statuses when available. A failed Task Run can be historical; use the Rollout's failedTasks for current failures. Pass a canonical Issue name from this project. Each facet explicitly reports whether it is available, not configured, not started, or unavailable. A review run marked not started has no recorded run; this does not establish whether that review is configured or applicable. ${projectScopeRestriction} This tool cannot take action.`,
       parametersSchema: {
         type: "object",
         properties: {

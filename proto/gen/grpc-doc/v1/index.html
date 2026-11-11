@@ -1004,11 +1004,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ReviewRun.Type"><span class="badge">E</span>ReviewRun.Type</a>
+                  <a href="#bytebase.v1.ReviewRun.State"><span class="badge">E</span>ReviewRun.State</a>
                 </li>
               
               
@@ -11009,7 +11005,7 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the review run to retrieve.
-Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
+Format: projects/{project}/issues/{issue}/reviewRun </p></td>
                 </tr>
               
             </tbody>
@@ -11462,17 +11458,11 @@ Never accepted on create or update. </p></td>
             <tbody>
               
                 <tr>
-                  <td>run_type</td>
-                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
-                  <td></td>
-                  <td><p>The reviewer that posted the result. </p></td>
-                </tr>
-              
-                <tr>
                   <td>rule_type</td>
                   <td><a href="#bytebase.v1.ReviewRuleType">ReviewRuleType</a></td>
                   <td></td>
-                  <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
+                  <td><p>The standard rule judged against. Set on the result of a standard rule,
+and on no other result. </p></td>
                 </tr>
               
                 <tr>
@@ -11494,8 +11484,8 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td>superseded</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>A later run of the same reviewer has completed without reporting the
-result again, whatever its thread state. </p></td>
+                  <td><p>A later run has completed without reporting the result again, whatever
+its thread state. </p></td>
                 </tr>
               
                 <tr>
@@ -11510,17 +11500,18 @@ result a later run reports again keeps its thread and its attempt. </p></td>
                   <td>codes</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>The conditions a RULE result reports, as finding codes such as
-&#34;WT101&#34;, one per reason. A code names the same condition on every
-engine. Empty for other reviewers. </p></td>
+                  <td><p>The conditions the result of a standard rule reports, as finding codes
+such as &#34;WT101&#34;, one per reason. A code names the same condition on
+every engine. Empty on any other result. </p></td>
                 </tr>
               
                 <tr>
                   <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the problem an AI result reports, on one line; the comment
-holds the rest. Empty for a RULE result, which rule_type names. </p></td>
+                  <td><p>The name of the problem, on one line, for a result that no standard
+rule names; the comment holds the rest. Empty on the result of a
+standard rule, which rule_type names. </p></td>
                 </tr>
               
             </tbody>
@@ -11531,7 +11522,7 @@ holds the rest. Empty for a RULE result, which rule_type names. </p></td>
         
       
         <h3 id="bytebase.v1.IssueComment.ReviewRunCompletion">IssueComment.ReviewRunCompletion</h3>
-        <p>A review run completed, and what it did to the results of its reviewer.</p><p>Posted by the reviewer, with no creator.</p>
+        <p>A review run completed, and what it did to the earlier results. Posted</p><p>by the review, with no creator.</p>
 
         
           <table class="field-table">
@@ -11541,18 +11532,11 @@ holds the rest. Empty for a RULE result, which rule_type names. </p></td>
             <tbody>
               
                 <tr>
-                  <td>run_type</td>
-                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
-                  <td></td>
-                  <td><p>The reviewer that ran. </p></td>
-                </tr>
-              
-                <tr>
                   <td>attempt</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p>Identifies the run among its reviewer&#39;s runs on the issue. The results
-it posted carry the same ReviewMetadata.attempt. </p></td>
+                  <td><p>Identifies the run among the runs on the issue. The results it posted
+carry the same ReviewMetadata.attempt. </p></td>
                 </tr>
               
                 <tr>
@@ -11904,21 +11888,14 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;ai&#34;. The name
-addresses a slot, not an execution. </p></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/reviewRun
+An issue has one review run. The name addresses the current run, which
+a re-run replaces. </p></td>
                 </tr>
               
                 <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
-                  <td></td>
-                  <td><p>Derived from the name. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>status</td>
-                  <td><a href="#bytebase.v1.ReviewRun.Status">ReviewRun.Status</a></td>
+                  <td>state</td>
+                  <td><a href="#bytebase.v1.ReviewRun.State">ReviewRun.State</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11934,17 +11911,16 @@ addresses a slot, not an execution. </p></td>
                   <td>end_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>When the run reached a terminal status. Unset while AVAILABLE or
-RUNNING. </p></td>
+                  <td><p>When the run reached a terminal state. Unset while RUNNING. </p></td>
                 </tr>
               
                 <tr>
                   <td>error</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
                   <td></td>
-                  <td><p>Fatal execution error, set if and only if status is FAILED: the review
+                  <td><p>Fatal execution error, set if and only if state is FAILED: the review
 failed to execute (a platform problem, never the SQL — SQL problems are
-review results on a DONE run). </p></td>
+review results on a SUCCEEDED run). </p></td>
                 </tr>
               
                 <tr>
@@ -12024,7 +12000,7 @@ Format: users/{email}. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/reviewRun </p></td>
                 </tr>
               
             </tbody>
@@ -12452,8 +12428,8 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.ReviewRun.Status">ReviewRun.Status</h3>
-        <p>States follow task_run, minus PENDING (review needs no admission</p><p>control) and minus CANCELED (runs are side-effect-free until the fenced</p><p>completion transaction, so re-running supersedes instead of canceling).</p>
+        <h3 id="bytebase.v1.ReviewRun.State">ReviewRun.State</h3>
+        <p>There is no canceled state: a run has no effect until its fenced</p><p>completion transaction, so a re-run supersedes it instead.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -12461,67 +12437,29 @@ In this situation, `update_mask` is ignored. </p></td>
           <tbody>
             
               <tr>
-                <td>STATUS_UNSPECIFIED</td>
+                <td>STATE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AVAILABLE</td>
-                <td>1</td>
-                <td><p>Created and claimable by any replica.</p></td>
               </tr>
             
               <tr>
                 <td>RUNNING</td>
-                <td>2</td>
-                <td><p></p></td>
+                <td>1</td>
+                <td><p>Queued or running.</p></td>
               </tr>
             
               <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p>Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s
-scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first
-ci_sampling_size targets of each spec, or every target when
-ci_sampling_size is 0. DONE does not mean the review passed: whether
-problems remain is judged from open comments.</p></td>
+                <td>SUCCEEDED</td>
+                <td>2</td>
+                <td><p>Every (spec, target) unit in scope was evaluated. SUCCEEDED does not
+mean the review passed: whether problems remain is judged from open
+comments.</p></td>
               </tr>
             
               <tr>
                 <td>FAILED</td>
-                <td>4</td>
+                <td>3</td>
                 <td><p>At least one unit was not evaluated; the cause is in `error`.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ReviewRun.Type">ReviewRun.Type</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RULE</td>
-                <td>1</td>
-                <td><p>Review against the standard rules.</p></td>
-              </tr>
-            
-              <tr>
-                <td>AI</td>
-                <td>2</td>
-                <td><p>Review against the natural-language AI review policy, performed by a
-model.</p></td>
               </tr>
             
           </tbody>
@@ -12654,9 +12592,9 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
                 <td>GetReviewRun</td>
                 <td><a href="#bytebase.v1.GetReviewRunRequest">GetReviewRunRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
-                <td><p>Gets the current run of one reviewer on an issue. The run carries
-execution status only; review results are issue comments. A reviewer
-that has never run on the issue is NOT_FOUND.
+                <td><p>Gets the review run of an issue. The run carries the execution state
+only; review results are issue comments. An issue the review has never
+run on is NOT_FOUND.
 Permissions required: bb.reviewRuns.get</p></td>
               </tr>
             
@@ -12664,11 +12602,11 @@ Permissions required: bb.reviewRuns.get</p></td>
                 <td>RunReview</td>
                 <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
                 <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
-                <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
-execution is superseded (its completion is fenced off), the attempt
-number is bumped, and the returned run is AVAILABLE.
+                <td><p>Starts the review of an issue. It replaces the current run
+unconditionally: an execution in flight is superseded (its completion is
+fenced off), and the returned run is RUNNING.
 Review results are not returned by this RPC: they are posted as issue
-comments. The returned run carries execution status only, and
+comments. The returned run carries the execution state only, and
 GetReviewRun reads it back.
 The audit log is the only record of who triggered a run.
 Permissions required: bb.reviewRuns.run</p></td>
@@ -12827,7 +12765,7 @@ Permissions required: bb.reviewRuns.run</p></td>
               <tr>
                 <td>GetReviewRun</td>
                 <td>GET</td>
-                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRun}</td>
                 <td></td>
               </tr>
               
@@ -12837,7 +12775,7 @@ Permissions required: bb.reviewRuns.run</p></td>
               <tr>
                 <td>RunReview</td>
                 <td>POST</td>
-                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}:run</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRun}:run</td>
                 <td>*</td>
               </tr>
               

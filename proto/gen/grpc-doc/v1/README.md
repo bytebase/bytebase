@@ -217,8 +217,7 @@
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
     - [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority)
     - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
-    - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
-    - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
+    - [ReviewRun.State](#bytebase-v1-ReviewRun-State)
   
     - [IssueService](#bytebase-v1-IssueService)
   
@@ -3627,7 +3626,7 @@ needs a person&#39;s acceptance, not that it is forbidden.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
+| name | [string](#string) |  | The name of the review run to retrieve. Format: projects/{project}/issues/{issue}/reviewRun |
 
 
 
@@ -3772,14 +3771,13 @@ What a review result carries beyond its text.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
-| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The standard rule judged against. Set on the result of a standard rule, and on no other result. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, whatever its thread state. |
+| superseded | [bool](#bool) |  | A later run has completed without reporting the result again, whatever its thread state. |
 | attempt | [int64](#int64) |  | The ReviewRunCompletion.attempt of the run that posted the result. A result a later run reports again keeps its thread and its attempt. |
-| codes | [string](#string) | repeated | The conditions a RULE result reports, as finding codes such as &#34;WT101&#34;, one per reason. A code names the same condition on every engine. Empty for other reviewers. |
-| title | [string](#string) |  | The name of the problem an AI result reports, on one line; the comment holds the rest. Empty for a RULE result, which rule_type names. |
+| codes | [string](#string) | repeated | The conditions the result of a standard rule reports, as finding codes such as &#34;WT101&#34;, one per reason. A code names the same condition on every engine. Empty on any other result. |
+| title | [string](#string) |  | The name of the problem, on one line, for a result that no standard rule names; the comment holds the rest. Empty on the result of a standard rule, which rule_type names. |
 
 
 
@@ -3789,14 +3787,13 @@ What a review result carries beyond its text.
 <a name="bytebase-v1-IssueComment-ReviewRunCompletion"></a>
 
 ### IssueComment.ReviewRunCompletion
-A review run completed, and what it did to the results of its reviewer.
-Posted by the reviewer, with no creator.
+A review run completed, and what it did to the earlier results. Posted
+by the review, with no creator.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that ran. |
-| attempt | [int64](#int64) |  | Identifies the run among its reviewer&#39;s runs on the issue. The results it posted carry the same ReviewMetadata.attempt. |
+| attempt | [int64](#int64) |  | Identifies the run among the runs on the issue. The results it posted carry the same ReviewMetadata.attempt. |
 | posted_count | [int32](#int32) |  | Results the run posted as new threads. |
 | kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |
 | superseded_count | [int32](#int32) |  | Earlier results the run no longer reports, now superseded. |
@@ -3949,12 +3946,11 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;ai&#34;. The name addresses a slot, not an execution. |
-| type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | Derived from the name. |
-| status | [ReviewRun.Status](#bytebase-v1-ReviewRun-Status) |  |  |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRun An issue has one review run. The name addresses the current run, which a re-run replaces. |
+| state | [ReviewRun.State](#bytebase-v1-ReviewRun-State) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
-| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the run reached a terminal status. Unset while AVAILABLE or RUNNING. |
-| error | [string](#string) |  | Fatal execution error, set if and only if status is FAILED: the review failed to execute (a platform problem, never the SQL — SQL problems are review results on a DONE run). |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the run reached a terminal state. Unset while RUNNING. |
+| error | [google.rpc.Status](#google-rpc-Status) |  | Fatal execution error, set if and only if state is FAILED: the review failed to execute (a platform problem, never the SQL — SQL problems are review results on a SUCCEEDED run). |
 | outdated | [bool](#bool) |  | Whether the plan&#39;s SQL changed after this run started, so the run reviews an earlier version of it. The server starts a new run before it creates the rollout automatically. |
 
 
@@ -3988,7 +3984,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRun |
 
 
 
@@ -4162,33 +4158,18 @@ blocking, which thread_state alone decides.
 
 
 
-<a name="bytebase-v1-ReviewRun-Status"></a>
+<a name="bytebase-v1-ReviewRun-State"></a>
 
-### ReviewRun.Status
-States follow task_run, minus PENDING (review needs no admission
-control) and minus CANCELED (runs are side-effect-free until the fenced
-completion transaction, so re-running supersedes instead of canceling).
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| AVAILABLE | 1 | Created and claimable by any replica. |
-| RUNNING | 2 |  |
-| DONE | 3 | Every (spec, target) unit in the reviewer&#39;s scope was evaluated. RULE&#39;s scope is every target. AI&#39;s scope is the project&#39;s CI sample, the first ci_sampling_size targets of each spec, or every target when ci_sampling_size is 0. DONE does not mean the review passed: whether problems remain is judged from open comments. |
-| FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
-
-
-
-<a name="bytebase-v1-ReviewRun-Type"></a>
-
-### ReviewRun.Type
-
+### ReviewRun.State
+There is no canceled state: a run has no effect until its fenced
+completion transaction, so a re-run supersedes it instead.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
+| STATE_UNSPECIFIED | 0 |  |
+| RUNNING | 1 | Queued or running. |
+| SUCCEEDED | 2 | Every (spec, target) unit in scope was evaluated. SUCCEEDED does not mean the review passed: whether problems remain is judged from open comments. |
+| FAILED | 3 | At least one unit was not evaluated; the cause is in `error`. |
 
 
  
@@ -4216,8 +4197,8 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
-| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the current run of one reviewer on an issue. The run carries execution status only; review results are issue comments. A reviewer that has never run on the issue is NOT_FOUND. Permissions required: bb.reviewRuns.get |
-| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries execution status only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
+| GetReviewRun | [GetReviewRunRequest](#bytebase-v1-GetReviewRunRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Gets the review run of an issue. The run carries the execution state only; review results are issue comments. An issue the review has never run on is NOT_FOUND. Permissions required: bb.reviewRuns.get |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Starts the review of an issue. It replaces the current run unconditionally: an execution in flight is superseded (its completion is fenced off), and the returned run is RUNNING. Review results are not returned by this RPC: they are posted as issue comments. The returned run carries the execution state only, and GetReviewRun reads it back. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 

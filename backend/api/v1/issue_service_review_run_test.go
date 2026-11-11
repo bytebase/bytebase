@@ -22,10 +22,15 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// TestRunReviewCreatesRuleRunWithReviewOff pins that switching every rule off
-// does not refuse a rule run: the run completes with no findings, which
+// reviewRunName is the name of an issue's review run.
+func reviewRunName(projectID string, issueUID int64) string {
+	return fmt.Sprintf("projects/%s/issues/%d/reviewRun", projectID, issueUID)
+}
+
+// TestRunReviewStartsTheRuleJobWithEveryRuleOff pins that switching every rule
+// off does not refuse a review: the rule job completes with no findings, which
 // resolves the findings of earlier runs.
-func TestRunReviewCreatesRuleRunWithReviewOff(t *testing.T) {
+func TestRunReviewStartsTheRuleJobWithEveryRuleOff(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -46,11 +51,14 @@ func TestRunReviewCreatesRuleRunWithReviewOff(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-		Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID),
+		Name: reviewRunName("project-a", issue.UID),
 	}))
 	require.NoError(t, err)
-	require.Equal(t, v1pb.ReviewRun_RULE, resp.Msg.Type)
-	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
+	require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
+	job, err := stores.GetReviewRun(ctx, "project-a", issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	require.NotNil(t, job)
+	require.Equal(t, storepb.ReviewRun_AVAILABLE, job.Status)
 }
 
 func TestGetReviewRun(t *testing.T) {
@@ -59,14 +67,14 @@ func TestGetReviewRun(t *testing.T) {
 	stores := setupIssueServiceTestStore(ctx, t)
 	issue := createReviewRunIssue(ctx, t, stores, "project-a")
 	service := newIssueServiceForTest(t, stores)
-	ruleName := fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID)
+	name := reviewRunName("project-a", issue.UID)
 
-	_, err := getReviewRunForTest(ctx, service, ruleName)
+	_, err := getReviewRunForTest(ctx, service, name)
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), "a run that never started")
 
-	run, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: ruleName}))
+	run, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
 	require.NoError(t, err)
-	got, err := getReviewRunForTest(ctx, service, ruleName)
+	got, err := getReviewRunForTest(ctx, service, name)
 	require.NoError(t, err)
 	require.True(t, proto.Equal(run.Msg, got), "got %v, want %v", got, run.Msg)
 
@@ -76,12 +84,12 @@ func TestGetReviewRun(t *testing.T) {
 	updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"}, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
-	got, err = getReviewRunForTest(ctx, service, ruleName)
+	got, err = getReviewRunForTest(ctx, service, name)
 	require.NoError(t, err)
-	require.Equal(t, ruleName, got.Name)
-	require.Equal(t, v1pb.ReviewRun_RULE, got.Type)
-	require.Equal(t, v1pb.ReviewRun_FAILED, got.Status)
-	require.Equal(t, "boom", got.Error)
+	require.Equal(t, name, got.Name)
+	require.Equal(t, v1pb.ReviewRun_FAILED, got.State)
+	require.Equal(t, int32(connect.CodeUnknown), got.GetError().GetCode())
+	require.Equal(t, "boom", got.GetError().GetMessage())
 	require.True(t, proto.Equal(run.Msg.CreateTime, got.CreateTime))
 	require.NotNil(t, got.EndTime)
 
@@ -90,10 +98,9 @@ func TestGetReviewRun(t *testing.T) {
 		name        string
 		wantCode    connect.Code
 	}{
-		{"slot never created", fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/ai", issue.UID), connect.CodeNotFound},
-		{"issue does not exist", "projects/project-a/issues/999/reviewRuns/rule", connect.CodeNotFound},
-		{"unknown reviewer", fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/guideline", issue.UID), connect.CodeInvalidArgument},
-		{"issue id not a number", "projects/project-a/issues/abc/reviewRuns/rule", connect.CodeInvalidArgument},
+		{"issue does not exist", reviewRunName("project-a", 999), connect.CodeNotFound},
+		{"a name that names a reviewer", fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID), connect.CodeInvalidArgument},
+		{"issue id not a number", "projects/project-a/issues/abc/reviewRun", connect.CodeInvalidArgument},
 	} {
 		_, err := getReviewRunForTest(ctx, service, tc.name)
 		require.Equal(t, tc.wantCode, connect.CodeOf(err), tc.description)
@@ -110,8 +117,8 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	issueB := createReviewRunIssue(ctx, t, stores, "project-b")
 	require.Equal(t, issueA.UID, issueB.UID, "the issue ids must collide")
 	service := newIssueServiceForTest(t, stores)
-	nameA := fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issueA.UID)
-	nameB := fmt.Sprintf("projects/project-b/issues/%d/reviewRuns/rule", issueB.UID)
+	nameA := reviewRunName("project-a", issueA.UID)
+	nameB := reviewRunName("project-b", issueB.UID)
 
 	runB, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: nameB}))
 	require.NoError(t, err)
@@ -136,15 +143,88 @@ func TestGetReviewRunCollidingIssues(t *testing.T) {
 	gotA, err := getReviewRunForTest(ctx, service, nameA)
 	require.NoError(t, err)
 	require.Equal(t, nameA, gotA.Name)
-	require.Equal(t, v1pb.ReviewRun_FAILED, gotA.Status)
-	require.Equal(t, "boom", gotA.Error)
+	require.Equal(t, v1pb.ReviewRun_FAILED, gotA.State)
+	require.Equal(t, "boom", gotA.GetError().GetMessage())
 	gotB, err := getReviewRunForTest(ctx, service, nameB)
 	require.NoError(t, err)
 	require.Equal(t, nameB, gotB.Name)
-	require.Equal(t, v1pb.ReviewRun_RUNNING, gotB.Status)
-	require.Empty(t, gotB.Error)
+	require.Equal(t, v1pb.ReviewRun_RUNNING, gotB.State)
+	require.Nil(t, gotB.Error)
 	require.Nil(t, gotB.EndTime)
 	require.True(t, proto.Equal(runB.Msg.CreateTime, gotB.CreateTime))
+}
+
+// TestGetReviewRunReadsTheReviewersJobsAsOneRun pins how the rule job and the
+// AI job read as one run.
+func TestGetReviewRunReadsTheReviewersJobsAsOneRun(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	issue := createReviewRunIssue(ctx, t, stores, "project-a")
+	service := newIssueServiceForTest(t, stores)
+	name := reviewRunName("project-a", issue.UID)
+	setAIReview := func(on bool) {
+		t.Helper()
+		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: "default",
+			Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: on},
+		})
+		require.NoError(t, err)
+	}
+	getRun := func() *v1pb.ReviewRun {
+		t.Helper()
+		run, err := getReviewRunForTest(ctx, service, name)
+		require.NoError(t, err)
+		return run
+	}
+
+	setAIReview(true)
+	_, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: name}))
+	require.NoError(t, err)
+	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+	require.NoError(t, err)
+	require.Len(t, claimed, 2)
+	complete := func(reviewType string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload) {
+		t.Helper()
+		for _, c := range claimed {
+			if c.Type != reviewType {
+				continue
+			}
+			updated, err := stores.CompleteReviewRun(ctx, c, "replica-1", status, payload, nil)
+			require.NoError(t, err)
+			require.True(t, updated)
+		}
+	}
+
+	complete(store.ReviewRunTypeRule, storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{})
+	run := getRun()
+	require.Equal(t, v1pb.ReviewRun_RUNNING, run.State, "the AI job is still running")
+	require.Nil(t, run.EndTime)
+
+	complete(store.ReviewRunTypeAI, storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "rate limited"})
+	run = getRun()
+	require.Equal(t, v1pb.ReviewRun_FAILED, run.State, "one failed job fails the run")
+	require.Equal(t, "rate limited", run.GetError().GetMessage())
+	require.NotNil(t, run.EndTime)
+
+	setAIReview(false)
+	run = getRun()
+	require.Equal(t, v1pb.ReviewRun_SUCCEEDED, run.State, "the AI job does not count while the AI review is off")
+	require.Nil(t, run.Error)
+
+	// The rule job restarts alone on new SQL, as the rollout creator does.
+	setAIReview(true)
+	_, err = stores.GetDB().ExecContext(ctx, `
+		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"1"')
+		WHERE project = $1 AND id = $2
+	`, issue.ProjectID, *issue.PlanUID)
+	require.NoError(t, err)
+	_, err = stores.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	require.NoError(t, err)
+	run = getRun()
+	require.Equal(t, v1pb.ReviewRun_RUNNING, run.State, "the AI job of the earlier SQL is not part of this run")
+	require.False(t, run.Outdated)
 }
 
 func getReviewRunForTest(ctx context.Context, service *IssueService, name string) (*v1pb.ReviewRun, error) {
@@ -188,14 +268,17 @@ func createReviewRunIssue(ctx context.Context, t *testing.T, stores *store.Store
 	return issue
 }
 
-func TestRunReviewRefusesAIReviewWhileItsSwitchIsOff(t *testing.T) {
+// TestRunReviewStartsTheAIJobOnlyWhileItsSwitchIsOn pins that an AI review
+// that is off is skipped, not refused: the review starts with the rule job
+// alone.
+func TestRunReviewStartsTheAIJobOnlyWhileItsSwitchIsOn(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
 
-	setAISetting := func(setting *storepb.AISetting) {
+	startedTypes := func(setting *storepb.AISetting) []string {
 		t.Helper()
 		_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
 			Name:      storepb.SettingName_AI,
@@ -203,51 +286,50 @@ func TestRunReviewRefusesAIReviewWhileItsSwitchIsOff(t *testing.T) {
 			Value:     setting,
 		})
 		require.NoError(t, err)
-	}
-	runAIReview := func() (*connect.Response[v1pb.ReviewRun], error) {
-		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/ai", issue.UID),
+		resp, err := service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
+			Name: reviewRunName("project-a", issue.UID),
 		}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
+		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+		var types []string
+		for _, c := range claimed {
+			types = append(types, c.Type)
+		}
+		return types
 	}
 
-	setAISetting(&storepb.AISetting{Enabled: true})
-	_, err := runAIReview()
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.ErrorContains(t, err, "AI SQL review is not enabled")
-	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
+	require.Equal(t, []string{store.ReviewRunTypeRule}, startedTypes(&storepb.AISetting{Enabled: true}), "the AI review's switch is off")
+	require.ElementsMatch(t, []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI}, startedTypes(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true}))
+	restartOrder, err := service.startableReviewTypes(ctx)
 	require.NoError(t, err)
-	require.Empty(t, claimed, "a refused review creates no run")
-
-	setAISetting(&storepb.AISetting{Enabled: true, SqlReviewEnabled: true})
-	resp, err := runAIReview()
-	require.NoError(t, err)
-	require.Equal(t, v1pb.ReviewRun_AI, resp.Msg.Type)
-	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
-
-	setAISetting(&storepb.AISetting{SqlReviewEnabled: true})
-	_, err = runAIReview()
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.ErrorContains(t, err, "AI is not enabled")
+	require.Equal(t, []string{store.ReviewRunTypeAI, store.ReviewRunTypeRule}, restartOrder, "the AI job restarts first")
+	require.Equal(t, []string{store.ReviewRunTypeRule}, startedTypes(&storepb.AISetting{SqlReviewEnabled: true}), "AI is off")
 }
 
-func TestRunReviewRefusesRuleReviewWithoutSQLReviewV2(t *testing.T) {
+// TestRunReviewWithoutSQLReviewV2 pins a server without SQL Review V2: it has
+// no rule job, so a review is the AI job alone, and is refused while the AI
+// review is off.
+func TestRunReviewWithoutSQLReviewV2(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	service := newIssueServiceForTest(t, stores)
 	service.profile = &config.Profile{}
-	runReview := func(reviewRunID string) (*connect.Response[v1pb.ReviewRun], error) {
+	runReview := func() (*connect.Response[v1pb.ReviewRun], error) {
 		return service.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/%s", issue.UID, reviewRunID),
+			Name: reviewRunName("project-a", issue.UID),
 		}))
 	}
 
-	_, err := runReview("rule")
-	require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
+	_, err := runReview()
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.ErrorContains(t, err, "AI is not enabled")
 	claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica")
 	require.NoError(t, err)
-	require.Empty(t, claimed, "a refused review creates no run")
+	require.Empty(t, claimed, "a refused review creates no job")
 
 	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_AI,
@@ -255,9 +337,13 @@ func TestRunReviewRefusesRuleReviewWithoutSQLReviewV2(t *testing.T) {
 		Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: true},
 	})
 	require.NoError(t, err)
-	resp, err := runReview("ai")
+	resp, err := runReview()
 	require.NoError(t, err, "the AI review does not depend on SQL Review V2")
-	require.Equal(t, v1pb.ReviewRun_AVAILABLE, resp.Msg.Status)
+	require.Equal(t, v1pb.ReviewRun_RUNNING, resp.Msg.State)
+	claimed, err = stores.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	require.Equal(t, store.ReviewRunTypeAI, claimed[0].Type)
 }
 
 func TestStartReviews(t *testing.T) {
@@ -433,7 +519,7 @@ func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
 	getRun := func() *v1pb.ReviewRun {
 		t.Helper()
 		resp, err := service.GetReviewRun(ctx, connect.NewRequest(&v1pb.GetReviewRunRequest{
-			Name: fmt.Sprintf("projects/project-a/issues/%d/reviewRuns/rule", issue.UID),
+			Name: reviewRunName("project-a", issue.UID),
 		}))
 		require.NoError(t, err)
 		return resp.Msg

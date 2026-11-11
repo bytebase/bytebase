@@ -6,16 +6,14 @@ import {
 } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   type ReviewRun,
-  ReviewRun_Status,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { sqlReviewV2Enabled } from "@/utils/featureGates";
-import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 
-// The issue's AI review slot. The name addresses the slot, not one execution.
-export const aiReviewRunName = (issueName: string): string =>
-  `${issueName}/reviewRuns/ai`;
+// The issue's review run. The name addresses the current run, which a re-run
+// replaces.
+export const reviewRunName = (issueName: string): string =>
+  `${issueName}/reviewRun`;
 
 // How many databases a database group matches, or undefined until the
 // page has loaded the group's full view.
@@ -53,30 +51,11 @@ export const hasReviewableSQL = (
     return targets.length > 0;
   });
 
-// Whether the plan page reads the issue's AI review run. The review is dark
-// launched behind SQL Review V2, runs only while the workspace has AI and its
-// review switch on, and reviews SQL that no rollout has frozen yet.
-export const readsAIReviewRun = ({
-  plan,
-  project,
-  serverInfo,
-  matchedDatabaseCount,
-}: {
-  plan: Plan;
-  project: Project;
-  serverInfo: ActuatorInfo | undefined;
-  matchedDatabaseCount: MatchedDatabaseCount;
-}): boolean =>
-  sqlReviewV2Enabled() &&
-  Boolean(serverInfo?.aiEnabled && serverInfo.aiSqlReviewEnabled) &&
-  Boolean(plan.issue) &&
-  !plan.hasRollout &&
-  hasReviewableSQL(plan, matchedDatabaseCount) &&
-  hasProjectPermissionV2(project, "bb.reviewRuns.get");
+// Whether a review run includes the AI review: the workspace has AI and its
+// review switch on. Such a run makes model calls.
+export const aiReviewEnabled = (serverInfo: ActuatorInfo | undefined) =>
+  Boolean(serverInfo?.aiEnabled && serverInfo.aiSqlReviewEnabled);
 
 // A queued or running execution; RunReview would replace it.
-export const isAIReviewRunActive = (
-  run: ReviewRun | null | undefined
-): boolean =>
-  run?.status === ReviewRun_Status.AVAILABLE ||
-  run?.status === ReviewRun_Status.RUNNING;
+export const isReviewRunActive = (run: ReviewRun | null | undefined) =>
+  run?.state === ReviewRun_State.RUNNING;

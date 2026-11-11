@@ -2097,14 +2097,8 @@
       "self": "影響行数",
       "up-to-on": "最大で {{database}} の {{rows}} 行"
     },
-    "ai-review": {
-      "failed-to-run": "AI レビューを開始できませんでした",
-      "run": "AI レビューを実行",
-      "run-again-description": "実行するたびにレビュー対象の各データベースでモデルを呼び出すため、結果が異なる場合があります。新しい検出事項は、解決済みのものを含め前回の結果を置き換えます。",
-      "run-again-title": "AI レビューを再実行しますか？",
-      "save-first": "AI レビューを実行するには、編集内容を保存または破棄してください。"
-    },
     "automated-review": {
+      "ai-sampled": "AI レビューは {{total}} 個中 {{count}} 個のデータベースを抽出してレビューしました",
       "checks": "プランチェック",
       "details": "詳細",
       "failed": "実行できませんでした",
@@ -2121,6 +2115,8 @@
       "no-findings": "検出事項なし",
       "not-run": "未実行",
       "nothing-needs-attention": "対応が必要な項目はありません",
+      "off": "オフ",
+      "off-for-project": "このプロジェクトではオフです",
       "opens-in-sql": "クリックすると SQL 内で順に確認できます。",
       "out-of-date": "古い結果",
       "outdated": "この実行後に SQL が変更されました",
@@ -2132,8 +2128,11 @@
       "rerun": "再実行",
       "rerun-all": "すべて再実行",
       "retry": "再試行",
+      "reviewing": "レビュー中…",
+      "run-again-description": "実行するたびにレビュー対象の各データベースでモデルを呼び出すため、結果が異なる場合があります。再び報告された検出事項はスレッドを引き継ぎ、報告されなくなったものは解決済みになります。",
+      "run-again-title": "レビューを再実行しますか？",
       "running": "実行中",
-      "sampled": "{{total}} 個中 {{count}} 個のデータベースを抽出",
+      "save-first": "レビューを実行するには、編集内容を保存または破棄してください。",
       "scope": "{{databases}} をレビュー",
       "scope-label": "このレビューの対象",
       "scope-with-engines": "{{databases}}（{{engines}}）をレビュー",

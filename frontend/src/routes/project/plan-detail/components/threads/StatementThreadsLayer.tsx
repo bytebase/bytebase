@@ -114,16 +114,15 @@ export function StatementThreadsLayer({
     previewEndLine === undefined && canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
-  // A click on a finding count narrows the walker to one group of that
-  // reviewer's findings, across every change of the plan.
+  // A click on a finding count narrows the walker to one group of the
+  // review's findings, across every change of the plan.
   const walkerFilter = usePlanDetailStore((s) => s.walkerFilter);
   const setWalkerFilter = usePlanDetailStore((s) => s.setWalkerFilter);
   const { focusInActivity, focusInStatement } = useFocusThread();
   const matchesWalker = useCallback(
     (thread: CommentThread) =>
       walkerFilter
-        ? thread.root.reviewMetadata?.runType === walkerFilter.runType &&
-          inFindingGroup(thread.root, walkerFilter.group)
+        ? inFindingGroup(thread.root, walkerFilter.group)
         : !thread.resolved,
     [walkerFilter]
   );
@@ -790,7 +789,7 @@ export function StatementThreadsLayer({
               filterLabel={
                 walkerFilter
                   ? t("plan.review.thread.walker.filter", {
-                      reviewer: reviewerName(t, walkerFilter.runType),
+                      reviewer: reviewerName(t),
                       state: findingGroupLabel(t, walkerFilter.group),
                     })
                   : undefined

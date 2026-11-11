@@ -42,9 +42,9 @@ func waitReviewRunTerminal(ctx context.Context, t *testing.T, ctl *controller, p
 	return row
 }
 
-func runReview(ctx context.Context, ctl *controller, issueName, reviewRunID string) (*v1pb.ReviewRun, error) {
+func runReview(ctx context.Context, ctl *controller, issueName string) (*v1pb.ReviewRun, error) {
 	resp, err := ctl.issueServiceClient.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{
-		Name: issueName + "/reviewRuns/" + reviewRunID,
+		Name: issueName + "/reviewRun",
 	}))
 	if err != nil {
 		return nil, err
@@ -52,10 +52,19 @@ func runReview(ctx context.Context, ctl *controller, issueName, reviewRunID stri
 	return resp.Msg, nil
 }
 
+func getReviewRun(ctx context.Context, t *testing.T, ctl *controller, issueName string) *v1pb.ReviewRun {
+	t.Helper()
+	resp, err := ctl.issueServiceClient.GetReviewRun(ctx, connect.NewRequest(&v1pb.GetReviewRunRequest{
+		Name: issueName + "/reviewRun",
+	}))
+	require.NoError(t, err)
+	return resp.Msg
+}
+
 // TestCollision_RunReviewLifecycle drives RunReview end to end on two
 // projects whose issue ids collide: the scheduler claims and executes the
-// rule review for real, completions land on the right project, and a re-run
-// on one project leaves the other project's slot untouched.
+// review for real, completions land on the right project, and a re-run on one
+// project leaves the other project's slots untouched.
 func TestCollision_RunReviewLifecycle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -67,7 +76,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 
 	// The fixture issues carry rollouts; a rollout freezes the plan's SQL, so
 	// review is refused.
-	_, err := runReview(ctx, ctl, fixture.IssueA.Name, "rule")
+	_, err := runReview(ctx, ctl, fixture.IssueA.Name)
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 
 	// Fresh colliding plan+issue pairs without rollouts.
@@ -87,26 +96,22 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
 	a.Equal(int64(0), rowB.Attempt)
 
-	// Unknown reviewer type.
-	_, err = runReview(ctx, ctl, issueA.Name, "bogus")
+	// A name that names a reviewer is not a review run.
+	_, err = ctl.issueServiceClient.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: issueA.Name + "/reviewRuns/rule"}))
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	// AI review requires AI to be enabled, which is off in the test workspace.
-	_, err = runReview(ctx, ctl, issueA.Name, "ai")
-	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
-
-	// Rule review on both colliding issues.
-	runA, err := runReview(ctx, ctl, issueA.Name, "rule")
+	// Review on both colliding issues. AI is off in the test workspace, so
+	// the review is the rule job alone.
+	runA, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	a.Equal(issueA.Name+"/reviewRuns/rule", runA.Name)
-	a.Equal(v1pb.ReviewRun_RULE, runA.Type)
-	a.Equal(v1pb.ReviewRun_AVAILABLE, runA.Status)
+	a.Equal(issueA.Name+"/reviewRun", runA.Name)
+	a.Equal(v1pb.ReviewRun_RUNNING, runA.State)
 	a.NotNil(runA.CreateTime)
 	a.Nil(runA.EndTime)
-	a.Empty(runA.Error)
-	runB, err := runReview(ctx, ctl, issueB.Name, "rule")
+	a.Nil(runA.Error)
+	runB, err := runReview(ctx, ctl, issueB.Name)
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_AVAILABLE, runB.Status)
+	a.Equal(v1pb.ReviewRun_RUNNING, runB.State)
 
 	// The scheduler claims and executes both. The rule executor evaluates
 	// the real test databases through omni's SQL Review V2 contract.
@@ -116,6 +121,9 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	rowB = waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
 	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
 	a.Equal(int64(1), rowB.Attempt)
+	doneA := getReviewRun(ctx, t, ctl, issueA.Name)
+	a.Equal(v1pb.ReviewRun_SUCCEEDED, doneA.State)
+	a.NotNil(doneA.EndTime)
 
 	// Re-running A bumps only A's attempt; B's colliding slot is untouched.
 	// The fixture's own issues started reviews too; they settle first.
@@ -129,9 +137,9 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}, 90*time.Second, 500*time.Millisecond, "project B review runs should settle")
 	beforeB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Greater(len(beforeB), 0, "project B should have review_run rows")
-	runA2, err := runReview(ctx, ctl, issueA.Name, "rule")
+	runA2, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_AVAILABLE, runA2.Status)
+	a.Equal(v1pb.ReviewRun_RUNNING, runA2.State)
 	rowA2 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal(int64(2), rowA2.Attempt)
 	a.Equal("DONE", rowA2.Status)
@@ -160,13 +168,18 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}))
 	defer brokenModel.Close()
 
+	// With the AI review switched off, a review starts no AI job.
 	setting := setAISetting(ctx, t, ctl, brokenModel.URL, false)
 	a.False(setting.GetValue().GetAi().GetSqlReviewEnabled())
-	_, err = runReview(ctx, ctl, issueA.Name, "ai")
-	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
-	a.ErrorContains(err, "AI SQL review is not enabled")
+	_, err = runReview(ctx, ctl, issueA.Name)
+	a.NoError(err)
+	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
+	a.Equal(int64(4), rowA2.Attempt)
+	for _, r := range listReviewRuns(ctx, t, ctl, projectAID) {
+		a.NotEqual("AI", r.Type, "the AI review is switched off")
+	}
 
-	// With the review switched on but the model failing, the AI slot is
+	// With the review switched on but the model failing, the AI job is
 	// created, claimed, and fails honestly with the model's error.
 	setting = setAISetting(ctx, t, ctl, brokenModel.URL, true)
 	a.True(setting.GetValue().GetAi().GetSqlReviewEnabled())
@@ -178,16 +191,20 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	setStoredAISQLReviewEnabled(ctx, t, ctl, true)
 	a.True(actuatorAISQLReviewEnabled(ctx, t, ctl))
 
-	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
+	aiRun, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
+	a.Equal(v1pb.ReviewRun_RUNNING, aiRun.State)
 	aiRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
 	a.Equal("FAILED", aiRow.Status, "payload %s", aiRow.Payload)
 	a.Contains(aiRow.Payload, "model call 1 failed")
-	// The failed AI run left A's rule slot alone.
+	// The rule job of the same review finished on its own.
 	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(3), rowA3.Attempt)
+	a.Equal(int64(5), rowA3.Attempt)
 	a.Equal("DONE", rowA3.Status)
+	// One failed job fails the review run, with that job's error.
+	failedRun := getReviewRun(ctx, t, ctl, issueA.Name)
+	a.Equal(v1pb.ReviewRun_FAILED, failedRun.State)
+	a.Contains(failedRun.GetError().GetMessage(), "model call 1 failed")
 
 	// A table in A's database for the model to read through the tools.
 	pgContainer, err := pgContainerOf(fixture.Instance)
@@ -203,8 +220,8 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.NoError(err)
 
 	// With a model that reads the table and then answers, the run completes
-	// and posts the finding as an open thread on the sheet, named as the AI
-	// reviewer's result and listing the database it applies to.
+	// and posts the finding as an open thread on the sheet, listing the
+	// database it applies to.
 	var toolResults sync.Map
 	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request struct {
@@ -232,9 +249,9 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}))
 	defer model.Close()
 	setAISetting(ctx, t, ctl, model.URL, true)
-	aiRun, err = runReview(ctx, ctl, issueA.Name, "ai")
+	aiRun, err = runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_AVAILABLE, aiRun.Status)
+	a.Equal(v1pb.ReviewRun_RUNNING, aiRun.State)
 	aiRow = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
 	a.Equal("DONE", aiRow.Status, "payload %s", aiRow.Payload)
 	a.Equal(int64(1), aiRow.Attempt)
@@ -246,7 +263,8 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.NoError(err)
 	var results []*v1pb.IssueComment
 	for _, comment := range comments.Msg.IssueComments {
-		if comment.GetReviewMetadata().GetRunType() == v1pb.ReviewRun_AI {
+		// A result that no standard rule names is the AI review's.
+		if metadata := comment.GetReviewMetadata(); metadata != nil && metadata.GetRuleType() == v1pb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED && !metadata.GetSuperseded() {
 			results = append(results, comment)
 		}
 	}
@@ -281,7 +299,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}))
 	defer switchingModel.Close()
 	setAISetting(ctx, t, ctl, switchingModel.URL, true)
-	_, err = runReview(ctx, ctl, issueA.Name, "ai")
+	_, err = runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
 	stoppedRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
 	select {
@@ -417,14 +435,15 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		}
 		return out
 	}
-	// The rule review's latest completion event.
+	// The review's latest completion event. AI is off, so every one is the
+	// rule job's.
 	lastCompletion := func() *v1pb.IssueComment_ReviewRunCompletion {
 		t.Helper()
 		resp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issue.Msg.Name}))
 		a.NoError(err)
 		var last *v1pb.IssueComment_ReviewRunCompletion
 		for _, comment := range resp.Msg.IssueComments {
-			if completion := comment.GetReviewRunCompletion(); completion.GetRunType() == v1pb.ReviewRun_RULE {
+			if completion := comment.GetReviewRunCompletion(); completion != nil {
 				a.Empty(comment.Creator)
 				last = completion
 			}
@@ -470,7 +489,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 	a.NoError(err)
 
 	// A re-run on the same SQL posts nothing and keeps the person's resolution.
-	_, err = runReview(ctx, ctl, issue.Msg.Name, "rule")
+	_, err = runReview(ctx, ctl, issue.Msg.Name)
 	a.NoError(err)
 	waitAttempt(1)
 	a.Equal([]int64{1, 0, 2, 0}, counts(lastCompletion()))

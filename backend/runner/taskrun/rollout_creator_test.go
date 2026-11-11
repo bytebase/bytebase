@@ -520,6 +520,72 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 	require.True(t, tryCreateRollout(), "the review of the current SQL is done")
 }
 
+func TestTryCreateRolloutWaitsForTheAIReviewWhileItIsOn(t *testing.T) {
+	ctx := context.Background()
+	s, plan, issue := newAutoRolloutIssue(ctx, t)
+	project, err := s.GetProjectByResourceID(ctx, plan.ProjectID)
+	require.NoError(t, err)
+	b, err := bus.New()
+	require.NoError(t, err)
+	creator := NewRolloutCreator(s, b, nil, true)
+	blocked := func() bool {
+		t.Helper()
+		got, err := creator.reviewBlocksRollout(ctx, project, plan, issue)
+		require.NoError(t, err)
+		return got
+	}
+	setAIReview := func(on bool) {
+		t.Helper()
+		_, err := s.UpsertSetting(ctx, &store.SettingMessage{
+			Name:      storepb.SettingName_AI,
+			Workspace: autoRolloutWorkspaceID,
+			Value:     &storepb.AISetting{Enabled: true, SqlReviewEnabled: on},
+		})
+		require.NoError(t, err)
+	}
+	complete := func(reviewType string, status storepb.ReviewRun_Status) {
+		t.Helper()
+		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
+		require.NoError(t, err)
+		for _, c := range claimed {
+			if c.Type != reviewType {
+				continue
+			}
+			updated, err := s.CompleteReviewRun(ctx, c, "replica", status, &storepb.ReviewRunPayload{}, nil)
+			require.NoError(t, err)
+			require.True(t, updated)
+			return
+		}
+		require.Fail(t, "no claimed job of the type", reviewType)
+	}
+
+	setAIReview(true)
+	for _, reviewType := range []string{store.ReviewRunTypeRule, store.ReviewRunTypeAI} {
+		_, err := s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, reviewType)
+		require.NoError(t, err)
+	}
+	complete(store.ReviewRunTypeRule, storepb.ReviewRun_DONE)
+	require.True(t, blocked(), "the AI review has not finished")
+
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeAI)
+	require.NoError(t, err)
+	complete(store.ReviewRunTypeAI, storepb.ReviewRun_FAILED)
+	require.True(t, blocked(), "the AI review failed")
+
+	setAIReview(false)
+	require.False(t, blocked(), "an AI review that is off holds nothing")
+
+	setAIReview(true)
+	require.True(t, blocked())
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeAI)
+	require.NoError(t, err)
+	complete(store.ReviewRunTypeAI, storepb.ReviewRun_DONE)
+	creator.tryCreateRollout(ctx, bus.PlanRef{ProjectID: plan.ProjectID, PlanID: plan.UID})
+	got, err := s.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+	require.NoError(t, err)
+	require.True(t, got.Config.GetHasRollout(), "both reviewers are done")
+}
+
 func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
 	ctx := context.Background()
 	s, plan, issue := newAutoRolloutIssue(ctx, t)

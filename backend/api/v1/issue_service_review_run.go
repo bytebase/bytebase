@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -19,38 +20,64 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Review run resource IDs: the {reviewRun} segment of
-// projects/{project}/issues/{issue}/reviewRuns/{reviewRun}.
-const (
-	reviewRunIDRule = "rule"
-	reviewRunIDAI   = "ai"
-)
-
-// GetReviewRun returns the run in a review slot as stored, and whether the
-// plan's SQL changed after it started.
+// GetReviewRun returns the issue's review run, and whether the plan's SQL
+// changed after it started.
 func (s *IssueService) GetReviewRun(ctx context.Context, req *connect.Request[v1pb.GetReviewRunRequest]) (*connect.Response[v1pb.ReviewRun], error) {
-	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
+	projectID, issueUID, err := common.GetProjectIDIssueUIDFromReviewRun(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	reviewType, ok := reviewRunTypeFromID(reviewRunID)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown reviewer type %q", reviewRunID))
-	}
 
-	reviewRun, err := s.store.GetReviewRun(ctx, projectID, issueUID, reviewType)
+	jobs, err := ReviewJobs(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), projectID, issueUID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review run"))
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	if reviewRun == nil {
+	if len(jobs) == 0 {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("review run %q not found", req.Msg.Name))
 	}
-	converted := convertToReviewRun(reviewRun)
-	converted.Outdated, err = reviewRunOutdated(ctx, s.store, reviewRun)
+	converted := convertToReviewRun(projectID, issueUID, jobs)
+	// Every job of a run reviews the same version of the SQL.
+	converted.Outdated, err = reviewRunOutdated(ctx, s.store, jobs[0])
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(converted), nil
+}
+
+// ReviewJobs returns the reviewers' jobs the issue's review run is read from:
+// the rule job, and the AI job of the same SQL version while the workspace
+// allows the AI review. Each reviewer runs as a job of its own (BYT-10505).
+// The rollout creator waits for the same jobs, so the run a caller reads and
+// the rollout agree.
+func ReviewJobs(ctx context.Context, stores *store.Store, workspaceID, projectID string, issueUID int64) ([]*store.ReviewRunMessage, error) {
+	var jobs []*store.ReviewRunMessage
+	ruleJob, err := stores.GetReviewRun(ctx, projectID, issueUID, store.ReviewRunTypeRule)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get the rule review run")
+	}
+	if ruleJob != nil {
+		jobs = append(jobs, ruleJob)
+	}
+	aiJob, err := stores.GetReviewRun(ctx, projectID, issueUID, store.ReviewRunTypeAI)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get the AI review run")
+	}
+	if aiJob == nil {
+		return jobs, nil
+	}
+	// An AI job of another version was left behind while the AI review was
+	// off: the review that started it is not the one the rule job belongs to.
+	if ruleJob != nil && aiJob.Payload.GetApprovalInputVersion() != ruleJob.Payload.GetApprovalInputVersion() {
+		return jobs, nil
+	}
+	aiSetting, err := stores.GetAISettingUncached(ctx, workspaceID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	if allowed := aireview.CheckSetting(aiSetting) == nil; allowed {
+		jobs = append(jobs, aiJob)
+	}
+	return jobs, nil
 }
 
 // reviewRunOutdated reports whether the run's approval input version is no
@@ -77,20 +104,13 @@ func reviewRunOutdated(ctx context.Context, stores *store.Store, reviewRun *stor
 	return reviewRun.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion(), nil
 }
 
-// RunReview triggers a review run. The slot is reset unconditionally: a
-// RUNNING execution is superseded, the attempt number is bumped, and the
-// returned run is AVAILABLE.
+// RunReview starts the issue's review. Every reviewer's job is reset
+// unconditionally, which supersedes an execution in flight, and the returned
+// run is RUNNING.
 func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.RunReviewRequest]) (*connect.Response[v1pb.ReviewRun], error) {
-	projectID, issueUID, reviewRunID, err := common.GetProjectIDIssueUIDReviewRunID(req.Msg.Name)
+	projectID, issueUID, err := common.GetProjectIDIssueUIDFromReviewRun(req.Msg.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	reviewType, ok := reviewRunTypeFromID(reviewRunID)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown reviewer type %q", reviewRunID))
-	}
-	if reviewType == store.ReviewRunTypeRule && !s.profile.SQLReviewV2 {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("the standard rule review is not available on this server yet"))
 	}
 
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
@@ -104,32 +124,56 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if issue == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue %d not found in project %s", issueUID, projectID))
 	}
-	// Applicability: the review type must apply to this issue right now — a
-	// slot for an inapplicable type must not exist, so it is not created.
 	if err := checkReviewable(ctx, s.store, issue); err != nil {
 		return nil, err
 	}
-	if reviewType == store.ReviewRunTypeAI {
-		aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
-		}
-		if err := aireview.CheckSetting(aiSetting); err != nil {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
-		}
+	reviewTypes, err := s.startableReviewTypes(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	reviewRun, err := s.store.CreateReviewRun(ctx, projectID, issueUID, reviewType)
-	if err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			return nil, connect.NewError(connect.CodeNotFound, err)
+	jobs := make([]*store.ReviewRunMessage, 0, len(reviewTypes))
+	for _, reviewType := range reviewTypes {
+		job, err := s.store.CreateReviewRun(ctx, projectID, issueUID, reviewType)
+		if err != nil {
+			if common.ErrorCode(err) == common.NotFound {
+				return nil, connect.NewError(connect.CodeNotFound, err)
+			}
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create review run"))
 		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create review run"))
+		jobs = append(jobs, job)
 	}
 
 	s.bus.ReviewRunTickleChan <- 0
 
-	return connect.NewResponse(convertToReviewRun(reviewRun)), nil
+	return connect.NewResponse(convertToReviewRun(projectID, issueUID, jobs)), nil
+}
+
+// startableReviewTypes returns the reviewers a review starts now, in the
+// order their jobs restart: the AI review while the workspace allows it, and
+// the standard rules where SQL Review V2 is on. With neither, the error is
+// why the AI review is off.
+//
+// The jobs restart one write at a time, and the AI job goes first. The rule
+// job is quick, so restarted first it could finish beside the AI job's
+// earlier result, and the two would read as a finished review.
+func (s *IssueService) startableReviewTypes(ctx context.Context) ([]string, error) {
+	var reviewTypes []string
+	aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
+	}
+	aiErr := aireview.CheckSetting(aiSetting)
+	if aiErr == nil {
+		reviewTypes = append(reviewTypes, store.ReviewRunTypeAI)
+	}
+	if s.profile.SQLReviewV2 {
+		reviewTypes = append(reviewTypes, store.ReviewRunTypeRule)
+	}
+	if len(reviewTypes) == 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, aiErr)
+	}
+	return reviewTypes, nil
 }
 
 // checkReviewable refuses a review the issue cannot have now: the issue must
@@ -169,11 +213,12 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 	return nil
 }
 
-// startReviews starts the issue's reviews of the given types where SQL Review
-// V2 is on, at the points the plan checks run. The AI review starts only while
-// the workspace allows it, and only the rule review's run holds the rollout.
-// It never fails its caller: an issue the reviews do not apply to is skipped,
-// and a failure is logged.
+// startReviews starts the issue's reviews of the given types, in the given
+// order, where SQL Review V2 is on, at the points the plan checks run. The AI
+// review starts only while the workspace allows it. A caller that starts both
+// names the AI review first, as startableReviewTypes does. It never fails its
+// caller: an issue the reviews do not apply to is skipped, and a failure is
+// logged.
 func startReviews(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage, reviewTypes ...string) {
 	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return
@@ -238,75 +283,51 @@ func requestRolloutCheck(ctx context.Context, stores *store.Store, b *bus.Bus, p
 	}
 }
 
-// reviewRunTypeFromID maps a review run resource ID to the stored reviewer
-// type.
-func reviewRunTypeFromID(reviewRunID string) (string, bool) {
-	switch reviewRunID {
-	case reviewRunIDRule:
-		return store.ReviewRunTypeRule, true
-	case reviewRunIDAI:
-		return store.ReviewRunTypeAI, true
-	default:
-		return "", false
-	}
-}
-
-// reviewRunIDFromType maps a stored reviewer type to its resource ID. An
-// unknown type maps to itself: the reviewer-id space is open, and a name
-// beats an empty segment.
-func reviewRunIDFromType(reviewType string) string {
-	switch reviewType {
-	case store.ReviewRunTypeRule:
-		return reviewRunIDRule
-	case store.ReviewRunTypeAI:
-		return reviewRunIDAI
-	default:
-		return reviewType
-	}
-}
-
-func convertToReviewRun(reviewRun *store.ReviewRunMessage) *v1pb.ReviewRun {
+// convertToReviewRun reads the reviewers' jobs as one run: RUNNING while any
+// job is queued or running, else FAILED with the error of the first job that
+// failed, else SUCCEEDED. The run was triggered when its latest job was, and
+// ended when its last job did.
+func convertToReviewRun(projectID string, issueUID int64, jobs []*store.ReviewRunMessage) *v1pb.ReviewRun {
 	converted := &v1pb.ReviewRun{
-		Name:       common.FormatReviewRun(reviewRun.ProjectID, reviewRun.IssueUID, reviewRunIDFromType(reviewRun.Type)),
-		Type:       convertToReviewRunType(reviewRun.Type),
-		Status:     convertToReviewRunStatus(reviewRun.Status),
-		CreateTime: timestamppb.New(reviewRun.CreatedAt),
+		Name:  common.FormatReviewRun(projectID, issueUID),
+		State: v1pb.ReviewRun_SUCCEEDED,
 	}
-	switch reviewRun.Status {
-	case storepb.ReviewRun_DONE, storepb.ReviewRun_FAILED:
-		// A terminal row is never written again, so updated_at is the end
-		// time.
-		converted.EndTime = timestamppb.New(reviewRun.UpdatedAt)
+	var failed, created, ended *store.ReviewRunMessage
+	running := false
+	for _, job := range jobs {
+		if created == nil || job.CreatedAt.After(created.CreatedAt) {
+			created = job
+		}
+		// A terminal row is never written again, so updated_at is the end time.
+		if ended == nil || job.UpdatedAt.After(ended.UpdatedAt) {
+			ended = job
+		}
+		switch job.Status {
+		case storepb.ReviewRun_DONE:
+		case storepb.ReviewRun_FAILED:
+			if failed == nil {
+				failed = job
+			}
+		default:
+			running = true
+		}
+	}
+	if created != nil {
+		converted.CreateTime = timestamppb.New(created.CreatedAt)
+	}
+	switch {
+	case running:
+		converted.State = v1pb.ReviewRun_RUNNING
+	case failed != nil:
+		converted.State = v1pb.ReviewRun_FAILED
+		converted.Error = &spb.Status{
+			Code:    int32(connect.CodeUnknown),
+			Message: failed.Payload.GetError(),
+		}
 	default:
 	}
-	if reviewRun.Status == storepb.ReviewRun_FAILED {
-		converted.Error = reviewRun.Payload.GetError()
+	if !running && ended != nil {
+		converted.EndTime = timestamppb.New(ended.UpdatedAt)
 	}
 	return converted
-}
-
-func convertToReviewRunType(reviewType string) v1pb.ReviewRun_Type {
-	switch reviewType {
-	case store.ReviewRunTypeRule:
-		return v1pb.ReviewRun_RULE
-	case store.ReviewRunTypeAI:
-		return v1pb.ReviewRun_AI
-	default:
-		return v1pb.ReviewRun_TYPE_UNSPECIFIED
-	}
-}
-
-func convertToReviewRunStatus(status storepb.ReviewRun_Status) v1pb.ReviewRun_Status {
-	switch status {
-	case storepb.ReviewRun_AVAILABLE:
-		return v1pb.ReviewRun_AVAILABLE
-	case storepb.ReviewRun_RUNNING:
-		return v1pb.ReviewRun_RUNNING
-	case storepb.ReviewRun_DONE:
-		return v1pb.ReviewRun_DONE
-	case storepb.ReviewRun_FAILED:
-		return v1pb.ReviewRun_FAILED
-	default:
-		return v1pb.ReviewRun_STATUS_UNSPECIFIED
-	}
 }

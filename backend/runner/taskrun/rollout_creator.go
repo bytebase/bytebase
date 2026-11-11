@@ -234,9 +234,10 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 }
 
 // reviewBlocksRollout reports whether the issue's review holds its rollout
-// under SQL Review V2: the rule review of the plan's current SQL has not
-// finished, or a thread on the issue is open. An open thread blocks whatever
-// its priority, and whoever started it.
+// under SQL Review V2: the review of the plan's current SQL has not
+// succeeded, or a thread on the issue is open. An open thread blocks whatever
+// its priority, and whoever started it. The review is every job its run is
+// read from, so the AI review holds the rollout too while it is on.
 //
 // A run for an earlier approval input version holds too, and so does a
 // missing run on a plan with SQL to review: the slot write that should have
@@ -264,8 +265,14 @@ func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *stor
 		bus.Tickle(rc.bus.ReviewRunTickleChan)
 		return true, nil
 	}
-	if run != nil && run.Status != storepb.ReviewRun_DONE {
-		return true, nil
+	jobs, err := apiv1.ReviewJobs(ctx, rc.store, project.Workspace, issue.ProjectID, issue.UID)
+	if err != nil {
+		return false, err
+	}
+	for _, job := range jobs {
+		if job.Status != storepb.ReviewRun_DONE {
+			return true, nil
+		}
 	}
 	open := store.ThreadStateOpen
 	limit := 1

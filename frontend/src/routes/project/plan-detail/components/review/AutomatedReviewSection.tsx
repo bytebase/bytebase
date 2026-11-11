@@ -3,6 +3,7 @@ import {
   CircleAlert,
   CircleCheck,
   CircleDashed,
+  CircleSlash,
   CircleX,
   EllipsisVertical,
   Info,
@@ -45,27 +46,22 @@ import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb
 import {
   type IssueComment,
   IssueComment_ReviewMetadata_Priority,
-  ReviewRun_Status,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { engineNameV1 } from "@/utils/v1/instance";
-import { useEffectiveStandardRules } from "../../hooks/useEffectiveStandardRules";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanCheckActions } from "../../hooks/usePlanCheckActions";
 import type { PlanReviewState } from "../../hooks/usePlanReviewState";
-import { useRuleReviewRerun } from "../../hooks/useRuleReviewRerun";
+import { useReviewRerun } from "../../hooks/useReviewRerun";
 import { useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
 import {
   usePlanDetailStore,
   usePlanDetailStoreApi,
 } from "../../shared/stores/usePlanDetailStore";
-import { PROJECT_NAME_PREFIX } from "../../shell/constants";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { countByName, findingsInOrder } from "../../utils/findingIndex";
 import {
-  type AutomatedReviewer,
   type AutomatedReviewRow,
   type FindingGroup,
   type FindingPriority,
@@ -73,6 +69,7 @@ import {
   rowNeedsAttention,
 } from "../../utils/planGates";
 import { openFindingsLabel, reviewerLabel } from "../../utils/reviewLabels";
+import { aiReviewEnabled } from "../../utils/reviewRun";
 import { reviewScope } from "../../utils/reviewScope";
 import {
   priorityStyle,
@@ -87,29 +84,25 @@ const NAMED_OVERRIDES = 3;
 const NAMED_DATABASES = 3;
 const NO_COMMENTS: IssueComment[] = [];
 
-const runTypeOf = (reviewer: AutomatedReviewer): ReviewRun_Type | undefined =>
-  reviewer === "rule"
-    ? ReviewRun_Type.RULE
-    : reviewer === "ai"
-      ? ReviewRun_Type.AI
-      : undefined;
-
-// The machine reviewers, one line each, between Approval and Activity: the
-// conclusion, the open findings by priority, what people resolved, and what
-// the reviewer covered on hover. The findings themselves live in the editor;
-// every count opens it there.
+// The review and the plan checks, one line each, between Approval and
+// Activity: the conclusion, the open findings by priority, what people
+// resolved, and what the review covered on hover. The findings themselves
+// live in the editor; every count opens it there.
 export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
-  const ruleReview = useSqlReviewV2()?.ruleReview;
+  const review = useSqlReviewV2()?.review;
   const { rows } = state;
   const attention = rows.filter(rowNeedsAttention).length;
+  // A review that is off checked nothing, so it is neither counted nor
+  // summed up as needing no attention.
+  const reviewed = rows.filter((row) => row.conclusion !== "off");
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
-  // Running the checks also starts the rule review on the server.
+  // Running the checks also starts the review on the server.
   const rerunAll = async () => {
     await runChecks();
-    await ruleReview?.reload();
+    await review?.reload();
   };
   const requestRerunChecks = () => void rerunAll();
 
@@ -124,14 +117,19 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         <h4 className="text-sm font-medium text-main">
           {t("plan.automated-review.self")}
         </h4>
-        <span className="text-sm text-control-light">
-          {attention > 0
-            ? t("plan.automated-review.needs-attention", {
-                count: attention,
-                total: rows.length,
-              })
-            : t("plan.automated-review.nothing-needs-attention")}
-        </span>
+        {(attention > 0 || reviewed.length === rows.length) && (
+          <span
+            className="text-sm text-control-light"
+            data-testid="automated-review-summary"
+          >
+            {attention > 0
+              ? t("plan.automated-review.needs-attention", {
+                  count: attention,
+                  total: reviewed.length,
+                })
+              : t("plan.automated-review.nothing-needs-attention")}
+          </span>
+        )}
         <div className="flex-1" />
         <Button
           appearance="link"
@@ -177,7 +175,6 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
             onRerunChecks={requestRerunChecks}
             onViewChecks={() => setChecksDrawerOpen(true)}
             row={row}
-            state={state}
           />
         ))}
       </div>
@@ -235,12 +232,10 @@ function RerunConfirmDialog({
 
 function ReviewerRow({
   row,
-  state,
   onRerunChecks,
   onViewChecks,
 }: {
   row: AutomatedReviewRow;
-  state: PlanReviewState;
   onRerunChecks: () => void;
   onViewChecks: () => void;
 }) {
@@ -248,14 +243,14 @@ function ReviewerRow({
   const page = usePlanDetailContext();
   const storeApi = usePlanDetailStoreApi();
   const { focusInStatement } = useFocusThread();
-  const ruleReview = useSqlReviewV2()?.ruleReview;
+  const review = useSqlReviewV2()?.review;
   const { allowRunChecks, isRunningChecks } = usePlanCheckActions();
-  const rerunRule = useRuleReviewRerun();
-  const runType = runTypeOf(row.reviewer);
+  const rerun = useReviewRerun();
+  const isReview = row.reviewer === "review";
   const comments = useAppStore((s) =>
     page.issue ? s.getIssueComments(page.issue.name) : NO_COMMENTS
   );
-  const [confirmAI, setConfirmAI] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
 
   // Activity's "Show" brings this row into view.
@@ -268,37 +263,30 @@ function ReviewerRow({
   // A count opens the editor on the first finding of its group and narrows
   // the walker to that group.
   const openGroup = (group: FindingGroup) => {
-    if (runType === undefined) return;
-    const first = findingsInOrder(comments, runType, page.plan.specs, group)[0];
+    if (!isReview) return;
+    const first = findingsInOrder(comments, page.plan.specs, group)[0];
     if (!first) return;
-    storeApi.getState().setWalkerFilter({ runType, group });
+    storeApi.getState().setWalkerFilter({ group });
     focusInStatement(first);
   };
 
-  const ai = state.ai;
-  let name: ReactNode;
-  if (row.reviewer === "rule" || row.reviewer === "ai") {
-    name = (
-      <>
-        <ReviewerIcon
-          className="size-4 shrink-0 text-control-light"
-          runType={runType ?? ReviewRun_Type.RULE}
-        />
-        {reviewerName(t, runType ?? ReviewRun_Type.RULE)}
-      </>
-    );
-  } else {
-    name = reviewerLabel(t, row.reviewer);
-  }
+  const name: ReactNode = isReview ? (
+    <>
+      <ReviewerIcon className="size-4 shrink-0 text-control-light" />
+      {reviewerName(t)}
+    </>
+  ) : (
+    reviewerLabel(t, row.reviewer)
+  );
 
   const actions: ReactNode[] = [];
-  if (row.reviewer === "rule") {
-    if (ruleReview?.loadFailed) {
+  if (isReview) {
+    if (review?.loadFailed) {
       actions.push(
         <Button
           appearance="outline"
           key="retry"
-          onClick={() => void ruleReview.reload()}
+          onClick={() => void review.reload()}
           size="xs"
         >
           <RotateCw className="size-3.5" />
@@ -306,46 +294,31 @@ function ReviewerRow({
         </Button>
       );
     } else if (
-      rerunRule.allowed &&
+      rerun.allowed &&
       row.conclusion !== "running" &&
-      row.conclusion !== "loading"
+      row.conclusion !== "loading" &&
+      row.conclusion !== "off"
     ) {
       actions.push(
-        <RunButton
-          conclusion={row.conclusion}
-          disabled={rerunRule.disabled}
+        <Tooltip
+          content={
+            rerun.editing ? t("plan.automated-review.save-first") : undefined
+          }
           key="run"
-          onClick={() => void rerunRule.run()}
-        />
+        >
+          <RunButton
+            conclusion={row.conclusion}
+            disabled={rerun.disabled}
+            onClick={() =>
+              rerun.confirmFirst ? setConfirmOpen(true) : void rerun.run()
+            }
+          />
+        </Tooltip>
       );
     }
   }
-  if (
-    row.reviewer === "ai" &&
-    ai.allowRun &&
-    row.conclusion !== "running" &&
-    row.conclusion !== "loading"
-  ) {
-    // Every finished run is paid for in model calls, so running it again
-    // asks first.
-    const settled =
-      ai.run?.status === ReviewRun_Status.DONE && !ai.run.outdated;
-    actions.push(
-      <Tooltip
-        content={ai.editing ? t("plan.ai-review.save-first") : undefined}
-        key="run"
-      >
-        <RunButton
-          conclusion={settled ? "passed" : row.conclusion}
-          disabled={!ai.canStart}
-          label={settled ? undefined : t("plan.ai-review.run")}
-          onClick={() => (settled ? setConfirmAI(true) : void ai.runReview())}
-        />
-      </Tooltip>
-    );
-  }
-  // Plan checks run together, and the run restarts the rule review too.
-  if (runType === undefined && allowRunChecks && row.conclusion !== "running") {
+  // Plan checks run together, and the run restarts the review too.
+  if (!isReview && allowRunChecks && row.conclusion !== "running") {
     actions.push(
       <RunButton
         conclusion={row.conclusion}
@@ -355,7 +328,7 @@ function ReviewerRow({
       />
     );
   }
-  if (runType === undefined) {
+  if (!isReview) {
     actions.push(
       <Button
         appearance="link"
@@ -369,11 +342,13 @@ function ReviewerRow({
     );
   }
 
-  // A reviewer without a result has covered nothing yet.
+  // A review without a result has covered nothing yet, and one that is off
+  // covers nothing at all.
   const hasResult =
     row.conclusion !== "not-run" &&
     row.conclusion !== "loading" &&
-    row.conclusion !== "running";
+    row.conclusion !== "running" &&
+    row.conclusion !== "off";
 
   return (
     <div
@@ -387,28 +362,23 @@ function ReviewerRow({
       </span>
       {/* Below the name on a narrow screen, lined up with it. */}
       <span className="order-last flex min-w-0 basis-full flex-wrap items-center gap-x-1.5 gap-y-1 pl-7 text-control sm:order-none sm:flex-1 sm:pl-0">
-        <ConclusionText
-          comments={comments}
-          onOpen={openGroup}
-          row={row}
-          runType={runType}
-        />
-        {(row.reviewer === "rule" || row.reviewer === "ai") && hasResult && (
-          <ScopeInfo reviewer={row.reviewer} />
-        )}
+        <ConclusionText comments={comments} onOpen={openGroup} row={row} />
+        {isReview && hasResult && <ScopeInfo />}
       </span>
       {actions.length > 0 && (
         <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
       )}
-      <RerunConfirmDialog
-        confirmLabel={t("plan.automated-review.rerun")}
-        description={t("plan.ai-review.run-again-description")}
-        disabled={!ai.canStart}
-        onConfirm={() => void ai.runReview()}
-        onOpenChange={setConfirmAI}
-        open={confirmAI}
-        title={t("plan.ai-review.run-again-title")}
-      />
+      {isReview && (
+        <RerunConfirmDialog
+          confirmLabel={t("plan.automated-review.rerun")}
+          description={t("plan.automated-review.run-again-description")}
+          disabled={rerun.disabled}
+          onConfirm={() => void rerun.run()}
+          onOpenChange={setConfirmOpen}
+          open={confirmOpen}
+          title={t("plan.automated-review.run-again-title")}
+        />
+      )}
     </div>
   );
 }
@@ -419,12 +389,10 @@ function RunButton({
   conclusion,
   disabled,
   onClick,
-  label,
 }: {
   conclusion: AutomatedReviewRow["conclusion"];
   disabled: boolean;
   onClick: () => void;
-  label?: string;
 }) {
   const { t } = useTranslation();
   const first = conclusion === "not-run" || conclusion === "outdated";
@@ -436,7 +404,6 @@ function RunButton({
   return (
     <Button
       appearance="outline"
-      aria-label={label}
       disabled={disabled}
       onClick={onClick}
       size="xs"
@@ -480,6 +447,8 @@ function ConclusionIcon({ row }: { row: AutomatedReviewRow }) {
       return (
         <Loader2 className={cn(className, "animate-spin text-control-light")} />
       );
+    case "off":
+      return <CircleSlash className={cn(className, "text-control-light")} />;
     default:
       return <CircleDashed className={cn(className, "text-control-light")} />;
   }
@@ -535,7 +504,7 @@ function FindingCount({
   );
 }
 
-// A finding's name: its rule, or for the AI review, its title.
+// A finding's name: its standard rule, or else its title.
 const findingName = (t: TFunction, comment: IssueComment): string => {
   const ruleType =
     comment.reviewMetadata?.ruleType ??
@@ -549,15 +518,15 @@ const findingName = (t: TFunction, comment: IssueComment): string => {
 // need a look, by count per rule for the rest.
 function useGroupNames(
   comments: readonly IssueComment[],
-  runType: ReviewRun_Type | undefined,
+  isReview: boolean,
   group: "overridden" | "resolved",
   count: number
 ): string {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   return useMemo(() => {
-    if (runType === undefined || count === 0) return "";
-    const findings = findingsInOrder(comments, runType, page.plan.specs, group);
+    if (!isReview || count === 0) return "";
+    const findings = findingsInOrder(comments, page.plan.specs, group);
     if (group === "overridden") {
       const named = findings.slice(0, NAMED_OVERRIDES).map((comment) => {
         const line = comment.statementAnchor?.startPosition?.line;
@@ -577,31 +546,30 @@ function useGroupNames(
         times > 1 ? t("plan.findings.name-times", { name, count: times }) : name
       )
       .join(t("plan.findings.separator"));
-  }, [comments, count, group, page.plan.specs, runType, t]);
+  }, [comments, count, group, isReview, page.plan.specs, t]);
 }
 
 function ConclusionText({
   row,
-  runType,
   comments,
   onOpen,
 }: {
   row: AutomatedReviewRow;
-  runType: ReviewRun_Type | undefined;
   comments: readonly IssueComment[];
   onOpen: (group: FindingGroup) => void;
 }) {
   const { t } = useTranslation();
   const { findings } = row;
+  const isReview = row.reviewer === "review";
   const overriddenNames = useGroupNames(
     comments,
-    runType,
+    isReview,
     "overridden",
     findings.overridden
   );
   const resolvedNames = useGroupNames(
     comments,
-    runType,
+    isReview,
     "resolved",
     findings.resolved
   );
@@ -614,7 +582,57 @@ function ConclusionText({
       tsMs={getTimeForPbTimestampProtoEs(row.time)}
     />
   );
-  const isPlanCheck = runType === undefined;
+  // The review's findings: the open ones by priority, then what people
+  // resolved.
+  const findingParts = (): ReactNode[] => {
+    const counts: ReactNode[] = [];
+    if (findings.open > 0) {
+      counts.push(
+        <span className="flex items-center gap-x-1.5" key="open">
+          {PRIORITIES.filter((priority) => findings[priority] > 0).map(
+            (priority) => (
+              <PriorityCount
+                count={findings[priority]}
+                key={priority}
+                onClick={() => onOpen(priority)}
+                priority={priority}
+              />
+            )
+          )}
+        </span>
+      );
+    }
+    if (findings.resolved > 0) {
+      counts.push(
+        <FindingCount
+          className="text-sm text-control underline decoration-control-border underline-offset-2 hover:text-main"
+          hint={resolvedNames}
+          key="resolved"
+          label={t("plan.findings.n-resolved", { count: findings.resolved })}
+          onClick={() => onOpen("resolved")}
+        >
+          {t("plan.findings.n-resolved", { count: findings.resolved })}
+        </FindingCount>
+      );
+    }
+    if (findings.overridden > 0) {
+      counts.push(
+        <FindingCount
+          className="text-sm text-main underline decoration-warning underline-offset-2"
+          hint={overriddenNames}
+          key="overridden"
+          label={t("plan.findings.n-overridden", {
+            count: findings.overridden,
+          })}
+          onClick={() => onOpen("overridden")}
+        >
+          <TriangleAlert className="size-3.5 shrink-0 text-warning" />
+          {t("plan.findings.n-overridden", { count: findings.overridden })}
+        </FindingCount>
+      );
+    }
+    return counts;
+  };
   const parts: ReactNode[] = [];
   switch (row.conclusion) {
     case "loading":
@@ -624,10 +642,17 @@ function ConclusionText({
       parts.push(t("plan.automated-review.not-run"));
       break;
     case "running":
-      parts.push(t("plan.automated-review.running"));
+      parts.push(
+        isReview
+          ? t("plan.automated-review.reviewing")
+          : t("plan.automated-review.running")
+      );
       break;
     case "outdated":
       parts.push(t("plan.automated-review.outdated"));
+      break;
+    case "off":
+      parts.push(t("plan.automated-review.off-for-project"));
       break;
     case "failed":
       parts.push(
@@ -635,10 +660,12 @@ function ConclusionText({
           {row.error || t("plan.automated-review.failed")}
         </span>
       );
+      // A failed run changes no finding, so the earlier ones still stand.
+      if (isReview) parts.push(...findingParts());
       break;
     case "passed":
       parts.push(
-        isPlanCheck && row.targets
+        !isReview && row.targets
           ? t("plan.automated-review.passed-on", { count: row.targets })
           : t("plan.automated-review.no-findings")
       );
@@ -650,7 +677,7 @@ function ConclusionText({
       break;
     case "open":
     case "resolved":
-      if (isPlanCheck) {
+      if (!isReview) {
         parts.push(
           <span className="font-medium text-main" key="errors">
             {openFindingsLabel(t, row)}
@@ -663,51 +690,7 @@ function ConclusionText({
         }
         break;
       }
-      if (findings.open > 0) {
-        parts.push(
-          <span className="flex items-center gap-x-1.5" key="open">
-            {PRIORITIES.filter((priority) => findings[priority] > 0).map(
-              (priority) => (
-                <PriorityCount
-                  count={findings[priority]}
-                  key={priority}
-                  onClick={() => onOpen(priority)}
-                  priority={priority}
-                />
-              )
-            )}
-          </span>
-        );
-      }
-      if (findings.resolved > 0) {
-        parts.push(
-          <FindingCount
-            className="text-sm text-control underline decoration-control-border underline-offset-2 hover:text-main"
-            hint={resolvedNames}
-            key="resolved"
-            label={t("plan.findings.n-resolved", { count: findings.resolved })}
-            onClick={() => onOpen("resolved")}
-          >
-            {t("plan.findings.n-resolved", { count: findings.resolved })}
-          </FindingCount>
-        );
-      }
-      if (findings.overridden > 0) {
-        parts.push(
-          <FindingCount
-            className="text-sm text-main underline decoration-warning underline-offset-2"
-            hint={overriddenNames}
-            key="overridden"
-            label={t("plan.findings.n-overridden", {
-              count: findings.overridden,
-            })}
-            onClick={() => onOpen("overridden")}
-          >
-            <TriangleAlert className="size-3.5 shrink-0 text-warning" />
-            {t("plan.findings.n-overridden", { count: findings.overridden })}
-          </FindingCount>
-        );
-      }
+      parts.push(...findingParts());
       break;
   }
   if (time && row.conclusion !== "loading" && row.conclusion !== "not-run") {
@@ -756,40 +739,54 @@ function PriorityCount({
   );
 }
 
-// What the reviewer covered, on hover: the databases, and for the rule
-// review, the rules it applies. A "No findings" means little without it.
-function ScopeInfo({ reviewer }: { reviewer: "rule" | "ai" }) {
+// What the review covered, on hover: the databases, a sample the AI review
+// took of them, and the standard rules it applies. A "No findings" means
+// little without it. The standard rules review every database on an engine
+// they cover, and the AI review a sample when the project sets a sample
+// size, so the line names the wider of the two scopes that ran.
+function ScopeInfo() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
+  const rules = useSqlReviewV2()?.standardRules;
+  const aiReviewOn = useAppStore((s) => aiReviewEnabled(s.serverInfo));
   const databasesByName = useAppStore((s) => s.databasesByName);
   const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const dbGroupViewByName = useAppStore((s) => s.dbGroupViewByName);
-  const rules = useEffectiveStandardRules(
-    `${PROJECT_NAME_PREFIX}${page.projectId}`
-  );
-  const scope = useMemo(
-    () =>
-      reviewScope(page.plan, {
-        reviewer,
-        sampleSize: page.project.ciSamplingSize ?? 0,
-        matchedDatabases: (group) =>
-          dbGroupViewByName[group] === DatabaseGroupView.FULL
-            ? (dbGroupsByName[group]?.matchedDatabases.map(
-                (database) => database.name
-              ) ?? [])
-            : undefined,
-        engineOf: (database) =>
-          databasesByName[database]?.instanceResource?.engine,
-      }),
-    [
-      databasesByName,
-      dbGroupViewByName,
-      dbGroupsByName,
-      page.plan,
-      page.project.ciSamplingSize,
-      reviewer,
-    ]
-  );
+  const { ruleScope, aiScope } = useMemo(() => {
+    const options = {
+      sampleSize: page.project.ciSamplingSize ?? 0,
+      matchedDatabases: (group: string) =>
+        dbGroupViewByName[group] === DatabaseGroupView.FULL
+          ? (dbGroupsByName[group]?.matchedDatabases.map(
+              (database) => database.name
+            ) ?? [])
+          : undefined,
+      engineOf: (database: string) =>
+        databasesByName[database]?.instanceResource?.engine,
+    };
+    return {
+      ruleScope: reviewScope(page.plan, { ...options, reviewer: "rule" }),
+      aiScope: reviewScope(page.plan, { ...options, reviewer: "ai" }),
+    };
+  }, [
+    databasesByName,
+    dbGroupViewByName,
+    dbGroupsByName,
+    page.plan,
+    page.project.ciSamplingSize,
+  ]);
+  // Rules not known yet count as on. The review covered what its reviewers
+  // that are on covered between them: the AI review reads engines the
+  // standard rules do not.
+  const rulesOn = !rules || rules.rules.length > 0;
+  const scopes = [
+    ...(rulesOn ? [ruleScope] : []),
+    ...(aiReviewOn ? [aiScope] : []),
+  ];
+  const scope = {
+    databases: [...new Set(scopes.flatMap((s) => s.databases))],
+    engines: [...new Set(scopes.flatMap((s) => s.engines))],
+  };
   if (scope.databases.length === 0) return null;
 
   const names =
@@ -808,15 +805,15 @@ function ScopeInfo({ reviewer }: { reviewer: "rule" | "ai" }) {
         })
       : t("plan.automated-review.scope", { databases: names }),
   ];
-  if (scope.total > scope.databases.length) {
+  if (aiReviewOn && aiScope.total > aiScope.databases.length) {
     lines.push(
-      t("plan.automated-review.sampled", {
-        count: scope.databases.length,
-        total: scope.total,
+      t("plan.automated-review.ai-sampled", {
+        count: aiScope.databases.length,
+        total: aiScope.total,
       })
     );
   }
-  if (reviewer === "rule" && rules) {
+  if (rules) {
     const counts = {
       on: rules.rules.length,
       total: STANDARD_RULE_TYPES.length,

@@ -390,7 +390,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	// signaled, as either can create the rollout: a rule slot already reset
 	// holds it until the rule review of the new SQL is done.
 	if planCheckRunsTrigger {
-		startReviews(ctx, s.profile, s.store, s.bus, updateResult.Issue, store.ReviewRunTypeRule, store.ReviewRunTypeAI)
+		startReviews(ctx, s.profile, s.store, s.bus, updateResult.Issue, store.ReviewRunTypeAI, store.ReviewRunTypeRule)
 	}
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {

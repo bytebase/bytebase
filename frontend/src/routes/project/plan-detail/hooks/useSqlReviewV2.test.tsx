@@ -3,22 +3,23 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   type ReviewRun,
-  ReviewRun_Status,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 
 const mocks = vi.hoisted(() => ({
   gate: true,
   page: {} as Record<string, unknown>,
   permissions: new Set<string>(),
-  ruleReview: {
+  review: {
     run: null,
     stale: false,
     loadFailed: false,
-    openFindings: 0,
   } as unknown,
+  standardRules: { rules: [], source: "workspace" } as unknown,
   threadsLoaded: true,
   unresolvedThreads: 2,
-  useRuleReviewRun: vi.fn(),
+  useEffectiveStandardRules: vi.fn(),
+  useReviewRun: vi.fn(),
 }));
 
 vi.mock("@/hooks/useProjectByName", () => ({
@@ -43,14 +44,18 @@ vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => mocks.page,
 }));
 
-vi.mock("./useRuleReviewRun", () => ({
-  useRuleReviewRun: mocks.useRuleReviewRun,
+vi.mock("./useEffectiveStandardRules", () => ({
+  useEffectiveStandardRules: mocks.useEffectiveStandardRules,
+}));
+
+vi.mock("./useReviewRun", () => ({
+  useReviewRun: mocks.useReviewRun,
 }));
 
 import {
   SqlReviewV2Provider,
   useSqlReviewV2,
-  withRuleReview,
+  withReviewRun,
 } from "./useSqlReviewV2";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -67,18 +72,24 @@ beforeEach(() => {
     plan: { updateTime: { seconds: 9n, nanos: 1 } },
     projectId: "foo",
   };
-  mocks.useRuleReviewRun.mockReturnValue(mocks.ruleReview);
+  mocks.useReviewRun.mockReturnValue(mocks.review);
+  mocks.useEffectiveStandardRules.mockReturnValue(mocks.standardRules);
 });
 
 describe("SqlReviewV2Provider", () => {
-  test("provides the open threads and the rule review", () => {
+  test("provides the open threads, the review run, and the rules", () => {
     const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
     expect(result.current).toEqual({
       unresolvedThreads: 2,
       threadsLoaded: true,
-      ruleReview: mocks.ruleReview,
+      review: mocks.review,
+      standardRules: mocks.standardRules,
     });
-    expect(mocks.useRuleReviewRun).toHaveBeenCalledWith({
+    expect(mocks.useEffectiveStandardRules).toHaveBeenCalledWith(
+      "projects/foo",
+      true
+    );
+    expect(mocks.useReviewRun).toHaveBeenCalledWith({
       enabled: true,
       issueName: "projects/foo/issues/7",
       reloadKey: "9:1",
@@ -91,8 +102,9 @@ describe("SqlReviewV2Provider", () => {
     expect(result.current).toEqual({
       unresolvedThreads: 2,
       threadsLoaded: true,
+      standardRules: mocks.standardRules,
     });
-    expect(mocks.useRuleReviewRun).toHaveBeenCalledWith(
+    expect(mocks.useReviewRun).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false })
     );
   });
@@ -120,25 +132,27 @@ describe("SqlReviewV2Provider", () => {
     arrange();
     const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
     expect(result.current).toBeUndefined();
+    expect(mocks.useEffectiveStandardRules).toHaveBeenCalledWith(
+      "projects/foo",
+      false
+    );
   });
 });
 
-describe("withRuleReview", () => {
+describe("withReviewRun", () => {
   const checks = { error: 0, running: 0, success: 1, total: 1, warning: 0 };
-  const run = (status: ReviewRun_Status) => ({ status }) as ReviewRun;
+  const run = (state: ReviewRun_State) => ({ state }) as ReviewRun;
 
   test("counts a queued or running review as a running check", () => {
-    for (const status of [ReviewRun_Status.AVAILABLE, ReviewRun_Status.RUNNING]) {
-      expect(withRuleReview(checks, run(status))).toEqual({
-        ...checks,
-        running: 1,
-        total: 2,
-      });
-    }
+    expect(withReviewRun(checks, run(ReviewRun_State.RUNNING))).toEqual({
+      ...checks,
+      running: 1,
+      total: 2,
+    });
   });
 
   test("counts a failed review as a failed check", () => {
-    expect(withRuleReview(checks, run(ReviewRun_Status.FAILED))).toEqual({
+    expect(withReviewRun(checks, run(ReviewRun_State.FAILED))).toEqual({
       ...checks,
       error: 1,
       total: 2,
@@ -146,8 +160,8 @@ describe("withRuleReview", () => {
   });
 
   test("leaves the checks alone for a completed or absent review", () => {
-    expect(withRuleReview(checks, run(ReviewRun_Status.DONE))).toBe(checks);
-    expect(withRuleReview(checks, null)).toBe(checks);
-    expect(withRuleReview(checks, undefined)).toBe(checks);
+    expect(withReviewRun(checks, run(ReviewRun_State.SUCCEEDED))).toBe(checks);
+    expect(withReviewRun(checks, null)).toBe(checks);
+    expect(withReviewRun(checks, undefined)).toBe(checks);
   });
 });

@@ -46,7 +46,7 @@ vi.mock("../hooks/usePlanCheckActions", () => ({
   }),
 }));
 vi.mock("../hooks/useSqlReviewV2", () => ({
-  useSqlReviewV2: () => ({ ruleReview: { reload: mocks.reload } }),
+  useSqlReviewV2: () => ({ review: { reload: mocks.reload } }),
 }));
 vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({ isCreating: false }),

@@ -9,6 +9,7 @@ import type { ApprovalStatus, IssueStatus, Position, RiskLevel } from "./common_
 import type { Expr } from "../google/type/expr_pb";
 import type { ReviewRuleType } from "./review_rule_pb";
 import type { Plan_Spec } from "./plan_service_pb";
+import type { Status } from "../google/rpc/status_pb";
 
 /**
  * Describes the file v1/issue_service.proto.
@@ -1076,21 +1077,15 @@ export declare const IssueCommentSchema: GenMessage<IssueComment>;
  */
 export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComment.ReviewMetadata"> & {
   /**
-   * The reviewer that posted the result.
+   * The standard rule judged against. Set on the result of a standard rule,
+   * and on no other result.
    *
-   * @generated from field: bytebase.v1.ReviewRun.Type run_type = 1;
-   */
-  runType: ReviewRun_Type;
-
-  /**
-   * The rule judged against. Set if and only if run_type is RULE.
-   *
-   * @generated from field: bytebase.v1.ReviewRuleType rule_type = 2;
+   * @generated from field: bytebase.v1.ReviewRuleType rule_type = 1;
    */
   ruleType: ReviewRuleType;
 
   /**
-   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 3;
+   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 2;
    */
   priority: IssueComment_ReviewMetadata_Priority;
 
@@ -1098,15 +1093,15 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
    * Every database the result applies to, sorted.
    * Format: instances/{instance}/databases/{database}
    *
-   * @generated from field: repeated string targets = 4;
+   * @generated from field: repeated string targets = 3;
    */
   targets: string[];
 
   /**
-   * A later run of the same reviewer has completed without reporting the
-   * result again, whatever its thread state.
+   * A later run has completed without reporting the result again, whatever
+   * its thread state.
    *
-   * @generated from field: bool superseded = 5;
+   * @generated from field: bool superseded = 4;
    */
   superseded: boolean;
 
@@ -1114,24 +1109,25 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
    * The ReviewRunCompletion.attempt of the run that posted the result. A
    * result a later run reports again keeps its thread and its attempt.
    *
-   * @generated from field: int64 attempt = 6;
+   * @generated from field: int64 attempt = 5;
    */
   attempt: bigint;
 
   /**
-   * The conditions a RULE result reports, as finding codes such as
-   * "WT101", one per reason. A code names the same condition on every
-   * engine. Empty for other reviewers.
+   * The conditions the result of a standard rule reports, as finding codes
+   * such as "WT101", one per reason. A code names the same condition on
+   * every engine. Empty on any other result.
    *
-   * @generated from field: repeated string codes = 7;
+   * @generated from field: repeated string codes = 6;
    */
   codes: string[];
 
   /**
-   * The name of the problem an AI result reports, on one line; the comment
-   * holds the rest. Empty for a RULE result, which rule_type names.
+   * The name of the problem, on one line, for a result that no standard
+   * rule names; the comment holds the rest. Empty on the result of a
+   * standard rule, which rule_type names.
    *
-   * @generated from field: string title = 8;
+   * @generated from field: string title = 7;
    */
   title: string;
 };
@@ -1309,45 +1305,38 @@ export declare type IssueComment_ReviewSubmission = Message<"bytebase.v1.IssueCo
 export declare const IssueComment_ReviewSubmissionSchema: GenMessage<IssueComment_ReviewSubmission>;
 
 /**
- * A review run completed, and what it did to the results of its reviewer.
- * Posted by the reviewer, with no creator.
+ * A review run completed, and what it did to the earlier results. Posted
+ * by the review, with no creator.
  *
  * @generated from message bytebase.v1.IssueComment.ReviewRunCompletion
  */
 export declare type IssueComment_ReviewRunCompletion = Message<"bytebase.v1.IssueComment.ReviewRunCompletion"> & {
   /**
-   * The reviewer that ran.
+   * Identifies the run among the runs on the issue. The results it posted
+   * carry the same ReviewMetadata.attempt.
    *
-   * @generated from field: bytebase.v1.ReviewRun.Type run_type = 1;
-   */
-  runType: ReviewRun_Type;
-
-  /**
-   * Identifies the run among its reviewer's runs on the issue. The results
-   * it posted carry the same ReviewMetadata.attempt.
-   *
-   * @generated from field: int64 attempt = 2;
+   * @generated from field: int64 attempt = 1;
    */
   attempt: bigint;
 
   /**
    * Results the run posted as new threads.
    *
-   * @generated from field: int32 posted_count = 3;
+   * @generated from field: int32 posted_count = 2;
    */
   postedCount: number;
 
   /**
    * Earlier results the run reported again, which kept their threads.
    *
-   * @generated from field: int32 kept_count = 4;
+   * @generated from field: int32 kept_count = 3;
    */
   keptCount: number;
 
   /**
    * Earlier results the run no longer reports, now superseded.
    *
-   * @generated from field: int32 superseded_count = 5;
+   * @generated from field: int32 superseded_count = 4;
    */
   supersededCount: number;
 };
@@ -1455,56 +1444,48 @@ export declare const StatementAnchorSchema: GenMessage<StatementAnchor>;
  */
 export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
   /**
-   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-   * The {reviewRun} id is the reviewer: "rule" or "ai". The name
-   * addresses a slot, not an execution.
+   * Format: projects/{project}/issues/{issue}/reviewRun
+   * An issue has one review run. The name addresses the current run, which
+   * a re-run replaces.
    *
    * @generated from field: string name = 1;
    */
   name: string;
 
   /**
-   * Derived from the name.
-   *
-   * @generated from field: bytebase.v1.ReviewRun.Type type = 2;
+   * @generated from field: bytebase.v1.ReviewRun.State state = 2;
    */
-  type: ReviewRun_Type;
-
-  /**
-   * @generated from field: bytebase.v1.ReviewRun.Status status = 3;
-   */
-  status: ReviewRun_Status;
+  state: ReviewRun_State;
 
   /**
    * When the current run was triggered. Reset on every re-run.
    *
-   * @generated from field: google.protobuf.Timestamp create_time = 4;
+   * @generated from field: google.protobuf.Timestamp create_time = 3;
    */
   createTime?: Timestamp | undefined;
 
   /**
-   * When the run reached a terminal status. Unset while AVAILABLE or
-   * RUNNING.
+   * When the run reached a terminal state. Unset while RUNNING.
    *
-   * @generated from field: google.protobuf.Timestamp end_time = 5;
+   * @generated from field: google.protobuf.Timestamp end_time = 4;
    */
   endTime?: Timestamp | undefined;
 
   /**
-   * Fatal execution error, set if and only if status is FAILED: the review
+   * Fatal execution error, set if and only if state is FAILED: the review
    * failed to execute (a platform problem, never the SQL — SQL problems are
-   * review results on a DONE run).
+   * review results on a SUCCEEDED run).
    *
-   * @generated from field: string error = 6;
+   * @generated from field: google.rpc.Status error = 5;
    */
-  error: string;
+  error?: Status | undefined;
 
   /**
    * Whether the plan's SQL changed after this run started, so the run
    * reviews an earlier version of it. The server starts a new run before it
    * creates the rollout automatically.
    *
-   * @generated from field: bool outdated = 7;
+   * @generated from field: bool outdated = 6;
    */
   outdated: boolean;
 };
@@ -1516,83 +1497,45 @@ export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
 export declare const ReviewRunSchema: GenMessage<ReviewRun>;
 
 /**
- * @generated from enum bytebase.v1.ReviewRun.Type
- */
-export enum ReviewRun_Type {
-  /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
-   */
-  TYPE_UNSPECIFIED = 0,
-
-  /**
-   * Review against the standard rules.
-   *
-   * @generated from enum value: RULE = 1;
-   */
-  RULE = 1,
-
-  /**
-   * Review against the natural-language AI review policy, performed by a
-   * model.
-   *
-   * @generated from enum value: AI = 2;
-   */
-  AI = 2,
-}
-
-/**
- * Describes the enum bytebase.v1.ReviewRun.Type.
- */
-export declare const ReviewRun_TypeSchema: GenEnum<ReviewRun_Type>;
-
-/**
- * States follow task_run, minus PENDING (review needs no admission
- * control) and minus CANCELED (runs are side-effect-free until the fenced
- * completion transaction, so re-running supersedes instead of canceling).
+ * There is no canceled state: a run has no effect until its fenced
+ * completion transaction, so a re-run supersedes it instead.
  *
- * @generated from enum bytebase.v1.ReviewRun.Status
+ * @generated from enum bytebase.v1.ReviewRun.State
  */
-export enum ReviewRun_Status {
+export enum ReviewRun_State {
   /**
-   * @generated from enum value: STATUS_UNSPECIFIED = 0;
+   * @generated from enum value: STATE_UNSPECIFIED = 0;
    */
-  STATUS_UNSPECIFIED = 0,
+  STATE_UNSPECIFIED = 0,
 
   /**
-   * Created and claimable by any replica.
+   * Queued or running.
    *
-   * @generated from enum value: AVAILABLE = 1;
+   * @generated from enum value: RUNNING = 1;
    */
-  AVAILABLE = 1,
+  RUNNING = 1,
 
   /**
-   * @generated from enum value: RUNNING = 2;
-   */
-  RUNNING = 2,
-
-  /**
-   * Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
-   * scope is every target. AI's scope is the project's CI sample, the first
-   * ci_sampling_size targets of each spec, or every target when
-   * ci_sampling_size is 0. DONE does not mean the review passed: whether
-   * problems remain is judged from open comments.
+   * Every (spec, target) unit in scope was evaluated. SUCCEEDED does not
+   * mean the review passed: whether problems remain is judged from open
+   * comments.
    *
-   * @generated from enum value: DONE = 3;
+   * @generated from enum value: SUCCEEDED = 2;
    */
-  DONE = 3,
+  SUCCEEDED = 2,
 
   /**
    * At least one unit was not evaluated; the cause is in `error`.
    *
-   * @generated from enum value: FAILED = 4;
+   * @generated from enum value: FAILED = 3;
    */
-  FAILED = 4,
+  FAILED = 3,
 }
 
 /**
- * Describes the enum bytebase.v1.ReviewRun.Status.
+ * Describes the enum bytebase.v1.ReviewRun.State.
  */
-export declare const ReviewRun_StatusSchema: GenEnum<ReviewRun_Status>;
+export declare const ReviewRun_StateSchema: GenEnum<ReviewRun_State>;
 
 /**
  * @generated from message bytebase.v1.GetReviewRunRequest
@@ -1600,7 +1543,7 @@ export declare const ReviewRun_StatusSchema: GenEnum<ReviewRun_Status>;
 export declare type GetReviewRunRequest = Message<"bytebase.v1.GetReviewRunRequest"> & {
   /**
    * The name of the review run to retrieve.
-   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   * Format: projects/{project}/issues/{issue}/reviewRun
    *
    * @generated from field: string name = 1;
    */
@@ -1618,7 +1561,7 @@ export declare const GetReviewRunRequestSchema: GenMessage<GetReviewRunRequest>;
  */
 export declare type RunReviewRequest = Message<"bytebase.v1.RunReviewRequest"> & {
   /**
-   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   * Format: projects/{project}/issues/{issue}/reviewRun
    *
    * @generated from field: string name = 1;
    */
@@ -1788,9 +1731,9 @@ export declare const IssueService: GenService<{
     output: typeof IssueSchema;
   },
   /**
-   * Gets the current run of one reviewer on an issue. The run carries
-   * execution status only; review results are issue comments. A reviewer
-   * that has never run on the issue is NOT_FOUND.
+   * Gets the review run of an issue. The run carries the execution state
+   * only; review results are issue comments. An issue the review has never
+   * run on is NOT_FOUND.
    * Permissions required: bb.reviewRuns.get
    *
    * @generated from rpc bytebase.v1.IssueService.GetReviewRun
@@ -1801,11 +1744,11 @@ export declare const IssueService: GenService<{
     output: typeof ReviewRunSchema;
   },
   /**
-   * Triggers a review run. The slot is reset unconditionally: a RUNNING
-   * execution is superseded (its completion is fenced off), the attempt
-   * number is bumped, and the returned run is AVAILABLE.
+   * Starts the review of an issue. It replaces the current run
+   * unconditionally: an execution in flight is superseded (its completion is
+   * fenced off), and the returned run is RUNNING.
    * Review results are not returned by this RPC: they are posted as issue
-   * comments. The returned run carries execution status only, and
+   * comments. The returned run carries the execution state only, and
    * GetReviewRun reads it back.
    * The audit log is the only record of who triggered a run.
    * Permissions required: bb.reviewRuns.run

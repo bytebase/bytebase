@@ -641,7 +641,7 @@ describe("ProjectPlanDetailPage", () => {
     mocks.reviewState = {
       rows: [
         {
-          reviewer: "rule",
+          reviewer: "review",
           conclusion: "open",
           findings: { open: 2, resolved: 0, openP0: 0 },
           holdsRollout: true,

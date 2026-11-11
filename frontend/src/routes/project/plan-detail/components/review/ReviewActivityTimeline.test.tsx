@@ -12,7 +12,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -326,7 +325,6 @@ describe("ReviewActivityTimeline", () => {
         event: {
           case: "reviewRunCompletion",
           value: create(IssueComment_ReviewRunCompletionSchema, {
-            runType: ReviewRun_Type.RULE,
             attempt,
             ...counts,
           }),
@@ -352,7 +350,6 @@ describe("ReviewActivityTimeline", () => {
           endPosition: create(PositionSchema, { line: 1, column: 0 }),
         }),
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           superseded,
           attempt,
         }),

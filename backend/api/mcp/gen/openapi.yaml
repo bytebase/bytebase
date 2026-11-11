@@ -3186,9 +3186,9 @@ paths:
         - bytebase.v1.IssueService
       summary: GetReviewRun
       description: |-
-        Gets the current run of one reviewer on an issue. The run carries
-         execution status only; review results are issue comments. A reviewer
-         that has never run on the issue is NOT_FOUND.
+        Gets the review run of an issue. The run carries the execution state
+         only; review results are issue comments. An issue the review has never
+         run on is NOT_FOUND.
          Permissions required: bb.reviewRuns.get
       operationId: bytebase.v1.IssueService.GetReviewRun
       parameters:
@@ -3441,11 +3441,11 @@ paths:
         - bytebase.v1.IssueService
       summary: RunReview
       description: |-
-        Triggers a review run. The slot is reset unconditionally: a RUNNING
-         execution is superseded (its completion is fenced off), the attempt
-         number is bumped, and the returned run is AVAILABLE.
+        Starts the review of an issue. It replaces the current run
+         unconditionally: an execution in flight is superseded (its completion is
+         fenced off), and the returned run is RUNNING.
          Review results are not returned by this RPC: they are posted as issue
-         comments. The returned run carries execution status only, and
+         comments. The returned run carries the execution state only, and
          GetReviewRun reads it back.
          The audit log is the only record of who triggered a run.
          Permissions required: bb.reviewRuns.run
@@ -14176,7 +14176,7 @@ components:
           title: name
           description: |-
             The name of the review run to retrieve.
-             Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+             Format: projects/{project}/issues/{issue}/reviewRun
       title: GetReviewRunRequest
       required:
         - name
@@ -15267,16 +15267,13 @@ components:
     bytebase.v1.IssueComment.ReviewMetadata:
       type: object
       properties:
-        runType:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
-          title: run_type
-          description: The reviewer that posted the result.
         ruleType:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.ReviewRuleType'
           title: rule_type
-          description: The rule judged against. Set if and only if run_type is RULE.
+          description: |-
+            The standard rule judged against. Set on the result of a standard rule,
+             and on no other result.
         priority:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata.Priority'
@@ -15293,8 +15290,8 @@ components:
           type: boolean
           title: superseded
           description: |-
-            A later run of the same reviewer has completed without reporting the
-             result again, whatever its thread state.
+            A later run has completed without reporting the result again, whatever
+             its thread state.
         attempt:
           type: string
           title: attempt
@@ -15308,15 +15305,16 @@ components:
             type: string
           title: codes
           description: |-
-            The conditions a RULE result reports, as finding codes such as
-             "WT101", one per reason. A code names the same condition on every
-             engine. Empty for other reviewers.
+            The conditions the result of a standard rule reports, as finding codes
+             such as "WT101", one per reason. A code names the same condition on
+             every engine. Empty on any other result.
         title:
           type: string
           title: title
           description: |-
-            The name of the problem an AI result reports, on one line; the comment
-             holds the rest. Empty for a RULE result, which rule_type names.
+            The name of the problem, on one line, for a result that no standard
+             rule names; the comment holds the rest. Empty on the result of a
+             standard rule, which rule_type names.
       title: ReviewMetadata
       additionalProperties: false
       description: What a review result carries beyond its text.
@@ -15334,18 +15332,13 @@ components:
     bytebase.v1.IssueComment.ReviewRunCompletion:
       type: object
       properties:
-        runType:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
-          title: run_type
-          description: The reviewer that ran.
         attempt:
           type: string
           title: attempt
           format: int64
           description: |-
-            Identifies the run among its reviewer's runs on the issue. The results
-             it posted carry the same ReviewMetadata.attempt.
+            Identifies the run among the runs on the issue. The results it posted
+             carry the same ReviewMetadata.attempt.
         postedCount:
           type: integer
           title: posted_count
@@ -15364,8 +15357,8 @@ components:
       title: ReviewRunCompletion
       additionalProperties: false
       description: |-
-        A review run completed, and what it did to the results of its reviewer.
-         Posted by the reviewer, with no creator.
+        A review run completed, and what it did to the earlier results. Posted
+         by the review, with no creator.
     bytebase.v1.IssueComment.ReviewSubmission:
       type: object
       title: ReviewSubmission
@@ -19807,19 +19800,13 @@ components:
           type: string
           title: name
           description: |-
-            Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-             The {reviewRun} id is the reviewer: "rule" or "ai". The name
-             addresses a slot, not an execution.
-        type:
+            Format: projects/{project}/issues/{issue}/reviewRun
+             An issue has one review run. The name addresses the current run, which
+             a re-run replaces.
+        state:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
-          title: type
-          description: Derived from the name.
-          readOnly: true
-        status:
-          allOf:
-            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Status'
-          title: status
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.State'
+          title: state
           readOnly: true
         createTime:
           allOf:
@@ -19831,17 +19818,16 @@ components:
           allOf:
             - $ref: '#/components/schemas/google.protobuf.Timestamp'
           title: end_time
-          description: |-
-            When the run reached a terminal status. Unset while AVAILABLE or
-             RUNNING.
+          description: When the run reached a terminal state. Unset while RUNNING.
           readOnly: true
         error:
-          type: string
+          allOf:
+            - $ref: '#/components/schemas/google.rpc.Status'
           title: error
           description: |-
-            Fatal execution error, set if and only if status is FAILED: the review
+            Fatal execution error, set if and only if state is FAILED: the review
              failed to execute (a platform problem, never the SQL — SQL problems are
-             review results on a DONE run).
+             review results on a SUCCEEDED run).
           readOnly: true
         outdated:
           type: boolean
@@ -19853,26 +19839,17 @@ components:
           readOnly: true
       title: ReviewRun
       additionalProperties: false
-    bytebase.v1.ReviewRun.Status:
+    bytebase.v1.ReviewRun.State:
       type: string
-      title: Status
+      title: State
       enum:
-        - STATUS_UNSPECIFIED
-        - AVAILABLE
+        - STATE_UNSPECIFIED
         - RUNNING
-        - DONE
+        - SUCCEEDED
         - FAILED
       description: |-
-        States follow task_run, minus PENDING (review needs no admission
-         control) and minus CANCELED (runs are side-effect-free until the fenced
-         completion transaction, so re-running supersedes instead of canceling).
-    bytebase.v1.ReviewRun.Type:
-      type: string
-      title: Type
-      enum:
-        - TYPE_UNSPECIFIED
-        - RULE
-        - AI
+        There is no canceled state: a run has no effect until its fenced
+         completion transaction, so a re-run supersedes it instead.
     bytebase.v1.Revision:
       type: object
       properties:
@@ -20344,7 +20321,7 @@ components:
         name:
           type: string
           title: name
-          description: 'Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}'
+          description: 'Format: projects/{project}/issues/{issue}/reviewRun'
       title: RunReviewRequest
       required:
         - name
@@ -25676,15 +25653,10 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        Represents a JSON `null`.
+        `NullValue` is a singleton enumeration to represent the null value for the
+         `Value` type union.
 
-         `NullValue` is a sentinel, using an enum with only one value to represent
-         the null value for the `Value` type union.
-
-         A field of type `NullValue` with any value other than `0` is considered
-         invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
-         set as a JSON `null` regardless of the integer value, and so will round trip
-         to a `0` value.
+         The JSON representation for `NullValue` is JSON `null`.
     google.protobuf.Struct:
       type: object
       additionalProperties:

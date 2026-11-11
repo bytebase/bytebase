@@ -11,7 +11,7 @@ import {
   GetIssueRequestSchema,
   GetReviewRunRequestSchema,
   Issue_Type,
-  ReviewRun_Status,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   GetPlanCheckRunRequestSchema,
@@ -38,7 +38,7 @@ type NotConfigured = { status: "not_configured" };
 type NotStarted = { status: "not_started" };
 
 type ReviewFacet =
-  | Available<{ runStatus: string }>
+  | Available<{ runState: string }>
   | Unavailable
   | NotConfigured
   | NotStarted;
@@ -71,7 +71,7 @@ type IssueOverview = {
     | Unavailable
     | NotConfigured
     | NotStarted;
-  reviews: { rule: ReviewFacet; ai: ReviewFacet };
+  review: ReviewFacet;
   rollout:
     | Available<{
         name: string;
@@ -168,10 +168,7 @@ function unavailableOverview(project: string): IssueOverview {
     issue: { status: "unavailable" },
     plan: { status: "unavailable" },
     planCheck: { status: "unavailable" },
-    reviews: {
-      rule: { status: "unavailable" },
-      ai: { status: "unavailable" },
-    },
+    review: { status: "unavailable" },
     rollout: { status: "unavailable" },
     taskRuns: { status: "unavailable" },
     evidence: { project, references: [] },
@@ -208,7 +205,7 @@ function parseReviewResult(
     }
     return {
       status: "available",
-      runStatus: enumName(ReviewRun_Status, result.value.status),
+      runState: enumName(ReviewRun_State, result.value.state),
     };
   }
   return isNotFound(result.reason)
@@ -267,10 +264,7 @@ export async function collectIssueOverview(
       issue: issueFacet,
       plan: { status: "not_configured" },
       planCheck: { status: "not_configured" },
-      reviews: {
-        rule: { status: "not_configured" },
-        ai: { status: "not_configured" },
-      },
+      review: { status: "not_configured" },
       rollout: { status: "not_started" },
       taskRuns: { status: "not_started" },
       evidence,
@@ -285,31 +279,23 @@ export async function collectIssueOverview(
     };
   }
 
-  const [planResult, planCheckResult, ruleReviewResult, aiReviewResult] =
-    await Promise.allSettled([
-      planServiceClientConnect.getPlan(
-        create(GetPlanRequestSchema, { name: issue.plan }),
-        silentOptions
-      ),
-      planServiceClientConnect.getPlanCheckRun(
-        create(GetPlanCheckRunRequestSchema, {
-          name: `${issue.plan}/planCheckRun`,
-        }),
-        silentOptions
-      ),
-      issueServiceClientConnect.getReviewRun(
-        create(GetReviewRunRequestSchema, {
-          name: `${issue.name}/reviewRuns/rule`,
-        }),
-        silentOptions
-      ),
-      issueServiceClientConnect.getReviewRun(
-        create(GetReviewRunRequestSchema, {
-          name: `${issue.name}/reviewRuns/ai`,
-        }),
-        silentOptions
-      ),
-    ]);
+  const reviewRunName = `${issue.name}/reviewRun`;
+  const [planResult, planCheckResult, reviewResult] = await Promise.allSettled([
+    planServiceClientConnect.getPlan(
+      create(GetPlanRequestSchema, { name: issue.plan }),
+      silentOptions
+    ),
+    planServiceClientConnect.getPlanCheckRun(
+      create(GetPlanCheckRunRequestSchema, {
+        name: `${issue.plan}/planCheckRun`,
+      }),
+      silentOptions
+    ),
+    issueServiceClientConnect.getReviewRun(
+      create(GetReviewRunRequestSchema, { name: reviewRunName }),
+      silentOptions
+    ),
+  ]);
 
   const plan =
     planResult.status === "fulfilled" &&
@@ -347,10 +333,7 @@ export async function collectIssueOverview(
       : isNotFound(planCheckResult.reason)
         ? { status: "not_started" as const }
         : { status: "unavailable" as const };
-  const reviews = {
-    rule: parseReviewResult(ruleReviewResult, `${issue.name}/reviewRuns/rule`),
-    ai: parseReviewResult(aiReviewResult, `${issue.name}/reviewRuns/ai`),
-  };
+  const review = parseReviewResult(reviewResult, reviewRunName);
 
   if (plan.status !== "available") {
     return {
@@ -358,7 +341,7 @@ export async function collectIssueOverview(
       issue: issueFacet,
       plan,
       planCheck,
-      reviews,
+      review,
       rollout: { status: "unavailable" },
       taskRuns: { status: "unavailable" },
       evidence,
@@ -371,7 +354,7 @@ export async function collectIssueOverview(
       issue: issueFacet,
       plan,
       planCheck,
-      reviews,
+      review,
       rollout: { status: "not_started" },
       taskRuns: { status: "not_started" },
       evidence,
@@ -394,7 +377,7 @@ export async function collectIssueOverview(
       issue: issueFacet,
       plan,
       planCheck,
-      reviews,
+      review,
       rollout: { status: "unavailable" },
       taskRuns: { status: "unavailable" },
       evidence,
@@ -450,7 +433,7 @@ export async function collectIssueOverview(
     issue: issueFacet,
     plan,
     planCheck,
-    reviews,
+    review,
     rollout: {
       status: "available",
       name: rollout.name,
