@@ -772,7 +772,7 @@ describe("title bar", () => {
   test("a click on the bar's title folds and unfolds; the fold control folds once; a drag that selects text does not", () => {
     const onToggleFold = vi.fn();
     render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
-    const title = barNode()?.querySelector("[title]") as HTMLElement;
+    const title = foldControl()?.nextElementSibling as HTMLElement;
     click(title);
     expect(onToggleFold).toHaveBeenCalledTimes(1);
     click(barNode());
