@@ -769,6 +769,30 @@ describe("title bar", () => {
     expect(container.querySelector('button[aria-label="common.close"]')).toBeNull();
   });
 
+  test("a click on the bar's title folds and unfolds; the fold control folds once; a drag that selects text does not", () => {
+    const onToggleFold = vi.fn();
+    render(<CommentThreadCard bar={bar(false, onToggleFold)} collapsible={false} issue={issue} project={project} thread={findingThread()} />);
+    const title = barNode()?.querySelector("[title]") as HTMLElement;
+    click(title);
+    expect(onToggleFold).toHaveBeenCalledTimes(1);
+    click(barNode());
+    expect(onToggleFold).toHaveBeenCalledTimes(2);
+    // The fold control is still the one control that folds, never twice.
+    click(foldControl());
+    expect(onToggleFold).toHaveBeenCalledTimes(3);
+    // A drag that ends with selected text in the bar does not fold it.
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    window.getSelection()?.removeAllRanges();
+    window.getSelection()?.addRange(range);
+    click(title);
+    expect(onToggleFold).toHaveBeenCalledTimes(3);
+    window.getSelection()?.removeAllRanges();
+    // The bar adds no focus stop of its own.
+    expect(barNode()?.getAttribute("tabindex")).toBeNull();
+    expect(barNode()?.getAttribute("role")).toBeNull();
+  });
+
   test("says Resolved in the bar, never in the footer, and nothing for an open thread", () => {
     render(<CommentThreadCard bar={bar(false)} collapsible={false} issue={issue} project={project} thread={findingThread(true)} />);
     const states = container.querySelectorAll("[data-testid='thread-state']");

@@ -7,6 +7,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
+  type MouseEvent,
   type ReactNode,
   type SetStateAction,
   useContext,
@@ -397,6 +398,14 @@ type ThreadBarProps = {
 
 // Every word and icon in the bar is text-control: text-control-light falls
 // under the 4.5:1 contrast minimum on the bar's background.
+// A click inside the bar folds unless it lands on a control, which keeps its
+// own meaning, or ends a drag that selected text.
+const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
+  const target = event.target as Element;
+  if (target.closest("button, a, input, [role='button']")) return false;
+  return !window.getSelection()?.toString();
+};
+
 function ThreadBar({
   folded,
   onToggleFold,
@@ -404,12 +413,17 @@ function ThreadBar({
   title,
 }: ThreadBarProps & { resolved: boolean }) {
   return (
+    // A click anywhere on the bar folds too. It is a pointer shortcut: the fold
+    // control stays the one focusable control, and the keyboard's path.
     <div
       className={cn(
-        "flex min-h-8 min-w-0 items-center gap-x-2 bg-background px-2 text-xs text-control",
+        "flex min-h-8 min-w-0 cursor-pointer items-center gap-x-2 bg-background px-2 text-xs text-control",
         folded ? "rounded-sm" : "rounded-t-sm border-b border-block-border"
       )}
       data-testid="thread-bar"
+      onClick={(event) => {
+        if (shouldFoldFromBarClick(event)) onToggleFold();
+      }}
     >
       <Button
         appearance="secondary"

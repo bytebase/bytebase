@@ -1159,7 +1159,8 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     // Folded, the card is its bar: the title stays, the comment goes.
     await expect(foldA).toHaveAttribute("aria-expanded", "false");
     await expect(planPage.threadCardIn("changes", rootA)).toHaveCount(0);
-    await foldA.click();
+    // A click on the bar's title unfolds it too.
+    await planPage.threadBar("Comment on line 2").getByText("Comment on line 2", { exact: true }).click();
     await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
 
     const foldB = planPage.threadFoldControl("Comment on lines 4–5");
