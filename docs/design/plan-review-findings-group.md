@@ -3,7 +3,8 @@
 Status: proposal · 2026-11-11
 
 When Standard rules or AI review finishes a run on a plan, the Activity timeline records it as one
-line, such as "Standard rules reviewed the SQL · 2 findings, 1 open", with a Show or Hide control.
+line, such as "Standard rules reviewed the SQL · 2 new findings, 1 open", with a Show or Hide
+control.
 The findings that run posted are comment threads. Today each one is its own timeline entry, with
 its own icon, at the same level as the review line that owns it, so nothing on the page says which
 findings belong to which review. The rule this doc lands on: **a review and the findings it posted
@@ -94,7 +95,7 @@ line, and Show and Hide are its fold control:
 Today a hidden run still shows the findings `needsActivityCard` in `threadModel.ts` keeps: one
 people replied to, or one the Changes section cannot show. So when every finding of a review has
 a reply, Hide changes nothing but its own word, and reads as broken. A hidden finding is not
-lost: the review line still counts it, as in "2 findings, 1 open", and Show brings it back.
+lost: the review line still counts it, as in "2 new findings, 1 open", and Show brings it back.
 The old rule also kept a card on the page for a finding the Changes section cannot show, which
 is where `focusInActivity` in `useFocusThread.ts` sends the reader. Opening the group on such a
 request keeps that jump working.
@@ -119,7 +120,7 @@ Rejected: an outlined button, which is heavier than the one line it sits on.
 | No findings | The review line alone |
 | Open, with findings | A group: the review line, then one card per finding |
 | Hidden, with findings | The group folded: its frame around the review line, with Show |
-| A later review | The line says what changed: "1 new, 1 still found, 1 no longer found" |
+| A later review | The line counts only the findings it posted: "1 new finding", or "no new findings" |
 | A finding a later run reports again | Its thread stays with the run that first posted it, as today |
 | A comment from a person | Its own entry, outside any group |
 

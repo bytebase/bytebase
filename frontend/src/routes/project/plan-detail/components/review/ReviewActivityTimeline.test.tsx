@@ -33,10 +33,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
-    t: (key: string) =>
-      key === "plan.review.activity.marked-ready-for-review"
-        ? "marked this plan ready for review"
-        : key,
+    t: (key: string, options?: { count?: number }) => {
+      if (key === "plan.review.activity.marked-ready-for-review")
+        return "marked this plan ready for review";
+      if (key === "plan.findings.separator") return ", ";
+      return options?.count === undefined ? key : `${key}(${options.count})`;
+    },
   }),
 }));
 
@@ -411,12 +413,6 @@ describe("ReviewActivityTimeline", () => {
       expect(button.className).toContain("text-accent");
       expect(button.className).not.toContain("text-control-light");
     }
-    const text = container.textContent ?? "";
-    expect(text).toContain("plan.review.activity.n-findings");
-    expect(text).toContain("plan.review.activity.n-no-longer-found");
-    expect(text).toContain("plan.review.activity.n-still-found");
-    // The re-run posted an open finding, but its line counts only changes.
-    expect(text).not.toContain("plan.automated-review.n-open");
 
     act(() => (runButtons()[0] as HTMLButtonElement).click());
     expect(cards()).toEqual(["old", "new"]);
@@ -543,6 +539,77 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
     container.remove();
     Element.prototype.scrollIntoView = original;
+  });
+
+  test.each([
+    {
+      name: "counts the findings it posted and how many are open",
+      counts: { postedCount: 2 },
+      findingStates: [
+        IssueComment_ThreadState.OPEN,
+        IssueComment_ThreadState.RESOLVED,
+      ],
+      expected:
+        "plan.review.activity.n-new-findings(2), plan.automated-review.n-open(1)",
+    },
+    {
+      name: "leaves out the findings it reported again or no longer reports",
+      counts: { postedCount: 1, keptCount: 2, supersededCount: 3 },
+      findingStates: [IssueComment_ThreadState.RESOLVED],
+      expected: "plan.review.activity.n-new-findings(1)",
+    },
+    {
+      name: "says no new findings when it only repeated earlier ones",
+      counts: { keptCount: 1, supersededCount: 1 },
+      findingStates: [],
+      expected: "plan.review.activity.no-new-findings",
+    },
+    {
+      name: "says no new findings when it reported nothing",
+      counts: { supersededCount: 1 },
+      findingStates: [],
+      expected: "plan.review.activity.no-new-findings",
+    },
+  ])("a run's line $name", ({ counts, findingStates, expected }) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[
+            create(IssueCommentSchema, {
+              name: "projects/p1/issues/1/issueComments/run",
+              event: {
+                case: "reviewRunCompletion",
+                value: create(IssueComment_ReviewRunCompletionSchema, {
+                  runType: ReviewRun_Type.AI,
+                  attempt: 3n,
+                  ...counts,
+                }),
+              },
+            }),
+            ...findingStates.map((threadState, i) =>
+              create(IssueCommentSchema, {
+                name: `projects/p1/issues/1/issueComments/finding-${i}`,
+                comment: "No WHERE clause",
+                threadState,
+                reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
+                  runType: ReviewRun_Type.AI,
+                  attempt: 3n,
+                }),
+              })
+            ),
+          ]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+    const spans = [...container.querySelectorAll("li span")].map(
+      (span) => span.textContent
+    );
+    expect(spans).toContain(expected);
+    act(() => root.unmount());
   });
 
   test("unfolds the timeline to reach a card asked for from elsewhere", () => {
