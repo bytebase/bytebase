@@ -47,6 +47,9 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
 		}
+		if err := s.checkActiveProject(ctx, pid); err != nil {
+			return nil, err
+		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
 		// workspace-level workload identity: parent = "workspaces/{id}"
@@ -110,6 +113,24 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	}
 
 	return connect.NewResponse(convertToWorkloadIdentity(createdWI)), nil
+}
+
+// checkActiveProject refuses a project that is missing, archived or another
+// workspace's. The project cache is keyed by ID alone, so it can return another
+// workspace's project whatever workspace the lookup names.
+func (s *WorkloadIdentityService) checkActiveProject(ctx context.Context, projectID string) error {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  workspaceID,
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
+	}
+	if project == nil || project.Workspace != workspaceID || project.Deleted {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", common.FormatProject(projectID)))
+	}
+	return nil
 }
 
 // GetWorkloadIdentity gets a workload identity by name.
