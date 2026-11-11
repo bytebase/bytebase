@@ -300,7 +300,7 @@ describe("ReviewActivityTimeline", () => {
     act(() => root.unmount());
   });
 
-  test("a run's line shows and hides its finding cards in place", () => {
+  test("a run's line shows and hides its finding cards in place, with Show and Hide in the link color", () => {
     const sha = "c".repeat(64);
     const plan = create(PlanSchema, {
       name: "projects/p1/plans/1",
@@ -386,7 +386,6 @@ describe("ReviewActivityTimeline", () => {
       "common.show",
       "common.hide",
     ]);
-    // Show and Hide take the shared link button's own color, like any link.
     for (const button of runButtons()) {
       expect(button.className).toContain("text-accent");
       expect(button.className).not.toContain("text-control-light");
