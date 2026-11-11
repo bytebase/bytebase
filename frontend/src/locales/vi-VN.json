@@ -3376,7 +3376,7 @@
             "title": "Phê duyệt hoặc từ chối Issue"
           },
           "ci-identities": {
-            "details": "Tạo một danh tính khối lượng công việc mà các job GitHub Actions hoặc GitLab CI trong một kho mã dùng để đăng nhập, với vai trò Tác nhân Dịch vụ GitOps trong một dự án · Mỗi danh tính được xác nhận trong ứng dụng MCP của người dùng trước khi được tạo · Chính sách này không giới hạn những gì nó làm, và nó tồn tại cho đến khi bị xóa",
+            "details": "Tạo một danh tính khối lượng công việc mà các job GitHub Actions hoặc GitLab CI trong một kho mã dùng để đăng nhập, với vai trò Tác nhân Dịch vụ GitOps trong một dự án, nên nó có thể triển khai mà không cần phê duyệt · Mỗi danh tính được xác nhận trong ứng dụng MCP của người dùng trước khi được tạo · Chính sách này không giới hạn những gì nó làm, và nó tồn tại cho đến khi bị xóa",
             "title": "Tạo danh tính CI"
           },
           "export": {

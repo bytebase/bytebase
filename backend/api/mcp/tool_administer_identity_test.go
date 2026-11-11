@@ -179,14 +179,14 @@ func TestAdministerIdentityCreatesJourneyFoursIdentityWithItsRole(t *testing.T) 
 		`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
 		`Any GitHub Actions job in "example-org/hr-migrations" signs in as it,`,
 		`> and the MCP access policy does not limit it.`,
-		`Role: GitOps Service Agent in this project. It lasts until removed.`,
+		`Role: GitOps Service Agent. It can roll out without approval.`,
 	}, "\n"), asked.Message)
 	for _, line := range strings.Split(asked.Message, "\n")[1:] {
 		require.LessOrEqual(t, lineColumns(line), messageLineWidth, line)
 	}
 	require.Equal(t, strings.Join([]string{
 		`The rule trusts the owner's name: if "example-org" is renamed or deleted, whoever registers the name can sign in as it.`,
-		`It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://token.actions.githubusercontent.com for audience "bytebase".`,
+		`It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://token.actions.githubusercontent.com for audience "bytebase". It lasts until it is removed.`,
 		`GitOps Service Agent lets it create plans, releases and rollouts in this project and run their tasks in every environment. Its rollouts carry no issue, so no approval rule holds them. Titled "HR migrations CI".`,
 	}, "\n"), choiceDescription(t, asked))
 
@@ -247,7 +247,7 @@ func TestAdministerIdentityFitsTheOtherShapesInFourLines(t *testing.T) {
 				`Create workload identity "analytics-pipeline-ci" in "data-platform", as alice@example.com?`,
 				`Any GitHub Actions job in "data-platform-org/analytics-migrations"`,
 				`> signs in as it, and the MCP access policy does not limit it.`,
-				`Role: GitOps Service Agent in this project. It lasts until removed.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
 			},
 		},
 		"a GitLab project in a subgroup": {
@@ -258,7 +258,7 @@ func TestAdministerIdentityFitsTheOtherShapesInFourLines(t *testing.T) {
 				`Create workload identity "hr-migrations-ci" in "hr", as alice@example.com?`,
 				`Any GitLab CI job in "acme/team/deploy" signs in as it, and the MCP`,
 				`> access policy does not limit it.`,
-				`Role: GitOps Service Agent in this project. It lasts until removed.`,
+				`Role: GitOps Service Agent. It can roll out without approval.`,
 			},
 		},
 	} {
@@ -277,7 +277,7 @@ func TestAdministerIdentityWarnsOfTheOwnersNameOnlyWithNeitherID(t *testing.T) {
 		"repo:example-org@111/hr-migrations:*":     `The pattern pins owner ID "111", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org/hr-migrations@456:*":     `The pattern pins repository ID "456", so a new account under a freed name cannot sign in as it.`,
 		"repo:example-org@111/hr-migrations@456:*": `The pattern pins owner ID "111" and repository ID "456", so a new account under a freed name cannot sign in as it.`,
-		"project_path:example-org/hr-migrations:*": `It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://gitlab.com for audience "bytebase".`,
+		"project_path:example-org/hr-migrations:*": `It signs in as hr-migrations-ci@hr.workload.bytebase.com with tokens from https://gitlab.com for audience "bytebase". It lasts until it is removed.`,
 	} {
 		t.Run(pattern, func(t *testing.T) {
 			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}

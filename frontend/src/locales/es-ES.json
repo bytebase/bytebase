@@ -3376,7 +3376,7 @@
             "title": "Aprobar o rechazar issues"
           },
           "ci-identities": {
-            "details": "Crear una identidad de carga de trabajo con la que inician sesión los trabajos de GitHub Actions o GitLab CI de un repositorio, con el rol Agente de Servicio GitOps en un proyecto · Cada identidad se confirma en el cliente MCP del usuario antes de crearse · Esta política no limita lo que hace, y dura hasta que se elimina",
+            "details": "Crear una identidad de carga de trabajo con la que inician sesión los trabajos de GitHub Actions o GitLab CI de un repositorio, con el rol Agente de Servicio GitOps en un proyecto, de modo que puede desplegar sin aprobación · Cada identidad se confirma en el cliente MCP del usuario antes de crearse · Esta política no limita lo que hace, y dura hasta que se elimina",
             "title": "Crear identidades de CI"
           },
           "export": {

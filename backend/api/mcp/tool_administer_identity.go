@@ -321,7 +321,7 @@ func identityForm(ctx context.Context, c *identityCreation, link string) (*admin
 	}
 	changes := []formChange{
 		{text: fmt.Sprintf("Any %s job in %q signs in as it, and the MCP access policy does not limit it.", jobs, repository.path)},
-		{text: fmt.Sprintf("Role: %s in this project. It lasts until removed.", identityRoleTitle)},
+		{text: fmt.Sprintf("Role: %s. It can roll out without approval.", identityRoleTitle)},
 	}
 	return fitForm(ctx, question(c.request.GetWorkloadIdentityId()), changes, "", "", identityDescription(c, repository), func(needed int, _ string) error {
 		return &toolError{
@@ -351,7 +351,7 @@ func identityDescription(c *identityCreation, repository identityRepository) str
 			fmt.Fprintf(&sb, "The pattern pins %s, so a new account under a freed name cannot sign in as it.\n", strings.Join(pins, " and "))
 		}
 	}
-	fmt.Fprintf(&sb, "It signs in as %s with tokens from %s for audience %q.", c.email, c.config().GetIssuerUrl(), identityAudience)
+	fmt.Fprintf(&sb, "It signs in as %s with tokens from %s for audience %q. It lasts until it is removed.", c.email, c.config().GetIssuerUrl(), identityAudience)
 	// The role holds bb.taskRuns.create, which runs tasks in every environment,
 	// and no issue permission, so its rollouts carry no issue; approval checks
 	// apply only to a rollout with an issue (RolloutService.CreateRollout).
