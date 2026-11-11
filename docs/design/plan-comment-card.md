@@ -91,10 +91,10 @@ even where it follows the tables.
    the lines where the bar shows them apart from the title. Whatever the title is, the control has
    a name.
 6. **Color in the bar is kept for what the reader must act on.** The bar's words and icons are
-   `text-control`. Besides the link, three things in it are colored: the badge of a P0 or P1
-   finding, "Prod", and "Outdated". The two markers are badges with a light fill and no
-   border. "Resolved" and "Statement unavailable" are text with an icon, with no color and no
-   fill.
+   `text-control`. Besides the link, two things in it have a color of their own: the badge of a
+   P0 or P1 finding, and "Outdated". "Prod" is a badge too, with a light tint behind the bar's
+   own text color, so it marks without calling. "Resolved" and "Statement unavailable" are
+   text with an icon, with no color and no fill.
 7. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
    sees none.
 8. **A place adds content, not a layout.** The Changes section and Activity fill the same bar and
@@ -225,9 +225,12 @@ accepted by a person, so both need someone to act, and with several folded findi
 say which to open first. The badge is the one `ReviewResult` draws beside the finding's title.
 That one stays, so an unfolded finding shows its priority twice. The bar cannot drop it on
 unfold without breaking invariant 4. "Prod" takes the same form as the priority badge, a light
-fill with no border: `Badge variant="secondary"`, the accent at 10% behind accent text. That is
-also how the product draws an environment in its default color. Rejected: an outlined "Prod"
-beside a filled priority badge. The two markers then read as different kinds of thing.
+fill with no border: a `Badge` with `bg-accent/10` behind `text-control`. The tint is the one
+the product gives an environment in its default color, so the badge reads as an environment.
+Its text stays the bar's gray. Rejected: an outlined "Prod" beside a filled priority badge. The
+two markers then read as different kinds of thing. Rejected: accent text on the tint, as the
+environment badge has. "Prod" is context, and it would be the most saturated text in the bar,
+louder than the P1 badge beside it and the same color as the link at the bar's other end.
 Rejected: no markers. Nothing would say which folded finding must be fixed. Rejected: a badge for
 P2. It is advisory, and a marker on every finding marks nothing. Rejected: the database's name in
 the label. It makes the bar a third longer and repeats the "Applies to" row. Rejected: the
@@ -352,10 +355,10 @@ in the slice's own PR and reviewed there.
      deleted change and a thread that is not on lines; two folded cards whose fold controls have
      different names; a folded P0 finding shows its badge; a click on the change's label folds,
      and a click on the lines or on the link does not; the excerpt renders in the body and not
-     in the bar; "Outdated" carries the warning color and no fill, and "Resolved" and "Statement unavailable" carry neither; the
-     frame has the corners and the shadow in both places. `check-ui-guideline.test.mjs`: the
-     scanner accepts `rounded-lg` in a file that draws a comment card and still rejects it in
-     any other file. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
+     in the bar; "Outdated" carries the warning color and no fill, and "Resolved" and "Statement
+     unavailable" carry neither; the frame has the corners and the shadow in both places.
+     `check-ui-guideline.test.mjs`: the scanner accepts `rounded-lg` in a file that draws a
+     comment card and still rejects it in any other file. E2E: `plan-detail-review.spec.ts` covers folding and resolving in Activity.
 3. **No line tints, the gray ground, and the width limit (D1, D2's width, D11).** Depends on
    slice 1, which gives every thread in the Changes section a title that names its lines.
    - Delivers: invariant 1, the statement's ground from invariant 2, and every row of On the
@@ -389,8 +392,8 @@ in the slice's own PR and reviewed there.
      for "Prod".
    - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: "Prod" shows
      when one of the finding's databases is in a production environment, and does not when
-     none is, when the environment-tier feature is off, or on a person's thread; the label
-     holds no database name.
+     none is, when the environment-tier feature is off, or on a person's thread; the badge
+     holds no database name, and has the tint, the bar's text color and no border.
 
 D9 changes nothing, so no slice carries it.
 
