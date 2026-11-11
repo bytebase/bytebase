@@ -16,9 +16,9 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 72 | served to a read-only session and above |
+| READ | 70 | served to a read-only session and above |
 | WRITE | 46 | served to a read-write session only |
-| EXCLUDED | 70 | served by no ceiling this phase ships |
+| EXCLUDED | 72 | served by no ceiling this phase ships |
 | FORBIDDEN | 32 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **220** | |
@@ -233,8 +233,8 @@ served by no ceiling.
 | UserService/UpdateUser | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | WorkloadIdentityService/CreateWorkloadIdentity | WRITE | — | bb.workloadIdentities.create |
 | WorkloadIdentityService/DeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.delete |
-| WorkloadIdentityService/GetWorkloadIdentity | READ | — | bb.workloadIdentities.get |
-| WorkloadIdentityService/ListWorkloadIdentities | READ | — | bb.workloadIdentities.list |
+| WorkloadIdentityService/GetWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.get |
+| WorkloadIdentityService/ListWorkloadIdentities | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.list |
 | WorkloadIdentityService/UndeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.undelete |
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |

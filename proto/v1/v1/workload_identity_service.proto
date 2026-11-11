@@ -43,7 +43,8 @@ service WorkloadIdentityService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.workloadIdentities.get";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = READ;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Lists workload identities.
@@ -57,7 +58,8 @@ service WorkloadIdentityService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.workloadIdentities.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = READ;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a workload identity.

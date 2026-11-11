@@ -337,8 +337,4 @@ func TestMCPCreatesAWorkloadIdentityAfterAConfirmation(t *testing.T) {
 	a.Equal([]string{"bytebase"}, identity.GetWorkloadIdentityConfig().GetAllowedAudiences())
 	a.Equal("repo:acme-corp/deploy:*", identity.GetWorkloadIdentityConfig().GetSubjectPattern())
 	a.True(granted(), "the identity holds the GitOps Service Agent role with no condition")
-
-	listed := callAPIOnSession(ctx, t, session, "WorkloadIdentityService/ListWorkloadIdentities", map[string]any{"parent": ctl.project.Name})
-	a.Equal(http.StatusOK, listed.Status, listed.Error)
-	a.Contains(listed.RawResponse, email, "the reads are served, so the agent sees what exists")
 }
