@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   envTier: true,
   databasesByName: {} as Record<string, unknown>,
   environmentList: [] as unknown[],
+  batchFetch: vi.fn(async (_names: string[]) => [] as unknown[]),
 }));
 
 vi.mock("@/utils/featureGates", () => ({
@@ -113,7 +114,8 @@ vi.mock("@/stores/app", () => ({
       }),
     {
       getState: () => ({
-        batchGetOrFetchDatabases: async () => [],
+        batchGetOrFetchDatabases: (names: string[]) => mocks.batchFetch(names),
+        databasesByName: mocks.databasesByName,
         createIssueComment: mocks.createIssueComment,
         updateIssueComment: mocks.updateIssueComment,
       }),
@@ -1013,6 +1015,29 @@ describe("the production badge in the bar", () => {
   const changesBar = (folded: boolean) => ({ place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });
   const barNode = () => container.querySelector("[data-testid='thread-bar']") as HTMLElement;
   const envBadges = () => [...barNode().querySelectorAll("[data-testid='thread-production']")] as HTMLElement[];
+
+  test("cards that mount together ask for their uncached databases once, by valid name only", () => {
+    mocks.databasesByName = {};
+    mocks.batchFetch.mockReset();
+    mocks.batchFetch.mockReturnValue(new Promise(() => {}));
+    const shared = [PROD_DB, TEST_DB, "not-a-database"];
+    render(
+      <>
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, shared)} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P2, shared)} />
+        <CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P0, shared)} />
+      </>
+    );
+    expect(mocks.batchFetch.mock.calls).toEqual([[[PROD_DB, TEST_DB]]]);
+  });
+
+  test("caps a long environment name at a width it truncates to, with the full name on hover", () => {
+    render(<CommentThreadCard bar={changesBar(false)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_DB])} />);
+    const [badge] = envBadges();
+    expect(badge.className.split(" ")).toContain("max-w-40");
+    expect(badge.getAttribute("title")).toBe("Production");
+    expect(badge.querySelector(".truncate")?.textContent).toBe("Production");
+  });
 
   test("shows the environment's badge after the priority, by name on a tint of its color, folded and unfolded", () => {
     for (const folded of [true, false]) {

@@ -1,9 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
 import { EnvironmentSetting_EnvironmentSchema } from "@/types/proto-es/v1/setting_service_pb";
 import type { Environment } from "@/types/v1/environment";
-import { productionEnvironmentsOf } from "./productionTargets";
+import {
+  productionEnvironmentsOf,
+  requestMissingDatabases,
+} from "./productionTargets";
 
 const environment = (
   id: string,
@@ -79,4 +82,48 @@ describe("productionEnvironmentsOf", () => {
       ).toEqual(expected);
     }
   );
+});
+
+describe("requestMissingDatabases", () => {
+  test("asks once for a name that is cached or already being fetched by another card", async () => {
+    const pending: (() => void)[] = [];
+    const fetch = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          pending.push(resolve);
+        })
+    );
+    const cached = (name: string) => name === "instances/i/databases/cached";
+    const first = requestMissingDatabases(
+      ["instances/i/databases/a", "instances/i/databases/cached"],
+      cached,
+      fetch
+    );
+    const second = requestMissingDatabases(
+      ["instances/i/databases/a", "instances/i/databases/b"],
+      cached,
+      fetch
+    );
+    expect(fetch.mock.calls).toEqual([
+      [["instances/i/databases/a"]],
+      [["instances/i/databases/b"]],
+    ]);
+    for (const resolve of pending) resolve();
+    await Promise.all([first, second]);
+  });
+
+  test("asks again after a request ends, so a name that failed is retried by the next card", async () => {
+    const fetch = vi.fn(() => Promise.reject(new Error("not found")));
+    await requestMissingDatabases(
+      ["instances/i/databases/gone"],
+      () => false,
+      fetch
+    ).catch(() => {});
+    await requestMissingDatabases(
+      ["instances/i/databases/gone"],
+      () => false,
+      fetch
+    ).catch(() => {});
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });

@@ -437,8 +437,8 @@ export function StatementThreadsLayer({
     const decorations: monaco.editor.IModelDeltaDecoration[] = [];
     const stickiness =
       monacoModule.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges;
-    // No thread paints its lines. The one highlight is the reader's own
-    // selection and the lines of an open composer, one background per line.
+    // The one highlight is the reader's own selection and the lines of an
+    // open composer, one background per line.
     const selectedLines = new Set<number>();
     const pendingSelection = canCreate ? selection : undefined;
     for (const range of [

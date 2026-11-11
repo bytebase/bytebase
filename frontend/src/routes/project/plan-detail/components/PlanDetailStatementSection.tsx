@@ -107,11 +107,16 @@ const STATEMENT_EDITOR_OPTIONS = {
   occurrencesHighlight: "off",
 } as const;
 
-// Sticky scroll would pin statement lines over the thread view zones.
-const THREADS_EDITOR_OPTIONS = {
+// A pinned sticky-scroll line would paint the editor's white over the
+// statement's gray ground, and over the thread view zones.
+const READONLY_EDITOR_OPTIONS = {
   ...STATEMENT_EDITOR_OPTIONS,
-  selectOnLineNumbers: false,
   stickyScroll: { enabled: false },
+} as const;
+
+const THREADS_EDITOR_OPTIONS = {
+  ...READONLY_EDITOR_OPTIONS,
+  selectOnLineNumbers: false,
 } as const;
 
 export function PlanDetailStatementSection({
@@ -843,7 +848,7 @@ export function PlanDetailStatementSection({
                   options={
                     threadsEnabled
                       ? THREADS_EDITOR_OPTIONS
-                      : STATEMENT_EDITOR_OPTIONS
+                      : READONLY_EDITOR_OPTIONS
                   }
                 />
                 {threadsEnabled && issue && sheetSha256 && readonlyEditor && (

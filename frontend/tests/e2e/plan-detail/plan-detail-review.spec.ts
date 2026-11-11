@@ -1492,8 +1492,6 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
-    // The selection is the one highlight, in the neutral gray token. It stays
-    // translucent so Monaco's own text selection still shows through.
     const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
     await expect(selected).toBeVisible();
     const gray = await page.evaluate(
@@ -1532,6 +1530,7 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await expect(ground).toHaveCSS("background-color", groundColor);
     // Monaco's own layers are transparent, so the ground shows behind every
     // line: the commented ones and the rest alike.
+    await expect(planPage.statementEditor).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     for (const layer of [".monaco-editor-background", ".margin"]) {
       await expect(planPage.statementEditor.locator(layer).first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     }
@@ -1541,7 +1540,6 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {
     const card = planPage.threadCardIn("changes", rangeRoot);
     await expect(card).toBeVisible();
-    // No thread paints its lines.
     await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
     const [cardBox, editorBox] = await Promise.all([card.boundingBox(), planPage.statementEditor.boundingBox()]);
     if (!cardBox || !editorBox) throw new Error("no box");

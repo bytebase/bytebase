@@ -579,13 +579,10 @@ describe("StatementThreadsLayer", () => {
     const fake = createFakeEditor();
     mount(fake.editor);
     const painted = () => fake.decorations.current.filter((d) => d.options.isWholeLine);
-    // The first open thread is unfolded; its lines stay unpainted too.
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/discussion`);
     expect(painted()).toEqual([]);
-    // Unfolding another thread paints nothing either.
     fake.fire("down", 4, MouseTargetType.GUTTER_GLYPH_MARGIN);
     expect(painted()).toEqual([]);
-    // The gutter markers stay the only mark on the statement.
     for (const line of [2, 4, 6, 8]) {
       expect(classesOf(fake.decorations.current, line).some((name) => name.includes("bb-thread-glyph"))).toBe(true);
     }

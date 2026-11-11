@@ -31,7 +31,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
-import { isValidDatabaseName } from "@/types";
 import {
   type Issue,
   IssueComment_ReviewMetadata_Priority,
@@ -39,10 +38,14 @@ import {
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isValidDatabaseName } from "@/types/v1/database";
 import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
-import { hexToRgb } from "@/utils";
+import { hexToRgb } from "@/utils/css";
 import "./CommentThreadCard.css";
-import { productionEnvironmentsOf } from "./productionTargets";
+import {
+  productionEnvironmentsOf,
+  requestMissingDatabases,
+} from "./productionTargets";
 import { ReviewPriorityBadge } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
 import { ThreadStateBadge } from "./ThreadStateBadge";
@@ -421,12 +424,14 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
   useEffect(() => {
     const names = targetKey.split("\n").filter(isValidDatabaseName);
     if (names.length === 0) return;
-    void useAppStore
-      .getState()
-      .batchGetOrFetchDatabases(names, true)
-      .catch(() => {
-        // Without the databases the bar just shows no environment badge.
-      });
+    const store = useAppStore.getState();
+    void requestMissingDatabases(
+      names,
+      (name) => Boolean(useAppStore.getState().databasesByName[name]),
+      (missing) => store.batchGetOrFetchDatabases(missing, true)
+    ).catch(() => {
+      // Without the databases the bar just shows no environment badge.
+    });
   }, [targetKey]);
   if (!review) return null;
   const urgent =
@@ -444,7 +449,7 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
         // The environment's own badge: its name on a tint of its color, the
         // way an environment badge is drawn, with the bar's gray text.
         <Badge
-          className="shrink-0 text-control"
+          className="max-w-40 shrink-0 text-control"
           data-testid="thread-production"
           key={environment.name}
           style={{
@@ -452,8 +457,9 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
               environment.color || DEFAULT_ENVIRONMENT_COLOR
             ).join(", ")}, ${LIGHT_BADGE_BACKGROUND_ALPHA})`,
           }}
+          title={environment.title}
         >
-          {environment.title}
+          <span className="truncate">{environment.title}</span>
         </Badge>
       ))}
     </>
