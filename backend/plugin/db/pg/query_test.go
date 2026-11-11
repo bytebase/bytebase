@@ -155,14 +155,21 @@ func TestPadZeroes(t *testing.T) {
 // TestConvertValueTimestampFromDriver reads timestamps through the driver rather than
 // from a constructed time.Time, exercising the session time zone the way QueryConn does:
 // read once per statement, then applied to every timestamptz in the result. It also
-// covers ColumnType.DecimalSize reporting the column's fractional-second scale, which
-// Bytebase's pgx fork adds and upstream does not, so a pgx upgrade that loses that patch
-// fails here instead of silently changing query results.
+// covers the fractional-seconds precision QueryConn reads from the native field
+// descriptions via util.PgColumnTypeModifiers, the describe path that lets Bytebase render
+// timestamp(N) results without a patched pgx driver: tz_scale3 must report Accuracy 3 and
+// the unspecified columns 6.
 func TestConvertValueTimestampFromDriver(t *testing.T) {
 	const (
 		sessionZone   = "Asia/Shanghai"
 		sessionOffset = 8 * 60 * 60
 	)
+	const query = `SELECT
+		'2026-03-04 05:06:07.891234+00'::timestamptz    AS tz_default,
+		'2026-03-04 05:06:07.891234+00'::timestamptz(3) AS tz_scale3,
+		'2026-03-04 05:06:07.891234'::timestamp         AS ts_default,
+		'10000-01-01 00:00:00+00'::timestamptz          AS tz_out_of_range,
+		'10000-01-01 00:00:00'::timestamp               AS ts_out_of_range`
 
 	ctx := context.Background()
 	_, db := testcontainer.NewPgDatabase(t)
@@ -174,16 +181,15 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	_, err = conn.ExecContext(ctx, "SET TimeZone TO '"+sessionZone+"'")
 	require.NoError(t, err)
 
-	// QueryConn reads the zone once per statement, after any preceding SET.
+	// QueryConn reads the zone and the per-column type modifiers once per statement, after
+	// any preceding SET and before running the statement.
 	location := util.PgSessionLocation(conn)
 	require.Equal(t, sessionZone, location.String())
+	typeModifiers := util.PgColumnTypeModifiers(ctx, conn, query)
+	require.Equal(t, []int32{-1, 3, -1, -1, -1}, typeModifiers)
+	convert := convertValueIn(location, typeModifiers)
 
-	rows, err := conn.QueryContext(ctx, `SELECT
-		'2026-03-04 05:06:07.891234+00'::timestamptz    AS tz_default,
-		'2026-03-04 05:06:07.891234+00'::timestamptz(3) AS tz_scale3,
-		'2026-03-04 05:06:07.891234'::timestamp         AS ts_default,
-		'10000-01-01 00:00:00+00'::timestamptz          AS tz_out_of_range,
-		'10000-01-01 00:00:00'::timestamp               AS ts_out_of_range`)
+	rows, err := conn.QueryContext(ctx, query)
 	require.NoError(t, err)
 	defer rows.Close()
 
@@ -201,7 +207,7 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 
 	values := make(map[string]*v1pb.RowValue, len(columnTypes))
 	for i, columnType := range columnTypes {
-		values[columnType.Name()] = convertValue(columnType.DatabaseTypeName(), columnType, dest[i], location)
+		values[columnType.Name()] = convert(i, columnType.DatabaseTypeName(), columnType, dest[i])
 	}
 
 	tzDefault := values["tz_default"].GetTimestampTzValue()
