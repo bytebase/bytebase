@@ -11,6 +11,8 @@ import { useAppStore } from "@/stores/app";
 interface CopyButtonProps {
   // The text to copy. Pass a function to defer resolution until click.
   readonly content: string | (() => string);
+  // Accessible name. Name what is copied when several copy buttons share a view.
+  readonly label?: string;
   readonly size?: ButtonProps["size"];
   readonly variant?: ButtonProps["variant"];
   readonly appearance?: ButtonProps["appearance"];
@@ -21,6 +23,7 @@ interface CopyButtonProps {
 
 export function CopyButton({
   content,
+  label,
   size = "xs",
   variant = "default",
   appearance = "secondary",
@@ -58,7 +61,7 @@ export function CopyButton({
         size={size}
         disabled={disabled}
         onClick={handleCopy}
-        aria-label={t("common.copy")}
+        aria-label={label ?? t("common.copy")}
         className={cn("px-1", className)}
       >
         {copied ? (

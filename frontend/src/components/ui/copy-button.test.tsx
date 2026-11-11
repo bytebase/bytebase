@@ -89,4 +89,17 @@ describe("CopyButton", () => {
     expect(button.querySelector(".lucide-check")).toBeNull();
     expect(button.querySelector(".lucide-copy")).not.toBeNull();
   });
+
+  test("takes its accessible name from the label, keeping the generic tooltip", async () => {
+    render(<CopyButton content="ana@example.com" label="Copy email for Ana" />);
+    const button = screen.getByRole("button", { name: "Copy email for Ana" });
+
+    await act(async () => {
+      fireEvent.focus(button);
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(screen.queryByRole("button", { name: "common.copy" })).toBeNull();
+    expect(document.getElementById("bb-react-layer-overlay")?.textContent ?? "").toContain("common.copy");
+  });
 });

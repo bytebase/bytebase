@@ -609,12 +609,41 @@ test.describe("A step held only by a service account", () => {
     // The signed-in admin does not hold the role, so there is nothing to review.
     await expect(planPage.reviewButton).not.toBeVisible();
 
-    await reviewers.hover();
+    await reviewers.click();
     await expect(page.getByText(serviceAccountTitle)).toBeVisible();
     await expect(page.getByText(serviceAccount.email)).toBeVisible();
     await expect(
       page.getByText("Service Account", { exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: `Copy email for ${serviceAccountTitle}` }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(serviceAccount.email)).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: /1 reviewer/ }),
+    ).toBeFocused();
+  });
+
+  test("the header status popover opens the reviewer list, and Escape closes only the list", async () => {
+    await planPage.headerStatusPill("Under review").click();
+    const statusPopover = page
+      .getByRole("dialog")
+      .filter({ hasText: "Review in progress" });
+    await expect(statusPopover).toBeVisible({ timeout: 10_000 });
+
+    await statusPopover.getByRole("button", { name: /1 reviewer/ }).click();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+
+    await page
+      .getByRole("button", { name: `Copy email for ${serviceAccountTitle}` })
+      .click();
+    await expect(page.getByText(serviceAccount.email)).toBeVisible();
+    await expect(statusPopover).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(serviceAccount.email)).toBeHidden();
+    await expect(statusPopover).toBeVisible();
   });
 
   test("once it approves through the API, the step and the activity name it", async () => {

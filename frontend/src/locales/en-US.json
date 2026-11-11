@@ -2321,16 +2321,18 @@
       },
       "approval-after-submit": "Approval starts when you submit for review.",
       "approval-flow": {
-        "and-n-more_one": "and {{count}} more",
-        "and-n-more_other": "and {{count}} more",
         "approved-by": "Approved by {{user}}",
+        "clear-search": "Clear search",
+        "copy-email": "Copy email for {{user}}",
         "current": "Current",
         "n-approved": "{{n}} approved",
         "n-pending": "{{n}} pending",
         "n-reviewers_one": "{{count}} reviewer",
         "n-reviewers_other": "{{count}} reviewers",
+        "no-matching-reviewers": "No reviewers match “{{query}}”",
         "no-reviewers": "No reviewers",
-        "rejected-by": "Rejected by {{user}}"
+        "rejected-by": "Rejected by {{user}}",
+        "search-placeholder": "Search by name or email"
       },
       "candidate-last-changed-plan": "Can't approve — last changed this plan",
       "comment-required-to-reject": "A comment is required to reject",

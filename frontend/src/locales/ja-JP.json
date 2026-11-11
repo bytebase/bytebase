@@ -2321,16 +2321,18 @@
       },
       "approval-after-submit": "レビューに提出すると承認が始まります。",
       "approval-flow": {
-        "and-n-more_one": "他 {{count}} 名",
-        "and-n-more_other": "他 {{count}} 名",
         "approved-by": "{{user}} が承認",
+        "clear-search": "検索をクリア",
+        "copy-email": "{{user}} のメールアドレスをコピー",
         "current": "現在",
         "n-approved": "{{n}} 件承認済み",
         "n-pending": "{{n}} 件保留中",
         "n-reviewers_one": "{{count}} 名のレビュアー",
         "n-reviewers_other": "{{count}} 名のレビュアー",
+        "no-matching-reviewers": "「{{query}}」に一致するレビュアーはいません",
         "no-reviewers": "レビュアーなし",
-        "rejected-by": "{{user}} が却下"
+        "rejected-by": "{{user}} が却下",
+        "search-placeholder": "名前またはメールアドレスで検索"
       },
       "candidate-last-changed-plan": "承認不可 — このプランを最後に変更",
       "comment-required-to-reject": "却下するにはコメントが必要です",
