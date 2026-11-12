@@ -139,7 +139,7 @@ export function ProjectHomePage({ projectId }: { projectId: string }) {
   });
   const canListDatabases = !missedPermissions.includes("bb.databases.list");
   const canGetDatabases = !missedPermissions.includes("bb.databases.get");
-  const canPreviewDatabases = canGetDatabases;
+  const canPreviewDatabases = canGetDatabases && canListDatabases;
   const canGetPlanDetail = PLAN_DETAIL_PERMISSIONS.every(
     (permission) => !missedPermissions.includes(permission)
   );

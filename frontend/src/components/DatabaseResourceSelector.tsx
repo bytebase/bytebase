@@ -1,8 +1,10 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import {
   ChevronDown,
   ChevronRight,
   Columns3,
   Layers,
+  RefreshCw,
   Table2,
   X,
 } from "lucide-react";
@@ -16,6 +18,7 @@ import {
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeInstanceName } from "@/lib/resourceName";
@@ -112,6 +115,8 @@ export function DatabaseResourceSelector({
   const [databases, setDatabases] = useState<Database[]>([]);
   const [nextPageToken, setNextPageToken] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
     scopes: [],
@@ -131,6 +136,11 @@ export function DatabaseResourceSelector({
   );
   const environments = useAppStore((s) => s.environmentList);
   const project = useAppStore((s) => s.projectsByName[projectName]);
+  const canListDatabases = useAppStore(
+    (s) =>
+      s.hasWorkspacePermission("bb.databases.list") ||
+      Boolean(project && s.hasProjectPermission(project, "bb.databases.list"))
+  );
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
@@ -270,40 +280,69 @@ export function DatabaseResourceSelector({
     // first page below.
     setLoadingMore(false);
     setNextPageToken("");
+    setLoadError(false);
+    if (!canListDatabases) {
+      setDatabases([]);
+      return;
+    }
     const fetchFirstPage = async () => {
       const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: DATABASE_PAGE_SIZE,
         pageToken: "",
         filter: databaseFilter,
+        silent: true,
       });
       if (generation !== requestGenerationRef.current) return;
       setDatabases(result.databases);
       setNextPageToken(result.nextPageToken);
     };
-    fetchFirstPage();
-  }, [projectName, databaseFilter]);
+    void fetchFirstPage().catch((error) => {
+      if (generation !== requestGenerationRef.current) return;
+      setDatabases([]);
+      setLoadError(
+        !(error instanceof ConnectError && error.code === Code.PermissionDenied)
+      );
+    });
+  }, [projectName, databaseFilter, canListDatabases, refreshToken]);
 
   const loadMore = useCallback(async () => {
-    if (!nextPageToken || loadingMore) return;
+    if (!canListDatabases || !nextPageToken || loadingMore) return;
     const generation = requestGenerationRef.current;
     setLoadingMore(true);
+    setLoadError(false);
     try {
       const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: DATABASE_PAGE_SIZE,
         pageToken: nextPageToken,
         filter: databaseFilter,
+        silent: true,
       });
       if (generation !== requestGenerationRef.current) return;
       setDatabases((prev) => [...prev, ...result.databases]);
       setNextPageToken(result.nextPageToken);
+    } catch (error) {
+      if (generation === requestGenerationRef.current) {
+        setLoadError(
+          !(
+            error instanceof ConnectError &&
+            error.code === Code.PermissionDenied
+          )
+        );
+      }
     } finally {
       if (generation === requestGenerationRef.current) {
         setLoadingMore(false);
       }
     }
-  }, [projectName, databaseFilter, nextPageToken, loadingMore]);
+  }, [
+    projectName,
+    databaseFilter,
+    nextPageToken,
+    loadingMore,
+    canListDatabases,
+  ]);
 
   const selectedResourceMap = useMemo(() => {
     const map = new Map<string, DatabaseSelection>();
@@ -1034,6 +1073,25 @@ export function DatabaseResourceSelector({
                 </div>
               );
             })}
+            {loadError && (
+              <div className="flex flex-col gap-y-2 px-3 py-2">
+                <Alert variant="error" appearance="caption">
+                  {t("database-group.load-database-failed")}
+                </Alert>
+                {!nextPageToken && (
+                  <Button
+                    appearance="secondary"
+                    size="sm"
+                    type="button"
+                    className="self-start"
+                    onClick={() => setRefreshToken((token) => token + 1)}
+                  >
+                    <RefreshCw />
+                    {t("common.refresh")}
+                  </Button>
+                )}
+              </div>
+            )}
             {nextPageToken && (
               <Button
                 appearance="secondary"
