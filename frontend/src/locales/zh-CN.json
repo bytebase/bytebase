@@ -1303,22 +1303,30 @@
   },
   "gitops": {
     "back-to-releases": "返回发布包",
-    "checklist": {
-      "database-group-recommendation": "对于具有相同 Schema 的数据库，数据库分组可以让您在一次变更中同时迁移它们。只需定义一次分组，即可在多次迁移中复用，无需每次都逐个选择数据库。",
-      "external-url": "外部访问地址",
-      "target-databases": "目标数据库",
-      "title": "开始前检查",
-      "wif-notice-suffix": "以使用服务账号配置 GitOps。",
-      "wif-notice-text": "Workload Identity Federation 目前仅支持 GitHub 和 GitLab。对于其他 VCS，请参考以下教程：",
-      "workload-identity": "工作负载身份"
-    },
-    "documentation": "查看文档",
-    "overview": {
-      "description": "Bytebase GitOps 让您通过将数据库架构变更集成到 CI/CD 流水线中，以 Database as Code 的方式管理数据库。",
-      "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
-      "title": "什么是 GitOps"
-    },
     "setup": {
+      "continue": "继续",
+      "databases": {
+        "create-group": "创建数据库组",
+        "databases-hint": "这些数据库会写入工作流文件。之后如需添加，请编辑这些文件。",
+        "databases-label": "数据库",
+        "databases-placeholder": "选择数据库",
+        "databases-tab": "数据库",
+        "deploy-order-hint": "变更按此顺序逐个环境部署。",
+        "description": "工作流针对这些数据库审核并部署每个迁移文件。",
+        "group-hint": "之后加入此组的数据库也会被部署，无需修改工作流文件。",
+        "group-label": "数据库组",
+        "group-matches-none": "此组尚未匹配任何数据库，因此没有可部署的内容。",
+        "group-placeholder": "选择数据库组",
+        "group-tab": "数据库组",
+        "no-group-description": "推荐使用数据库组，因为之后加入组的数据库也会被部署，无需修改工作流文件。",
+        "no-group-title": "此项目没有数据库组",
+        "none-pickable-description": "此项目中的所有数据库都没有环境，因此都不在部署顺序中。为数据库分配环境后即可选择。",
+        "none-pickable-title": "没有可选择的数据库",
+        "question": "GitOps 应部署到哪些数据库？",
+        "recommended": "推荐",
+        "view-databases": "查看数据库",
+        "view-group": "查看组"
+      },
       "deploy-order": {
         "database-count_one": "{{count}} 个数据库",
         "database-count_other": "{{count}} 个数据库",
@@ -1330,25 +1338,57 @@
         "unassigned-description_other": "它们没有环境，部署会跳过它们且不报错。为它们指定环境即可纳入部署。",
         "unassigned-title_one": "{{count}} 个数据库不会被部署",
         "unassigned-title_other": "{{count}} 个数据库不会被部署"
-      }
-    },
-    "test-setup": {
-      "description": "使用示例迁移文件验证整个工作流是否正常运行。",
-      "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",
-      "step-create-branch": "创建新分支，添加上面的文件，然后向 {{branch}} 提交拉取请求。",
-      "step-merge": "审查通过后，合并 PR。Bytebase 将自动创建 rollout 并部署到目标环境。",
-      "step-sql-review": "SQL Review 会自动在拉取请求上运行并发布审查评论。",
-      "title": "测试您的首次 GitOps 迁移"
-    },
-    "workflow": {
-      "description": "将工作流文件复制到您的代码仓库中，以自动化 SQL 审查和数据库变更发布。",
-      "file-hint": "保存为仓库 {{repository}} 中的 {{filePath}}",
-      "provider-not-match": "所选的 工作负载标识 (Workload Identity) 仅适用于 {{provider}}。",
-      "self-hosted-runner": "自托管 runner",
-      "title": "工作流文件生成"
-    },
-    "workload-identity": {
-      "select-placeholder": "选择工作负载身份"
+      },
+      "external-url-description": "你的工作流通过此地址访问 Bytebase。你现在就可以完成这些步骤。工作区管理员设置该地址后，工作流文件即完整。",
+      "files": {
+        "copy-off": "设置外部 URL 之前无法复制",
+        "description": "这些文件已包含你的数据库和工作负载身份。请原样复制。",
+        "developers-github": "开发者：在拉取请求中添加一个文件，例如 <code>{{file}}</code>。文件名以版本号开头。没有版本号的文件会被工作流跳过。",
+        "developers-gitlab": "开发者：在合并请求中添加一个文件，例如 <code>{{file}}</code>。文件名以版本号开头。没有版本号的文件会被工作流跳过。",
+        "folder-hint": "工作流审核并部署此文件夹中的 SQL 文件。",
+        "folder-invalid": "请输入相对于仓库根目录的文件夹路径，例如 migrations 或 db/migrations。",
+        "folder-label": "迁移文件夹",
+        "heading": "将文件添加到你的仓库",
+        "next-github": "文件进入默认分支后，下一个修改迁移文件夹的拉取请求会收到 Bytebase 审核评论。合并后即部署。",
+        "next-gitlab": "文件进入默认分支后，下一个修改迁移文件夹的合并请求会收到 Bytebase 审核评论。合并后即部署。",
+        "next-title": "接下来会发生什么",
+        "repository": "仓库",
+        "show-all": "显示全部 {{lines}} 行",
+        "url-missing": "文件中 Bytebase 地址的位置显示为 <code>{{placeholder}}</code>。设置外部 URL 之前无法复制，因为没有地址的工作流无法访问 Bytebase。"
+      },
+      "identity": {
+        "create": "创建工作负载身份",
+        "description": "你的工作流以此身份登录 Bytebase，因此仓库中不存储任何密钥。",
+        "every-repository": "{{owner}} 的所有仓库",
+        "git-provider": "Git 提供商",
+        "label": "工作负载身份",
+        "no-role-description": "其工作流可以登录，但 Bytebase 会拒绝审核和部署。请在成员页面为其授予 GitOps Service Agent 角色。",
+        "no-role-title": "此身份没有允许 GitOps 的角色",
+        "none": "此项目还没有工作负载身份。",
+        "open-members": "打开成员",
+        "other-provider": "其他 OIDC。设置中没有适用于它的工作流文件。",
+        "placeholder": "选择工作负载身份",
+        "question": "你的工作流以哪个工作负载身份登录？",
+        "read-from": "从此身份读取",
+        "repositories": "可登录的仓库",
+        "role": "在此项目中的角色"
+      },
+      "no-database": {
+        "description": "GitOps 部署到此项目的数据库。请先向此项目添加或转移一个数据库。",
+        "title": "此项目没有数据库"
+      },
+      "no-identity": {
+        "description": "你的工作流以此项目的工作负载身份登录 Bytebase。请让项目所有者创建一个。",
+        "title": "此项目没有工作负载身份"
+      },
+      "outcome": "每个修改迁移文件夹的拉取请求都会获得 Bytebase 审核。合并后即部署。",
+      "scope": "设置会为 GitHub Actions 和 GitLab CI 生成工作流文件。其他 CI/CD 平台请参阅 <docs>GitOps 文档</docs>。",
+      "steps": {
+        "databases": "数据库",
+        "workflow-files": "工作流文件",
+        "workload-identity": "工作负载身份"
+      },
+      "title": "GitOps"
     }
   },
   "identity-provider": {

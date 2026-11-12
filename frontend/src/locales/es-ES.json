@@ -1303,22 +1303,30 @@
   },
   "gitops": {
     "back-to-releases": "Volver a Lanzamientos",
-    "checklist": {
-      "database-group-recommendation": "Para bases de datos con el mismo esquema, un grupo de bases de datos permite migrarlas juntas en un solo cambio. Defina el grupo una vez y reutilícelo en las migraciones sin tener que seleccionar bases de datos individuales cada vez.",
-      "external-url": "URL externa",
-      "target-databases": "Bases de datos de destino",
-      "title": "Verificaciones antes de comenzar",
-      "wif-notice-suffix": "para configurar GitOps con una cuenta de servicio.",
-      "wif-notice-text": "Workload Identity Federation actualmente solo es compatible con GitHub y GitLab. Para otros VCS, consulte los tutoriales de",
-      "workload-identity": "Identidad de carga de trabajo"
-    },
-    "documentation": "Ver documentación",
-    "overview": {
-      "description": "Bytebase GitOps le permite gestionar Database as Code integrando los cambios de esquema de base de datos en su pipeline de CI/CD.",
-      "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
-      "title": "Qué es GitOps"
-    },
     "setup": {
+      "continue": "Continuar",
+      "databases": {
+        "create-group": "Crear un grupo de bases de datos",
+        "databases-hint": "Estas bases de datos se escriben en los archivos del flujo de trabajo. Para agregar una después, edita los archivos.",
+        "databases-label": "Bases de datos",
+        "databases-placeholder": "Selecciona bases de datos",
+        "databases-tab": "Bases de datos",
+        "deploy-order-hint": "Los cambios se despliegan un entorno a la vez, en este orden.",
+        "description": "El flujo de trabajo revisa y despliega cada archivo de migración en estas bases de datos.",
+        "group-hint": "Una base de datos que se una a este grupo después también se despliega, sin cambiar los archivos del flujo de trabajo.",
+        "group-label": "Grupo de bases de datos",
+        "group-matches-none": "Este grupo todavía no coincide con ninguna base de datos, así que no hay nada que desplegar.",
+        "group-placeholder": "Selecciona un grupo de bases de datos",
+        "group-tab": "Grupo de bases de datos",
+        "no-group-description": "Se recomienda un grupo porque una base de datos que se una después también se despliega, sin cambiar los archivos del flujo de trabajo.",
+        "no-group-title": "Este proyecto no tiene grupos de bases de datos",
+        "none-pickable-description": "Ninguna base de datos de este proyecto tiene entorno, así que ninguna tiene lugar en el orden de despliegue. Asigna un entorno a una base de datos para elegirla.",
+        "none-pickable-title": "No se puede elegir ninguna base de datos",
+        "question": "¿En qué bases de datos debe desplegar GitOps?",
+        "recommended": "Recomendado",
+        "view-databases": "Ver bases de datos",
+        "view-group": "Ver grupo"
+      },
       "deploy-order": {
         "database-count_one": "{{count}} base de datos",
         "database-count_other": "{{count}} bases de datos",
@@ -1330,25 +1338,57 @@
         "unassigned-description_other": "No tienen entorno, así que el despliegue las omite sin error. Asígnales un entorno para incluirlas.",
         "unassigned-title_one": "{{count}} base de datos no se desplegará",
         "unassigned-title_other": "{{count}} bases de datos no se desplegarán"
-      }
-    },
-    "test-setup": {
-      "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
-      "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
-      "step-create-branch": "Cree una nueva rama, agregue el archivo anterior y abra una pull request dirigida a {{branch}}.",
-      "step-merge": "Una vez que la revisión pase, fusione el PR. Bytebase creará automáticamente un despliegue y lo implementará en los entornos de destino.",
-      "step-sql-review": "SQL Review se ejecuta automáticamente en la pull request y publica comentarios de revisión.",
-      "title": "Pruebe su primera migración GitOps"
-    },
-    "workflow": {
-      "description": "Copie los archivos de flujo de trabajo en su repositorio para automatizar la revisión de SQL y los despliegues de base de datos.",
-      "file-hint": "Guardar como {{filePath}} en su repositorio {{repository}}",
-      "provider-not-match": "La workload identity seleccionada solo funciona para {{provider}}.",
-      "self-hosted-runner": "Runner self-hosted",
-      "title": "Generación de archivo de flujo de trabajo"
-    },
-    "workload-identity": {
-      "select-placeholder": "Seleccionar una identidad de carga de trabajo"
+      },
+      "external-url-description": "Tu flujo de trabajo usa esta dirección para conectarse a Bytebase. Ya puedes seguir los pasos. Los archivos del flujo de trabajo estarán completos cuando un administrador del espacio de trabajo la configure.",
+      "files": {
+        "copy-off": "Copiar está desactivado hasta que se configure la URL externa",
+        "description": "Los archivos ya contienen tus bases de datos y tu identidad de carga de trabajo. Cópialos tal como están.",
+        "developers-github": "Para desarrolladores: agrega un archivo como <code>{{file}}</code> en un pull request. Los nombres de archivo empiezan con un número de versión. El flujo de trabajo omite un archivo sin él.",
+        "developers-gitlab": "Para desarrolladores: agrega un archivo como <code>{{file}}</code> en un merge request. Los nombres de archivo empiezan con un número de versión. El flujo de trabajo omite un archivo sin él.",
+        "folder-hint": "El flujo de trabajo revisa y despliega los archivos SQL de esta carpeta.",
+        "folder-invalid": "Introduce una ruta de carpeta relativa a la raíz del repositorio, como migrations o db/migrations.",
+        "folder-label": "Carpeta de migraciones",
+        "heading": "Agrega los archivos a tu repositorio",
+        "next-github": "Cuando los archivos estén en la rama predeterminada, el siguiente pull request que cambie la carpeta de migraciones recibirá un comentario de revisión de Bytebase. Al fusionarlo, se despliega.",
+        "next-gitlab": "Cuando los archivos estén en la rama predeterminada, el siguiente merge request que cambie la carpeta de migraciones recibirá un comentario de revisión de Bytebase. Al fusionarlo, se despliega.",
+        "next-title": "Qué pasa después",
+        "repository": "Repositorio",
+        "show-all": "Mostrar las {{lines}} líneas",
+        "url-missing": "Los archivos muestran <code>{{placeholder}}</code> donde va la dirección de Bytebase. Copiar está desactivado hasta que se configure la URL externa, porque un flujo de trabajo sin dirección no puede conectarse a Bytebase."
+      },
+      "identity": {
+        "create": "Crear identidad de carga de trabajo",
+        "description": "Tu flujo de trabajo inicia sesión en Bytebase con esta identidad, así que no se guarda ningún secreto en el repositorio.",
+        "every-repository": "Todos los repositorios de {{owner}}",
+        "git-provider": "Proveedor de Git",
+        "label": "Identidad de carga de trabajo",
+        "no-role-description": "Su flujo de trabajo puede iniciar sesión, pero Bytebase rechazará la revisión y el despliegue. Concédele el rol GitOps Service Agent en la página Miembros.",
+        "no-role-title": "Esta identidad no tiene ningún rol que permita GitOps",
+        "none": "Este proyecto todavía no tiene identidades de carga de trabajo.",
+        "open-members": "Abrir Miembros",
+        "other-provider": "Otro OIDC. La configuración no tiene archivos de flujo de trabajo para él.",
+        "placeholder": "Selecciona una identidad de carga de trabajo",
+        "question": "¿Con qué identidad de carga de trabajo inicia sesión tu flujo de trabajo?",
+        "read-from": "Leído de esta identidad",
+        "repositories": "Repositorios que pueden iniciar sesión",
+        "role": "Rol en este proyecto"
+      },
+      "no-database": {
+        "description": "GitOps despliega en las bases de datos de este proyecto. Primero agrega o transfiere una base de datos a este proyecto.",
+        "title": "Este proyecto no tiene bases de datos"
+      },
+      "no-identity": {
+        "description": "Tu flujo de trabajo inicia sesión en Bytebase como una identidad de carga de trabajo de este proyecto. Pide a un propietario del proyecto que cree una.",
+        "title": "Este proyecto no tiene identidades de carga de trabajo"
+      },
+      "outcome": "Cada pull request que cambia la carpeta de migraciones recibe una revisión de Bytebase. Al fusionarlo, se despliega.",
+      "scope": "La configuración genera archivos de flujo de trabajo para GitHub Actions y GitLab CI. Para otras plataformas de CI/CD, consulta la <docs>documentación de GitOps</docs>.",
+      "steps": {
+        "databases": "Bases de datos",
+        "workflow-files": "Archivos del flujo de trabajo",
+        "workload-identity": "Identidad de carga de trabajo"
+      },
+      "title": "GitOps"
     }
   },
   "identity-provider": {
