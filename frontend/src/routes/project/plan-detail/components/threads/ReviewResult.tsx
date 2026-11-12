@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import { Bot, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { markdownSummary } from "@/components/MarkdownEditor";
@@ -16,19 +16,19 @@ import {
   type IssueComment,
   type IssueComment_ReviewMetadata,
   IssueComment_ReviewMetadata_Priority,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { PlanTargetDisplay } from "../PlanTargetDisplay";
+import { isStandardRuleResult } from "./threadModel";
 
 // A long target list keeps its head visible and folds the rest behind a count.
 const VISIBLE_TARGETS = 3;
 const FOLD_TARGETS_ABOVE = 4;
 
 // The avatar and name of a comment's author. A review result has no creator,
-// so the reviewer its review metadata names stands in for a person.
+// so the review stands in for a person.
 export function useCommentAuthor(comment: IssueComment): {
   avatar: ReactNode;
   name: string;
@@ -44,10 +44,10 @@ export function useCommentAuthor(comment: IssueComment): {
           className="flex size-5 shrink-0 items-center justify-center rounded-full bg-control-bg text-control"
           data-testid="reviewer-avatar"
         >
-          <ReviewerIcon className="size-3.5" runType={review.runType} />
+          <ReviewerIcon className="size-3.5" />
         </span>
       ),
-      name: reviewerName(t, review.runType),
+      name: reviewerName(t),
     };
   }
   const creator = user ?? unknownUser(comment.creator);
@@ -58,26 +58,14 @@ export function useCommentAuthor(comment: IssueComment): {
   };
 }
 
-export function ReviewerIcon({
-  className,
-  runType,
-}: {
-  className: string;
-  runType: ReviewRun_Type;
-}) {
-  const Icon = runType === ReviewRun_Type.AI ? Bot : ListChecks;
-  return <Icon className={className} />;
+export function ReviewerIcon({ className }: { className: string }) {
+  return <ListChecks className={className} />;
 }
 
-export function reviewerName(t: TFunction, runType: ReviewRun_Type): string {
-  switch (runType) {
-    case ReviewRun_Type.AI:
-      return t("sql-review.ai-review.self");
-    case ReviewRun_Type.RULE:
-      return t("sql-review.standard-rules.self");
-    default:
-      return t("sql-review.title");
-  }
+// Every review result names the one review as its author, whichever part of
+// it found the problem.
+export function reviewerName(t: TFunction): string {
+  return t("sql-review.reviewer");
 }
 
 export function ReviewPriorityBadge({
@@ -123,14 +111,15 @@ export function priorityStyle(
   }
 }
 
-// A review result's heading line: its priority, then for a rule review
-// result the rule and the finding codes, and for an AI result its title.
+// A review result's heading line: its priority, then for the result of a
+// standard rule the rule and the finding codes, and for any other result its
+// title.
 export function ReviewHeading({
   review,
 }: {
   review: IssueComment_ReviewMetadata;
 }) {
-  const isRule = review.runType === ReviewRun_Type.RULE;
+  const isRule = isStandardRuleResult(review);
   return (
     <div
       className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
@@ -152,8 +141,8 @@ export function ReviewHeading({
   );
 }
 
-// The standard rule a rule review result reports, in the reader's language,
-// with what the rule checks on hover.
+// The standard rule a result reports, in the reader's language, with what the
+// rule checks on hover.
 export function ReviewRule({ ruleType }: { ruleType: ReviewRuleType }) {
   const { t } = useTranslation();
   if (ruleType === ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED) return null;

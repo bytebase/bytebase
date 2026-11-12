@@ -51,7 +51,6 @@ const (
 	ChangelogPrefix            = "changelogs/"
 	IssueNamePrefix            = "issues/"
 	IssueCommentNamePrefix     = "issueComments/"
-	ReviewRunNamePrefix        = "reviewRuns/"
 	PipelineNamePrefix         = "pipelines/"
 	LogNamePrefix              = "logs/"
 	BranchPrefix               = "branches/"
@@ -72,6 +71,7 @@ const (
 	SchemaStringSuffix = "/schemaString"
 	MetadataSuffix     = "/metadata"
 	CatalogSuffix      = "/catalog"
+	ReviewRunSuffix    = "/reviewRun"
 
 	UserBindingPrefix             = "user:"
 	GroupBindingPrefix            = "group:"
@@ -319,18 +319,14 @@ func GetProjectIDIssueUIDIssueCommentID(name string) (string, int64, string, err
 	return tokens[0], issueUID, tokens[2], nil
 }
 
-// GetProjectIDIssueUIDReviewRunID returns the project ID, issue UID, and
-// review run ID from a resource name.
-func GetProjectIDIssueUIDReviewRunID(name string) (string, int64, string, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, ReviewRunNamePrefix)
-	if err != nil {
-		return "", 0, "", err
+// GetProjectIDIssueUIDFromReviewRun returns the project ID and issue UID from
+// the name of an issue's review run.
+func GetProjectIDIssueUIDFromReviewRun(name string) (string, int64, error) {
+	issueName, ok := strings.CutSuffix(name, ReviewRunSuffix)
+	if !ok {
+		return "", 0, errors.Errorf("invalid review run name %q", name)
 	}
-	issueUID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, "", errors.Errorf("invalid issue ID %q", tokens[1])
-	}
-	return tokens[0], issueUID, tokens[2], nil
+	return GetProjectIDIssueUID(issueName)
 }
 
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.
@@ -729,10 +725,9 @@ func FormatSheet(projectID string, sheetSha256 string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SheetIDPrefix, sheetSha256)
 }
 
-// FormatReviewRun formats a review run resource name. The review run ID is
-// the reviewer: "rule" or "ai".
-func FormatReviewRun(projectID string, issueUID int64, reviewRunID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatIssue(projectID, issueUID), ReviewRunNamePrefix, reviewRunID)
+// FormatReviewRun formats the name of an issue's review run.
+func FormatReviewRun(projectID string, issueUID int64) string {
+	return FormatIssue(projectID, issueUID) + ReviewRunSuffix
 }
 
 // FormatIssueComment formats an issue comment resource name under its issue.

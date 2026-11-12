@@ -102,12 +102,19 @@ vi.mock("@/components/monaco", async () => ({
   ReadonlyMonaco: ({
     content,
     onReady,
+    options,
   }: {
     content: string;
     onReady?: (monaco: unknown, editor: unknown) => void;
+    options?: { stickyScroll?: { enabled?: boolean } };
   }) => (
     <>
-      <div data-testid="statement">{content.slice(0, 24)}</div>
+      <div
+        data-sticky-scroll={String(options?.stickyScroll?.enabled)}
+        data-testid="statement"
+      >
+        {content.slice(0, 24)}
+      </div>
       <button
         onClick={() =>
           onReady?.({}, {
@@ -320,6 +327,11 @@ test("hides unsaved check results once their exact SQL changes", async () => {
   fireEvent.click(view.getByRole("button", { name: "Make small draft" }));
   expect(view.queryByRole("button", { name: "plan.navigator.checks" })).toBeNull();
   expect(view.getByText("plan.overview.no-checks")).toBeInTheDocument();
+});
+
+test("the statement being read pins no line over its gray ground", () => {
+  const { getByTestId } = renderEditableSpec("SELECT 1;");
+  expect(getByTestId("statement").getAttribute("data-sticky-scroll")).toBe("false");
 });
 
 const renderPlanCreationSpec = (

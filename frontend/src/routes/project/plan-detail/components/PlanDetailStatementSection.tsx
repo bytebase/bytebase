@@ -113,11 +113,16 @@ const STATEMENT_EDITOR_OPTIONS = {
   occurrencesHighlight: "off",
 } as const;
 
-// Sticky scroll would pin statement lines over the thread view zones.
-const THREADS_EDITOR_OPTIONS = {
+// A pinned sticky-scroll line would paint the editor's white over the
+// statement's gray ground, and over the thread view zones.
+const READONLY_EDITOR_OPTIONS = {
   ...STATEMENT_EDITOR_OPTIONS,
-  selectOnLineNumbers: false,
   stickyScroll: { enabled: false },
+} as const;
+
+const THREADS_EDITOR_OPTIONS = {
+  ...READONLY_EDITOR_OPTIONS,
+  selectOnLineNumbers: false,
 } as const;
 
 export function PlanDetailStatementSection({
@@ -885,11 +890,16 @@ export function PlanDetailStatementSection({
         </div>
       ) : isEditing || showsReadonlyEditor ? (
         <div className="flex flex-col">
+          {/* The statement being read sits on gray, so a comment card, which
+              is white, stands apart from the SQL without any line tint. */}
           <div
             className={cn(
               "relative overflow-hidden rounded-sm border border-control-border",
-              showsAffectedRows && "rounded-b-none"
+              showsAffectedRows && "rounded-b-none",
+              !isEditing &&
+                "plan-statement--monaco-transparent bg-control-bg/50"
             )}
+            data-testid={isEditing ? undefined : "statement-ground"}
           >
             {isEditing ? (
               <MonacoEditor
@@ -921,7 +931,7 @@ export function PlanDetailStatementSection({
                   options={
                     threadsEnabled
                       ? THREADS_EDITOR_OPTIONS
-                      : STATEMENT_EDITOR_OPTIONS
+                      : READONLY_EDITOR_OPTIONS
                   }
                 />
                 {threadsEnabled && issue && sheetSha256 && readonlyEditor && (

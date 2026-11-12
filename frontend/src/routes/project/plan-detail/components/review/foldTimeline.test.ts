@@ -74,4 +74,29 @@ describe("foldTimeline", () => {
     const entries = Array.from({ length: 30 }, (_, i) => e(`e${i}`));
     expect(foldTimeline(entries, true)).toHaveLength(30);
   });
+
+  test("a review's group is one entry, kept whole whether it folds into a stretch or stays pinned", () => {
+    const entries = Array.from({ length: 14 }, (_, i) => ({
+      id: `e${i}`,
+      pinned: i === 3,
+      children:
+        i === 3 || i === 7
+          ? [{ id: `card-${i}-a` }, { id: `card-${i}-b` }]
+          : undefined,
+    }));
+    const items = foldTimeline(entries, false);
+    const shown = items.flatMap((item) =>
+      item.type === "entry" ? [item.entry] : []
+    );
+    const open = shown.find((entry) => entry.id === "e3");
+    expect(open?.children?.map((child) => child.id)).toEqual([
+      "card-3-a",
+      "card-3-b",
+    ]);
+    expect(items.some((item) => item.type === "fold" && item.count === 7)).toBe(
+      true
+    );
+    // A hidden group folds with the stretch around it, as one entry.
+    expect(shown.some((entry) => entry.id === "e7")).toBe(false);
+  });
 });

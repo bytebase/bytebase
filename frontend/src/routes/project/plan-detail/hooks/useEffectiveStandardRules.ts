@@ -14,11 +14,13 @@ export type EffectiveStandardRules = {
   source: "project" | "workspace";
 };
 
-// The standard rules the rule review applies to a project: its own enforced
-// policy, else the workspace's. Undefined until known, and when the reader
-// cannot see the workspace rules a project without its own follows.
+// The standard rules the review applies to a project: its own enforced
+// policy, else the workspace's. Undefined until known, when the reader cannot
+// see the workspace rules a project without its own follows, and while
+// `enabled` is false, when nothing is read.
 export function useEffectiveStandardRules(
-  projectName: string
+  projectName: string,
+  enabled = true
 ): EffectiveStandardRules | undefined {
   const workspace = useWorkspaceResourceName();
   const canReadWorkspace = hasWorkspacePermissionV2("bb.policies.get");
@@ -35,6 +37,7 @@ export function useEffectiveStandardRules(
     })
   );
   useEffect(() => {
+    if (!enabled) return;
     const store = useAppStore.getState();
     void store
       .fetchPolicyByParentAndType({
@@ -50,8 +53,9 @@ export function useEffectiveStandardRules(
         })
         .catch(() => undefined);
     }
-  }, [canReadWorkspace, projectName, workspace]);
+  }, [canReadWorkspace, enabled, projectName, workspace]);
 
+  if (!enabled) return undefined;
   const projectRules = reviewRulesOfPolicy(projectPolicy);
   if (projectRules) return { rules: projectRules, source: "project" };
   const workspaceRules = canReadWorkspace

@@ -632,9 +632,7 @@ function ReviewResultActivityRow({
       }
       header={
         <>
-          <span className="font-medium text-main">
-            {reviewerName(t, review.runType)}
-          </span>
+          <span className="font-medium text-main">{reviewerName(t)}</span>
           <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
           {createdTs !== updatedTs && (
             <span className="text-control-light text-xs">
@@ -646,7 +644,7 @@ function ReviewResultActivityRow({
       icon={
         <CommentIconBadge
           className="bg-control-bg text-control"
-          icon={<ReviewerIcon className="size-4" runType={review.runType} />}
+          icon={<ReviewerIcon className="size-4" />}
         />
       }
       id={comment.name}

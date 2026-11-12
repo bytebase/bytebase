@@ -9,12 +9,13 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   type IssueComment,
+  type IssueComment_ReviewMetadata,
   IssueComment_ThreadState,
-  ReviewRun_Type,
   type StatementAnchor,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID } from "@/utils/v1/sheet";
 import { tokenizeLines } from "./placement/lineTokens";
@@ -200,12 +201,19 @@ const compareEditorThreads = (a: EditorThread, b: EditorThread): number =>
   a.range.endLine - b.range.endLine ||
   compareByCreateTime(a.thread.root, b.thread.root);
 
-// The statement shows only the latest standard rule review. A result a later
-// run superseded stays in the timeline, unless someone reopened it, since an
-// open thread holds the rollout.
+// Whether a standard rule found the review result. Only such a result names a
+// rule; any other carries a title.
+export const isStandardRuleResult = (
+  review: IssueComment_ReviewMetadata | undefined
+): boolean =>
+  !!review && review.ruleType !== ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
+
+// The statement shows only the latest results of the standard rules. A result
+// a later run superseded stays in the timeline, unless someone reopened it,
+// since an open thread holds the rollout.
 const isSupersededRuleResult = (root: IssueComment): boolean =>
-  root.reviewMetadata?.runType === ReviewRun_Type.RULE &&
-  root.reviewMetadata.superseded &&
+  isStandardRuleResult(root.reviewMetadata) &&
+  !!root.reviewMetadata?.superseded &&
   root.threadState !== IssueComment_ThreadState.OPEN;
 
 // Threads shown in the displayed statement, ordered by start line, then
@@ -233,47 +241,6 @@ export function selectEditorThreads(
     placed.push({ thread, range: placement.range });
   }
   return placed.sort(compareEditorThreads);
-}
-
-// Whether the statement editor shows a thread: anchored, placed CURRENT on
-// its spec's current sheet, and inside the part of an oversized statement
-// the editor loaded. Anything else can only be read in its Activity card.
-export function isShownInEditor(
-  root: IssueComment,
-  specs: readonly Plan_Spec[],
-  placementFor: (
-    commentName: string,
-    specId: string,
-    sheetSha256: string | undefined
-  ) => Placement | undefined,
-  previewEndLineFor: (specId: string) => number | undefined
-): boolean {
-  const anchor = root.statementAnchor;
-  if (!anchor) return false;
-  const spec = specs.find((candidate) => candidate.id === anchor.spec);
-  const sheetSha256 = targetSha256OfSpec(spec);
-  const placement =
-    placementFor(root.name, anchor.spec, sheetSha256) ??
-    trivialPlacement(anchor, sheetSha256);
-  if (placement?.state !== "CURRENT") return false;
-  const previewEndLine = previewEndLineFor(anchor.spec);
-  return (
-    previewEndLine === undefined || placement.range.endLine <= previewEndLine
-  );
-}
-
-// Under SQL Review V2, a folded run shows in Activity as one line, so a
-// finding of it keeps its own card only where nothing else shows it: people
-// replied to it, or the editor cannot show it. A result a later run superseded
-// is history unless someone reopened it, since an open thread holds the
-// rollout.
-export function needsActivityCard(
-  thread: CommentThread,
-  shownInEditor: boolean
-): boolean {
-  if (thread.replies.length > 0) return true;
-  if (thread.root.reviewMetadata?.superseded && thread.resolved) return false;
-  return !shownInEditor;
 }
 
 export const isEditorThreadVisible = (

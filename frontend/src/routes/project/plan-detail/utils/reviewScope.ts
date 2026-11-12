@@ -8,27 +8,34 @@ const RULE_REVIEW_ENGINE_SET: ReadonlySet<Engine> = new Set(
 );
 
 export interface ReviewScope {
-  // The databases the reviewer reviews, in plan order.
+  // The databases the review reads, in plan order.
   databases: string[];
   engines: Engine[];
-  // The databases it could have reviewed; more than `databases` when the AI
-  // review samples.
+  // The databases it could have read; more than `databases` when the project
+  // sets a sample size.
   total: number;
 }
 
-// What a reviewer reviews. The rule review takes every target on an engine
-// it covers. The AI review takes the first `sampleSize` targets of each
-// spec, or every target when the size is zero. A group's targets are its
-// matched databases once loaded.
+// What the review covers. It takes the first `sampleSize` targets of each
+// spec, or every target when the size is zero. Of those the AI review reads
+// all, and the standard rules read the ones on an engine they cover. A
+// group's targets are its matched databases once loaded.
 export function reviewScope(
   plan: Pick<Plan, "specs">,
   options: {
-    reviewer: "rule" | "ai";
+    reviewers: { rules: boolean; ai: boolean };
     sampleSize: number;
     matchedDatabases: (group: string) => string[] | undefined;
     engineOf: (database: string) => Engine | undefined;
   }
 ): ReviewScope {
+  const { reviewers } = options;
+  const read = (database: string) => {
+    if (reviewers.ai) return true;
+    if (!reviewers.rules) return false;
+    const engine = options.engineOf(database);
+    return engine === undefined || RULE_REVIEW_ENGINE_SET.has(engine);
+  };
   const reviewed = new Set<string>();
   const candidates = new Set<string>();
   for (const spec of plan.specs) {
@@ -43,19 +50,10 @@ export function reviewScope(
         ? (options.matchedDatabases(target) ?? [])
         : [target]
     );
-    const eligible =
-      options.reviewer === "rule"
-        ? targets.filter((database) => {
-            const engine = options.engineOf(database);
-            return engine === undefined || RULE_REVIEW_ENGINE_SET.has(engine);
-          })
-        : targets;
-    for (const database of eligible) candidates.add(database);
     const sampled =
-      options.reviewer === "ai" && options.sampleSize > 0
-        ? eligible.slice(0, options.sampleSize)
-        : eligible;
-    for (const database of sampled) reviewed.add(database);
+      options.sampleSize > 0 ? targets.slice(0, options.sampleSize) : targets;
+    for (const database of targets.filter(read)) candidates.add(database);
+    for (const database of sampled.filter(read)) reviewed.add(database);
   }
   const databases = [...reviewed];
   const engines = [

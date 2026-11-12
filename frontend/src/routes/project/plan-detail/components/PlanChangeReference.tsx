@@ -38,11 +38,15 @@ export function PlanChangeReference({
   className,
   density = "activity",
   reference,
+  tone = "muted",
 }: {
   ariaHidden?: boolean;
   className?: string;
   density?: PlanChangeReferenceDensity;
   reference: PlanChangeReferenceModel;
+  // "control" draws the index and icon in the label's own text-control, for a
+  // surface where lighter text falls under the contrast minimum.
+  tone?: "muted" | "control";
 }) {
   const measureRef = useRef<HTMLSpanElement>(null);
   const densityClass = DENSITY_CLASS[density];
@@ -105,11 +109,21 @@ export function PlanChangeReference({
       data-plan-change-reference-overflow={isOverflowing || undefined}
     >
       {showIndex && (
-        <span className="shrink-0 text-sm font-normal tabular-nums text-control-placeholder">
+        <span
+          className={cn(
+            "shrink-0 text-sm font-normal tabular-nums",
+            tone === "control" ? "text-control" : "text-control-placeholder"
+          )}
+        >
           {reference.index}
         </span>
       )}
-      <span className="mr-0.5 shrink-0 text-control-light">
+      <span
+        className={cn(
+          "mr-0.5 shrink-0",
+          tone === "control" ? "text-control" : "text-control-light"
+        )}
+      >
         <ChangeTypeIcon icon={reference.icon} />
       </span>
       <MiddleEllipsisLabel className={densityClass.label} text={displayLabel} />

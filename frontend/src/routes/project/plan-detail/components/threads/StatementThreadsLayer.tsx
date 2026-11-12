@@ -18,10 +18,7 @@ import { useMonacoFindWidgetVisible } from "@/components/monaco/useMonacoFindWid
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import {
-  type Issue,
-  IssueComment_ReviewMetadata_Priority,
-} from "@/types/proto-es/v1/issue_service_pb";
+import { type Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { placementsForSheet } from "../../shared/stores/placementSlice";
@@ -55,12 +52,6 @@ const firstToExpand = (threads: EditorThread[] | undefined): string[] => {
   const entry = threads && (defaultExpandedThread(threads) ?? threads[0]);
   return entry ? [entry.thread.root.name] : [];
 };
-
-const LINE_CLASS_BY_WEIGHT = [
-  "bb-thread-line--passive",
-  "bb-thread-line--attention",
-  "bb-thread-line--blocking",
-] as const;
 
 // An unpublished comment form, keyed by the last line of its range so one
 // line carries at most one form. Drafts live in their own record so typing
@@ -114,16 +105,15 @@ export function StatementThreadsLayer({
     previewEndLine === undefined && canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
-  // A click on a finding count narrows the walker to one group of that
-  // reviewer's findings, across every change of the plan.
+  // A click on a finding count narrows the walker to one group of the
+  // review's findings, across every change of the plan.
   const walkerFilter = usePlanDetailStore((s) => s.walkerFilter);
   const setWalkerFilter = usePlanDetailStore((s) => s.setWalkerFilter);
   const { focusInActivity, focusInStatement } = useFocusThread();
   const matchesWalker = useCallback(
     (thread: CommentThread) =>
       walkerFilter
-        ? thread.root.reviewMetadata?.runType === walkerFilter.runType &&
-          inFindingGroup(thread.root, walkerFilter.group)
+        ? inFindingGroup(thread.root, walkerFilter.group)
         : !thread.resolved,
     [walkerFilter]
   );
@@ -173,27 +163,6 @@ export function StatementThreadsLayer({
     () => groupMarkersByLine(editorThreads),
     [editorThreads]
   );
-
-  // One background per commented line, so overlapping threads never darken
-  // it. Open findings tint by priority, open discussions stay neutral, and
-  // resolved threads leave the line untinted.
-  const commentedLines = useMemo(() => {
-    const rank = new Map<number, number>();
-    for (const { range, thread } of editorThreads) {
-      if (thread.resolved) continue;
-      const priority = thread.root.reviewMetadata?.priority;
-      const weight = !thread.root.reviewMetadata
-        ? 0
-        : priority === IssueComment_ReviewMetadata_Priority.P0
-          ? 2
-          : 1;
-      for (let line = range.startLine; line <= range.endLine; line++)
-        rank.set(line, Math.max(rank.get(line) ?? 0, weight));
-    }
-    return [...rank]
-      .sort(([a], [b]) => a - b)
-      .map(([line, weight]) => [line, LINE_CLASS_BY_WEIGHT[weight]] as const);
-  }, [editorThreads]);
 
   // Open lines and expanded roots are independent: opening another thread
   // leaves the others in place. The first unresolved thread opens by default.
@@ -467,34 +436,24 @@ export function StatementThreadsLayer({
     const decorations: monaco.editor.IModelDeltaDecoration[] = [];
     const stickiness =
       monacoModule.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges;
-    // Exactly one background per line: passive, current, or creation.
-    // Higher-priority states replace the base instead of layering over it.
-    const lineClasses = new Map<number, string>(commentedLines);
-    // A pending selection replaces the reading highlight; open composers
-    // keep theirs beside it, and win where they overlap.
+    // The one highlight is the reader's own selection and the lines of an
+    // open composer, one background per line.
+    const selectedLines = new Set<number>();
     const pendingSelection = canCreate ? selection : undefined;
-    const paint = (range: LineRange, className: string) => {
+    for (const range of [
+      ...[...activeComposers.values()].map((composer) => composer.range),
+      ...(pendingSelection ? [pendingSelection] : []),
+    ]) {
       for (let line = range.startLine; line <= range.endLine; line++) {
-        lineClasses.set(line, className);
-      }
-    };
-    if (!pendingSelection) {
-      for (const entry of expandedEntries) {
-        paint(entry.range, "bb-thread-line");
+        selectedLines.add(line);
       }
     }
-    for (const composer of activeComposers.values()) {
-      paint(composer.range, "bb-thread-line--selecting");
-    }
-    if (pendingSelection) paint(pendingSelection, "bb-thread-line--selecting");
-    for (const [line, className] of [...lineClasses].sort(
-      ([a], [b]) => a - b
-    )) {
+    for (const line of [...selectedLines].sort((a, b) => a - b)) {
       decorations.push({
         range: new monacoModule.Range(line, 1, line, 1),
         options: {
           isWholeLine: true,
-          className,
+          className: "bb-thread-line--selecting",
           stickiness,
         },
       });
@@ -547,9 +506,7 @@ export function StatementThreadsLayer({
     actionLine,
     activeComposers,
     canCreate,
-    commentedLines,
     editor,
-    expandedEntries,
     markersByLine,
     monacoModule,
     openLines,
@@ -790,7 +747,7 @@ export function StatementThreadsLayer({
               filterLabel={
                 walkerFilter
                   ? t("plan.review.thread.walker.filter", {
-                      reviewer: reviewerName(t, walkerFilter.runType),
+                      reviewer: reviewerName(t),
                       state: findingGroupLabel(t, walkerFilter.group),
                     })
                   : undefined
@@ -825,22 +782,24 @@ export function StatementThreadsLayer({
               }
               revealTarget={revealEntry ? expandedThreadRef : undefined}
             >
-              <div className="py-2 pr-2">
-                <ThreadStack
-                  expandedRoots={expandedRoots}
-                  expandedThreadRef={expandedThreadRef}
-                  flashRoot={flashRoot}
-                  onFlashEnd={() => setFlashRoot(undefined)}
-                  issue={issue}
-                  onCollapse={collapseThread}
-                  onExpand={(rootName) => expandThread(line, rootName)}
-                  replyDrafts={replyDrafts}
-                  onReplyDraftChange={updateReplyDraft}
-                  project={project}
-                  revealRoot={revealEntry?.thread.root.name}
-                  spec={spec}
-                  threads={entries}
-                />
+              <div className="py-2 pr-4" data-testid="thread-zone">
+                <div className="max-w-3xl">
+                  <ThreadStack
+                    expandedRoots={expandedRoots}
+                    expandedThreadRef={expandedThreadRef}
+                    flashRoot={flashRoot}
+                    onFlashEnd={() => setFlashRoot(undefined)}
+                    issue={issue}
+                    onCollapse={collapseThread}
+                    onExpand={(rootName) => expandThread(line, rootName)}
+                    replyDrafts={replyDrafts}
+                    onReplyDraftChange={updateReplyDraft}
+                    project={project}
+                    revealRoot={revealEntry?.thread.root.name}
+                    spec={spec}
+                    threads={entries}
+                  />
+                </div>
               </div>
             </MonacoViewZone>
           );
@@ -853,15 +812,17 @@ export function StatementThreadsLayer({
           revealFromLine={composer.range.startLine}
           revealKey={composer.revealNonce}
         >
-          <div className="py-2 pr-2">
-            <InlineThreadComposer
-              draft={composerDrafts[line] ?? ""}
-              onCancel={() => closeComposer(line)}
-              onDraftChange={(draft) => updateComposerDraft(line, draft)}
-              onPublish={(comment) => publish(line, comment)}
-              pending={actions.pending}
-              range={composer.range}
-            />
+          <div className="py-2 pr-4" data-testid="thread-zone">
+            <div className="max-w-3xl">
+              <InlineThreadComposer
+                draft={composerDrafts[line] ?? ""}
+                onCancel={() => closeComposer(line)}
+                onDraftChange={(draft) => updateComposerDraft(line, draft)}
+                onPublish={(comment) => publish(line, comment)}
+                pending={actions.pending}
+                range={composer.range}
+              />
+            </div>
           </div>
         </MonacoViewZone>
       ))}

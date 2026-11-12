@@ -12,7 +12,6 @@ import {
   IssueComment_ReviewSubmissionSchema,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -177,7 +176,7 @@ describe("canEditIssueComment", () => {
     const result = create(IssueCommentSchema, {
       name: "projects/p1/issues/1/issueComments/10",
       comment: "DELETE FROM employee has no WHERE clause",
-      reviewMetadata: { runType: ReviewRun_Type.RULE },
+      reviewMetadata: {},
     });
     expect(canEditIssueComment(result, project)).toBe(false);
   });

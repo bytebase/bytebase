@@ -6,7 +6,7 @@ import { silentContextKey } from "@/api/context-key";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   Issue_Type,
-  ReviewRun_Status,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import {
@@ -53,7 +53,7 @@ describe("issueOverview", () => {
     Object.values(mocks).forEach((mock) => mock.mockReset());
   });
 
-  test("collects a bounded view of an Issue, its Plan, checks, reviews, and rollout", async () => {
+  test("collects a bounded view of an Issue, its Plan, checks, review, and rollout", async () => {
     mocks.getIssue.mockResolvedValue({
       name: issueName,
       title: "Add customer table",
@@ -77,13 +77,7 @@ describe("issueOverview", () => {
       ],
     });
     mocks.getReviewRun.mockImplementation((request) =>
-      Promise.resolve({
-        name: request.name,
-        status:
-          request.name === `${issueName}/reviewRuns/rule`
-            ? ReviewRun_Status.DONE
-            : ReviewRun_Status.RUNNING,
-      })
+      Promise.resolve({ name: request.name, state: ReviewRun_State.RUNNING })
     );
     mocks.getRollout.mockResolvedValue({
       name: `${planName}/rollout`,
@@ -142,10 +136,7 @@ describe("issueOverview", () => {
         runStatus: "DONE",
         resultCounts: { success: 1, warning: 1, error: 1 },
       },
-      reviews: {
-        rule: { status: "available", runStatus: "DONE" },
-        ai: { status: "available", runStatus: "RUNNING" },
-      },
+      review: { status: "available", runState: "RUNNING" },
       rollout: {
         status: "available",
         name: `${planName}/rollout`,
@@ -192,12 +183,8 @@ describe("issueOverview", () => {
       expect.objectContaining({ name: `${planName}/planCheckRun` }),
       expect.anything()
     );
-    expect(mocks.getReviewRun).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${issueName}/reviewRuns/rule` }),
-      expect.anything()
-    );
-    expect(mocks.getReviewRun).toHaveBeenCalledWith(
-      expect.objectContaining({ name: `${issueName}/reviewRuns/ai` }),
+    expect(mocks.getReviewRun).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ name: `${issueName}/reviewRun` }),
       expect.anything()
     );
     expect(mocks.getRollout).toHaveBeenCalledWith(
@@ -299,10 +286,7 @@ describe("issueOverview", () => {
       issue: { status: "available", name: issueName },
       plan: { status: "unavailable" },
       planCheck: { status: "unavailable" },
-      reviews: {
-        rule: { status: "unavailable" },
-        ai: { status: "unavailable" },
-      },
+      review: { status: "unavailable" },
       rollout: { status: "unavailable" },
       taskRuns: { status: "unavailable" },
     });
@@ -336,10 +320,7 @@ describe("issueOverview", () => {
     ).resolves.toMatchObject({
       plan: { status: "available", hasRollout: false },
       planCheck: { status: "not_started" },
-      reviews: {
-        rule: { status: "not_started" },
-        ai: { status: "not_started" },
-      },
+      review: { status: "not_started" },
       rollout: { status: "not_started" },
       taskRuns: { status: "not_started" },
     });
@@ -394,15 +375,10 @@ describe("issueOverview", () => {
       status: PlanCheckRun_Status.DONE,
       results: [],
     });
-    mocks.getReviewRun.mockImplementation((request) =>
-      Promise.resolve({
-        name:
-          request.name === `${issueName}/reviewRuns/rule`
-            ? "projects/other/issues/5/reviewRuns/rule"
-            : request.name,
-        status: ReviewRun_Status.DONE,
-      })
-    );
+    mocks.getReviewRun.mockResolvedValue({
+      name: "projects/other/issues/5/reviewRun",
+      state: ReviewRun_State.SUCCEEDED,
+    });
     mocks.getRollout.mockResolvedValue({
       name: "projects/other/plans/plan-2/rollout",
       stages: [],
@@ -412,10 +388,7 @@ describe("issueOverview", () => {
       collectIssueOverview("projects/orders", issueName)
     ).resolves.toMatchObject({
       planCheck: { status: "unavailable" },
-      reviews: {
-        rule: { status: "unavailable" },
-        ai: { status: "available" },
-      },
+      review: { status: "unavailable" },
       rollout: { status: "unavailable" },
       taskRuns: { status: "unavailable" },
     });
@@ -442,7 +415,7 @@ describe("issueOverview", () => {
       results: [],
     });
     mocks.getReviewRun.mockImplementation((request) =>
-      Promise.resolve({ name: request.name, status: ReviewRun_Status.DONE })
+      Promise.resolve({ name: request.name, state: ReviewRun_State.SUCCEEDED })
     );
     mocks.getRollout.mockResolvedValue({
       name: `${planName}/rollout`,
@@ -498,10 +471,7 @@ describe("issueOverview", () => {
     ).resolves.toMatchObject({
       plan: { status: "not_configured" },
       planCheck: { status: "not_configured" },
-      reviews: {
-        rule: { status: "not_configured" },
-        ai: { status: "not_configured" },
-      },
+      review: { status: "not_configured" },
       rollout: { status: "not_started" },
       taskRuns: { status: "not_started" },
     });

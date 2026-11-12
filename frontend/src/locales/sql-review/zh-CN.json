@@ -156,6 +156,7 @@
   "policy-update-failed": "审核策略更新失败",
   "policy-updated": "审核策略已更新",
   "review-policy": "审核策略",
+  "reviewer": "SQL 审核",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {

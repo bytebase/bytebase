@@ -156,6 +156,7 @@
   "policy-update-failed": "No se pudo actualizar la política de revisión.",
   "policy-updated": "La política de revisión se actualizó correctamente.",
   "review-policy": "Política de revisión",
+  "reviewer": "Revisión de SQL",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {

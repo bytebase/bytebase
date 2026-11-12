@@ -27,15 +27,15 @@ import { useAppStore } from "@/stores/app";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
-import { useSqlReviewV2, withRuleReview } from "../../hooks/useSqlReviewV2";
+import { useSqlReviewV2, withReviewRun } from "../../hooks/useSqlReviewV2";
 import { focusPlanPhase } from "../../shell/focusPhase";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
+import type { PlanCheckSummary } from "../../utils/phaseSummary";
+import { getPlanCheckSummary } from "../../utils/phaseSummary";
 import {
   hasReviewableSQL,
   loadedMatchedDatabaseCount,
-} from "../../utils/aiReviewRun";
-import type { PlanCheckSummary } from "../../utils/phaseSummary";
-import { getPlanCheckSummary } from "../../utils/phaseSummary";
+} from "../../utils/reviewRun";
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
 import {
   type BypassActionWeight,
@@ -72,30 +72,30 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   const [acknowledge, setAcknowledge] = useState(false);
 
   const sqlReview = useSqlReviewV2();
-  const ruleReview = sqlReview?.ruleReview;
-  const ruleReviewRun = ruleReview?.run;
+  const review = sqlReview?.review;
+  const reviewRun = review?.run;
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
   const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
   const reviewsSQL = hasReviewableSQL(
     plan,
     loadedMatchedDatabaseCount({ dbGroupsByName, dbGroupViewByName })
   );
-  // The rule review is unknown when this page cannot read it (still loading,
+  // The review is unknown when this page cannot read it (still loading,
   // failed to load, no permission, or not read since the plan changed), or
   // when it never ran on a plan with SQL to review: the server may still be
   // running it, or start it before an automatic rollout.
-  const ruleReviewUnknown =
+  const reviewUnknown =
     !!sqlReview &&
-    (!ruleReview ||
-      ruleReview.run === undefined ||
-      (ruleReview.run === null && reviewsSQL) ||
-      ruleReview.loadFailed ||
-      ruleReview.stale);
+    (!review ||
+      review.run === undefined ||
+      (review.run === null && reviewsSQL) ||
+      review.loadFailed ||
+      review.stale);
   const unresolvedThreads = sqlReview?.unresolvedThreads ?? 0;
   const threadsUnknown = !!sqlReview && !sqlReview.threadsLoaded;
   const checks = useMemo(
-    () => withRuleReview(getPlanCheckSummary(plan), ruleReviewRun),
-    [plan, ruleReviewRun]
+    () => withReviewRun(getPlanCheckSummary(plan), reviewRun),
+    [plan, reviewRun]
   );
   const state = useMemo(
     () =>
@@ -121,14 +121,14 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   });
   const planCheckSummary = useMemo(
     () =>
-      withRuleReview(
+      withReviewRun(
         getPlanCheckSummaryWithFallback(
           page.planCheckRuns,
           plan.planCheckRunStatusCount
         ),
-        ruleReviewRun
+        reviewRun
       ),
-    [page.planCheckRuns, plan.planCheckRunStatusCount, ruleReviewRun]
+    [page.planCheckRuns, plan.planCheckRunStatusCount, reviewRun]
   );
 
   const openConfirm = () => {
@@ -143,7 +143,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
     if (
       state.kind === "all-gates-passed" &&
       checks.running === 0 &&
-      !ruleReviewUnknown &&
+      !reviewUnknown &&
       !threadsUnknown
     ) {
       void createRollout();
@@ -215,7 +215,7 @@ export function useBypassDeploy(issue: Issue, plan: Plan): BypassDeploy {
   if (checks.running > 0) {
     warnings.push(t("plan.review.footer.confirm-checks-running"));
   }
-  if (ruleReviewUnknown) {
+  if (reviewUnknown) {
     warnings.push(t("plan.review.footer.confirm-rule-review-unknown"));
   }
   if (unresolvedThreads > 0) {

@@ -321,6 +321,19 @@ export class PlanDetailPage {
     return this.page.getByTestId("comment-thread").filter({ hasText: rootText });
   }
 
+  // A thread card by its root comment's resource name. Unlike the root's
+  // text, the name stays on the card when it folds to its title bar.
+  threadCardOf(phase: "changes" | "review", rootName: string): Locator {
+    return this.page.locator(
+      `#plan-phase-${phase} [data-testid='comment-thread'][id='${rootName}']`,
+    );
+  }
+
+  // The fold control on a thread card's title bar, whatever its name.
+  cardFoldControl(card: Locator): Locator {
+    return card.getByTestId("thread-bar").locator("button[aria-expanded]");
+  }
+
   threadCardIn(phase: "changes" | "review", rootText: string): Locator {
     return this.page
       .locator(`#plan-phase-${phase}`)

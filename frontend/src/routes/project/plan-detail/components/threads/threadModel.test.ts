@@ -3,11 +3,9 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { describe, expect, test } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
-  type IssueComment,
   IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
-  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -15,6 +13,7 @@ import {
   Plan_SpecSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
   buildWholeLineAnchor,
@@ -26,8 +25,6 @@ import {
   formatLineRange,
   groupMarkersByLine,
   groupThreads,
-  isShownInEditor,
-  needsActivityCard,
   resolveAnchorState,
   selectEditorThreads,
   sheetSha256OfName,
@@ -207,125 +204,6 @@ describe("resolveAnchorState", () => {
   });
 });
 
-describe("isShownInEditor", () => {
-  const noPlacement = () => undefined;
-  const noPreview = () => undefined;
-
-  test("shows a thread placed CURRENT on its spec's sheet", () => {
-    expect(
-      isShownInEditor(
-        root("here", { anchor: anchor(3, 4) }),
-        plan().specs,
-        noPlacement,
-        noPreview
-      )
-    ).toBe(true);
-  });
-
-  test("hides a thread past the loaded head of an oversized statement", () => {
-    expect(
-      isShownInEditor(
-        root("far", { anchor: anchor(30, 31) }),
-        plan().specs,
-        noPlacement,
-        () => 20
-      )
-    ).toBe(false);
-    expect(
-      isShownInEditor(
-        root("near", { anchor: anchor(19, 20) }),
-        plan().specs,
-        noPlacement,
-        () => 20
-      )
-    ).toBe(true);
-  });
-
-  test("hides a thread with no anchor, an outdated placement, or an unplaced revision", () => {
-    expect(
-      isShownInEditor(root("whole"), plan().specs, noPlacement, noPreview)
-    ).toBe(false);
-    expect(
-      isShownInEditor(
-        root("outdated", { anchor: anchor(3, 3) }),
-        plan().specs,
-        () => OUTDATED,
-        noPreview
-      )
-    ).toBe(false);
-    expect(
-      isShownInEditor(
-        root("pending", { anchor: anchor(3, 3, OTHER_SHA) }),
-        plan().specs,
-        noPlacement,
-        noPreview
-      )
-    ).toBe(false);
-  });
-
-  test("follows a computed placement to its current line", () => {
-    expect(
-      isShownInEditor(
-        root("moved", { anchor: anchor(3, 3, OTHER_SHA) }),
-        plan().specs,
-        () => current(25, 25),
-        () => 20
-      )
-    ).toBe(false);
-  });
-});
-
-describe("needsActivityCard", () => {
-  const finding = (
-    id: string,
-    opts: { resolved?: boolean; superseded?: boolean } = {}
-  ) =>
-    create(IssueCommentSchema, {
-      ...root(id, { resolved: opts.resolved }),
-      reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-        runType: ReviewRun_Type.RULE,
-        superseded: opts.superseded ?? false,
-      }),
-    });
-  const threadOf = (rootComment: IssueComment, replies: IssueComment[] = []) =>
-    groupThreads([rootComment, ...replies])[0];
-
-  test("a finding the editor shows needs no card, unless someone replied", () => {
-    expect(needsActivityCard(threadOf(finding("shown")), true)).toBe(false);
-    expect(
-      needsActivityCard(
-        threadOf(finding("talked"), [reply("r", "talked", 2)]),
-        true
-      )
-    ).toBe(true);
-  });
-
-  test("a finding the editor cannot show keeps its card", () => {
-    expect(needsActivityCard(threadOf(finding("hidden")), false)).toBe(true);
-  });
-
-  test("a resolved superseded result is history, a reopened one is not", () => {
-    expect(
-      needsActivityCard(
-        threadOf(finding("old", { resolved: true, superseded: true })),
-        false
-      )
-    ).toBe(false);
-    expect(
-      needsActivityCard(
-        threadOf(finding("reopened", { superseded: true })),
-        false
-      )
-    ).toBe(true);
-    expect(
-      needsActivityCard(
-        threadOf(finding("reopened-shown", { superseded: true })),
-        true
-      )
-    ).toBe(false);
-  });
-});
-
 describe("buildWholeLineAnchor", () => {
   test("orders the lines and uses zero columns", () => {
     const built = buildWholeLineAnchor({
@@ -419,28 +297,30 @@ describe("editor placement", () => {
 describe("editor placement of review results", () => {
   const result = (
     id: string,
-    runType: ReviewRun_Type,
+    ruleType: ReviewRuleType,
     opts: { superseded?: boolean; resolved?: boolean } = {}
   ) => {
     const comment = root(id, { anchor: anchor(2, 2), resolved: opts.resolved });
     comment.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType,
+      ruleType,
       superseded: opts.superseded ?? false,
     });
     return comment;
   };
+  const RULE = ReviewRuleType.REQUIRE_WHERE;
+  const NO_RULE = ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
   const placedNames = (comments: ReturnType<typeof root>[]) =>
     selectEditorThreads(groupThreads(comments), {
       specId: "spec-1",
       sheetSha256: SHA,
     }).map((entry) => entry.thread.root.comment);
 
-  test("shows the latest standard rule review, resolved or not", () => {
+  test("shows the latest results of the standard rules, resolved or not", () => {
     expect(
       placedNames([
-        result("latest-open", ReviewRun_Type.RULE),
-        result("latest-resolved", ReviewRun_Type.RULE, { resolved: true }),
-        result("earlier", ReviewRun_Type.RULE, {
+        result("latest-open", RULE),
+        result("latest-resolved", RULE, { resolved: true }),
+        result("earlier", RULE, {
           superseded: true,
           resolved: true,
         }),
@@ -450,22 +330,20 @@ describe("editor placement of review results", () => {
 
   test("keeps a superseded result someone reopened, since it holds the rollout", () => {
     expect(
-      placedNames([
-        result("reopened", ReviewRun_Type.RULE, { superseded: true }),
-      ])
+      placedNames([result("reopened", RULE, { superseded: true })])
     ).toEqual(["root reopened"]);
   });
 
-  test("leaves AI results and human threads as they are", () => {
+  test("leaves results no rule names and human threads as they are", () => {
     expect(
       placedNames([
-        result("ai-earlier", ReviewRun_Type.AI, {
+        result("earlier-untitled", NO_RULE, {
           superseded: true,
           resolved: true,
         }),
         root("human", { anchor: anchor(2, 2), resolved: true }),
       ])
-    ).toEqual(["root ai-earlier", "root human"]);
+    ).toEqual(["root earlier-untitled", "root human"]);
   });
 });
 

@@ -10,8 +10,7 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Status,
-  ReviewRun_Type,
+  ReviewRun_State,
   ReviewRunSchema,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -28,7 +27,6 @@ import {
 import { shownTimestampPrecisions } from "@/test-utils/humanizeTs";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
-import type { PlanReviewState } from "../../hooks/usePlanReviewState";
 import {
   type AutomatedReviewRow,
   emptyFindings,
@@ -42,7 +40,7 @@ const mocks = vi.hoisted(() => ({
   runChecks: vi.fn(async () => undefined),
   reload: vi.fn(async () => undefined),
   routerPush: vi.fn(),
-  ruleReview: undefined as unknown,
+  review: undefined as unknown,
   rules: undefined as unknown,
   runReview: vi.fn(async () => ({})),
   pushNotification: vi.fn(),
@@ -51,6 +49,10 @@ const mocks = vi.hoisted(() => ({
   issuePlan: "projects/p/plans/42",
   issueName: "projects/p/issues/1",
   planCheckRuns: [] as PlanCheckRun[],
+  serverInfo: undefined as unknown,
+  editing: false,
+  ciSamplingSize: 0,
+  targets: [] as string[],
 }));
 
 vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
@@ -122,9 +124,13 @@ vi.mock("@/components/plan-check/PlanCheckSection", async () => {
 vi.mock("@/stores/app", () => {
   const getState = () => ({
       getIssueComments: () => mocks.comments,
+      serverInfo: mocks.serverInfo,
       databasesByName: {
         "instances/i/databases/hr_test": {
           instanceResource: { engine: Engine.POSTGRES },
+        },
+        "instances/i/databases/hr_docs": {
+          instanceResource: { engine: Engine.MONGODB },
         },
       },
       dbGroupsByName: {},
@@ -134,10 +140,6 @@ vi.mock("@/stores/app", () => {
     });
   return { useAppStore: Object.assign((selector: (state: unknown) => unknown) => selector(getState()), { getState }) };
 });
-
-vi.mock("../../hooks/useEffectiveStandardRules", () => ({
-  useEffectiveStandardRules: () => mocks.rules,
-}));
 
 vi.mock("../../hooks/usePlanCheckActions", () => ({
   usePlanCheckActions: () => ({
@@ -155,7 +157,10 @@ vi.mock("../../hooks/useFocusThread", () => ({
 }));
 
 vi.mock("../../hooks/useSqlReviewV2", () => ({
-  useSqlReviewV2: () => ({ ruleReview: mocks.ruleReview }),
+  useSqlReviewV2: () => ({
+    review: mocks.review,
+    standardRules: mocks.rules,
+  }),
 }));
 
 vi.mock("../../shared/stores/usePlanDetailStore", () => {
@@ -176,7 +181,7 @@ vi.mock("../../shell/PlanDetailContext", () => ({
       plan: mocks.issuePlan,
       status: IssueStatus.OPEN,
     }),
-    isEditing: false,
+    isEditing: mocks.editing,
     readonly: false,
     rollout: undefined,
     plan: create(PlanSchema, {
@@ -187,14 +192,14 @@ vi.mock("../../shell/PlanDetailContext", () => ({
           config: {
             case: "changeDatabaseConfig",
             value: create(Plan_ChangeDatabaseConfigSchema, {
-              targets: ["instances/i/databases/hr_test"],
+              targets: mocks.targets,
             }),
           },
         },
       ],
     }),
     planCheckRuns: mocks.planCheckRuns,
-    project: { ciSamplingSize: 0 },
+    project: { ciSamplingSize: mocks.ciSamplingSize },
     projectId: "p",
   }),
 }));
@@ -220,7 +225,6 @@ const finding = (
       startPosition: create(PositionSchema, { line }),
     }),
     reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-      runType: ReviewRun_Type.RULE,
       ruleType: options.ruleType ?? ReviewRuleType.DISALLOW_DROP_OBJECT,
       priority: options.priority ?? IssueComment_ReviewMetadata_Priority.P1,
     }),
@@ -244,33 +248,16 @@ const row = (
   ...extra,
 });
 
-const ai = (overrides: Partial<PlanReviewState["ai"]> = {}) => ({
-  allowRun: true,
-  canStart: true,
-  editing: false,
-  run: null,
-  runReview: vi.fn(async () => undefined),
-  shown: true,
-  starting: false,
-  ...overrides,
-});
-
-const renderSection = (
-  rows: AutomatedReviewRow[],
-  aiState: PlanReviewState["ai"] = ai()
-) =>
+const renderSection = (rows: AutomatedReviewRow[]) =>
   render(
-    <AutomatedReviewSection
-      state={{ rows, gates: [], openDiscussions: 0, ai: aiState }}
-    />
+    <AutomatedReviewSection state={{ rows, gates: [], openDiscussions: 0 }} />
   );
 
-const failedReview = (reviewer: "rule" | "ai") =>
+const failedReview = () =>
   create(ReviewRunSchema, {
-    name: `projects/p/issues/1/reviewRuns/${reviewer}`,
-    type: reviewer === "rule" ? ReviewRun_Type.RULE : ReviewRun_Type.AI,
-    status: ReviewRun_Status.FAILED,
-    error: "review service unavailable",
+    name: "projects/p/issues/1/reviewRun",
+    state: ReviewRun_State.FAILED,
+    error: { code: 14, message: "review service unavailable" },
     createTime: { seconds: 100n, nanos: 123 },
     endTime: { seconds: 110n, nanos: 456 },
   });
@@ -284,41 +271,51 @@ const diagnosticSnapshot = () => {
   expect(options.capability).toEqual({ kind: "diagnostic", resource: references[0] });
   return JSON.parse(prompt.slice(prompt.indexOf("\n") + 1));
 };
+const AI_ON = { aiEnabled: true, aiSqlReviewEnabled: true };
+const reviewRun = (state: ReviewRun_State, outdated = false) =>
+  create(ReviewRunSchema, { state, outdated });
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.comments = [];
-  mocks.ruleReview = { loadFailed: false, reload: mocks.reload };
+  mocks.review = { loadFailed: false, reload: mocks.reload, run: null };
   mocks.rules = { rules: [1, 2, 3], source: "project" };
   mocks.planName = "projects/p/plans/42";
   mocks.issuePlan = mocks.planName;
   mocks.issueName = "projects/p/issues/1";
   mocks.planCheckRuns = [];
+  mocks.serverInfo = undefined;
+  mocks.editing = false;
+  mocks.ciSamplingSize = 0;
+  mocks.targets = ["instances/i/databases/hr_test"];
 });
 
 afterEach(cleanup);
 
 describe("AutomatedReviewSection", () => {
-  test.each(["rule", "ai"] as const)("keeps failed %s reviewer help with the error metadata, separate from Retry", (reviewer) => {
-    const run = failedReview(reviewer);
-    if (reviewer === "rule") mocks.ruleReview = { run, loadFailed: false, reload: mocks.reload };
-    renderSection([row(reviewer, "failed", undefined, { error: run.error, time: run.endTime })], ai({ run: reviewer === "ai" ? run : null }));
+  test("keeps failed review help with the error metadata and earlier findings, separate from Retry", () => {
+    const run = failedReview();
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed", findings({ open: 1, p0: 1, resolved: 2, overridden: 1 }), { error: run.error!.message, time: run.endTime })]);
 
-    const errorSummary = screen.getByText(run.error).parentElement!;
+    const errorSummary = screen.getByText(run.error!.message).parentElement!;
     const help = within(errorSummary).getByRole("button", { name: "agent.diagnostic-help.ask-agent" });
     const metadata = help.parentElement!;
     expect(within(metadata).getByTestId("humanize-ts").textContent).toBe("110000.000456");
     expect(within(metadata).getByRole("button", { name: "plan.automated-review.scope-label" })).toBeDefined();
-    expect(within(metadata).queryByText(run.error)).toBeNull();
-    const retryName = reviewer === "ai" ? "plan.ai-review.run" : "plan.automated-review.retry";
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-priority:1" }).textContent).toBe("P01");
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-resolved:2" })).toBeDefined();
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-overridden:1" })).toBeDefined();
+    expect(within(metadata).queryByText(run.error!.message)).toBeNull();
+    const retryName = "plan.automated-review.retry";
     expect(within(errorSummary).queryByRole("button", { name: retryName })).toBeNull();
     expect(screen.getByRole("button", { name: retryName }).textContent).toContain("plan.automated-review.retry");
   });
 
-  test.each(["rule", "ai"] as const)("diagnoses the exact failed %s reviewer execution on click", (reviewer) => {
-    const run = failedReview(reviewer);
-    if (reviewer === "rule") mocks.ruleReview = { run, loadFailed: false, reload: mocks.reload };
-    renderSection([row(reviewer, "failed", undefined, { error: run.error })], ai({ run: reviewer === "ai" ? run : null }));
+  test("diagnoses the exact failed unified review execution on click", () => {
+    const run = failedReview();
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed", undefined, { error: run.error!.message })]);
     expect(mocks.launchDiagnostic).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
     expect(mocks.launchDiagnostic).toHaveBeenCalledOnce();
@@ -327,10 +324,10 @@ describe("AutomatedReviewSection", () => {
     expect(snapshot.sourceId).toBe(run.name);
     expect(snapshot.summary).toMatch(/execution failed/i);
     expect(snapshot.summary).not.toMatch(/finding/i);
-    expect(snapshot.detail).toBe(run.error);
-    expect(JSON.stringify(snapshot.facts)).toContain(reviewer.toUpperCase());
+    expect(snapshot.detail).toBe(run.error!.message);
     expect(snapshot.facts).toEqual(expect.arrayContaining([
       { label: "Status", value: "FAILED" },
+      { label: "Error code", value: "14" },
       { label: "Issue", value: "projects/p/issues/1" },
       { label: "Plan", value: "projects/p/plans/42" },
       { label: "Started", value: "100.000000123" },
@@ -339,35 +336,53 @@ describe("AutomatedReviewSection", () => {
     expect(snapshot.sql).toBeUndefined();
   });
 
-  test.each(["passed", "resolved", "not-run", "outdated", "running", "loading", "open"] as const)("does not turn %s reviewer state into another diagnostic action", (conclusion) => {
-    mocks.ruleReview = { run: failedReview("rule"), loadFailed: false, reload: mocks.reload };
-    renderSection([row("rule", conclusion, findings({ open: 1, p1: 1 }))]);
+  test("diagnoses a failed review with a status code but no error message", () => {
+    const run = failedReview();
+    run.error = { ...run.error!, code: 8, message: "" };
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
+    fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
+    const snapshot = diagnosticSnapshot();
+    expect(snapshot.sourceId).toBe(run.name);
+    expect(snapshot.detail).toBe("Review execution failed (code 8)");
+    expect(snapshot.facts).toContainEqual({ label: "Error code", value: "8" });
+  });
+
+  test.each(["passed", "resolved", "not-run", "outdated", "running", "loading", "open", "off"] as const)("does not turn %s review state into another diagnostic action", (conclusion) => {
+    mocks.review = { run: failedReview(), loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", conclusion, findings({ open: 1, p1: 1 }))]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
   });
 
-  test.each([ReviewRun_Status.DONE, ReviewRun_Status.RUNNING, ReviewRun_Status.AVAILABLE, ReviewRun_Status.STATUS_UNSPECIFIED])("requires a failed underlying reviewer execution, not only the row conclusion (%s)", (status) => {
-    mocks.ruleReview = { run: { ...failedReview("rule"), status }, loadFailed: false, reload: mocks.reload };
-    renderSection([row("rule", "failed")]);
+  test.each([ReviewRun_State.SUCCEEDED, ReviewRun_State.RUNNING, ReviewRun_State.STATE_UNSPECIFIED])("requires a failed underlying review execution, not only the row conclusion (%s)", (state) => {
+    mocks.review = { run: { ...failedReview(), state }, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
   });
 
-  test.each(["invalid-plan", "different-project", "linked-plan", "run-issue", "run-type", "empty-error", "load-failed"])("hides failed reviewer help for %s evidence", (failure) => {
-    const run = failedReview("rule");
+  test.each(["invalid-plan", "different-project", "linked-plan", "invalid-issue", "run-issue", "legacy-run", "missing-run", "missing-error", "empty-error", "whitespace-error", "load-failed"])("hides failed review help for %s evidence", (failure) => {
+    const run = failedReview();
     if (failure === "invalid-plan") mocks.planName = "projects/p/plans/create";
     if (failure === "different-project") mocks.planName = "projects/other/plans/42";
     if (failure === "linked-plan") mocks.issuePlan = "projects/p/plans/43";
-    if (failure === "run-issue") run.name = "projects/p/issues/2/reviewRuns/rule";
-    if (failure === "run-type") run.type = ReviewRun_Type.AI;
-    if (failure === "empty-error") run.error = "";
-    mocks.ruleReview = { run, loadFailed: failure === "load-failed", reload: mocks.reload };
-    renderSection([row("rule", "failed")]);
+    if (failure === "invalid-issue") {
+      mocks.issueName = "projects/p/issues/create";
+      run.name = `${mocks.issueName}/reviewRun`;
+    }
+    if (failure === "run-issue") run.name = "projects/p/issues/2/reviewRun";
+    if (failure === "legacy-run") run.name = "projects/p/issues/1/reviewRuns/rule";
+    if (failure === "missing-error") run.error = undefined;
+    if (failure === "empty-error") run.error = { ...run.error!, code: 0, message: "" };
+    if (failure === "whitespace-error") run.error = { ...run.error!, code: 0, message: " \n " };
+    mocks.review = { run: failure === "missing-run" ? undefined : run, loadFailed: failure === "load-failed", reload: mocks.reload };
+    renderSection([row("review", "failed")]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
     expect(screen.getByRole("button", { name: /plan.automated-review.retry/ })).toBeDefined();
   });
 
-  test("keeps a generic rule-review load failure on its existing Retry path", () => {
-    mocks.ruleReview = { loadFailed: true, reload: mocks.reload };
-    renderSection([row("rule", "failed")]);
+  test("keeps a generic review load failure on its existing Retry path", () => {
+    mocks.review = { loadFailed: true, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /plan.automated-review.retry/ }));
     expect(mocks.reload).toHaveBeenCalledOnce();
@@ -418,16 +433,16 @@ describe("AutomatedReviewSection", () => {
     expect(JSON.stringify(snapshot)).toContain(PlanCheckRun_Status[status]);
   });
 
-  test("puts each reviewer on one line with its open findings by priority", () => {
+  test("puts the review on one line with its open findings by priority", () => {
     renderSection([
-      row("rule", "open", findings({ open: 3, p0: 1, p1: 2 })),
-      row("ai", "not-run"),
+      row("review", "open", findings({ open: 3, p0: 1, p1: 2 })),
       row("policy", "passed", undefined, { targets: 2 }),
     ]);
     expect(
-      screen.getByText("plan.automated-review.needs-attention:2")
+      screen.getByText("plan.automated-review.needs-attention:1")
     ).toBeDefined();
-    const rule = screen.getByTestId("automated-review-rule");
+    const review = screen.getByTestId("automated-review-review");
+    expect(review.textContent).toContain("sql-review.reviewer");
     expect(
       screen.getByRole("button", { name: "plan.findings.n-priority:1" })
         .textContent
@@ -436,15 +451,31 @@ describe("AutomatedReviewSection", () => {
       screen.getByRole("button", { name: "plan.findings.n-priority:2" })
         .textContent
     ).toBe("P12");
-    expect(rule.textContent).not.toContain("P2");
-    expect(screen.getByText("plan.automated-review.not-run")).toBeDefined();
+    expect(review.textContent).not.toContain("P2");
     expect(screen.getByText("plan.automated-review.passed-on:2")).toBeDefined();
+  });
+
+  test("a review that never ran says so, and a running one reads as reviewing", () => {
+    const { unmount } = renderSection([row("review", "not-run")]);
+    expect(screen.getByText("plan.automated-review.not-run")).toBeDefined();
+    unmount();
+
+    renderSection([row("review", "running"), row("checks", "running")]);
+    expect(
+      screen.getByTestId("automated-review-review").textContent
+    ).toContain("plan.automated-review.reviewing");
+    expect(
+      screen.getByTestId("automated-review-checks").textContent
+    ).toContain("plan.automated-review.running");
   });
 
   test("reads reviewer finish times to the minute", () => {
     const { container } = renderSection([
-      row("rule", "passed", undefined, { time: timestampFromMs(1_000_000) }),
-      row("ai", "open", findings({ open: 1, p1: 1 }), {
+      row("review", "open", findings({ open: 1, p1: 1 }), {
+        time: timestampFromMs(1_000_000),
+      }),
+      row("policy", "passed", undefined, {
+        targets: 1,
         time: timestampFromMs(1_008_000),
       }),
     ]);
@@ -457,14 +488,11 @@ describe("AutomatedReviewSection", () => {
       finding("line-2", 2),
       finding("p0", 3, { priority: IssueComment_ReviewMetadata_Priority.P0 }),
     ];
-    renderSection([row("rule", "open", findings({ open: 3, p0: 1, p1: 2 }))]);
+    renderSection([row("review", "open", findings({ open: 3, p0: 1, p1: 2 }))]);
     fireEvent.click(
       screen.getByRole("button", { name: "plan.findings.n-priority:2" })
     );
-    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
-      runType: ReviewRun_Type.RULE,
-      group: "p1",
-    });
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({ group: "p1" });
     expect(mocks.focusInStatement).toHaveBeenCalledWith(
       expect.objectContaining({ name: "line-2" })
     );
@@ -485,7 +513,7 @@ describe("AutomatedReviewSection", () => {
         resolved: true,
       }),
     ];
-    renderSection([row("rule", "resolved", findings({ resolved: 3 }))]);
+    renderSection([row("review", "resolved", findings({ resolved: 3 }))]);
     const resolved = screen.getByRole("button", {
       name: "plan.findings.n-resolved:3",
     });
@@ -493,10 +521,7 @@ describe("AutomatedReviewSection", () => {
       "plan.findings.name-times:2"
     );
     fireEvent.click(resolved);
-    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
-      runType: ReviewRun_Type.RULE,
-      group: "resolved",
-    });
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({ group: "resolved" });
     expect(mocks.focusInStatement).toHaveBeenCalledWith(
       expect.objectContaining({ name: "drop-1" })
     );
@@ -511,7 +536,7 @@ describe("AutomatedReviewSection", () => {
         resolved: true,
       }),
     ];
-    renderSection([row("rule", "resolved", findings({ overridden: 1 }))]);
+    renderSection([row("review", "resolved", findings({ overridden: 1 }))]);
     expect(
       screen.getByText("plan.automated-review.needs-attention:1")
     ).toBeDefined();
@@ -522,17 +547,14 @@ describe("AutomatedReviewSection", () => {
       "plan.findings.name-at-line"
     );
     fireEvent.click(overridden);
-    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({
-      runType: ReviewRun_Type.RULE,
-      group: "overridden",
-    });
+    expect(mocks.setWalkerFilter).toHaveBeenCalledWith({ group: "overridden" });
     expect(mocks.focusInStatement).toHaveBeenCalledWith(
       expect.objectContaining({ name: "null-3" })
     );
   });
 
-  test("says on hover what the rule review covered", () => {
-    renderSection([row("rule", "passed")]);
+  test("says on hover what the review covered", () => {
+    renderSection([row("review", "passed")]);
     expect(
       screen.getByRole("button", { name: "plan.automated-review.scope-label" })
     ).toBeDefined();
@@ -541,34 +563,109 @@ describe("AutomatedReviewSection", () => {
       "plan.automated-review.scope-with-engines"
     );
     expect(scope.textContent).toContain("plan.automated-review.project-rules");
+    expect(scope.textContent).not.toContain("plan.automated-review.sampled");
   });
 
-  test("claims no coverage for a reviewer that has not run", () => {
-    renderSection([row("ai", "not-run"), row("rule", "running")]);
+  test("says when the review covered only a sample, whichever reviewer is on", () => {
+    mocks.ciSamplingSize = 1;
+    mocks.targets = [
+      "instances/i/databases/hr_test",
+      "instances/i/databases/hr_prod",
+    ];
+    const { unmount } = renderSection([row("review", "passed")]);
+    expect(screen.getByTestId("review-scope").textContent).toContain(
+      "plan.automated-review.sampled:1"
+    );
+    unmount();
+
+    mocks.serverInfo = AI_ON;
+    renderSection([row("review", "passed")]);
+    expect(screen.getByTestId("review-scope").textContent).toContain(
+      "plan.automated-review.sampled:1"
+    );
+  });
+
+  test("covers a database only the AI review reads", () => {
+    mocks.targets = ["instances/i/databases/hr_docs"];
+    const { unmount } = renderSection([row("review", "passed")]);
+    expect(screen.queryByTestId("review-scope")).toBeNull();
+    unmount();
+
+    mocks.serverInfo = AI_ON;
+    renderSection([row("review", "passed")]);
+    expect(screen.getByTestId("review-scope").textContent).toContain(
+      "plan.automated-review.scope-with-engines"
+    );
+  });
+
+  test("claims no coverage for a review that has not run", () => {
+    const { unmount } = renderSection([row("review", "not-run")]);
+    expect(screen.queryByTestId("review-scope")).toBeNull();
+    unmount();
+    renderSection([row("review", "running")]);
     expect(screen.queryByTestId("review-scope")).toBeNull();
   });
 
-  test("Run, Retry, and Rerun start the rule review alone", async () => {
-    const { unmount } = renderSection([row("rule", "outdated")]);
+  test("a review that is off says so, shows no pass, and offers no run", () => {
+    mocks.rules = { rules: [], source: "project" };
+    renderSection([row("review", "off", undefined, { holdsRollout: false })]);
+    const review = screen.getByTestId("automated-review-review");
+    expect(review.textContent).toContain(
+      "plan.automated-review.off-for-project"
+    );
+    expect(review.textContent).not.toContain(
+      "plan.automated-review.no-findings"
+    );
+    expect(screen.queryByTestId("review-scope")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /plan.automated-review.rerun/ })
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /common.run/ })).toBeNull();
+    expect(screen.queryByTestId("automated-review-summary")).toBeNull();
+  });
+
+  test("an off review beside passing checks is not summed up as needing nothing", () => {
+    const { unmount } = renderSection([
+      row("review", "off", undefined, { holdsRollout: false }),
+      row("policy", "passed", undefined, { targets: 1 }),
+    ]);
+    expect(screen.queryByTestId("automated-review-summary")).toBeNull();
+    unmount();
+
+    renderSection([
+      row("review", "off", undefined, { holdsRollout: false }),
+      row("policy", "open", findings({ open: 1, p0: 1 }), { targets: 1 }),
+    ]);
+    expect(screen.getByTestId("automated-review-summary").textContent).toBe(
+      "plan.automated-review.needs-attention:1"
+    );
+  });
+
+  test("Run, Retry, and Rerun start the review with one call", async () => {
+    const { unmount } = renderSection([row("review", "outdated")]);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /common.run/ }));
     });
     expect(mocks.runReview).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ name: "projects/p/issues/1/reviewRuns/rule" }),
+      expect.objectContaining({ name: "projects/p/issues/1/reviewRun" }),
       expect.anything()
     );
     expect(mocks.reload).toHaveBeenCalledOnce();
     expect(mocks.runChecks).not.toHaveBeenCalled();
     unmount();
 
-    renderSection([row("rule", "failed", undefined, { error: "hr_test: metadata not synced" })]);
+    renderSection([
+      row("review", "failed", undefined, {
+        error: "hr_test: metadata not synced",
+      }),
+    ]);
     expect(
       screen.getByRole("button", { name: /plan.automated-review.retry/ })
     ).toBeDefined();
   });
 
-  test("a rule review with a result offers Rerun, since settings and schema change results", async () => {
-    renderSection([row("rule", "open", findings({ open: 1, p1: 1 }))]);
+  test("a review with a result offers Rerun, since settings and schema change results", async () => {
+    renderSection([row("review", "open", findings({ open: 1, p1: 1 }))]);
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: /plan.automated-review.rerun/ })
@@ -577,9 +674,18 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runReview).toHaveBeenCalledOnce();
   });
 
-  test("a rerun keeps resolved findings, so it does not ask", async () => {
+  test("a rerun without the AI review costs nothing, so it does not ask", async () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
     renderSection([
-      row("rule", "open", findings({ open: 1, p1: 1, resolved: 1, overridden: 1 })),
+      row(
+        "review",
+        "open",
+        findings({ open: 1, p1: 1, resolved: 1, overridden: 1 })
+      ),
     ]);
     await act(async () => {
       fireEvent.click(
@@ -590,53 +696,145 @@ describe("AutomatedReviewSection", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  test("shows a failed run's error in full", () => {
+  test("shows a failed run's error in full, beside the findings that still stand", () => {
     renderSection([
-      row("rule", "failed", undefined, {
+      row("review", "failed", findings({ open: 1, p0: 1 }), {
         error: "hr_test: metadata not synced",
       }),
     ]);
     expect(screen.getByText("hr_test: metadata not synced")).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "plan.findings.n-priority:1" })
+        .textContent
+    ).toBe("P01");
   });
 
-  test("an AI review waits for unsaved edits and says so on hover", () => {
-    renderSection([row("ai", "not-run")], ai({ canStart: false, editing: true }));
-    const run = screen.getByRole("button", { name: "plan.ai-review.run" });
+  test("the review waits for unsaved edits and says so on hover", () => {
+    mocks.editing = true;
+    renderSection([row("review", "not-run")]);
+    const run = screen.getByRole("button", { name: /common.run/ });
     expect((run as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByTestId("tooltip").textContent).toBe(
-      "plan.ai-review.save-first"
+      "plan.automated-review.save-first"
     );
   });
 
-  test("a finished AI review offers Rerun behind a confirmation", async () => {
-    const aiState = ai({
-      run: create(ReviewRunSchema, { status: ReviewRun_Status.DONE }),
-    });
-    renderSection([row("ai", "passed")], aiState);
+  test("the review cannot start again while a run is queued or running", () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.RUNNING),
+    };
+    renderSection([row("review", "outdated")]);
+    const run = screen.getByRole("button", { name: /common.run/ });
+    expect((run as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  test("a finished review that includes the AI review offers Rerun behind a confirmation", async () => {
+    mocks.serverInfo = AI_ON;
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([row("review", "passed")]);
     fireEvent.click(
       screen.getByRole("button", { name: /plan.automated-review.rerun/ })
     );
-    expect(aiState.runReview).not.toHaveBeenCalled();
-    expect(screen.getByText("plan.ai-review.run-again-title")).toBeDefined();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("plan.automated-review.run-again-title")
+    ).toBeDefined();
     const confirm = screen
       .getAllByRole("button", { name: "plan.automated-review.rerun" })
       .at(-1);
     await act(async () => {
       fireEvent.click(confirm!);
     });
-    expect(aiState.runReview).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledOnce();
   });
 
-  test("Re-run all reruns the checks and the rule review without asking", async () => {
-    renderSection([row("rule", "resolved", findings({ resolved: 3 }))]);
+  test("offers Retry when the run could not be read", async () => {
+    mocks.review = { loadFailed: true, reload: mocks.reload, run: undefined };
+    renderSection([row("review", "failed")]);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: /plan.automated-review.retry/ })
+      );
+    });
+    expect(mocks.reload).toHaveBeenCalledOnce();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+  });
+
+  const rerunAll = async () => {
     fireEvent.click(screen.getByRole("button", { name: "common.more" }));
     await act(async () => {
       fireEvent.click(
         await screen.findByText("plan.automated-review.rerun-all")
       );
     });
+  };
+
+  test("Re-run all reruns the checks and the review", async () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([row("review", "resolved", findings({ resolved: 3 }))]);
+    await rerunAll();
     expect(mocks.runChecks).toHaveBeenCalledOnce();
-    expect(mocks.reload).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+    // The review is reset before the checks can finish.
+    expect(mocks.runReview.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.runChecks.mock.invocationCallOrder[0]
+    );
+  });
+
+  test("Re-run all asks first when the review makes model calls", async () => {
+    mocks.serverInfo = AI_ON;
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([row("review", "passed")]);
+    await rerunAll();
+    expect(mocks.runChecks).not.toHaveBeenCalled();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "plan.automated-review.rerun-all" })
+      );
+    });
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("Re-run all leaves alone a review that is running or off", async () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.RUNNING),
+    };
+    const { unmount } = renderSection([row("review", "running")]);
+    await rerunAll();
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    unmount();
+
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([
+      row("review", "off", undefined, { holdsRollout: false }),
+      row("policy", "passed", undefined, { targets: 1 }),
+    ]);
+    await rerunAll();
+    expect(mocks.runChecks).toHaveBeenCalledTimes(2);
+    expect(mocks.runReview).not.toHaveBeenCalled();
   });
 
   test("a plan check row reruns the checks", async () => {

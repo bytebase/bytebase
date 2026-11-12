@@ -91,10 +91,15 @@ even where it follows the tables.
    the lines where the bar shows them apart from the title. Whatever the title is, the control has
    a name.
 6. **Color in the bar is kept for what the reader must act on.** The bar's words and icons are
-   `text-control`. Besides the link, two things in it have a color of their own: the badge of a
-   P0 or P1 finding, and "Outdated". The badge of a production environment has a light tint
-   of that environment's color behind the bar's own text color, so it marks without calling.
-   "Resolved" and "Statement unavailable" are text with an icon, with no color and no fill.
+   `text-control`. Besides the link, three things in it have a color of their own: the badge of
+   a P0 or P1 finding, "Outdated", and the badge of a production environment, which is in the
+   color the workspace gave that environment. "Resolved" and "Statement unavailable" are text
+   with an icon, with no color and no fill.
+9. **A marker that stands for an object the product already draws is that object's own
+   component.** The priority badge is the one `ReviewResult` draws, and the badge of an
+   environment is `EnvironmentBadge`. The bar may limit its width; it never changes its color,
+   text or icon. So a marker reads the same as that object everywhere else, and changes when
+   the object's component does.
 7. **The footer is there only when the reader can act.** A reader who can neither reply nor resolve
    sees none.
 8. **A place adds content, not a layout.** The Changes section and Activity fill the same bar and
@@ -123,14 +128,15 @@ Markers follow the title, in this order, in both places and whether the card is 
 | The thread is a review finding with priority P0 | The "P0" badge, the one drawn beside the finding's title |
 | The thread is a review finding with priority P1 | The "P1" badge |
 | The thread is a P2 finding, or comes from a person | No badge |
-| The thread is a review finding that applies to at least one database in a production environment | That environment's badge: its name on a light tint of its color, with no database name |
+| The thread is a review finding that applies to at least one database in a production environment | That environment's badge, drawn by `EnvironmentBadge` as everywhere else: its name and production shield in its color on a light tint of it, with no database name |
 
 A production environment is one the workspace marked with "Mark as production environment" in
 its environment settings, which is what `isProtectedEnvironment` reads. The setting needs the
 environment-tier feature, so without that feature no thread shows the badge. A thread from a
-person has no list of databases, so it never shows it. The badge carries the name the
-workspace gave that environment and the color it gave it, or the default color when it gave
-none. A finding that applies to several production environments shows one badge for each, in
+person has no list of databases, so it never shows it. By invariant 9 the badge is
+`EnvironmentBadge` itself: the name the workspace gave that environment, in the color it gave
+it, or the default color when it gave none. The bar caps its width and shows the full name on
+hover. A finding that applies to several production environments shows one badge for each, in
 the workspace's environment order.
 
 ### State labels, lines and link
@@ -239,19 +245,20 @@ the badge of a production environment the finding applies to. A P0 must change a
 accepted by a person, so both need someone to act, and with several folded findings the markers
 say which to open first. The badge is the one `ReviewResult` draws beside the finding's title.
 That one stays, so an unfolded finding shows its priority twice. The bar cannot drop it on
-unfold without breaking invariant 4. The production badge takes the same form as the priority
-badge, a light fill with no border. It is the environment's own badge: its name on a 10% tint
-of its color, the way `EnvironmentBadge` draws an environment, from `environment.title` and
-`environment.color`, or the default color when the workspace chose none. A workspace names
+unfold without breaking invariant 4. The production badge is the environment's own badge,
+drawn by `EnvironmentBadge`, by invariant 9: its name and production shield in the color the
+workspace chose, on a 10% tint of it, or in the default color when the workspace chose none.
+It takes the same form as the priority badge, a light fill with no border. A workspace names
 and colors its environments to tell them apart, and the bar should say what the environment's
-badge says elsewhere. Its text stays the bar's `text-control`. Rejected: the fixed word
-"Prod". A workspace may call its production environment something else, and may have more
-than one. Rejected: an outlined badge beside a filled priority badge. The two markers then
-read as different kinds of thing. Rejected: one fixed tint for every workspace. It ignores the
-color the workspace chose. Rejected: text in the environment's color, as the environment
-badge has. The environment is context, and its name would be the most saturated text in the
-bar. A workspace that colors production red would also get a badge that reads as a second P0.
-Rejected: no markers. Nothing would say which folded finding must be fixed. Rejected: a badge for
+badge says elsewhere on the page. The cost: the environment's name is saturated text in the
+bar, and a workspace that colors production red gets a badge close to the P0 badge in color.
+The name, the shield and the badge's place after the priority tell them apart. Rejected: the
+fixed word "Prod". A workspace may call its production environment something else, and may
+have more than one. Rejected: an outlined badge beside a filled priority badge. The two markers
+then read as different kinds of thing. Rejected: one fixed tint for every workspace. It ignores
+the color the workspace chose. Rejected: the bar's gray text on the environment's tint, which
+the first build drew. Beside the same environment's badge on the page it reads as a different
+badge, and a 10% tint alone does not show the color the workspace chose. Rejected: no markers. Nothing would say which folded finding must be fixed. Rejected: a badge for
 P2. It is advisory, and a marker on every finding marks nothing. Rejected: the database's name in
 the label. It makes the bar a third longer and repeats the "Applies to" row. Rejected: the
 author's avatar and name. Rejected: a word or an icon that says whether the thread is a finding
@@ -421,10 +428,11 @@ in the slice's own PR and reviewed there.
      own name, so no locale string is added.
    - Tests: `CommentThreadCard.test.tsx` and the helper's own test. They include: the badge
      shows when one of the finding's databases is in a production environment, and does not
-     when none is, when the environment-tier feature is off, or on a person's thread; it
-     carries the environment's name on a tint of its color, with the bar's text color, no
-     border and no database name; an environment with no color gets the default tint; a
-     finding on two production environments shows a badge for each, in environment order.
+     when none is, when the environment-tier feature is off, or on a person's thread; for
+     environments of several colors, the default included, it is what `EnvironmentBadge`
+     draws for that environment, in its color with the shield, no border and no database
+     name; a finding on two production environments shows a badge for each, in environment
+     order.
 
 D9 changes nothing, so no slice carries it.
 
@@ -455,6 +463,7 @@ after the last PR in its row has merged, and until then it holds where the earli
 | 6. Color in the bar is kept for what the reader must act on | Card 1 for the priority badge and "Resolved", Card 2 for the other state labels, Card 6 for the production badge | Card 6 |
 | 7. The footer is there only when the reader can act | Card 1 in the Changes section, Card 2 in Activity | Card 2 |
 | 8. A place adds content, not a layout | Card 2 | Card 2 |
+| 9. A marker for a product object is that object's own component | Card 1 for the priority badge; for the production badge, the fix after Card 6 that draws it with `EnvironmentBadge` | That fix |
 
 ## Not in this PR
 

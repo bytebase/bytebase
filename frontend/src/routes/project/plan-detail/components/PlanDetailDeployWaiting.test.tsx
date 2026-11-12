@@ -5,7 +5,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -81,8 +80,8 @@ vi.mock("./review/bypassDeploy", () => ({
 
 import { PlanDetailDeployWaiting } from "./PlanDetailDeployWaiting";
 
-const openRule: AutomatedReviewRow = {
-  reviewer: "rule",
+const openReview: AutomatedReviewRow = {
+  reviewer: "review",
   conclusion: "open",
   findings: { ...emptyFindings(), open: 2, p1: 2 },
   holdsRollout: true,
@@ -139,7 +138,7 @@ describe("PlanDetailDeployWaiting", () => {
     ];
     renderWaiting([
       { kind: "approval", rejected: false, role: "roles/workspaceDBA" },
-      { kind: "review", row: openRule },
+      { kind: "review", row: openReview },
       { kind: "discussion", open: 1 },
     ]);
     expect(
@@ -155,7 +154,7 @@ describe("PlanDetailDeployWaiting", () => {
       "review",
       expect.any(Function)
     );
-    expect(mocks.requestReviewRow).toHaveBeenCalledWith("rule");
+    expect(mocks.requestReviewRow).toHaveBeenCalledWith("review");
 
     fireEvent.click(shows[2]);
     expect(mocks.focusInStatement).toHaveBeenCalledWith(
@@ -198,7 +197,7 @@ describe("PlanDetailDeployWaiting", () => {
   });
 
   test("a draft waits on submission and offers no override", () => {
-    renderWaiting([{ kind: "submit" }, { kind: "review", row: openRule }], true);
+    renderWaiting([{ kind: "submit" }, { kind: "review", row: openReview }], true);
     expect(screen.getByText("plan.deploy-waiting.submit")).toBeDefined();
     expect(
       screen.queryByText("plan.review.footer.bypass-and-deploy")
@@ -206,7 +205,7 @@ describe("PlanDetailDeployWaiting", () => {
   });
 
   test("a submitted plan keeps the override beside the list", () => {
-    renderWaiting([{ kind: "review", row: openRule }]);
+    renderWaiting([{ kind: "review", row: openReview }]);
     fireEvent.click(screen.getByText("plan.review.footer.bypass-and-deploy"));
     expect(mocks.triggerDeploy).toHaveBeenCalledOnce();
   });
@@ -214,7 +213,7 @@ describe("PlanDetailDeployWaiting", () => {
   test("flags a P0 resolved without a change without holding the rollout", () => {
     renderWaiting([], false, [
       {
-        reviewer: "rule",
+        reviewer: "review",
         conclusion: "resolved",
         findings: { ...emptyFindings(), overridden: 1 },
         holdsRollout: false,
@@ -226,6 +225,6 @@ describe("PlanDetailDeployWaiting", () => {
     const line = screen.getByTestId("deploy-overridden");
     expect(line.textContent).toContain("plan.deploy-waiting.overridden");
     fireEvent.click(screen.getAllByText("plan.deploy-waiting.show")[0]);
-    expect(mocks.requestReviewRow).toHaveBeenCalledWith("rule");
+    expect(mocks.requestReviewRow).toHaveBeenCalledWith("review");
   });
 });

@@ -9,10 +9,8 @@ type T = (key: string, options?: Record<string, unknown>) => string;
 
 export const reviewerLabel = (t: T, reviewer: AutomatedReviewer): string => {
   switch (reviewer) {
-    case "rule":
-      return t("sql-review.standard-rules.self");
-    case "ai":
-      return t("sql-review.ai-review.self");
+    case "review":
+      return t("sql-review.reviewer");
     case "policy":
       return t("plan.automated-review.policy");
     case "ghost":
@@ -40,7 +38,7 @@ export const findingGroupLabel = (t: T, group: FindingGroup): string => {
 };
 
 export const isPlanCheckRow = (row: AutomatedReviewRow): boolean =>
-  row.reviewer !== "rule" && row.reviewer !== "ai";
+  row.reviewer !== "review";
 
 const PRIORITIES: readonly FindingPriority[] = ["p0", "p1", "p2"];
 
@@ -79,7 +77,7 @@ export const reviewGateLabel = (t: T, row: AutomatedReviewRow): string => {
 };
 
 // A reviewer's conclusion in a collapsed summary, saying what people decided
-// about its findings: "Standard rules: 2 resolved, 1 P0 resolved without a
+// about its findings: "SQL review: 2 resolved, 1 P0 resolved without a
 // change".
 export const reviewSummaryPart = (t: T, row: AutomatedReviewRow): string => {
   const reviewer = reviewerLabel(t, row.reviewer);
@@ -112,6 +110,9 @@ export const reviewSummaryPart = (t: T, row: AutomatedReviewRow): string => {
       break;
     case "not-run":
       status = t("plan.automated-review.not-run");
+      break;
+    case "off":
+      status = t("plan.automated-review.off");
       break;
     default:
       status = t("plan.automated-review.running");
