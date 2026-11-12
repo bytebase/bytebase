@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { createContextValues } from "@connectrpc/connect";
 import {
   Bot,
   CircleDot,
@@ -28,6 +29,7 @@ import {
   instanceServiceClientConnect,
   projectServiceClientConnect,
 } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { router } from "@/app/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -477,6 +479,8 @@ export function LandingPage(_: Record<string, never> = {}) {
   const { isSaaSMode, version, changelogURL } = useServerState();
   const landingAgentEnabled = isSaaSOrDev(isSaaSMode);
   const canSearchAuditLogs = useWorkspacePermission("bb.auditLogs.search");
+  const canListWorkspaceInstances = useWorkspacePermission("bb.instances.list");
+  const canListWorkspaceDatabases = useWorkspacePermission("bb.databases.list");
   const [setupResources, setSetupResources] = useState<
     "loading" | "present" | "empty" | "unknown"
   >("loading");
@@ -518,26 +522,33 @@ export function LandingPage(_: Record<string, never> = {}) {
           pageSize: 1,
           orderBy: "title",
           showDeleted: false,
-        })
+        }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
       )
       .then(({ projects }) => projects.length > 0);
-    const hasInstance = instanceServiceClientConnect
-      .listInstances(
-        create(ListInstancesRequestSchema, {
-          pageSize: 1,
-          showDeleted: false,
-        })
-      )
-      .then(({ instances }) => instances.length > 0);
-    const hasDatabase = databaseServiceClientConnect
-      .listDatabases(
-        create(ListDatabasesRequestSchema, {
-          parent: workspace.name,
-          pageSize: 1,
-          showDeleted: false,
-        })
-      )
-      .then(({ databases }) => databases.length > 0);
+    const hasInstance = canListWorkspaceInstances
+      ? instanceServiceClientConnect
+          .listInstances(
+            create(ListInstancesRequestSchema, {
+              pageSize: 1,
+              showDeleted: false,
+            }),
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          )
+          .then(({ instances }) => instances.length > 0)
+      : undefined;
+    const hasDatabase = canListWorkspaceDatabases
+      ? databaseServiceClientConnect
+          .listDatabases(
+            create(ListDatabasesRequestSchema, {
+              parent: workspace.name,
+              pageSize: 1,
+              showDeleted: false,
+            }),
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          )
+          .then(({ databases }) => databases.length > 0)
+      : undefined;
     void Promise.allSettled([hasProject, hasInstance, hasDatabase]).then(
       (results) => {
         if (!active) return;
@@ -547,7 +558,11 @@ export function LandingPage(_: Record<string, never> = {}) {
           )
         ) {
           setSetupResources("present");
-        } else if (results.every((result) => result.status === "fulfilled")) {
+        } else if (
+          results.every(
+            (result) => result.status === "fulfilled" && result.value === false
+          )
+        ) {
           setSetupResources("empty");
         } else {
           setSetupResources("unknown");
@@ -557,7 +572,13 @@ export function LandingPage(_: Record<string, never> = {}) {
     return () => {
       active = false;
     };
-  }, [aiEnabled, landingAgentEnabled, workspace?.name]);
+  }, [
+    aiEnabled,
+    canListWorkspaceDatabases,
+    canListWorkspaceInstances,
+    landingAgentEnabled,
+    workspace?.name,
+  ]);
 
   const landingStarterIds = getLandingStarterIds({
     scope: "workspace",

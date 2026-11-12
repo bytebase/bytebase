@@ -131,6 +131,11 @@ export function DatabaseResourceSelector({
   );
   const environments = useAppStore((s) => s.environmentList);
   const project = useAppStore((s) => s.projectsByName[projectName]);
+  const canListDatabases = useAppStore(
+    (s) =>
+      s.hasWorkspacePermission("bb.databases.list") ||
+      Boolean(project && s.hasProjectPermission(project, "bb.databases.list"))
+  );
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
@@ -270,22 +275,29 @@ export function DatabaseResourceSelector({
     // first page below.
     setLoadingMore(false);
     setNextPageToken("");
+    if (!canListDatabases) {
+      setDatabases([]);
+      return;
+    }
     const fetchFirstPage = async () => {
       const result = await useAppStore.getState().fetchDatabases({
         parent: projectName,
         pageSize: DATABASE_PAGE_SIZE,
         pageToken: "",
         filter: databaseFilter,
+        silent: true,
       });
       if (generation !== requestGenerationRef.current) return;
       setDatabases(result.databases);
       setNextPageToken(result.nextPageToken);
     };
-    fetchFirstPage();
-  }, [projectName, databaseFilter]);
+    void fetchFirstPage().catch(() => {
+      if (generation === requestGenerationRef.current) setDatabases([]);
+    });
+  }, [projectName, databaseFilter, canListDatabases]);
 
   const loadMore = useCallback(async () => {
-    if (!nextPageToken || loadingMore) return;
+    if (!canListDatabases || !nextPageToken || loadingMore) return;
     const generation = requestGenerationRef.current;
     setLoadingMore(true);
     try {
@@ -294,16 +306,25 @@ export function DatabaseResourceSelector({
         pageSize: DATABASE_PAGE_SIZE,
         pageToken: nextPageToken,
         filter: databaseFilter,
+        silent: true,
       });
       if (generation !== requestGenerationRef.current) return;
       setDatabases((prev) => [...prev, ...result.databases]);
       setNextPageToken(result.nextPageToken);
+    } catch {
+      return;
     } finally {
       if (generation === requestGenerationRef.current) {
         setLoadingMore(false);
       }
     }
-  }, [projectName, databaseFilter, nextPageToken, loadingMore]);
+  }, [
+    projectName,
+    databaseFilter,
+    nextPageToken,
+    loadingMore,
+    canListDatabases,
+  ]);
 
   const selectedResourceMap = useMemo(() => {
     const map = new Map<string, DatabaseSelection>();

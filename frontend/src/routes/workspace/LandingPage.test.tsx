@@ -1,4 +1,11 @@
 import {
+  type CallOptions,
+  Code,
+  ConnectError,
+  createContextValues,
+} from "@connectrpc/connect";
+import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -8,6 +15,8 @@ import {
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { silentContextKey } from "@/api/context-key";
+import { authInterceptor } from "@/api/middlewares/authInterceptorMiddleware";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
@@ -19,6 +28,8 @@ const mocks = vi.hoisted(() => ({
   aiEnabled: true as boolean | undefined,
   canConfigureAI: true,
   canSearchAuditLogs: true,
+  canListWorkspaceInstances: true,
+  canListWorkspaceDatabases: true,
   hasAuditLogFeature: true,
   chatRunning: false,
   queuedUserMessage: null as { chatId: string } | null,
@@ -40,7 +51,18 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/app/router", () => ({ router: { push: mocks.push } }));
+vi.mock("@/app/router", () => ({
+  router: {
+    push: mocks.push,
+    currentRoute: {
+      value: {
+        name: "workspace.home",
+        fullPath: "/",
+        requiredPermissions: [],
+      },
+    },
+  },
+}));
 
 vi.mock("@/utils/featureGates", () => ({
   isSaaSOrDev: (isSaaSMode: boolean) => isSaaSMode || mocks.dev,
@@ -82,10 +104,12 @@ vi.mock("@/hooks/useAppState", () => ({
   }),
   useServerState: () => ({ isSaaSMode: mocks.isSaaSMode, version: "", changelogURL: "" }),
   usePlanFeature: () => mocks.hasAuditLogFeature,
-  useWorkspacePermission: (permission: string) =>
-    permission === "bb.auditLogs.search"
-      ? mocks.canSearchAuditLogs
-      : mocks.canConfigureAI,
+  useWorkspacePermission: (permission: string) => {
+    if (permission === "bb.auditLogs.search") return mocks.canSearchAuditLogs;
+    if (permission === "bb.instances.list") return mocks.canListWorkspaceInstances;
+    if (permission === "bb.databases.list") return mocks.canListWorkspaceDatabases;
+    return mocks.canConfigureAI;
+  },
   useWorkspace: () => mocks.workspace,
 }));
 
@@ -213,6 +237,8 @@ beforeEach(() => {
   mocks.aiEnabled = true;
   mocks.canConfigureAI = true;
   mocks.canSearchAuditLogs = true;
+  mocks.canListWorkspaceInstances = true;
+  mocks.canListWorkspaceDatabases = true;
   mocks.hasAuditLogFeature = true;
   mocks.chatRunning = false;
   mocks.dev = true;
@@ -223,6 +249,7 @@ beforeEach(() => {
   mocks.selectOrCreateChatForContext.mockClear();
   mocks.openAgent.mockClear();
   mocks.queueUserMessage.mockClear();
+  mocks.push.mockClear();
   mocks.searchProjects.mockReset();
   mocks.listInstances.mockReset();
   mocks.listDatabases.mockReset();
@@ -318,20 +345,89 @@ describe("LandingPage", () => {
         expect.objectContaining({
           filter: 'exclude_default == true && state == "ACTIVE"',
           pageSize: 1,
-        })
+        }),
+        expect.any(Object)
       )
     );
     expect(mocks.listInstances).toHaveBeenCalledWith(
-      expect.objectContaining({ pageSize: 1, showDeleted: false })
+      expect.objectContaining({ pageSize: 1, showDeleted: false }),
+      expect.any(Object)
     );
     expect(mocks.listDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
         parent: "workspaces/acme",
         pageSize: 1,
         showDeleted: false,
-      })
+      }),
+      expect.any(Object)
     );
+    for (const probe of [
+      mocks.searchProjects,
+      mocks.listInstances,
+      mocks.listDatabases,
+    ]) {
+      expect(probe.mock.calls[0][1].contextValues.get(silentContextKey)).toBe(true);
+    }
   });
+
+  test.each([
+    { instances: false, databases: true },
+    { instances: true, databases: false },
+    { instances: false, databases: false },
+  ])(
+    "skips unauthorized workspace probes without assuming setup is empty (%j)",
+    async ({ instances, databases }) => {
+      mocks.canListWorkspaceInstances = instances;
+      mocks.canListWorkspaceDatabases = databases;
+
+      await act(async () => {
+        render(<LandingPage />);
+      });
+
+      expect(mocks.searchProjects).toHaveBeenCalledOnce();
+      expect(mocks.listInstances).toHaveBeenCalledTimes(Number(instances));
+      expect(mocks.listDatabases).toHaveBeenCalledTimes(Number(databases));
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention,workspace-recent"
+      );
+    }
+  );
+
+  test.each([
+    {
+      probe: "searchProjects",
+      method: "SearchProjects",
+      service: "ProjectService",
+    },
+    { probe: "listInstances", method: "ListInstances", service: "InstanceService" },
+    { probe: "listDatabases", method: "ListDatabases", service: "DatabaseService" },
+  ] as const)(
+    "keeps a rejected optional $probe probe on the landing page",
+    async ({ probe, method, service }) => {
+      const denied = authInterceptor(async () => {
+        throw new ConnectError("permission denied", Code.PermissionDenied);
+      });
+      mocks[probe].mockImplementation((_request, options?: CallOptions) =>
+        denied({
+          contextValues: options?.contextValues ?? createContextValues(),
+          method: { name: method },
+          service: { typeName: `bytebase.v1.${service}` },
+        } as never)
+      );
+
+      await act(async () => {
+        render(<LandingPage />);
+      });
+
+      expect(mocks[probe]).toHaveBeenCalledOnce();
+      expect(mocks.push).not.toHaveBeenCalled();
+      expect(screen.getByTestId("landing-starter-primary")).toHaveAttribute(
+        "data-starter-ids",
+        "workspace-attention,workspace-recent"
+      );
+    }
+  );
 
   test("does not assume a workspace needs setup when resource discovery is incomplete", async () => {
     mocks.searchProjects.mockRejectedValue(new Error("permission denied"));

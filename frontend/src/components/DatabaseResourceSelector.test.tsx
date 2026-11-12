@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
   fetchInstanceList: vi.fn(),
   getOrFetchDatabaseMetadata: vi.fn(),
+  canListWorkspaceDatabases: false,
+  canListProjectDatabases: true,
   instanceStore: undefined as
     | { fetchInstanceList: ReturnType<typeof vi.fn> }
     | undefined,
@@ -104,6 +106,9 @@ vi.mock("@/stores/app", () => {
       "projects/project": { name: "projects/project" },
       "projects/default": { name: "projects/default" },
     },
+    hasProjectPermission: () =>
+      mocks.canListWorkspaceDatabases || mocks.canListProjectDatabases,
+    hasWorkspacePermission: () => mocks.canListWorkspaceDatabases,
   });
   return {
     useAppStore: Object.assign(
@@ -216,6 +221,11 @@ const renderIntoContainer = (element: ReactElement) => {
   });
   return {
     container,
+    rerender: (element: ReactElement) => {
+      act(() => {
+        root.render(element);
+      });
+    },
     unmount: () => {
       act(() => {
         root.unmount();
@@ -289,6 +299,8 @@ const waitForText = async (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.canListWorkspaceDatabases = false;
+  mocks.canListProjectDatabases = true;
   mocks.fetchDatabases.mockResolvedValue({
     databases: [
       {
@@ -309,6 +321,170 @@ beforeEach(async () => {
 });
 
 describe("DatabaseResourceSelector", () => {
+  test("does not list databases without permission and preserves selected resources", async () => {
+    mocks.canListProjectDatabases = false;
+    const { container, unmount } = renderIntoContainer(
+      <Harness initialValue={[{ databaseFullName: databaseName }]} />
+    );
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("hr");
+    unmount();
+  });
+
+  test.each(["project", "workspace"])(
+    "lists databases silently with a %s permission grant",
+    async (scope) => {
+      mocks.canListProjectDatabases = scope === "project";
+      mocks.canListWorkspaceDatabases = scope === "workspace";
+      const { container, unmount } = renderIntoContainer(<Harness />);
+      await flushPromises();
+
+      expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+        expect.objectContaining({ parent: "projects/project", silent: true })
+      );
+      expect(container.textContent).toContain("hr");
+      unmount();
+    }
+  );
+
+  test("does not list databases before the project is known", async () => {
+    const { unmount } = renderIntoContainer(
+      <Harness projectName="projects/unknown" />
+    );
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("allows a workspace grant before the project is cached", async () => {
+    mocks.canListWorkspaceDatabases = true;
+    const { unmount } = renderIntoContainer(
+      <Harness projectName="projects/unknown" />
+    );
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/unknown", silent: true })
+    );
+    unmount();
+  });
+
+  test("starts discovery when permission becomes available", async () => {
+    mocks.canListProjectDatabases = false;
+    const { container, rerender, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+
+    mocks.canListProjectDatabases = true;
+    rerender(<Harness />);
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("hr");
+    unmount();
+  });
+
+  test("clears discovered databases and pagination when permission is lost", async () => {
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "instances/prod/databases/db1" }],
+      nextPageToken: "page-2",
+    });
+    const { container, rerender, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    expect(container.textContent).toContain("db1");
+    const loadMore = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("load-more")
+    );
+    expect(loadMore).toBeTruthy();
+
+    mocks.canListProjectDatabases = false;
+    rerender(<Harness />);
+    await flushPromises();
+
+    expect(container.textContent).not.toContain("db1");
+    expect(container.textContent).not.toContain("load-more");
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test.each(["first page", "next page"])(
+    "discards a pending %s when permission is lost",
+    async (page) => {
+      let resolvePage: (value: unknown) => void = () => {};
+      mocks.fetchDatabases.mockReset();
+      if (page === "next page") {
+        mocks.fetchDatabases.mockResolvedValueOnce({
+          databases: [{ name: "instances/prod/databases/db1" }],
+          nextPageToken: "page-2",
+        });
+      }
+      mocks.fetchDatabases.mockImplementationOnce(
+        () => new Promise((resolve) => { resolvePage = resolve; })
+      );
+      const { container, rerender, unmount } = renderIntoContainer(<Harness />);
+      await flushPromises();
+      if (page === "next page") {
+        const loadMore = Array.from(container.querySelectorAll("button")).find(
+          (button) => button.textContent?.includes("load-more")
+        );
+        act(() => { loadMore?.click(); });
+        await flushPromises();
+      }
+
+      mocks.canListProjectDatabases = false;
+      rerender(<Harness />);
+      await flushPromises();
+      resolvePage({
+        databases: [{ name: "instances/prod/databases/stale" }],
+        nextPageToken: "stale-page",
+      });
+      await flushPromises();
+
+      expect(container.textContent).not.toContain("stale");
+      expect(container.textContent).not.toContain("db1");
+      expect(container.textContent).not.toContain("load-more");
+      unmount();
+    }
+  );
+
+  test("handles a failed optional first page without an unhandled rejection", async () => {
+    mocks.fetchDatabases.mockRejectedValueOnce(new Error("permission denied"));
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ silent: true })
+    );
+    expect(container.textContent).not.toContain("hr");
+    unmount();
+  });
+
+  test("handles a failed optional next page and permits retry", async () => {
+    mocks.fetchDatabases
+      .mockResolvedValueOnce({
+        databases: [{ name: "instances/prod/databases/db1" }],
+        nextPageToken: "page-2",
+      })
+      .mockRejectedValueOnce(new Error("permission denied"));
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    const loadMore = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("load-more")
+    );
+    act(() => { loadMore?.click(); });
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageToken: "page-2", silent: true })
+    );
+    expect(container.textContent).toContain("db1");
+    expect(loadMore?.disabled).toBe(false);
+    unmount();
+  });
+
   test("only searches workspace instances for the default project", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => {
       if (params?.parent) {
