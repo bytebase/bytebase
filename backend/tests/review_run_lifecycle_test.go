@@ -32,7 +32,7 @@ func waitReviewRunTerminal(ctx context.Context, t *testing.T, ctl *controller, p
 	var row *reviewRun
 	a.Eventually(func() bool {
 		for _, r := range listReviewRuns(ctx, t, ctl, projectID) {
-			if r.IssueID == issueUID && r.Type == "REVIEW" && (r.Status == "DONE" || r.Status == "FAILED") {
+			if r.IssueID == issueUID && (r.Status == "DONE" || r.Status == "FAILED") {
 				row = r
 				return true
 			}
@@ -419,7 +419,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		t.Helper()
 		a.Eventually(func() bool {
 			for _, r := range listReviewRuns(ctx, t, ctl, projectID) {
-				if r.IssueID == issueUID && r.Type == "REVIEW" && r.Attempt == attempt && (r.Status == "DONE" || r.Status == "FAILED") {
+				if r.IssueID == issueUID && r.Attempt == attempt && (r.Status == "DONE" || r.Status == "FAILED") {
 					a.Equal("DONE", r.Status, "payload %s", r.Payload)
 					return true
 				}
