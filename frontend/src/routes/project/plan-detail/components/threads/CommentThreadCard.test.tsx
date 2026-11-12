@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { EnvironmentBadge } from "@/components/EnvironmentLabel";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { shownTimestampInstants } from "@/test-utils/humanizeTs";
@@ -14,6 +15,7 @@ import {
   ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import type { Environment } from "@/types/v1/environment";
 
 const mocks = vi.hoisted(() => ({
   sqlReviewV2: false,
@@ -1039,26 +1041,40 @@ describe("the production badge in the bar", () => {
     expect(badge.querySelector(".truncate")?.textContent).toBe("Production");
   });
 
-  test("shows the environment's badge after the priority, by name on a tint of its color, folded and unfolded", () => {
+  // The environment's own badge, as EnvironmentBadge draws it anywhere else.
+  const referenceBadge = (environment: unknown) => {
+    const host = document.createElement("div");
+    const hostRoot = createRoot(host);
+    act(() => hostRoot.render(<EnvironmentBadge className="max-w-full" environment={environment as Environment} hasEnvTierFeature />));
+    const html = host.innerHTML;
+    act(() => hostRoot.unmount());
+    return html;
+  };
+
+  test.each([
+    { label: "red", color: "#dc2626", rgb: "220, 38, 38" },
+    { label: "green", color: "#16A34A", rgb: "22, 163, 74" },
+    { label: "no color, so the default", color: "", rgb: "79, 70, 229" },
+  ])("is the environment's own badge, for an environment in $label, in that color with the shield, after the priority, folded and unfolded", ({ color, rgb }) => {
+    const environment = { name: "environments/prod", id: "prod", title: "Production", tags: { protected: "protected" }, color, order: 0 };
+    mocks.environmentList = [environment];
     for (const folded of [true, false]) {
       render(<CommentThreadCard bar={changesBar(folded)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [TEST_DB, PROD_DB])} />);
-      const [badge] = envBadges();
       expect(envBadges()).toHaveLength(1);
+      const [marker] = envBadges();
+      expect(marker.innerHTML).toBe(referenceBadge(environment));
+      const badge = marker.firstElementChild as HTMLElement;
       expect(badge.textContent).toBe("Production");
-      expect(badge.textContent).not.toContain("orders");
-      expect(barNode().querySelector("[data-testid='review-priority']")?.compareDocumentPosition(badge)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-      expect(badge.style.backgroundColor).toBe("rgba(220, 38, 38, 0.1)");
-      expect(badge.style.color).toBe("");
-      const classes = badge.className.split(" ");
-      for (const name of ["rounded-xs", "text-control"]) expect(classes).toContain(name);
-      expect(badge.className).not.toMatch(/\btext-(accent|warning|error|success)\b/);
+      expect(badge.style.color).toBe(`rgb(${rgb})`);
+      expect(badge.style.backgroundColor).toBe(`rgba(${rgb}, 0.1)`);
+      expect(badge.querySelector("svg")).not.toBeNull();
+      expect(badge.className.split(" ")).toContain("rounded-xs");
       expect(badge.className).not.toMatch(/\bborder-(?!transparent\b)[a-z]/);
+      expect(barNode().querySelector("[data-testid='review-priority']")?.compareDocumentPosition(marker)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     }
   });
 
-  test("an environment with no color gets the default tint, and two production environments show a badge each, in environment order", () => {
-    render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_B_DB])} />);
-    expect(envBadges()[0].style.backgroundColor).toBe("rgba(79, 70, 229, 0.1)");
+  test("two production environments show a badge each, in environment order", () => {
     render(<CommentThreadCard bar={changesBar(true)} issue={issue} project={project} thread={finding(IssueComment_ReviewMetadata_Priority.P1, [PROD_B_DB, PROD_DB])} />);
     expect(envBadges().map((badge) => badge.textContent)).toEqual(["Production", "Prod EU"]);
   });
