@@ -193,18 +193,14 @@ func (s *Server) grantIdentityRole(ctx context.Context, c *identityCreation) (st
 	if why == "" || !mayHaveApplied(resp, err) {
 		return why, false
 	}
-	// The policy shows whether the write was stored. Without the member, a 5xx
-	// means no grant, since its handler has returned; a call that ran past its
-	// deadline may still be storing it.
-	stored, readWhy := s.readIamPolicy(ctx, project)
-	switch {
-	case readWhy == "" && hasRole(stored, identityRole, member):
+	// Only a read that holds the member settles it. A call past its deadline may
+	// still be storing the grant, and a commit that reports an error returns
+	// before store.SetIamPolicy evicts the policy cache, which then serves the
+	// policy from before the grant on a server that is not HA.
+	if stored, readWhy := s.readIamPolicy(ctx, project); readWhy == "" && hasRole(stored, identityRole, member) {
 		return "", false
-	case readWhy == "" && err == nil:
-		return why, false
-	default:
-		return why, true
 	}
+	return why, true
 }
 
 // readIamPolicy reads the project's IAM policy, or says why it could not.
@@ -220,24 +216,28 @@ func (s *Server) readIamPolicy(ctx context.Context, project string) (*v1pb.IamPo
 	return policy, ""
 }
 
-// hasRole reports whether member is in a binding of the role.
-func hasRole(policy *v1pb.IamPolicy, role, member string) bool {
+// unconditionalBinding is the role's binding with no condition, or nil: the one
+// the grant writes and the read-back checks. A binding with a condition would
+// give the member its expiry or its database scope, and the policy accepts one
+// for an identity before the identity exists.
+func unconditionalBinding(policy *v1pb.IamPolicy, role string) *v1pb.Binding {
 	for _, binding := range policy.GetBindings() {
-		if binding.GetRole() == role && slices.Contains(binding.GetMembers(), member) {
-			return true
+		if binding.GetRole() == role && binding.GetCondition().GetExpression() == "" {
+			return binding
 		}
 	}
-	return false
+	return nil
+}
+
+// hasRole reports whether member is in the role's binding with no condition.
+func hasRole(policy *v1pb.IamPolicy, role, member string) bool {
+	return slices.Contains(unconditionalBinding(policy, role).GetMembers(), member)
 }
 
 // addToRole adds member to the role's binding with no condition, or appends
-// that binding. A binding with a condition would give the member its expiry or
-// its database scope.
+// that binding.
 func addToRole(policy *v1pb.IamPolicy, role, member string) {
-	for _, binding := range policy.GetBindings() {
-		if binding.GetRole() != role || binding.GetCondition().GetExpression() != "" {
-			continue
-		}
+	if binding := unconditionalBinding(policy, role); binding != nil {
 		if !slices.Contains(binding.GetMembers(), member) {
 			binding.Members = append(binding.Members, member)
 		}

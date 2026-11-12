@@ -731,27 +731,37 @@ func TestAdministerIdentityReportsACreateItCannotConfirm(t *testing.T) {
 }
 
 func TestAdministerIdentityReadsBackAGrantThatDidNotFinish(t *testing.T) {
-	created := `Created workload identity "` + journeyFourEmail + `" in project "hr", `
-	notGranted := created + "but Bytebase did not grant it the GitOps Service Agent role: HTTP 500: failed to begin transaction. " +
-		"It can sign in, and it does not have that role until it is granted signed in to the console. "
-	unconfirmed := created + "but Bytebase could not confirm whether it has the GitOps Service Agent role: "
+	unconfirmed := `Created workload identity "` + journeyFourEmail + `" in project "hr", but Bytebase could not confirm whether it has the GitOps Service Agent role: `
 	for name, tc := range map[string]struct {
 		fails          writeFailure
 		readBackStatus int
-		// want is the whole result when the grant was made, and wantPrefix the
-		// start of the result otherwise.
+		// heldExpired puts the identity in an expired binding of the role before
+		// the create, as the policy accepts for an identity that does not exist.
+		heldExpired bool
+		// want is the whole result when the read holds the grant, and wantPrefix
+		// the start of the result otherwise.
 		want, wantPrefix string
 	}{
-		"a timeout after the store, with the grant still running": {fails: timesOutAfterStore, want: journeyFourResult},
-		"a 5xx after the store":                                   {fails: fails500AfterStore, want: journeyFourResult},
-		"a 5xx before the store":                                  {fails: fails500BeforeStore, wantPrefix: notGranted},
-		"a timeout before the store":                              {fails: timesOutBeforeStore, wantPrefix: unconfirmed + "failed to execute API request: "},
-		"a read that fails":                                       {fails: fails500AfterStore, readBackStatus: http.StatusInternalServerError, wantPrefix: unconfirmed + "HTTP 500: failed to commit transaction. "},
+		"a read that holds the grant, after a timeout with the grant still running": {fails: timesOutAfterStore, want: journeyFourResult},
+		"a read that holds the grant, after a 5xx":                                  {fails: fails500AfterStore, want: journeyFourResult},
+		"a read without the grant, after a 5xx":                                     {fails: fails500BeforeStore, wantPrefix: unconfirmed + "HTTP 500: failed to begin transaction. "},
+		"a read without the grant, after a timeout":                                 {fails: timesOutBeforeStore, wantPrefix: unconfirmed + "failed to execute API request: "},
+		"a read that holds the identity only in an expired binding of the role": {
+			fails: fails500BeforeStore, heldExpired: true, wantPrefix: unconfirmed + "HTTP 500: failed to begin transaction. ",
+		},
+		"a read that fails": {fails: fails500AfterStore, readBackStatus: http.StatusInternalServerError, wantPrefix: unconfirmed + "HTTP 500: failed to commit transaction. "},
 	} {
 		t.Run(name, func(t *testing.T) {
 			mock := newIdentityMock()
 			mock.grantFails = tc.fails
 			mock.readBackStatus = tc.readBackStatus
+			if tc.heldExpired {
+				mock.policy.Bindings = append(mock.policy.Bindings, &v1pb.Binding{
+					Role:      "roles/gitopsServiceAgent",
+					Members:   []string{journeyFourMember},
+					Condition: &expr.Expr{Expression: `request.time < timestamp("2026-01-01T00:00:00Z")`},
+				})
+			}
 			s, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
 			s.internalAPITimeoutOverride = 200 * time.Millisecond
 			// Registered last, so it runs first and ends a grant still running.
@@ -768,10 +778,8 @@ func TestAdministerIdentityReadsBackAGrantThatDidNotFinish(t *testing.T) {
 				return
 			}
 			require.True(t, strings.HasPrefix(text, tc.wantPrefix), text)
-			if strings.HasPrefix(tc.wantPrefix, unconfirmed) {
-				require.Contains(t, text, ". It can sign in. If the members page does not list it with that role, grant the role there, signed in to the console. "+
-					"MCP cannot change or remove a workload identity: change or remove it in the console.")
-			}
+			require.Contains(t, text, ". It can sign in. If the members page does not list it with that role, grant the role there, signed in to the console. "+
+				"MCP cannot change or remove a workload identity: change or remove it in the console.")
 			require.True(t, strings.HasSuffix(text, "\nMembers: https://bb.example.com/projects/hr/members\n"+
 				"Workload identities: https://bb.example.com/projects/hr/workload-identities"), text)
 			output, err := json.Marshal(res.StructuredContent)
