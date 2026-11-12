@@ -2114,7 +2114,6 @@
       "n-databases_other": "{{count}} 個のデータベース",
       "n-errors_one": "{{count}} 件のエラー",
       "n-errors_other": "{{count}} 件のエラー",
-      "n-open": "未解決 {{count}} 件",
       "n-warnings_one": "{{count}} 件の警告",
       "n-warnings_other": "{{count}} 件の警告",
       "needs-attention": "{{total}} 件中 {{count}} 件に対応が必要",

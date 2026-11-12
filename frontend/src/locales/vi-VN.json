@@ -2114,7 +2114,6 @@
       "n-databases_other": "{{count}} cơ sở dữ liệu",
       "n-errors_one": "{{count}} lỗi",
       "n-errors_other": "{{count}} lỗi",
-      "n-open": "{{count}} đang mở",
       "n-warnings_one": "{{count}} cảnh báo",
       "n-warnings_other": "{{count}} cảnh báo",
       "needs-attention": "{{count}}/{{total}} cần xử lý",

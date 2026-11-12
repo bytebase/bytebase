@@ -36,7 +36,6 @@ vi.mock("react-i18next", () => ({
     t: (key: string, options?: { count?: number }) => {
       if (key === "plan.review.activity.marked-ready-for-review")
         return "marked this plan ready for review";
-      if (key === "plan.findings.separator") return ", ";
       return options?.count === undefined ? key : `${key}(${options.count})`;
     },
   }),
@@ -543,14 +542,13 @@ describe("ReviewActivityTimeline", () => {
 
   test.each([
     {
-      name: "counts the findings it posted and how many are open",
+      name: "counts the findings it posted, open or resolved",
       counts: { postedCount: 2 },
       findingStates: [
         IssueComment_ThreadState.OPEN,
         IssueComment_ThreadState.RESOLVED,
       ],
-      expected:
-        "plan.review.activity.n-new-findings(2), plan.automated-review.n-open(1)",
+      expected: "plan.review.activity.n-new-findings(2)",
     },
     {
       name: "leaves out the findings it reported again or no longer reports",

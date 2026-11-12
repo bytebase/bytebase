@@ -2114,7 +2114,6 @@
       "n-databases_other": "{{count}} bases de datos",
       "n-errors_one": "{{count}} error",
       "n-errors_other": "{{count}} errores",
-      "n-open": "{{count}} abiertos",
       "n-warnings_one": "{{count}} advertencia",
       "n-warnings_other": "{{count}} advertencias",
       "needs-attention": "{{count}} de {{total}} requieren atención",
