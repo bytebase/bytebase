@@ -24,6 +24,7 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import { getAgentRunClarificationBindings } from "../logic/runCheckpoint";
 import {
   hasAgentRunLease,
   supportsAgentRunRecovery,
@@ -85,12 +86,23 @@ const getWorkspaceStorageKey = (key: string, workspaceName: string) => {
   return workspaceId ? `${key}.${workspaceId}` : null;
 };
 
-export const getAgentStateKey = (workspaceName: string, userEmail: string) => {
+const getScopedAgentStateKey = (
+  key: string,
+  workspaceName: string,
+  userEmail: string
+) => {
   const workspaceId = getResourceId(workspaceName, workspaceNamePrefix);
   return workspaceId && userEmail
-    ? `${supportsAgentRunRecovery() ? AGENT_RUN_STATE_KEY : AGENT_STATE_KEY}.${workspaceId.length}:${workspaceId}.${userEmail}`
+    ? `${key}.${workspaceId.length}:${workspaceId}.${userEmail}`
     : null;
 };
+
+export const getAgentStateKey = (workspaceName: string, userEmail: string) =>
+  getScopedAgentStateKey(
+    supportsAgentRunRecovery() ? AGENT_RUN_STATE_KEY : AGENT_STATE_KEY,
+    workspaceName,
+    userEmail
+  );
 
 export const getAgentWindowKey = (workspaceName: string) =>
   getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
@@ -1386,8 +1398,12 @@ const migrateLegacyState = (
   storage: Storage | null,
   workspaceName: string,
   userEmail: string
-) => {
-  if (!storage || !getAgentStateKey(workspaceName, userEmail)) return;
+): boolean => {
+  if (
+    !storage ||
+    !getScopedAgentStateKey(AGENT_STATE_KEY, workspaceName, userEmail)
+  )
+    return true;
   try {
     const prefix = `${AGENT_STATE_KEY}.`;
     const keys = Array.from({ length: storage.length }, (_, index) =>
@@ -1425,13 +1441,14 @@ const migrateLegacyState = (
         return [];
       }
     });
-    if (sources.length === 0) return;
+    if (sources.length === 0) return true;
 
     const owner = storage.getItem(LEGACY_AGENT_OWNER_KEY);
-    if (owner !== null && owner !== userEmail) return;
+    if (owner !== null && owner !== userEmail) return true;
     if (owner === null) storage.setItem(LEGACY_AGENT_OWNER_KEY, userEmail);
 
     const incomingByWorkspace = new Map<string, PersistedAgentState>();
+    const retainedSourceKeys = new Set<string>();
     for (const source of sources) {
       const chatsByWorkspace = new Map<string, AgentChat[]>();
       for (const chat of source.state.chats) {
@@ -1447,6 +1464,12 @@ const migrateLegacyState = (
         chatsByWorkspace.set(chatWorkspaceName, chats);
       }
       for (const [name, chats] of chatsByWorkspace) {
+        const v3Key = getScopedAgentStateKey(
+          AGENT_RUN_STATE_KEY,
+          name,
+          userEmail
+        );
+        if (v3Key && storage.getItem(v3Key)) retainedSourceKeys.add(source.key);
         const incoming = selectPersistedChats(source.state, chats);
         incomingByWorkspace.set(
           name,
@@ -1455,9 +1478,9 @@ const migrateLegacyState = (
       }
     }
 
-    // Write every account cache before removing any ownerless source.
+    // Stage in v2 so v3 hydration and accounting use the serialized writer.
     for (const [name, incoming] of incomingByWorkspace) {
-      const key = getAgentStateKey(name, userEmail);
+      const key = getScopedAgentStateKey(AGENT_STATE_KEY, name, userEmail);
       if (!key) throw new Error("Invalid legacy workspace");
       const existing = readPersistedState(storage, key);
       const merged = mergePersistedStates(existing, incoming);
@@ -1466,9 +1489,14 @@ const migrateLegacyState = (
       }
       storage.setItem(key, JSON.stringify(merged));
     }
-    for (const { key } of sources) storage.removeItem(key);
+    for (const { key } of sources) {
+      // An existing v3 cache takes precedence and does not import staged v2.
+      if (!retainedSourceKeys.has(key)) storage.removeItem(key);
+    }
+    return true;
   } catch {
     // The owner marker prevents another account from claiming a partial migration.
+    return false;
   }
 };
 
@@ -2927,6 +2955,10 @@ export const createAgentStore = () => {
             !canOwnRun(get(), chatId)
           )
             return false;
+          const clarifiedBindings = getAgentRunClarificationBindings(
+            chat,
+            get().getMessages(chatId)
+          );
           set((state) => {
             const current = state.chats.find(
               (candidate) => candidate.id === chatId
@@ -2939,6 +2971,11 @@ export const createAgentStore = () => {
             current.requiresAIConfiguration = false;
             delete state.pendingAskByChatId[chatId];
             setLastUserInterruptionReason(state.messagesByChatId[chatId] ?? []);
+            if (clarifiedBindings) {
+              current.runCheckpoint!.bindings = clarifiedBindings;
+              current.runCheckpoint!.referencePreflightPending = true;
+              current.runMode = clarifiedBindings.runMode;
+            }
             current.runCheckpoint!.suspension = "interrupted";
           });
           return get().flushRunPersistence();
@@ -3419,8 +3456,14 @@ export const createAgentStore = () => {
             }
           }
           const storage = getSafeStorage();
-          if (!supportsAgentRunRecovery())
-            migrateLegacyState(storage, workspaceName, nextUserEmail);
+          if (
+            !migrateLegacyState(storage, workspaceName, nextUserEmail) &&
+            supportsAgentRunRecovery() &&
+            !storage?.getItem(stateKey)
+          ) {
+            if (identityChanged) get().setWorkspaceName(undefined, "");
+            return false;
+          }
           const oldKey = stateKey.replace(AGENT_RUN_STATE_KEY, AGENT_STATE_KEY);
           const v3Key = stateKey.replace(AGENT_STATE_KEY, AGENT_RUN_STATE_KEY);
           const existingV3 = storage?.getItem(v3Key);

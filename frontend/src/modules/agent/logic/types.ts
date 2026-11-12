@@ -73,6 +73,7 @@ export interface AgentRunCheckpoint {
   maskingSections: MaskingSkillSection[];
   phase: "working" | "finalizing";
   startupComplete?: boolean;
+  referencePreflightPending?: boolean;
   finalizationText?: string;
 }
 
@@ -311,6 +312,10 @@ interface AgentLoopUsage {
 }
 
 export type AgentLoopOutcome =
+  | ({
+      kind: "stopped";
+      reason: "provider-attempt-limit";
+    } & AgentLoopUsage)
   | ({
       kind: "paused";
       reason: "token-limit";

@@ -288,6 +288,7 @@
       "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
     },
     "project-reference-unavailable": "このプロジェクトは利用できないか、アクセス権がありません。",
+    "provider-attempt-limit": "この実行が AI プロバイダーへのリクエスト試行回数の上限に達したため、新たな AI リクエストを送信する前に停止しました。以前の操作はすでに完了している可能性があります。再試行を依頼する前に、その状態を確認してください。",
     "query-result": {
       "returned-rows": "返された行数: {{count}}",
       "showing-columns": "{{total}} 列中 {{shown}} 列を表示",
@@ -350,6 +351,7 @@
       "action-failed": "この実行を更新できませんでした。もう一度お試しください。",
       "apply": "適用",
       "completed-over-limit": "トークン上限を超えて実行が完了しました。",
+      "continuation-unavailable": "この実行を安全に再開できません。メッセージと下書きは保持されています。新しいチャットを開始して続けてください。",
       "end-run": "実行を終了",
       "increase": "上限を引き上げ",
       "increase-and-resume": "上限を引き上げて再開",

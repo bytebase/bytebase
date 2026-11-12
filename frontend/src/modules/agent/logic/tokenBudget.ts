@@ -306,8 +306,10 @@ export function normalizeRunCheckpoint(
     return undefined;
   const bindings = normalizeRunBindings(value.bindings);
   if (
-    value.startupComplete !== undefined &&
-    typeof value.startupComplete !== "boolean"
+    (value.startupComplete !== undefined &&
+      typeof value.startupComplete !== "boolean") ||
+    (value.referencePreflightPending !== undefined &&
+      typeof value.referencePreflightPending !== "boolean")
   )
     return undefined;
   return bindings
@@ -325,6 +327,9 @@ export function normalizeRunCheckpoint(
         ...(value.startupComplete === undefined
           ? {}
           : { startupComplete: value.startupComplete }),
+        ...(value.referencePreflightPending === true
+          ? { referencePreflightPending: true }
+          : {}),
         ...(value.finalizationText === undefined
           ? {}
           : { finalizationText: value.finalizationText as string }),

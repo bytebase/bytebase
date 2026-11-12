@@ -1,10 +1,58 @@
 import { normalizeAgentDiagnosticCapability } from "./diagnosticCapability";
+import { getHumanInputResourceReferenceMap } from "./resourceMention";
 import { normalizeRunBudget, normalizeRunCheckpoint } from "./tokenBudget";
-import type { AgentChat, AgentMessage, AgentRunCheckpoint } from "./types";
+import type {
+  AgentChat,
+  AgentMessage,
+  AgentRunBindings,
+  AgentRunCheckpoint,
+} from "./types";
 
 export interface AgentRunContinuation {
   checkpoint: AgentRunCheckpoint;
   messages: AgentMessage[];
+}
+
+export function getAgentRunClarificationBindings(
+  chat: AgentChat | null | undefined,
+  messages: readonly AgentMessage[]
+): AgentRunBindings | undefined {
+  const continuation = getAgentRunContinuation(chat, messages);
+  if (!continuation) return undefined;
+  const { checkpoint } = continuation;
+  if (
+    checkpoint.suspension !== "awaiting-user" ||
+    checkpoint.bindings.capability ||
+    messages.findLast((message) => message.role === "user")?.id !==
+      checkpoint.rootUserMessageId
+  )
+    return undefined;
+
+  const cursor = messages.findIndex(
+    (message) => message.id === checkpoint.throughMessageId
+  );
+  const referencesByMessage = getHumanInputResourceReferenceMap(
+    continuation.messages
+  );
+  for (let index = messages.length - 1; index > cursor; index--) {
+    const reply = messages[index];
+    if (reply.role !== "tool" || reply.metadata?.runId !== checkpoint.runId)
+      continue;
+    const references = referencesByMessage.get(reply);
+    if (!references) continue;
+    if (
+      JSON.stringify(references) ===
+      JSON.stringify(checkpoint.bindings.references)
+    )
+      return undefined;
+    return {
+      ...checkpoint.bindings,
+      references,
+      runMode: "read-only",
+      instanceName: undefined,
+    };
+  }
+  return undefined;
 }
 
 export function getAgentRunContinuation(

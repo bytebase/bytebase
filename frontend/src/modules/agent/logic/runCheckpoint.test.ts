@@ -1,7 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { buildOutboundHistory } from "./outboundHistory";
-import { getAgentRunContinuation } from "./runCheckpoint";
-import type { AgentChat, AgentMessage, AgentRunCheckpoint } from "./types";
+import {
+  getAgentRunClarificationBindings,
+  getAgentRunContinuation,
+} from "./runCheckpoint";
+import type {
+  AgentChat,
+  AgentMessage,
+  AgentResourceReference,
+  AgentRunCheckpoint,
+} from "./types";
 
 const checkpoint: AgentRunCheckpoint = {
   version: 1,
@@ -266,6 +274,248 @@ describe("getAgentRunContinuation", () => {
     ).toBeUndefined();
     expect(
       getAgentRunContinuation({ ...chat, capability }, messages)
+    ).toBeUndefined();
+  });
+});
+
+describe("getAgentRunClarificationBindings", () => {
+  const resource: AgentResourceReference = {
+    kind: "database",
+    name: "instances/prod/databases/orders",
+    project: "projects/example",
+    label: "Orders",
+  };
+  const ask: AgentMessage = {
+    ...message("ask-message", "assistant", ""),
+    toolCalls: [
+      {
+        id: "ask-database",
+        name: "ask_user",
+        arguments: '{"kind":"input","prompt":"Which database?"}',
+      },
+    ],
+    metadata: { runId: "run-1" },
+  };
+  const reply: AgentMessage = {
+    ...message("reply-message", "tool", '{"kind":"input","answer":"@Orders"}'),
+    toolCallId: "ask-database",
+    metadata: { runId: "run-1", resourceReference: resource },
+  };
+  const awaiting: AgentChat = {
+    ...chat,
+    status: "awaiting_user",
+    runCheckpoint: {
+      ...checkpoint,
+      suspension: "awaiting-user",
+      throughMessageId: ask.id,
+      bindings: {
+        ...checkpoint.bindings,
+        runMode: "default",
+        instanceName: "instances/previous",
+        maskingPage: { kind: "semantic-types" },
+      },
+    },
+  };
+  const transcript = [...messages, ask, reply];
+
+  test("refines explicit clarification scope without rebinding the saved page", () => {
+    expect(
+      getAgentRunClarificationBindings(
+        {
+          ...awaiting,
+          context: "projects/elsewhere",
+          page: { path: "/projects/elsewhere", title: "Elsewhere" },
+        },
+        transcript
+      )
+    ).toEqual({
+      page: { path: "/projects/example", title: "Example" },
+      context: "projects/example",
+      references: [resource],
+      runMode: "read-only",
+      instanceName: undefined,
+      maskingPage: { kind: "semantic-types" },
+    });
+    expect(awaiting.runCheckpoint?.bindings.references).toEqual([]);
+  });
+
+  test("takes the latest normalized explicit clarification references", () => {
+    const project: AgentResourceReference = {
+      kind: "project",
+      name: "projects/example",
+      project: "projects/example",
+      label: "Example",
+    };
+    const nextAsk: AgentMessage = {
+      ...ask,
+      id: "next-ask-message",
+      toolCalls: [{ ...ask.toolCalls![0], id: "next-ask" }],
+    };
+    const nextReply: AgentMessage = {
+      ...reply,
+      id: "next-reply-message",
+      toolCallId: "next-ask",
+      metadata: {
+        runId: "run-1",
+        resourceReferences: [{ ...resource, label: " Orders " }, project],
+      },
+    };
+    expect(
+      getAgentRunClarificationBindings(awaiting, [
+        ...transcript,
+        nextAsk,
+        nextReply,
+      ])?.references
+    ).toEqual([project, resource]);
+  });
+
+  test.each([
+    { name: "missing", metadata: undefined },
+    { name: "another run", metadata: { ...reply.metadata, runId: "run-2" } },
+    { name: "no references", metadata: { runId: "run-1" } },
+    {
+      name: "invalid references",
+      metadata: {
+        runId: "run-1",
+        resourceReference: { ...resource, project: "invalid" },
+      },
+    },
+  ])("does not refine a reply with $name metadata", ({ metadata }) => {
+    expect(
+      getAgentRunClarificationBindings(awaiting, [
+        ...messages,
+        ask,
+        { ...reply, metadata },
+      ])
+    ).toBeUndefined();
+  });
+
+  test.each([
+    { name: "unmatched", toolCallId: "different-ask" },
+    { name: "non-input", content: '{"kind":"choose","answer":"@Orders"}' },
+    { name: "empty", content: '{"kind":"input","answer":" "}' },
+    { name: "malformed", content: "invalid" },
+  ])("does not refine a $name reply", ({ name: _name, ...change }) => {
+    expect(
+      getAgentRunClarificationBindings(awaiting, [
+        ...messages,
+        ask,
+        { ...reply, ...change },
+      ])
+    ).toBeUndefined();
+  });
+
+  test("does not trust an input reply matched to a different tool", () => {
+    expect(
+      getAgentRunClarificationBindings(awaiting, [
+        ...messages,
+        { ...ask, toolCalls: [{ ...ask.toolCalls![0], name: "call_api" }] },
+        reply,
+      ])
+    ).toBeUndefined();
+  });
+
+  test.each([reply.id, "after-reply"])(
+    "does not reapply a reply at or before cursor %s",
+    (throughMessageId) => {
+      expect(
+        getAgentRunClarificationBindings(
+          {
+            ...awaiting,
+            runCheckpoint: {
+              ...awaiting.runCheckpoint!,
+              throughMessageId,
+            },
+          },
+          [...transcript, message("after-reply", "assistant", "Checking")]
+        )
+      ).toBeUndefined();
+    }
+  );
+
+  test("does not refine from a later user turn", () => {
+    expect(
+      getAgentRunClarificationBindings(awaiting, [
+        ...messages,
+        message("later-user", "user", "A new request"),
+        ask,
+        reply,
+      ])
+    ).toBeUndefined();
+  });
+
+  test("does not change bindings without a new explicit clarification mention", () => {
+    expect(
+      getAgentRunClarificationBindings(
+        {
+          ...awaiting,
+          context: "projects/elsewhere",
+          page: { path: "/projects/elsewhere", title: "Elsewhere" },
+        },
+        [...messages, ask]
+      )
+    ).toBeUndefined();
+    expect(
+      getAgentRunClarificationBindings(
+        {
+          ...awaiting,
+          runCheckpoint: {
+            ...awaiting.runCheckpoint!,
+            bindings: {
+              ...awaiting.runCheckpoint!.bindings,
+              references: [resource],
+            },
+          },
+        },
+        transcript
+      )
+    ).toBeUndefined();
+  });
+
+  test.each([
+    { runId: "other-run" },
+    { runBudget: undefined },
+    { runCheckpoint: undefined },
+    {
+      runCheckpoint: {
+        ...awaiting.runCheckpoint!,
+        startupComplete: false,
+      },
+    },
+    {
+      runCheckpoint: {
+        ...awaiting.runCheckpoint!,
+        suspension: "interrupted" as const,
+      },
+    },
+  ])("requires a validated run awaiting clarification %j", (change) => {
+    expect(
+      getAgentRunClarificationBindings({ ...awaiting, ...change }, transcript)
+    ).toBeUndefined();
+  });
+
+  test("does not refine diagnostic capability bindings", () => {
+    const capability = {
+      kind: "diagnostic",
+      resource: {
+        kind: "issue",
+        name: "projects/example/issues/1",
+        project: "projects/example",
+        label: "Issue",
+      },
+    } as const;
+    expect(
+      getAgentRunClarificationBindings(
+        {
+          ...awaiting,
+          capability,
+          runCheckpoint: {
+            ...awaiting.runCheckpoint!,
+            bindings: { ...awaiting.runCheckpoint!.bindings, capability },
+          },
+        },
+        transcript
+      )
     ).toBeUndefined();
   });
 });

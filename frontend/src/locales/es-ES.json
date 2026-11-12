@@ -288,6 +288,7 @@
       "unavailable": "No se pueden cargar los elementos que necesitan tu atención en este proyecto."
     },
     "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
+    "provider-attempt-limit": "Me detuve antes de enviar otra solicitud de IA porque esta ejecución alcanzó su límite de intentos con el proveedor. Es posible que las acciones anteriores ya se hayan completado; compruebe su estado antes de pedirme que vuelva a intentarlo.",
     "query-result": {
       "returned-rows": "Filas devueltas: {{count}}",
       "showing-columns": "Mostrando {{shown}} de {{total}} columnas",
@@ -350,6 +351,7 @@
       "action-failed": "No se pudo actualizar esta ejecución. Inténtelo de nuevo.",
       "apply": "Aplicar",
       "completed-over-limit": "La ejecución finalizó por encima de su límite de tokens.",
+      "continuation-unavailable": "No se puede reanudar esta ejecución de forma segura. Sus mensajes y su borrador se conservan. Inicie un chat nuevo para continuar.",
       "end-run": "Finalizar ejecución",
       "increase": "Aumentar límite",
       "increase-and-resume": "Aumentar y reanudar",

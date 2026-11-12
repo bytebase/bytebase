@@ -12,8 +12,9 @@ import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { AIChatResponse_StopReason } from "@/types/proto-es/v1/ai_service_pb";
 import type { DomRefSuggestion } from "../dom";
 import type { AgentMaskingPageResource } from "../logic/chatContext";
+import type { AgentCallbacks, AgentLoopOptions } from "../logic/agentLoop";
 import type { createToolExecutor } from "../logic/tools";
-import type { AgentPendingAsk } from "../logic/types";
+import type { AgentPendingAsk, ToolExecutor } from "../logic/types";
 import { withAgentRunLease } from "../logic/runOwnership";
 import { createAgentStore, getAgentStateKey, selectError, useAgentStore } from "../store/agent";
 import {
@@ -473,6 +474,156 @@ describe("AgentInput", () => {
     vi.stubGlobal("sessionStorage", createMockStorage());
   };
 
+  const seedUnrecoverableRun = async (kind: "legacy" | "incomplete") => {
+    enableRunRecovery();
+    const store = useAgentStore.getState();
+    const page = { path: "/demo", title: "Demo" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    const root = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+    if (kind === "legacy") {
+      store.startChatRun(chat.id, page, { runId: "legacy-run" });
+    } else {
+      const key = getAgentStateKey(store.workspaceName!, store.userEmail!)!;
+      await withAgentRunLease(key, chat.id, () => store.beginChatRun(chat.id, root.id, {
+        page, context: chat.context, references: [], runMode: "default",
+      }));
+    }
+    store.setDraft(chat.id, { text: "Keep my next question" });
+    await store.flushRunPersistence();
+    return { store, chat };
+  };
+
+  test("does not show a continuation failure on an empty landing composer", () => {
+    useAgentStore.getState().clearCurrentChat();
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("clears unavailable continuation feedback after canceling a legacy question", async () => {
+    enableRunRecovery();
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+    store.awaitUser(chat.id, { kind: "input", toolCallId: "legacy-question", prompt: "Which database?" });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      fireEvent.change(view.container.querySelector("textarea")!, { target: { value: "Orders" } });
+      await act(async () => { view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click(); });
+      expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+      await act(async () => { screen.getByRole("button", { name: "agent.cancel-request" }).click(); });
+      expect(store.getPendingAsk(chat.id)).toBeNull();
+      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each(["legacy", "incomplete"] as const)("keeps the error and history when Retry cannot recover a %s run", async kind => {
+    const { store, chat } = await seedUnrecoverableRun(kind);
+    store.setChatStatus(chat.id, "error", { lastError: "Connection lost" });
+    const before = store.getChat(chat.id);
+    const history = store.getMessages(chat.id);
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    try {
+      await act(async () => { retryActionRef.current?.(); });
+      expect(store.getChat(chat.id)).toEqual(before);
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([
+    ["legacy", "input"], ["legacy", "confirm"], ["legacy", "choose"],
+    ["incomplete", "input"], ["incomplete", "confirm"], ["incomplete", "choose"],
+  ] as const)("preserves a %s run's %s question when its continuation is unavailable", async (kind, askKind) => {
+    const { store, chat } = await seedUnrecoverableRun(kind);
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{
+      id: "unrecoverable-ask", name: "ask_user", arguments: JSON.stringify({ kind: askKind, prompt: "Which database?" }),
+    }] });
+    const ask = { kind: askKind, toolCallId: "unrecoverable-ask", prompt: "Which database?", ...(askKind === "choose" ? { options: [{ value: "orders", label: "Orders" }] } : {}) };
+    store.awaitUser(chat.id, ask);
+    const history = store.getMessages(chat.id);
+    const before = store.getChat(chat.id);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      if (askKind === "input") {
+        fireEvent.change(view.container.querySelector("textarea")!, { target: { value: "Use orders" } });
+        await act(async () => { view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click(); });
+        expect(view.container.querySelector("textarea")?.value).toBe("Use orders");
+      } else if (askKind === "confirm") {
+        await act(async () => { screen.getByRole("button", { name: "agent.confirm" }).click(); });
+      } else {
+        fireEvent.click(screen.getByRole("radio", { name: "Orders" }));
+        await act(async () => { screen.getByRole("button", { name: "agent.reply" }).click(); });
+        expect(screen.getByRole("radio", { name: "Orders" })).toBeChecked();
+      }
+      expect(store.getPendingAsk(chat.id)).toEqual(ask);
+      expect(store.getChat(chat.id)).toEqual(before);
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([
+    ["legacy", true], ["legacy", false],
+    ["incomplete", true], ["incomplete", false],
+  ] as const)("handles a %s run's available API permission with approved=%s without unsafe continuation", async (kind, approved) => {
+    const { store, chat } = await seedUnrecoverableRun(kind);
+    const ask: AgentPendingAsk = {
+      kind: "confirm", toolCallId: "unrecoverable-permission", prompt: "Update the project title?",
+      apiPermission: { actionId: "unrecoverable-action", operationId: "bytebase.v1.ProjectService.UpdateProject" },
+    };
+    mocks.getPendingApiCallPreview.mockReturnValue({ operationId: ask.apiPermission!.operationId, body: "{}", expiresAt: Date.now() + 300_000 });
+    const result = '{"error":"API request denied by user."}';
+    mocks.resolvePendingApiCall.mockResolvedValue(result);
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: ask.toolCallId, name: "call_api", arguments: "{}" }] });
+    store.awaitUser(chat.id, ask);
+    const before = store.getChat(chat.id);
+    const history = store.getMessages(chat.id);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { screen.getByRole("button", { name: approved ? "agent.api-permission-allow" : "agent.api-permission-deny" }).click(); });
+      if (approved) {
+        expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+        expect(store.getChat(chat.id)).toEqual(before);
+        expect(store.getPendingAsk(chat.id)).toEqual(ask);
+        expect(store.getMessages(chat.id)).toEqual(history);
+      } else {
+        expect(mocks.resolvePendingApiCall).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ actionId: "unrecoverable-action", approved: false }));
+        expect(store.getChat(chat.id)).toMatchObject({ status: "idle", runId: null });
+        expect(store.getChat(chat.id)?.runBudget).toEqual(before?.runBudget);
+        expect(store.getChat(chat.id)?.runCheckpoint).toBeUndefined();
+        expect(store.getPendingAsk(chat.id)).toBeNull();
+        expect(store.getMessages(chat.id).filter(message => message.toolCallId === ask.toolCallId)).toEqual([
+          expect.objectContaining({ role: "tool", content: result, metadata: expect.objectContaining({ runId: before?.runId }) }),
+        ]);
+      }
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getAbortController(chat.id)).toBeNull();
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+    } finally {
+      view.unmount();
+    }
+  });
+
   test("does not report missing usage while its locally owned provider attempt is pending", async () => {
     enableRunRecovery();
     let finish: (() => void) | undefined;
@@ -684,6 +835,118 @@ describe("AgentInput", () => {
     expect(new Set(runIds).size).toBe(1);
     expect(store.getChat(chat.id)?.runBudget?.providerAttemptCount).toBe(3);
     view.unmount();
+  });
+
+  test("refines a recovered clarification with its explicit database without rebinding to navigation", async () => {
+    enableRunRecovery();
+    const database = { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders" };
+    const ask = { kind: "input" as const, toolCallId: "choose-database", prompt: "Which database?", defaultValue: database.name, defaultResource: database };
+    let runId: string | undefined;
+    let resumedCheckpoint: unknown;
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: database.project, database: { name: database.name, status: "available", state: "ACTIVE" } }) });
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks, _signal, options) => {
+      if (!runId) {
+        runId = options.runId;
+        const reservation = await options.reserveProviderAttempt();
+        await options.onAttemptSettled({ attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 40 } });
+        callbacks.onAssistantMessage({ role: "assistant", toolCalls: [{ id: ask.toolCallId, name: "ask_user", arguments: JSON.stringify({ kind: "input", prompt: ask.prompt }) }] });
+        return { kind: "awaiting_user", ask, totalTokensUsed: 40 };
+      }
+      resumedCheckpoint = options.checkpoint;
+      callbacks.onText("Ready to inspect orders.");
+      return { kind: "completed", success: true, totalTokensUsed: 0 };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/demo", title: "Demo" };
+    const chat = store.createChat({ context: "workspaces/demo", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Help me query a database", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("awaiting_user")); });
+      mocks.currentPath = "/projects/billing";
+      await act(async () => {
+        view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+      });
+      expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+      expect(resumedCheckpoint).toMatchObject({ runId, bindings: { page, context: "workspaces/demo", references: [database], runMode: "read-only" } });
+      expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ pagePath: page.path, context: "workspaces/demo", referencedDatabase: database.name, referencedProject: database.project, runMode: "read-only" }));
+      expect(mocks.executeTool).toHaveBeenCalledExactlyOnceWith("get_database_overview", { databaseName: database.name }, expect.any(String));
+      expect(store.getMessages(chat.id).filter(message => message.metadata?.runPreflight)).toHaveLength(2);
+      expect(store.getChat(chat.id)?.runBudget).toMatchObject({ runId, totalTokensUsed: 40, providerAttemptCount: 1 });
+      expect(store.getMessages(chat.id).filter(message => message.role === "user")).toHaveLength(1);
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("revalidates a clarified database on Retry when continuing could not persist", async () => {
+    enableRunRecovery();
+    const database = { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders" };
+    const ask = { kind: "input" as const, toolCallId: "choose-database", prompt: "Which database?", defaultValue: database.name, defaultResource: database };
+    const store = useAgentStore.getState();
+    const flushRunPersistence = store.flushRunPersistence;
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: database.project, database: { name: database.name, status: "available", state: "ACTIVE" } }) });
+    mocks.runAgentLoop
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks, _signal, options) => {
+        const reservation = await options.reserveProviderAttempt();
+        await options.onAttemptSettled({ attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 40 } });
+        callbacks.onAssistantMessage({ role: "assistant", toolCalls: [{ id: ask.toolCallId, name: "ask_user", arguments: JSON.stringify({ kind: "input", prompt: ask.prompt }) }] });
+        return { kind: "awaiting_user", ask, totalTokensUsed: 40 };
+      })
+      .mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("The chosen database is available.");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      });
+    const page = { path: "/demo", title: "Demo" };
+    const chat = store.createChat({ context: "workspaces/demo", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Help me query a database", page });
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("awaiting_user")); });
+      const runId = store.getChat(chat.id)?.runId;
+      useAgentStore.setState({ flushRunPersistence: vi.fn(async () => false) });
+      await act(async () => {
+        view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error"));
+      });
+      expect(store.getChat(chat.id)?.runCheckpoint?.bindings.references).toEqual([database]);
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      useAgentStore.setState({ flushRunPersistence });
+      await act(async () => {
+        retryActionRef.current?.();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+      });
+      expect(mocks.executeTool).toHaveBeenCalledExactlyOnceWith("get_database_overview", { databaseName: database.name }, expect.any(String));
+      expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+      expect(mocks.executeTool.mock.invocationCallOrder[0]).toBeLessThan(mocks.runAgentLoop.mock.invocationCallOrder[1]);
+      expect(store.getMessages(chat.id).filter(message => message.metadata?.runPreflight)).toHaveLength(2);
+      expect(store.getChat(chat.id)?.runBudget).toMatchObject({ runId, totalTokensUsed: 40, providerAttemptCount: 1 });
+    } finally {
+      useAgentStore.setState({ flushRunPersistence });
+      view.unmount();
+    }
+  });
+
+  test.each([enUS, zhCN, esES, jaJP, viVN])("localizes a provider-attempt stop at the UI boundary", async locale => {
+    mocks.useTranslation.mockReturnValue({ t: key => key === "agent.provider-attempt-limit" ? locale.agent["provider-attempt-limit"] : key, i18n: { language: "test" } });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "stopped", reason: "provider-attempt-limit", totalTokensUsed: 10 });
+    const store = useAgentStore.getState();
+    const page = { path: "/demo", title: "Demo" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Check orders", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
+      expect(store.getMessages(chat.id).at(-1)).toMatchObject({ role: "assistant", content: locale.agent["provider-attempt-limit"] });
+    } finally {
+      view.unmount();
+    }
   });
 
   test("requires explicit API Allow at the run limit and keeps budget Resume from approving again", async () => {
@@ -3741,7 +4004,8 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("keeps the Plan draft action after a schema read and clarification reply", async () => {
+  test.each([false, true])("keeps the Plan draft action after a schema read and clarification reply (recovery: %s)", async recovery => {
+    if (recovery) enableRunRecovery();
     const database = "instances/prod/databases/orders";
     const project = "projects/orders";
     const answer = "Proposed change:\n\n```sql\nCREATE TABLE audit_log (id INT PRIMARY KEY);\n```";
@@ -3769,7 +4033,7 @@ describe("AgentInput", () => {
           ],
         });
         const result = await executor("call_api", args, "schema-1");
-        callbacks.onToolResult("schema-1", result.result);
+        await callbacks.onToolResult("schema-1", result.result);
         return {
           kind: "awaiting_user",
           ask: { toolCallId: "ask-1", prompt: "What should the table be named?", kind: "input" },
@@ -3816,7 +4080,8 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
-  test("does not restore Plan draft evidence after an intervening write", async () => {
+  test.each([false, true])("does not restore Plan draft evidence after an intervening write (recovery: %s)", async recovery => {
+    if (recovery) enableRunRecovery();
     const database = "instances/prod/databases/orders";
     const project = "projects/orders";
     const answer = "```sql\nALTER TABLE orders ADD COLUMN note TEXT;\n```";
@@ -3845,7 +4110,7 @@ describe("AgentInput", () => {
             toolCalls: [{ id, name: "call_api", arguments: JSON.stringify(args) }],
           });
           const result = await executor("call_api", args, id);
-          callbacks.onToolResult(id, result.result);
+          await callbacks.onToolResult(id, result.result);
         }
         return {
           kind: "awaiting_user",
@@ -3891,6 +4156,186 @@ describe("AgentInput", () => {
         ?.metadata?.actions
     ).toBeUndefined();
     view.unmount();
+  });
+
+  describe("managed Plan draft evidence", () => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/orders";
+    const page = { path: "/projects/orders", title: "Orders" };
+    const answer = "```sql\nALTER TABLE orders ADD COLUMN note TEXT;\n```";
+    const overview = { project, database: { status: "available", name: database, state: "ACTIVE" } };
+    const schemaArgs = { operationId: "DatabaseService/GetDatabaseSchema", body: { name: `${database}/schema` } };
+
+    beforeEach(() => {
+      enableRunRecovery();
+      mocks.executeTool.mockImplementation(async (name, args) => ({
+        kind: "tool_result",
+        result: JSON.stringify(name === "get_database_overview" ? overview : {
+          status: 200,
+          response: args.operationId === schemaArgs.operationId ? { schema: "CREATE TABLE orders (id INT);" } : {},
+        }),
+      }));
+    });
+
+    const queueQuestion = () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: project, page });
+      store.queueUserMessage({
+        chatId: chat.id, text: "@orders Add a note column", page,
+        resourceReference: { kind: "database", name: database, project, label: "orders" },
+      });
+      return { store, chat };
+    };
+
+    const recordTool = async (executor: ToolExecutor, callbacks: AgentCallbacks, id: string, name: string, args: Record<string, unknown>) => {
+      callbacks.onAssistantMessage!({ toolCalls: [{ id, name, arguments: JSON.stringify(args) }] });
+      const result = await executor(name, args, id);
+      if (result.kind !== "tool_result") throw new Error("Expected a completed tool result");
+      await callbacks.onToolResult!(id, result.result);
+    };
+
+    const settleAttempt = async (options: AgentLoopOptions, totalTokens: number) => {
+      const reservation = await options.reserveProviderAttempt!();
+      if (reservation.kind !== "allowed") throw new Error("Expected an allowed provider attempt");
+      expect(await options.onAttemptSettled!({
+        attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId!,
+        outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens },
+      })).toBe(true);
+      return reservation.ordinal;
+    };
+
+    test.each(["working", "finalizing", "Retry"] as const)("retains verified Plan actions across %s without repeating startup", async suspension => {
+      const runIds: string[] = [];
+      mocks.runAgentLoop.mockImplementation(async (_history, _tools, executor, callbacks, _signal, options) => {
+        runIds.push(options.runId);
+        const totalTokens = runIds.length === 1 && suspension !== "Retry" ? 60_000 : 10;
+        const ordinal = await settleAttempt(options, totalTokens);
+        if (ordinal === 1) {
+          await recordTool(executor, callbacks, "schema-1", "call_api", schemaArgs);
+          const phase = suspension === "finalizing" ? "finalizing" : "working";
+          const progress = { phase, ...(phase === "finalizing" ? { finalizationText: answer } : {}) };
+          expect(await options.onCheckpoint(progress)).toBe(true);
+          return suspension === "Retry"
+            ? { kind: "error", error: new Error("Temporary provider failure"), totalTokensUsed: totalTokens }
+            : { kind: "paused", reason: "token-limit", ...progress, totalTokensUsed: totalTokens };
+        }
+        expect(options.checkpoint).toMatchObject({ phase: suspension === "finalizing" ? "finalizing" : "working" });
+        if (suspension === "finalizing") expect(options.checkpoint.finalizationText).toBe(answer);
+        callbacks.onText(answer);
+        return { kind: "completed", success: true, actions: [], totalTokensUsed: totalTokens };
+      });
+      const { store, chat } = queueQuestion();
+      const retryActionRef = createRef<(() => void) | null>();
+      const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+      view.render();
+      try {
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe(suspension === "Retry" ? "error" : "paused")); });
+        if (suspension === "Retry") {
+          await act(async () => { retryActionRef.current?.(); });
+        } else {
+          const resume = await openRunLimitIncrease(view.container, 100);
+          await act(async () => { resume.click(); });
+        }
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
+        expect(runIds).toHaveLength(2);
+        expect(new Set(runIds).size).toBe(1);
+        expect(store.getChat(chat.id)?.runBudget).toMatchObject({
+          runId: runIds[0], providerAttemptCount: 2, totalTokensUsed: suspension === "Retry" ? 20 : 60_010,
+        });
+        expect(store.getMessages(chat.id).find(message => message.content === answer)?.metadata?.actions).toEqual([{ kind: "draft-plan", project, database }]);
+        expect(store.getMessages(chat.id).filter(message => message.role === "user")).toHaveLength(1);
+        expect(mocks.executeTool).toHaveBeenCalledTimes(2);
+        expect(mocks.executeTool).toHaveBeenNthCalledWith(1, "get_database_overview", { databaseName: database }, expect.any(String));
+        expect(mocks.executeTool).toHaveBeenNthCalledWith(2, "call_api", schemaArgs, "schema-1");
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test.each([
+      { name: "another project", result: { ...overview, project: "projects/other" } },
+      { name: "another database", result: { ...overview, database: { ...overview.database, name: "instances/prod/databases/other" } } },
+      { name: "unavailable", result: { project, database: { status: "unavailable" } } },
+      { name: "archived", result: { ...overview, database: { ...overview.database, state: "DELETED" } } },
+    ])("rejects Plan actions after a canonical overview for $name", async ({ result }) => {
+      mocks.executeTool
+        .mockResolvedValueOnce({ kind: "tool_result", result: JSON.stringify(overview) })
+        .mockResolvedValueOnce({ kind: "tool_result", result: JSON.stringify(result) });
+      mocks.runAgentLoop
+        .mockImplementationOnce(async (_history, _tools, executor, callbacks, _signal, options) => {
+          await settleAttempt(options, 10);
+          await recordTool(executor, callbacks, "overview-1", "get_database_overview", { databaseName: database });
+          await recordTool(executor, callbacks, "schema-1", "call_api", schemaArgs);
+          expect(await options.onCheckpoint({ phase: "working" })).toBe(true);
+          return { kind: "error", error: new Error("Temporary provider failure"), totalTokensUsed: 10 };
+        })
+        .mockImplementationOnce(async (_history, _tools, _executor, callbacks, _signal, options) => {
+          await settleAttempt(options, 10);
+          callbacks.onText(answer);
+          return { kind: "completed", success: true, actions: [{ kind: "draft-plan", project, database }], totalTokensUsed: 10 };
+        });
+      const { store, chat } = queueQuestion();
+      const retryActionRef = createRef<(() => void) | null>();
+      const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+      view.render();
+      try {
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+        await act(async () => {
+          retryActionRef.current?.();
+          await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+        });
+        expect(store.getMessages(chat.id).find(message => message.content === answer)).toMatchObject({ role: "assistant" });
+        expect(store.getMessages(chat.id).find(message => message.content === answer)?.metadata?.actions).toBeUndefined();
+        expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+        expect(mocks.executeTool).toHaveBeenCalledTimes(3);
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test("does not restore verification from pre-write reads whose results arrive after the write", async () => {
+      mocks.runAgentLoop
+        .mockImplementationOnce(async (_history, _tools, executor, callbacks, _signal, options) => {
+          await settleAttempt(options, 10);
+          const reads = [
+            { id: "late-overview", name: "get_database_overview", args: { databaseName: database } },
+            { id: "late-schema", name: "call_api", args: schemaArgs },
+          ];
+          callbacks.onAssistantMessage({ toolCalls: reads.map(({ id, name, args }) => ({ id, name, arguments: JSON.stringify(args) })) });
+          const results = reads.map(({ id, name, args }) => executor(name, args, id));
+          await recordTool(executor, callbacks, "write-1", "call_api", { operationId: "PlanService/CreatePlan", body: {} });
+          for (const [index, pending] of results.entries()) {
+            const result = await pending;
+            if (result.kind !== "tool_result") throw new Error("Expected a completed read");
+            await callbacks.onToolResult(reads[index].id, result.result);
+          }
+          expect(await options.onCheckpoint({ phase: "working" })).toBe(true);
+          return { kind: "error", error: new Error("Temporary provider failure"), totalTokensUsed: 10 };
+        })
+        .mockImplementationOnce(async (_history, _tools, _executor, callbacks, _signal, options) => {
+          await settleAttempt(options, 10);
+          callbacks.onText(answer);
+          return { kind: "completed", success: true, actions: [{ kind: "draft-plan", project, database }], totalTokensUsed: 10 };
+        });
+      const { store, chat } = queueQuestion();
+      const retryActionRef = createRef<(() => void) | null>();
+      const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+      view.render();
+      try {
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+        const resultOrder = store.getMessages(chat.id).filter(message => message.role === "tool" && !message.metadata?.runPreflight).map(message => message.toolCallId);
+        expect(resultOrder).toEqual(["write-1", "late-overview", "late-schema"]);
+        await act(async () => {
+          retryActionRef.current?.();
+          await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+        });
+        expect(store.getMessages(chat.id).find(message => message.content === answer)).toMatchObject({ role: "assistant" });
+        expect(store.getMessages(chat.id).find(message => message.content === answer)?.metadata?.actions).toBeUndefined();
+        expect(mocks.executeTool).toHaveBeenCalledTimes(4);
+      } finally {
+        view.unmount();
+      }
+    });
   });
 
   test("does not offer a Plan draft when schema retrieval fails", async () => {

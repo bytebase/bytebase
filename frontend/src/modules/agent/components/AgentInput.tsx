@@ -233,6 +233,27 @@ const invalidatesPlanDraftEvidence = (
       apiCallNeedsConfirmation(args.operationId))) ||
   (name === "dom_action" && args.type !== "read" && args.type !== "scroll");
 
+const getVerifiedDatabaseOverview = (
+  result: string,
+  database: string | undefined,
+  project: string | undefined
+): { name: string; project: string } | undefined => {
+  if (!database || !project) return undefined;
+  try {
+    const overview = JSON.parse(result);
+    if (
+      overview?.project === project &&
+      overview.database?.status === "available" &&
+      overview.database.name === database &&
+      overview.database.state === "ACTIVE"
+    )
+      return { name: database, project };
+  } catch {
+    // Only canonical successful overviews establish database verification.
+  }
+  return undefined;
+};
+
 const hasCurrentTurnDatabaseSchemaRead = (
   messages: AgentMessage[],
   databaseName: string
@@ -611,6 +632,10 @@ export function AgentInput({
   );
 
   const [askDraft, setAskDraft] = useState<AgentDraft>({ text: "" });
+  const [continuationFailure, setContinuationFailure] = useState<{
+    chatId: string;
+    runId: string | null;
+  } | null>(null);
   const [choiceSelection, setChoiceSelection] = useState<{
     chatId: string;
     toolCallId: string;
@@ -1084,11 +1109,24 @@ export function AgentInput({
     []
   );
 
+  const canContinueChatRun = useCallback((chatId: string) => {
+    if (!supportsAgentRunRecovery()) return true;
+    const store = useAgentStore.getState();
+    const chat = store.getChat(chatId);
+    if (!getAgentRunContinuation(chat, store.getMessages(chatId))) {
+      if (chat) setContinuationFailure({ chatId, runId: chat.runId ?? null });
+      return false;
+    }
+    setContinuationFailure(null);
+    return true;
+  }, []);
+
   const handleOutcome = useCallback(
     (chatId: string, outcome: Awaited<ReturnType<typeof runAgentLoop>>) => {
       const store = useAgentStore.getState();
       switch (outcome.kind) {
         case "completed":
+        case "stopped":
           store.finishChatRun(chatId);
           return;
         case "awaiting_user":
@@ -1361,10 +1399,15 @@ export function AgentInput({
       if (resumeCheckpoint) {
         const calls = new Map<
           string,
-          { name: string; args: Record<string, unknown> }
+          { name: string; args: Record<string, unknown>; epoch: number }
         >();
+        let epoch = 0;
+        readDatabaseSchema = false;
         const invalidate = () => {
+          epoch++;
           overviewEvidence = undefined;
+          verifiedDatabase = undefined;
+          readDatabaseSchema = false;
           handoffCandidates.length = 0;
           maskingDraftIds.length = 0;
           exemptionDraftIds.length = 0;
@@ -1376,7 +1419,9 @@ export function AgentInput({
           ) + 1
         );
         for (const message of runMessages) {
-          for (const call of message.toolCalls ?? []) {
+          for (const call of message.role === "assistant"
+            ? (message.toolCalls ?? [])
+            : []) {
             let args: Record<string, unknown> = {};
             try {
               const value: unknown = JSON.parse(call.arguments);
@@ -1385,15 +1430,36 @@ export function AgentInput({
             } catch {
               // Malformed calls cannot establish evidence.
             }
-            calls.set(call.id, { name: call.name, args });
+            if (invalidatesPlanDraftEvidence(call.name, args)) invalidate();
+            calls.set(call.id, { name: call.name, args, epoch });
           }
           if (message.role !== "tool" || !message.toolCallId) continue;
           const call = calls.get(message.toolCallId);
           calls.delete(message.toolCallId);
-          if (call && invalidatesPlanDraftEvidence(call.name, call.args))
-            invalidate();
+          if (!call || call.epoch !== epoch) continue;
           const name = call?.name;
           if (!message.content) continue;
+          if (
+            name === "get_database_overview" &&
+            call.args.databaseName === referencedDatabase
+          ) {
+            verifiedDatabase = getVerifiedDatabaseOverview(
+              message.content,
+              referencedDatabase,
+              referencedProject
+            );
+            if (!verifiedDatabase) readDatabaseSchema = false;
+          } else if (
+            name === "call_api" &&
+            verifiedDatabase &&
+            isSuccessfulDatabaseSchemaRead(
+              call.args,
+              { kind: "tool_result", result: message.content },
+              verifiedDatabase.name
+            )
+          ) {
+            readDatabaseSchema = true;
+          }
           if (name) observeHandoffs(name, message.content);
           const extract =
             name === "get_project_overview"
@@ -1413,12 +1479,6 @@ export function AgentInput({
               extract(message.content)
             );
         }
-        if (
-          [...calls.values()].some((call) =>
-            invalidatesPlanDraftEvidence(call.name, call.args)
-          )
-        )
-          invalidate();
       }
 
       try {
@@ -1698,27 +1758,14 @@ export function AgentInput({
           }
           const overviewResult =
             result?.kind === "tool_result" ? result.result : undefined;
-          let valid = false;
-          if (overviewResult) {
-            try {
-              const overview = JSON.parse(overviewResult) as {
-                project?: unknown;
-                database?: {
-                  status?: unknown;
-                  name?: unknown;
-                  state?: unknown;
-                };
-              };
-              valid =
-                overview.project === referencedProject &&
-                overview.database?.status === "available" &&
-                overview.database.name === referencedDatabase &&
-                overview.database.state === "ACTIVE";
-            } catch {
-              valid = false;
-            }
-          }
-          if (!valid || !overviewResult) {
+          verifiedDatabase = overviewResult
+            ? getVerifiedDatabaseOverview(
+                overviewResult,
+                referencedDatabase,
+                referencedProject
+              )
+            : undefined;
+          if (!verifiedDatabase || !overviewResult) {
             useAgentStore.getState().addMessage({
               chatId,
               role: "assistant",
@@ -1728,10 +1775,6 @@ export function AgentInput({
             useAgentStore.getState().finishChatRun(chatId);
             return;
           }
-          verifiedDatabase = {
-            name: referencedDatabase,
-            project: referencedProject,
-          };
           overviewEvidence = mergeOverviewEvidence(
             overviewEvidence,
             extractDatabaseOverviewEvidence(overviewResult)
@@ -1754,7 +1797,7 @@ export function AgentInput({
             }
           );
         }
-        if (managed && !resumeCheckpoint) {
+        if (managed) {
           const startupPairs = history.slice(startupStart);
           for (const message of startupPairs) {
             useAgentStore.getState().addMessage({
@@ -1782,6 +1825,7 @@ export function AgentInput({
             throughMessageId,
             maskingSections: [...maskingSections],
             startupComplete: true,
+            referencePreflightPending: undefined,
           });
         };
         if (managed && !(await saveCheckpoint())) {
@@ -1814,6 +1858,18 @@ export function AgentInput({
                   })
                 : executor(name, args, toolCallId);
             return execution.then((result) => {
+              if (
+                name === "get_database_overview" &&
+                args.databaseName === referencedDatabase &&
+                result.kind === "tool_result"
+              ) {
+                verifiedDatabase = getVerifiedDatabaseOverview(
+                  result.result,
+                  referencedDatabase,
+                  referencedProject
+                );
+                if (!verifiedDatabase) readDatabaseSchema = false;
+              }
               if (
                 name === "call_api" &&
                 verifiedDatabase &&
@@ -1991,6 +2047,15 @@ export function AgentInput({
           !isCurrentChatScope(store, chatId)
         ) {
           return;
+        }
+
+        if (outcome.kind === "stopped") {
+          useAgentStore.getState().addMessage({
+            chatId,
+            role: "assistant",
+            content: t("agent.provider-attempt-limit"),
+            metadata: { route: page.path, runId },
+          });
         }
 
         if (finalText && outcome.kind === "completed") {
@@ -2313,6 +2378,7 @@ export function AgentInput({
           let resumeCheckpoint: AgentRunCheckpoint | undefined;
           if (supportsAgentRunRecovery()) {
             if (intent === "continue") {
+              if (!canContinueChatRun(chatId)) return;
               const continuation = getAgentRunContinuation(
                 chat,
                 currentStore.getMessages(chatId)
@@ -2329,7 +2395,10 @@ export function AgentInput({
                 });
                 return;
               }
-              resumeCheckpoint = continuation.checkpoint;
+              resumeCheckpoint = useAgentStore
+                .getState()
+                .getChat(chatId)?.runCheckpoint;
+              if (!resumeCheckpoint) return;
               runId = resumeCheckpoint.runId;
               currentPage = resumeCheckpoint.bindings.page;
             } else {
@@ -2431,7 +2500,9 @@ export function AgentInput({
             currentPage,
             runId,
             effectiveRunMode,
-            skipReferencePreflight || Boolean(resumeCheckpoint),
+            resumeCheckpoint?.referencePreflightPending
+              ? false
+              : skipReferencePreflight || Boolean(resumeCheckpoint),
             resumeCheckpoint
           );
         },
@@ -2439,6 +2510,7 @@ export function AgentInput({
       );
     },
     [
+      canContinueChatRun,
       runChat,
       runProjectAttentionStarter,
       runRecentActivityStarter,
@@ -2582,10 +2654,9 @@ export function AgentInput({
     ) {
       return;
     }
-    currentStore.clearError(sourceChatId);
-
     if (pendingAsk) {
       return withChatRunSegment(sourceChatId, async (lease) => {
+        if (!canContinueChatRun(sourceChatId)) return;
         const answer = input.trim();
         if (!answer) return;
         let answered;
@@ -2605,6 +2676,7 @@ export function AgentInput({
             { kind: "input", answer },
             {
               route: currentPage.path,
+              runId: currentStore.getChat(sourceChatId)?.runId ?? undefined,
               ...(references[0] ? { resourceReference: references[0] } : {}),
               ...(references.length > 1
                 ? { resourceReferences: references }
@@ -2628,6 +2700,9 @@ export function AgentInput({
         return;
       });
     }
+
+    currentStore.clearError(sourceChatId);
+    setContinuationFailure(null);
 
     const text = submittedDraft.text.trim();
     if (!text) return;
@@ -2703,6 +2778,7 @@ export function AgentInput({
   }, [
     askDraft,
     blockWhenAIIsNotConfigured,
+    canContinueChatRun,
     input,
     startChatRun,
     t,
@@ -2763,6 +2839,7 @@ export function AgentInput({
           return;
         }
         await withChatRunSegment(chat.id, async (lease) => {
+          if (!messageId && !canContinueChatRun(chat.id)) return;
           current.clearError(chat.id);
           let starterId: LandingStarterId | undefined;
           if (messageId) {
@@ -2811,7 +2888,7 @@ export function AgentInput({
         }
       }
     },
-    [blockWhenAIIsNotConfigured, startChatRun, t]
+    [blockWhenAIIsNotConfigured, canContinueChatRun, startChatRun, t]
   );
 
   useEffect(() => {
@@ -2838,6 +2915,7 @@ export function AgentInput({
     void withChatRunSegment(chat.id, async () => {
       const store = useAgentStore.getState();
       if (!store.cancelPendingAsk(chat.id)) return;
+      setContinuationFailure(null);
       setAskDraft({ text: "" });
       if (supportsAgentRunRecovery() && !(await store.flushRunPersistence())) {
         store.setChatStatus(chat.id, "error", {
@@ -2892,6 +2970,8 @@ export function AgentInput({
             ) {
               return;
             }
+            if (confirmed && requestAvailable && !canContinueChatRun(chatId))
+              return;
             if (
               supportsAgentRunRecovery() &&
               !(await currentStore.flushRunPersistence())
@@ -2960,10 +3040,28 @@ export function AgentInput({
                 },
               });
               currentStore.finishChatRun(chatId);
+              setContinuationFailure(null);
               return;
             }
             if (currentChat.archived) {
               currentStore.finishChatRun(chatId);
+              return;
+            }
+            if (
+              !confirmed &&
+              supportsAgentRunRecovery() &&
+              !getAgentRunContinuation(
+                currentChat,
+                currentStore.getMessages(chatId)
+              )
+            ) {
+              currentStore.finishChatRun(chatId);
+              setContinuationFailure(null);
+              if (!(await currentStore.flushRunPersistence())) {
+                currentStore.setChatStatus(chatId, "error", {
+                  lastError: t("agent.token-budget.action-failed"),
+                });
+              }
               return;
             }
             // An approved write can make the selected resource unavailable.
@@ -3019,12 +3117,16 @@ export function AgentInput({
       ) {
         return;
       }
-      currentStore.clearError(chatId);
       await withChatRunSegment(chatId, async (lease) => {
+        if (!canContinueChatRun(chatId)) return;
+        currentStore.clearError(chatId);
         const answered = currentStore.answerPendingAsk(
           chatId,
           { kind: "confirm", answer, confirmed },
-          { route: currentPage.path }
+          {
+            route: currentPage.path,
+            runId: currentStore.getChat(chatId)?.runId ?? undefined,
+          }
         );
         if (!answered) return;
         await startChatRun(
@@ -3038,7 +3140,14 @@ export function AgentInput({
         );
       });
     },
-    [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun, t]
+    [
+      blockWhenAIIsNotConfigured,
+      canContinueChatRun,
+      confirmLabel,
+      cancelLabel,
+      startChatRun,
+      t,
+    ]
   );
 
   const submitChoice = useCallback(async () => {
@@ -3073,8 +3182,9 @@ export function AgentInput({
     ) {
       return;
     }
-    currentStore.clearError(chatId);
     await withChatRunSegment(chatId, async (lease) => {
+      if (!canContinueChatRun(chatId)) return;
+      currentStore.clearError(chatId);
       const answered = currentStore.answerPendingAsk(
         chatId,
         {
@@ -3082,7 +3192,10 @@ export function AgentInput({
           answer: selectedChoice.label,
           value: selectedChoice.value,
         },
-        { route: currentPage.path }
+        {
+          route: currentPage.path,
+          runId: currentStore.getChat(chatId)?.runId ?? undefined,
+        }
       );
       if (!answered) return;
       setChoiceSelection(null);
@@ -3098,6 +3211,7 @@ export function AgentInput({
     });
   }, [
     blockWhenAIIsNotConfigured,
+    canContinueChatRun,
     choiceSelection,
     selectedChoice,
     startChatRun,
@@ -3188,6 +3302,14 @@ export function AgentInput({
           {t("agent.token-budget.recovery-unavailable")}
         </Alert>
       )}
+      {continuationFailure &&
+        currentChat &&
+        continuationFailure.chatId === currentChat.id &&
+        continuationFailure.runId === (currentChat.runId ?? null) && (
+          <Alert appearance="caption" variant="warning" role="alert">
+            {t("agent.token-budget.continuation-unavailable")}
+          </Alert>
+        )}
       <AgentTokenBudgetStatus
         chat={currentChat}
         pendingAttemptId={pendingAttemptId}
@@ -3252,6 +3374,7 @@ export function AgentInput({
             ended = await useAgentStore.getState().endPausedRun(currentChat.id);
           });
           if (!ended) throw new Error("Agent run could not be ended");
+          setContinuationFailure(null);
         }}
       />
       <div className="min-w-0">

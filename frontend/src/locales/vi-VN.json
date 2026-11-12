@@ -288,6 +288,7 @@
       "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
     },
     "project-reference-unavailable": "Dự án này không còn khả dụng hoặc bạn không có quyền truy cập.",
+    "provider-attempt-limit": "Tôi đã dừng trước khi gửi thêm yêu cầu AI vì lượt chạy này đã đạt giới hạn số lần thử với nhà cung cấp. Các thao tác trước đó có thể đã hoàn tất; hãy kiểm tra trạng thái trước khi yêu cầu tôi thử lại.",
     "query-result": {
       "returned-rows": "Số hàng trả về: {{count}}",
       "showing-columns": "Hiển thị {{shown}} trong {{total}} cột",
@@ -350,6 +351,7 @@
       "action-failed": "Không thể cập nhật lượt chạy này. Vui lòng thử lại.",
       "apply": "Áp dụng",
       "completed-over-limit": "Lượt chạy đã hoàn tất vượt quá giới hạn token.",
+      "continuation-unavailable": "Không thể tiếp tục lượt chạy này một cách an toàn. Tin nhắn và bản nháp của bạn được giữ nguyên. Hãy bắt đầu cuộc trò chuyện mới để tiếp tục.",
       "end-run": "Kết thúc lượt chạy",
       "increase": "Tăng giới hạn",
       "increase-and-resume": "Tăng và tiếp tục",

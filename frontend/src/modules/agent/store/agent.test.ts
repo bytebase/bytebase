@@ -392,6 +392,256 @@ describe("durable run recovery", () => {
     s(reload).setWorkspaceName(workspaceName);
     expect(s(reload).getChat("later-old-tab")).toBeNull();
   });
+  test.each([
+    { name: "workspace-only", key: `${AGENT_STATE_KEY}.recovery` },
+    { name: "global", key: AGENT_STATE_KEY },
+    { name: "interim", key: `${AGENT_STATE_KEY}.legacy` },
+  ])(
+    "migrates $name ownerless history through scoped v2 before the locked v3 write",
+    async ({ key: sourceKey }) => {
+      const stateKey = getAgentStateKey(workspaceName);
+      const v2Key = stateKey.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      mockStorage.setItem(
+        sourceKey,
+        JSON.stringify({
+          currentChatId: "completed",
+          chats: [
+            {
+              id: "completed",
+              context: "projects/sample",
+              status: "idle",
+              totalTokensUsed: 30,
+              lastRunUsage: {
+                runId: "completed-run",
+                calls: [{ purpose: "agent", toolNames: [], totalTokens: 30 }],
+              },
+            },
+          ],
+          messagesByChatId: {
+            completed: [
+              { id: "question", role: "user", content: "Inspect" },
+              { id: "answer", role: "assistant", content: "Complete" },
+            ],
+          },
+          draftsByChatId: { completed: { text: "Follow up" } },
+        })
+      );
+
+      const store = createAgentStore();
+      s(store).setWorkspaceName(workspaceName);
+
+      expect(s(store).currentChatId).toBe("completed");
+      expect(s(store).getChat("completed")).toMatchObject({
+        workspaceName,
+        context: "projects/sample",
+        status: "idle",
+        totalTokensUsed: 30,
+        legacyUsage: { totalTokensUsed: 30, hasUnreportedUsage: true },
+        lastRunUsage: {
+          runId: "completed-run",
+          calls: [{ totalTokens: 30 }],
+        },
+      });
+      expect(s(store).getMessages("completed").at(-1)?.content).toBe(
+        "Complete"
+      );
+      expect(s(store).getDraft("completed").text).toBe("Follow up");
+      expect(mockStorage.getItem(sourceKey)).toBeNull();
+      expect(mockStorage.getItem(v2Key)).not.toBeNull();
+      expect(mockStorage.getItem(stateKey)).toBeNull();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getChat("completed")).toMatchObject({
+        totalTokensUsed: 30,
+        legacyUsage: { totalTokensUsed: 30, hasUnreportedUsage: true },
+      });
+      expect(await s(reloaded).flushRunPersistence()).toBe(true);
+    }
+  );
+  test("partitions ownerless history by workspace and prevents another member from claiming it", async () => {
+    mockStorage.setItem(
+      AGENT_STATE_KEY,
+      JSON.stringify({
+        currentChatId: "recovery-chat",
+        chats: [
+          { id: "recovery-chat", workspaceName, totalTokensUsed: 10 },
+          {
+            id: "other-chat",
+            workspaceName: "workspaces/other",
+            totalTokensUsed: 20,
+          },
+        ],
+        messagesByChatId: {
+          "recovery-chat": [{ role: "user", content: "First workspace" }],
+          "other-chat": [{ role: "user", content: "Other workspace" }],
+        },
+      })
+    );
+
+    const owner = createAgentStore();
+    s(owner).setWorkspaceName(workspaceName);
+    expect(s(owner).getChat("recovery-chat")?.totalTokensUsed).toBe(10);
+    expect(s(owner).getChat("other-chat")).toBeNull();
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+
+    const otherMember = createAgentStore();
+    s(otherMember).setWorkspaceName("workspaces/other", "other@example.com");
+    expect(s(otherMember).getChat("other-chat")).toBeNull();
+    expect(await s(otherMember).flushRunPersistence()).toBe(true);
+
+    s(owner).setWorkspaceName("workspaces/other");
+    expect(s(owner).getChat("recovery-chat")).toBeNull();
+    expect(s(owner).getChat("other-chat")).toMatchObject({
+      totalTokensUsed: 20,
+      legacyUsage: { totalTokensUsed: 20, hasUnreportedUsage: true },
+    });
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+  });
+  test("leaves ownerless history for its previously recorded migration owner", async () => {
+    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    const source = JSON.stringify({
+      currentChatId: "private",
+      chats: [{ id: "private", totalTokensUsed: 25 }],
+      messagesByChatId: { private: [{ role: "user", content: "Private" }] },
+    });
+    mockStorage.setItem(
+      `${AGENT_STATE_KEY}-migration-owner`,
+      "first@example.com"
+    );
+    mockStorage.setItem(sourceKey, source);
+
+    const otherMember = createAgentStore();
+    s(otherMember).setWorkspaceName(workspaceName);
+    expect(s(otherMember).getChat("private")).toBeNull();
+    expect(mockStorage.getItem(sourceKey)).toBe(source);
+    expect(await s(otherMember).flushRunPersistence()).toBe(true);
+
+    const owner = createAgentStore();
+    s(owner).setWorkspaceName(workspaceName, "first@example.com");
+    expect(s(owner).getChat("private")?.totalTokensUsed).toBe(25);
+    expect(mockStorage.getItem(sourceKey)).toBeNull();
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+  });
+  test("preserves ownerless history without replacing an existing v3 cache", async () => {
+    const stateKey = getAgentStateKey(workspaceName);
+    const v2Key = stateKey.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    const source = JSON.stringify({
+      currentChatId: "earlier",
+      chats: [{ id: "earlier", totalTokensUsed: 25 }],
+      messagesByChatId: { earlier: [{ role: "user", content: "Earlier" }] },
+    });
+    mockStorage.setItem(sourceKey, source);
+    mockStorage.setItem(
+      stateKey,
+      JSON.stringify({
+        currentChatId: "current",
+        chats: [{ id: "current", totalTokensUsed: 40 }],
+        messagesByChatId: { current: [{ role: "user", content: "Current" }] },
+      })
+    );
+
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    expect(s(store).currentChatId).toBe("current");
+    expect(s(store).getChat("current")?.totalTokensUsed).toBe(40);
+    expect(s(store).getChat("earlier")).toBeNull();
+    expect(mockStorage.getItem(v2Key)).toContain("Earlier");
+    expect(mockStorage.getItem(sourceKey)).toBe(source);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+  });
+  test("retries a failed ownerless staging write without installing an empty v3 cache", async () => {
+    const stateKey = getAgentStateKey(workspaceName);
+    const v2Key = stateKey.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    const source = JSON.stringify({
+      currentChatId: "earlier",
+      chats: [{ id: "earlier", totalTokensUsed: 25 }],
+      messagesByChatId: { earlier: [{ role: "user", content: "Earlier" }] },
+    });
+    mockStorage.setItem(sourceKey, source);
+    const originalSetItem = mockStorage.setItem.bind(mockStorage);
+    let failNextStagingWrite = true;
+    vi.spyOn(mockStorage, "setItem").mockImplementation((key, value) => {
+      if (key === v2Key && failNextStagingWrite) {
+        failNextStagingWrite = false;
+        throw new Error("Storage full");
+      }
+      originalSetItem(key, value);
+    });
+
+    const store = createAgentStore();
+    const initialized = s(store).setWorkspaceName(workspaceName);
+    const initialScope = s(store).workspaceName;
+    const firstFlush = await s(store).flushRunPersistence();
+    const initialV3 = mockStorage.getItem(stateKey);
+    expect(mockStorage.getItem(sourceKey)).toBe(source);
+
+    const otherMember = createAgentStore();
+    s(otherMember).setWorkspaceName(workspaceName, "other@example.com");
+    expect(s(otherMember).getChat("earlier")).toBeNull();
+    expect(mockStorage.getItem(sourceKey)).toBe(source);
+    expect(await s(otherMember).flushRunPersistence()).toBe(true);
+
+    const reloaded = createAgentStore();
+    expect(s(reloaded).setWorkspaceName(workspaceName)).toBe(true);
+    expect(s(reloaded).getChat("earlier")).toMatchObject({
+      totalTokensUsed: 25,
+      legacyUsage: { totalTokensUsed: 25, hasUnreportedUsage: true },
+    });
+    expect(mockStorage.getItem(sourceKey)).toBeNull();
+    expect(await s(reloaded).flushRunPersistence()).toBe(true);
+    expect(initialized).toBe(false);
+    expect(initialScope).toBeNull();
+    expect(firstFlush).toBe(false);
+    expect(initialV3).toBeNull();
+  });
+  test("clears the previous member when ownerless staging fails during an account switch", async () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName, "first@example.com");
+    const privateChatId = s(store).currentChatId!;
+    s(store).addMessage({
+      chatId: privateChatId,
+      role: "user",
+      content: "Private first-member history",
+    });
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const sourceKey = `${AGENT_STATE_KEY}.recovery`;
+    mockStorage.setItem(
+      sourceKey,
+      JSON.stringify({
+        currentChatId: "earlier",
+        chats: [{ id: "earlier" }],
+        messagesByChatId: { earlier: [{ role: "user", content: "Earlier" }] },
+      })
+    );
+    const targetKey = getAgentStateKey(workspaceName).replace(
+      "bb-agent-state-v3",
+      AGENT_STATE_KEY
+    );
+    const originalSetItem = mockStorage.setItem.bind(mockStorage);
+    vi.spyOn(mockStorage, "setItem").mockImplementation((key, value) => {
+      if (key === targetKey) throw new Error("Storage full");
+      originalSetItem(key, value);
+    });
+
+    const initialized = s(store).setWorkspaceName(workspaceName);
+
+    expect(s(store).getChat(privateChatId)).toBeNull();
+    expect(s(store).workspaceName).toBeNull();
+    expect(s(store).userEmail).toBeNull();
+    expect(initialized).toBe(false);
+    expect(mockStorage.getItem(sourceKey)).not.toBeNull();
+
+    const firstMember = createAgentStore();
+    s(firstMember).setWorkspaceName(workspaceName, "first@example.com");
+    expect(s(firstMember).getMessages(privateChatId)[0]?.content).toBe(
+      "Private first-member history"
+    );
+    expect(await s(firstMember).flushRunPersistence()).toBe(true);
+  });
   test("requires an execution lease and durably reserves before returning allowance", async () => {
     const { store, chat, root } = await create();
     expect(await s(store).beginChatRun(chat.id, root!.id, bindings)).toBeNull();
@@ -411,6 +661,108 @@ describe("durable run recovery", () => {
           disk.chats.find((entry: AgentChat) => entry.id === chat.id).runBudget
             .providerAttemptCount
         ).toBe(1);
+      }
+    );
+  });
+  test("durably refines explicit clarification references without refreshing the run allowance", async () => {
+    const { store, chat, root } = await create();
+    const database = {
+      kind: "database" as const,
+      name: "instances/main/databases/sample",
+      project: "projects/sample",
+      label: "Sample",
+    };
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        const runId = await s(store).beginChatRun(chat.id, root!.id, {
+          ...bindings,
+          context: "projects/sample",
+          instanceName: "instances/initial",
+          maskingPage: { kind: "global-masking" },
+        });
+        expect(runId).toBeTruthy();
+        const reservation = await s(store).reserveChatRunAttempt(
+          chat.id,
+          runId!
+        );
+        if (reservation.kind !== "allowed")
+          throw new Error("Expected allowance");
+        await s(store).recordChatModelAttempt(chat.id, {
+          ...reservation,
+          runId: runId!,
+          outcome: "response",
+          usage: { purpose: "agent", toolNames: ["ask_user"], totalTokens: 7 },
+        });
+        const ask = s(store).addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "clarification",
+              name: "ask_user",
+              arguments: JSON.stringify({
+                kind: "input",
+                prompt: "Which database?",
+              }),
+            },
+          ],
+          metadata: { runId: runId! },
+        });
+        await s(store).saveChatRunCheckpoint(chat.id, {
+          ...s(store).getChat(chat.id)!.runCheckpoint!,
+          startupComplete: true,
+          throughMessageId: ask!.id,
+          suspension: "awaiting-user",
+          maskingSections: ["overview"],
+        });
+        s(store).awaitUser(chat.id, {
+          toolCallId: "clarification",
+          kind: "input",
+          prompt: "Which database?",
+        });
+        s(store).answerPendingAsk(
+          chat.id,
+          { kind: "input", answer: "Use @Sample" },
+          { runId: runId!, resourceReferences: [database] }
+        );
+        const before = s(store).getChat(chat.id)!;
+
+        expect(await s(store).continueChatRun(chat.id, runId!)).toBe(true);
+
+        const current = s(store).getChat(chat.id)!;
+        expect(current).toMatchObject({
+          runId,
+          status: "running",
+          runMode: "read-only",
+          totalTokensUsed: 7,
+          runCheckpoint: {
+            rootUserMessageId: root!.id,
+            throughMessageId: ask!.id,
+            suspension: "interrupted",
+            referencePreflightPending: true,
+            maskingSections: ["overview"],
+            bindings: {
+              page: bindings.page,
+              context: "projects/sample",
+              references: [database],
+              runMode: "read-only",
+              maskingPage: { kind: "global-masking" },
+            },
+          },
+        });
+        expect(current.runCheckpoint?.bindings.instanceName).toBeUndefined();
+        expect(current.runBudget).toEqual(before.runBudget);
+        expect(current.modelAttempts).toEqual(before.modelAttempts);
+        const persisted = JSON.parse(
+          mockStorage.getItem(getAgentStateKey(workspaceName))!
+        ).chats.find((entry: AgentChat) => entry.id === chat.id);
+        expect(persisted.runCheckpoint.bindings).toEqual(
+          current.runCheckpoint!.bindings
+        );
+        expect(persisted.runBudget).toEqual(before.runBudget);
+        expect(persisted.runCheckpoint.referencePreflightPending).toBe(true);
       }
     );
   });

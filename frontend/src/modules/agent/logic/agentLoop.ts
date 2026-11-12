@@ -811,10 +811,11 @@ export async function runAgentLoop(
       return { kind: "aborted", totalTokensUsed };
     }
     if (error instanceof ProviderAttemptLimitError) {
-      const text =
-        "I stopped before making another AI request because this run reached its provider attempt limit. Earlier actions may already have completed; check their status before asking me to retry.";
-      callbacks?.onText?.(text);
-      return { kind: "completed", text, success: false, totalTokensUsed };
+      return {
+        kind: "stopped",
+        reason: "provider-attempt-limit",
+        totalTokensUsed,
+      };
     }
     return {
       kind: "error",

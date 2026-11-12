@@ -288,6 +288,7 @@
       "unavailable": "Unable to load items needing your attention in this project."
     },
     "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
+    "provider-attempt-limit": "I stopped before making another AI request because this run reached its provider attempt limit. Earlier actions may already have completed; check their status before asking me to retry.",
     "query-result": {
       "returned-rows": "Rows returned: {{count}}",
       "showing-columns": "Showing {{shown}} of {{total}} columns",
@@ -350,6 +351,7 @@
       "action-failed": "Couldn't update this run. Try again.",
       "apply": "Apply",
       "completed-over-limit": "Run completed above its token limit.",
+      "continuation-unavailable": "This run cannot be resumed safely. Your messages and draft are preserved. Start a new chat to continue.",
       "end-run": "End run",
       "increase": "Increase limit",
       "increase-and-resume": "Increase and resume",

@@ -361,11 +361,12 @@ describe("runAgentLoop", () => {
   test.each(["attempt-limit", "storage-unavailable", "superseded"] as const)(
     "diagnoses %s reservation independently of token exhaustion",
     async (kind) => {
+      const onText = vi.fn();
       const outcome = await runAgentLoop(
         [],
         [],
         vi.fn(),
-        undefined,
+        { onText },
         undefined,
         {
           runId: "run",
@@ -374,19 +375,70 @@ describe("runAgentLoop", () => {
       );
       expect(outcome.kind).toBe(
         kind === "attempt-limit"
-          ? "completed"
+          ? "stopped"
           : kind === "superseded"
             ? "aborted"
             : "error"
       );
       if (kind === "attempt-limit")
-        expect(outcome).toMatchObject({
-          success: false,
-          text: expect.stringContaining("provider attempt limit"),
+        expect(outcome).toEqual({
+          kind: "stopped",
+          reason: "provider-attempt-limit",
+          totalTokensUsed: 0,
         });
+      expect(onText).not.toHaveBeenCalled();
       expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
     }
   );
+
+  test("retains settled tools and usage when the next provider attempt is refused", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        { id: "one", name: "lookup", arguments: "{}" },
+        { id: "two", name: "lookup", arguments: "{}" },
+      ],
+      usage: { totalTokens: 120 },
+    } as never);
+    const settled: AgentModelAttempt[] = [];
+    const results: string[] = [];
+    const onText = vi.fn();
+    let reservations = 0;
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [],
+      async () => ({ kind: "tool_result", result: "ok" }),
+      {
+        onText,
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      },
+      undefined,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () =>
+          ++reservations === 1
+            ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+            : { kind: "attempt-limit" },
+        onAttemptSettled: async (attempt) => {
+          settled.push(attempt);
+          return true;
+        },
+      }
+    );
+    expect(outcome).toEqual({
+      kind: "stopped",
+      reason: "provider-attempt-limit",
+      totalTokensUsed: 120,
+    });
+    expect(results).toEqual(["one", "two"]);
+    expect(settled).toMatchObject([
+      { outcome: "response", usage: { totalTokens: 120 } },
+    ]);
+    expect(onText).not.toHaveBeenCalled();
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+  });
 
   test("traces sanitized terminal counts without including settlement latency or payloads", async () => {
     let now = 100;
@@ -1168,16 +1220,31 @@ describe("runAgentLoop", () => {
             metadata: "",
           },
         ],
+        usage: { totalTokens: 5 },
       } as never;
     });
 
+    const results: string[] = [];
+    const onText = vi.fn();
     const outcome = await runAgentLoop(
       [{ role: "user", content: "Inspect" }],
       [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
-      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" }))
+      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" })),
+      {
+        onText,
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      }
     );
 
-    expect(outcome).toMatchObject({ kind: "completed", success: false });
+    expect(outcome).toEqual({
+      kind: "stopped",
+      reason: "provider-attempt-limit",
+      totalTokensUsed: 60,
+    });
+    expect(results).toHaveLength(12);
+    expect(onText).not.toHaveBeenCalled();
     expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
   });
 
@@ -1206,7 +1273,10 @@ describe("runAgentLoop", () => {
       );
       await vi.runAllTimersAsync();
 
-      expect(await run).toMatchObject({ kind: "completed", success: false });
+      expect(await run).toMatchObject({
+        kind: "stopped",
+        reason: "provider-attempt-limit",
+      });
       expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
       expect(executeTool).toHaveBeenCalledTimes(6);
     } finally {
