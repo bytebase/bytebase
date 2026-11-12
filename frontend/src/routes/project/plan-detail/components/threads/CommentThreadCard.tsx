@@ -19,11 +19,10 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { LIGHT_BADGE_BACKGROUND_ALPHA } from "@/components/EnvironmentLabel";
+import { EnvironmentBadge } from "@/components/EnvironmentLabel";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -39,8 +38,6 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
-import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
-import { hexToRgb } from "@/utils/css";
 import "./CommentThreadCard.css";
 import {
   productionEnvironmentsOf,
@@ -446,21 +443,19 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
     <>
       {urgent && <ReviewPriorityBadge priority={review.priority} />}
       {productionEnvironments.map((environment) => (
-        // The environment's own badge: its name on a tint of its color, the
-        // way an environment badge is drawn, with the bar's gray text.
-        <Badge
-          className="max-w-40 shrink-0 text-control"
+        // The environment's own badge, unchanged; the bar only caps its width.
+        <span
+          className="inline-flex max-w-40 min-w-0 shrink-0"
           data-testid="thread-production"
           key={environment.name}
-          style={{
-            backgroundColor: `rgba(${hexToRgb(
-              environment.color || DEFAULT_ENVIRONMENT_COLOR
-            ).join(", ")}, ${LIGHT_BADGE_BACKGROUND_ALPHA})`,
-          }}
           title={environment.title}
         >
-          <span className="truncate">{environment.title}</span>
-        </Badge>
+          <EnvironmentBadge
+            className="max-w-full"
+            environment={environment}
+            hasEnvTierFeature={hasEnvTierFeature}
+          />
+        </span>
       ))}
     </>
   );
