@@ -982,7 +982,7 @@ func TestAdministerInstanceReportsWhatTheCreateLeft(t *testing.T) {
 
 func TestAdministerInstanceClassifiesEveryRequestField(t *testing.T) {
 	refused := map[string]bool{"validate_only": true}
-	for _, field := range []string{"name", "state", "engine_version", "external_link", "roles", "sync_interval", "sync_databases", "last_sync_time", "labels"} {
+	for _, field := range []string{"name", "state", "engine_version", "external_link", "roles", "sync_interval", "sync_databases", "last_sync_time", "labels", "vendor"} {
 		refused["instance."+field] = true
 	}
 	for _, field := range []string{

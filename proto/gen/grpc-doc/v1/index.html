@@ -2009,7 +2009,23 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DiscoverNeonBranchesRequest"><span class="badge">M</span>DiscoverNeonBranchesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DiscoverNeonBranchesResponse"><span class="badge">M</span>DiscoverNeonBranchesResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetInstanceRequest"><span class="badge">M</span>GetInstanceRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ImportInstancesRequest"><span class="badge">M</span>ImportInstancesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ImportInstancesResponse"><span class="badge">M</span>ImportInstancesResponse</a>
                 </li>
               
                 <li>
@@ -2018,6 +2034,18 @@
               
                 <li>
                   <a href="#bytebase.v1.Instance.LabelsEntry"><span class="badge">M</span>Instance.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceImport"><span class="badge">M</span>InstanceImport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceImportFailure"><span class="badge">M</span>InstanceImportFailure</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceImportResult"><span class="badge">M</span>InstanceImportResult</a>
                 </li>
               
                 <li>
@@ -2042,6 +2070,26 @@
               
                 <li>
                   <a href="#bytebase.v1.ListInstancesResponse"><span class="badge">M</span>ListInstancesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NeonBranch"><span class="badge">M</span>NeonBranch</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NeonBranchSource"><span class="badge">M</span>NeonBranchSource</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NeonCredential"><span class="badge">M</span>NeonCredential</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NeonDatabase"><span class="badge">M</span>NeonDatabase</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.NeonProjectDiscoveryFailure"><span class="badge">M</span>NeonProjectDiscoveryFailure</a>
                 </li>
               
                 <li>
@@ -2111,6 +2159,14 @@
               
                 <li>
                   <a href="#bytebase.v1.DataSourceType"><span class="badge">E</span>DataSourceType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.InstanceImportFailure.CreationOutcome"><span class="badge">E</span>InstanceImportFailure.CreationOutcome</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Vendor"><span class="badge">E</span>Vendor</a>
                 </li>
               
               
@@ -22677,6 +22733,99 @@ The instance must already be soft-deleted for this to work. </p></td>
 
         
       
+        <h3 id="bytebase.v1.DiscoverNeonBranchesRequest">DiscoverNeonBranchesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, branches are discovered for the
+workspace collection. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>api_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Used only during this request and never persisted. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Neon project filter. Required for project-scoped Neon keys. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>Defaults to 50. Values above 100 are capped; negative values are invalid. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Opaque continuation token containing no credentials. The destination and
+project filter must match the original request; page size may change. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DiscoverNeonBranchesResponse">DiscoverNeonBranchesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>branches</td>
+                  <td><a href="#bytebase.v1.NeonBranch">NeonBranch</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Only an empty token indicates completion; a page may contain zero branches. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>failures</td>
+                  <td><a href="#bytebase.v1.NeonProjectDiscoveryFailure">NeonProjectDiscoveryFailure</a></td>
+                  <td>repeated</td>
+                  <td><p>Projects that could not be enumerated must not be interpreted as empty. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetInstanceRequest">GetInstanceRequest</h3>
         <p></p>
 
@@ -22693,6 +22842,73 @@ The instance must already be soft-deleted for this to work. </p></td>
                   <td></td>
                   <td><p>The name of the instance to retrieve.
 Format: instances/{instance} or projects/{project}/instances/{instance} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ImportInstancesRequest">ImportInstancesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The parent, which owns this collection of instances.
+Format: projects/{project}. If omitted, every entry is created in the
+workspace collection; otherwise, every entry is created in this project
+collection. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>neon_credential</td>
+                  <td><a href="#bytebase.v1.NeonCredential">NeonCredential</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>imports</td>
+                  <td><a href="#bytebase.v1.InstanceImport">InstanceImport</a></td>
+                  <td>repeated</td>
+                  <td><p>Between 1 and 20 entries. Every entry&#39;s source must belong to the
+credential. Duplicate target IDs or sources are rejected before any
+creation. Successful entries are not rolled back. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ImportInstancesResponse">ImportInstancesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>results</td>
+                  <td><a href="#bytebase.v1.InstanceImportResult">InstanceImportResult</a></td>
+                  <td>repeated</td>
+                  <td><p>Exactly one result per entry, in request order. </p></td>
                 </tr>
               
             </tbody>
@@ -22814,6 +23030,13 @@ Not set means sync all schemas &amp; databases. </p></td>
 For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
                 </tr>
               
+                <tr>
+                  <td>vendor</td>
+                  <td><a href="#bytebase.v1.Vendor">Vendor</a></td>
+                  <td></td>
+                  <td><p>Database service variant. Unspecified retains generic connection behavior. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22841,6 +23064,131 @@ For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#
                 <tr>
                   <td>value</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.InstanceImport">InstanceImport</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>instance_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Bytebase instance resource ID. Uniqueness does not provide idempotency. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instance</td>
+                  <td><a href="#bytebase.v1.Instance">Instance</a></td>
+                  <td></td>
+                  <td><p>The instance to register, with the same meaning as in CreateInstance.
+The source determines engine, vendor, and data_sources, which must be
+unset. The workspace license determines activation, so a supplied value
+is ignored. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>username</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Existing database user for the instance&#39;s ADMIN data source. The server
+derives the host and port from the source. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>connection_database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Initial connection target, independent of instance.sync_databases. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>Omit to let the vendor supply the password. A supplied empty value is invalid. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>neon_branch</td>
+                  <td><a href="#bytebase.v1.NeonBranchSource">NeonBranchSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.InstanceImportFailure">InstanceImportFailure</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creation_outcome</td>
+                  <td><a href="#bytebase.v1.InstanceImportFailure.CreationOutcome">InstanceImportFailure.CreationOutcome</a></td>
+                  <td></td>
+                  <td><p>Always populated. Unknown outcomes must be reconciled before retrying. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.InstanceImportResult">InstanceImportResult</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>imported</td>
+                  <td><a href="#bytebase.v1.Instance">Instance</a></td>
+                  <td></td>
+                  <td><p>Confirms registration, not synchronization. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>failure</td>
+                  <td><a href="#bytebase.v1.InstanceImportFailure">InstanceImportFailure</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -23173,6 +23521,190 @@ For example:
                   <td></td>
                   <td><p>A token, which can be sent as `page_token` to retrieve the next page.
 If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NeonBranch">NeonBranch</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>project_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>databases</td>
+                  <td><a href="#bytebase.v1.NeonDatabase">NeonDatabase</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>roles</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>discovery_error</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p>Absent when inspection succeeded and a direct read-write endpoint exists.
+Successful discovery does not establish database access or privileges. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NeonBranchSource">NeonBranchSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>branch_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NeonCredential">NeonCredential</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>api_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NeonDatabase">NeonDatabase</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.NeonProjectDiscoveryFailure">NeonProjectDiscoveryFailure</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>project_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#google.rpc.Status">google.rpc.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -23746,6 +24278,58 @@ holds the token value.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.InstanceImportFailure.CreationOutcome">InstanceImportFailure.CreationOutcome</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CREATION_OUTCOME_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NOT_CREATED</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UNKNOWN</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.Vendor">Vendor</h3>
+        <p>Database service variant, independent of engine and registration method.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VENDOR_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NEON</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -23779,6 +24363,24 @@ Permissions required: bb.instances.list</p></td>
                 <td><a href="#bytebase.v1.CreateInstanceRequest">CreateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
                 <td><p>Creates a new database instance.
+Permissions required: bb.instances.create</p></td>
+              </tr>
+            
+              <tr>
+                <td>DiscoverNeonBranches</td>
+                <td><a href="#bytebase.v1.DiscoverNeonBranchesRequest">DiscoverNeonBranchesRequest</a></td>
+                <td><a href="#bytebase.v1.DiscoverNeonBranchesResponse">DiscoverNeonBranchesResponse</a></td>
+                <td><p>Discovers Neon branches without persisting the management API key.
+Permissions required: bb.instances.create</p></td>
+              </tr>
+            
+              <tr>
+                <td>ImportInstances</td>
+                <td><a href="#bytebase.v1.ImportInstancesRequest">ImportInstancesRequest</a></td>
+                <td><a href="#bytebase.v1.ImportInstancesResponse">ImportInstancesResponse</a></td>
+                <td><p>Registers instances resolved from a vendor&#39;s control plane. Synchronous;
+entries succeed or fail independently and successes are not rolled back.
+Registration does not wait for instance synchronization.
 Permissions required: bb.instances.create</p></td>
               </tr>
             
@@ -23940,6 +24542,40 @@ Permissions required: bb.instances.update</p></td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/instances</td>
                 <td>instance</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DiscoverNeonBranches</td>
+                <td>POST</td>
+                <td>/v1/instances:discoverNeonBranches</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>DiscoverNeonBranches</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances:discoverNeonBranches</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ImportInstances</td>
+                <td>POST</td>
+                <td>/v1/instances:import</td>
+                <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>ImportInstances</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/instances:import</td>
+                <td>*</td>
               </tr>
               
             

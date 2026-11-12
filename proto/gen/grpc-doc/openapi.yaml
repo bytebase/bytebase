@@ -5405,6 +5405,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateInstancesResponse'
+  /v1/instances:discoverNeonBranches:
+    post:
+      tags:
+        - InstanceService
+      summary: DiscoverNeonBranches
+      description: |-
+        Discovers Neon branches without persisting the management API key.
+         Permissions required: bb.instances.create
+      operationId: InstanceService_DiscoverNeonBranches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DiscoverNeonBranchesRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.DiscoverNeonBranchesResponse'
+  /v1/instances:import:
+    post:
+      tags:
+        - InstanceService
+      summary: ImportInstances
+      description: |-
+        Registers instances resolved from a vendor's control plane. Synchronous;
+         entries succeed or fail independently and successes are not rolled back.
+         Registration does not wait for instance synchronization.
+         Permissions required: bb.instances.create
+      operationId: InstanceService_ImportInstances
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ImportInstancesRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ImportInstancesResponse'
   /v1/projects:
     get:
       tags:
@@ -10847,6 +10893,112 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateInstancesResponse'
+  /v1/projects/{project}/instances:discoverNeonBranches:
+    post:
+      tags:
+        - InstanceService
+      summary: DiscoverNeonBranches
+      description: |-
+        Discovers Neon branches without persisting the management API key.
+         Permissions required: bb.instances.create
+      operationId: InstanceService_DiscoverNeonBranches2
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apiKey:
+                  type: string
+                  title: api_key
+                  description: Used only during this request and never persisted.
+                projectId:
+                  type: string
+                  title: project_id
+                  description: (OPTIONAL) Neon project filter. Required for project-scoped Neon keys.
+                pageSize:
+                  type: integer
+                  title: page_size
+                  format: int32
+                  description: (OPTIONAL) Defaults to 50. Values above 100 are capped; negative values are invalid.
+                pageToken:
+                  type: string
+                  title: page_token
+                  description: |-
+                    (OPTIONAL) Opaque continuation token containing no credentials. The destination and
+                     project filter must match the original request; page size may change.
+              title: DiscoverNeonBranchesRequest
+              required:
+                - apiKey
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.DiscoverNeonBranchesResponse'
+  /v1/projects/{project}/instances:import:
+    post:
+      tags:
+        - InstanceService
+      summary: ImportInstances
+      description: |-
+        Registers instances resolved from a vendor's control plane. Synchronous;
+         entries succeed or fail independently and successes are not rolled back.
+         Registration does not wait for instance synchronization.
+         Permissions required: bb.instances.create
+      operationId: InstanceService_ImportInstances2
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              anyOf:
+                - type: object
+                  properties:
+                    neonCredential:
+                      allOf:
+                        - $ref: '#/components/schemas/bytebase.v1.NeonCredential'
+                      title: neon_credential
+                  title: neon_credential
+              unevaluatedProperties: false
+              properties:
+                imports:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/bytebase.v1.InstanceImport'
+                  title: imports
+                  description: |-
+                    Between 1 and 20 entries. Every entry's source must belong to the
+                     credential. Duplicate target IDs or sources are rejected before any
+                     creation. Successful entries are not rolled back.
+              title: ImportInstancesRequest
+              required:
+                - imports
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ImportInstancesResponse'
   /v1/projects/{project}/instances:prepareSampleProjectInstance:
     post:
       tags:
@@ -20658,6 +20810,61 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.DiscoverNeonBranchesRequest:
+      type: object
+      properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, branches are discovered for the
+             workspace collection.
+        apiKey:
+          type: string
+          title: api_key
+          description: Used only during this request and never persisted.
+        projectId:
+          type: string
+          title: project_id
+          description: (OPTIONAL) Neon project filter. Required for project-scoped Neon keys.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: (OPTIONAL) Defaults to 50. Values above 100 are capped; negative values are invalid.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            (OPTIONAL) Opaque continuation token containing no credentials. The destination and
+             project filter must match the original request; page size may change.
+      title: DiscoverNeonBranchesRequest
+      required:
+        - apiKey
+      additionalProperties: false
+    bytebase.v1.DiscoverNeonBranchesResponse:
+      type: object
+      properties:
+        branches:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.NeonBranch'
+          title: branches
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: Only an empty token indicates completion; a page may contain zero branches.
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.NeonProjectDiscoveryFailure'
+          title: failures
+          description: Projects that could not be enumerated must not be interpreted as empty.
+      title: DiscoverNeonBranchesResponse
+      additionalProperties: false
     bytebase.v1.EmailSetting:
       type: object
       anyOf:
@@ -22132,6 +22339,51 @@ components:
         - OAUTH2
         - OIDC
         - LDAP
+    bytebase.v1.ImportInstancesRequest:
+      type: object
+      anyOf:
+        - type: object
+          properties:
+            neonCredential:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.NeonCredential'
+              title: neon_credential
+          title: neon_credential
+      unevaluatedProperties: false
+      properties:
+        parent:
+          type:
+            - string
+            - "null"
+          title: parent
+          description: |-
+            The parent, which owns this collection of instances.
+             Format: projects/{project}. If omitted, every entry is created in the
+             workspace collection; otherwise, every entry is created in this project
+             collection.
+        imports:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.InstanceImport'
+          title: imports
+          description: |-
+            Between 1 and 20 entries. Every entry's source must belong to the
+             credential. Duplicate target IDs or sources are rejected before any
+             creation. Successful entries are not rolled back.
+      title: ImportInstancesRequest
+      required:
+        - imports
+    bytebase.v1.ImportInstancesResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.InstanceImportResult'
+          title: results
+          description: Exactly one result per entry, in request order.
+      title: ImportInstancesResponse
+      additionalProperties: false
     bytebase.v1.IndexMetadata:
       type: object
       properties:
@@ -22312,8 +22564,114 @@ components:
           description: |-
             Labels are key-value pairs that can be attached to the instance.
              For example, { "org_group": "infrastructure", "environment": "production" }
+        vendor:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.Vendor'
+          title: vendor
+          description: (OPTIONAL) Database service variant. Unspecified retains generic connection behavior.
       title: Instance
       additionalProperties: false
+    bytebase.v1.InstanceImport:
+      type: object
+      anyOf:
+        - type: object
+          properties:
+            neonBranch:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.NeonBranchSource'
+              title: neon_branch
+          title: neon_branch
+      unevaluatedProperties: false
+      properties:
+        instanceId:
+          type: string
+          title: instance_id
+          description: Bytebase instance resource ID. Uniqueness does not provide idempotency.
+        instance:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.Instance'
+          title: instance
+          description: |-
+            The instance to register, with the same meaning as in CreateInstance.
+             The source determines engine, vendor, and data_sources, which must be
+             unset. The workspace license determines activation, so a supplied value
+             is ignored.
+        username:
+          type: string
+          title: username
+          description: |-
+            Existing database user for the instance's ADMIN data source. The server
+             derives the host and port from the source.
+        connectionDatabase:
+          type: string
+          title: connection_database
+          description: Initial connection target, independent of instance.sync_databases.
+        password:
+          type:
+            - string
+            - "null"
+          title: password
+          description: (OPTIONAL) Omit to let the vendor supply the password. A supplied empty value is invalid.
+      title: InstanceImport
+      required:
+        - instanceId
+        - instance
+        - username
+        - connectionDatabase
+    bytebase.v1.InstanceImportFailure:
+      type: object
+      properties:
+        status:
+          allOf:
+            - $ref: '#/components/schemas/google.rpc.Status'
+          title: status
+        creationOutcome:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.InstanceImportFailure.CreationOutcome'
+          title: creation_outcome
+          description: Always populated. Unknown outcomes must be reconciled before retrying.
+      title: InstanceImportFailure
+      additionalProperties: false
+    bytebase.v1.InstanceImportFailure.CreationOutcome:
+      type: string
+      title: CreationOutcome
+      enum:
+        - CREATION_OUTCOME_UNSPECIFIED
+        - NOT_CREATED
+        - UNKNOWN
+    bytebase.v1.InstanceImportResult:
+      type: object
+      anyOf:
+        - type: object
+          properties:
+            failure:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.InstanceImportFailure'
+              title: failure
+          title: failure
+        - type: object
+          properties:
+            imported:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.Instance'
+              title: imported
+              description: Confirms registration, not synchronization.
+          title: imported
+      unevaluatedProperties: false
+      not:
+        allOf:
+          - anyOf:
+              - required:
+                  - failure
+              - required:
+                  - imported
+          - not:
+              oneOf:
+                - required:
+                    - failure
+                - required:
+                    - imported
+      title: InstanceImportResult
     bytebase.v1.InstanceResource:
       type: object
       properties:
@@ -25014,6 +25372,87 @@ components:
           format: int32
           description: How many moved.
       title: MoveMySavedQueriesResponse
+      additionalProperties: false
+    bytebase.v1.NeonBranch:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        projectTitle:
+          type: string
+          title: project_title
+        branchId:
+          type: string
+          title: branch_id
+        branchTitle:
+          type: string
+          title: branch_title
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.NeonDatabase'
+          title: databases
+        roles:
+          type: array
+          items:
+            type: string
+          title: roles
+        discoveryError:
+          allOf:
+            - $ref: '#/components/schemas/google.rpc.Status'
+          title: discovery_error
+          description: |-
+            Absent when inspection succeeded and a direct read-write endpoint exists.
+             Successful discovery does not establish database access or privileges.
+      title: NeonBranch
+      additionalProperties: false
+    bytebase.v1.NeonBranchSource:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        branchId:
+          type: string
+          title: branch_id
+      title: NeonBranchSource
+      required:
+        - projectId
+        - branchId
+      additionalProperties: false
+    bytebase.v1.NeonCredential:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          title: api_key
+      title: NeonCredential
+      required:
+        - apiKey
+      additionalProperties: false
+    bytebase.v1.NeonDatabase:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+        owner:
+          type: string
+          title: owner
+      title: NeonDatabase
+      additionalProperties: false
+    bytebase.v1.NeonProjectDiscoveryFailure:
+      type: object
+      properties:
+        projectId:
+          type: string
+          title: project_id
+        status:
+          allOf:
+            - $ref: '#/components/schemas/google.rpc.Status'
+          title: status
+      title: NeonProjectDiscoveryFailure
       additionalProperties: false
     bytebase.v1.OAuth2AuthStyle:
       type: string
@@ -31990,6 +32429,13 @@ components:
           title: display_name
       title: VCSUser
       additionalProperties: false
+    bytebase.v1.Vendor:
+      type: string
+      title: Vendor
+      enum:
+        - VENDOR_UNSPECIFIED
+        - NEON
+      description: Database service variant, independent of engine and registration method.
     bytebase.v1.VerifyCheckoutSessionRequest:
       type: object
       properties:
@@ -33142,10 +33588,15 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        `NullValue` is a singleton enumeration to represent the null value for the
-         `Value` type union.
+        Represents a JSON `null`.
 
-         The JSON representation for `NullValue` is JSON `null`.
+         `NullValue` is a sentinel, using an enum with only one value to represent
+         the null value for the `Value` type union.
+
+         A field of type `NullValue` with any value other than `0` is considered
+         invalid. Most ProtoJSON serializers will emit a `Value` with a `null_value`
+         set as a JSON `null` regardless of the integer value, and so will round trip
+         to a `0` value.
     google.protobuf.Struct:
       type: object
       additionalProperties:
