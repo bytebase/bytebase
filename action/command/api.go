@@ -69,6 +69,7 @@ type client struct {
 	releaseClient  v1connect.ReleaseServiceClient
 	planClient     v1connect.PlanServiceClient
 	rolloutClient  v1connect.RolloutServiceClient
+	sheetClient    v1connect.SheetServiceClient
 	actuatorClient v1connect.ActuatorServiceClient
 
 	// Client options
@@ -158,6 +159,7 @@ func newClient(url string, cred credential, opts clientOptions) (*client, error)
 		releaseClient:        v1connect.NewReleaseServiceClient(httpClient, url, interceptors),
 		planClient:           v1connect.NewPlanServiceClient(httpClient, url, interceptors),
 		rolloutClient:        v1connect.NewRolloutServiceClient(httpClient, url, interceptors),
+		sheetClient:          v1connect.NewSheetServiceClient(httpClient, url, interceptors),
 		actuatorClient:       v1connect.NewActuatorServiceClient(httpClient, url, interceptors),
 	}, nil
 }
@@ -265,6 +267,28 @@ func (c *client) createRelease(ctx context.Context, project string, r *v1pb.Rele
 	return resp.Msg, nil
 }
 
+func (c *client) getRelease(ctx context.Context, releaseName string) (*v1pb.Release, error) {
+	resp, err := c.releaseClient.GetRelease(ctx, connect.NewRequest(&v1pb.GetReleaseRequest{
+		Name: releaseName,
+	}))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get release")
+	}
+	return resp.Msg, nil
+}
+
+// getSheetContent reads a sheet's whole content.
+func (c *client) getSheetContent(ctx context.Context, sheetName string) ([]byte, error) {
+	resp, err := c.sheetClient.GetSheet(ctx, connect.NewRequest(&v1pb.GetSheetRequest{
+		Name: sheetName,
+		Raw:  true,
+	}))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sheet")
+	}
+	return resp.Msg.GetContent(), nil
+}
+
 func (c *client) getPlan(ctx context.Context, planName string) (*v1pb.Plan, error) {
 	resp, err := c.planClient.GetPlan(ctx,
 		connect.NewRequest(&v1pb.GetPlanRequest{
@@ -325,11 +349,17 @@ func (c *client) listTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) 
 
 // listAllTaskRuns reads every task run of the rollout, following page tokens.
 func (c *client) listAllTaskRuns(ctx context.Context, rolloutName string) ([]*v1pb.TaskRun, error) {
+	return c.listTaskRunsUnder(ctx, rolloutName+"/stages/-/tasks/-")
+}
+
+// listTaskRunsUnder reads the task runs of a parent that may hold "-" for the
+// stage or the task.
+func (c *client) listTaskRunsUnder(ctx context.Context, parent string) ([]*v1pb.TaskRun, error) {
 	var taskRuns []*v1pb.TaskRun
 	var pageToken string
 	for {
 		resp, err := c.listTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
-			Parent:    rolloutName + "/stages/-/tasks/-",
+			Parent:    parent,
 			PageSize:  1000,
 			PageToken: pageToken,
 		})
@@ -342,6 +372,16 @@ func (c *client) listAllTaskRuns(ctx context.Context, rolloutName string) ([]*v1
 		}
 		pageToken = resp.NextPageToken
 	}
+}
+
+func (c *client) getTaskRunLog(ctx context.Context, taskRunName string) (*v1pb.TaskRunLog, error) {
+	resp, err := c.rolloutClient.GetTaskRunLog(ctx, connect.NewRequest(&v1pb.GetTaskRunLogRequest{
+		Parent: taskRunName,
+	}))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get task run log")
+	}
+	return resp.Msg, nil
 }
 
 func (c *client) batchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {

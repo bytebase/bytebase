@@ -15,6 +15,7 @@ import (
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/action/command"
+	"github.com/bytebase/bytebase/action/result"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -727,7 +728,7 @@ func TestActionRolloutCommand_BasicRollout(t *testing.T) {
 	a.Equal("00001", revision.Version)
 
 	// 7. Verify output file contains server resource names
-	var output map[string]string
+	var output map[string]any
 	data, err := os.ReadFile(outputFile)
 	a.NoError(err)
 	err = json.Unmarshal(data, &output)
@@ -925,7 +926,7 @@ func TestActionRolloutCommand_MultipleFiles(t *testing.T) {
 	a.Equal("00003", lastRevision.Version)
 
 	// 7. Verify output file contains server resource names
-	var output map[string]string
+	var output map[string]any
 	data, err := os.ReadFile(outputFile)
 	a.NoError(err)
 	err = json.Unmarshal(data, &output)
@@ -1219,7 +1220,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	a.NoError(err, "First declarative rollout should succeed")
 
 	// Read first output
-	var output1 map[string]string
+	var output1 map[string]any
 	data1, err := os.ReadFile(outputFile1)
 	a.NoError(err)
 	err = json.Unmarshal(data1, &output1)
@@ -1242,14 +1243,15 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	a.NoError(err, "Second declarative rollout should succeed")
 
 	// Read second output
-	var output2 map[string]string
+	var output2 map[string]any
 	data2, err := os.ReadFile(outputFile2)
 	a.NoError(err)
 	err = json.Unmarshal(data2, &output2)
 	a.NoError(err)
 
 	// Rollout should be created for second execution
-	rolloutName := output2["rollout"]
+	rolloutName, ok := output2["rollout"].(string)
+	a.True(ok, "the output should name the rollout")
 	a.NotEmpty(rolloutName, "Rollout should be created for second execution")
 
 	// Execute third declarative rollout with same schema (should also succeed with task as no-op)
@@ -1269,7 +1271,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	a.NoError(err, "Third declarative rollout should succeed")
 
 	// Read third output
-	var output3 map[string]string
+	var output3 map[string]any
 	data3, err := os.ReadFile(outputFile3)
 	a.NoError(err)
 	err = json.Unmarshal(data3, &output3)
@@ -1323,7 +1325,8 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	a.Len(rollout2.Msg.Stages, 1, "Second rollout should have 1 stage")
 
 	// Verify third rollout also has 1 task
-	rolloutName3 := output3["rollout"]
+	rolloutName3, ok := output3["rollout"].(string)
+	a.True(ok, "the output should name the rollout")
 	a.NotEmpty(rolloutName3, "Rollout should be created for third execution")
 
 	rollout3, err := ctl.rolloutServiceClient.GetRollout(ctx, connect.NewRequest(&v1pb.GetRolloutRequest{
@@ -1561,6 +1564,140 @@ func TestActionRolloutDeclarativeMode_DeclarativeMultipleFilesMerged(t *testing.
 
 	// Verify command output
 	a.NotContains(result.Stderr, "error", "Merged declarative rollout should complete without errors")
+}
+
+// readRolloutResult returns the one detailed stage of the result in the
+// action's output file.
+func readRolloutResult(t *testing.T, outputFile string) (*result.Result, []*result.Task) {
+	t.Helper()
+	a := require.New(t)
+	data, err := os.ReadFile(outputFile)
+	a.NoError(err)
+	var output struct {
+		Rollout string         `json:"rollout"`
+		Result  *result.Result `json:"result"`
+	}
+	a.NoError(json.Unmarshal(data, &output))
+	a.NotNil(output.Result, "the output file should carry the rollout result")
+	a.Equal(output.Rollout, output.Result.URL[len(output.Result.URL)-len(output.Rollout):])
+	var tasks []*result.Task
+	for _, stage := range output.Result.Stages {
+		tasks = append(tasks, stage.Tasks...)
+	}
+	return output.Result, tasks
+}
+
+func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startProject(ctx, t)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
+
+	testDataDir := t.TempDir()
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00001_create_account.sql"),
+		[]byte("CREATE TABLE account (id INT PRIMARY KEY, tier TEXT);"), 0644))
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
+		[]byte("INSERT INTO account VALUES (1, NULL), (2, NULL), (3, 'pro');\nUPDATE account SET tier = 'basic' WHERE tier IS NULL;"), 0644))
+	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
+
+	actionResult, err := executeActionCommand(ctx,
+		"rollout",
+		"--url", ctl.rootURL,
+		"--service-account", "demo@example.com",
+		"--service-account-secret", "1024bytebase",
+		"--project", ctl.project.Name,
+		"--targets", database.Name,
+		"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+		"--target-stage", "environments/prod",
+		"--output", outputFile,
+	)
+	a.NoError(err)
+
+	rolloutResult, tasks := readRolloutResult(t, outputFile)
+	a.Equal(result.Done, rolloutResult.Outcome)
+	a.Len(tasks, 1)
+	task := tasks[0]
+	a.Equal(database.Name, task.Target)
+	a.Equal("DONE", task.Status)
+	a.Equal(1, task.Attempt)
+	a.False(task.Unchanged)
+	a.NotNil(task.AffectedRows)
+	a.Equal(int64(5), *task.AffectedRows)
+
+	a.Len(task.Files, 2)
+	a.Equal("00001", task.Files[0].Version)
+	a.Equal(int64(0), *task.Files[0].AffectedRows)
+	seed := task.Files[1]
+	a.Equal("DONE", seed.Status)
+	a.False(seed.RolledBack)
+	a.Equal(int64(5), *seed.AffectedRows)
+	a.Len(seed.Commands, 2)
+	a.Contains(seed.Commands[0].Statement, "INSERT INTO account")
+	a.Equal(int64(3), *seed.Commands[0].AffectedRows)
+	a.Contains(seed.Commands[1].Statement, "UPDATE account")
+	a.Equal(int64(2), *seed.Commands[1].AffectedRows)
+
+	a.Contains(actionResult.Stdout, "Rollout to prod: DONE")
+	a.Contains(actionResult.Stdout, "1 changed")
+	a.Contains(actionResult.Stdout, "3 rows  INSERT INTO account")
+}
+
+func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startProject(ctx, t)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
+
+	testDataDir := t.TempDir()
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00001_create_account.sql"),
+		[]byte("CREATE TABLE account (id INT PRIMARY KEY, tier TEXT);"), 0644))
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
+		[]byte("INSERT INTO account VALUES (1, 'basic');\nINSERT INTO account VALUES (1, 'pro');"), 0644))
+	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
+
+	actionResult, err := executeActionCommand(ctx,
+		"rollout",
+		"--url", ctl.rootURL,
+		"--service-account", "demo@example.com",
+		"--service-account-secret", "1024bytebase",
+		"--project", ctl.project.Name,
+		"--targets", database.Name,
+		"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+		"--target-stage", "environments/prod",
+		"--output", outputFile,
+	)
+	a.Error(err, "a failed task still fails the command")
+	var rolloutErr *command.RolloutError
+	a.ErrorAs(err, &rolloutErr)
+	a.Contains(err.Error(), "rollout stopped: "+database.Name+" failed at ")
+	a.Contains(err.Error(), "00002_seed_account.sql")
+	a.Contains(err.Error(), "duplicate key")
+
+	rolloutResult, tasks := readRolloutResult(t, outputFile)
+	a.Equal(result.Failed, rolloutResult.Outcome)
+	a.Len(tasks, 1)
+	task := tasks[0]
+	a.Equal("FAILED", task.Status)
+	a.NotEmpty(task.Detail)
+	a.Equal(int64(0), *task.AffectedRows, "the row inserted before the failure was rolled back")
+
+	a.Len(task.Files, 2)
+	a.Equal("DONE", task.Files[0].Status)
+	failed := task.Files[1]
+	a.Equal("FAILED", failed.Status)
+	a.True(failed.RolledBack)
+	a.Len(failed.Commands, 2)
+	a.Equal(int64(1), *failed.Commands[0].AffectedRows)
+	a.True(failed.Commands[0].RolledBack)
+	a.Nil(failed.Commands[1].AffectedRows)
+	a.Contains(failed.Commands[1].Statement, "INSERT INTO account VALUES (1, 'pro')")
+	a.Contains(failed.Commands[1].Error, "duplicate key")
+
+	a.Contains(actionResult.Stdout, "Rollout to prod: FAILED")
+	a.Contains(actionResult.Stdout, "INSERT INTO account VALUES (1, 'pro')")
+	a.Contains(actionResult.Stdout, "duplicate key")
 }
 
 func TestActionErrorScenarios_InvalidServiceAccountSecret(t *testing.T) {

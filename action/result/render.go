@@ -1,0 +1,648 @@
+package result
+
+import (
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+)
+
+const (
+	// shownCommands is how many row-changing commands a file lists in the log
+	// and the summary. The output file lists all of them.
+	shownCommands = 10
+	// shownStatementLines caps a failed statement in the log and the summary.
+	shownStatementLines = 30
+	// markdownBudget keeps a GitHub step summary under its 1 MiB limit, past
+	// which GitHub drops the whole summary.
+	markdownBudget = 900 << 10
+)
+
+// Folder wraps one task's lines so that a CI can collapse them. The index is
+// unique within one rendering.
+type Folder func(index int, header string, detail []string) []string
+
+// Headline is the one line that says how the rollout stands.
+func (r *Result) Headline() string {
+	switch r.Outcome {
+	case NotWaited:
+		return "Rollout created. This job deployed nothing: no --target-stage was given."
+	case StageNotFound:
+		return fmt.Sprintf("This job deployed nothing: the rollout has no stage for %s.", r.TargetStage)
+	case Interrupted:
+		return fmt.Sprintf("Rollout to %s: INTERRUPTED. The action stopped before the stage finished, so this state is not final.", r.stageName())
+	default:
+		return fmt.Sprintf("Rollout to %s: %s", r.stageName(), r.Outcome)
+	}
+}
+
+// Failures returns one line per failed or canceled task, failed first.
+func (r *Result) Failures() []string {
+	var lines []string
+	for _, task := range r.orderedTasks() {
+		switch task.Status {
+		case "FAILED":
+			file, _, errText := task.failure()
+			line := task.Target + " failed"
+			if file != nil {
+				line += " at " + file.name()
+			}
+			if errText != "" {
+				line += ": " + oneLine(errText, 500)
+			}
+			lines = append(lines, line)
+		case "CANCELED":
+			lines = append(lines, task.Target+" was canceled")
+		default:
+		}
+	}
+	return lines
+}
+
+// RenderText renders the result for a job log. fold may be nil. The answer
+// comes first and the rollout's URL last, since most readers never need it.
+func RenderText(r *Result, fold Folder) string {
+	lines := []string{r.Headline()}
+	lines = append(lines, r.countLines()...)
+
+	tasks := r.orderedTasks()
+	if len(tasks) > 0 {
+		lines = append(lines, "")
+	}
+	var statusWidth, targetWidth int
+	for _, task := range tasks {
+		statusWidth = max(statusWidth, len(task.Status))
+		targetWidth = max(targetWidth, utf8.RuneCountInString(task.Target))
+	}
+	indent := strings.Repeat(" ", statusWidth+2)
+	for i, task := range tasks {
+		header := strings.TrimRight(fmt.Sprintf("%-*s  %-*s  %s", statusWidth, task.Status, targetWidth, task.Target, task.note()), " ")
+		var detail []string
+		for _, line := range task.detailLines() {
+			detail = append(detail, indent+line)
+		}
+		// Retrying or skipping happens in Bytebase, so the task's URL sits
+		// with the failure it follows from.
+		if task.stopped() && task.URL != "" {
+			detail = append(detail, indent+"Retry or skip: "+task.URL)
+		}
+		// A failure stays unfolded so the reader sees it without a click.
+		if fold != nil && len(detail) > 0 && task.Status == "DONE" {
+			lines = append(lines, fold(i, header, detail)...)
+			continue
+		}
+		lines = append(lines, header)
+		lines = append(lines, detail...)
+	}
+	if len(tasks) > 0 {
+		lines = append(lines, "")
+	}
+	lines = append(lines, "Rollout: "+r.URL)
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// RenderMarkdown renders the result for a GitHub step summary. A link appears
+// only where the page cannot answer: beside a failure, which is retried or
+// skipped in Bytebase, and where the page shows no finished stage.
+func RenderMarkdown(r *Result) string {
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, "### %s\n\n", r.Headline())
+	tasks := r.orderedTasks()
+	if len(tasks) == 0 || r.Outcome == Interrupted {
+		_, _ = fmt.Fprintf(&sb, "[Follow the rollout in Bytebase](%s)\n\n", r.URL)
+	}
+	for _, line := range r.countLines() {
+		_, _ = sb.WriteString(line + "\n\n")
+	}
+	if len(tasks) == 0 {
+		return sb.String()
+	}
+
+	// Failures are written out first and placed after the table, so that a
+	// large rollout spends the budget on them before anything else.
+	var failures strings.Builder
+	for _, task := range tasks {
+		if !task.stopped() {
+			continue
+		}
+		block := task.failureMarkdown()
+		if failures.Len()+len(block) > markdownBudget/2 {
+			break
+		}
+		_, _ = failures.WriteString(block)
+	}
+	budget := markdownBudget - sb.Len() - failures.Len()
+
+	_, _ = sb.WriteString("| Database | Instance | Status | Files | Statements | Rows | Duration |\n|---|---|---|---|---|---|---|\n")
+	var shown int
+	for _, task := range tasks {
+		row := task.markdownRow()
+		if len(row) > budget {
+			break
+		}
+		budget -= len(row)
+		_, _ = sb.WriteString(row)
+		shown++
+	}
+	if rest := len(tasks) - shown; rest > 0 {
+		_, _ = fmt.Fprintf(&sb, "\n%s are in the output file and [in Bytebase](%s).\n", more(rest, "database"), r.URL)
+	}
+	_, _ = sb.WriteString("\n")
+	_, _ = sb.WriteString(failures.String())
+
+	for _, task := range tasks[:shown] {
+		if task.Status != "DONE" {
+			continue
+		}
+		detail := task.detailLines()
+		if len(detail) == 0 {
+			continue
+		}
+		block := fmt.Sprintf("<details><summary>Statements run on %s</summary>\n\n%s</details>\n\n", task.displayName(), fenced("text", strings.Join(detail, "\n")))
+		if len(block) > budget {
+			break
+		}
+		budget -= len(block)
+		_, _ = sb.WriteString(block)
+	}
+	return sb.String()
+}
+
+func (r *Result) detail() *Stage {
+	for _, stage := range r.Stages {
+		if len(stage.Tasks) > 0 {
+			return stage
+		}
+	}
+	return nil
+}
+
+func (r *Result) stageName() string {
+	if stage := r.detail(); stage != nil {
+		return strings.TrimPrefix(stage.Environment, "environments/")
+	}
+	return strings.TrimPrefix(r.TargetStage, "environments/")
+}
+
+// orderedTasks returns the detailed stage's tasks with failed and canceled
+// ones first.
+func (r *Result) orderedTasks() []*Task {
+	stage := r.detail()
+	if stage == nil {
+		return nil
+	}
+	rank := func(status string) int {
+		switch status {
+		case "FAILED":
+			return 0
+		case "CANCELED":
+			return 1
+		default:
+			return 2
+		}
+	}
+	tasks := slices.Clone(stage.Tasks)
+	slices.SortStableFunc(tasks, func(a, b *Task) int {
+		return rank(a.Status) - rank(b.Status)
+	})
+	return tasks
+}
+
+// countLines summarizes the detailed stage by what happened to each database,
+// and the other stages, in one line, by task status.
+func (r *Result) countLines() []string {
+	var lines []string
+	detail := r.detail()
+	if detail != nil {
+		counts := map[string]int{}
+		for _, task := range detail.Tasks {
+			switch {
+			case task.Status == "DONE" && task.Unchanged:
+				counts["unchanged"]++
+			case task.Status == "DONE":
+				counts["changed"]++
+			default:
+				counts[statusWord(task.Status)]++
+			}
+		}
+		lines = append(lines, joinCounts(counts, []string{"changed", "unchanged", "failed", "canceled", "skipped", "running", "pending", "not started"}))
+	}
+	var others []string
+	for _, stage := range r.Stages {
+		if stage == detail {
+			continue
+		}
+		counts := map[string]int{}
+		for status, n := range stage.TaskCounts {
+			counts[statusWord(status)] += n
+		}
+		text := joinCounts(counts, []string{"done", "failed", "canceled", "skipped", "running", "pending", "not started"})
+		if text == "" {
+			text = "no tasks"
+		}
+		others = append(others, fmt.Sprintf("%s (%s)", strings.TrimPrefix(stage.Environment, "environments/"), text))
+	}
+	if len(others) > 0 {
+		label := "Other stages: "
+		if detail == nil {
+			label = "Stages: "
+		}
+		lines = append(lines, label+strings.Join(others, ", "))
+	}
+	return lines
+}
+
+func statusWord(status string) string {
+	return strings.ToLower(strings.ReplaceAll(status, "_", " "))
+}
+
+func joinCounts(counts map[string]int, order []string) string {
+	var parts []string
+	seen := map[string]bool{}
+	for _, key := range order {
+		seen[key] = true
+		if counts[key] > 0 {
+			parts = append(parts, fmt.Sprintf("%d %s", counts[key], key))
+		}
+	}
+	var rest []string
+	for key := range counts {
+		if !seen[key] {
+			rest = append(rest, key)
+		}
+	}
+	slices.Sort(rest)
+	for _, key := range rest {
+		parts = append(parts, fmt.Sprintf("%d %s", counts[key], key))
+	}
+	return strings.Join(parts, " · ")
+}
+
+// note is what follows the database on a task's line.
+func (t *Task) note() string {
+	var parts []string
+	if t.Attempt > 1 {
+		parts = append(parts, fmt.Sprintf("attempt %d", t.Attempt))
+	}
+	switch t.Status {
+	case "SKIPPED":
+		note := ""
+		if t.Skipper != "" {
+			note = "by " + strings.TrimPrefix(t.Skipper, "users/")
+		}
+		if t.SkippedReason != "" {
+			if note != "" {
+				note += ": "
+			}
+			note += oneLine(t.SkippedReason, 200)
+		}
+		if note != "" {
+			parts = append(parts, note)
+		}
+	case "DONE":
+		switch {
+		case t.LogUnavailable:
+			parts = append(parts, "log not available")
+		case t.Unchanged:
+			parts = append(parts, "unchanged, every version was already applied")
+		default:
+			if len(t.Files) > 0 {
+				parts = append(parts, plural(len(t.Files), "file"))
+			}
+			if n := t.commandCount(); n > 0 {
+				parts = append(parts, plural(n, "statement"))
+			}
+			parts = append(parts, rowsText(t.AffectedRows))
+			if d := t.duration(); d != "" {
+				parts = append(parts, d)
+			}
+		}
+	case "FAILED", "CANCELED":
+		if t.LogUnavailable {
+			parts = append(parts, "log not available")
+		}
+		if t.FilesNotRun > 0 {
+			parts = append(parts, plural(t.FilesNotRun, "file")+" not run")
+		}
+	default:
+	}
+	return strings.Join(parts, " · ")
+}
+
+// detailLines are the lines under a task: its files, the commands that
+// changed rows, and for a failure the statement and the error.
+func (t *Task) detailLines() []string {
+	var lines []string
+	var errorShown bool
+	for _, file := range t.Files {
+		lines = append(lines, strings.TrimRight(file.name()+"  "+file.note(), " "))
+		if file.Status == "DONE" {
+			lines = append(lines, indented(commandLines(file.Commands), "  ")...)
+			continue
+		}
+		failed := failureLines(file.Commands, file.Error)
+		errorShown = errorShown || len(failed) > 0
+		lines = append(lines, indented(failed, "  ")...)
+	}
+	if failed := failureLines(t.Commands, ""); len(failed) > 0 {
+		errorShown = true
+		lines = append(lines, failed...)
+	} else {
+		lines = append(lines, commandLines(t.Commands)...)
+	}
+	if !errorShown && t.Detail != "" && (t.Status == "FAILED" || t.Status == "CANCELED") {
+		lines = append(lines, strings.Split(strings.TrimSpace(t.Detail), "\n")...)
+	}
+	return lines
+}
+
+// failure returns the file, statement and error a failed task stopped on.
+// The file is nil when the failure was outside any release file.
+func (t *Task) failure() (*File, string, string) {
+	for _, file := range t.Files {
+		if file.Status != "FAILED" {
+			continue
+		}
+		for _, command := range file.Commands {
+			if command.Error != "" {
+				return file, command.Statement, command.Error
+			}
+		}
+		if file.Error != "" {
+			return file, "", file.Error
+		}
+		return file, "", t.Detail
+	}
+	for _, command := range t.Commands {
+		if command.Error != "" {
+			return nil, command.Statement, command.Error
+		}
+	}
+	return nil, "", t.Detail
+}
+
+func (t *Task) commandCount() int {
+	n := len(t.Commands)
+	for _, file := range t.Files {
+		n += len(file.Commands)
+	}
+	return n
+}
+
+func (t *Task) duration() string {
+	if t.StartTime == nil || t.UpdateTime == nil || t.UpdateTime.Before(*t.StartTime) {
+		return ""
+	}
+	d := t.UpdateTime.Sub(*t.StartTime)
+	if d < time.Minute {
+		return strconv.FormatFloat(d.Seconds(), 'f', 1, 64) + "s"
+	}
+	return d.Round(time.Second).String()
+}
+
+// stopped reports whether the task needs someone to retry or skip it.
+func (t *Task) stopped() bool {
+	return t.Status == "FAILED" || t.Status == "CANCELED"
+}
+
+// instanceAndDatabase splits the task's target. The database is empty for a
+// task that creates one.
+func (t *Task) instanceAndDatabase() (string, string) {
+	before, database, _ := strings.Cut(t.Target, "/databases/")
+	instance := before
+	if i := strings.LastIndex(before, "instances/"); i >= 0 {
+		instance = before[i+len("instances/"):]
+	}
+	return instance, database
+}
+
+// displayName reads "employee on prod-instance".
+func (t *Task) displayName() string {
+	instance, database := t.instanceAndDatabase()
+	if database == "" {
+		return instance
+	}
+	return database + " on " + instance
+}
+
+func (t *Task) markdownRow() string {
+	icons := map[string]string{"DONE": "✅", "FAILED": "❌", "CANCELED": "⛔", "SKIPPED": "⏭️"}
+	status := t.Status
+	if icon, ok := icons[t.Status]; ok {
+		status = icon + " " + t.Status
+	}
+	if t.Unchanged {
+		status += ", unchanged"
+	}
+	if t.Attempt > 1 {
+		status += fmt.Sprintf(", attempt %d", t.Attempt)
+	}
+	files, statements, rows := "", "", ""
+	if t.TaskRun != "" && !t.LogUnavailable {
+		files = strconv.Itoa(len(t.Files))
+		if t.FilesNotRun > 0 {
+			files += fmt.Sprintf(" (%d not run)", t.FilesNotRun)
+		}
+		statements = strconv.Itoa(t.commandCount())
+		if t.AffectedRows != nil {
+			rows = formatCount(*t.AffectedRows)
+		}
+	}
+	cell := func(s string) string {
+		return strings.ReplaceAll(s, "|", "\\|")
+	}
+	instance, database := t.instanceAndDatabase()
+	if database == "" {
+		database = instance
+	}
+	return fmt.Sprintf("| [%s](%s) | %s | %s | %s | %s | %s | %s |\n", cell(database), t.URL, cell(instance), cell(status), files, statements, rows, t.duration())
+}
+
+func (t *Task) failureMarkdown() string {
+	var sb strings.Builder
+	file, statement, errText := t.failure()
+	_, _ = fmt.Fprintf(&sb, "#### %s %s\n\n", t.displayName(), statusWord(t.Status))
+	if file != nil {
+		_, _ = fmt.Fprintf(&sb, "`%s` %s\n\n", file.name(), file.note())
+	}
+	if statement != "" {
+		_, _ = sb.WriteString(fenced("sql", strings.Join(statementLines(statement), "\n")))
+	}
+	if errText != "" {
+		_, _ = sb.WriteString(fenced("text", strings.TrimSpace(errText)))
+	}
+	if t.URL != "" {
+		_, _ = fmt.Fprintf(&sb, "[Retry or skip this task in Bytebase](%s)\n\n", t.URL)
+	}
+	return sb.String()
+}
+
+func (f *File) name() string {
+	if f.Path != "" {
+		return f.Path
+	}
+	return "version " + f.Version
+}
+
+func (f *File) note() string {
+	var note string
+	if f.Status == "DONE" {
+		if f.AffectedRows != nil {
+			note = rowsText(f.AffectedRows)
+		}
+	} else {
+		note = statusWord(f.Status)
+	}
+	if f.RolledBack {
+		if note != "" {
+			note += ", "
+		}
+		note += "rolled back"
+	}
+	return note
+}
+
+// commandLines lists the first commands that changed rows, counts first so
+// that they line up, and says how many it left out.
+func commandLines(commands []*Command) []string {
+	type numbered struct {
+		*Command
+		label string
+	}
+	var changing []numbered
+	for i, command := range commands {
+		if command.AffectedRows != nil && *command.AffectedRows > 0 {
+			changing = append(changing, numbered{Command: command, label: commandLabel(i, command)})
+		}
+	}
+	shown := changing
+	if len(shown) > shownCommands {
+		shown = shown[:shownCommands]
+	}
+	var width int
+	for _, command := range shown {
+		width = max(width, len(rowsText(command.AffectedRows)))
+	}
+	var lines []string
+	for _, command := range shown {
+		line := fmt.Sprintf("%*s  %s", width, rowsText(command.AffectedRows), command.label)
+		if command.RolledBack {
+			line += "  (rolled back)"
+		}
+		lines = append(lines, line)
+	}
+	if rest := changing[len(shown):]; len(rest) > 0 {
+		var rows int64
+		for _, command := range rest {
+			rows += *command.AffectedRows
+		}
+		lines = append(lines, fmt.Sprintf("and %s, %s", more(len(rest), "statement"), rowsText(&rows)))
+	}
+	return lines
+}
+
+// failureLines are the failed statement and its error, or nil when the
+// commands carry no error.
+func failureLines(commands []*Command, scopeErr string) []string {
+	for i, command := range commands {
+		if command.Error == "" {
+			continue
+		}
+		lines := statementLines(command.Statement)
+		if len(lines) == 0 {
+			lines = []string{commandLabel(i, command)}
+		}
+		return append(lines, strings.Split(strings.TrimSpace(command.Error), "\n")...)
+	}
+	if scopeErr != "" {
+		return strings.Split(strings.TrimSpace(scopeErr), "\n")
+	}
+	return nil
+}
+
+// commandLabel is the command's statement on one line, or its position when
+// the statement's text could not be read.
+func commandLabel(index int, command *Command) string {
+	if strings.TrimSpace(command.Statement) == "" {
+		return fmt.Sprintf("statement %d", index+1)
+	}
+	return oneLine(command.Statement, 100)
+}
+
+func statementLines(statement string) []string {
+	statement = strings.TrimSpace(statement)
+	if statement == "" {
+		return nil
+	}
+	lines := strings.Split(statement, "\n")
+	if len(lines) > shownStatementLines {
+		rest := len(lines) - shownStatementLines
+		lines = append(lines[:shownStatementLines:shownStatementLines], "... "+more(rest, "line"))
+	}
+	return lines
+}
+
+func indented(lines []string, indent string) []string {
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		out = append(out, indent+line)
+	}
+	return out
+}
+
+// fenced wraps text in a code fence longer than any backtick run inside it.
+func fenced(language, text string) string {
+	fence := "```"
+	for strings.Contains(text, fence) {
+		fence += "`"
+	}
+	return fence + language + "\n" + text + "\n" + fence + "\n\n"
+}
+
+// oneLine collapses whitespace and cuts the text to limit characters.
+func oneLine(s string, limit int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if utf8.RuneCountInString(s) <= limit {
+		return s
+	}
+	return string([]rune(s)[:limit]) + "..."
+}
+
+func rowsText(rows *int64) string {
+	if rows == nil {
+		return "rows not reported"
+	}
+	if *rows == 1 {
+		return "1 row"
+	}
+	return formatCount(*rows) + " rows"
+}
+
+func plural(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return formatCount(int64(n)) + " " + noun + "s"
+}
+
+// more reads "3 more statements".
+func more(n int, noun string) string {
+	if n != 1 {
+		noun += "s"
+	}
+	return formatCount(int64(n)) + " more " + noun
+}
+
+func formatCount(n int64) string {
+	s := strconv.FormatInt(n, 10)
+	start := 0
+	if n < 0 {
+		start = 1
+	}
+	for i := len(s) - 3; i > start; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}

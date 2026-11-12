@@ -33,7 +33,7 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
 -   **`--output`**: The output file location. The output file is a JSON file with the created resource names and check results.
     -   Default: `""` (empty string)
     -   For `check` command: outputs detailed check results including advices, affected rows, and risk levels
-    -   For `rollout` command: outputs created resource names (release, plan, rollout)
+    -   For `rollout` command: outputs created resource names (release, plan, rollout) and the rollout result. See [Rollout result](#rollout-result).
 
 -   **`--url`**: The Bytebase instance URL. Required.
 
@@ -130,6 +130,91 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 -   **`--plan`**: The specific plan to rollout.
     -   Format: `projects/{project}/plans/{plan}`
     -   If specified, this shadows the `--file-pattern` and `--targets` flags, meaning they will be ignored.
+
+## Rollout result
+
+When `rollout` stops waiting, it reports how the rollout stands. The report is written whether the command passes or fails, and it never changes the exit code.
+
+-   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error.
+-   **`--output` file**: the same result under the `result` key, in full.
+-   **GitHub**: the block as the step summary, and an error annotation for each failed database.
+-   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.
+
+`result.outcome` says how the run ended:
+
+| Outcome | Meaning | Exit code |
+|---|---|---|
+| `DONE` | Every task in the target stage is done or skipped | 0 |
+| `FAILED` | A task failed | 1 |
+| `CANCELED` | A task was canceled | 1 |
+| `NOT_WAITED` | No `--target-stage` was given, so the rollout was created and nothing was awaited | 0 |
+| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed | 0 |
+| `INTERRUPTED` | The action stopped before the stage finished, so the state is not final | 1 |
+
+The result details one stage: the target stage, or an earlier stage when the rollout stopped there. Other stages carry task counts only.
+
+```json
+{
+  "plan": "projects/example/plans/101",
+  "rollout": "projects/example/plans/101/rollout",
+  "result": {
+    "outcome": "FAILED",
+    "url": "https://bytebase.example.com/projects/example/plans/101/rollout",
+    "targetStage": "environments/prod",
+    "stages": [
+      {
+        "environment": "environments/prod",
+        "taskCounts": { "FAILED": 1 },
+        "tasks": [
+          {
+            "target": "instances/prod/databases/crm",
+            "status": "FAILED",
+            "attempt": 1,
+            "affectedRows": 0,
+            "filesNotRun": 1,
+            "files": [
+              {
+                "version": "0004",
+                "path": "migrations/0004_add_risk_score.sql",
+                "status": "FAILED",
+                "rolledBack": true,
+                "affectedRows": 0,
+                "commands": [
+                  { "statement": "UPDATE account SET tier = 'basic' WHERE tier IS NULL", "affectedRows": 40, "rolledBack": true },
+                  { "statement": "ALTER TABLE account ADD COLUMN risk_score int", "error": "ERROR: column \"risk_score\" of relation \"account\" already exists (SQLSTATE 42701)" }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Reading the rows:
+
+-   `affectedRows` is the count the database returned. A file's count sums its commands, and a task's sums its files.
+-   A missing `affectedRows` means the database driver reported none. It does not mean zero.
+-   Commands in a transaction that rolled back keep their count, carry `rolledBack`, and are left out of the file and task totals.
+-   A task's result is its latest run. `attempt` counts its runs, and `previousRuns` lists the earlier ones.
+-   A task with `unchanged` finished with no file left to apply.
+
+Statement text comes from the migration files, because the server logs each command as a byte range of its file. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. With neither, a command is named by its position, such as `statement 3`, and its count and error are still reported.
+
+To keep the file on GitLab when the job fails:
+
+```yaml
+deploy:
+  script:
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --plan=$PLAN --target-stage=environments/prod --output=bytebase-rollout.json
+  artifacts:
+    when: always
+    paths: [bytebase-rollout.json]
+    reports:
+      annotations: bytebase_annotations.json
+```
 
 ## Sign-in
 
