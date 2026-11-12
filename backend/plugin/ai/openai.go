@@ -365,6 +365,8 @@ type responsesOpenAITool struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Parameters  any    `json:"parameters"`
+	// Explicit false preserves optional parameters instead of Responses' strict defaults.
+	Strict bool `json:"strict"`
 }
 
 type responsesOpenAIResponse struct {

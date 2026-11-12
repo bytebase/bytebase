@@ -297,6 +297,7 @@ func TestChatAzureOpenAIResponsesRoundTripsAToolCall(t *testing.T) {
 			"name":        "search",
 			"description": "Find objects by name.",
 			"parameters":  azureSearchParameters,
+			"strict":      false,
 		}}, request.body["tools"])
 	}
 	conversation := []any{

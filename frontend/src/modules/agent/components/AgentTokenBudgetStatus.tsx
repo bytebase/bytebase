@@ -70,25 +70,24 @@ function TokenBudgetStatus({
   const paused = Boolean(
     budget && chat.runCheckpoint?.suspension === "token-limit"
   );
+  if (
+    chat.status === "idle" &&
+    chat.interrupted &&
+    chat.interruptionReason === "user" &&
+    !paused &&
+    !remoteBusy
+  )
+    return null;
   // A remote marker can outlive its owner. Only the caller's explicit lease check authorizes recovery.
   const remoteRecovery = Boolean(remoteBusy && budget && chat.runCheckpoint);
   const recoverableRun = paused || remoteRecovery;
   const showResume = recoverableRun && state !== "exhausted";
   const showEndRun = recoverableRun || interruptedRun;
-  const completedOverLimit =
-    chat.status === "idle" &&
-    !chat.runCheckpoint &&
-    budget !== undefined &&
-    budget.totalTokensUsed > budget.limit;
   const active = chat.status === "running" || chat.status === "awaiting_user";
   const showThreshold = active && state !== "normal";
-  if (
-    !showEndRun &&
-    !completedOverLimit &&
-    !showThreshold &&
-    !hasUnreportedUsage
-  )
-    return null;
+  const showPartialUsage =
+    hasUnreportedUsage && (active || chat.status === "error");
+  if (!showEndRun && !showThreshold && !showPartialUsage) return null;
   const minimum = budget ? Math.max(budget.limit, budget.totalTokensUsed) : 0;
   const minimumLimit = formatTokenLimit(
     minimum < Number.MAX_SAFE_INTEGER ? minimum + 1 : Number.MAX_SAFE_INTEGER
@@ -110,13 +109,11 @@ function TokenBudgetStatus({
       ? t("agent.token-budget.remote-busy")
       : interruptedRun
         ? t("agent.interrupted")
-        : completedOverLimit
-          ? t("agent.token-budget.completed-over-limit")
-          : active && state === "exhausted"
-            ? t("agent.token-budget.reached")
-            : active && state === "warning"
-              ? t("agent.token-budget.warning")
-              : t("agent.token-budget.partial");
+        : active && state === "exhausted"
+          ? t("agent.token-budget.reached")
+          : active && state === "warning"
+            ? t("agent.token-budget.warning")
+            : t("agent.token-budget.partial");
   const used =
     hasUnreportedUsage && budget
       ? t("agent.token-usage.at-least", {
@@ -146,9 +143,7 @@ function TokenBudgetStatus({
   return (
     <Alert
       appearance="caption"
-      variant={
-        paused || completedOverLimit || showThreshold ? "warning" : "info"
-      }
+      variant={paused || showThreshold ? "warning" : "info"}
       role="region"
       aria-label={t("agent.token-budget.title")}
       data-agent-token-budget
@@ -291,10 +286,9 @@ function TokenBudgetStatus({
             )}
           </div>
         </div>
-        {hasUnreportedUsage &&
-          (showEndRun || completedOverLimit || showThreshold) && (
-            <span>{t("agent.token-budget.partial")}</span>
-          )}
+        {hasUnreportedUsage && (showEndRun || showThreshold) && (
+          <span>{t("agent.token-budget.partial")}</span>
+        )}
         {failed && !open && (
           <FormError>{t("agent.token-budget.action-failed")}</FormError>
         )}

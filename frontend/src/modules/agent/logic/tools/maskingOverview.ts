@@ -32,6 +32,7 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import type { AgentPageResource } from "../chatContext";
+import { readSemanticTypeSetting } from "../semanticTypeSetting";
 import type { AgentHandoff } from "../types";
 import { getMaskingSetup } from "./maskingSetup";
 
@@ -205,10 +206,10 @@ function summarizeSemanticTypeAlgorithm(id: string, algorithm?: Algorithm) {
 }
 
 function summarizeSemanticTypes(
-  setting: Awaited<ReturnType<typeof getSetting>>,
+  result: Awaited<ReturnType<typeof readSemanticTypeSetting>> | undefined,
   semanticTypeId?: string
 ) {
-  const value = setting?.value?.value;
+  const value = result?.setting?.value?.value;
   if (value?.case !== "semanticType") return unavailable;
   const types = getSemanticTypeListWithBuiltins(value.value.types);
   const selected =
@@ -217,6 +218,7 @@ function summarizeSemanticTypes(
       : types.filter((type) => type.id === semanticTypeId);
   return {
     status: "available" as const,
+    ...(result?.configured === false ? { configured: false } : {}),
     ...(semanticTypeId === undefined
       ? {}
       : {
@@ -370,17 +372,32 @@ export function createMaskingOverviewTool({
   context?: string;
   databaseName?: string;
 }) {
-  return async (args: MaskingOverviewArgs = {}): Promise<string> => {
+  return async (rawArgs: MaskingOverviewArgs = {}): Promise<string> => {
     if (
-      args.semanticTypeId !== undefined &&
-      (typeof args.semanticTypeId !== "string" ||
-        !args.semanticTypeId.trim() ||
-        args.semanticTypeId.length > MAX_TEXT_LENGTH ||
-        args.semanticTypeId.includes("\0"))
+      rawArgs.semanticTypeId !== undefined &&
+      (typeof rawArgs.semanticTypeId !== "string" ||
+        rawArgs.semanticTypeId.length > MAX_TEXT_LENGTH ||
+        rawArgs.semanticTypeId.includes("\0"))
     )
       return JSON.stringify({
         error: "Select an exact semantic type ID of at most 500 characters.",
       });
+    if (rawArgs.project !== undefined && typeof rawArgs.project !== "string")
+      return JSON.stringify({
+        error: "Select an exact project before inspecting its masking setup.",
+      });
+    if (rawArgs.database !== undefined && typeof rawArgs.database !== "string")
+      return JSON.stringify({
+        error:
+          "Select an exact database and its project before inspecting a catalog.",
+      });
+    const omitBlank = (value: string | undefined) =>
+      value?.trim() ? value : undefined;
+    const args = {
+      project: omitBlank(rawArgs.project),
+      database: omitBlank(rawArgs.database),
+      semanticTypeId: omitBlank(rawArgs.semanticTypeId),
+    };
     const validWorkspaceName =
       workspaceName ?? (context?.startsWith("workspaces/") ? context : "");
     if (!/^workspaces\/[A-Za-z0-9_-]+$/.test(validWorkspaceName)) {
@@ -493,7 +510,7 @@ export function createMaskingOverviewTool({
           ? getPolicy(validWorkspaceName, PolicyType.MASKING_RULE)
           : undefined,
         canRead("semantic-types")
-          ? getSetting(Setting_SettingName.SEMANTIC_TYPES)
+          ? readSemanticTypeSetting().catch(() => undefined)
           : undefined,
         canRead("data-classification")
           ? getSetting(Setting_SettingName.DATA_CLASSIFICATION)
@@ -549,7 +566,10 @@ export function createMaskingOverviewTool({
       policy && readCheck(id)?.status === "allowed";
     if (canOpenPolicy("global-masking", maskingPolicy))
       openTargets.push({ kind: "open-global-masking" });
-    if (semanticTypes && readCheck("semantic-types")?.status === "allowed")
+    if (
+      semanticTypes?.setting &&
+      readCheck("semantic-types")?.status === "allowed"
+    )
       openTargets.push({ kind: "open-semantic-types" });
     if (
       classification &&

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StoreApi } from "zustand";
 import { withAgentRunLease } from "../logic/runOwnership";
+import type { AgentSqlFixSource } from "../logic/sqlFix";
 import type {
   AgentChat,
   AgentDiagnosticCapability,
@@ -20,6 +21,19 @@ import {
   useAgentStore,
 } from "./agent";
 import { getAgentPreferencesKey } from "./preferences";
+
+const sqlFixIdentity = vi.hoisted(() => ({
+  workspace: "workspaces/alpha",
+  user: "users/member@example.com",
+}));
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      workspaceResourceName: () => sqlFixIdentity.workspace,
+      currentUser: { name: sqlFixIdentity.user },
+    }),
+  },
+}));
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -61,6 +75,8 @@ function setViewportSize(width: number, height: number) {
 let mockStorage: Storage;
 
 beforeEach(() => {
+  sqlFixIdentity.workspace = "workspaces/alpha";
+  sqlFixIdentity.user = "users/member@example.com";
   mockStorage = createMockStorage();
   vi.stubGlobal("localStorage", mockStorage);
   setViewportSize(1280, 800);
@@ -81,6 +97,259 @@ const s = (store: StoreApi<AgentState>) => {
       state.setWorkspaceName(workspaceName, userEmail),
   };
 };
+
+describe("runtime SQL fix drafts", () => {
+  const resource = {
+    kind: "plan" as const,
+    name: "projects/example/plans/7",
+    project: "projects/example",
+    label: "projects/example/plans/7",
+  };
+  const source = (): AgentSqlFixSource => ({
+    identity: JSON.stringify([sqlFixIdentity.workspace, sqlFixIdentity.user]),
+    pageKey: "/projects/example/plans/7",
+    resource,
+    sourceId: "projects/example/plans/7/planCheckRun",
+    plan: resource.name,
+    specId: "spec-1",
+    sheet: "projects/example/sheets/9",
+    targets: ["instances/prod/databases/example"],
+    sha256: "a".repeat(64),
+    sql: "UPDATE books SET price = 1;",
+  });
+  const setup = () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(sqlFixIdentity.workspace);
+    const chat = s(store).createChat({
+      workspaceName: sqlFixIdentity.workspace,
+      capability: { kind: "diagnostic", resource },
+    });
+    return { store, chat };
+  };
+
+  test("binds exact source bytes and a complete proposal to one local diagnostic chat", () => {
+    const { store, chat } = setup();
+    const original = source();
+    s(store).setSqlFixSource(chat.id, original);
+    const action = s(store).prepareSqlFixDraft(
+      chat.id,
+      "```sql\n  UPDATE books SET price = 2;  \n```"
+    );
+    expect(action?.kind).toBe("review-sql-fix");
+    expect(s(store).sqlFixDraftsById[action!.draftId]).toEqual({
+      id: action!.draftId,
+      chatId: chat.id,
+      source: original,
+      sql: "  UPDATE books SET price = 2;  ",
+    });
+    expect(s(store).sqlFixSourcesByChatId[chat.id]).not.toBe(original);
+    expect(s(store).sqlFixSourcesByChatId[chat.id].targets).not.toBe(
+      original.targets
+    );
+  });
+
+  test("offers review for a marked replacement alongside an explanatory snippet", () => {
+    const { store, chat } = setup();
+    s(store).setSqlFixSource(chat.id, source());
+    const action = s(store).prepareSqlFixDraft(
+      chat.id,
+      "Original expression:\n```sql\nprice = 1\n```\n```sql replacement\nUPDATE books SET price = 2;\n```"
+    );
+    expect(action?.kind).toBe("review-sql-fix");
+    expect(s(store).sqlFixDraftsById[action!.draftId].sql).toBe(
+      "UPDATE books SET price = 2;"
+    );
+  });
+
+  test("prepares a local background chat's SQL fix without changing selection", () => {
+    const { store, chat } = setup();
+    s(store).setSqlFixSource(chat.id, source());
+    s(store).startChatRun(chat.id, {
+      path: "/projects/example/plans/7",
+      title: "Plan",
+    });
+    const selected = s(store).createChat();
+
+    const action = s(store).prepareSqlFixDraft(
+      chat.id,
+      "```sql replacement\nUPDATE books SET price = 2;\n```"
+    );
+
+    expect(action?.kind).toBe("review-sql-fix");
+    expect(s(store).sqlFixDraftsById[action!.draftId]).toMatchObject({
+      chatId: chat.id,
+      sql: "UPDATE books SET price = 2;",
+    });
+    expect(s(store).currentChatId).toBe(selected.id);
+    s(store).setCurrentChat(chat.id);
+    expect(s(store).sqlFixDraftsById[action!.draftId]).toBeDefined();
+  });
+
+  test("does not capture a SQL fix source for an unselected chat", () => {
+    const { store, chat } = setup();
+    s(store).createChat();
+
+    s(store).setSqlFixSource(chat.id, source());
+
+    expect(s(store).sqlFixSourcesByChatId[chat.id]).toBeUndefined();
+  });
+
+  test("persists opaque review IDs without persisting source or proposal SQL", () => {
+    const { store, chat } = setup();
+    s(store).setSqlFixSource(chat.id, source());
+    const action = s(store).prepareSqlFixDraft(
+      chat.id,
+      "```sql\nUPDATE books SET price = 2;\n```"
+    )!;
+    s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review the proposal",
+      metadata: { actions: [action] },
+    });
+    s(store).saveState();
+    const saved = mockStorage.getItem(
+      getAgentStateKey(sqlFixIdentity.workspace)
+    )!;
+    expect(saved).toContain(action.draftId);
+    expect(saved).not.toContain(source().sql);
+    expect(saved).not.toContain("UPDATE books SET price = 2;");
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(sqlFixIdentity.workspace);
+    expect(s(reloaded).sqlFixSourcesByChatId).toEqual({});
+    expect(s(reloaded).sqlFixDraftsById).toEqual({});
+    expect(s(reloaded).getMessages(chat.id)[0].metadata?.actions).toEqual([
+      action,
+    ]);
+    expect(
+      s(reloaded).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
+    ).toBeUndefined();
+  });
+
+  test.each(["missing", "resource", "identity", "remote", "archived"])(
+    "rejects %s source or ownership",
+    (reason) => {
+      const { store, chat } = setup();
+      const original = source();
+      if (reason === "resource")
+        original.resource = { ...resource, name: "projects/example/plans/8" };
+      if (reason === "identity") original.identity = "another identity";
+      if (reason !== "missing") s(store).setSqlFixSource(chat.id, original);
+      if (reason === "remote")
+        store.setState({ remoteBusyChatIds: { [chat.id]: true } });
+      if (reason === "archived") s(store).archiveChat(chat.id);
+      expect(
+        s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
+      ).toBeUndefined();
+      expect(s(store).sqlFixDraftsById).toEqual({});
+    }
+  );
+
+  test("rejects unchanged SQL and a changed signed-in actor", () => {
+    const { store, chat } = setup();
+    s(store).setSqlFixSource(chat.id, source());
+    expect(
+      s(store).prepareSqlFixDraft(chat.id, `\`\`\`sql\n${source().sql}\n\`\`\``)
+    ).toBeUndefined();
+    sqlFixIdentity.user = "users/another@example.com";
+    expect(
+      s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
+    ).toBeUndefined();
+  });
+
+  test.each(["archive", "archive-all", "delete", "workspace", "user"])(
+    "clears runtime SQL on %s",
+    (operation) => {
+      const { store, chat } = setup();
+      s(store).setSqlFixSource(chat.id, source());
+      expect(
+        s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 2;\n```")
+      ).toBeDefined();
+      if (operation === "archive") s(store).archiveChat(chat.id);
+      if (operation === "archive-all") s(store).archiveAllActiveChats();
+      if (operation === "delete") s(store).deleteChat(chat.id);
+      if (operation === "workspace")
+        s(store).setWorkspaceName("workspaces/other");
+      if (operation === "user")
+        s(store).setWorkspaceName(
+          sqlFixIdentity.workspace,
+          "other@example.com"
+        );
+      expect(s(store).sqlFixSourcesByChatId).toEqual({});
+      expect(s(store).sqlFixDraftsById).toEqual({});
+    }
+  );
+
+  test.each(["archive", "archive-all"])(
+    "%s clears SQL fix drafts and managed run recovery together",
+    async (operation) => {
+      const { store, chat } = setup();
+      const bindings: AgentRunBindings = {
+        page: { path: source().pageKey, title: "Plan" },
+        references: [],
+        runMode: "default",
+        capability: chat.capability,
+      };
+      s(store).setSqlFixSource(chat.id, source());
+      const action = s(store).prepareSqlFixDraft(
+        chat.id,
+        "```sql\nSELECT 2;\n```"
+      );
+      expect(action).toBeDefined();
+      const root = s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Fix the SQL",
+      });
+      s(store).queueUserMessage({
+        chatId: chat.id,
+        text: "Follow up",
+        page: bindings.page,
+      });
+      expect(s(store).takeQueuedUserMessage(chat.id)).not.toBeNull();
+      const runId = await s(store).beginChatRun(chat.id, root!.id, bindings);
+      expect(runId).toBeTruthy();
+      expect(
+        await s(store).saveChatRunCheckpoint(chat.id, {
+          ...s(store).getChat(chat.id)!.runCheckpoint!,
+          startupComplete: true,
+        })
+      ).toBe(true);
+      const controller = new AbortController();
+      s(store).setAbortController(chat.id, controller);
+      s(store).awaitUser(chat.id, {
+        toolCallId: "confirm",
+        kind: "confirm",
+        prompt: "Confirm",
+      });
+
+      if (operation === "archive") s(store).archiveChat(chat.id);
+      else s(store).archiveAllActiveChats();
+
+      expect(controller.signal.aborted).toBe(true);
+      expect(s(store).sqlFixSourcesByChatId).toEqual({});
+      expect(s(store).sqlFixDraftsById).toEqual({});
+      expect(s(store).getChat(chat.id)).toMatchObject({
+        archived: true,
+        status: "idle",
+        interrupted: true,
+        runId: null,
+        runCheckpoint: undefined,
+        runBudget: { runId },
+      });
+      expect(s(store).getPendingAsk(chat.id)).toBeNull();
+      expect(s(store).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+      expect(
+        s(store).queuedUserMessageInFlightByChatId[chat.id]
+      ).toBeUndefined();
+      s(store).unarchiveChat(chat.id);
+      expect(await s(store).continueChatRun(chat.id, runId!)).toBe(false);
+      expect(
+        s(store).prepareSqlFixDraft(chat.id, "```sql\nSELECT 3;\n```")
+      ).toBeUndefined();
+    }
+  );
+});
 
 describe("logical run accounting", () => {
   const bindings: AgentRunBindings = {

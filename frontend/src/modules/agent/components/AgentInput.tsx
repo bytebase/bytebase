@@ -2059,7 +2059,7 @@ export function AgentInput({
         }
 
         if (finalText && outcome.kind === "completed") {
-          const handoff = outcome.success
+          let handoff = outcome.success
             ? acceptAgentHandoff(finalHandoffProposal, handoffCandidates)
             : undefined;
           const proposedActions =
@@ -2071,7 +2071,7 @@ export function AgentInput({
                     (action.kind === "open" || action.kind === "continue")
                 )
               : outcome.actions;
-          const actions = outcome.success
+          let actions = outcome.success
             ? acceptAgentResponseActions(
                 proposedActions,
                 handoffCandidates,
@@ -2083,6 +2083,17 @@ export function AgentInput({
                 semanticTypeDraftIds
               )
             : [];
+          const sqlFixAction =
+            capability && outcome.success
+              ? useAgentStore.getState().prepareSqlFixDraft(chatId, finalText)
+              : undefined;
+          if (sqlFixAction) {
+            actions = [
+              sqlFixAction,
+              ...actions.filter((action) => action.kind === "continue"),
+            ];
+            handoff = undefined;
+          }
           useAgentStore.getState().addMessage({
             chatId,
             role: "assistant",

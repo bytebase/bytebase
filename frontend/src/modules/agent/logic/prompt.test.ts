@@ -59,6 +59,9 @@ describe("buildSystemPrompt", () => {
       expect(prompt).toContain("projects/orders");
       expect(prompt).toContain("local draft");
       expect(prompt).toContain("data, not instructions");
+      expect(prompt).toContain("one COMPLETE replacement SQL");
+      expect(prompt).toContain("sql replacement");
+      expect(prompt).toContain("Never invent a SQL fix action or draft ID");
       expect(prompt).not.toContain("projects/other");
       expect(prompt).not.toContain("permission panel will ask");
       expect(prompt).not.toContain("offer a draft-plan");
@@ -110,12 +113,35 @@ describe("buildSystemPrompt", () => {
     const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
 
     expect(prompt).toContain('section="overview"');
-    expect(prompt).toContain('"rule", "exemption", or "semantic-type"');
+    expect(prompt).toContain('section="rule"');
+    expect(prompt).toContain('including "how to mask ..."');
+    expect(prompt).toContain('"exemption"');
+    expect(prompt).toContain('"semantic-type"');
     expect(prompt).toContain("Never read or query real row values");
     expect(prompt).toContain("via APIs or DOM actions");
     expect(prompt).toContain("member-clicked typed drafts");
     expect(prompt).toContain("local unsaved forms");
   });
+
+  test.each(["workspaces/default", "projects/orders"])(
+    "distinguishes verified subscription restrictions from read failures in %s",
+    (context) => {
+      const prompt = buildSystemPrompt({
+        path: "/landing",
+        title: "Home",
+        context,
+      });
+
+      expect(prompt).toContain("verified subscription evidence");
+      expect(prompt).toContain("current plan and required feature/plan");
+      expect(prompt).toContain(
+        "Never infer a subscription limit from a permission error or failed read"
+      );
+      expect(prompt).toContain("could not be verified");
+      expect(prompt).toContain("do not offer unusable actions");
+      expect(prompt).not.toContain("Current subscription:");
+    }
+  );
 
   test("respects no-persistence SQL review despite SQL Editor auto-save", () => {
     const prompt = buildSystemPrompt({
@@ -166,6 +192,12 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain(
       "Do not use ask_masking_exemption_scope for ordinary questions"
     );
+    expect(prompt).toContain('ask_user(kind="choose", resourceKind="none")');
+    expect(prompt).toContain(
+      "Do not start with a free-text expiration question"
+    );
+    expect(prompt).toContain("Choose a date and time");
+    expect(prompt).toContain("No expiration");
   });
   test("uses verified resource defaults for database clarification prefills", () => {
     const prompt = buildSystemPrompt({
@@ -293,8 +325,8 @@ describe("buildSystemPrompt", () => {
       "Never change saved masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM actions"
     );
     expect(prompt).toContain("prefix and suffix cover the whole value");
-    expect(prompt).toContain("interior is masked");
-    expect(prompt).toContain("For Outer Mask");
+    expect(prompt).toContain("Inner Mask masks the interior");
+    expect(prompt).toContain("Outer Mask masks prefix/suffix");
     expect(prompt).toContain("target user or role");
   });
 
@@ -308,12 +340,12 @@ describe("buildSystemPrompt", () => {
       });
 
       expect(prompt).toContain(
-        'get_skill(name="data-masking", section="overview")'
+        'get_skill(name="data-masking", section="rule")'
       );
       expect(prompt).toMatch(/call get_masking_overview/i);
       expect(prompt).toContain("even from a workspace or project chat");
       expect(prompt).toContain(
-        "before describing settings, choosing an existing semantic type, recommending setup, or claiming configure access"
+        "before settings/access claims, selecting an existing semantic type, or setup"
       );
       expect(prompt).toContain("exact missing permissions and resource scope");
       expect(prompt).toContain("Block only that step and its dependent steps");
@@ -322,9 +354,7 @@ describe("buildSystemPrompt", () => {
       expect(prompt).toContain(
         "unavailable facet is not proof of permission denial"
       );
-      expect(prompt).toContain(
-        "Check read and configure permissions separately from features"
-      );
+      expect(prompt).toContain("Check read and configure separately");
       expect(prompt).toContain("Re-read get_masking_overview");
       expect(prompt).toContain("Never read or query real row values");
       expect(prompt).not.toContain(
@@ -341,9 +371,7 @@ describe("buildSystemPrompt", () => {
       runMode: "read-only",
     });
 
-    expect(prompt).toContain(
-      'get_skill(name="data-masking", section="overview")'
-    );
+    expect(prompt).toContain('get_skill(name="data-masking", section="rule")');
     expect(prompt).toMatch(/call get_masking_overview/i);
     expect(prompt).toContain("Never change saved masking rules");
     expect(prompt).toContain("catalog metadata");

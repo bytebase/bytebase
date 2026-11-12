@@ -1,11 +1,7 @@
-import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
-import { settingServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
 import i18n from "@/lib/i18n";
 import { useAppStore } from "@/stores/app";
-import { GetSettingRequestSchema } from "@/types/proto-es/v1/setting_service_pb";
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
+import { readSemanticTypeSetting } from "../semanticTypeSetting";
 import type { AgentAskUserOption } from "../types";
 import { getMaskingSetup } from "./maskingSetup";
 import { validateResourceChoices } from "./resourceChoices";
@@ -50,10 +46,7 @@ export async function getMaskingSemanticTypeChoices(
   requireAccess(step?.readAccess, "semantic-types");
   if (setup.features.masking !== "available")
     throw new Error("The masking feature is unavailable or unverified.");
-  const setting = await settingServiceClientConnect.getSetting(
-    create(GetSettingRequestSchema, { name: "settings/SEMANTIC_TYPES" }),
-    { contextValues: createContextValues().set(silentContextKey, true) }
-  );
+  const { setting } = await readSemanticTypeSetting();
   check();
   if (setting.value?.value.case !== "semanticType")
     throw new Error("The semantic types setting is unavailable.");

@@ -40,6 +40,7 @@ import {
   type AgentPlanDraftEventDetail,
   appendAgentPlanDraftSQL,
 } from "@/lib/plan/agentDraftHandoff";
+import { expandSpecTargets } from "@/lib/plan/check";
 import { cn } from "@/lib/utils";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
@@ -60,6 +61,7 @@ import {
   UpdatePlanRequestSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
+  type CheckReleaseResponse_CheckResult,
   GetReleaseRequestSchema,
   type Release,
 } from "@/types/proto-es/v1/release_service_pb";
@@ -77,18 +79,22 @@ import {
   getSheetStatement,
   setSheetStatement,
 } from "@/utils/v1/sheet";
+import { useRegisterPlanSqlFixEditor } from "../hooks/usePlanSqlFixTarget";
 import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { affectedRowsSummary } from "../utils/affectedRows";
 import {
   createEmptyLocalSheet,
   getLocalSheetByName,
+  isSameStatementContent,
   removeLocalSheet,
   setLocalSheetStatement,
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
+import type { PlanSqlFixEditorSnapshot } from "../utils/sqlFixTarget";
 import { AffectedRowsStrip } from "./AffectedRowsStrip";
 import { ReleaseChangesRail } from "./changes/ReleaseChangesRail";
+import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
 import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
 import {
@@ -134,6 +140,7 @@ export function PlanDetailStatementSection({
   const page = usePlanDetailContext();
   const { setEditing } = page;
   const databasesByName = useAppStore((s) => s.databasesByName);
+  const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const currentUser = page.currentUser;
   const project = page.project;
   const releaseName =
@@ -157,6 +164,11 @@ export function PlanDetailStatementSection({
     () => seedSheetStatement(sheetName, getLocalSheetByName).statement
   );
   const [draftStatement, setDraftStatement] = useState("");
+  const [inlineChecks, setInlineChecks] = useState<{
+    content?: Uint8Array;
+    results?: CheckReleaseResponse_CheckResult[];
+    targets: string;
+  }>();
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const [pendingAgentDraft, setPendingAgentDraft] =
     useState<AgentPlanDraftEventDetail>();
@@ -174,6 +186,7 @@ export function PlanDetailStatementSection({
   }>();
   const [editingEditor, setEditingEditor] = useState<IStandaloneCodeEditor>();
   const editAnchorRef = useRef<EditorViewAnchor | undefined>(undefined);
+  const focusAppliedSqlRef = useRef(false);
   const threadFocus = usePlanDetailStore((state) => state.threadFocus);
   const clearThreadFocus = usePlanDetailStore(
     (state) => state.clearThreadFocus
@@ -198,6 +211,10 @@ export function PlanDetailStatementSection({
     editAnchorRef.current = undefined;
     if (!anchor) return;
     focusEditorAtAnchor(editingEditor, anchor);
+    if (focusAppliedSqlRef.current) {
+      focusAppliedSqlRef.current = false;
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+    }
     if (activityLine && threadFocus) {
       // Activity lives in another phase section, so the editor may be off
       // screen.
@@ -358,6 +375,55 @@ export function PlanDetailStatementSection({
     spec.config.value.targets?.length === 1 &&
     isValidDatabaseName(spec.config.value.targets[0]);
 
+  const canModifyStatement = Boolean(
+    !page.readonly &&
+      !page.plan.hasRollout &&
+      sheetName &&
+      project &&
+      (page.isCreating ||
+        currentUser.name === page.plan.creator ||
+        hasProjectPermissionV2(project, "bb.plans.update"))
+  );
+  const expandedTargets = useMemo(
+    () =>
+      expandSpecTargets(spec, (name) =>
+        dbGroupsByName?.[name]?.matchedDatabases.map(
+          (database) => database.name
+        )
+      ),
+    [dbGroupsByName, spec]
+  );
+  const sqlFixSnapshot: PlanSqlFixEditorSnapshot = {
+    pageKey: page.pageKey,
+    plan: page.plan.name,
+    specId: spec.id,
+    sheet: sheetName,
+    targets: expandedTargets,
+    currentSql: isEditing && !page.isCreating ? draftStatement : statement,
+    status:
+      page.readonly || page.plan.hasRollout || releaseName
+        ? "readonly"
+        : !canModifyStatement
+          ? "permission-denied"
+          : isLoading || isSaving
+            ? "loading"
+            : isSheetOversize
+              ? "unavailable"
+              : "ready",
+  };
+  const currentSqlFixSnapshot = useRef(sqlFixSnapshot);
+  currentSqlFixSnapshot.current = sqlFixSnapshot;
+  const inlineContent = useMemo(
+    () => new TextEncoder().encode(draftStatement),
+    [draftStatement]
+  );
+  const inlineTargetSignature = JSON.stringify(expandedTargets);
+  const currentInlineChecks =
+    inlineChecks?.targets === inlineTargetSignature &&
+    isSameStatementContent(inlineChecks.content, inlineContent)
+      ? inlineChecks
+      : undefined;
+
   const updateLocalStatement = useCallback(
     (nextStatement: string) => {
       if (!sheetName) return false;
@@ -392,6 +458,32 @@ export function PlanDetailStatementSection({
     },
     [t, updateLocalStatement]
   );
+
+  useRegisterPlanSqlFixEditor(sqlFixSnapshot, (expectedSql, sql) => {
+    const current = currentSqlFixSnapshot.current;
+    if (current.status !== "ready" || current.currentSql !== expectedSql)
+      return false;
+    if (page.isCreating) {
+      try {
+        if (!updateLocalStatement(sql)) return false;
+      } catch {
+        return false;
+      }
+    } else {
+      setDraftStatement(sql);
+      setIsEditing(true);
+    }
+    currentSqlFixSnapshot.current = { ...current, currentSql: sql };
+    editAnchorRef.current = lineViewAnchor(1);
+    focusAppliedSqlRef.current = true;
+    if (isEditing && editingEditor) {
+      focusEditorAtAnchor(editingEditor, editAnchorRef.current);
+      editingEditor.getDomNode()?.scrollIntoView({ block: "nearest" });
+      editAnchorRef.current = undefined;
+      focusAppliedSqlRef.current = false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     if (!page.isCreating) return;
@@ -448,15 +540,6 @@ export function PlanDetailStatementSection({
     );
   }
 
-  const canModifyStatement = Boolean(
-    !page.readonly &&
-      !page.plan.hasRollout &&
-      sheetName &&
-      project &&
-      (page.isCreating ||
-        currentUser.name === page.plan.creator ||
-        hasProjectPermissionV2(project, "bb.plans.update"))
-  );
   const canEdit = canModifyStatement && !isSheetOversize && !page.isCreating;
   // An active edit session (not whole-plan creation) shows Save/Cancel.
   const isInlineEditing = isEditing && !page.isCreating;
@@ -885,6 +968,26 @@ export function PlanDetailStatementSection({
           {t("common.no-data")}
         </div>
       )}
+      {isInlineEditing &&
+        canModifyStatement &&
+        !isLoading &&
+        !isSheetOversize && (
+          <PlanDetailDraftChecks
+            title={t("agent.sql-fix.unsaved-checks")}
+            canDiagnose
+            checkedContent={currentInlineChecks?.content}
+            checkResults={currentInlineChecks?.results}
+            content={inlineContent}
+            onCheckResultsChange={(content, results) =>
+              setInlineChecks({
+                content,
+                results,
+                targets: inlineTargetSignature,
+              })
+            }
+            selectedSpec={spec}
+          />
+        )}
       {project && schemaEditorEligible && (
         <SchemaEditorSheet
           open={isSchemaEditorOpen}

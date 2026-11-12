@@ -513,12 +513,17 @@ export function PlanDetailChangesBranch({
   ]);
 
   const selectedSpecIdForDraftChecks = selectedSpec?.id;
+  const draftCheckPageKey = page.pageKey;
   const handleDraftCheckResultsChange = useCallback(
     (
       content: Uint8Array | undefined,
       results: CheckReleaseResponse_CheckResult[] | undefined
     ) => {
-      if (!selectedSpecIdForDraftChecks) return;
+      if (
+        !selectedSpecIdForDraftChecks ||
+        pageKeyRef.current !== draftCheckPageKey
+      )
+        return;
       setDraftCheckResultsBySpecId((prev) => {
         const nextState = results ? { results, content } : undefined;
         const previousState = prev[selectedSpecIdForDraftChecks];
@@ -534,7 +539,7 @@ export function PlanDetailChangesBranch({
         };
       });
     },
-    [selectedSpecIdForDraftChecks]
+    [draftCheckPageKey, selectedSpecIdForDraftChecks]
   );
   const handleStatementPersisted = useCallback((specId: string) => {
     setStatementVersionBySpecId((prev) => ({
@@ -723,6 +728,9 @@ export function PlanDetailChangesBranch({
             page.isCreating &&
             selectedSpec.config.case === "changeDatabaseConfig" && (
               <PlanDetailDraftChecks
+                checkedContent={
+                  draftCheckResults ? draftCheckState?.content : undefined
+                }
                 checkResults={draftCheckResults}
                 onCheckResultsChange={handleDraftCheckResultsChange}
                 selectedSpec={selectedSpec}

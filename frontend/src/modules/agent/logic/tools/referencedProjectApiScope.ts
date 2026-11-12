@@ -69,7 +69,7 @@ const constrainsProject = (expr: Expr, project: string): boolean => {
   return false;
 };
 
-const searchFilterConstrainedToProject = async (
+export const isApiFilterConstrainedToProject = async (
   filter: string,
   project: string
 ): Promise<boolean> => {
@@ -132,7 +132,7 @@ export const apiTargetsAnotherProject = async (
   if (call.operationId === "bytebase.v1.DatabaseService.SearchDatabases") {
     // This endpoint searches across projects unless its filter proves the selected scope.
     if (typeof body.filter !== "string" || !body.filter.trim()) return true;
-    return !(await searchFilterConstrainedToProject(
+    return !(await isApiFilterConstrainedToProject(
       body.filter,
       referencedProject
     ));

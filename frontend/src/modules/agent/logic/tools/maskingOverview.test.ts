@@ -141,6 +141,124 @@ describe("masking overview", () => {
     );
   });
 
+  test.each(["", " ", " \t\n"])(
+    "treats blank optional filters %j as a workspace overview",
+    async (blank) => {
+      mocks.getSetting.mockResolvedValue({
+        value: { value: { case: "semanticType", value: { types: [] } } },
+      });
+      const result = JSON.parse(
+        await createMaskingOverviewTool({ context: "workspaces/default" })({
+          project: blank,
+          database: blank,
+          semanticTypeId: blank,
+        })
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.page).toBe("workspace");
+      expect(result.semanticTypes).toMatchObject({
+        status: "available",
+        types: [
+          expect.objectContaining({ id: "bb.default" }),
+          expect.objectContaining({ id: "bb.default-partial" }),
+        ],
+      });
+      expect(mocks.getMaskingSetup).toHaveBeenCalledWith({
+        workspaceName: "workspaces/default",
+        projectName: undefined,
+        databaseName: undefined,
+      });
+    }
+  );
+
+  test.each(["bound database", "catalog page"])(
+    "blank optional filters preserve project context and the %s",
+    async (source) => {
+      const project = "projects/sample";
+      const database = "instances/primary/databases/app";
+      mocks.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, { name: database, project })
+      );
+      mocks.getDatabaseCatalog.mockResolvedValue({ schemas: [] });
+      const result = JSON.parse(
+        await createMaskingOverviewTool({
+          context: project,
+          workspaceName: "workspaces/default",
+          ...(source === "bound database"
+            ? { databaseName: database }
+            : {
+                page: {
+                  kind: "database-catalog" as const,
+                  project,
+                  names: [database],
+                },
+              }),
+        })({ project: " ", database: "", semanticTypeId: "\t" })
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.project).toBe(project);
+      expect(result.catalog).toMatchObject({ status: "available", database });
+      expect(mocks.getMaskingSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: project,
+          databaseName: database,
+        })
+      );
+    }
+  );
+
+  test("blank database filters do not undo an explicit project-wide selection", async () => {
+    const project = "projects/sample";
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        context: project,
+        workspaceName: "workspaces/default",
+        databaseName: "instances/primary/databases/app",
+      })({ project, database: " ", semanticTypeId: "" })
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.project).toBe(project);
+    expect(result.catalog).toEqual({ status: "not-applicable" });
+    expect(mocks.getDatabase).not.toHaveBeenCalled();
+    expect(mocks.getMaskingSetup).toHaveBeenCalledWith({
+      workspaceName: "workspaces/default",
+      projectName: project,
+      databaseName: undefined,
+    });
+  });
+
+  test("blank filters cannot widen a project-bound chat to a foreign project", async () => {
+    const result = JSON.parse(
+      await createMaskingOverviewTool({
+        context: "projects/sample",
+        workspaceName: "workspaces/default",
+      })({ project: "projects/other", database: "", semanticTypeId: " " })
+    );
+
+    expect(result.error).toMatch(/outside this chat's scope/);
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect(mocks.getMaskingSetup).not.toHaveBeenCalled();
+  });
+
+  test.each(["project", "database"] as const)(
+    "rejects non-string %s filters rather than treating them as omitted",
+    async (field) => {
+      const result = JSON.parse(
+        await createMaskingOverviewTool({
+          context: "projects/sample",
+          workspaceName: "workspaces/default",
+        })({ [field]: false } as never)
+      );
+
+      expect(result.error).toMatch(new RegExp(field));
+      expect(mocks.getProject).not.toHaveBeenCalled();
+      expect(mocks.getMaskingSetup).not.toHaveBeenCalled();
+    }
+  );
+
   test.each(["bound database", "catalog page"])(
     "an explicit project selection ignores the database from the %s",
     async (source) => {
@@ -474,6 +592,71 @@ describe("masking overview", () => {
       kind: "open-semantic-types",
     });
   });
+
+  test("reports built-in types when the semantic setting is missing and read access is confirmed", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("missing", Code.NotFound)
+    );
+    mocks.getMaskingSetup.mockResolvedValue({
+      steps: [{ id: "semantic-types", readAccess: { status: "allowed" } }],
+    });
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({ context: "workspaces/default" })()
+    );
+
+    expect(result.semanticTypes).toMatchObject({
+      status: "available",
+      configured: false,
+      totalTypes: 2,
+      truncated: false,
+      types: [
+        { id: "bb.default", algorithm: { kind: "default-full-mask" } },
+        {
+          id: "bb.default-partial",
+          algorithm: { kind: "default-partial-mask" },
+        },
+      ],
+    });
+    expect(result.openTargets).toContainEqual({ kind: "open-semantic-types" });
+  });
+
+  test("does not verify a missing semantic setting without confirmed read access", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("missing", Code.NotFound)
+    );
+
+    const result = JSON.parse(
+      await createMaskingOverviewTool({ context: "workspaces/default" })()
+    );
+
+    expect(result.semanticTypes).toEqual({
+      status: "unavailable",
+      reason: "permission-unverified",
+    });
+    expect(result.openTargets).not.toContainEqual({
+      kind: "open-semantic-types",
+    });
+  });
+
+  test.each([Code.PermissionDenied, Code.Unavailable])(
+    "does not expose built-in types after a failed semantic setting read with code %s",
+    async (code) => {
+      mocks.getSetting.mockRejectedValue(new ConnectError("read failed", code));
+      mocks.getMaskingSetup.mockResolvedValue({
+        steps: [{ id: "semantic-types", readAccess: { status: "allowed" } }],
+      });
+
+      const result = JSON.parse(
+        await createMaskingOverviewTool({ context: "workspaces/default" })()
+      );
+
+      expect(result.semanticTypes).toEqual({ status: "unavailable" });
+      expect(result.openTargets).not.toContainEqual({
+        kind: "open-semantic-types",
+      });
+    }
+  );
 
   test("returns policy and catalog metadata without exposing exemption identities or row values", async () => {
     mocks.getMaskingSetup.mockResolvedValue({
@@ -965,7 +1148,25 @@ describe("masking overview", () => {
     expect(result.semanticTypes.requestedTypeFound).toBeUndefined();
   });
 
-  test.each([null, 12, "", " ", "bad\0id", "x".repeat(501)])(
+  test("does not trim a nonblank exact semantic type ID", async () => {
+    mocks.getSetting.mockResolvedValue({
+      value: { value: { case: "semanticType", value: { types: [] } } },
+    });
+    const result = JSON.parse(
+      await createMaskingOverviewTool({ context: "workspaces/default" })({
+        semanticTypeId: " bb.default ",
+      })
+    );
+
+    expect(result.semanticTypes).toMatchObject({
+      status: "available",
+      requestedTypeId: " bb.default ",
+      requestedTypeFound: false,
+      types: [],
+    });
+  });
+
+  test.each([null, 12, "bad\0id", "x".repeat(501), " ".repeat(501)])(
     "rejects invalid exact type ID %j before reading resources",
     async (semanticTypeId) => {
       const result = JSON.parse(

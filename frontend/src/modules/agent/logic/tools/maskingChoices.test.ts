@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, expect, test, vi } from "vitest";
 import {
   SemanticTypeSetting_SemanticTypeSchema,
@@ -64,6 +65,17 @@ beforeEach(() => {
   );
   mocks.database.mockResolvedValue([
     { value: "instances/prod/databases/app", label: "app (Production)" },
+  ]);
+});
+test("offers built-in full and partial types before the semantic types setting exists", async () => {
+  mocks.setting.mockRejectedValue(new ConnectError("missing", Code.NotFound));
+
+  const choices = await getMaskingSemanticTypeChoices(context);
+
+  expect(choices.map((option) => option.value)).toEqual([
+    "semantic-type:bb.default",
+    "semantic-type:bb.default-partial",
+    "action:create-semantic-type",
   ]);
 });
 test("lists all types including duplicate titles/configurations, with creation last and no default", async () => {

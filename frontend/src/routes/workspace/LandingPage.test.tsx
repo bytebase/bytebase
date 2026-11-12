@@ -460,8 +460,8 @@ describe("LandingPage", () => {
     render(<LandingPage />);
 
     expect(
-      screen.getByRole("heading", { name: "Acme workspace" })
-    ).toBeVisible();
+      screen.queryByRole("heading", { name: "Acme workspace" })
+    ).not.toBeInTheDocument();
     expect(screen.getByText("landing.quick-link.yours")).toBeVisible();
     expect(screen.getByText("settings.sidebar.general")).toBeVisible();
     expect(screen.getByText("agent.context: Acme workspace")).toBeVisible();

@@ -10,12 +10,15 @@ import {
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { type Sheet, SheetSchema } from "@/types/proto-es/v1/sheet_service_pb";
+import { CheckReleaseResponse_CheckResultSchema } from "@/types/proto-es/v1/release_service_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { getSheetStatement } from "@/utils/v1/sheet";
 import {
   getLocalSheetByName,
   removeLocalSheet,
   setLocalSheetStatement,
 } from "../utils/localSheet";
+import type { PlanSqlFixEditor, PlanSqlFixEditorSnapshot } from "../utils/sqlFixTarget";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 
 const mocks = vi.hoisted(() => ({
@@ -36,12 +39,19 @@ const mocks = vi.hoisted(() => ({
   failLocalWrite: false,
   getRelease: vi.fn(),
   openedFile: undefined as unknown,
+  sqlFixSnapshot: undefined as PlanSqlFixEditorSnapshot | undefined,
+  applySqlFix: undefined as PlanSqlFixEditor["apply"] | undefined,
+  checkRelease: vi.fn(),
+  updatePlan: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
-  planServiceClientConnect: {},
+  planServiceClientConnect: { updatePlan: mocks.updatePlan },
   sheetServiceClientConnect: {},
-  releaseServiceClientConnect: { getRelease: mocks.getRelease },
+  releaseServiceClientConnect: { getRelease: mocks.getRelease, checkRelease: mocks.checkRelease },
+}));
+vi.mock("../hooks/usePlanSqlFixTarget", () => ({
+  useRegisterPlanSqlFixEditor: (snapshot: PlanSqlFixEditorSnapshot, apply: PlanSqlFixEditor["apply"]) => { mocks.sqlFixSnapshot = snapshot; mocks.applySqlFix = apply; },
 }));
 vi.mock("./release/ReleaseFileViewer", () => ({
   useOpenReleaseFile: () => (target: unknown) => {
@@ -130,8 +140,8 @@ vi.mock("@/stores", () => ({
 }));
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
-    (selector: (state: { databasesByName: object }) => unknown) =>
-      selector({ databasesByName: {} }),
+    (selector: (state: { databasesByName: object; dbGroupsByName: object }) => unknown) =>
+      selector({ databasesByName: {}, dbGroupsByName: {} }),
     {
       getState: () => ({
         getSheetByName: (name: string) => mocks.sheets.get(name),
@@ -182,6 +192,8 @@ afterEach(() => {
   mocks.sheets.clear();
   mocks.threadFocus = undefined;
   mocks.failLocalWrite = false;
+  mocks.sqlFixSnapshot = undefined;
+  mocks.applySqlFix = undefined;
   vi.clearAllMocks();
 });
 
@@ -250,7 +262,8 @@ const renderEditableSpec = (statement: string) => {
   mocks.page = {
     currentUser: { name: "users/test" },
     isCreating: false,
-    plan: create(PlanSchema, { creator: "users/test", specs: [spec] }),
+    pageKey: "p/42",
+    plan: create(PlanSchema, { name: "projects/p/plans/42", creator: "users/test", specs: [spec] }),
     project: { name: "projects/p" },
     readonly: false,
     setEditing: vi.fn(),
@@ -258,9 +271,63 @@ const renderEditableSpec = (statement: string) => {
   const view = render(<PlanDetailStatementSection spec={spec} />);
   return {
     ...view,
+    spec,
     rerender: () => view.rerender(<PlanDetailStatementSection spec={spec} />),
   };
 };
+
+test("applies an exact-source fix only to the unsaved saved-Plan editor and focuses it", () => {
+  const view = renderEditableSpec("SELECT 1;");
+  expect(mocks.sqlFixSnapshot?.currentSql).toBe("SELECT 1;");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 2;")).toBe(true); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  expect(view.getByRole("button", { name: "common.save" })).toBeEnabled();
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "Editor ready" }));
+  expect(mocks.focus).toHaveBeenCalled();
+  expect(mocks.revealLineInCenter).toHaveBeenCalledWith(1);
+  expect(mocks.scrollIntoView).toHaveBeenCalled();
+});
+
+test("refuses a fix when current editor SQL or permissions changed", () => {
+  const view = renderEditableSpec("SELECT 1;");
+  fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+  fireEvent.click(view.getByRole("button", { name: "Make small draft" }));
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 3;")).toBe(false); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  mocks.page = { ...(mocks.page as object), readonly: true };
+  view.rerender();
+  expect(mocks.sqlFixSnapshot?.status).toBe("readonly");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 2;", "SELECT 3;")).toBe(false); });
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+});
+
+test("runs checks for unsaved saved-Plan SQL only after the member clicks", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  mocks.checkRelease.mockResolvedValue({ results: [] });
+  act(() => { mocks.applySqlFix?.("SELECT 1;", "SELECT 2;"); });
+  expect(view.getByText("agent.sql-fix.unsaved-checks")).toBeInTheDocument();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "plan.run" }));
+  await waitFor(() => expect(mocks.checkRelease).toHaveBeenCalledTimes(1));
+  expect(mocks.checkRelease.mock.lastCall?.[0]).toMatchObject({
+    parent: "projects/p",
+    release: { files: [{ statement: new TextEncoder().encode("SELECT 2;") }] },
+  });
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+});
+
+test("hides unsaved check results once their exact SQL changes", async () => {
+  const view = renderEditableSpec("SELECT 1;");
+  mocks.checkRelease.mockResolvedValue({ results: [create(CheckReleaseResponse_CheckResultSchema, { advices: [{ status: Advice_Level.WARNING, title: "Warning", content: "Original SQL evidence" }] })] });
+  fireEvent.click(view.getByRole("button", { name: "common.edit" }));
+  fireEvent.click(view.getByRole("button", { name: "plan.run" }));
+  await waitFor(() => expect(view.queryByRole("button", { name: "plan.navigator.checks" })).toBeInTheDocument());
+  fireEvent.click(view.getByRole("button", { name: "Make small draft" }));
+  expect(view.queryByRole("button", { name: "plan.navigator.checks" })).toBeNull();
+  expect(view.getByText("plan.overview.no-checks")).toBeInTheDocument();
+});
 
 test("the statement being read pins no line over its gray ground", () => {
   const { getByTestId } = renderEditableSpec("SELECT 1;");
@@ -321,6 +388,15 @@ const dispatchPlanDraft = (
   });
   return detail;
 };
+
+test("applies an exact-source fix to the new Plan's local sheet without saving or checks", () => {
+  const view = renderPlanCreationSpec("instances/main/databases/books", "SELECT 1;");
+  act(() => { expect(mocks.applySqlFix?.("SELECT 1;", "SELECT 2;")).toBe(true); });
+  expect(getSheetStatement(view.sheet)).toBe("SELECT 2;");
+  expect(view.getByTestId("editing-statement")).toHaveTextContent("SELECT 2;");
+  expect(mocks.updatePlan).not.toHaveBeenCalled();
+  expect(mocks.checkRelease).not.toHaveBeenCalled();
+});
 
 test("opens the Agent for the selected database and applies its DDL to this Plan", () => {
   const database = "instances/mysql/databases/app";

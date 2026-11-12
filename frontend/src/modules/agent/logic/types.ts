@@ -150,6 +150,7 @@ export type AgentResponseAction =
   | { kind: "draft-masking-rule"; draftId: string }
   | { kind: "draft-masking-exemption"; draftId: string }
   | { kind: "draft-semantic-type"; draftId: string }
+  | { kind: "review-sql-fix"; draftId: string }
   | { kind: "continue"; prompt: string };
 
 export interface AgentResourceReference {

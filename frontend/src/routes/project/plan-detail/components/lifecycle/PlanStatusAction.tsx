@@ -34,6 +34,8 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import { principalLabel, usePrincipal } from "@/hooks/usePrincipal";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { cn } from "@/lib/utils";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { userNamePrefix } from "@/stores/modules/v1/common";
@@ -179,6 +181,28 @@ export function PlanStatusAction({
         onOpenChange={setChecksDrawerOpen}
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
+        renderResultAction={(result) => {
+          const sourceId = `${page.plan.name}/planCheckRun`;
+          if (
+            page.isCreating ||
+            page.planCheckRuns.length !== 1 ||
+            page.planCheckRuns[0].name !== sourceId
+          )
+            return null;
+          const context = getPlanCheckDiagnosticContext({
+            resource: {
+              kind: "plan",
+              name: page.plan.name,
+              project: `projects/${page.projectId}`,
+              label: page.plan.name,
+            },
+            result,
+            sourceId,
+          });
+          return context ? (
+            <AgentDiagnosticHelpButton context={context} />
+          ) : null;
+        }}
       />
     </>
   );
