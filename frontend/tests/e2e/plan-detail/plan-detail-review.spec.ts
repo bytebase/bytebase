@@ -1492,6 +1492,12 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
+    const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
+    await expect(selected).toBeVisible();
+    const gray = await page.evaluate(
+      () => `rgba(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")}, 0.6)`,
+    );
+    await expect(selected).toHaveCSS("background-color", gray);
     await planPage.clickAddThreadGlyph();
     const composer = planPage.inlineComposer;
     await expect(composer).toBeVisible();
@@ -1506,6 +1512,39 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await rangeCard.scrollIntoViewIfNeeded();
     await expect(rangeCard.getByTestId("thread-bar")).toContainText("Lines 2–3", { timeout: 15_000 });
     await expect(rangeCard).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("the statement sits on its gray ground on every line, with or without a thread", async () => {
+    const ground = page.locator("#plan-phase-changes [data-testid='statement-ground']").first();
+    await expect(ground).toBeVisible();
+    // Tailwind computes the token's opacity in its own color space, so the
+    // expected value comes from a probe drawn with the same utility.
+    const groundColor = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.className = "bg-control-bg/50";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    });
+    await expect(ground).toHaveCSS("background-color", groundColor);
+    // Monaco's own layers are transparent, so the ground shows behind every
+    // line: the commented ones and the rest alike.
+    await expect(planPage.statementEditor).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    for (const layer of [".monaco-editor-background", ".margin"]) {
+      await expect(planPage.statementEditor.locator(layer).first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    }
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+  });
+
+  test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {
+    const card = planPage.threadCardIn("changes", rangeRoot);
+    await expect(card).toBeVisible();
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+    const [cardBox, editorBox] = await Promise.all([card.boundingBox(), planPage.statementEditor.boundingBox()]);
+    if (!cardBox || !editorBox) throw new Error("no box");
+    expect(cardBox.width).toBeLessThanOrEqual(768);
+    expect(editorBox.x + editorBox.width - (cardBox.x + cardBox.width)).toBeGreaterThanOrEqual(16);
   });
 
   test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {

@@ -13,8 +13,8 @@ export type TimelineSource =
   | { type: "plan-created"; creator: string; time?: Timestamp }
   | { type: "ready-for-review"; creator: string; time?: Timestamp }
   | { type: "comment"; comment: IssueComment }
-  // One line for a completed review run, which opens to the findings it
-  // posted.
+  // One line for a completed review run, the first line of the group that
+  // holds the findings it posted.
   | {
       type: "review-run";
       completion: IssueComment_ReviewRunCompletion;
@@ -30,9 +30,11 @@ export interface TimelineEntry {
   // consecutive similar activities (e.g. repeated label edits). Drives the
   // "(N similar activities)" badge. Absent means a standalone row.
   similarCount?: number;
-  // The line and cards of an open run, which the long-history fold leaves in
-  // place.
+  // An open run, which the long-history fold leaves in place.
   pinned?: boolean;
+  // A run's group: the card of every finding it posted while open, none while
+  // hidden.
+  children?: TimelineEntry[];
 }
 
 export function buildTimelineEntries(input: {
@@ -42,9 +44,9 @@ export function buildTimelineEntries(input: {
   issueCreateTime?: Timestamp;
   issueDraft?: boolean;
   comments: IssueComment[];
-  // Under SQL Review V2, findings become one line per completed run. An open
-  // run shows every finding's card; a folded one only those this keeps.
-  keepFindingCard?: (root: IssueComment) => boolean;
+  // Under SQL Review V2, a completed run is one line heading a group of the
+  // findings it posted.
+  sqlReviewV2?: boolean;
   // Runs someone opened or folded, by entry id. The rest follow the default:
   // only the runs with a finding still current are open.
   runToggles?: ReadonlyMap<string, boolean>;
@@ -121,7 +123,7 @@ export function buildTimelineEntries(input: {
       continue;
     }
     if (comment.event.case === "reviewRunCompletion") {
-      if (!input.keepFindingCard) continue;
+      if (!input.sqlReviewV2) continue;
       const completion = comment.event.value;
       const findings = findingsByRun.get(comment.name) ?? [];
       const id = `review-run:${comment.name}`;
@@ -138,18 +140,16 @@ export function buildTimelineEntries(input: {
           open,
         },
         pinned: open,
+        children: open
+          ? findings.map((finding) => ({
+              id: finding.name,
+              source: { type: "comment", comment: finding },
+            }))
+          : [],
       });
-      for (const finding of findings) {
-        if (!open && !input.keepFindingCard(finding)) continue;
-        entries.push({
-          id: finding.name,
-          source: { type: "comment", comment: finding },
-          pinned: open,
-        });
-      }
       continue;
     }
-    if (input.keepFindingCard && runOfFinding.has(comment.name)) continue;
+    if (input.sqlReviewV2 && runOfFinding.has(comment.name)) continue;
     entries.push({ id: comment.name, source: { type: "comment", comment } });
   }
   return entries;

@@ -188,7 +188,7 @@ describe("StatementAnchorContext", () => {
     { start: 2, end: 2, displayed: [1, 2], selected: [2], lines: "2-2" },
     { start: 4, end: 5, displayed: [2, 3, 4, 5], selected: [4, 5], lines: "4-5" },
   ])("adds at most two preceding lines to lines $lines without expanding the anchor", async ({start, end, displayed, selected, lines}) => {
-    const { container, bar } = renderAnchor({ anchor: anchor(start, end), placement: OUTDATED });
+    const { container, bar } = renderAnchor({ anchor: anchor(start, end), placement: current(start + 5, end + 5) });
     const numbers = (selector: string) => Array.from(container.querySelectorAll(selector)).map((el) => Number(el.getAttribute("data-line-number")));
     expect(numbers("[data-line-number]")).toEqual(displayed);
     expect(numbers('[data-selected="true"]')).toEqual(selected);
@@ -205,7 +205,7 @@ describe("StatementAnchorContext", () => {
     mocks.sheets[name] = create(SheetSchema, { name, content: new TextEncoder().encode(original) });
     const shared = buildWholeLineAnchor({ spec: "spec", sheetSha256: hash, startLine: 5, endLine: 5 });
     const card = () => (
-      <StatementAnchorContext {...props} anchor={shared} placement={OUTDATED}>
+      <StatementAnchorContext {...props} anchor={shared} placement={current(9, 9)}>
         {({ excerpt }) => excerpt}
       </StatementAnchorContext>
     );
@@ -284,5 +284,40 @@ describe("StatementAnchorContext", () => {
     await waitFor(() => expect(mocks.fetchSheet).toHaveBeenCalledWith(savedName));
     expect(container.querySelector("[data-line-number]")).toBeNull();
     expect(container.textContent).not.toContain("CURRENT REVISION");
+  });
+
+  test("sits on the gray ground, marks the range with a bar beside the line numbers and paints no row", async () => {
+    const { container } = renderAnchor({ anchor: anchor(4, 5), placement: current(10, 11) });
+    expect(container.querySelector("pre")?.className.split(" ")).toContain("bg-control-bg");
+    const rows = Array.from(container.querySelectorAll("[data-line-number]"));
+    expect(rows.map((row) => Number(row.getAttribute("data-line-number")))).toEqual([2, 3, 4, 5]);
+    for (const row of rows) {
+      expect(row.className).not.toMatch(/\bbg-/);
+      const marked = row.querySelector("[data-testid='excerpt-range-marker']") !== null;
+      expect(marked).toBe(row.getAttribute("data-selected") === "true");
+      expect(row.className).toContain("pl-9");
+      expect(row.className).toContain("sm:pl-10");
+    }
+    await waitFor(() => expect(container.querySelector("code span")).not.toBeNull());
+    expect(container.querySelector("pre")?.className).not.toContain("opacity");
+  });
+
+  test.each([
+    { name: "outdated", placement: OUTDATED },
+    { name: "unavailable", placement: UNAVAILABLE },
+  ])("draws a $name excerpt as plain gray text, not faded, and still marks the range", async ({ placement }) => {
+    const { container } = renderAnchor({ anchor: anchor(4, 5), placement });
+    await waitFor(() => expect(container.querySelector("[data-line-number]")).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(mocks.colorize).not.toHaveBeenCalled();
+    expect(container.querySelector("pre")?.className).not.toContain("opacity");
+    expect(container.querySelector("code span")).toBeNull();
+    const codes = Array.from(container.querySelectorAll("[data-line-number] code"));
+    expect(codes.length).toBeGreaterThan(0);
+    for (const code of codes) {
+      expect(code.className.split(" ")).toContain("text-control");
+      expect(code.className).not.toContain("text-control-light");
+    }
+    expect(container.querySelectorAll("[data-testid='excerpt-range-marker']")).toHaveLength(2);
   });
 });
