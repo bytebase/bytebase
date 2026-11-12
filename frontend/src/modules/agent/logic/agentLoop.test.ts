@@ -1,9 +1,16 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { aiServiceClientConnect } from "@/api";
-import { AIChatMessageRole } from "@/types/proto-es/v1/ai_service_pb";
+import {
+  AIChatMessageRole,
+  AIChatResponse_StopReason,
+} from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
-import type { ToolExecutionResult, ToolExecutor } from "./types";
+import type {
+  AgentModelAttempt,
+  ToolExecutionResult,
+  ToolExecutor,
+} from "./types";
 
 const preferenceDefaults = vi.hoisted(() => ({ tokenLimitPerRun: 100_000 }));
 
@@ -31,6 +38,607 @@ describe("runAgentLoop", () => {
     vi.mocked(aiServiceClientConnect.chat).mockReset();
     preferenceDefaults.tokenLimitPerRun = 100_000;
   });
+
+  test("settles a whole tool group before pausing without fabricating an answer", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        { id: "one", name: "lookup", arguments: "{}" },
+        { id: "two", name: "lookup", arguments: "{}" },
+      ],
+      usage: { totalTokens: 120 },
+    } as never);
+    const settled: AgentModelAttempt[] = [];
+    const results: string[] = [];
+    const onUsage = vi.fn();
+    const onText = vi.fn();
+    let reservations = 0;
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [],
+      async () => ({ kind: "tool_result", result: "ok" }),
+      {
+        onUsage,
+        onText,
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      },
+      undefined,
+      {
+        runId: "run",
+        maxTotalTokens: 1,
+        reserveProviderAttempt: async () =>
+          ++reservations === 1
+            ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+            : { kind: "token-limit" },
+        onAttemptSettled: async (attempt) => {
+          settled.push(attempt);
+          return true;
+        },
+      }
+    );
+    expect(outcome).toEqual({
+      kind: "paused",
+      reason: "token-limit",
+      phase: "working",
+      totalTokensUsed: 120,
+    });
+    expect(results).toEqual(["one", "two"]);
+    expect(settled).toMatchObject([
+      {
+        attemptId: "run:1",
+        runId: "run",
+        ordinal: 1,
+        outcome: "response",
+        usage: { totalTokens: 120 },
+      },
+    ]);
+    expect(onUsage).not.toHaveBeenCalled();
+    expect(onText).not.toHaveBeenCalled();
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+  });
+
+  test("reserves retries separately and pauses if the next retry is refused", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(aiServiceClientConnect.chat).mockRejectedValue(
+        new Error("503 private endpoint")
+      );
+      const settled: AgentModelAttempt[] = [];
+      let reservations = 0;
+      const run = runAgentLoop(
+        [{ role: "user", content: "Inspect" }],
+        [],
+        vi.fn(),
+        undefined,
+        undefined,
+        {
+          runId: "run",
+          reserveProviderAttempt: async () =>
+            ++reservations === 1
+              ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+              : { kind: "token-limit" },
+          onAttemptSettled: async (attempt) => {
+            settled.push(attempt);
+            return true;
+          },
+        }
+      );
+      await vi.runAllTimersAsync();
+      expect(await run).toMatchObject({
+        kind: "paused",
+        reason: "token-limit",
+      });
+      expect(settled).toEqual([
+        { attemptId: "run:1", runId: "run", ordinal: 1, outcome: "error" },
+      ]);
+      expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("reconstructs a finalization-only request from its checkpoint", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [{ id: "done", name: "done", arguments: "{}" }],
+      usage: { totalTokens: 5 },
+    } as never);
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [
+        { name: "lookup", description: "Lookup", parametersSchema: {} },
+        { name: "done", description: "Done", parametersSchema: {} },
+      ],
+      async () => ({ kind: "done", text: "Finished", success: true }),
+      undefined,
+      undefined,
+      {
+        checkpoint: {
+          phase: "finalizing",
+          finalizationText: "The evidence is ready",
+        },
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "completed", success: true });
+    const request = vi.mocked(aiServiceClientConnect.chat).mock.calls[0]![0];
+    expect(request.toolDefinitions?.map((tool) => tool.name)).toEqual(["done"]);
+    expect(request.messages?.map((message) => message.content)).toContain(
+      "The evidence is ready"
+    );
+    expect(request.messages?.at(-1)?.content).toContain(
+      "Finalize your preceding answer"
+    );
+  });
+
+  test("refuses side effects when the durable tool boundary fails", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [{ id: "write", name: "write", arguments: "{}" }],
+    } as never);
+    const executeTool = vi.fn();
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [],
+      executeTool,
+      undefined,
+      undefined,
+      {
+        beforeToolExecution: async () => false,
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "error" });
+    expect(executeTool).not.toHaveBeenCalled();
+  });
+
+  test("does not call the provider after cancellation during reservation", async () => {
+    const controller = new AbortController();
+    const outcome = await runAgentLoop(
+      [],
+      [],
+      vi.fn(),
+      undefined,
+      controller.signal,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () => {
+          controller.abort();
+          return { kind: "allowed", attemptId: "run:1", ordinal: 1 };
+        },
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "aborted" });
+    expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
+  });
+
+  test("finishes a terminal tool group even when the response crosses the token limit", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        { id: "done", name: "done", arguments: "{}" },
+        { id: "skipped", name: "write", arguments: "{}" },
+      ],
+      usage: { totalTokens: 120 },
+    } as never);
+    let calls = 0;
+    const results: string[] = [];
+    const outcome = await runAgentLoop(
+      [],
+      [],
+      async () => ({ kind: "done", text: "Finished", success: true }),
+      {
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      },
+      undefined,
+      {
+        runId: "run",
+        maxTotalTokens: 1,
+        reserveProviderAttempt: async () =>
+          ++calls === 1
+            ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+            : { kind: "token-limit" },
+        onAttemptSettled: async () => true,
+      }
+    );
+    expect(outcome).toMatchObject({
+      kind: "completed",
+      success: true,
+      totalTokensUsed: 120,
+    });
+    expect(results).toEqual(["done", "skipped"]);
+    expect(calls).toBe(1);
+  });
+
+  test("does not execute tools after a late response loses invocation ownership", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [{ id: "write", name: "write", arguments: "{}" }],
+      usage: { totalTokens: 7 },
+    } as never);
+    const executeTool = vi.fn();
+    const onAssistantMessage = vi.fn();
+    const settled: AgentModelAttempt[] = [];
+    const outcome = await runAgentLoop(
+      [],
+      [],
+      executeTool,
+      { onAssistantMessage },
+      undefined,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () => ({
+          kind: "allowed",
+          attemptId: "run:1",
+          ordinal: 1,
+        }),
+        onAttemptSettled: async (attempt) => {
+          settled.push(attempt);
+          return false;
+        },
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "aborted", totalTokensUsed: 7 });
+    expect(settled).toMatchObject([
+      { outcome: "response", usage: { totalTokens: 7 } },
+    ]);
+    expect(executeTool).not.toHaveBeenCalled();
+    expect(onAssistantMessage).not.toHaveBeenCalled();
+  });
+
+  test("settles failed transport after cancellation as unknown aborted consumption", async () => {
+    const controller = new AbortController();
+    vi.mocked(aiServiceClientConnect.chat).mockImplementationOnce(async () => {
+      controller.abort();
+      throw new Error("private endpoint closed");
+    });
+    const settled: AgentModelAttempt[] = [];
+    const outcome = await runAgentLoop(
+      [],
+      [],
+      vi.fn(),
+      undefined,
+      controller.signal,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () => ({
+          kind: "allowed",
+          attemptId: "run:1",
+          ordinal: 1,
+        }),
+        onAttemptSettled: async (attempt) => {
+          settled.push(attempt);
+          return true;
+        },
+      }
+    );
+    expect(outcome).toMatchObject({ kind: "aborted" });
+    expect(settled).toEqual([
+      { attemptId: "run:1", runId: "run", ordinal: 1, outcome: "aborted" },
+    ]);
+  });
+
+  test("saves the finalization phase before a token pause", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "Evidence is ready",
+      toolCalls: [],
+      usage: { totalTokens: 12 },
+    } as never);
+    let calls = 0;
+    const checkpoints: unknown[] = [];
+    const outcome = await runAgentLoop(
+      [],
+      [{ name: "done", description: "Done", parametersSchema: {} }],
+      vi.fn(),
+      undefined,
+      undefined,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () =>
+          ++calls === 1
+            ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+            : { kind: "token-limit" },
+        onAttemptSettled: async () => true,
+        onCheckpoint: async (checkpoint) => {
+          checkpoints.push(checkpoint);
+          return true;
+        },
+      }
+    );
+    expect(outcome).toMatchObject({
+      kind: "paused",
+      phase: "finalizing",
+      finalizationText: "Evidence is ready",
+    });
+    expect(checkpoints).toContainEqual({
+      phase: "finalizing",
+      finalizationText: "Evidence is ready",
+    });
+  });
+
+  test.each(["attempt-limit", "storage-unavailable", "superseded"] as const)(
+    "diagnoses %s reservation independently of token exhaustion",
+    async (kind) => {
+      const onText = vi.fn();
+      const outcome = await runAgentLoop(
+        [],
+        [],
+        vi.fn(),
+        { onText },
+        undefined,
+        {
+          runId: "run",
+          reserveProviderAttempt: async () => ({ kind }),
+        }
+      );
+      expect(outcome.kind).toBe(
+        kind === "attempt-limit"
+          ? "stopped"
+          : kind === "superseded"
+            ? "aborted"
+            : "error"
+      );
+      if (kind === "attempt-limit")
+        expect(outcome).toEqual({
+          kind: "stopped",
+          reason: "provider-attempt-limit",
+          totalTokensUsed: 0,
+        });
+      expect(onText).not.toHaveBeenCalled();
+      expect(aiServiceClientConnect.chat).not.toHaveBeenCalled();
+    }
+  );
+
+  test("retains settled tools and usage when the next provider attempt is refused", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        { id: "one", name: "lookup", arguments: "{}" },
+        { id: "two", name: "lookup", arguments: "{}" },
+      ],
+      usage: { totalTokens: 120 },
+    } as never);
+    const settled: AgentModelAttempt[] = [];
+    const results: string[] = [];
+    const onText = vi.fn();
+    let reservations = 0;
+    const outcome = await runAgentLoop(
+      [{ role: "user", content: "Inspect" }],
+      [],
+      async () => ({ kind: "tool_result", result: "ok" }),
+      {
+        onText,
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      },
+      undefined,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () =>
+          ++reservations === 1
+            ? { kind: "allowed", attemptId: "run:1", ordinal: 1 }
+            : { kind: "attempt-limit" },
+        onAttemptSettled: async (attempt) => {
+          settled.push(attempt);
+          return true;
+        },
+      }
+    );
+    expect(outcome).toEqual({
+      kind: "stopped",
+      reason: "provider-attempt-limit",
+      totalTokensUsed: 120,
+    });
+    expect(results).toEqual(["one", "two"]);
+    expect(settled).toMatchObject([
+      { outcome: "response", usage: { totalTokens: 120 } },
+    ]);
+    expect(onText).not.toHaveBeenCalled();
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+  });
+
+  test("traces sanitized terminal counts without including settlement latency or payloads", async () => {
+    let now = 100;
+    const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+    try {
+      vi.mocked(aiServiceClientConnect.chat).mockImplementationOnce(
+        async () => {
+          now = 125;
+          return {
+            content: "private SQL",
+            toolCalls: [],
+            usage: {
+              totalTokens: 7,
+              inputTokens: 5,
+              outputTokens: 2,
+              cachedInputTokens: 3,
+            },
+            stopReason: AIChatResponse_StopReason.TOKEN_LIMIT,
+          } as never;
+        }
+      );
+      const records: unknown[] = [];
+      await runAgentLoop(
+        [{ role: "user", content: "private question" }],
+        [],
+        vi.fn(),
+        {
+          onProviderAttempt: (record) => records.push(record),
+        },
+        undefined,
+        {
+          runId: "run",
+          allowPlainTextCompletion: true,
+          reserveProviderAttempt: async () => ({
+            kind: "allowed",
+            attemptId: "run:1",
+            ordinal: 1,
+          }),
+          onAttemptSettled: async () => {
+            now = 500;
+            return true;
+          },
+        }
+      );
+      expect(records).toMatchObject([
+        {
+          attemptId: "run:1",
+          runId: "run",
+          ordinal: 1,
+          outcome: "response",
+          phase: "working",
+          roundTripMs: 25,
+          stopReason: "token-limit",
+          usage: { totalTokens: 7, cachedInputTokens: 3 },
+          request: { messageCount: 1, toolCount: 0 },
+        },
+      ]);
+      expect(JSON.stringify(records)).not.toContain("private");
+      expect(JSON.stringify(records)).not.toContain("toolNames");
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  test("does not count a truncated or refused answer as a successful plain-text completion", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "Incomplete answer",
+      toolCalls: [],
+      usage: { totalTokens: 4 },
+      stopReason: AIChatResponse_StopReason.TOKEN_LIMIT,
+    } as never);
+    const outcome = await runAgentLoop([], [], vi.fn(), undefined, undefined, {
+      allowPlainTextCompletion: true,
+    });
+    expect(outcome).toMatchObject({ kind: "error", totalTokensUsed: 4 });
+  });
+
+  test("assigns distinct trace identities to standalone invocations", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValue({
+      content: "Done",
+      toolCalls: [],
+    } as never);
+    const identities: string[] = [];
+    for (let index = 0; index < 2; index++) {
+      await runAgentLoop(
+        [],
+        [],
+        vi.fn(),
+        { onProviderAttempt: (attempt) => identities.push(attempt.attemptId) },
+        undefined,
+        { allowPlainTextCompletion: true }
+      );
+    }
+    expect(new Set(identities).size).toBe(2);
+  });
+
+  test("retains a known managed side-effect result after Stop without running downstream work", async () => {
+    vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+      content: "",
+      toolCalls: [
+        { id: "write", name: "write", arguments: "{}" },
+        { id: "later", name: "write", arguments: "{}" },
+      ],
+      usage: { totalTokens: 7 },
+    } as never);
+    const controller = new AbortController();
+    let resolveTool!: (result: ToolExecutionResult) => void;
+    let releaseResult!: () => void;
+    const executeTool: ToolExecutor = vi.fn(
+      () =>
+        new Promise<ToolExecutionResult>((resolve) => {
+          resolveTool = resolve;
+        })
+    );
+    const retained: string[] = [];
+    const onText = vi.fn();
+    const onToolResult = vi.fn(async (id: string, result: string) => {
+      await new Promise<void>((resolve) => {
+        releaseResult = resolve;
+      });
+      retained.push(`${id}:${result}`);
+    });
+    let finished = false;
+    const run = runAgentLoop(
+      [],
+      [],
+      executeTool,
+      { onToolResult, onText },
+      controller.signal,
+      {
+        runId: "run",
+        reserveProviderAttempt: async () => ({
+          kind: "allowed",
+          attemptId: "run:1",
+          ordinal: 1,
+        }),
+        onAttemptSettled: async () => true,
+      }
+    ).then((outcome) => {
+      finished = true;
+      return outcome;
+    });
+    await vi.waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+    controller.abort();
+    resolveTool({ kind: "tool_result", result: "write completed" });
+    await vi.waitFor(() =>
+      expect(onToolResult).toHaveBeenCalledExactlyOnceWith(
+        "write",
+        "write completed"
+      )
+    );
+    expect(finished).toBe(false);
+    releaseResult();
+    expect(await run).toMatchObject({ kind: "aborted", totalTokensUsed: 7 });
+    expect(retained).toEqual(["write:write completed"]);
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+    expect(onText).not.toHaveBeenCalled();
+  });
+
+  test.each([false, true])(
+    "reports durable settlement failure distinctly from supersession even when stopped: %s",
+    async (stop) => {
+      vi.mocked(aiServiceClientConnect.chat).mockResolvedValueOnce({
+        content: "",
+        toolCalls: [{ id: "write", name: "write", arguments: "{}" }],
+        usage: { totalTokens: 7 },
+      } as never);
+      const controller = new AbortController();
+      const executeTool = vi.fn();
+      const outcome = await runAgentLoop(
+        [],
+        [],
+        executeTool,
+        undefined,
+        controller.signal,
+        {
+          runId: "run",
+          reserveProviderAttempt: async () => ({
+            kind: "allowed",
+            attemptId: "run:1",
+            ordinal: 1,
+          }),
+          onAttemptSettled: async () => {
+            if (stop) controller.abort();
+            throw new Error("storage unavailable");
+          },
+        }
+      );
+      expect(outcome).toMatchObject({
+        kind: "error",
+        totalTokensUsed: 7,
+        error: expect.objectContaining({
+          message: "Agent attempt could not be saved.",
+        }),
+      });
+      expect(executeTool).not.toHaveBeenCalled();
+      expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(1);
+    }
+  );
 
   test("treats a non-AbortError response after user cancellation as aborted", async () => {
     let rejectChat!: (error: Error) => void;
@@ -612,16 +1220,31 @@ describe("runAgentLoop", () => {
             metadata: "",
           },
         ],
+        usage: { totalTokens: 5 },
       } as never;
     });
 
+    const results: string[] = [];
+    const onText = vi.fn();
     const outcome = await runAgentLoop(
       [{ role: "user", content: "Inspect" }],
       [{ name: "lookup", description: "Lookup", parametersSchema: {} }],
-      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" }))
+      vi.fn(async () => ({ kind: "tool_result" as const, result: "ok" })),
+      {
+        onText,
+        onToolResult: (id) => {
+          results.push(id);
+        },
+      }
     );
 
-    expect(outcome).toMatchObject({ kind: "completed", success: false });
+    expect(outcome).toEqual({
+      kind: "stopped",
+      reason: "provider-attempt-limit",
+      totalTokensUsed: 60,
+    });
+    expect(results).toHaveLength(12);
+    expect(onText).not.toHaveBeenCalled();
     expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
   });
 
@@ -650,7 +1273,10 @@ describe("runAgentLoop", () => {
       );
       await vi.runAllTimersAsync();
 
-      expect(await run).toMatchObject({ kind: "completed", success: false });
+      expect(await run).toMatchObject({
+        kind: "stopped",
+        reason: "provider-attempt-limit",
+      });
       expect(aiServiceClientConnect.chat).toHaveBeenCalledTimes(12);
       expect(executeTool).toHaveBeenCalledTimes(6);
     } finally {

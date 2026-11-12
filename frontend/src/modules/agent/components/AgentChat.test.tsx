@@ -12,8 +12,13 @@ import {
 } from "@/app/router/handles";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
+import { buildOutboundHistory } from "../logic/outboundHistory";
 import { acceptAgentResponseActions } from "../logic/responseActions";
-import type { AgentHandoff, AgentMessageMetadata } from "../logic/types";
+import type {
+  AgentChat as AgentChatRecord,
+  AgentHandoff,
+  AgentMessageMetadata,
+} from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -322,6 +327,28 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("hides application preflight rows without deleting canonical outbound tool groups", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Inspect workspace metadata" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Internal startup evidence", toolCalls: [{ id: "preflight-read", name: "get_page_state", arguments: "{}", metadata: "opaque-provider-metadata" }], metadata: { runPreflight: true, hidden: true } });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "preflight-read", content: '{"result":"Canonical startup result"}', metadata: { runPreflight: true, hidden: true } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Visible reviewed answer" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(container.textContent).not.toContain("Internal startup evidence");
+      expect(container.textContent).not.toContain("Canonical startup result");
+      expect(container.textContent).toContain("Visible reviewed answer");
+      expect(store.getMessages(chat.id)).toHaveLength(4);
+      const outbound = buildOutboundHistory("System instruction", store.getMessages(chat.id));
+      expect(outbound.find((row) => row.toolCalls?.some((call) => call.id === "preflight-read"))?.toolCalls?.[0].metadata).toBe("opaque-provider-metadata");
+      expect(outbound.find((row) => row.toolCallId === "preflight-read")?.content).toContain("Canonical startup result");
+    } finally {
+      unmount();
+    }
+  });
+
   test("copies each user message's original text without changing the draft", async () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -2112,6 +2139,138 @@ describe("AgentChat", () => {
     }
   });
 
+  describe("user-stopped managed run Retry", () => {
+    const prepareStoppedRun = () => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const user = store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Count databases",
+      })!;
+      store.startChatRun(chat.id, undefined, { runId: "run-1" });
+      useAgentStore.setState((state) => ({
+        chats: state.chats.map((current): AgentChatRecord => current.id === chat.id
+          ? {
+              ...current,
+              runBudget: {
+                version: 1,
+                runId: "run-1",
+                limit: 1000,
+                totalTokensUsed: 100,
+                hasUnreportedUsage: false,
+                providerAttemptCount: 1,
+                revision: 1,
+              },
+              runCheckpoint: {
+                version: 1,
+                runId: "run-1",
+                suspension: "interrupted",
+                rootUserMessageId: user.id,
+                throughMessageId: user.id,
+                bindings: {
+                  page: { path: "/projects/sample", title: "Sample" },
+                  references: [],
+                  runMode: "default",
+                },
+                maskingSections: [],
+                phase: "working",
+                startupComplete: true,
+              },
+            }
+          : current),
+      }));
+      store.interruptChatRun(chat.id, undefined, "user");
+      return { store, chatId: chat.id };
+    };
+
+    test.each(["idle", "error"] as const)(
+      "offers Retry for a recoverable stopped run in %s without replacing its budget",
+      (status) => {
+        const { store, chatId } = prepareStoppedRun();
+        if (status === "error") {
+          store.setChatStatus(chatId, status, {
+            interrupted: true,
+            interruptionReason: "user",
+            lastError: "Request stopped",
+          });
+        }
+        const runBeforeRetry = store.getChat(chatId);
+        const onRetry = vi.fn();
+        const { container, render, unmount } = renderIntoContainer(
+          <AgentChat onRetry={onRetry} />
+        );
+        render();
+        try {
+          const result = container.querySelector("[data-agent-interruption-status]");
+          expect(result?.textContent).toContain("agent.request-stopped-by-user");
+          const retry = Array.from(result?.querySelectorAll("button") ?? []).find(
+            (button) => button.textContent === "agent.retry-last-chat-turn"
+          );
+          expect(retry).toBeDefined();
+          act(() => retry?.click());
+          expect(onRetry).toHaveBeenCalledOnce();
+          expect(store.getChat(chatId)?.runId).toBe("run-1");
+          expect(store.getChat(chatId)?.runBudget).toEqual(runBeforeRetry?.runBudget);
+          expect(store.getMessages(chatId)).toHaveLength(1);
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test.each([
+      "missing checkpoint", "missing budget", "incomplete startup", "stale cursor",
+      "different root", "mismatched budget", "token limit", "archived",
+      "running", "awaiting_user", "paused", "queued", "remote busy",
+    ] as const)("does not offer Retry for a %s stopped run", (state) => {
+      const { store, chatId } = prepareStoppedRun();
+      if (state === "different root") {
+        store.addMessage({ chatId, role: "user", content: "A later request" });
+        store.interruptChatRun(chatId, undefined, "user");
+      }
+      useAgentStore.setState((current) => ({
+        chats: current.chats.map((chat): AgentChatRecord => {
+          if (chat.id !== chatId) return chat;
+          switch (state) {
+            case "missing checkpoint": return { ...chat, runCheckpoint: undefined };
+            case "missing budget": return { ...chat, runBudget: undefined };
+            case "incomplete startup": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, startupComplete: false } };
+            case "stale cursor": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, throughMessageId: "missing" } };
+            case "mismatched budget": return { ...chat, runBudget: { ...chat.runBudget!, runId: "other-run" } };
+            case "token limit": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, suspension: "token-limit" } };
+            case "archived": return { ...chat, archived: true };
+            case "running":
+            case "awaiting_user":
+            case "paused": return { ...chat, status: state };
+            default: return chat;
+          }
+        }),
+        ...(state === "queued" ? {
+          queuedUserMessagesByChatId: {
+            [chatId]: { id: "queued-message", chatId, text: "Queued request", page: { path: "/demo", title: "Demo" } },
+          },
+        } : {}),
+      }));
+      if (state === "remote busy") {
+        useAgentStore.setState({ remoteBusyChatIds: { [chatId]: true } });
+      }
+      const onRetry = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onRetry={onRetry} />
+      );
+      render();
+      try {
+        expect(container.querySelector("[data-agent-interruption-status]")).not.toBeNull();
+        expect(container.textContent).not.toContain("agent.retry-last-chat-turn");
+        expect(onRetry).not.toHaveBeenCalled();
+      } finally {
+        unmount();
+        useAgentStore.setState({ remoteBusyChatIds: {} });
+      }
+    });
+  });
+
   test("offers Retry for the current unexpected interruption", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -2782,6 +2941,100 @@ describe("AgentChat", () => {
     }
 
     unmount();
+  });
+
+  test.each([
+    {
+      name: "multiline JSON",
+      content: JSON.stringify({
+        database: `instances/test-instance/databases/${"orders_".repeat(100)}`,
+        policy: "x".repeat(1000),
+      }, null, 2),
+    },
+    { name: "unbroken text", content: "x".repeat(2000) },
+    {
+      name: "canonical resource path",
+      content: `Inspect instances/test-instance/databases/${"orders_".repeat(100)}`,
+    },
+    {
+      name: "bound resource mention",
+      content: `Inspect @${"orders_".repeat(100)}`,
+      metadata: {
+        resourceReference: {
+          kind: "database",
+          name: `instances/test-instance/databases/${"orders_".repeat(100)}`,
+          project: "projects/demo",
+          label: "orders_".repeat(100),
+        },
+      } satisfies AgentMessageMetadata,
+    },
+  ])("bounds $name in a user bubble without changing its text", ({ content, metadata }) => {
+    const message = useAgentStore.getState().addMessage({
+      role: "user",
+      content,
+      metadata,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = Array.from(container.querySelectorAll("div")).find(
+        (element) => element.classList.contains("bg-info/10")
+      );
+      expect(bubble?.textContent).toBe(content);
+      expect(bubble).toHaveClass(
+        "w-fit", "min-w-0", "max-w-full", "wrap-anywhere", "whitespace-pre-wrap"
+      );
+      if (metadata) {
+        expect(bubble?.querySelector("[data-agent-message-mention]")?.textContent).toBe(
+          `@${metadata.resourceReference.label}`
+        );
+      }
+      expect(useAgentStore.getState().getMessages(
+        useAgentStore.getState().currentChatId
+      ).find((current) => current.id === message?.id)?.content).toBe(content);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("wraps long assistant prose within its content-sized bubble", () => {
+    const content = `Resource ${"orders_".repeat(200)} is unavailable.`;
+    useAgentStore.getState().addMessage({ role: "assistant", content });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = container.querySelector("[data-agent-answer]");
+      expect(bubble?.textContent).toBe(content);
+      expect(bubble).toHaveClass("w-fit", "min-w-0", "max-w-full", "wrap-anywhere");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps long fenced code unwrapped in its own horizontal scroll area", () => {
+    const sql = `SELECT '${"x".repeat(2000)}' AS value;`;
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: `Review the statement:\n\n\`\`\`sql\n${sql}\n\`\`\``,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = container.querySelector("[data-agent-answer]");
+      const pre = bubble?.querySelector("pre");
+      expect(bubble).toHaveClass("min-w-0", "max-w-full", "wrap-anywhere");
+      expect(pre?.textContent).toBe(`${sql}\n`);
+      expect(pre).toHaveClass("overflow-x-auto", "whitespace-pre");
+      expect(pre).not.toHaveClass("whitespace-pre-wrap", "break-all");
+    } finally {
+      unmount();
+    }
   });
 
   test("shows timestamps for user messages and final assistant replies", () => {

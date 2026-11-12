@@ -24,9 +24,27 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
+import { getAgentRunClarificationBindings } from "../logic/runCheckpoint";
+import {
+  hasAgentRunLease,
+  supportsAgentRunRecovery,
+} from "../logic/runOwnership";
+import {
+  createRunBudget,
+  increaseRunBudgetLimit,
+  mergeModelAttempts,
+  normalizeModelAttempt,
+  normalizeRunBindings,
+  normalizeRunBudget,
+  normalizeRunCheckpoint,
+  projectChatUsage,
+  projectRunBudget,
+  reserveRunAttempt,
+} from "../logic/tokenBudget";
 import { normalizeModelCallUsage } from "../logic/tokenUsage";
 import type {
   AgentAskUserResponse,
+  AgentAttemptReservation,
   AgentChat,
   AgentChatSnapshot,
   AgentChatStatus,
@@ -36,10 +54,13 @@ import type {
   AgentMentionRange,
   AgentMessage,
   AgentMessageMetadata,
+  AgentModelAttempt,
   AgentModelCallUsage,
   AgentPendingAsk,
   AgentResourceReference,
   AgentResponseAction,
+  AgentRunBindings,
+  AgentRunCheckpoint,
   AgentRunMode,
   Message,
   ToolCall,
@@ -51,8 +72,10 @@ import {
   getAgentPreferencesKey,
   normalizeAgentPreferences,
 } from "./preferences";
+import { createAgentRunPersistence } from "./runPersistence";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
+export const AGENT_RUN_STATE_KEY = "bb-agent-state-v3";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
 export const AGENT_WINDOW_LAYOUT_VERSION = 4;
 const LEGACY_AGENT_STATE_KEY = `${AGENT_STATE_KEY}.legacy`;
@@ -63,12 +86,23 @@ const getWorkspaceStorageKey = (key: string, workspaceName: string) => {
   return workspaceId ? `${key}.${workspaceId}` : null;
 };
 
-export const getAgentStateKey = (workspaceName: string, userEmail: string) => {
+const getScopedAgentStateKey = (
+  key: string,
+  workspaceName: string,
+  userEmail: string
+) => {
   const workspaceId = getResourceId(workspaceName, workspaceNamePrefix);
   return workspaceId && userEmail
-    ? `${AGENT_STATE_KEY}.${workspaceId.length}:${workspaceId}.${userEmail}`
+    ? `${key}.${workspaceId.length}:${workspaceId}.${userEmail}`
     : null;
 };
+
+export const getAgentStateKey = (workspaceName: string, userEmail: string) =>
+  getScopedAgentStateKey(
+    supportsAgentRunRecovery() ? AGENT_RUN_STATE_KEY : AGENT_STATE_KEY,
+    workspaceName,
+    userEmail
+  );
 
 export const getAgentWindowKey = (workspaceName: string) =>
   getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
@@ -523,6 +557,7 @@ const normalizeChat = (raw: unknown): AgentChat => {
   const status =
     chat.status === "running" ||
     chat.status === "awaiting_user" ||
+    chat.status === "paused" ||
     chat.status === "error"
       ? chat.status
       : DEFAULT_CHAT_STATUS;
@@ -547,6 +582,21 @@ const normalizeChat = (raw: unknown): AgentChat => {
         ? chat.totalTokensUsed
         : 0,
     hasUnreportedUsage: chat.hasUnreportedUsage === true,
+    legacyUsage:
+      isRecord(chat.legacyUsage) &&
+      typeof chat.legacyUsage.totalTokensUsed === "number" &&
+      Number.isSafeInteger(chat.legacyUsage.totalTokensUsed) &&
+      chat.legacyUsage.totalTokensUsed >= 0
+        ? {
+            totalTokensUsed: chat.legacyUsage.totalTokensUsed,
+            hasUnreportedUsage: chat.legacyUsage.hasUnreportedUsage === true,
+          }
+        : undefined,
+    modelAttempts: Array.isArray(chat.modelAttempts)
+      ? mergeModelAttempts(chat.modelAttempts as AgentModelAttempt[])
+      : undefined,
+    runBudget: normalizeRunBudget(chat.runBudget),
+    runCheckpoint: normalizeRunCheckpoint(chat.runCheckpoint),
     lastRunUsage:
       isRecord(chat.lastRunUsage) &&
       typeof chat.lastRunUsage.runId === "string" &&
@@ -590,6 +640,62 @@ const normalizeChat = (raw: unknown): AgentChat => {
       : {}),
   };
 };
+
+function applyChatAccounting(chat: AgentChat) {
+  const attempts = mergeModelAttempts(chat.modelAttempts);
+  chat.modelAttempts = attempts;
+  chat.legacyUsage ??= {
+    totalTokensUsed: chat.totalTokensUsed,
+    hasUnreportedUsage: Boolean(
+      chat.hasUnreportedUsage || chat.totalTokensUsed > 0
+    ),
+  };
+  Object.assign(chat, projectChatUsage(chat.legacyUsage, attempts));
+  if (chat.runBudget) {
+    chat.runBudget = projectRunBudget(chat.runBudget, attempts);
+    chat.hasUnreportedUsage ||= chat.runBudget.hasUnreportedUsage;
+  }
+  const runId = chat.lastRunUsage?.runId;
+  if (runId && attempts.some((attempt) => attempt.runId === runId)) {
+    chat.lastRunUsage = {
+      runId,
+      calls: attempts
+        .filter(
+          (attempt) =>
+            attempt.runId === runId &&
+            attempt.outcome === "response" &&
+            attempt.usage
+        )
+        .sort((a, b) => a.ordinal - b.ordinal)
+        .map((attempt) => ({
+          ...attempt.usage!,
+          attemptId: attempt.attemptId,
+        })),
+    };
+  }
+}
+
+function isValidChatCheckpoint(
+  chat: AgentChat,
+  messages: AgentMessage[],
+  checkpoint: AgentRunCheckpoint
+) {
+  const root = messages.findIndex(
+    (message) =>
+      message.id === checkpoint.rootUserMessageId && message.role === "user"
+  );
+  const through = messages.findIndex(
+    (message) => message.id === checkpoint.throughMessageId
+  );
+  return (
+    !chat.archived &&
+    chat.runId === checkpoint.runId &&
+    chat.runBudget?.runId === checkpoint.runId &&
+    root >= 0 &&
+    through >= root &&
+    samePersistedValue(chat.capability, checkpoint.bindings.capability)
+  );
+}
 
 const sortMessages = (messages: AgentMessage[]) => {
   messages.sort((a, b) => a.createdTs - b.createdTs);
@@ -654,6 +760,24 @@ const normalizePersistedState = (
         normalizeMessage(message, chat.id, chat.createdTs + index)
       )
     );
+    if (chat.legacyUsage || chat.modelAttempts || chat.runBudget)
+      applyChatAccounting(chat);
+    if (
+      chat.runCheckpoint &&
+      !isValidChatCheckpoint(chat, messages, chat.runCheckpoint)
+    )
+      chat.runCheckpoint = undefined;
+    if (
+      (chat.status === "paused" || chat.runBudget) &&
+      (!chat.runCheckpoint || chat.runBudget?.runId !== chat.runId)
+    ) {
+      if (chat.runId || chat.status === "paused") {
+        chat.status = DEFAULT_CHAT_STATUS;
+        chat.interrupted = true;
+        chat.interruptionReason = "unexpected";
+      }
+      chat.runCheckpoint = undefined;
+    }
 
     const firstUserMessage = messages.find(
       (message) => message.role === "user"
@@ -672,6 +796,7 @@ const normalizePersistedState = (
       chat.interruptionReason = "unexpected";
       chat.lastError = null;
       chat.requiresAIConfiguration = false;
+      if (chat.runCheckpoint) chat.runCheckpoint.suspension = "interrupted";
     }
     if (chat.interrupted) {
       setLastUserInterruptionReason(
@@ -904,6 +1029,32 @@ export interface AgentState {
     page?: AgentChatSnapshot,
     options?: { runId?: string; runMode?: AgentRunMode }
   ) => void;
+  beginChatRun: (
+    chatId: string,
+    rootUserMessageId: string,
+    bindings: AgentRunBindings
+  ) => Promise<string | null>;
+  continueChatRun: (chatId: string, runId: string) => Promise<boolean>;
+  saveChatRunCheckpoint: (
+    chatId: string,
+    checkpoint: AgentRunCheckpoint
+  ) => Promise<boolean>;
+  reserveChatRunAttempt: (
+    chatId: string,
+    runId: string
+  ) => Promise<AgentAttemptReservation>;
+  recordChatModelAttempt: (
+    chatId: string,
+    attempt: AgentModelAttempt
+  ) => Promise<boolean>;
+  pauseChatRun: (
+    chatId: string,
+    checkpoint: AgentRunCheckpoint
+  ) => Promise<boolean>;
+  increaseRunTokenLimit: (chatId: string, limit: number) => Promise<boolean>;
+  endPausedRun: (chatId: string) => Promise<boolean>;
+  flushRunPersistence: () => Promise<boolean>;
+  canUseAgentExecution: () => boolean;
   finishChatRun: (
     chatId: string,
     options?: {
@@ -1128,7 +1279,7 @@ const readPersistedState = (
   try {
     return normalizePersistedState(JSON.parse(saved));
   } catch {
-    storage?.removeItem(key);
+    if (!key.startsWith(`${AGENT_RUN_STATE_KEY}.`)) storage?.removeItem(key);
     return null;
   }
 };
@@ -1247,8 +1398,12 @@ const migrateLegacyState = (
   storage: Storage | null,
   workspaceName: string,
   userEmail: string
-) => {
-  if (!storage || !getAgentStateKey(workspaceName, userEmail)) return;
+): boolean => {
+  if (
+    !storage ||
+    !getScopedAgentStateKey(AGENT_STATE_KEY, workspaceName, userEmail)
+  )
+    return true;
   try {
     const prefix = `${AGENT_STATE_KEY}.`;
     const keys = Array.from({ length: storage.length }, (_, index) =>
@@ -1286,13 +1441,14 @@ const migrateLegacyState = (
         return [];
       }
     });
-    if (sources.length === 0) return;
+    if (sources.length === 0) return true;
 
     const owner = storage.getItem(LEGACY_AGENT_OWNER_KEY);
-    if (owner !== null && owner !== userEmail) return;
+    if (owner !== null && owner !== userEmail) return true;
     if (owner === null) storage.setItem(LEGACY_AGENT_OWNER_KEY, userEmail);
 
     const incomingByWorkspace = new Map<string, PersistedAgentState>();
+    const retainedSourceKeys = new Set<string>();
     for (const source of sources) {
       const chatsByWorkspace = new Map<string, AgentChat[]>();
       for (const chat of source.state.chats) {
@@ -1308,6 +1464,12 @@ const migrateLegacyState = (
         chatsByWorkspace.set(chatWorkspaceName, chats);
       }
       for (const [name, chats] of chatsByWorkspace) {
+        const v3Key = getScopedAgentStateKey(
+          AGENT_RUN_STATE_KEY,
+          name,
+          userEmail
+        );
+        if (v3Key && storage.getItem(v3Key)) retainedSourceKeys.add(source.key);
         const incoming = selectPersistedChats(source.state, chats);
         incomingByWorkspace.set(
           name,
@@ -1316,9 +1478,9 @@ const migrateLegacyState = (
       }
     }
 
-    // Write every account cache before removing any ownerless source.
+    // Stage in v2 so v3 hydration and accounting use the serialized writer.
     for (const [name, incoming] of incomingByWorkspace) {
-      const key = getAgentStateKey(name, userEmail);
+      const key = getScopedAgentStateKey(AGENT_STATE_KEY, name, userEmail);
       if (!key) throw new Error("Invalid legacy workspace");
       const existing = readPersistedState(storage, key);
       const merged = mergePersistedStates(existing, incoming);
@@ -1327,9 +1489,14 @@ const migrateLegacyState = (
       }
       storage.setItem(key, JSON.stringify(merged));
     }
-    for (const { key } of sources) storage.removeItem(key);
+    for (const { key } of sources) {
+      // An existing v3 cache takes precedence and does not import staged v2.
+      if (!retainedSourceKeys.has(key)) storage.removeItem(key);
+    }
+    return true;
   } catch {
     // The owner marker prevents another account from claiming a partial migration.
+    return false;
   }
 };
 
@@ -1356,6 +1523,64 @@ const persistedSnapshot = (state: AgentState): PersistedAgentState => ({
 
 const samePersistedValue = (a: unknown, b: unknown) =>
   a === b || JSON.stringify(a) === JSON.stringify(b);
+
+const currentScopeKey = (state: AgentState) =>
+  state.workspaceName && state.userEmail
+    ? getAgentStateKey(state.workspaceName, state.userEmail)
+    : null;
+const canOwnRun = (state: AgentState, chatId: string) => {
+  const key = currentScopeKey(state);
+  if (!key) return false;
+  if (supportsAgentRunRecovery()) return hasAgentRunLease(key, chatId);
+  try {
+    return !getSafeStorage()?.getItem(
+      key.replace(AGENT_STATE_KEY, AGENT_RUN_STATE_KEY)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const draftShadowKey = (scopeKey: string) => `bb-agent-ui-v1.${scopeKey}`;
+const saveDraftShadow = (state: AgentState) => {
+  const key = currentScopeKey(state);
+  if (!key || !supportsAgentRunRecovery()) return;
+  try {
+    sessionStorage.setItem(
+      draftShadowKey(key),
+      JSON.stringify({
+        currentChatId: state.currentChatId,
+        draftsByChatId: state.draftsByChatId,
+      })
+    );
+  } catch {
+    /* In-memory drafts remain available when browser storage is unavailable. */
+  }
+};
+const restoreDraftShadow = (key: string, state: PersistedAgentState) => {
+  if (!supportsAgentRunRecovery()) return state;
+  try {
+    const raw = JSON.parse(
+      sessionStorage.getItem(draftShadowKey(key)) ?? "null"
+    );
+    if (!isRecord(raw)) return state;
+    const ids = new Set(state.chats.map((chat) => chat.id));
+    if (
+      raw.currentChatId === null ||
+      (typeof raw.currentChatId === "string" && ids.has(raw.currentChatId))
+    )
+      state.currentChatId = raw.currentChatId as string | null;
+    if (isRecord(raw.draftsByChatId))
+      for (const id of ids) {
+        const draft = normalizeDraft(raw.draftsByChatId[id]);
+        if (draft) state.draftsByChatId[id] = draft;
+        else delete state.draftsByChatId[id];
+      }
+  } catch {
+    /* Draft recovery never restores execution state. */
+  }
+  return state;
+};
 
 const mergeDraftHandoffs = (
   message: AgentMessage,
@@ -1401,10 +1626,32 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
     updatedTs: _updatedTs,
     page: _page,
     archived: _archived,
+    totalTokensUsed: _total,
+    hasUnreportedUsage: _unreported,
+    modelAttempts: _attempts,
+    legacyUsage: _legacy,
+    lastRunUsage: _usage,
+    runBudget: budget,
     ...execution
   } = normalizeChat(chat);
   return {
     ...execution,
+    ...(!chat.runBudget && !chat.modelAttempts
+      ? {
+          totalTokensUsed: chat.totalTokensUsed,
+          hasUnreportedUsage: chat.hasUnreportedUsage,
+          lastRunUsage: chat.lastRunUsage,
+        }
+      : {}),
+    runBudget: budget
+      ? {
+          ...budget,
+          totalTokensUsed: 0,
+          hasUnreportedUsage: false,
+          limit: 0,
+          revision: 0,
+        }
+      : undefined,
     messages: (state.messagesByChatId[chat.id] ?? []).map((message) => {
       if (!message.metadata) return message;
       const {
@@ -1450,6 +1697,50 @@ const rebasePersistedChanges = (
     const sourceChat = useLocal ? current : incoming;
     if (!sourceChat) continue;
     const chat = { ...sourceChat };
+    if (
+      current?.modelAttempts ||
+      incoming?.modelAttempts ||
+      current?.legacyUsage ||
+      incoming?.legacyUsage
+    ) {
+      chat.legacyUsage = incoming?.legacyUsage ??
+        current?.legacyUsage ?? {
+          totalTokensUsed: sourceChat.totalTokensUsed,
+          hasUnreportedUsage: Boolean(
+            sourceChat.hasUnreportedUsage || sourceChat.totalTokensUsed > 0
+          ),
+        };
+      if (current?.legacyUsage && incoming?.legacyUsage) {
+        chat.legacyUsage = {
+          totalTokensUsed: Math.max(
+            current.legacyUsage.totalTokensUsed,
+            incoming.legacyUsage.totalTokensUsed
+          ),
+          hasUnreportedUsage:
+            current.legacyUsage.hasUnreportedUsage ||
+            incoming.legacyUsage.hasUnreportedUsage,
+        };
+      }
+      chat.modelAttempts = mergeModelAttempts(
+        incoming?.modelAttempts,
+        current?.modelAttempts
+      );
+      if (
+        chat.runBudget &&
+        current?.runBudget?.runId === chat.runBudget.runId &&
+        incoming?.runBudget?.runId === chat.runBudget.runId
+      ) {
+        chat.runBudget = {
+          ...chat.runBudget,
+          limit: Math.max(current.runBudget.limit, incoming.runBudget.limit),
+          revision: Math.max(
+            current.runBudget.revision,
+            incoming.runBudget.revision
+          ),
+        };
+      }
+      applyChatAccounting(chat);
+    }
     if (current?.capability || incoming?.capability) {
       chat.capability = current?.capability ?? incoming?.capability;
     }
@@ -1516,6 +1807,23 @@ export const createAgentStore = () => {
   const lastSerializedByScope = new Map<string, string>();
   const snapshotsByScope = new Map<string, PersistedAgentState>();
   const storageSnapshotsByScope = new Map<string, PersistedAgentState>();
+  const pendingStatesByScope = new Map<string, AgentState>();
+  const writersByScope = new Map<
+    string,
+    ReturnType<typeof createAgentRunPersistence>
+  >();
+  const getWriter = (key: string) => {
+    let writer = writersByScope.get(key);
+    if (!writer) {
+      writer = createAgentRunPersistence(key, () => {
+        const state = pendingStatesByScope.get(key);
+        if (!state || !synchronizeState(state, true, true))
+          throw new Error("Agent persistence unavailable");
+      });
+      writersByScope.set(key, writer);
+    }
+    return writer;
+  };
   let applyingSnapshot = false;
   let draftPersistTimer: ReturnType<typeof setTimeout> | null = null;
   const clearDraftPersistTimer = () => {
@@ -1776,6 +2084,8 @@ export const createAgentStore = () => {
           if (
             get().remoteBusyChatIds[message.chatId] ||
             _getChat(message.chatId)?.status !== "idle" ||
+            _getChat(message.chatId)?.runCheckpoint?.suspension ===
+              "token-limit" ||
             get().queuedUserMessagesByChatId[message.chatId]
           ) {
             return;
@@ -1805,6 +2115,7 @@ export const createAgentStore = () => {
           const message = get().queuedUserMessagesByChatId[chatId];
           if (
             !message ||
+            _getChat(chatId)?.runCheckpoint?.suspension === "token-limit" ||
             get().remoteBusyChatIds[chatId] ||
             get().queuedUserMessageInFlightByChatId[chatId]
           ) {
@@ -1825,7 +2136,12 @@ export const createAgentStore = () => {
 
         commitQueuedUserMessage: (chatId) => {
           const queued = get().queuedUserMessagesByChatId[chatId];
-          if (!queued || get().remoteBusyChatIds[chatId] || !_getChat(chatId)) {
+          if (
+            !queued ||
+            get().remoteBusyChatIds[chatId] ||
+            !_getChat(chatId) ||
+            _getChat(chatId)?.runCheckpoint?.suspension === "token-limit"
+          ) {
             return null;
           }
 
@@ -2045,10 +2361,27 @@ export const createAgentStore = () => {
 
         archiveChat: (chatId) => {
           if (!_getChat(chatId)) return null;
+          if (_getChat(chatId)?.runBudget)
+            get().getAbortController(chatId)?.abort();
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.archived = true;
+              if (chat.runBudget) {
+                chat.runCheckpoint = undefined;
+                chat.runId = null;
+                delete state.pendingAskByChatId[chatId];
+                delete state.queuedUserMessagesByChatId[chatId];
+                delete state.queuedUserMessageInFlightByChatId[chatId];
+                if (
+                  chat.status === "running" ||
+                  chat.status === "paused" ||
+                  chat.status === "awaiting_user"
+                ) {
+                  chat.status = "idle";
+                  chat.interrupted = true;
+                }
+              }
               _touchChatInDraft(state.chats, chatId);
             }
           });
@@ -2057,6 +2390,9 @@ export const createAgentStore = () => {
 
         archiveAllActiveChats: () => {
           let archivedCount = 0;
+          for (const chat of get().chats)
+            if (!chat.archived && chat.runBudget)
+              get().getAbortController(chat.id)?.abort();
           set((state) => {
             const activeChats = state.chats.filter((chat) => !chat.archived);
             archivedCount = activeChats.length;
@@ -2064,6 +2400,21 @@ export const createAgentStore = () => {
 
             for (const chat of activeChats) {
               chat.archived = true;
+              if (chat.runBudget) {
+                chat.runCheckpoint = undefined;
+                chat.runId = null;
+                delete state.pendingAskByChatId[chat.id];
+                delete state.queuedUserMessagesByChatId[chat.id];
+                delete state.queuedUserMessageInFlightByChatId[chat.id];
+                if (
+                  chat.status === "running" ||
+                  chat.status === "paused" ||
+                  chat.status === "awaiting_user"
+                ) {
+                  chat.status = "idle";
+                  chat.interrupted = true;
+                }
+              }
               _touchChatInDraft(state.chats, chat.id);
             }
 
@@ -2230,6 +2581,12 @@ export const createAgentStore = () => {
           if (message.chatId && !_getChat(message.chatId)) return null;
           const chatId = message.chatId ?? get().ensureCurrentChat().id;
           if (get().remoteBusyChatIds[chatId]) return null;
+          if (
+            message.role === "user" &&
+            (_getChat(chatId)?.status === "paused" ||
+              _getChat(chatId)?.runCheckpoint?.suspension === "token-limit")
+          )
+            return null;
           const createdTs = Date.now();
           const agentMessage: AgentMessage = {
             ...message,
@@ -2473,6 +2830,13 @@ export const createAgentStore = () => {
         },
 
         startChatRun: (chatId, page, options = {}) => {
+          if (
+            (currentScopeKey(get()) && !get().canUseAgentExecution()) ||
+            _getChat(chatId)?.runCheckpoint ||
+            (_getChat(chatId)?.runId && _getChat(chatId)?.runBudget) ||
+            _getChat(chatId)?.status === "paused"
+          )
+            return;
           get().setChatStatus(chatId, "running", { page });
           set((state) => {
             const chat = state.chats.find((c) => c.id === chatId);
@@ -2489,6 +2853,346 @@ export const createAgentStore = () => {
           });
         },
 
+        beginChatRun: async (chatId, rootUserMessageId, rawBindings) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          const bindings = normalizeRunBindings(rawBindings);
+          if (
+            !chat ||
+            chat.archived ||
+            chat.runCheckpoint ||
+            (chat.runId && chat.runBudget) ||
+            chat.status === "paused" ||
+            (get().remoteBusyChatIds[chatId] && !supportsAgentRunRecovery()) ||
+            !bindings ||
+            !samePersistedValue(chat.capability, bindings.capability) ||
+            !get()
+              .getMessages(chatId)
+              .some(
+                (message) =>
+                  message.id === rootUserMessageId && message.role === "user"
+              ) ||
+            !canOwnRun(get(), chatId)
+          )
+            return null;
+          const runId = uuidv4();
+          set((state) => {
+            const current = state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!;
+            current.legacyUsage ??= {
+              totalTokensUsed: current.totalTokensUsed,
+              hasUnreportedUsage: Boolean(
+                current.hasUnreportedUsage || current.totalTokensUsed > 0
+              ),
+            };
+            current.legacyUsage.hasUnreportedUsage ||= Boolean(
+              current.runBudget?.hasUnreportedUsage
+            );
+            current.modelAttempts ??= [];
+            current.runId = runId;
+            current.runMode = bindings.runMode;
+            current.runBudget = createRunBudget(
+              runId,
+              state.preferences.tokenLimitPerRun
+            );
+            current.runCheckpoint = {
+              version: 1,
+              runId,
+              suspension: "interrupted",
+              rootUserMessageId,
+              throughMessageId: rootUserMessageId,
+              bindings,
+              maskingSections: [],
+              phase: "working",
+              startupComplete: false,
+            };
+            current.lastRunUsage = { runId, calls: [] };
+            current.status = "running";
+            delete state.remoteBusyChatIds[chatId];
+            current.interrupted = false;
+            current.interruptionReason = undefined;
+            current.lastError = null;
+            current.requiresAIConfiguration = false;
+            delete state.pendingAskByChatId[chatId];
+            const root = state.messagesByChatId[chatId]?.find(
+              (message) => message.id === rootUserMessageId
+            );
+            if (root) root.metadata = { ...root.metadata, runId };
+            setLastUserInterruptionReason(state.messagesByChatId[chatId] ?? []);
+            _touchChatInDraft(state.chats, chatId);
+          });
+          return (await get().flushRunPersistence()) ? runId : null;
+        },
+
+        continueChatRun: async (chatId, runId) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          const pendingAsk = get().getPendingAsk(chatId);
+          if (
+            pendingAsk &&
+            !get()
+              .getMessages(chatId)
+              .some(
+                (message) =>
+                  message.role === "tool" &&
+                  message.toolCallId === pendingAsk.toolCallId &&
+                  message.metadata?.runId === runId
+              )
+          )
+            return false;
+          if (
+            !chat ||
+            chat.runId !== runId ||
+            !chat.runCheckpoint ||
+            chat.runCheckpoint.startupComplete !== true ||
+            !isValidChatCheckpoint(
+              chat,
+              get().getMessages(chatId),
+              chat.runCheckpoint
+            ) ||
+            (get().remoteBusyChatIds[chatId] && !supportsAgentRunRecovery()) ||
+            !canOwnRun(get(), chatId)
+          )
+            return false;
+          const clarifiedBindings = getAgentRunClarificationBindings(
+            chat,
+            get().getMessages(chatId)
+          );
+          set((state) => {
+            const current = state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!;
+            current.status = "running";
+            delete state.remoteBusyChatIds[chatId];
+            current.interrupted = false;
+            current.interruptionReason = undefined;
+            current.lastError = null;
+            current.requiresAIConfiguration = false;
+            delete state.pendingAskByChatId[chatId];
+            setLastUserInterruptionReason(state.messagesByChatId[chatId] ?? []);
+            if (clarifiedBindings) {
+              current.runCheckpoint!.bindings = clarifiedBindings;
+              current.runCheckpoint!.referencePreflightPending = true;
+              current.runMode = clarifiedBindings.runMode;
+            }
+            current.runCheckpoint!.suspension = "interrupted";
+          });
+          return get().flushRunPersistence();
+        },
+
+        saveChatRunCheckpoint: async (chatId, rawCheckpoint) => {
+          const checkpoint = normalizeRunCheckpoint(rawCheckpoint);
+          const chat = _getChat(chatId);
+          if (
+            !chat ||
+            !checkpoint ||
+            !canOwnRun(get(), chatId) ||
+            !isValidChatCheckpoint(
+              chat,
+              get().getMessages(chatId),
+              checkpoint
+            ) ||
+            !chat.runCheckpoint ||
+            !samePersistedValue(
+              chat.runCheckpoint.bindings,
+              checkpoint.bindings
+            ) ||
+            chat.runCheckpoint.rootUserMessageId !==
+              checkpoint.rootUserMessageId ||
+            (chat.runCheckpoint.phase === "finalizing" &&
+              checkpoint.phase !== "finalizing") ||
+            (chat.runCheckpoint.startupComplete && !checkpoint.startupComplete)
+          )
+            return false;
+          set((state) => {
+            state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!.runCheckpoint = checkpoint;
+          });
+          return get().flushRunPersistence();
+        },
+
+        reserveChatRunAttempt: async (chatId, runId) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          if (
+            !chat ||
+            chat.archived ||
+            chat.runId !== runId ||
+            chat.status !== "running" ||
+            !chat.runBudget ||
+            !chat.runCheckpoint ||
+            !canOwnRun(get(), chatId)
+          )
+            return { kind: "superseded" };
+          if (!(await get().flushRunPersistence()))
+            return { kind: "storage-unavailable" };
+          const latest = _getChat(chatId);
+          if (
+            !latest?.runBudget ||
+            latest.runId !== runId ||
+            !canOwnRun(get(), chatId)
+          )
+            return { kind: "superseded" };
+          const result = reserveRunAttempt(latest.runBudget);
+          if (result.reservation.kind !== "allowed") return result.reservation;
+          set((state) => {
+            const current = state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!;
+            current.runBudget = projectRunBudget(
+              result.budget,
+              current.modelAttempts ?? []
+            );
+            current.hasUnreportedUsage = true;
+          });
+          return (await get().flushRunPersistence())
+            ? result.reservation
+            : { kind: "storage-unavailable" };
+        },
+
+        recordChatModelAttempt: async (chatId, rawAttempt) => {
+          const attempt = normalizeModelAttempt(rawAttempt);
+          const chat = _getChat(chatId);
+          if (
+            !chat ||
+            !attempt ||
+            !get()
+              .getMessages(chatId)
+              .some((message) => message.metadata?.runId === attempt.runId)
+          )
+            return false;
+          const existing = chat.modelAttempts?.find(
+            (record) => record.attemptId === attempt.attemptId
+          );
+          if (
+            chat.runBudget?.runId === attempt.runId &&
+            attempt.ordinal > chat.runBudget.providerAttemptCount
+          )
+            return false;
+          if (!existing) {
+            set((state) => {
+              const current = state.chats.find(
+                (candidate) => candidate.id === chatId
+              )!;
+              current.modelAttempts = mergeModelAttempts(
+                current.modelAttempts,
+                [attempt]
+              );
+              applyChatAccounting(current);
+            });
+          }
+          if (!(await get().flushRunPersistence())) {
+            throw new Error("Agent attempt could not be persisted");
+          }
+          return true;
+        },
+
+        pauseChatRun: async (chatId, checkpoint) => {
+          if (
+            !(await get().saveChatRunCheckpoint(chatId, {
+              ...checkpoint,
+              suspension: "token-limit",
+            }))
+          )
+            return false;
+          set((state) => {
+            const chat = state.chats.find(
+              (candidate) => candidate.id === chatId
+            );
+            if (chat?.runId === checkpoint.runId) {
+              chat.status = "paused";
+              chat.interrupted = false;
+            }
+          });
+          return get().flushRunPersistence();
+        },
+
+        increaseRunTokenLimit: async (chatId, limit) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          const recoverySupported = supportsAgentRunRecovery();
+          const ownsRun = recoverySupported && canOwnRun(get(), chatId);
+          const budget =
+            chat?.runBudget && increaseRunBudgetLimit(chat.runBudget, limit);
+          if (
+            !chat ||
+            chat.archived ||
+            !chat.runCheckpoint ||
+            !budget ||
+            (recoverySupported && !ownsRun) ||
+            (get().remoteBusyChatIds[chatId] && !ownsRun)
+          )
+            return false;
+          set((state) => {
+            if (ownsRun) delete state.remoteBusyChatIds[chatId];
+            state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!.runBudget = budget;
+          });
+          return get().flushRunPersistence();
+        },
+
+        endPausedRun: async (chatId) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          const recoverySupported = supportsAgentRunRecovery();
+          const ownsRun = recoverySupported && canOwnRun(get(), chatId);
+          if (
+            !chat ||
+            (!chat.runCheckpoint && !(chat.runId && chat.runBudget)) ||
+            (recoverySupported && !ownsRun) ||
+            (chat.status === "running" &&
+              (!ownsRun || get().getAbortController(chatId))) ||
+            (get().remoteBusyChatIds[chatId] && !ownsRun)
+          )
+            return false;
+          set((state) => {
+            const current = state.chats.find(
+              (candidate) => candidate.id === chatId
+            )!;
+            current.status = "idle";
+            current.runId = null;
+            current.runMode = undefined;
+            current.runCheckpoint = undefined;
+            current.interrupted = false;
+            current.interruptionReason = undefined;
+            current.lastError = null;
+            if (ownsRun) delete state.remoteBusyChatIds[chatId];
+            delete state.pendingAskByChatId[chatId];
+            delete state.queuedUserMessagesByChatId[chatId];
+          });
+          return get().flushRunPersistence();
+        },
+
+        flushRunPersistence: async () => {
+          const state = get();
+          const key =
+            state.workspaceName && state.userEmail
+              ? getAgentStateKey(state.workspaceName, state.userEmail)
+              : null;
+          if (!key || !getSafeStorage()) return false;
+          if (!supportsAgentRunRecovery()) return synchronizeState(state, true);
+          pendingStatesByScope.set(key, state);
+          const writer = getWriter(key);
+          writer.schedule();
+          return writer.flush();
+        },
+
+        canUseAgentExecution: () => {
+          const key = currentScopeKey(get());
+          if (!key) return false;
+          if (supportsAgentRunRecovery()) return true;
+          try {
+            return !getSafeStorage()?.getItem(
+              key.replace(AGENT_STATE_KEY, AGENT_RUN_STATE_KEY)
+            );
+          } catch {
+            return false;
+          }
+        },
+
         finishChatRun: (chatId, options = {}) => {
           get().setChatStatus(chatId, options.status ?? DEFAULT_CHAT_STATUS, {
             lastError: options.lastError ?? null,
@@ -2500,6 +3204,7 @@ export const createAgentStore = () => {
             if (chat) {
               chat.runId = null;
               chat.runMode = undefined;
+              chat.runCheckpoint = undefined;
             }
           });
         },
@@ -2515,6 +3220,11 @@ export const createAgentStore = () => {
             page,
           });
           set((state) => {
+            const chat = state.chats.find(
+              (candidate) => candidate.id === chatId
+            );
+            if (chat?.runCheckpoint)
+              chat.runCheckpoint.suspension = "interrupted";
             setLastUserInterruptionReason(
               state.messagesByChatId[chatId] ?? [],
               interruptionReason
@@ -2592,6 +3302,7 @@ export const createAgentStore = () => {
             currentChat.status = DEFAULT_CHAT_STATUS;
             currentChat.runId = null;
             currentChat.runMode = undefined;
+            currentChat.runCheckpoint = undefined;
             currentChat.interrupted = false;
             currentChat.interruptionReason = undefined;
             currentChat.lastError = null;
@@ -2624,6 +3335,8 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.totalTokensUsed += totalTokensUsed;
+              if (chat.legacyUsage)
+                chat.legacyUsage.totalTokensUsed += totalTokensUsed;
               _touchChatInDraft(state.chats, chatId);
             }
           });
@@ -2640,6 +3353,11 @@ export const createAgentStore = () => {
             if (!chat) return;
             chat.totalTokensUsed += usage.totalTokens ?? 0;
             if (usage.totalTokens === undefined) chat.hasUnreportedUsage = true;
+            if (chat.legacyUsage) {
+              chat.legacyUsage.totalTokensUsed += usage.totalTokens ?? 0;
+              chat.legacyUsage.hasUnreportedUsage ||=
+                usage.totalTokens === undefined;
+            }
             if (chat.lastRunUsage?.runId === runId) {
               chat.lastRunUsage.calls.push(usage);
             }
@@ -2672,7 +3390,7 @@ export const createAgentStore = () => {
               c.requiresAIConfiguration = false;
               c.interrupted = false;
               c.interruptionReason = undefined;
-              c.runId = null;
+              if (!c.runCheckpoint) c.runId = null;
               if (c.status === "error") {
                 c.status = DEFAULT_CHAT_STATUS;
               }
@@ -2738,9 +3456,43 @@ export const createAgentStore = () => {
             }
           }
           const storage = getSafeStorage();
-          migrateLegacyState(storage, workspaceName, nextUserEmail);
-          const persistedState = getPersistedState(storage, stateKey);
+          if (
+            !migrateLegacyState(storage, workspaceName, nextUserEmail) &&
+            supportsAgentRunRecovery() &&
+            !storage?.getItem(stateKey)
+          ) {
+            if (identityChanged) get().setWorkspaceName(undefined, "");
+            return false;
+          }
+          const oldKey = stateKey.replace(AGENT_RUN_STATE_KEY, AGENT_STATE_KEY);
+          const v3Key = stateKey.replace(AGENT_STATE_KEY, AGENT_RUN_STATE_KEY);
+          const existingV3 = storage?.getItem(v3Key);
           const serialized = storage?.getItem(stateKey);
+          const sourceKey = supportsAgentRunRecovery()
+            ? serialized
+              ? stateKey
+              : oldKey
+            : existingV3
+              ? v3Key
+              : stateKey;
+          const persistedState = restoreDraftShadow(
+            stateKey,
+            getPersistedState(storage, sourceKey)
+          );
+          if (supportsAgentRunRecovery() && !serialized) {
+            for (const chat of persistedState.chats) {
+              chat.legacyUsage ??= {
+                totalTokensUsed: chat.totalTokensUsed,
+                hasUnreportedUsage: Boolean(
+                  chat.hasUnreportedUsage ||
+                    chat.totalTokensUsed > 0 ||
+                    (persistedState.messagesByChatId[chat.id]?.length ?? 0) > 0
+                ),
+              };
+              chat.modelAttempts ??= [];
+              applyChatAccounting(chat);
+            }
+          }
           const preferencesState = loadAgentPreferences(
             workspaceName,
             nextUserEmail
@@ -2749,7 +3501,10 @@ export const createAgentStore = () => {
             stateKey,
             serialized ? persistedState : createEmptyPersistedState()
           );
-          storageSnapshotsByScope.set(stateKey, persistedState);
+          storageSnapshotsByScope.set(
+            stateKey,
+            serialized ? persistedState : createEmptyPersistedState()
+          );
           if (serialized) lastSerializedByScope.set(stateKey, serialized);
           set((draft) => {
             draft.workspaceName = workspaceName;
@@ -2884,7 +3639,11 @@ export const createAgentStore = () => {
     })
   );
 
-  const synchronizeState = (state: AgentState, persist: boolean) => {
+  const synchronizeState = (
+    state: AgentState,
+    persist: boolean,
+    underLock = false
+  ): boolean => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
     const userEmail = state.userEmail;
@@ -2893,9 +3652,24 @@ export const createAgentStore = () => {
         ? getAgentStateKey(workspaceName, userEmail)
         : null;
     if (!storage || !key) {
-      return;
+      return false;
     }
-    const saved = storage.getItem(key);
+    if (persist && supportsAgentRunRecovery() && !underLock) {
+      pendingStatesByScope.set(key, state);
+      getWriter(key).schedule();
+      return true;
+    }
+    let saved: string | null;
+    try {
+      if (
+        !supportsAgentRunRecovery() &&
+        storage.getItem(key.replace(AGENT_STATE_KEY, AGENT_RUN_STATE_KEY))
+      )
+        return false;
+      saved = storage.getItem(key);
+    } catch {
+      return false;
+    }
     let remote = storageSnapshotsByScope.get(key);
     if (!remote || saved !== lastSerializedByScope.get(key)) {
       try {
@@ -2903,7 +3677,7 @@ export const createAgentStore = () => {
           ? normalizePersistedState(JSON.parse(saved), false)
           : createEmptyPersistedState();
       } catch {
-        return;
+        return false;
       }
     }
     const local = persistedSnapshot(state);
@@ -2950,11 +3724,15 @@ export const createAgentStore = () => {
       try {
         storage.setItem(key, serialized!);
       } catch {
-        return;
+        return false;
       }
     }
     if (serialized) lastSerializedByScope.set(key, serialized);
     storageSnapshotsByScope.set(key, persist ? merged : remote);
+    if (currentScopeKey(store.getState()) !== key) {
+      snapshotsByScope.set(key, merged);
+      return true;
+    }
 
     const ids = new Set(merged.chats.map((chat) => chat.id));
     const currentChatId =
@@ -3007,15 +3785,19 @@ export const createAgentStore = () => {
           draft.remoteBusyChatIds = remoteBusyChatIds;
         draft.currentChatId = currentChatId;
       });
-      snapshotsByScope.set(key, {
-        ...persistedSnapshot(store.getState()),
-        draftsByChatId: persist
-          ? store.getState().draftsByChatId
-          : base.draftsByChatId,
-      });
+      if (!persist && supportsAgentRunRecovery()) {
+        snapshotsByScope.set(key, remote);
+      } else
+        snapshotsByScope.set(key, {
+          ...persistedSnapshot(store.getState()),
+          draftsByChatId: persist
+            ? store.getState().draftsByChatId
+            : base.draftsByChatId,
+        });
     } finally {
       applyingSnapshot = false;
     }
+    return true;
   };
 
   store.subscribe((state, previousState) => {
@@ -3033,6 +3815,7 @@ export const createAgentStore = () => {
         previousState.queuedUserMessagesByChatId;
     const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
     if (!nonDraftStateChanged && !draftChanged) return;
+    saveDraftShadow(state);
 
     clearDraftPersistTimer();
     if (!nonDraftStateChanged && draftChanged) {
