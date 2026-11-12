@@ -13,9 +13,9 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// reviewRun is one row of the review_run table, which has no public gRPC
-// read API yet (the v1 surface lands with the rest of SQL Review V2). This
-// suite reads it with a table-specific direct DB read, the same allowance
+// reviewRun is one row of the review_run table. The v1 ReviewRun shows
+// neither the attempt nor the payload, so this suite reads the row with a
+// table-specific direct DB read, the same allowance
 // listPlanWebhookDeliveries uses for tables without a public read API.
 type reviewRun struct {
 	IssueID int64
@@ -53,10 +53,8 @@ func listReviewRuns(ctx context.Context, t *testing.T, ctl *controller, projectI
 }
 
 // seedReviewRun inserts one review_run row directly into the metadata
-// database. review_run has no store writer yet — the trigger/claim/complete
-// methods land with the SQL Review V2 execution work — so the purge
-// collision test seeds rows raw to make the DELETE path observable. Move
-// seeding to the product flow once real writers exist.
+// database, so the purge collision test holds a row in the state it names
+// without running a review.
 func seedReviewRun(ctx context.Context, t *testing.T, ctl *controller, projectID string, issueID int64, attempt int64, status string) {
 	t.Helper()
 	a := require.New(t)

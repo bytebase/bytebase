@@ -10,8 +10,8 @@ const ARROW_CLASS =
   "rounded-none border-l border-control-border text-control-light hover:text-control focus-visible:ring-inset focus-visible:ring-offset-0 pointer-coarse:focus-visible:ring-0";
 
 // Steps through the unresolved threads placed on the displayed statement, or
-// with a filter, through one reviewer's findings in one state across the
-// plan. `count` is what the arrows can visit; `remainder` is how many of this
+// with a filter, through one group of the review's findings across the plan.
+// `count` is what the arrows can visit; `remainder` is how many of this
 // change's matching threads are not placed on this version.
 export function StatementThreadWalker({
   announcement,

@@ -204,7 +204,7 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
 		Name:       common.FormatIssueComment(issueName, ic.ResourceID),
 	}
-	// A review result or run completion has no creator; it names the reviewer.
+	// A review result or run completion has no creator: the review posted it.
 	if ic.CreatorEmail != "" {
 		r.Creator = common.FormatUserEmail(ic.CreatorEmail)
 	}

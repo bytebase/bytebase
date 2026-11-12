@@ -46,8 +46,8 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
 	}
-	// An empty policy is review switched off: the run completes with no
-	// findings, which resolves those of earlier runs. omni evaluates SYNTAX
+	// An empty policy is the standard rules switched off: they report no
+	// finding, so the run resolves the ones they left. omni evaluates SYNTAX
 	// whether or not it is listed, so it is not asked at all.
 	if len(policy.GetRules()) == 0 {
 		return nil, nil

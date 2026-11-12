@@ -528,7 +528,7 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
 
   /**
    * The maximum number of databases to sample during CI data validation and
-   * AI review. Without specification, sampling is disabled, resulting in full
+   * SQL review. Without specification, sampling is disabled, resulting in full
    * validation.
    *
    * @generated from field: int32 ci_sampling_size = 16;

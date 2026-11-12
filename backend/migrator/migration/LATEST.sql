@@ -362,8 +362,8 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 CREATE TABLE issue_comment (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    -- NULL on review results and review run completions, which a reviewer
-    -- posts (the payload names it), never a person.
+    -- NULL on review results and review run completions, which the review
+    -- posts, never a person. A result's payload names the reviewer.
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -388,10 +388,10 @@ CREATE INDEX idx_issue_comment_parent_id ON issue_comment(parent_id)
 CREATE INDEX idx_issue_comment_open_thread ON issue_comment(project, issue_id)
     WHERE thread_state = 'OPEN';
 
--- SQL Review V2 run status slot: one row per (issue, reviewer type), reset in
--- place on re-run (created_at = now() on reset — the row is the current run,
--- not the slot's history). Results live in issue comments; the run carries
--- none. No standalone id on purpose: nothing may durably reference a run.
+-- SQL Review V2 run status slot: one row per issue, reset in place on re-run
+-- (created_at = now() on reset — the row is the current run, not the slot's
+-- history). Results live in issue comments; the run carries none. No
+-- standalone id on purpose: nothing may durably reference a run.
 CREATE TABLE review_run (
     project text NOT NULL REFERENCES project(resource_id),
     issue_id bigint NOT NULL,

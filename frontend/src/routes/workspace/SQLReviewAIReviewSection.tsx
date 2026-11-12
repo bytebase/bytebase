@@ -29,7 +29,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 export interface WorkspaceAIReview {
   // Whether the review is switched on, or the unsaved choice.
   enabled: boolean;
-  // Whether AI is on for the workspace. While it is off no review runs,
+  // Whether AI is on for the workspace. While it is off no AI review runs,
   // whatever the switch says.
   aiEnabled: boolean;
   // The switch is a field of the AI setting.
