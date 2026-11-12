@@ -1317,6 +1317,20 @@
       "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
       "title": "GitOps là gì"
     },
+    "setup": {
+      "deploy-order": {
+        "database-count_one": "{{count}} cơ sở dữ liệu",
+        "database-count_other": "{{count}} cơ sở dữ liệu",
+        "environment-count_one": "{{count}} môi trường",
+        "environment-count_other": "{{count}} môi trường",
+        "label": "Thứ tự triển khai",
+        "summary": "{{databases}} trong {{environments}}",
+        "unassigned-description_one": "Cơ sở dữ liệu này chưa có môi trường nên lần triển khai bỏ qua mà không báo lỗi. Hãy gán môi trường để đưa vào.",
+        "unassigned-description_other": "Các cơ sở dữ liệu này chưa có môi trường nên lần triển khai bỏ qua mà không báo lỗi. Hãy gán môi trường để đưa vào.",
+        "unassigned-title_one": "{{count}} cơ sở dữ liệu sẽ không được triển khai",
+        "unassigned-title_other": "{{count}} cơ sở dữ liệu sẽ không được triển khai"
+      }
+    },
     "test-setup": {
       "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
       "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",

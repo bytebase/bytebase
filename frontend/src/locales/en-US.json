@@ -1317,6 +1317,20 @@
       "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
       "title": "What is GitOps"
     },
+    "setup": {
+      "deploy-order": {
+        "database-count_one": "{{count}} database",
+        "database-count_other": "{{count}} databases",
+        "environment-count_one": "{{count}} environment",
+        "environment-count_other": "{{count}} environments",
+        "label": "Deploy order",
+        "summary": "{{databases}} in {{environments}}",
+        "unassigned-description_one": "It has no environment, so the deploy skips it without an error. Assign an environment to include it.",
+        "unassigned-description_other": "They have no environment, so the deploy skips them without an error. Assign an environment to include them.",
+        "unassigned-title_one": "{{count}} database will not be deployed",
+        "unassigned-title_other": "{{count}} databases will not be deployed"
+      }
+    },
     "test-setup": {
       "description": "Verify the workflow is working end-to-end with a sample migration file.",
       "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",

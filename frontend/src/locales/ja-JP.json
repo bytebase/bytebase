@@ -1317,6 +1317,20 @@
       "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
       "title": "GitOps とは"
     },
+    "setup": {
+      "deploy-order": {
+        "database-count_one": "{{count}} 個のデータベース",
+        "database-count_other": "{{count}} 個のデータベース",
+        "environment-count_one": "{{count}} 個の環境",
+        "environment-count_other": "{{count}} 個の環境",
+        "label": "デプロイ順序",
+        "summary": "{{environments}}に{{databases}}",
+        "unassigned-description_one": "環境が設定されていないため、デプロイはエラーを出さずにスキップします。含めるには環境を割り当ててください。",
+        "unassigned-description_other": "環境が設定されていないため、デプロイはエラーを出さずにスキップします。含めるには環境を割り当ててください。",
+        "unassigned-title_one": "{{count}} 個のデータベースはデプロイされません",
+        "unassigned-title_other": "{{count}} 個のデータベースはデプロイされません"
+      }
+    },
     "test-setup": {
       "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
       "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",

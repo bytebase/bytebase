@@ -1317,6 +1317,20 @@
       "description-git": "数据库架构与应用代码一起存储在 Git 中。拉取请求会触发 SQL 审查，合并到目标分支后会自动创建变更发布。",
       "title": "什么是 GitOps"
     },
+    "setup": {
+      "deploy-order": {
+        "database-count_one": "{{count}} 个数据库",
+        "database-count_other": "{{count}} 个数据库",
+        "environment-count_one": "{{count}} 个环境",
+        "environment-count_other": "{{count}} 个环境",
+        "label": "部署顺序",
+        "summary": "{{environments}}中的{{databases}}",
+        "unassigned-description_one": "它没有环境，部署会跳过它且不报错。为它指定环境即可纳入部署。",
+        "unassigned-description_other": "它们没有环境，部署会跳过它们且不报错。为它们指定环境即可纳入部署。",
+        "unassigned-title_one": "{{count}} 个数据库不会被部署",
+        "unassigned-title_other": "{{count}} 个数据库不会被部署"
+      }
+    },
     "test-setup": {
       "description": "使用示例迁移文件验证整个工作流是否正常运行。",
       "naming-convention": "迁移文件按字典顺序执行。请使用时间戳或序号前缀，例如 20240101000000_create_table.sql。在文件名末尾添加 _ddl 或 _dml 来标识变更类型。",

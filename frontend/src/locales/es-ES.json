@@ -1317,6 +1317,20 @@
       "description-git": "El esquema de su base de datos se almacena en Git junto con el código de su aplicación. Las pull requests activan la revisión de SQL, y la fusión en la rama de destino crea automáticamente los despliegues.",
       "title": "Qué es GitOps"
     },
+    "setup": {
+      "deploy-order": {
+        "database-count_one": "{{count}} base de datos",
+        "database-count_other": "{{count}} bases de datos",
+        "environment-count_one": "{{count}} entorno",
+        "environment-count_other": "{{count}} entornos",
+        "label": "Orden de despliegue",
+        "summary": "{{databases}} en {{environments}}",
+        "unassigned-description_one": "No tiene entorno, así que el despliegue la omite sin error. Asígnale un entorno para incluirla.",
+        "unassigned-description_other": "No tienen entorno, así que el despliegue las omite sin error. Asígnales un entorno para incluirlas.",
+        "unassigned-title_one": "{{count}} base de datos no se desplegará",
+        "unassigned-title_other": "{{count}} bases de datos no se desplegarán"
+      }
+    },
     "test-setup": {
       "description": "Verifique que el flujo de trabajo funciona de extremo a extremo con un archivo de migración de ejemplo.",
       "naming-convention": "Los archivos de migración se aplican en orden lexicográfico. Use un prefijo de marca de tiempo o secuencia, p. ej. 20240101000000_create_table.sql. Agregue _ddl o _dml para indicar el tipo de cambio.",
