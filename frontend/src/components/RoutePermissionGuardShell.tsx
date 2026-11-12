@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { useCurrentRoute } from "@/app/router";
 import {
   PermissionDeniedFallback,
@@ -13,6 +13,7 @@ export interface RoutePermissionGuardShellProps {
   targetClassName?: string;
   routeKey?: string;
   onReady?: (target: HTMLDivElement | null) => void;
+  children?: ReactNode;
 }
 
 export function RoutePermissionGuardShell({
@@ -21,6 +22,7 @@ export function RoutePermissionGuardShell({
   targetClassName,
   routeKey,
   onReady,
+  children,
 }: RoutePermissionGuardShellProps) {
   const route = useCurrentRoute();
   const targetRef = useRef<HTMLDivElement>(null);
@@ -70,5 +72,9 @@ export function RoutePermissionGuardShell({
     );
   }
 
-  return <div ref={targetRef} className={targetClassName} />;
+  return (
+    <div ref={targetRef} className={targetClassName}>
+      {children}
+    </div>
+  );
 }

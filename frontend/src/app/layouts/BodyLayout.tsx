@@ -46,16 +46,6 @@ export function BodyLayout() {
     mainContainer: null,
   });
 
-  // Non-project routes render through `RoutePermissionGuardShell`: it mounts
-  // into the shell's content target and reports a non-null target only once the
-  // route's `requiredPermissions` are satisfied, so a restricted page never
-  // mounts (it shows the permission-denied / request-role fallback instead).
-  // Project routes (`workspace.project.*`) bypass this gate — their gating
-  // belongs to `ProjectRouteGate`, which loads the project resource for
-  // project-scoped permission checks.
-  const [permissionTarget, setPermissionTarget] =
-    useState<HTMLDivElement | null>(null);
-
   // Agent toggle shortcut (Ctrl/Cmd+Shift+A).
   useEffect(() => {
     const handler = async (e: KeyboardEvent) => {
@@ -97,15 +87,12 @@ export function BodyLayout() {
                 routeKey={routeKey}
                 className="m-4"
                 targetClassName="h-full min-h-0"
-                onReady={setPermissionTarget}
-              />,
+              >
+                <Outlet />
+              </RoutePermissionGuardShell>,
               targets.content
             )
           : null}
-
-      {!isProjectRoute && permissionTarget
-        ? createPortal(<Outlet />, permissionTarget)
-        : null}
 
       {targets.quickstart
         ? createPortal(<WorkspaceSetupGuide />, targets.quickstart)
