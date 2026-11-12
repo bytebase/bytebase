@@ -264,7 +264,7 @@
       "back": "Quay lại trò chuyện",
       "continue-last-chat": "Tiếp tục cuộc trò chuyện trước",
       "enter-help": "Shift+Enter để xuống dòng.",
-      "invalid-token-limit": "Nhập một số nguyên dương.",
+      "invalid-token-limit": "Nhập giới hạn dương với tối đa 3 chữ số thập phân.",
       "newline-help": "Enter để xuống dòng. Cmd/Ctrl+Enter để gửi.",
       "reset": "Khôi phục mặc định",
       "reset-confirmation": "Khôi phục tùy chọn về mặc định?",
@@ -272,9 +272,9 @@
       "send-with-enter": "Gửi bằng Enter",
       "show-landing": "Hiển thị trang bắt đầu",
       "storage-failed": "Không thể lưu cục bộ. Thay đổi có hiệu lực cho đến khi tải lại trang này.",
+      "thousand-tokens": "K token",
       "title": "Tùy chọn Agent",
       "token-limit": "Giới hạn token mỗi lần chạy",
-      "tokens": "token",
       "when-opening": "Khi mở Agent"
     },
     "project-attention": {
@@ -288,6 +288,7 @@
       "unavailable": "Không thể tải các mục cần bạn chú ý trong dự án này."
     },
     "project-reference-unavailable": "Dự án này không còn khả dụng hoặc bạn không có quyền truy cập.",
+    "provider-attempt-limit": "Tôi đã dừng trước khi gửi thêm yêu cầu AI vì lượt chạy này đã đạt giới hạn số lần thử với nhà cung cấp. Các thao tác trước đó có thể đã hoàn tất; hãy kiểm tra trạng thái trước khi yêu cầu tôi thử lại.",
     "query-result": {
       "returned-rows": "Số hàng trả về: {{count}}",
       "showing-columns": "Hiển thị {{shown}} trong {{total}} cột",
@@ -364,12 +365,34 @@
       "unsaved-only": "Chỉ áp dụng vào bản nháp chưa lưu"
     },
     "stop": "Dừng",
+    "token-budget": {
+      "action-failed": "Không thể cập nhật lượt chạy này. Vui lòng thử lại.",
+      "apply": "Áp dụng",
+      "completed-over-limit": "Lượt chạy đã hoàn tất vượt quá giới hạn token.",
+      "continuation-unavailable": "Không thể tiếp tục lượt chạy này một cách an toàn. Tin nhắn và bản nháp của bạn được giữ nguyên. Hãy bắt đầu cuộc trò chuyện mới để tiếp tục.",
+      "end-run": "Kết thúc lượt chạy",
+      "increase": "Tăng giới hạn",
+      "increase-and-resume": "Tăng và tiếp tục",
+      "increase-title": "Tăng giới hạn cho lần chạy này",
+      "invalid-limit": "Nhập giới hạn lớn hơn {{minimum}} K token, tối đa 3 chữ số thập phân.",
+      "partial": "Một phần mức sử dụng token chưa được báo cáo.",
+      "paused": "Lượt chạy đã tạm dừng khi đạt giới hạn token.",
+      "reached": "Lượt chạy này đã đạt giới hạn token.",
+      "recovery-unavailable": "Trình duyệt này không thể tiếp tục an toàn các lượt chạy Agent đã lưu. Hãy sử dụng trình duyệt được hỗ trợ và đã cập nhật.",
+      "remote-busy": "Lượt chạy này có thể đang hoạt động trong thẻ khác.",
+      "resume": "Tiếp tục",
+      "run-limit": "Giới hạn token của lượt chạy này",
+      "title": "Ngân sách token của lượt chạy",
+      "usage": "{{used}} / {{limit}} token",
+      "warning": "Lượt chạy này sắp đạt giới hạn token."
+    },
     "token-usage": {
       "answer": "Câu trả lời",
       "answer-total": "Tổng của câu trả lời",
       "at-least": "Ít nhất {{count}}",
       "cached-input": "Đầu vào từ bộ nhớ đệm",
       "chat-total": "Tổng cuộc trò chuyện",
+      "failed-attempts": "Số lần thử thất bại hoặc bị gián đoạn: {{count}}",
       "follow-up-questions": "Câu hỏi tiếp theo",
       "input": "Đầu vào",
       "latest-answer": "Câu trả lời mới nhất",
@@ -379,6 +402,8 @@
       "not-recorded": "Chưa ghi nhận",
       "not-reported": "Không được báo cáo",
       "output": "Đầu ra",
+      "run-limit": "Giới hạn lượt chạy",
+      "run-usage": "Mức sử dụng của lượt chạy",
       "title": "Mức sử dụng token",
       "total": "Tổng"
     },
@@ -3387,6 +3412,10 @@
           "approve": {
             "details": "Mỗi quyết định được xác nhận trong ứng dụng MCP của người dùng trước khi được thực hiện · Yêu cầu vai trò được quyết định trên bảng điều khiển · Các quy tắc phê duyệt và thiết lập tự phê duyệt của dự án vẫn áp dụng, như trên bảng điều khiển",
             "title": "Phê duyệt hoặc từ chối Issue"
+          },
+          "ci-identities": {
+            "details": "Tạo một danh tính khối lượng công việc mà các job GitHub Actions hoặc GitLab CI trong một kho mã dùng để đăng nhập, với vai trò Tác nhân Dịch vụ GitOps trong một dự án, nên nó có thể triển khai mà không cần phê duyệt · Mỗi danh tính được xác nhận trong ứng dụng MCP của người dùng trước khi được tạo · Chính sách này không giới hạn những gì nó làm, và nó tồn tại cho đến khi bị xóa",
+            "title": "Tạo danh tính CI"
           },
           "export": {
             "details": "Xuất kết quả dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",

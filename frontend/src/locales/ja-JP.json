@@ -264,7 +264,7 @@
       "back": "チャットに戻る",
       "continue-last-chat": "前回のチャットを続ける",
       "enter-help": "Shift+Enter で改行します。",
-      "invalid-token-limit": "正の整数を入力してください。",
+      "invalid-token-limit": "小数点以下3桁以内の正の上限値を入力してください。",
       "newline-help": "Enter で改行し、Cmd/Ctrl+Enter で送信します。",
       "reset": "既定値に戻す",
       "reset-confirmation": "設定を既定値に戻しますか？",
@@ -272,9 +272,9 @@
       "send-with-enter": "Enter で送信",
       "show-landing": "開始ページを表示",
       "storage-failed": "ローカルに保存できませんでした。変更はページを再読み込みするまで適用されます。",
+      "thousand-tokens": "千トークン",
       "title": "エージェントの設定",
       "token-limit": "実行ごとのトークン上限",
-      "tokens": "トークン",
       "when-opening": "エージェントを開くとき"
     },
     "project-attention": {
@@ -288,6 +288,7 @@
       "unavailable": "このプロジェクトで対応が必要な項目を読み込めません。"
     },
     "project-reference-unavailable": "このプロジェクトは利用できないか、アクセス権がありません。",
+    "provider-attempt-limit": "この実行が AI プロバイダーへのリクエスト試行回数の上限に達したため、新たな AI リクエストを送信する前に停止しました。以前の操作はすでに完了している可能性があります。再試行を依頼する前に、その状態を確認してください。",
     "query-result": {
       "returned-rows": "返された行数: {{count}}",
       "showing-columns": "{{total}} 列中 {{shown}} 列を表示",
@@ -364,12 +365,34 @@
       "unsaved-only": "未保存の下書きにのみ適用"
     },
     "stop": "停止",
+    "token-budget": {
+      "action-failed": "この実行を更新できませんでした。もう一度お試しください。",
+      "apply": "適用",
+      "completed-over-limit": "トークン上限を超えて実行が完了しました。",
+      "continuation-unavailable": "この実行を安全に再開できません。メッセージと下書きは保持されています。新しいチャットを開始して続けてください。",
+      "end-run": "実行を終了",
+      "increase": "上限を引き上げ",
+      "increase-and-resume": "上限を引き上げて再開",
+      "increase-title": "この実行の上限を引き上げる",
+      "invalid-limit": "{{minimum}} K トークンより大きい値を小数点以下3桁以内で入力してください。",
+      "partial": "一部のトークン使用量が報告されていません。",
+      "paused": "トークン上限に達したため実行を一時停止しました。",
+      "reached": "この実行のトークン上限に達しました。",
+      "recovery-unavailable": "このブラウザーでは保存された Agent の実行を安全に継続できません。サポート対象の最新ブラウザーをご利用ください。",
+      "remote-busy": "この実行は別のタブで処理中の可能性があります。",
+      "resume": "再開",
+      "run-limit": "この実行のトークン上限",
+      "title": "実行のトークン予算",
+      "usage": "{{used}} / {{limit}} トークン",
+      "warning": "この実行のトークン上限に近づいています。"
+    },
     "token-usage": {
       "answer": "回答",
       "answer-total": "回答の合計",
       "at-least": "少なくとも {{count}}",
       "cached-input": "キャッシュされた入力",
       "chat-total": "チャットの合計",
+      "failed-attempts": "失敗または中断した試行: {{count}}",
       "follow-up-questions": "フォローアップの質問",
       "input": "入力",
       "latest-answer": "最新の回答",
@@ -379,6 +402,8 @@
       "not-recorded": "記録なし",
       "not-reported": "報告なし",
       "output": "出力",
+      "run-limit": "実行の上限",
+      "run-usage": "実行の使用量",
       "title": "トークン使用量",
       "total": "合計"
     },
@@ -3387,6 +3412,10 @@
           "approve": {
             "details": "各判断は、実行される前にユーザーの MCP クライアントで確認されます · ロール申請はコンソールで承認・却下します · 承認ルールとプロジェクトの自己承認設定は、コンソールと同じように適用されます",
             "title": "Issue の承認・却下"
+          },
+          "ci-identities": {
+            "details": "1 つのリポジトリの GitHub Actions または GitLab CI ジョブがサインインに使うワークロード ID を作成し、1 つのプロジェクトで GitOps サービスエージェントのロールを付与（承認なしでロールアウトできます） · 各 ID は、作成される前にユーザーの MCP クライアントで確認されます · このポリシーはその操作を制限せず、ID は削除されるまで存続します",
+            "title": "CI 用 ID の作成"
           },
           "export": {
             "details": "結果をファイルとしてエクスポートします。データが Bytebase の外に出ます。",

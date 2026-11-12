@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getRunTokenBudget } from "../logic/tokenBudget";
 import type { AgentChat, AgentModelCallUsage } from "../logic/types";
 import {
   AgentPopover,
@@ -26,10 +27,19 @@ type Metric =
   | "outputTokens"
   | "cachedInputTokens";
 
-export function AgentTokenUsage({ chat }: { chat: AgentChat | null }) {
+export function AgentTokenUsage({
+  chat,
+  pendingAttemptId,
+  showEmpty = false,
+}: {
+  chat: AgentChat | null;
+  pendingAttemptId?: string;
+  showEmpty?: boolean;
+}) {
   const { t } = useTranslation();
-  if (!chat) return null;
-  const calls = chat.lastRunUsage?.calls ?? [];
+  if (!chat && !showEmpty) return null;
+  const calls = chat?.lastRunUsage?.calls ?? [];
+  const run = chat ? getRunTokenBudget(chat, pendingAttemptId) : null;
   const format = (value: number | undefined) =>
     value === undefined
       ? t("agent.token-usage.not-reported")
@@ -49,9 +59,9 @@ export function AgentTokenUsage({ chat }: { chat: AgentChat | null }) {
             calls.reduce((value, call) => value + (call.totalTokens ?? 0), 0)
           )
         : format(undefined);
-  const chatTotal = chat.hasUnreportedUsage
+  const chatTotal = chat?.hasUnreportedUsage
     ? partial(chat.totalTokensUsed)
-    : format(chat.totalTokensUsed);
+    : format(chat?.totalTokensUsed ?? 0);
   const callName = (call: AgentModelCallUsage) =>
     call.purpose === "follow-up"
       ? t("agent.token-usage.follow-up-questions")
@@ -69,7 +79,7 @@ export function AgentTokenUsage({ chat }: { chat: AgentChat | null }) {
         }
       >
         {t("agent.chat-total-tokens", { count: chatTotal })}
-        <ChevronDownIcon className="size-4 shrink-0 group-data-popup-open:rotate-180" />
+        <ChevronDownIcon className="shrink-0 group-data-popup-open:rotate-180" />
       </AgentPopoverTrigger>
       <AgentPopoverContent
         className="w-112 max-w-[calc(100vw-2rem)] p-4"
@@ -88,9 +98,37 @@ export function AgentTokenUsage({ chat }: { chat: AgentChat | null }) {
               />
             }
           >
-            <XIcon className="size-4" />
+            <XIcon />
           </AgentPopoverClose>
         </div>
+        {run && (
+          <div className="flex flex-col gap-2 pb-3" data-agent-run-usage>
+            <div className="flex items-baseline justify-between gap-4">
+              <span>{t("agent.token-usage.run-usage")}</span>
+              <span className="font-medium tabular-nums">
+                {run.hasUnreportedUsage
+                  ? partial(run.budget.totalTokensUsed)
+                  : format(run.budget.totalTokensUsed)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between gap-4">
+              <span>{t("agent.token-usage.run-limit")}</span>
+              <span className="tabular-nums">{format(run.budget.limit)}</span>
+            </div>
+            {run.failedAttemptCount > 0 && (
+              <span className="text-xs text-control-light">
+                {t("agent.token-usage.failed-attempts", {
+                  count: run.failedAttemptCount,
+                })}
+              </span>
+            )}
+            {run.hasUnreportedUsage && (
+              <span className="text-xs text-control-light">
+                {t("agent.token-budget.partial")}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-baseline justify-between gap-4 pb-3">
           <span>{t("agent.token-usage.chat-total")}</span>
           <span className="font-medium tabular-nums">{chatTotal}</span>
@@ -129,7 +167,7 @@ export function AgentTokenUsage({ chat }: { chat: AgentChat | null }) {
               </TableHeader>
               <TableBody striped={false}>
                 {calls.map((call, index) => (
-                  <TableRow key={`${chat.lastRunUsage!.runId}-${index}`}>
+                  <TableRow key={`${chat?.lastRunUsage?.runId}-${index}`}>
                     <TableCell className="break-all px-1 py-2 text-xs">
                       {callName(call)}
                     </TableCell>

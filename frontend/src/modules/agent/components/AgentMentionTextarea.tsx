@@ -13,7 +13,7 @@ import {
   deleteResourceMention,
 } from "../logic/resourceMention";
 
-type AgentMentionTextareaProps = Omit<TextareaProps, "ref" | "value"> & {
+export type AgentMentionTextareaProps = Omit<TextareaProps, "ref" | "value"> & {
   value: string;
   mentions?: { range: AgentMentionRange; label: string }[];
   onDeleteMention?: (result: { text: string; caret: number }) => void;

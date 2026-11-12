@@ -248,12 +248,16 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 // credential appears in the response at all — the session instead arranges for
 // one to be issued later, or ships an existing secret out of the process.
 //
-//   - Create/UpdateWorkloadIdentity choose the OIDC issuer, audience and
-//     subject that AuthService/ExchangeToken validates against
-//     (auth_service.go, `wif.ValidateToken(ctx, request.Token, wicConfig)`).
-//     ExchangeToken is allow_without_credential, so once the anchor is written
-//     the Bytebase token is minted from outside, with no MCP session involved
-//     and nothing left to revoke.
+//   - UpdateWorkloadIdentity chooses the OIDC issuer, audience and subject
+//     that AuthService/ExchangeToken validates against (auth_service.go,
+//     `wif.ValidateToken(ctx, request.Token, wicConfig)`). ExchangeToken is
+//     allow_without_credential, so once the anchor is written the Bytebase
+//     token is minted from outside, with no MCP session involved and nothing
+//     left to revoke. CreateWorkloadIdentity makes the same choice. It is
+//     WRITE, so this read-only session's ceiling refuses it, and under
+//     Read-write the gate serves it only with the confirmation
+//     administer_workspace attaches
+//     (TestMCPCreatesAWorkloadIdentityAfterAConfirmation).
 //   - Create/UpdateIdentityProvider are the same move against SSO login.
 //   - TestIdentityProvider substitutes the STORED client secret whenever the
 //     request omits it (idp_service.go, the two `ClientSecret == ""` branches)
@@ -378,10 +382,10 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		"CreateIdentityProvider": createdIDP,
 		"UpdateIdentityProvider": updatedIDP,
 		"TestIdentityProvider":   testedIDP,
-		"CreateWorkloadIdentity": createdWI,
 		"UpdateWorkloadIdentity": updatedWI,
 		"TestEmailSetting":       testedEmail,
 	}
+	t.Logf("MCP CreateWorkloadIdentity → status=%d error=%q", createdWI.Status, createdWI.Error)
 	for name, out := range probes {
 		t.Logf("MCP %s → status=%d error=%q", name, out.Status, out.Error)
 	}
@@ -392,6 +396,8 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.Contains(out.Error, "principal other than the caller",
 			"%s must name this class's reason", name)
 	}
+	a.Equal(http.StatusForbidden, createdWI.Status, "CreateWorkloadIdentity must be refused before dispatch")
+	a.Contains(createdWI.Error, "is a WRITE method", "the read-only ceiling refuses the create")
 
 	// Nothing landed. Reading the listing rather than just the statuses above
 	// is what discriminates a gate that refuses before dispatch from one that
@@ -857,7 +863,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	}{
 		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount", "GetServiceAccount"}},
 		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}},
-		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}},
 	} {
 		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
 		a.Contains(listing, row.service+" is not available over MCP",
@@ -915,13 +920,22 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		a.Contains(unavailable, "SettingService/"+method)
 	}
 
+	served, unavailable = servedAndUnavailable("WorkloadIdentityService")
+	a.Contains(served, "WorkloadIdentityService/CreateWorkloadIdentity", "the session creates an identity through the tool")
+	a.Contains(served, "through the administer_workspace tool", "the listing names the one way to create an identity")
+	for _, method := range []string{"GetWorkloadIdentity", "ListWorkloadIdentities", "UpdateWorkloadIdentity", "DeleteWorkloadIdentity"} {
+		a.NotContains(served, "WorkloadIdentityService/"+method,
+			"search_api must not offer WorkloadIdentityService/%s, which the session can never call", method)
+		a.Contains(unavailable, "WorkloadIdentityService/"+method)
+	}
+
 	// The service list is the entry point into discovery, and a service whose
 	// every method is refused leaves the menu for the list of what MCP cannot do.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
 	available, unavailableServices, ok := strings.Cut(services, "## Not available over MCP")
 	a.True(ok, "the service list names what MCP cannot do")
 	for _, service := range []string{
-		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
+		"ServiceAccountService", "IdentityProviderService",
 	} {
 		a.NotContains(available, service, "%s serves nothing, so it is not on the menu", service)
 		a.Contains(unavailableServices, "**"+service+"**", "%s is named as unavailable", service)
@@ -930,6 +944,7 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	a.Contains(available, "WorkspaceService", "a service keeping any served method stays listed")
 	a.Contains(available, "UserService", "and so does the one that kept only GetCurrentUser")
 	a.Contains(available, "SettingService", "and the one that kept only GetSetting")
+	a.Contains(available, "WorkloadIdentityService", "and the one that kept only the create")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{
@@ -940,7 +955,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		"IdentityProviderService/CreateIdentityProvider",
 		"IdentityProviderService/UpdateIdentityProvider",
 		"IdentityProviderService/TestIdentityProvider",
-		"WorkloadIdentityService/CreateWorkloadIdentity",
 		"WorkloadIdentityService/UpdateWorkloadIdentity",
 		"SettingService/TestEmailSetting",
 		"UserService/UpdateEmail",

@@ -47,6 +47,9 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid parent %q", parent))
 		}
+		if err := s.checkActiveProject(ctx, pid); err != nil {
+			return nil, err
+		}
 		projectID = &pid
 	case strings.HasPrefix(parent, common.WorkspacePrefix):
 		// workspace-level workload identity: parent = "workspaces/{id}"
@@ -62,6 +65,12 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	workloadIdentityID := request.Msg.WorkloadIdentityId
 	if workloadIdentityID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_id is required"))
+	}
+	// The identity's name, workloadIdentities/{email}, is split on "/", so an
+	// identity whose ID holds one could be signed in as but never read, updated
+	// or deleted.
+	if strings.Contains(workloadIdentityID, "/") {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("workload_identity_id %q must not contain \"/\"", workloadIdentityID))
 	}
 
 	wi := request.Msg.WorkloadIdentity
@@ -110,6 +119,24 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	}
 
 	return connect.NewResponse(convertToWorkloadIdentity(createdWI)), nil
+}
+
+// checkActiveProject refuses a project that is missing or archived. The ACL
+// refuses a missing project, and another workspace's, before the handler, but it
+// lets an archived project through and authorizes "projects/-" at workspace
+// scope.
+func (s *WorkloadIdentityService) checkActiveProject(ctx context.Context, projectID string) error {
+	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get project %q", projectID))
+	}
+	if project == nil || project.Deleted {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", common.FormatProject(projectID)))
+	}
+	return nil
 }
 
 // GetWorkloadIdentity gets a workload identity by name.

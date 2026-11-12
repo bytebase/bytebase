@@ -1,4 +1,6 @@
 import type { DeniedQueryRequestDraft } from "@/modules/sql-editor/model/accessGrantDraft";
+import type { AgentMaskingPageResource } from "./chatContext";
+import type { MaskingSkillSection } from "./skills";
 
 export interface ToolDefinition {
   name: string;
@@ -20,13 +22,19 @@ export interface Message {
   toolCallId?: string;
 }
 
-export type AgentChatStatus = "idle" | "running" | "awaiting_user" | "error";
+export type AgentChatStatus =
+  | "idle"
+  | "running"
+  | "awaiting_user"
+  | "paused"
+  | "error";
 
 export type AgentInterruptionReason = "user" | "unexpected";
 
 export type AgentRunMode = "default" | "read-only";
 
 export interface AgentModelCallUsage {
+  attemptId?: string;
   purpose: "agent" | "follow-up";
   toolNames: string[];
   totalTokens?: number;
@@ -34,6 +42,55 @@ export interface AgentModelCallUsage {
   outputTokens?: number;
   cachedInputTokens?: number;
 }
+
+export interface AgentRunBudget {
+  version: 1;
+  runId: string;
+  limit: number;
+  totalTokensUsed: number;
+  hasUnreportedUsage: boolean;
+  providerAttemptCount: number;
+  revision: number;
+}
+
+export interface AgentRunBindings {
+  page: AgentChatSnapshot;
+  context?: string;
+  references: AgentResourceReference[];
+  runMode: AgentRunMode;
+  capability?: AgentDiagnosticCapability;
+  instanceName?: string;
+  maskingPage?: AgentMaskingPageResource;
+}
+
+export interface AgentRunCheckpoint {
+  version: 1;
+  runId: string;
+  suspension: "token-limit" | "awaiting-user" | "interrupted";
+  rootUserMessageId: string;
+  throughMessageId: string;
+  bindings: AgentRunBindings;
+  maskingSections: MaskingSkillSection[];
+  phase: "working" | "finalizing";
+  startupComplete?: boolean;
+  referencePreflightPending?: boolean;
+  finalizationText?: string;
+}
+
+export interface AgentModelAttempt {
+  attemptId: string;
+  runId: string;
+  ordinal: number;
+  outcome: "response" | "error" | "aborted";
+  usage?: AgentModelCallUsage;
+}
+
+export type AgentAttemptReservation =
+  | { kind: "allowed"; attemptId: string; ordinal: number }
+  | { kind: "token-limit" }
+  | { kind: "attempt-limit" }
+  | { kind: "superseded" }
+  | { kind: "storage-unavailable" };
 
 export interface AgentChatSnapshot {
   path: string;
@@ -130,6 +187,7 @@ export interface AgentDraft {
 }
 
 export interface AgentMessageMetadata {
+  runPreflight?: true;
   route?: string;
   pending?: boolean;
   hidden?: boolean;
@@ -174,6 +232,10 @@ export interface AgentChat {
   updatedTs: number;
   status: AgentChatStatus;
   totalTokensUsed: number;
+  runBudget?: AgentRunBudget;
+  runCheckpoint?: AgentRunCheckpoint;
+  modelAttempts?: AgentModelAttempt[];
+  legacyUsage?: { totalTokensUsed: number; hasUnreportedUsage: boolean };
   lastRunUsage?: {
     runId: string;
     calls: AgentModelCallUsage[];
@@ -251,6 +313,16 @@ interface AgentLoopUsage {
 }
 
 export type AgentLoopOutcome =
+  | ({
+      kind: "stopped";
+      reason: "provider-attempt-limit";
+    } & AgentLoopUsage)
+  | ({
+      kind: "paused";
+      reason: "token-limit";
+      phase: "working" | "finalizing";
+      finalizationText?: string;
+    } & AgentLoopUsage)
   | ({
       kind: "completed";
       text: string;

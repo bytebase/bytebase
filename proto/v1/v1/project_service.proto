@@ -153,8 +153,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Adds a webhook to a project for notifications.
@@ -467,7 +466,7 @@ message Project {
   }
 
   // The maximum number of databases to sample during CI data validation and
-  // AI review. Without specification, sampling is disabled, resulting in full
+  // SQL review. Without specification, sampling is disabled, resulting in full
   // validation.
   int32 ci_sampling_size = 16;
 

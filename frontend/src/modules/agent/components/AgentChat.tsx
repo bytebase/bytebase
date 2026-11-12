@@ -72,6 +72,7 @@ import {
   extractPlanDraftSQL,
   normalizeAgentResponseActions,
 } from "../logic/responseActions";
+import { getAgentRunContinuation } from "../logic/runCheckpoint";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -872,6 +873,7 @@ export function AgentChat({
       messages.filter(
         (message): message is AgentMessage =>
           (message.role === "user" || message.role === "assistant") &&
+          !message.metadata?.runPreflight &&
           !(
             message.role === "assistant" &&
             error &&
@@ -934,6 +936,11 @@ export function AgentChat({
     Boolean(latestUserMessageId) &&
     !isChatActionBlocked &&
     Boolean(onRetry);
+  const stoppedRunContinuation =
+    currentChat?.interruptionReason === "user" &&
+    (currentChat.status === "idle" || currentChat.status === "error")
+      ? getAgentRunContinuation(currentChat, messages)
+      : undefined;
 
   function getToolResult(
     messageId: string,
@@ -1021,7 +1028,8 @@ export function AgentChat({
   return (
     <div
       ref={chatContainerRef}
-      className={`flex flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
+      className={`flex min-w-0 flex-col overflow-y-auto gap-3 p-3 ${className ?? ""}`}
+      data-agent-chat-scroll-area
     >
       {showEmptyChat && (
         <div className="m-auto w-full max-w-xl py-2" data-agent-empty-chat>
@@ -1072,10 +1080,14 @@ export function AgentChat({
       {displayMessages.map((msg) => {
         const interruption = interruptionByLastMessageId.get(msg.id);
         const canRetry =
-          interruption?.reason === "unexpected" &&
+          interruption &&
+          (interruption.reason === "unexpected" ||
+            (stoppedRunContinuation?.checkpoint.suspension === "interrupted" &&
+              stoppedRunContinuation.checkpoint.rootUserMessageId ===
+                interruption.userMessageId)) &&
           interruption.userMessageId === latestUserMessageId &&
           currentChat?.interrupted &&
-          currentChat.interruptionReason === "unexpected" &&
+          currentChat.interruptionReason === interruption.reason &&
           !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
@@ -1155,7 +1167,10 @@ export function AgentChat({
           <div key={msg.id}>
             {msg.role === "user" ? (
               <div className="flex flex-col items-end">
-                <div className="flex w-fit max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm wrap-anywhere">
+                <div
+                  className="flex w-fit min-w-0 max-w-full flex-col gap-y-1 rounded-sm bg-info/10 px-3 py-2 text-sm whitespace-pre-wrap wrap-anywhere"
+                  data-agent-user-message
+                >
                   <span>{renderBoundMentions(content, references)}</span>
                   {projectReference &&
                     !content.includes(
@@ -1208,7 +1223,7 @@ export function AgentChat({
                     </div>
                   ) : msg.content ? (
                     <div
-                      className="w-fit max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm wrap-anywhere"
+                      className="w-fit min-w-0 max-w-full rounded-sm bg-control-bg px-3 py-2 text-sm wrap-anywhere"
                       data-agent-answer
                     >
                       <ReactMarkdown
@@ -1220,7 +1235,7 @@ export function AgentChat({
                             </p>
                           ),
                           pre: ({ children }) => (
-                            <pre className="my-1 overflow-x-auto rounded-xs bg-control-bg p-2 text-xs">
+                            <pre className="my-1 max-w-full overflow-x-auto rounded-xs bg-control-bg p-2 text-xs whitespace-pre">
                               {children}
                             </pre>
                           ),

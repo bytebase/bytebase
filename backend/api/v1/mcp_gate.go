@@ -299,6 +299,10 @@ var mcpRequestShapeRefusals = map[string]func(ctx context.Context, msg any) (rea
 		updatedSettingName, mcpSettingUpdateUnconfirmed, mcpSettingUpdateWayOut),
 	v1connect.InstanceServiceCreateInstanceProcedure: refuseUnconfirmed(v1connect.InstanceServiceCreateInstanceProcedure,
 		createdInstanceName, mcpInstanceCreationUnconfirmed, mcpInstanceCreationWayOut),
+	v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure: refuseUnconfirmed(v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure,
+		createdWorkloadIdentityName, mcpIdentityCreationUnconfirmed, mcpIdentityCreationWayOut),
+	v1connect.ProjectServiceSetIamPolicyProcedure: refuseUnconfirmed(v1connect.ProjectServiceSetIamPolicyProcedure,
+		projectIamPolicyName, mcpRoleGrantUnconfirmed, mcpRoleGrantWayOut),
 	v1connect.SheetServiceCreateSheetProcedure:       inTheConsole(refuseMaskedWriteSheet),
 	v1connect.SheetServiceBatchCreateSheetsProcedure: inTheConsole(refuseMaskedWriteSheetBatch),
 	v1connect.ReleaseServiceCreateReleaseProcedure:   inTheConsole(refuseMaskedWriteRelease),
@@ -353,6 +357,14 @@ const (
 		"and this request carries no such confirmation"
 	mcpInstanceCreationWayOut = "To add a PostgreSQL instance to a project, use the administer_workspace tool, which asks the user to confirm and tests the connection before it adds the instance. " +
 		"Add other instances, or test a connection alone, signed in to the Bytebase console"
+	mcpIdentityCreationUnconfirmed = "a workload identity is created over MCP only through administer_workspace, after the user confirms it in the MCP client, " +
+		"and this request carries no such confirmation"
+	mcpIdentityCreationWayOut = "To create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, use the administer_workspace tool, " +
+		"which asks the user to confirm and grants the identity the GitOps Service Agent role in its project. Create other workload identities signed in to the Bytebase console"
+	mcpRoleGrantUnconfirmed = "a project's IAM policy changes over MCP only when administer_workspace grants a workload identity it creates its role, " +
+		"after the user confirms it in the MCP client, and this request carries no such confirmation"
+	mcpRoleGrantWayOut = "To create a workload identity for CI with its role, use the administer_workspace tool. " +
+		"Change other members, roles and conditions signed in to the Bytebase console"
 )
 
 // refuseUnconfirmed serves procedure only when the request context carries a
@@ -406,6 +418,24 @@ func createdInstanceName(msg any) (string, bool) {
 	return getRequestResource(request, v1connect.InstanceServiceCreateInstanceProcedure), true
 }
 
+// createdWorkloadIdentityName names the identity a create adds, not its parent,
+// so a confirmation covers that one identity. A parent that names no project
+// gives a workspace identity's name, and administer_workspace confirms project
+// identities only.
+func createdWorkloadIdentityName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.CreateWorkloadIdentityRequest)
+	if !ok {
+		return "", false
+	}
+	projectID, _ := common.GetProjectID(request.GetParent())
+	return common.FormatWorkloadIdentityEmail(common.BuildWorkloadIdentityEmail(request.GetWorkloadIdentityId(), projectID)), true
+}
+
+func projectIamPolicyName(msg any) (string, bool) {
+	request, ok := msg.(*v1pb.SetIamPolicyRequest)
+	return request.GetResource(), ok
+}
+
 // refuseGrantIssueCreation applies grantIssueRefusal to CreateIssue. UpdateIssue's
 // allow_missing creation is guarded in its handler (rejectMCPOriginatedGrantIssue).
 func refuseGrantIssueCreation(_ context.Context, msg any) (string, string) {
@@ -431,8 +461,8 @@ func grantIssueRefusal(issueType v1pb.Issue_Type) (reason, wayOut string) {
 			v1connect.AccessGrantServiceCreateAccessGrantProcedure)
 		return reason, "Request the access with the request_access_grant tool instead"
 	case v1pb.Issue_ROLE_GRANT:
-		reason = "a ROLE_GRANT issue changes the project's IAM policy once approved, and MCP sessions " +
-			"cannot change IAM policy, whatever the approval rules say"
+		reason = "a ROLE_GRANT issue grants a project role once approved, and MCP sessions do not file role requests, " +
+			"whatever the approval rules say"
 		return reason, "To run a read-only statement, request an access grant with the request_access_grant tool; " +
 			"to get a role, request it signed in to the Bytebase console"
 	default:

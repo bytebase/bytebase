@@ -79,8 +79,8 @@ export function buildTimelineEntries(input: {
   // again keeps its thread, so stays with the run that posted it. A run posts
   // its completion just before its findings, so a finding belongs to the
   // latest completion before it that carries its attempt, else to the first
-  // one after it: two runs can share an attempt number while the backend
-  // still counts attempts per job.
+  // one after it. The attempt alone does not name a run: each reviewer once
+  // ran as a job with its own count, and the review's one job began its own.
   const findingsByRun = new Map<string, IssueComment[]>();
   const runOfFinding = new Map<string, string>();
   const completions: { name: string; attempt: bigint; index: number }[] = [];

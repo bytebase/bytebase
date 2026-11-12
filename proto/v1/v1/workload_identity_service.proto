@@ -33,8 +33,7 @@ service WorkloadIdentityService {
     option (bytebase.v1.permission) = "bb.workloadIdentities.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Gets a workload identity by name.

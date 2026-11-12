@@ -30,7 +30,8 @@ describe("AgentPreferences", () => {
     expect(screen.getByText("agent.preferences.scope")).toBeVisible();
     expect(screen.queryByText("agent.preferences.send-shortcut")).toBeNull();
     expect(screen.getByRole("switch", { name: "agent.preferences.send-with-enter" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "agent.preferences.token-limit" })).toHaveValue(100000);
+    expect(screen.getByRole("spinbutton", { name: "agent.preferences.token-limit" })).toHaveValue(100);
+    expect(screen.getByRole("spinbutton")).toHaveAccessibleDescription("agent.preferences.thousand-tokens");
     expect(screen.getByRole("radio", { name: "agent.preferences.show-landing" })).toBeChecked();
     expect(screen.getAllByRole("radio")).toHaveLength(2);
     expect(screen.queryByText(/query preview/i)).toBeNull();
@@ -39,7 +40,7 @@ describe("AgentPreferences", () => {
   test("saves valid changes locally for the current owner", () => {
     render(<AgentPreferences />);
     fireEvent.click(screen.getByRole("switch", { name: "agent.preferences.send-with-enter" }));
-    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "42000" } });
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "42" } });
     fireEvent.click(screen.getByRole("radio", { name: "agent.preferences.continue-last-chat" }));
 
     const expected = { sendWithEnter: false, tokenLimitPerRun: 42000, openingBehavior: "continue" };
@@ -84,10 +85,58 @@ describe("AgentPreferences", () => {
     expect(input).toHaveValue(0);
     expect(input).toHaveAttribute("aria-invalid", "true");
 
-    fireEvent.change(input, { target: { value: "50000" } });
+    fireEvent.change(input, { target: { value: "50" } });
     expect(input).not.toHaveAttribute("aria-invalid", "true");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(useAgentStore.getState().preferences.tokenLimitPerRun).toBe(50000);
+  });
+
+  test.each<[number, string]>([
+    [1, "0.001"],
+    [12345, "12.345"],
+    [100010, "100.01"],
+    [Number.MAX_SAFE_INTEGER, "9007199254740.991"],
+  ])("preserves a stored limit of %s tokens when displaying and editing %s K tokens", (tokens, displayed) => {
+    useAgentStore.getState().updatePreferences({ tokenLimitPerRun: tokens });
+    render(<AgentPreferences />);
+    const input = screen.getByRole("spinbutton") as HTMLInputElement;
+    expect(input.value).toBe(displayed);
+    expect(input).toBeValid();
+    expect(input).not.toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(input, { target: { value: displayed } });
+    fireEvent.click(screen.getByRole("switch"));
+    expect(useAgentStore.getState().preferences.tokenLimitPerRun).toBe(tokens);
+    expect(input.value).toBe(displayed);
+    const key = getAgentPreferencesKey("workspaces/example", "member@example.com")!;
+    expect(JSON.parse(localStorage.getItem(key)!).tokenLimitPerRun).toBe(tokens);
+  });
+
+  test.each<[string, number]>([
+    ["150", 150000],
+    ["12.345", 12345],
+    ["0.001", 1],
+    [".125", 125],
+    ["1.0000", 1000],
+    ["9007199254740.991", Number.MAX_SAFE_INTEGER],
+  ])("stores %s K tokens as exactly %s tokens", (entered, tokens) => {
+    render(<AgentPreferences />);
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: entered } });
+    expect(screen.getByRole("spinbutton")).not.toHaveAttribute("aria-invalid", "true");
+    expect(useAgentStore.getState().preferences.tokenLimitPerRun).toBe(tokens);
+    const key = getAgentPreferencesKey("workspaces/example", "member@example.com")!;
+    expect(JSON.parse(localStorage.getItem(key)!).tokenLimitPerRun).toBe(tokens);
+  });
+
+  test.each(["", "0", "-1", "0.0001", "1.2345", "9007199254740.992"])("keeps invalid K-token draft %s without changing the saved limit", (entered) => {
+    render(<AgentPreferences />);
+    const input = screen.getByRole("spinbutton") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: entered } });
+    expect(input.value).toBe(entered);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("agent.preferences.invalid-token-limit");
+    expect(input).toHaveAccessibleDescription("agent.preferences.thousand-tokens agent.preferences.invalid-token-limit");
+    expect(useAgentStore.getState().preferences.tokenLimitPerRun).toBe(100000);
   });
 
   test("resets preferences and validation only after confirmation without changing chats", async () => {
@@ -110,7 +159,7 @@ describe("AgentPreferences", () => {
 
     expect(useAgentStore.getState().preferences).toEqual(DEFAULT_AGENT_PREFERENCES);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("spinbutton")).toHaveValue(100000);
+    expect(screen.getByRole("spinbutton")).toHaveValue(100);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(useAgentStore.getState().getChat(chat.id)?.title).toBe("Keep this discussion");
     expect(useAgentStore.getState().currentChatId).toBe(chat.id);

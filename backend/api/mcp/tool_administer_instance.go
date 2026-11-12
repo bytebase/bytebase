@@ -78,19 +78,6 @@ func (c *instanceCreation) environmentID() string {
 	return id
 }
 
-// instanceSubject is an instance creation in confirmAdminChange's words.
-type instanceSubject struct{}
-
-func (instanceSubject) unchanged() string { return "no instance was added" }
-
-func (instanceSubject) notChanged() string { return "no instance was added" }
-
-func (instanceSubject) revised() string { return "the revised request" }
-
-func (instanceSubject) reread() string {
-	return "call administer_workspace again to ask the user about the request as it is now"
-}
-
 func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolRequest, input AdministerWorkspaceInput) (*mcp.CallToolResult, any, error) {
 	change, err := parseInstanceCreation(input.Body, getWorkspaceID(ctx))
 	if err != nil {
@@ -119,7 +106,7 @@ func (s *Server) administerInstance(ctx context.Context, req *mcp.CallToolReques
 		return formatToolError(err), nil, nil
 	}
 	digest := adminFormDigest(form, change.request)
-	if result := s.confirmAdminChange(ctx, req, change, digest, form, instanceSubject{}, "this request and its form"); result != nil {
+	if result := s.confirmAdminChange(ctx, req, change, digest, form, creationSubject{nothing: "no instance was added"}, "this request and its form"); result != nil {
 		return result, nil, nil
 	}
 
@@ -180,7 +167,7 @@ func (s *Server) createdInstance(ctx context.Context, c *instanceCreation, attem
 		}
 		return created, false, nil
 	}
-	if sendErr == nil && resp.Status < http.StatusInternalServerError {
+	if !mayHaveApplied(resp, sendErr) {
 		return nil, false, errors.Errorf("failed to add the instance: %s", why)
 	}
 	read, err := s.apiRequest(ctx, v1connect.InstanceServiceGetInstanceProcedure, map[string]string{"name": c.confirmedResource()})
@@ -222,6 +209,13 @@ func refusal(resp *apiResponse, err error) string {
 	default:
 		return ""
 	}
+}
+
+// mayHaveApplied reports whether a failed write may have been stored anyway:
+// the call ended before the handler answered, or the handler failed with a 5xx
+// rather than refusing the request.
+func mayHaveApplied(resp *apiResponse, err error) bool {
+	return err != nil || resp.Status >= http.StatusInternalServerError
 }
 
 // parseInstanceCreation reads the request and the project it adds the instance

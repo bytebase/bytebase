@@ -1,8 +1,8 @@
 # One review on the plan page
 
-Status: proposal · 2026-11-11 · [BYT-10505](https://linear.app/bytebase/issue/BYT-10505)
+Status: implemented in #21983 · 2026-11-12 · [BYT-10505](https://linear.app/bytebase/issue/BYT-10505)
 
-Checked on `main` at `309dd443b2`.
+Written before the change, on `main` at `309dd443b2`. "Today" in this document means that state.
 
 ## Problem
 
@@ -145,7 +145,8 @@ A failed review is data. It is never an error of the call that reads it.
 - `RunReview` fails only when the review cannot start: `NOT_FOUND` for a missing issue,
   `PERMISSION_DENIED` for a caller without the permission, and `FAILED_PRECONDITION` for a closed
   issue, a plan that has a rollout, or a plan with no SQL to review. A reviewer that is off is
-  skipped without an error.
+  skipped without an error. One case differs: a server without SQL Review V2 has no standard
+  rules, so there `RunReview` returns `FAILED_PRECONDITION` while the AI review is off.
 - `GetReviewRun` returns OK for a failed review. `state` and `error` carry the outcome.
 - An error in either reviewer fails the whole review, and the job posts no finding. The findings
   of the last successful review stay as they were.
@@ -186,6 +187,8 @@ private until it is shared.
   code.
 - Activity: one entry for each review replaces one entry for each reviewer.
 - Deploy: one line says what the rollout waits on.
+- Re-run all: it starts the review and then the plan checks. It asks first when the AI review is
+  on.
 - Running: the row says the review is running. No finding of that run shows until it ends.
 - Failed: the row shows the reason and Retry. No finding of that run shows.
 - Both reviewers off: the row says the review is off. It never shows a pass.
@@ -202,12 +205,9 @@ private until it is shared.
 
 ## Build plan
 
-Three PRs, in this order. Each carries its tests.
+Built in three parts and merged as one PR, #21983.
 
 1. API and plan page: the new `ReviewRun`, its generated code, and the one row on the plan page.
-   The page moves with the proto, because the new shape cannot fill two rows. Until the second PR
-   lands, the two calls read the two existing jobs as one run, and the rollout waits for both.
-2. One job: the executor and the sample. The job uses the existing table with one fixed reviewer
-   type.
-3. Migration: one row for each issue in `review_run`. It lands last, because the code before the
-   second PR still reads the reviewer type in the key.
+   The page moves with the proto, because the new shape cannot fill two rows.
+2. One job: the executor, the rollout rule, and the sample.
+3. Migration: one row for each issue in `review_run`, and no reviewer type in the table.

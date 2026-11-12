@@ -54,10 +54,9 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, err
 	}
-	// A run that starts with the review switched off reaches no provider and
-	// ends with no finding, which resolves the findings its earlier runs
-	// left. It starts that way when the switch-off came after the run was
-	// created, and when a review restarts for an issue that has an AI job.
+	// The review skips an AI review that is off, but the switch can change
+	// before this read. Switched off, the AI review reaches no provider and
+	// reports no finding.
 	aiSetting, err := e.store.GetAISettingUncached(ctx, project.Workspace)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI setting")

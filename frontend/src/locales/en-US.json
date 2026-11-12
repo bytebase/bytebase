@@ -264,7 +264,7 @@
       "back": "Back to chat",
       "continue-last-chat": "Continue last chat",
       "enter-help": "Shift+Enter inserts a new line.",
-      "invalid-token-limit": "Enter a positive whole number.",
+      "invalid-token-limit": "Enter a positive limit with up to 3 decimal places.",
       "newline-help": "Enter inserts a new line. Cmd/Ctrl+Enter sends.",
       "reset": "Reset to defaults",
       "reset-confirmation": "Reset preferences to defaults?",
@@ -272,9 +272,9 @@
       "send-with-enter": "Send with Enter",
       "show-landing": "Show landing page",
       "storage-failed": "Couldn't save locally. Changes apply until this page is reloaded.",
+      "thousand-tokens": "K tokens",
       "title": "Agent preferences",
       "token-limit": "Token limit per run",
-      "tokens": "tokens",
       "when-opening": "When opening Agent"
     },
     "project-attention": {
@@ -288,6 +288,7 @@
       "unavailable": "Unable to load items needing your attention in this project."
     },
     "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
+    "provider-attempt-limit": "I stopped before making another AI request because this run reached its provider attempt limit. Earlier actions may already have completed; check their status before asking me to retry.",
     "query-result": {
       "returned-rows": "Rows returned: {{count}}",
       "showing-columns": "Showing {{shown}} of {{total}} columns",
@@ -364,12 +365,34 @@
       "unsaved-only": "Unsaved draft only"
     },
     "stop": "Stop",
+    "token-budget": {
+      "action-failed": "Couldn't update this run. Try again.",
+      "apply": "Apply",
+      "completed-over-limit": "Run completed above its token limit.",
+      "continuation-unavailable": "This run cannot be resumed safely. Your messages and draft are preserved. Start a new chat to continue.",
+      "end-run": "End run",
+      "increase": "Increase limit",
+      "increase-and-resume": "Increase and resume",
+      "increase-title": "Increase limit for this run",
+      "invalid-limit": "Enter a limit greater than {{minimum}} K tokens, with up to 3 decimal places.",
+      "partial": "Some token usage was not reported.",
+      "paused": "Run paused at its token limit.",
+      "reached": "This run's token limit has been reached.",
+      "recovery-unavailable": "This browser can't safely continue stored Agent runs. Use a supported, up-to-date browser.",
+      "remote-busy": "This run may be active in another tab.",
+      "resume": "Resume",
+      "run-limit": "This run's token limit",
+      "title": "Run token budget",
+      "usage": "{{used}} / {{limit}} tokens",
+      "warning": "Approaching this run's token limit."
+    },
     "token-usage": {
       "answer": "Answer",
       "answer-total": "Answer total",
       "at-least": "At least {{count}}",
       "cached-input": "Cached input",
       "chat-total": "Chat total",
+      "failed-attempts": "Failed or interrupted attempts: {{count}}",
       "follow-up-questions": "Follow-up questions",
       "input": "Input",
       "latest-answer": "Latest answer",
@@ -379,6 +402,8 @@
       "not-recorded": "Not recorded",
       "not-reported": "Not reported",
       "output": "Output",
+      "run-limit": "Run limit",
+      "run-usage": "Run usage",
       "title": "Token usage",
       "total": "Total"
     },
@@ -3387,6 +3412,10 @@
           "approve": {
             "details": "Each decision is confirmed in the user's MCP client before it is made · Role requests are decided in the console · The approval rules and the project's self-approval setting apply, as in the console",
             "title": "Approve or reject issues"
+          },
+          "ci-identities": {
+            "details": "Create a workload identity that GitHub Actions or GitLab CI jobs in one repository sign in as, with the GitOps Service Agent role in one project, so it can roll out without approval · Each identity is confirmed in the user's MCP client before it is created · This policy does not limit what it does, and it lasts until it is removed",
+            "title": "Create CI identities"
           },
           "export": {
             "details": "Export results as files. Data leaves Bytebase.",

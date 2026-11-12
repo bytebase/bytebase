@@ -30,6 +30,11 @@ const mocks = vi.hoisted(() => ({
   getOrFetchDatabaseByName: vi.fn(),
   getIssue: vi.fn(),
   getPlan: vi.fn(),
+  loadProjectIamPolicy: vi.fn(),
+  searchAgentProjects: vi.fn(),
+  searchAgentDatabases: vi.fn(),
+  searchAgentIssues: vi.fn(),
+  searchAgentPlans: vi.fn(),
   canListReferences: true,
   planPolicyKnown: true,
   planPermissions: {
@@ -103,6 +108,7 @@ vi.mock("@/stores/app", () => {
     roles: [{}],
     workspacePolicy: {},
     getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+    loadProjectIamPolicy: mocks.loadProjectIamPolicy,
     hasWorkspacePermission: (permission: string) =>
       permission === "bb.plans.list"
         ? mocks.planPermissions.workspaceList
@@ -128,6 +134,23 @@ vi.mock("@/stores/app", () => {
 vi.mock("../logic/chatContext", () => ({
   getCurrentChatContext: () => mocks.currentContext,
   getCurrentAgentPageResource: () => mocks.pageResource,
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useProjectList: () => ({
+    projects: Object.entries(mocks.projectsByName).map(([name, project]) => ({ name, title: project.title })),
+    isLoading: false,
+    isFetchingMore: false,
+    hasMore: false,
+    loadMore: vi.fn(),
+  }),
+}));
+
+vi.mock("../logic/resourceSearch", () => ({
+  searchAgentProjects: mocks.searchAgentProjects,
+  searchAgentDatabases: mocks.searchAgentDatabases,
+  searchAgentIssues: mocks.searchAgentIssues,
+  searchAgentPlans: mocks.searchAgentPlans,
 }));
 
 vi.mock("@/api", async (importOriginal) => {
@@ -362,6 +385,12 @@ beforeEach(async () => {
   mocks.getOrFetchDatabaseByName.mockReset();
   mocks.getIssue.mockReset();
   mocks.getPlan.mockReset();
+  mocks.loadProjectIamPolicy.mockReset();
+  mocks.loadProjectIamPolicy.mockResolvedValue(undefined);
+  for (const search of [mocks.searchAgentProjects, mocks.searchAgentDatabases, mocks.searchAgentIssues, mocks.searchAgentPlans]) {
+    search.mockReset();
+    search.mockResolvedValue({ items: [], nextPageToken: "" });
+  }
   mocks.canListReferences = true;
   mocks.planPolicyKnown = true;
   mocks.planPermissions = {
@@ -1163,6 +1192,343 @@ describe("AgentWindow", () => {
     expect(store.getDraft(existing.id).text).toBe("Unfinished analytics question");
     expect(document.body.querySelector('[data-testid="agent-input"]')).toBeInstanceOf(HTMLElement);
     unmount();
+  });
+
+  describe("custom contextual questions", () => {
+    const getPrompt = () =>
+      screen.getByRole<HTMLTextAreaElement>("textbox", {
+        name: "agent.input-placeholder",
+      });
+    const typePrompt = (text: string) =>
+      fireEvent.change(getPrompt(), { target: { value: text } });
+    const submitPrompt = () =>
+      fireEvent.click(screen.getByRole("button", { name: "agent.send" }));
+
+    beforeEach(() => {
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+    });
+
+    test.each([
+      { kind: "project", name: "projects/orders", label: "Orders", category: "project" },
+      { kind: "plan", name: "projects/orders/plans/42", label: "Review schema (#42)", category: "plan" },
+    ] as const)("retains a picked $kind through preferences and minimize, then binds it to a new chat", async ({ kind, name, label, category }) => {
+      const store = useAgentStore.getState();
+      const previous = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+      store.addMessage({ chatId: previous.id, role: "user", content: "Earlier question" });
+      store.setDraft(previous.id, { text: "Unsent earlier follow-up" });
+      const originalChat = store.getChat(previous.id);
+      const originalMessages = store.getMessages(previous.id);
+      const originalDraft = store.getDraft(previous.id);
+      const count = useAgentStore.getState().chats.length;
+      mocks.searchAgentProjects.mockResolvedValue({ items: [{ name: "projects/orders", title: "Orders" }], nextPageToken: "" });
+      mocks.searchAgentPlans.mockResolvedValue({ items: [{ name: "projects/orders/plans/42", title: "Review schema", state: State.ACTIVE }], nextPageToken: "" });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        typePrompt("Explain @");
+        const categoryButton = document.querySelector<HTMLButtonElement>(`[data-agent-resource-category="${category}"]`);
+        expect(categoryButton).toBeInstanceOf(HTMLButtonElement);
+        await act(async () => { categoryButton!.click(); await Promise.resolve(); });
+        const resourceButton = document.querySelector<HTMLButtonElement>(`[data-agent-resource-${kind}="${name}"]`);
+        expect(resourceButton).toBeInstanceOf(HTMLButtonElement);
+        await act(async () => { resourceButton!.click(); await Promise.resolve(); });
+        expect(getPrompt()).toHaveValue(`Explain @${label} `);
+        expect(document.querySelector("[data-agent-inline-mention]")?.textContent).toBe(`@${label}`);
+
+        fireEvent.click(screen.getByRole("button", { name: "agent.preferences.title" }));
+        fireEvent.click(screen.getByRole("button", { name: "agent.preferences.back" }));
+        act(() => store.minimize());
+        act(() => store.restore());
+        expect(getPrompt()).toHaveValue(`Explain @${label} `);
+        expect(document.querySelector("[data-agent-inline-mention]")?.textContent).toBe(`@${label}`);
+        expect(useAgentStore.getState().currentChatId).toBe(previous.id);
+        expect(store.getChat(previous.id)).toEqual(originalChat);
+        expect(store.getMessages(previous.id)).toEqual(originalMessages);
+        expect(store.getDraft(previous.id)).toEqual(originalDraft);
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+
+        submitPrompt();
+        const next = store.getChat(useAgentStore.getState().currentChatId);
+        expect(next?.id).not.toBe(previous.id);
+        expect(next).toMatchObject({ context: "projects/orders", workspaceName: mocks.workspace.name });
+        expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+        expect(getCurrentQueuedUserMessage()).toMatchObject({
+          chatId: next?.id,
+          text: `Explain @${label}`,
+          runMode: "default",
+          resourceReference: { kind, name, project: "projects/orders", label },
+        });
+        expect(store.getChat(previous.id)).toEqual(originalChat);
+        expect(store.getMessages(previous.id)).toEqual(originalMessages);
+        expect(store.getDraft(previous.id)).toEqual(originalDraft);
+      } finally {
+        unmount();
+      }
+    });
+
+    test.each([1200, 700, 390])("disables landing context switching at %ipx without changing chats or drafts", (width) => {
+      vi.stubGlobal("innerWidth", width);
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const store = useAgentStore.getState();
+      const orders = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+      store.setDraft(orders.id, { text: "Earlier orders draft" });
+      const analytics = store.createChat({ context: "projects/analytics", workspaceName: mocks.workspace.name });
+      store.setDraft(analytics.id, { text: "Earlier analytics draft" });
+      const originalChats = [...useAgentStore.getState().chats];
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        typePrompt("Investigate the latest failures");
+        const trigger = document.querySelector<HTMLButtonElement>("[data-agent-context-trigger]")!;
+        expect(trigger).toHaveTextContent("Order service");
+        expect(trigger).toBeDisabled();
+        fireEvent.click(trigger);
+        fireEvent.keyDown(trigger, { key: "Enter" });
+        expect(document.querySelector("[data-agent-context-options]")).toBeNull();
+        expect(getPrompt()).toHaveValue("Investigate the latest failures");
+        expect(useAgentStore.getState().currentChatId).toBe(analytics.id);
+        expect(useAgentStore.getState().chats).toHaveLength(originalChats.length);
+        expect(originalChats.map((chat) => store.getChat(chat.id))).toEqual(originalChats);
+        expect(store.getDraft(orders.id).text).toBe("Earlier orders draft");
+        expect(store.getDraft(analytics.id).text).toBe("Earlier analytics draft");
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+        expect(document.querySelector("[data-agent-contextual-start]")).not.toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("shows a new chat's zero token usage instead of the previous chat's usage", () => {
+      const store = useAgentStore.getState();
+      const previous = store.createChat({ context: "projects/orders", workspaceName: mocks.workspace.name });
+      useAgentStore.setState((state) => ({ chats: state.chats.map((chat) => chat.id === previous.id ? { ...chat, totalTokensUsed: 1234 } : chat) }));
+      mocks.useTranslation.mockReturnValue({
+        t: (key: string, values?: Record<string, unknown>) => key === "agent.chat-total-tokens" ? `Chat tokens: ${values?.count}` : key,
+        i18n: { language: "en-US" },
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        const footer = document.querySelector("[data-agent-contextual-input] [data-agent-input-footer]");
+        expect(footer?.textContent).toContain("Order service");
+        expect(footer?.textContent).toContain("Chat tokens: 0");
+        expect(footer?.textContent).not.toContain("1,234");
+        expect(store.getChat(previous.id)?.totalTokensUsed).toBe(1234);
+      } finally {
+        unmount();
+      }
+    });
+
+    test("does not offer resource picking or context switching to a prompt-only page-help owner", () => {
+      const onStart = vi.fn(() => false);
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      let revoke = () => {};
+      try {
+        render();
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, onStart }); });
+        const count = useAgentStore.getState().chats.length;
+        typePrompt("Explain @");
+        expect(document.querySelector("[data-agent-resource-picker]")).toBeNull();
+        expect(document.querySelector<HTMLButtonElement>("[data-agent-context-trigger]")).toBeDisabled();
+        submitPrompt();
+        expect(onStart).toHaveBeenCalledWith("Explain @");
+        expect(getPrompt()).toHaveValue("Explain @");
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+      } finally {
+        act(() => revoke());
+        unmount();
+      }
+    });
+
+    test.each([1200, 700, 390])(
+      "starts a custom contextual question in a new captured project chat at %ipx",
+      (width) => {
+        vi.stubGlobal("innerWidth", width);
+        useAgentStore.setState({ size: { width, height: 600 } });
+        const store = useAgentStore.getState();
+        const previous = store.createChat({
+          context: "projects/orders",
+          workspaceName: mocks.workspace.name,
+        });
+        store.addMessage({ chatId: previous.id, role: "user", content: "Previous question" });
+        store.setDraft(previous.id, { text: "Unsent follow-up" });
+        const originalChat = store.getChat(previous.id);
+        const originalMessages = store.getMessages(previous.id);
+        const count = useAgentStore.getState().chats.length;
+        const { render, unmount } = renderIntoContainer(<AgentWindow />);
+        try {
+          render();
+          expect(getPrompt()).toBeVisible();
+          typePrompt("  Explain the slow queries  ");
+
+          expect(useAgentStore.getState().chats).toHaveLength(count);
+          expect(useAgentStore.getState().currentChatId).toBe(previous.id);
+          expect(store.getChat(previous.id)).toEqual(originalChat);
+          expect(store.getMessages(previous.id)).toEqual(originalMessages);
+          expect(store.getDraft(previous.id).text).toBe("Unsent follow-up");
+          expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+
+          mocks.currentContext = "projects/analytics";
+          submitPrompt();
+
+          const next = store.getChat(useAgentStore.getState().currentChatId);
+          expect(next?.id).not.toBe(previous.id);
+          expect(next).toMatchObject({ context: "projects/orders", workspaceName: mocks.workspace.name });
+          expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+          expect(getCurrentQueuedUserMessage()).toMatchObject({
+            chatId: next?.id,
+            text: "Explain the slow queries",
+            runMode: "default",
+            page: { path: expect.any(String), title: document.title },
+          });
+          expect(getCurrentQueuedUserMessage()).not.toHaveProperty("starterId");
+          expect(store.getChat(previous.id)).toEqual(originalChat);
+          expect(store.getMessages(previous.id)).toEqual(originalMessages);
+          expect(store.getDraft(previous.id).text).toBe("Unsent follow-up");
+          expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test("keeps a custom contextual draft through preferences and minimize", () => {
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        typePrompt("Keep this unsent contextual question");
+        const count = useAgentStore.getState().chats.length;
+        fireEvent.click(screen.getByRole("button", { name: "agent.preferences.title" }));
+        fireEvent.click(screen.getByRole("button", { name: "agent.preferences.back" }));
+        expect(getPrompt()).toHaveValue("Keep this unsent contextual question");
+
+        act(() => useAgentStore.getState().minimize());
+        act(() => useAgentStore.getState().restore());
+        expect(getPrompt()).toBeVisible();
+        expect(getPrompt()).toHaveValue("Keep this unsent contextual question");
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+      } finally {
+        unmount();
+      }
+    });
+
+    test("clears a custom contextual draft when a new help request opens", () => {
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      let revoke = () => {};
+      try {
+        render();
+        typePrompt("Unsent project question");
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" } }); });
+        expect(getPrompt()).toHaveValue("");
+        typePrompt("Unsent masking question");
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "semantic-types" } }); });
+        expect(getPrompt()).toHaveValue("");
+        expect(document.body.querySelector('[data-agent-contextual-start="semantic-types"]')).toBeVisible();
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+      } finally {
+        act(() => revoke());
+        unmount();
+      }
+    });
+
+    test("sends a custom contextual Plan question with its exact bound reference", async () => {
+      mocks.pageResource = {
+        kind: "plan",
+        name: "projects/orders/plans/42",
+        project: "projects/orders",
+      };
+      mocks.getPlan.mockResolvedValue({
+        name: "projects/orders/plans/42",
+        title: "Review schema",
+        state: State.ACTIVE,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        await act(async () => {
+          render();
+          await Promise.resolve();
+        });
+        typePrompt("Explain the proposed indexes");
+        submitPrompt();
+
+        expect(getCurrentQueuedUserMessage()).toMatchObject({
+          chatId: useAgentStore.getState().currentChatId,
+          text: "@Review schema (#42) Explain the proposed indexes",
+          runMode: "default",
+          resourceReference: {
+            kind: "plan",
+            name: "projects/orders/plans/42",
+            project: "projects/orders",
+            label: "Review schema (#42)",
+          },
+        });
+        expect(getCurrentQueuedUserMessage()).not.toHaveProperty("starterId");
+      } finally {
+        unmount();
+      }
+    });
+
+    test("keeps a custom contextual editor draft until its owner accepts it", () => {
+      let started = false;
+      const onStart = vi.fn(() => started);
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      let revoke = () => {};
+      try {
+        render();
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, maskingRuleEditor: true, onStart }); });
+        const count = useAgentStore.getState().chats.length;
+        typePrompt("Mask the email columns");
+        submitPrompt();
+
+        expect(onStart).toHaveBeenLastCalledWith("Mask the email columns");
+        expect(getPrompt()).toHaveValue("Mask the email columns");
+        expect(document.body.querySelector('[data-agent-contextual-start="global-masking"]')).toBeVisible();
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+
+        started = true;
+        submitPrompt();
+        expect(onStart).toHaveBeenCalledTimes(2);
+        expect(document.body.querySelector("[data-agent-contextual-start]")).toBeNull();
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+      } finally {
+        act(() => revoke());
+        unmount();
+      }
+    });
+
+    test("rechecks source availability before dispatching a custom contextual question", () => {
+      let available = true;
+      const onStart = vi.fn(() => true);
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      let revoke = () => {};
+      try {
+        render();
+        act(() => { revoke = openAgentPageHelp({ page: { kind: "global-masking" }, onStart, isAvailable: () => available }); });
+        typePrompt("Explain this masking configuration");
+        const submit = screen.getByRole("button", { name: "agent.send" });
+        expect(submit).toBeEnabled();
+        const count = useAgentStore.getState().chats.length;
+        available = false;
+        fireEvent.click(submit);
+
+        expect(onStart).not.toHaveBeenCalled();
+        expect(getPrompt()).toHaveValue("Explain this masking configuration");
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+      } finally {
+        act(() => revoke());
+        unmount();
+      }
+    });
   });
 
   describe("contextual chat continuation", () => {
