@@ -102,7 +102,7 @@ test("asks to acknowledge open threads before deploying past them", async () => 
   expect(result.current.confirmDisabled).toBe(false);
 });
 
-test("counts a failed rule review as a failed check", () => {
+test("counts a failed review as a failed check", () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
@@ -137,7 +137,7 @@ test.each([
   expect(mocks.createRollout).not.toHaveBeenCalled();
 });
 
-test("asks to confirm deploying past a rule review that never ran on the SQL", () => {
+test("asks to confirm deploying past a review that never ran on the SQL", () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,
@@ -193,7 +193,7 @@ test("asks to confirm deploying before the threads have loaded", () => {
   expect(mocks.createRollout).not.toHaveBeenCalled();
 });
 
-test("deploys at once after the rule review is done", async () => {
+test("deploys at once after the review has succeeded", async () => {
   mocks.sqlReview = {
     unresolvedThreads: 0,
     threadsLoaded: true,

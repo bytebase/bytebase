@@ -935,7 +935,7 @@ type Project struct {
 	// Execution retry policy for task runs.
 	ExecutionRetryPolicy *Project_ExecutionRetryPolicy `protobuf:"bytes,15,opt,name=execution_retry_policy,json=executionRetryPolicy,proto3" json:"execution_retry_policy,omitempty"`
 	// The maximum number of databases to sample during CI data validation and
-	// AI review. Without specification, sampling is disabled, resulting in full
+	// SQL review. Without specification, sampling is disabled, resulting in full
 	// validation.
 	CiSamplingSize int32 `protobuf:"varint,16,opt,name=ci_sampling_size,json=ciSamplingSize,proto3" json:"ci_sampling_size,omitempty"`
 	// The maximum number of parallel tasks allowed during rollout execution.

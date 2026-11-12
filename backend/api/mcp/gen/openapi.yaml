@@ -18651,7 +18651,7 @@ components:
           format: int32
           description: |-
             The maximum number of databases to sample during CI data validation and
-             AI review. Without specification, sampling is disabled, resulting in full
+             SQL review. Without specification, sampling is disabled, resulting in full
              validation.
         parallelTasksPerRollout:
           type: integer

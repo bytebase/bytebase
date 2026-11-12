@@ -381,7 +381,7 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 
 	var postedCount int64
 	if len(resultPayloads) > 0 {
-		// After the update above, the reviewer's current roots are the kept
+		// After the update above, the review's current roots are the kept
 		// ones. created_at is offset by the ordinal for the same reason as in
 		// CreateIssueComments, starting a microsecond after the completion
 		// event inserted below, so the results sort after it.
