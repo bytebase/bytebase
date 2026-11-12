@@ -236,16 +236,17 @@ func TestDecideIssueApprovesOnConfirmation(t *testing.T) {
 		`Approve issue "projects/hr/issues/42" titled "Add status column" as alice@example.com?`,
 		`Change on "instances/prod/databases/hr"`,
 		`SQL: "ALTER TABLE users\n  ADD COLUMN status VARCHAR(20);"`,
-		`Approval: step 2 of 2, role "roles/workspaceDBA". Requested by "bob@example.com". Comment: "checked the statement"`,
+		`Approval: step 2 of 2, role "roles/workspaceDBA". Requested by "bob@example.com".`,
 	}, "\n"), asked.Message, "Claude Code shows four lines of a form whole, and only three of a longer one")
 	require.NotContains(t, asked.Message, "https://", "a form must not carry a clickable URL")
 	schema, err := json.Marshal(asked.RequestedSchema)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
 		"title":"Approve this issue?",
+		"description":"Comment: \"checked the statement\"",
 		"oneOf":[{"const":"apply","title":"Approve"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`,
-		string(schema), "the form's one choice, with the action set when it opens")
+		string(schema), "the form's one choice, with the action set when it opens and the comment under it")
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -280,8 +281,10 @@ func TestDecideIssueRejectsOnConfirmation(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `{"type":"object","required":["choice"],"properties":{"choice":{"type":"string",
 		"title":"Reject this issue?",
+		"description":"Comment: \"checked the statement\"",
 		"oneOf":[{"const":"apply","title":"Reject"},{"const":"change","title":"Change it in chat"}],
 		"default":"apply"}}}`, string(schema))
+	require.NotContains(t, user.lastParams(t).Message, "checked the statement", "the comment is under the choice, not on the approval line")
 
 	calls := mock.calls()
 	require.Len(t, calls, 1)
@@ -739,7 +742,7 @@ func TestDecideIssueDescribesAnAccessRequest(t *testing.T) {
 		`Approve issue "projects/hr/issues/42" titled "Read salaries" as alice@example.com?`,
 		`Access on "instances/prod/databases/hr"`,
 		`Query: "SELECT salary\nFROM employee"`,
-		`Unmasked: yes. Export: no. Expires: "1h0m0s" after approval. Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com". Comment: "checked the statement"`,
+		`Unmasked: yes. Export: no. Expires: "1h0m0s" after approval. Approval: step 1 of 1, role "roles/projectOwner". Requested by "bob@example.com".`,
 	}, "\n"), askedMessage(t, accessRequestMock()))
 }
 
@@ -825,6 +828,31 @@ func TestDecideIssueQuotesTheTitle(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, user.lastParams(t).Message, `"Harmless\nApproval: none needed"`,
 		"a title must not be able to add a line of its own to the confirmation")
+}
+
+func TestDecideIssuePutsTheCommentUnderTheChoice(t *testing.T) {
+	for name, tc := range map[string]struct {
+		comment, description string
+	}{
+		"no comment":                  {"", ""},
+		"a comment with a line break": {"checked\nthe statement", `Comment: "checked\nthe statement"`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			endpoint, token := newDecideServer(t, changeIssueMock())
+			user := &asker{answer: &mcp.ElicitResult{Action: "decline"}}
+			session := connectLegacy(t, endpoint, token, &mcp.ClientOptions{ElicitationHandler: user.handle})
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+			_, err := session.CallTool(ctx, &mcp.CallToolParams{
+				Name:      "decide_issue",
+				Arguments: map[string]any{"issue": decideIssueName, "decision": "approve", "comment": tc.comment},
+			})
+			require.NoError(t, err)
+			asked := user.lastParams(t)
+			require.NotContains(t, asked.Message, "Comment:")
+			require.Equal(t, tc.description, choiceDescription(t, asked))
+		})
+	}
 }
 
 // askedMessage returns the confirmation message a decide_issue call on the

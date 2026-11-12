@@ -145,7 +145,11 @@ func (s *Server) handleDecideIssue(ctx context.Context, req *mcp.CallToolRequest
 		return formatToolError(err), nil, nil
 	}
 	action := capitalize(decision.verb())
-	return s.askToConfirm(ctx, decision, digest, message, confirmChoice{question: action + " this issue?", action: action}), nil, nil
+	choice := confirmChoice{question: action + " this issue?", action: action}
+	if view.Comment != "" {
+		choice.description = fmt.Sprintf("Comment: %q", view.Comment)
+	}
+	return s.askToConfirm(ctx, decision, digest, message, choice), nil, nil
 }
 
 func parseIssueDecision(input DecideIssueInput) (*issueDecision, error) {
@@ -423,17 +427,16 @@ func (v *confirmationView) digest() ([]byte, error) {
 }
 
 // describeIssueDecision builds the confirmation message: the decision, the
-// issue, what approving it would let happen, the step it decides, and the
-// comment it records. Every value taken from the issue or from the agent enters
-// through %q, which escapes line breaks, so no value can pose as a line of the
-// message. The message carries no link: the MCP specification asks servers not
-// to put clickable URLs in a form.
+// issue, what approving it would let happen, and the step it decides. Every
+// value taken from the issue enters through %q, which escapes line breaks, so
+// no value can pose as a line of the message. The message carries no link: the
+// MCP specification asks servers not to put clickable URLs in a form.
 //
 // Claude Code 2.1.302 shows four lines of a message, or three and "… (+N more
 // lines)", and cuts each line six columns short of the terminal width. So each
 // line does one job, its bounded part first: the decision; the targets, counted
-// before they are named; the statement; then the approval step, requester and
-// comment. A plan with several changes shows its first change and the total.
+// before they are named; the statement; then the approval step and requester.
+// A plan with several changes shows its first change and the total.
 //
 // It fails closed: if any part cannot be read, nothing is asked.
 func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecision, view *confirmationView) (string, error) {
@@ -456,9 +459,6 @@ func (s *Server) describeIssueDecision(ctx context.Context, decision *issueDecis
 			return "", err
 		}
 	default:
-	}
-	if view.Comment != "" {
-		last += fmt.Sprintf(" Comment: %q", view.Comment)
 	}
 	lines := append([]string{question + "?"}, details...)
 	return strings.Join(append(lines, last), "\n"), nil
