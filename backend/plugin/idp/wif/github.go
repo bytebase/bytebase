@@ -3,6 +3,7 @@ package wif
 import (
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // githubClaims are the GitHub Actions token claims that name the repository a
@@ -92,6 +93,58 @@ func parseGitHubSubjectPattern(pattern string) (githubSubjectPattern, bool) {
 		repoID:  repoID,
 		rest:    ":" + rest,
 	}, true
+}
+
+// GitHubRepository is the one repository a GitHub subject pattern names, when
+// the pattern admits every job in it.
+type GitHubRepository struct {
+	Owner   string
+	OwnerID string
+	Name    string
+	ID      string
+}
+
+// ParseGitHubRepositoryPattern reads "repo:OWNER[@OWNER_ID]/REPO[@REPO_ID]:*"
+// with the grammar the token match uses. It reports false for every other
+// pattern, one that names every repository of an owner included. No GitHub name
+// holds white space, so a pattern with any matches nothing.
+func ParseGitHubRepositoryPattern(pattern string) (GitHubRepository, bool) {
+	if strings.ContainsFunc(pattern, unicode.IsSpace) {
+		return GitHubRepository{}, false
+	}
+	p, ok := parseGitHubSubjectPattern(pattern)
+	if !ok || p.repo == "" || p.rest != ":*" {
+		return GitHubRepository{}, false
+	}
+	return GitHubRepository{Owner: p.owner, OwnerID: p.ownerID, Name: p.repo, ID: p.repoID}, true
+}
+
+// ParseGitLabProjectPattern reads "project_path:GROUP/PROJECT:*", where PROJECT
+// may name subgroups, and returns the project's path. It reports false for every
+// other pattern. A GitLab pattern is matched by prefix alone, and ":" ends the
+// path in GitLab's default subject, project_path:{group}/{project}:ref_type:...
+// (docs.gitlab.com/ci/secrets/id_token_authentication), so the pattern admits
+// that project and no other. No GitLab path holds "*", ":", "@", white space or
+// an empty segment, so a pattern with any of them matches nothing.
+func ParseGitLabProjectPattern(pattern string) (string, bool) {
+	body, ok := strings.CutPrefix(pattern, gitlabSubjectPrefix)
+	if !ok {
+		return "", false
+	}
+	path, ok := strings.CutSuffix(body, ":*")
+	if !ok {
+		return "", false
+	}
+	segments := strings.Split(path, "/")
+	if len(segments) < 2 {
+		return "", false
+	}
+	for _, segment := range segments {
+		if segment == "" || strings.ContainsAny(segment, "*:@") || strings.ContainsFunc(segment, unicode.IsSpace) {
+			return "", false
+		}
+	}
+	return path, true
 }
 
 // splitNameAndID splits "name" or "name@123". The name must be non-empty and

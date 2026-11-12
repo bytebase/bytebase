@@ -1057,6 +1057,7 @@ func TestChange_Links_UseWorkspaceExternalURL(t *testing.T) {
 	s := newChangeTestServer(t, mock)
 	s.profile.ExternalURL = ""
 	s.store = &testServerStore{
+		workspaceID:      "wk-test",
 		workspaceProfile: &storepb.WorkspaceProfileSetting{ExternalUrl: "https://workspace.example.com"},
 	}
 

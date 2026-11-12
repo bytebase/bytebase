@@ -656,7 +656,7 @@ func TestDecideIssueRefusesARoleRequest(t *testing.T) {
 			require.True(t, res.IsError)
 			text := resultText(t, res)
 			require.Contains(t, text, "ROLE_GRANT_NOT_SUPPORTED")
-			require.Contains(t, text, "approving a role request grants a project role, which MCP does not do yet")
+			require.Contains(t, text, "approving a role request grants a project role, which decide_issue does not do")
 			require.Contains(t, text, "decide it signed in to the Bytebase console: https://bb.example.com/projects/hr/issues/42")
 			require.Zero(t, user.asked.Load(), "no form may be sent for a role request")
 			require.Empty(t, mock.calls(), "no decision, and so no confirmation, may reach the API")

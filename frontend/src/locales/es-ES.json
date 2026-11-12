@@ -3370,6 +3370,10 @@
             "details": "Cada decisión se confirma en el cliente MCP del usuario antes de tomarse · Las solicitudes de rol se deciden en la consola · Se aplican las reglas de aprobación y la configuración de autoaprobación del proyecto, como en la consola",
             "title": "Aprobar o rechazar issues"
           },
+          "ci-identities": {
+            "details": "Crear una identidad de carga de trabajo con la que inician sesión los trabajos de GitHub Actions o GitLab CI de un repositorio, con el rol Agente de Servicio GitOps en un proyecto, de modo que puede desplegar sin aprobación · Cada identidad se confirma en el cliente MCP del usuario antes de crearse · Esta política no limita lo que hace, y dura hasta que se elimina",
+            "title": "Crear identidades de CI"
+          },
           "export": {
             "details": "Exportar resultados como archivos. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"

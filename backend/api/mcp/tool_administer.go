@@ -48,17 +48,19 @@ const administerWorkspaceDescription = `Make a workspace administration change t
 | operationId | Yes      | The operation, e.g. "SettingService/UpdateSetting" |
 | body        | Yes      | The operation's request body |
 
-It serves three changes.
+It serves four changes.
 
 The approval rules for database changes: send SettingService/UpdateSetting with setting.name "settings/WORKSPACE_APPROVAL" and the whole rule list in setting.value.workspaceApproval.rules. Read the stored rules first with call_api SettingService/GetSetting, change only the rules whose source is CHANGE_DATABASE, and send every other rule as stored, in its order. Give each rule you add the source CHANGE_DATABASE. Send a rule's source, condition.expression, template.title, template.description and template.flow.roles; other fields are refused. Name each approver in template.flow.roles by its role name, such as roles/workspaceDBA. An approval check tries the CHANGE_DATABASE rules in order, and the first whose condition matches decides who approves a change. When none matches, the rules with no source, such as the Fallback Rule, decide, and a change that no rule matches needs no approval.
 
 The masking rules: send OrgPolicyService/UpdatePolicy with policy.name "workspaces/{workspace}/policies/masking_rule", policy.type MASKING_RULE and the whole rule list in policy.maskingRulePolicy.rules, with allowMissing true when no rules are stored yet. Read the stored rules first with call_api OrgPolicyService/GetPolicy, and the semantic types with call_api SettingService/GetSetting on settings/SEMANTIC_TYPES; the built-in types bb.default (full mask) and bb.default-partial (partial mask) always exist. Send a rule's id, condition.expression, condition.title and semanticType; other fields are refused, and the tool sets updateMask. Keep each stored rule's id, and give each new rule a new UUID. Masking tries the rules in order, and the first whose condition matches gives a column its semantic type; a column that no rule matches keeps its own.
 
-A PostgreSQL instance in a project: send InstanceService/CreateInstance with parent "projects/{project}", instanceId, and instance with title, engine POSTGRES, environment ("environments/{id}", as call_api SettingService/GetSetting on settings/ENVIRONMENT lists them; leave it out for none), activation, and one dataSources entry: type ADMIN, host (one name or address), port, username, password, and optionally database, useSsl, verifyTlsCertificate and authenticationType PASSWORD; the tool sets its id. Other fields are refused, keys that name no field are ignored, and the default project cannot own an instance. Masking skips an instance that is not activated unless every instance is licensed; the create refuses activation true when no license is free, as on the Free plan. When the user accepts, Bytebase tests the connection and adds the instance only if it connects; its databases join the project for good. Certificates, SSH, other engines and other sign-in methods are set up in the console.
+A PostgreSQL instance in a project: send InstanceService/CreateInstance with parent "projects/{project}", instanceId, and instance with title, engine POSTGRES, environment ("environments/{id}", or left out for none), activation, and one dataSources entry: type ADMIN, host, port, username, password, and optionally database, useSsl, verifyTlsCertificate and authenticationType PASSWORD; the tool sets its id. Other fields are refused, keys that name no field are ignored, and the default project cannot own an instance. Masking skips an instance that is not activated unless every instance is licensed; the create refuses activation true when no license is free, as on the Free plan. When the user accepts, Bytebase tests the connection and adds the instance only if it connects; its databases join the project for good.
 
-The tool shows the user what changes and asks them to confirm in a form. It makes the change only when they accept; declining or cancelling changes nothing. A change too long for the form is refused, and the refusal says whether smaller steps help. A client that cannot show the form gets the console page instead. Do not ask in chat first: the form is the question.
+A workload identity for CI jobs in one GitHub or GitLab repository: send WorkloadIdentityService/CreateWorkloadIdentity in a project, with the fields search_api's note on it lists. When the user accepts, the tool creates it and grants it the GitOps Service Agent role in the project.
 
-Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. Adding an instance needs bb.instances.create. call_api refuses SettingService/UpdateSetting, OrgPolicyService/UpdatePolicy and InstanceService/CreateInstance.`
+The tool shows the user what changes and asks them to confirm in a form. It makes the change only when they accept; declining or cancelling changes nothing. Do not ask in chat first: the form is the question.
+
+Reading and changing the approval rules needs bb.settings.get and bb.settings.set, as in the console. Reading and changing the masking rules needs bb.policies.getMaskingRulePolicy and bb.policies.updateMaskingRulePolicy, bb.policies.createMaskingRulePolicy for the first save, and bb.settings.get for the semantic types. Adding an instance needs bb.instances.create, and a workload identity bb.workloadIdentities.create, bb.projects.getIamPolicy and bb.projects.setIamPolicy. call_api refuses each of these writes.`
 
 func (s *Server) registerAdministerWorkspaceTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -119,6 +121,20 @@ func (r adminRules) notChanged() string { return r.name + " were not changed" }
 
 func (adminRules) revised() string { return "the revised rules" }
 
+// creationSubject is a create in confirmAdminChange's words. nothing says that
+// nothing was made, such as "no instance was added".
+type creationSubject struct{ nothing string }
+
+func (c creationSubject) unchanged() string { return c.nothing }
+
+func (c creationSubject) notChanged() string { return c.nothing }
+
+func (creationSubject) revised() string { return "the revised request" }
+
+func (creationSubject) reread() string {
+	return "call administer_workspace again to ask the user about the request as it is now"
+}
+
 // reread is the next step after the stored rules changed: the request was
 // built from the old ones, so sending it again would undo the other change.
 func (r adminRules) reread() string {
@@ -151,13 +167,15 @@ func (s *Server) handleAdministerWorkspace(ctx context.Context, req *mcp.CallToo
 			return s.administerMaskingRules(ctx, req, input)
 		case v1connect.InstanceServiceCreateInstanceProcedure:
 			return s.administerInstance(ctx, req, input)
+		case v1connect.WorkloadIdentityServiceCreateWorkloadIdentityProcedure:
+			return s.administerIdentity(ctx, req, input)
 		default:
 		}
 	}
 	return formatToolError(&toolError{
 		Code:       "UNSUPPORTED_CHANGE",
 		Message:    fmt.Sprintf("administer_workspace does not change %q", input.OperationID),
-		Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting and the masking rules through OrgPolicyService/UpdatePolicy, and adds a PostgreSQL instance to a project through InstanceService/CreateInstance; make other changes with the tool that serves them, or signed in to the Bytebase console",
+		Suggestion: "it changes the approval rules for database changes through SettingService/UpdateSetting and the masking rules through OrgPolicyService/UpdatePolicy, adds a PostgreSQL instance to a project through InstanceService/CreateInstance, and creates a workload identity for CI in a project through WorkloadIdentityService/CreateWorkloadIdentity; make other changes with the tool that serves them, or signed in to the Bytebase console",
 	}), nil, nil
 }
 
@@ -529,15 +547,20 @@ func approvers(rule *v1pb.WorkspaceApprovalSetting_Rule) string {
 	}
 	names := make([]string, 0, len(roles))
 	for _, role := range roles {
-		name := role
-		if roleID, err := common.GetRoleID(role); err == nil {
-			if predefined := store.GetPredefinedRole(roleID); predefined != nil {
-				name = predefined.Name
-			}
-		}
-		names = append(names, fmt.Sprintf("%q", name))
+		names = append(names, fmt.Sprintf("%q", roleTitle(role)))
 	}
 	return strings.Join(names, " then ")
+}
+
+// roleTitle names a predefined role by its display name, as the console does,
+// and any other value as written.
+func roleTitle(role string) string {
+	if roleID, err := common.GetRoleID(role); err == nil {
+		if predefined := store.GetPredefinedRole(roleID); predefined != nil {
+			return predefined.Name
+		}
+	}
+	return role
 }
 
 // conditionText shows a condition between backquotes, as typed, when every
