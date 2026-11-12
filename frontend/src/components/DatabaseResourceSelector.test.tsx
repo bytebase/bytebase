@@ -1,3 +1,5 @@
+import { Code, ConnectError } from "@connectrpc/connect";
+import { within } from "@testing-library/react";
 import { act, type ReactElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -450,8 +452,33 @@ describe("DatabaseResourceSelector", () => {
     }
   );
 
-  test("handles a failed optional first page without an unhandled rejection", async () => {
-    mocks.fetchDatabases.mockRejectedValueOnce(new Error("permission denied"));
+  test.each([
+    ["unavailable", new ConnectError("unavailable", Code.Unavailable)],
+    ["network", new TypeError("Failed to fetch")],
+  ])("shows a first-page %s error and retries discovery", async (_kind, error) => {
+    mocks.fetchDatabases.mockRejectedValueOnce(error);
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+
+    expect(within(container).getByRole("alert")).toHaveTextContent(
+      "database-group.load-database-failed"
+    );
+    act(() => within(container).getByRole("button", { name: "common.refresh" }).click());
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ parent: "projects/project", pageToken: "", silent: true })
+    );
+    expect(within(container).queryByRole("alert")).toBeNull();
+    expect(container.textContent).toContain("hr");
+    unmount();
+  });
+
+  test("keeps a first-page permission denial local without an unhandled rejection", async () => {
+    mocks.fetchDatabases.mockRejectedValueOnce(
+      new ConnectError("permission denied", Code.PermissionDenied)
+    );
     const { container, unmount } = renderIntoContainer(<Harness />);
     await flushPromises();
 
@@ -459,6 +486,7 @@ describe("DatabaseResourceSelector", () => {
       expect.objectContaining({ silent: true })
     );
     expect(container.textContent).not.toContain("hr");
+    expect(within(container).queryByRole("alert")).toBeNull();
     unmount();
   });
 
@@ -468,7 +496,7 @@ describe("DatabaseResourceSelector", () => {
         databases: [{ name: "instances/prod/databases/db1" }],
         nextPageToken: "page-2",
       })
-      .mockRejectedValueOnce(new Error("permission denied"));
+      .mockRejectedValueOnce(new ConnectError("permission denied", Code.PermissionDenied));
     const { container, unmount } = renderIntoContainer(<Harness />);
     await flushPromises();
     const loadMore = Array.from(container.querySelectorAll("button")).find(
@@ -482,8 +510,77 @@ describe("DatabaseResourceSelector", () => {
     );
     expect(container.textContent).toContain("db1");
     expect(loadMore?.disabled).toBe(false);
+    expect(within(container).queryByRole("alert")).toBeNull();
     unmount();
   });
+
+  test("shows a next-page error while preserving rows and allowing retry", async () => {
+    mocks.fetchDatabases
+      .mockResolvedValueOnce({
+        databases: [{ name: "instances/prod/databases/db1" }],
+        nextPageToken: "page-2",
+      })
+      .mockRejectedValueOnce(new ConnectError("unavailable", Code.Unavailable))
+      .mockResolvedValueOnce({
+        databases: [{ name: "instances/prod/databases/db2" }],
+        nextPageToken: "",
+      });
+    const { container, unmount } = renderIntoContainer(<Harness />);
+    await flushPromises();
+    act(() => within(container).getByRole("button", { name: "common.load-more" }).click());
+    await flushPromises();
+
+    expect(within(container).getByRole("alert")).toHaveTextContent(
+      "database-group.load-database-failed"
+    );
+    expect(container.textContent).toContain("db1");
+    act(() => within(container).getByRole("button", { name: "common.load-more" }).click());
+    await flushPromises();
+
+    expect(mocks.fetchDatabases).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageToken: "page-2", silent: true })
+    );
+    expect(within(container).queryByRole("alert")).toBeNull();
+    expect(container.textContent).toContain("db1");
+    expect(container.textContent).toContain("db2");
+    unmount();
+  });
+
+  test.each(["first page", "next page"])(
+    "ignores a stale %s failure after the project changes",
+    async (page) => {
+      let rejectPage: (error: unknown) => void = () => {};
+      mocks.fetchDatabases.mockReset();
+      if (page === "next page") {
+        mocks.fetchDatabases.mockResolvedValueOnce({
+          databases: [{ name: "instances/prod/databases/db1" }],
+          nextPageToken: "page-2",
+        });
+      }
+      mocks.fetchDatabases
+        .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectPage = reject; }))
+        .mockResolvedValue({
+          databases: [{ name: "instances/prod/databases/fresh" }],
+          nextPageToken: "",
+        });
+      const { container, rerender, unmount } = renderIntoContainer(<Harness />);
+      await flushPromises();
+      if (page === "next page") {
+        act(() => within(container).getByRole("button", { name: "common.load-more" }).click());
+        await flushPromises();
+      }
+
+      rerender(<Harness projectName="projects/default" />);
+      await flushPromises();
+      rejectPage(new ConnectError("unavailable", Code.Unavailable));
+      await flushPromises();
+
+      expect(within(container).queryByRole("alert")).toBeNull();
+      expect(container.textContent).toContain("fresh");
+      expect(container.textContent).not.toContain("db1");
+      unmount();
+    }
+  );
 
   test("only searches workspace instances for the default project", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => {
