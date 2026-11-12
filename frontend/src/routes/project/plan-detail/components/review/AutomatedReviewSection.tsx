@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -735,7 +735,7 @@ function ConclusionText({
     const counts: ReactNode[] = [];
     if (findings.open > 0) {
       counts.push(
-        <span className="flex items-center gap-x-1.5" key="open">
+        <span className="flex items-center gap-x-3" key="open">
           {PRIORITIES.filter((priority) => findings[priority] > 0).map(
             (priority) => (
               <PriorityCount
@@ -874,7 +874,8 @@ function ConclusionText({
   );
 }
 
-// "P0 2", colored as the priority badge on each finding.
+// The priority badge each finding carries, then how many are open. Only the
+// count underlines on hover: a link's underline would run through the badge.
 function PriorityCount({
   priority,
   count,
@@ -888,7 +889,7 @@ function PriorityCount({
   const style = priorityStyle(t, PRIORITY[priority]);
   return (
     <FindingCount
-      className={badgeVariants({ variant: style?.variant })}
+      className="group gap-x-1 hover:no-underline"
       hint={style?.description}
       label={t("plan.findings.n-priority", {
         count,
@@ -896,8 +897,10 @@ function PriorityCount({
       })}
       onClick={onClick}
     >
-      {priority.toUpperCase()}
-      <span className="font-semibold">{count}</span>
+      <Badge variant={style?.variant}>{priority.toUpperCase()}</Badge>
+      <span className="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline">
+        {count}
+      </span>
     </FindingCount>
   );
 }
