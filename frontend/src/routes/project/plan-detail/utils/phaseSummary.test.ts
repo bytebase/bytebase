@@ -16,7 +16,7 @@ import {
   buildReviewSummaryV2,
   isRolloutExpected,
 } from "./phaseSummary";
-import { emptyFindings, ruleReviewRow } from "./planGates";
+import { emptyFindings, reviewRow } from "./planGates";
 
 const templates: Record<string, string> = {
   "common.and": "and",
@@ -37,7 +37,7 @@ const templates: Record<string, string> = {
   "plan.findings.separator": ", ",
   "plan.automated-review.summary-part": "{{reviewer}}: {{status}}",
   "plan.deploy-waiting.open-discussions": "{{count}} open discussions",
-  "sql-review.standard-rules.self": "Standard rules",
+  "sql-review.reviewer": "SQL review",
 };
 
 const t = (key: string, options?: Record<string, unknown>) => {
@@ -380,11 +380,12 @@ describe("isRolloutExpected", () => {
 });
 
 describe("SQL Review V2 summaries", () => {
-  const resolvedRule = ruleReviewRow({
+  const resolvedReview = reviewRow({
     run: null,
     stale: false,
     loadFailed: false,
     findings: { ...emptyFindings(), resolved: 2, overridden: 1 },
+    off: false,
   });
 
   test("names the approvers and each reviewer's conclusion", () => {
@@ -401,11 +402,11 @@ describe("SQL Review V2 summaries", () => {
       buildReviewSummaryV2(
         issue,
         t,
-        [{ ...resolvedRule, conclusion: "resolved" }],
+        [{ ...resolvedReview, conclusion: "resolved" }],
         0
       )
     ).toBe(
-      "Approved by alex, dana · Standard rules: 2 resolved, 1 P0 resolved without a change"
+      "Approved by alex, dana · SQL review: 2 resolved, 1 P0 resolved without a change"
     );
   });
 

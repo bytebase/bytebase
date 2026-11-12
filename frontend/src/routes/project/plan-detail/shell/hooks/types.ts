@@ -1,4 +1,4 @@
-import type { Issue, ReviewRun } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
@@ -30,9 +30,6 @@ export interface PlanDetailPageSnapshot {
   rollout?: Rollout;
   planCheckRuns: PlanCheckRun[];
   taskRuns: TaskRun[];
-  // The issue's AI review run: null when the slot has never run, undefined
-  // when the page does not read it or has not read it yet.
-  aiReviewRun?: ReviewRun | null;
 }
 
 export interface PlanDetailPageState extends PlanDetailPageSnapshot {

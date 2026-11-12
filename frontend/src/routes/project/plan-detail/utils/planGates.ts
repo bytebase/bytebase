@@ -1,8 +1,8 @@
 // The automated reviewers' conclusions and the gates the automatic rollout
 // waits on, computed once for the Review section, the Deploy waiting list, the
 // header, and the collapsed summaries. Mirrors the server's rollout creator:
-// approval passed, plan checks passed, the rule review done for the current
-// SQL, and no open thread.
+// approval passed, plan checks passed, the review done for the current SQL,
+// and no open thread.
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { markdownSummary } from "@/components/MarkdownEditor";
 import { isThreadRoot } from "@/stores/app/issueComment";
@@ -13,8 +13,7 @@ import {
   IssueComment_ReviewMetadata_Priority,
   IssueComment_ThreadState,
   type ReviewRun,
-  ReviewRun_Status,
-  ReviewRun_Type,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   type PlanCheckRun,
@@ -23,12 +22,13 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 
-export type AutomatedReviewer = "rule" | "ai" | "policy" | "ghost" | "checks";
+export type AutomatedReviewer = "review" | "policy" | "ghost" | "checks";
 
 export type PlanCheckReviewer = "policy" | "ghost";
 
 // One conclusion per reviewer. "passed" is a run with no findings;
-// "resolved" a run whose findings people have all resolved.
+// "resolved" a run whose findings people have all resolved; "off" a review
+// the project has switched off, which checked nothing.
 export type ReviewConclusion =
   | "loading"
   | "not-run"
@@ -37,7 +37,8 @@ export type ReviewConclusion =
   | "failed"
   | "open"
   | "resolved"
-  | "passed";
+  | "passed"
+  | "off";
 
 // A finding's priority as its reviewer gave it: P0 says the SQL is wrong and
 // must change, P1 that a person must accept a real risk, P2 is advice.
@@ -45,9 +46,9 @@ export type FindingPriority = "p0" | "p1" | "p2";
 
 // Where a finding stands: open findings by priority, and the resolved
 // findings still current, where a P0 resolved without a change stands apart.
-// A run supersedes and resolves every earlier finding of its reviewer it
-// does not report again, so a resolved finding still current was resolved by
-// a person on SQL the latest run still reports.
+// A run supersedes and resolves every earlier finding it does not report
+// again, so a resolved finding still current was resolved by a person on SQL
+// the latest run still reports.
 export type FindingSet =
   | FindingPriority
   | "overridden"
@@ -112,7 +113,7 @@ export function inFindingGroup(
     : set === group;
 }
 
-// An AI finding's title as plain text.
+// The title of a finding that no standard rule names, as plain text.
 export const findingTitle = (comment: IssueComment): string =>
   markdownSummary(comment.reviewMetadata?.title ?? "");
 
@@ -131,21 +132,13 @@ export const emptyFindings = (): ReviewerFindings => ({
 export const resolvedByPeople = (findings: ReviewerFindings): number =>
   findings.resolved + findings.overridden;
 
-const runTypeOf: Record<"rule" | "ai", ReviewRun_Type> = {
-  rule: ReviewRun_Type.RULE,
-  ai: ReviewRun_Type.AI,
-};
-
 // Open findings count whatever run posted them, since any open thread holds
 // the rollout; resolved ones count while still current.
 export function countFindings(
-  comments: readonly IssueComment[],
-  reviewer: "rule" | "ai"
+  comments: readonly IssueComment[]
 ): ReviewerFindings {
-  const runType = runTypeOf[reviewer];
   const counts = emptyFindings();
   for (const comment of comments) {
-    if (comment.reviewMetadata?.runType !== runType) continue;
     const set = findingSetOf(comment);
     if (!set) continue;
     counts[set]++;
@@ -176,13 +169,12 @@ const runConclusion = (
   findings: ReviewerFindings
 ): ReviewConclusion => {
   if (run.outdated) return "outdated";
-  switch (run.status) {
-    case ReviewRun_Status.AVAILABLE:
-    case ReviewRun_Status.RUNNING:
+  switch (run.state) {
+    case ReviewRun_State.RUNNING:
       return "running";
-    case ReviewRun_Status.FAILED:
+    case ReviewRun_State.FAILED:
       return "failed";
-    case ReviewRun_Status.DONE:
+    case ReviewRun_State.SUCCEEDED:
       return findingsConclusion(findings);
     default:
       return "loading";
@@ -191,11 +183,16 @@ const runConclusion = (
 
 // Every state but a finished current run holds the rollout: the server starts
 // a missing or outdated run before it creates the rollout, and waits for it.
-export function ruleReviewRow(input: {
+// A review the project has switched off checks nothing, so where it would
+// pass or has never run it concludes "off"; findings left from earlier runs
+// still show. A run that is running, failed or outdated shows as it is, off
+// or not: the server waits for it whatever the switches say.
+export function reviewRow(input: {
   run: ReviewRun | null | undefined;
   stale: boolean;
   loadFailed: boolean;
   findings: ReviewerFindings;
+  off: boolean;
 }): AutomatedReviewRow {
   const { findings, run } = input;
   let conclusion: ReviewConclusion;
@@ -213,51 +210,38 @@ export function ruleReviewRow(input: {
       conclusion = "running";
     }
   }
+  if (input.off && (conclusion === "passed" || conclusion === "not-run")) {
+    const row = findingsRow(findings);
+    return row.conclusion === "passed" ? { ...row, conclusion: "off" } : row;
+  }
   return {
-    reviewer: "rule",
+    reviewer: "review",
     conclusion,
     findings,
     holdsRollout: conclusion !== "passed" && conclusion !== "resolved",
-    error: input.loadFailed ? undefined : (run?.error ?? undefined),
+    error: input.loadFailed ? undefined : run?.error?.message || undefined,
     time: run?.endTime,
   };
 }
 
-// A plan with no SQL to review never gets a rule review run, and the server
-// holds nothing for one; a run that exists still counts, since the server
-// restarts a stale run whatever the plan holds.
-export const ruleReviewApplies = (
+// The review's row from its findings alone, for a reader who cannot read the
+// run: only the open ones hold the rollout.
+export function findingsRow(findings: ReviewerFindings): AutomatedReviewRow {
+  return {
+    reviewer: "review",
+    conclusion: findingsConclusion(findings),
+    findings,
+    holdsRollout: findings.open > 0,
+  };
+}
+
+// A plan with no SQL to review never gets a review run, and the server holds
+// nothing for one; a run that exists still counts, since the server restarts
+// a stale run whatever the plan holds.
+export const reviewApplies = (
   run: ReviewRun | null | undefined,
   reviewsSQL: boolean
 ): boolean => run !== null || reviewsSQL;
-
-// The AI review holds the rollout only through the findings it posts. The
-// page reads its run only while a review can still start, as before a
-// rollout; otherwise the findings alone conclude.
-export function aiReviewRow(input: {
-  run: ReviewRun | null | undefined;
-  runFetched: boolean;
-  findings: ReviewerFindings;
-}): AutomatedReviewRow {
-  const { findings } = input;
-  const run = input.runFetched ? input.run : null;
-  const conclusion =
-    run === undefined
-      ? "loading"
-      : run === null
-        ? findings.open + resolvedByPeople(findings) > 0
-          ? findingsConclusion(findings)
-          : "not-run"
-        : runConclusion(run, findings);
-  return {
-    reviewer: "ai",
-    conclusion,
-    findings,
-    holdsRollout: findings.open > 0,
-    error: run?.error || undefined,
-    time: run?.endTime,
-  };
-}
 
 const PLAN_CHECK_TYPE: Record<PlanCheckReviewer, PlanCheckRun_Result_Type> = {
   policy: PlanCheckRun_Result_Type.STATEMENT_ADVISE,

@@ -386,11 +386,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		}
 	}
 
-	// The reviews start before the plan checks and the approval check are
-	// signaled, as either can create the rollout: a rule slot already reset
-	// holds it until the rule review of the new SQL is done.
+	// The review starts before the plan checks and the approval check are
+	// signaled, as either can create the rollout: a slot already reset holds
+	// it until the review of the new SQL is done.
 	if planCheckRunsTrigger {
-		startReviews(ctx, s.profile, s.store, s.bus, updateResult.Issue, store.ReviewRunTypeRule, store.ReviewRunTypeAI)
+		startReview(ctx, s.profile, s.store, s.bus, updateResult.Issue)
 	}
 
 	if updatedIssue := updateResult.Issue; updateResult.ApprovalReset && updatedIssue != nil {
@@ -452,28 +452,6 @@ func (s *PlanService) GetPlanCheckRun(ctx context.Context, request *connect.Requ
 	return connect.NewResponse(converted), nil
 }
 
-// startRuleReviewOfPlan starts the standard rule review of the plan's issue,
-// if it has one. Rerunning the checks leaves the AI review alone: rerunning it
-// costs model calls, so it has its own RunReview.
-func (s *PlanService) startRuleReviewOfPlan(ctx context.Context, plan *store.PlanMessage) {
-	if !s.profile.SQLReviewV2 {
-		return
-	}
-	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ProjectIDs: []string{plan.ProjectID},
-		PlanUID:    &plan.UID,
-	})
-	if err != nil {
-		slog.Warn("failed to find the plan's issue for the standard rule review",
-			slog.String("project", plan.ProjectID),
-			slog.Int64("plan_id", plan.UID),
-			log.BBError(err))
-		return
-	}
-	startReviews(ctx, s.profile, s.store, s.bus, issue, store.ReviewRunTypeRule)
-}
-
 // RunPlanChecks runs plan checks for a plan.
 func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Request[v1pb.RunPlanChecksRequest]) (*connect.Response[v1pb.RunPlanChecksResponse], error) {
 	req := request.Msg
@@ -529,7 +507,6 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 			}
 		}
 	}
-	s.startRuleReviewOfPlan(ctx, plan)
 	planCheckRun, err := getPlanCheckRunFromPlan(ctx, s.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get plan check run for plan"))

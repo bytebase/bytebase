@@ -234,8 +234,8 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 }
 
 // reviewBlocksRollout reports whether the issue's review holds its rollout
-// under SQL Review V2: the rule review of the plan's current SQL has not
-// finished, or a thread on the issue is open. An open thread blocks whatever
+// under SQL Review V2: the review of the plan's current SQL has not
+// succeeded, or a thread on the issue is open. An open thread blocks whatever
 // its priority, and whoever started it.
 //
 // A run for an earlier approval input version holds too, and so does a
@@ -246,9 +246,9 @@ func (rc *RolloutCreator) tryCreateRollout(ctx context.Context, ref bus.PlanRef)
 // plan has nothing left to review: it then completes with no findings, which
 // supersedes those of the earlier SQL.
 func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *store.ProjectMessage, plan *store.PlanMessage, issue *store.IssueMessage) (bool, error) {
-	run, err := rc.store.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	run, err := rc.store.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to get the rule review run")
+		return false, errors.Wrap(err, "failed to get the review run")
 	}
 	start := run != nil && run.Payload.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion()
 	if run == nil {
@@ -258,8 +258,8 @@ func (rc *RolloutCreator) reviewBlocksRollout(ctx context.Context, project *stor
 		}
 	}
 	if start {
-		if _, err := rc.store.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule); err != nil {
-			return false, errors.Wrap(err, "failed to start the rule review")
+		if _, err := rc.store.CreateReviewRun(ctx, issue.ProjectID, issue.UID); err != nil {
+			return false, errors.Wrap(err, "failed to start the review")
 		}
 		bus.Tickle(rc.bus.ReviewRunTickleChan)
 		return true, nil

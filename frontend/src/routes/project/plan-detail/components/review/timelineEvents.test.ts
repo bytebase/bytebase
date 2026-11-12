@@ -9,7 +9,6 @@ import {
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { buildTimelineEntries, type TimelineEntry } from "./timelineEvents";
 
@@ -104,35 +103,23 @@ describe("buildTimelineEntries", () => {
     expect(entries.map((entry) => entry.id)).toEqual(["c-submit"]);
   });
 
-  const finding = (
-    name: string,
-    runType: ReviewRun_Type,
-    attempt: bigint,
-    superseded = false
-  ) =>
+  const finding = (name: string, attempt: bigint, superseded = false) =>
     create(IssueCommentSchema, {
       name,
       threadState: superseded
         ? IssueComment_ThreadState.RESOLVED
         : IssueComment_ThreadState.OPEN,
       reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-        runType,
         attempt,
         superseded,
       }),
     });
-  const completion = (
-    name: string,
-    runType: ReviewRun_Type,
-    attempt: bigint,
-    postedCount = 0
-  ) =>
+  const completion = (name: string, attempt: bigint, postedCount = 0) =>
     create(IssueCommentSchema, {
       name,
       event: {
         case: "reviewRunCompletion",
         value: create(IssueComment_ReviewRunCompletionSchema, {
-          runType,
           attempt,
           postedCount,
         }),
@@ -148,17 +135,17 @@ describe("buildTimelineEntries", () => {
         : entry.id
     );
 
-  test("puts each run's findings in its group, by reviewer and attempt", () => {
+  test("puts each run's findings in its group, apart from another run that shares its attempt", () => {
     const entries = buildTimelineEntries({
       comments: [
-        completion("c-r0", ReviewRun_Type.RULE, 0n, 2),
-        finding("r1", ReviewRun_Type.RULE, 0n),
-        finding("r2", ReviewRun_Type.RULE, 0n),
-        completion("c-a0", ReviewRun_Type.AI, 0n, 1),
-        finding("a1", ReviewRun_Type.AI, 0n),
+        completion("c-r0", 0n, 2),
+        finding("r1", 0n),
+        finding("r2", 0n),
+        completion("c-a0", 0n, 1),
+        finding("a1", 0n),
         userComment("u", "hello"),
-        completion("c-r1", ReviewRun_Type.RULE, 1n, 1),
-        finding("r3", ReviewRun_Type.RULE, 1n),
+        completion("c-r1", 1n, 1),
+        finding("r3", 1n),
       ],
       sqlReviewV2: true,
     });
@@ -168,9 +155,9 @@ describe("buildTimelineEntries", () => {
   test("a run that found nothing new still gets its line, with nothing to fold", () => {
     const entries = buildTimelineEntries({
       comments: [
-        completion("c-r0", ReviewRun_Type.RULE, 0n, 1),
-        finding("kept", ReviewRun_Type.RULE, 0n),
-        completion("c-r1", ReviewRun_Type.RULE, 1n),
+        completion("c-r0", 0n, 1),
+        finding("kept", 0n),
+        completion("c-r1", 1n),
       ],
       sqlReviewV2: true,
     });
@@ -184,11 +171,11 @@ describe("buildTimelineEntries", () => {
   test("opens a run by default while any of its findings is current", () => {
     const entries = buildTimelineEntries({
       comments: [
-        completion("c-r0", ReviewRun_Type.RULE, 0n, 2),
-        finding("kept", ReviewRun_Type.RULE, 0n),
-        finding("fixed", ReviewRun_Type.RULE, 0n, true),
-        completion("c-r1", ReviewRun_Type.RULE, 1n, 1),
-        finding("gone", ReviewRun_Type.RULE, 1n, true),
+        completion("c-r0", 0n, 2),
+        finding("kept", 0n),
+        finding("fixed", 0n, true),
+        completion("c-r1", 1n, 1),
+        finding("gone", 1n, true),
       ],
       sqlReviewV2: true,
     });
@@ -204,9 +191,9 @@ describe("buildTimelineEntries", () => {
     "an open run has every finding and a hidden run has none, replies=$replies",
     ({ replies }) => {
       const comments = [
-        completion("c-r0", ReviewRun_Type.RULE, 0n, 2),
-        finding("one", ReviewRun_Type.RULE, 0n),
-        finding("two", ReviewRun_Type.RULE, 0n),
+        completion("c-r0", 0n, 2),
+        finding("one", 0n),
+        finding("two", 0n),
         ...(replies
           ? [reply("one-reply", "one"), reply("two-reply", "two")]
           : []),
@@ -230,9 +217,17 @@ describe("buildTimelineEntries", () => {
     }
   );
 
+  test("a finding listed before its run's completion still goes in its group", () => {
+    const entries = buildTimelineEntries({
+      comments: [finding("early", 0n), completion("c-0", 0n, 1)],
+      sqlReviewV2: true,
+    });
+    expect(rowsOf(entries)).toEqual(["run0:early"]);
+  });
+
   test("a finding whose run left no completion stays its own entry", () => {
     const entries = buildTimelineEntries({
-      comments: [finding("orphan", ReviewRun_Type.RULE, 0n)],
+      comments: [finding("orphan", 0n)],
       sqlReviewV2: true,
     });
     expect(rowsOf(entries)).toEqual(["orphan"]);
@@ -240,10 +235,7 @@ describe("buildTimelineEntries", () => {
 
   test("without SQL Review V2, every finding stays its own entry and completions are left out", () => {
     const entries = buildTimelineEntries({
-      comments: [
-        completion("c-r0", ReviewRun_Type.RULE, 0n, 1),
-        finding("r1", ReviewRun_Type.RULE, 0n),
-      ],
+      comments: [completion("c-r0", 0n, 1), finding("r1", 0n)],
     });
     expect(entries.map((entry) => entry.id)).toEqual(["r1"]);
   });

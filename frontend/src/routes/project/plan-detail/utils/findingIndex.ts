@@ -1,16 +1,12 @@
-import type {
-  IssueComment,
-  ReviewRun_Type,
-} from "@/types/proto-es/v1/issue_service_pb";
+import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { type FindingGroup, inFindingGroup } from "./planGates";
 
-// A reviewer's findings in one group, in change and line order: where a click
+// The review's findings in one group, in change and line order: where a click
 // on a count lands first, and the order the walker steps in. A finding
 // without an anchor sorts last.
 export function findingsInOrder(
   comments: readonly IssueComment[],
-  runType: ReviewRun_Type,
   specs: readonly Plan_Spec[],
   group: FindingGroup
 ): IssueComment[] {
@@ -23,11 +19,7 @@ export function findingsInOrder(
   const line = (comment: IssueComment) =>
     comment.statementAnchor?.startPosition?.line || Number.MAX_SAFE_INTEGER;
   return comments
-    .filter(
-      (comment) =>
-        comment.reviewMetadata?.runType === runType &&
-        inFindingGroup(comment, group)
-    )
+    .filter((comment) => inFindingGroup(comment, group))
     .sort(
       (a, b) =>
         specIndex(a) - specIndex(b) ||

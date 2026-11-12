@@ -20,10 +20,10 @@ import (
 // bound the task executor enforces.
 const maxBackupSize = common.MaxSheetCheckSize
 
-// RuleExecutor evaluates the standard rules against every (spec, target)
-// unit of the issue's plan through omni's SQL Review V2 contract: one Review
-// call per (spec, engine), the caller resolving every input that needs the
-// store and the engine deriving the findings.
+// RuleExecutor evaluates the standard rules against the (spec, target) units
+// of the issue's plan in the project's CI sample through omni's SQL Review V2
+// contract: one Review call per (spec, engine), the caller resolving every
+// input that needs the store and the engine deriving the findings.
 type RuleExecutor struct {
 	store       *store.Store
 	reviewFuncs map[storepb.Engine]review.ReviewFunc
@@ -57,9 +57,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
-	// DeriveReviewTargets, not DeriveCheckTargets: the rule review evaluates
-	// every (spec, target) unit, so the CI sampling limit does not apply.
-	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
+	checkTargets, err := plancheck.DeriveCheckTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
@@ -145,6 +143,10 @@ func (u *reviewUnit) failures(err error) []error {
 // errNoRuleReviewer marks a target whose engine has no standard rule review.
 var errNoRuleReviewer = errors.New("the engine has no standard rule reviewer")
 
+// errMetadataNotSynced marks a database whose schema Bytebase has not synced,
+// so no reviewer can read it.
+var errMetadataNotSynced = errors.New("metadata not synced")
+
 // resolveReviewTarget gathers the inputs the engine cannot derive from the
 // SQL: the synced schema, and the instance facts the review contract lists.
 // A database whose schema is not synced cannot be reviewed. A target on an
@@ -167,7 +169,7 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 		return nil, errors.Wrapf(err, "failed to get database schema")
 	}
 	if dbSchema == nil || dbSchema.GetProto() == nil {
-		return nil, errors.New("metadata not synced")
+		return nil, errMetadataNotSynced
 	}
 	schema := dbSchema.GetProto()
 
@@ -231,24 +233,41 @@ func sessionUser(project *store.ProjectMessage, instance *store.InstanceMessage,
 	return utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN).GetUsername()
 }
 
-// aggregateUnitErrors folds per-unit failures into one message, e.g.
-// "2 of 5 review units failed: instances/prod/databases/db1: ...;
-// instances/prod/databases/db2: ... (+1 more)".
-func aggregateUnitErrors(total int, unitErrs []error) error {
-	if len(unitErrs) == 0 {
-		return nil
-	}
+// unitErrors is the failures of a run's units as one error. It unwraps to
+// each of them, so the kind of failure stays readable through it.
+type unitErrors struct {
+	total int
+	errs  []error
+}
+
+// Error folds the failures into one message, e.g. "2 of 5 review units
+// failed: instances/prod/databases/db1: ...; instances/prod/databases/db2:
+// ... (+1 more)".
+func (e *unitErrors) Error() string {
 	const maxDetailed = 3
 	details := make([]string, 0, maxDetailed)
-	for i, err := range unitErrs {
+	for i, err := range e.errs {
 		if i >= maxDetailed {
 			break
 		}
 		details = append(details, err.Error())
 	}
 	suffix := ""
-	if len(unitErrs) > maxDetailed {
-		suffix = fmt.Sprintf(" (+%d more)", len(unitErrs)-maxDetailed)
+	if len(e.errs) > maxDetailed {
+		suffix = fmt.Sprintf(" (+%d more)", len(e.errs)-maxDetailed)
 	}
-	return errors.Errorf("%d of %d review units failed: %s%s", len(unitErrs), total, strings.Join(details, "; "), suffix)
+	return fmt.Sprintf("%d of %d review units failed: %s%s", len(e.errs), e.total, strings.Join(details, "; "), suffix)
+}
+
+func (e *unitErrors) Unwrap() []error {
+	return e.errs
+}
+
+// aggregateUnitErrors folds per-unit failures into one error, or nil when
+// there is none.
+func aggregateUnitErrors(total int, unitErrs []error) error {
+	if len(unitErrs) == 0 {
+		return nil
+	}
+	return &unitErrors{total: total, errs: unitErrs}
 }

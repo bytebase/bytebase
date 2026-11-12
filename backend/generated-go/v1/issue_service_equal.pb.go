@@ -4,6 +4,7 @@
 package v1
 
 import (
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	proto "google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -500,9 +501,6 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.RunType != y.RunType {
-		return false
-	}
 	if x.RuleType != y.RuleType {
 		return false
 	}
@@ -610,9 +608,6 @@ func (x *IssueComment_ReviewRunCompletion) Equal(y *IssueComment_ReviewRunComple
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.RunType != y.RunType {
-		return false
 	}
 	if x.Attempt != y.Attempt {
 		return false
@@ -742,10 +737,7 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	if x.Name != y.Name {
 		return false
 	}
-	if x.Type != y.Type {
-		return false
-	}
-	if x.Status != y.Status {
+	if x.State != y.State {
 		return false
 	}
 	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
@@ -754,7 +746,9 @@ func (x *ReviewRun) Equal(y *ReviewRun) bool {
 	if p, q := x.EndTime, y.EndTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.Error != y.Error {
+	if equal, ok := interface{}(x.Error).(interface{ Equal(*status.Status) bool }); !ok || !equal.Equal(y.Error) {
+		return false
+	} else if !proto.Equal(x.Error, y.Error) {
 		return false
 	}
 	if x.Outdated != y.Outdated {

@@ -19,7 +19,6 @@ import (
 // listPlanWebhookDeliveries uses for tables without a public read API.
 type reviewRun struct {
 	IssueID int64
-	Type    string
 	Attempt int64
 	Status  string
 	Payload string
@@ -35,10 +34,10 @@ func listReviewRuns(ctx context.Context, t *testing.T, ctl *controller, projectI
 	defer db.Close()
 
 	rows, err := db.QueryContext(ctx, `
-		SELECT issue_id, type, attempt, status, payload::text
+		SELECT issue_id, attempt, status, payload::text
 		FROM review_run
 		WHERE project = $1
-		ORDER BY issue_id, type
+		ORDER BY issue_id
 	`, projectID)
 	a.NoError(err, "query review_run for project %s", projectID)
 	defer rows.Close()
@@ -46,7 +45,7 @@ func listReviewRuns(ctx context.Context, t *testing.T, ctl *controller, projectI
 	var out []*reviewRun
 	for rows.Next() {
 		var r reviewRun
-		a.NoError(rows.Scan(&r.IssueID, &r.Type, &r.Attempt, &r.Status, &r.Payload))
+		a.NoError(rows.Scan(&r.IssueID, &r.Attempt, &r.Status, &r.Payload))
 		out = append(out, &r)
 	}
 	a.NoError(rows.Err())
@@ -58,7 +57,7 @@ func listReviewRuns(ctx context.Context, t *testing.T, ctl *controller, projectI
 // methods land with the SQL Review V2 execution work — so the purge
 // collision test seeds rows raw to make the DELETE path observable. Move
 // seeding to the product flow once real writers exist.
-func seedReviewRun(ctx context.Context, t *testing.T, ctl *controller, projectID string, issueID int64, runType string, attempt int64, status string) {
+func seedReviewRun(ctx context.Context, t *testing.T, ctl *controller, projectID string, issueID int64, attempt int64, status string) {
 	t.Helper()
 	a := require.New(t)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -66,15 +65,15 @@ func seedReviewRun(ctx context.Context, t *testing.T, ctl *controller, projectID
 	defer db.Close()
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO review_run (project, issue_id, type, attempt, status)
-		VALUES ($1, $2, $3, $4, $5)
-	`, projectID, issueID, runType, attempt, status)
-	a.NoError(err, "seed review_run (%s, %d, %s)", projectID, issueID, runType)
+		INSERT INTO review_run (project, issue_id, attempt, status)
+		VALUES ($1, $2, $3, $4)
+	`, projectID, issueID, attempt, status)
+	a.NoError(err, "seed review_run (%s, %d)", projectID, issueID)
 }
 
 // TestCollision_ReviewRunProjectPurge verifies that purging project A
 // deletes A's review_run rows and leaves project B's rows untouched when
-// both projects hold rows under colliding (issue_id, type) keys.
+// both projects hold a row under the same issue id.
 func TestCollision_ReviewRunProjectPurge(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -92,10 +91,8 @@ func TestCollision_ReviewRunProjectPurge(t *testing.T) {
 	// assert it so the test cannot silently lose its collision.
 	a.Equal(issueAUID, issueBUID, "fixture issue ids should collide")
 
-	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, "RULE", 2, "DONE")
-	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, "AI", 0, "AVAILABLE")
-	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, "RULE", 5, "FAILED")
-	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, "AI", 1, "RUNNING")
+	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, 2, "DONE")
+	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, 5, "FAILED")
 
 	// Positive preconditions: an empty list would make the isolation
 	// assertions below vacuously true.

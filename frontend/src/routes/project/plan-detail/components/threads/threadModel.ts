@@ -9,12 +9,13 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   type IssueComment,
+  type IssueComment_ReviewMetadata,
   IssueComment_ThreadState,
-  ReviewRun_Type,
   type StatementAnchor,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan, Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID } from "@/utils/v1/sheet";
 import { tokenizeLines } from "./placement/lineTokens";
@@ -200,12 +201,19 @@ const compareEditorThreads = (a: EditorThread, b: EditorThread): number =>
   a.range.endLine - b.range.endLine ||
   compareByCreateTime(a.thread.root, b.thread.root);
 
-// The statement shows only the latest standard rule review. A result a later
-// run superseded stays in the timeline, unless someone reopened it, since an
-// open thread holds the rollout.
+// Whether a standard rule found the review result. Only such a result names a
+// rule; any other carries a title.
+export const isStandardRuleResult = (
+  review: IssueComment_ReviewMetadata | undefined
+): boolean =>
+  !!review && review.ruleType !== ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED;
+
+// The statement shows only the latest results of the standard rules. A result
+// a later run superseded stays in the timeline, unless someone reopened it,
+// since an open thread holds the rollout.
 const isSupersededRuleResult = (root: IssueComment): boolean =>
-  root.reviewMetadata?.runType === ReviewRun_Type.RULE &&
-  root.reviewMetadata.superseded &&
+  isStandardRuleResult(root.reviewMetadata) &&
+  !!root.reviewMetadata?.superseded &&
   root.threadState !== IssueComment_ThreadState.OPEN;
 
 // Threads shown in the displayed statement, ordered by start line, then

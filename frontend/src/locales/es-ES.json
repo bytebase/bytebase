@@ -2097,13 +2097,6 @@
       "self": "Filas afectadas",
       "up-to-on": "hasta {{rows}} en {{database}}"
     },
-    "ai-review": {
-      "failed-to-run": "No se pudo iniciar la revisión con IA",
-      "run": "Ejecutar revisión con IA",
-      "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Sus hallazgos sustituyen a los de la ejecución anterior, incluidos los que ya se resolvieron.",
-      "run-again-title": "¿Ejecutar de nuevo la revisión con IA?",
-      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión con IA."
-    },
     "automated-review": {
       "checks": "Comprobación del plan",
       "details": "Detalles",
@@ -2120,6 +2113,8 @@
       "no-findings": "Sin hallazgos",
       "not-run": "Aún no se ha ejecutado",
       "nothing-needs-attention": "Nada requiere atención",
+      "off": "desactivada",
+      "off-for-project": "Desactivada en este proyecto",
       "opens-in-sql": "Haz clic para recorrerlos en el SQL.",
       "out-of-date": "desactualizado",
       "outdated": "El SQL cambió después de esta ejecución",
@@ -2131,8 +2126,12 @@
       "rerun": "Volver a ejecutar",
       "rerun-all": "Volver a ejecutar todo",
       "retry": "Reintentar",
+      "reviewing": "Revisando…",
+      "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Un hallazgo que vuelve a aparecer conserva su hilo, y uno que ya no aparece queda resuelto.",
+      "run-again-title": "¿Ejecutar de nuevo la revisión?",
       "running": "En ejecución",
-      "sampled": "una muestra de {{count}} de {{total}} bases de datos",
+      "sampled": "La revisión cubrió una muestra de {{count}} de {{total}} bases de datos",
+      "save-first": "Guarda o descarta tus cambios para ejecutar la revisión.",
       "scope": "Se revisó {{databases}}",
       "scope-label": "Qué cubrió esta revisión",
       "scope-with-engines": "Se revisó {{databases}} ({{engines}})",

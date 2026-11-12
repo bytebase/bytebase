@@ -15,22 +15,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
-// Reviewer type values stored in review_run.type. The column has no CHECK on
-// purpose: the reviewer-id space is open.
-const (
-	// ReviewRunTypeRule reviews against the standard rules.
-	ReviewRunTypeRule = "RULE"
-	// ReviewRunTypeAI reviews against the natural-language AI review policy,
-	// judged by a model.
-	ReviewRunTypeAI = "AI"
-)
-
-// ReviewRunMessage is one review_run slot row: the current run of one
-// reviewer on one issue, reset in place on re-run.
+// ReviewRunMessage is one review_run slot row: the current review run of one
+// issue, reset in place on re-run.
 type ReviewRunMessage struct {
 	ProjectID string
 	IssueUID  int64
-	Type      string
 	Attempt   int64
 	Status    storepb.ReviewRun_Status
 	Payload   *storepb.ReviewRunPayload
@@ -38,8 +27,8 @@ type ReviewRunMessage struct {
 	UpdatedAt time.Time
 }
 
-// CreateReviewRun creates a new AVAILABLE run in the (issue, reviewer type)
-// slot. The slot row is reset in place unconditionally: created at attempt 0
+// CreateReviewRun creates a new AVAILABLE run in the issue's slot. The slot
+// row is reset in place unconditionally: created at attempt 0
 // when absent, attempt bumped otherwise, with created_at restarted,
 // replica_id cleared, and the payload reset to the approval input version of
 // the issue's plan as of this write. A RUNNING execution is superseded — its
@@ -48,7 +37,7 @@ type ReviewRunMessage struct {
 //
 // The slot requires an active project; the INSERT reads the issue row itself,
 // so a missing issue returns NotFound instead of a foreign-key error.
-func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID int64, reviewType string) (*ReviewRunMessage, error) {
+func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID int64) (*ReviewRunMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
@@ -60,13 +49,13 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	}
 
 	q := qb.Q().Space(`
-		INSERT INTO review_run (project, issue_id, type, status, payload)
-		SELECT issue.project, issue.id, ?, ?,
+		INSERT INTO review_run (project, issue_id, status, payload)
+		SELECT issue.project, issue.id, ?,
 			jsonb_strip_nulls(jsonb_build_object('approvalInputVersion', plan.config->'approvalInputVersion'))
 		FROM issue
 		LEFT JOIN plan ON plan.project = issue.project AND plan.id = issue.plan_id
 		WHERE issue.project = ? AND issue.id = ?
-		ON CONFLICT (project, issue_id, type) DO UPDATE
+		ON CONFLICT (project, issue_id) DO UPDATE
 		SET status = EXCLUDED.status,
 			attempt = review_run.attempt + 1,
 			created_at = now(),
@@ -74,7 +63,7 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 			replica_id = NULL,
 			payload = EXCLUDED.payload
 		RETURNING attempt, payload, created_at, updated_at
-	`, reviewType, storepb.ReviewRun_AVAILABLE.String(), projectID, issueUID)
+	`, storepb.ReviewRun_AVAILABLE.String(), projectID, issueUID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -84,7 +73,6 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	reviewRun := &ReviewRunMessage{
 		ProjectID: projectID,
 		IssueUID:  issueUID,
-		Type:      reviewType,
 		Status:    storepb.ReviewRun_AVAILABLE,
 		Payload:   &storepb.ReviewRunPayload{},
 	}
@@ -111,14 +99,14 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 // again.
 const keepApprovalInputVersion = `CAST(? AS JSONB) || jsonb_strip_nulls(jsonb_build_object('approvalInputVersion', review_run.payload->'approvalInputVersion'))`
 
-// GetReviewRun returns the run in the (issue, reviewer type) slot as stored,
-// or nil when the slot was never created.
-func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int64, reviewType string) (*ReviewRunMessage, error) {
+// GetReviewRun returns the run in the issue's slot as stored, or nil when the
+// slot was never created.
+func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int64) (*ReviewRunMessage, error) {
 	q := qb.Q().Space(`
 		SELECT attempt, status, payload, created_at, updated_at
 		FROM review_run
-		WHERE project = ? AND issue_id = ? AND type = ?
-	`, projectID, issueUID, reviewType)
+		WHERE project = ? AND issue_id = ?
+	`, projectID, issueUID)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -128,7 +116,6 @@ func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int
 	reviewRun := &ReviewRunMessage{
 		ProjectID: projectID,
 		IssueUID:  issueUID,
-		Type:      reviewType,
 		Payload:   &storepb.ReviewRunPayload{},
 	}
 	var statusString string
@@ -161,7 +148,6 @@ func (s *Store) GetReviewRun(ctx context.Context, projectID string, issueUID int
 type ClaimedReviewRun struct {
 	ProjectID string
 	IssueUID  int64
-	Type      string
 	Attempt   int64
 }
 
@@ -172,15 +158,15 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 	q := qb.Q().Space(`
 		UPDATE review_run
 		SET status = ?, updated_at = now(), replica_id = ?
-		WHERE (project, issue_id, type) IN (
-			SELECT review_run.project, review_run.issue_id, review_run.type
+		WHERE (project, issue_id) IN (
+			SELECT review_run.project, review_run.issue_id
 			FROM review_run
 			JOIN project ON project.resource_id = review_run.project
 			WHERE review_run.status = ?
 			  AND project.deleted = FALSE
 			FOR UPDATE OF review_run SKIP LOCKED
 		)
-		RETURNING project, issue_id, type, attempt
+		RETURNING project, issue_id, attempt
 	`, storepb.ReviewRun_RUNNING.String(), replicaID, storepb.ReviewRun_AVAILABLE.String())
 
 	query, args, err := q.ToSQL()
@@ -197,7 +183,7 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 	var claimed []*ClaimedReviewRun
 	for rows.Next() {
 		var c ClaimedReviewRun
-		if err := rows.Scan(&c.ProjectID, &c.IssueUID, &c.Type, &c.Attempt); err != nil {
+		if err := rows.Scan(&c.ProjectID, &c.IssueUID, &c.Attempt); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan claimed review run")
 		}
 		claimed = append(claimed, &c)
@@ -210,11 +196,11 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 
 // CompleteReviewRun moves a RUNNING run this replica owns to a terminal
 // status, fenced on the claim's attempt. On DONE it posts the run's results in
-// the same transaction. A current root of the same reviewer on the issue (one
-// no run has superseded) whose fingerprint a result repeats keeps its thread,
-// state and replies included, and takes the result's text, anchor, databases,
+// the same transaction. A current review result on the issue (a root no run
+// has superseded) whose fingerprint a result repeats keeps its thread, state
+// and replies included, and takes the result's text, anchor, databases,
 // priority, and title, reopening if it was resolved and the priority rose; that
-// result is not posted again. Every other current root of the reviewer is
+// result is not posted again. Every other current review result is
 // marked superseded and, if OPEN, resolved; the remaining results are inserted
 // as OPEN roots with no creator, carrying the run's attempt; and a
 // ReviewRunCompletion event records the counts. A FAILED run leaves the
@@ -225,8 +211,8 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // (the insert's foreign key), the order the project purge deletes them in.
 // The fence therefore runs before the inserts. A re-run does not stop the
 // execution it supersedes, so two completions of one slot can overlap and
-// split the reviewer's roots differently; each locks every root it may
-// update, in primary-key order, before updating any.
+// split the review results differently; each locks every root it may update,
+// in primary-key order, before updating any.
 func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload, results []*IssueCommentMessage) (bool, error) {
 	switch status {
 	case storepb.ReviewRun_DONE:
@@ -261,11 +247,11 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			SELECT resource_id FROM issue_comment
 			WHERE project = ? AND issue_id = ?
 			  AND parent_id IS NULL
-			  AND payload->'reviewMetadata'->>'runType' = ?
+			  AND payload->'reviewMetadata' IS NOT NULL
 			  AND (payload->'reviewMetadata'->'superseded' IS NULL OR thread_state = 'OPEN')
 			ORDER BY resource_id
 			FOR UPDATE
-		`, claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		`, claimed.ProjectID, claimed.IssueUID)
 		query, args, err := q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
@@ -281,10 +267,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			    payload = jsonb_set(payload, '{reviewMetadata,superseded}', 'true'::jsonb)
 			WHERE project = ? AND issue_id = ?
 			  AND parent_id IS NULL
-			  AND payload->'reviewMetadata'->>'runType' = ?
+			  AND payload->'reviewMetadata' IS NOT NULL
 			  AND payload->'reviewMetadata'->'superseded' IS NULL
 			  AND COALESCE(payload->'reviewMetadata'->>'fingerprint', '') <> ALL(?::TEXT[])
-		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type, fingerprints)
+		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, fingerprints)
 		query, args, err = q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
@@ -303,10 +289,9 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			SET thread_state = ?
 			WHERE project = ? AND issue_id = ?
 			  AND parent_id IS NULL
-			  AND payload->'reviewMetadata'->>'runType' = ?
 			  AND payload->'reviewMetadata'->'superseded' IS NOT NULL
 			  AND thread_state = 'OPEN'
-		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID)
 		query, args, err = q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
@@ -346,7 +331,6 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			FROM unnest(?::JSONB[]) AS r(payload)
 			WHERE kept.project = ? AND kept.issue_id = ?
 			  AND kept.parent_id IS NULL
-			  AND kept.payload->'reviewMetadata'->>'runType' = ?
 			  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
 			  AND kept.payload->'reviewMetadata'->>'fingerprint' = r.payload->'reviewMetadata'->>'fingerprint'
 			  AND ((r.payload ?? 'comment' AND kept.payload->'comment' IS DISTINCT FROM r.payload->'comment')
@@ -354,7 +338,7 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 			    OR kept.payload->'reviewMetadata'->'targets' IS DISTINCT FROM r.payload->'reviewMetadata'->'targets'
 			    OR kept.payload->'reviewMetadata'->'priority' IS DISTINCT FROM r.payload->'reviewMetadata'->'priority'
 			    OR kept.payload->'reviewMetadata'->'title' IS DISTINCT FROM r.payload->'reviewMetadata'->'title')
-		`, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		`, resultPayloads, claimed.ProjectID, claimed.IssueUID)
 		query, args, err = q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
@@ -367,10 +351,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	q := qb.Q().Space(`
 		UPDATE review_run
 		SET status = ?, updated_at = now(), payload = `+keepApprovalInputVersion+`
-		WHERE project = ? AND issue_id = ? AND type = ?
+		WHERE project = ? AND issue_id = ?
 		  AND status = ? AND replica_id = ? AND attempt = ?
 	`, status.String(), string(payloadBytes),
-		claimed.ProjectID, claimed.IssueUID, claimed.Type,
+		claimed.ProjectID, claimed.IssueUID,
 		storepb.ReviewRun_RUNNING.String(), replicaID, claimed.Attempt)
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -410,11 +394,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 				SELECT 1 FROM issue_comment kept
 				WHERE kept.project = ? AND kept.issue_id = ?
 				  AND kept.parent_id IS NULL
-				  AND kept.payload->'reviewMetadata'->>'runType' = ?
 				  AND kept.payload->'reviewMetadata'->'superseded' IS NULL
 				  AND kept.payload->'reviewMetadata'->>'fingerprint' = c.payload->'reviewMetadata'->>'fingerprint'
 			)
-		`, claimed.ProjectID, claimed.IssueUID, resultPayloads, claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		`, claimed.ProjectID, claimed.IssueUID, resultPayloads, claimed.ProjectID, claimed.IssueUID)
 		query, args, err := q.ToSQL()
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to build sql")
@@ -428,11 +411,9 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		}
 	}
 
-	runType := storepb.ReviewRun_Type(storepb.ReviewRun_Type_value[claimed.Type])
 	completion, err := protojson.Marshal(&storepb.IssueCommentPayload{
 		Event: &storepb.IssueCommentPayload_ReviewRunCompletion_{
 			ReviewRunCompletion: &storepb.IssueCommentPayload_ReviewRunCompletion{
-				RunType:         runType,
 				Attempt:         claimed.Attempt,
 				PostedCount:     int32(postedCount),
 				KeptCount:       int32(int64(len(resultPayloads)) - postedCount),
@@ -462,11 +443,11 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 }
 
 // marshalReviewResults checks that every result is a current root comment
-// the claimed reviewer posted, with no event, no creator, and a fingerprint
-// no other result repeats, and returns the payloads to insert, stamped with
-// the run's attempt, and their fingerprints. The fingerprints are never nil:
-// <> ALL(NULL) is NULL, which would keep every current root from being
-// superseded.
+// that names the reviewer that found it, with no event, no creator, and a
+// fingerprint no other result repeats, and returns the payloads to insert,
+// stamped with the run's attempt, and their fingerprints. The fingerprints
+// are never nil: <> ALL(NULL) is NULL, which would keep every current root
+// from being superseded.
 func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMessage) ([][]byte, []string, error) {
 	payloads := make([][]byte, 0, len(results))
 	fingerprints := make([]string, 0, len(results))
@@ -484,8 +465,8 @@ func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMess
 			return nil, nil, errors.New("a review result cannot carry an event")
 		}
 		metadata := result.Payload.GetReviewMetadata()
-		if metadata.GetRunType().String() != claimed.Type {
-			return nil, nil, errors.Errorf("review result names reviewer %q; the run is %q", metadata.GetRunType(), claimed.Type)
+		if runType := metadata.GetRunType(); runType != storepb.ReviewRun_RULE && runType != storepb.ReviewRun_AI {
+			return nil, nil, errors.New("a review result names the reviewer that found it")
 		}
 		if metadata.GetSuperseded() {
 			return nil, nil, errors.New("a review result cannot start superseded")

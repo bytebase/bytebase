@@ -9,6 +9,7 @@ package v1
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	expr "google.golang.org/genproto/googleapis/type/expr"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -304,121 +305,63 @@ func (IssueComment_Approval_Status) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 1, 0}
 }
 
-type ReviewRun_Type int32
+// There is no canceled state: a run has no effect until its fenced
+// completion transaction, so a re-run supersedes it instead.
+type ReviewRun_State int32
 
 const (
-	ReviewRun_TYPE_UNSPECIFIED ReviewRun_Type = 0
-	// Review against the standard rules.
-	ReviewRun_RULE ReviewRun_Type = 1
-	// Review against the natural-language AI review policy, performed by a
-	// model.
-	ReviewRun_AI ReviewRun_Type = 2
+	ReviewRun_STATE_UNSPECIFIED ReviewRun_State = 0
+	// Queued or running.
+	ReviewRun_RUNNING ReviewRun_State = 1
+	// Every (spec, target) unit in scope was evaluated. SUCCEEDED does not
+	// mean the review passed: whether problems remain is judged from open
+	// comments.
+	ReviewRun_SUCCEEDED ReviewRun_State = 2
+	// At least one unit was not evaluated; the cause is in `error`.
+	ReviewRun_FAILED ReviewRun_State = 3
 )
 
-// Enum value maps for ReviewRun_Type.
+// Enum value maps for ReviewRun_State.
 var (
-	ReviewRun_Type_name = map[int32]string{
-		0: "TYPE_UNSPECIFIED",
-		1: "RULE",
-		2: "AI",
+	ReviewRun_State_name = map[int32]string{
+		0: "STATE_UNSPECIFIED",
+		1: "RUNNING",
+		2: "SUCCEEDED",
+		3: "FAILED",
 	}
-	ReviewRun_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED": 0,
-		"RULE":             1,
-		"AI":               2,
+	ReviewRun_State_value = map[string]int32{
+		"STATE_UNSPECIFIED": 0,
+		"RUNNING":           1,
+		"SUCCEEDED":         2,
+		"FAILED":            3,
 	}
 )
 
-func (x ReviewRun_Type) Enum() *ReviewRun_Type {
-	p := new(ReviewRun_Type)
+func (x ReviewRun_State) Enum() *ReviewRun_State {
+	p := new(ReviewRun_State)
 	*p = x
 	return p
 }
 
-func (x ReviewRun_Type) String() string {
+func (x ReviewRun_State) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ReviewRun_Type) Descriptor() protoreflect.EnumDescriptor {
+func (ReviewRun_State) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_issue_service_proto_enumTypes[5].Descriptor()
 }
 
-func (ReviewRun_Type) Type() protoreflect.EnumType {
+func (ReviewRun_State) Type() protoreflect.EnumType {
 	return &file_v1_issue_service_proto_enumTypes[5]
 }
 
-func (x ReviewRun_Type) Number() protoreflect.EnumNumber {
+func (x ReviewRun_State) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ReviewRun_Type.Descriptor instead.
-func (ReviewRun_Type) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use ReviewRun_State.Descriptor instead.
+func (ReviewRun_State) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{23, 0}
-}
-
-// States follow task_run, minus PENDING (review needs no admission
-// control) and minus CANCELED (runs are side-effect-free until the fenced
-// completion transaction, so re-running supersedes instead of canceling).
-type ReviewRun_Status int32
-
-const (
-	ReviewRun_STATUS_UNSPECIFIED ReviewRun_Status = 0
-	// Created and claimable by any replica.
-	ReviewRun_AVAILABLE ReviewRun_Status = 1
-	ReviewRun_RUNNING   ReviewRun_Status = 2
-	// Every (spec, target) unit in the reviewer's scope was evaluated. RULE's
-	// scope is every target. AI's scope is the project's CI sample, the first
-	// ci_sampling_size targets of each spec, or every target when
-	// ci_sampling_size is 0. DONE does not mean the review passed: whether
-	// problems remain is judged from open comments.
-	ReviewRun_DONE ReviewRun_Status = 3
-	// At least one unit was not evaluated; the cause is in `error`.
-	ReviewRun_FAILED ReviewRun_Status = 4
-)
-
-// Enum value maps for ReviewRun_Status.
-var (
-	ReviewRun_Status_name = map[int32]string{
-		0: "STATUS_UNSPECIFIED",
-		1: "AVAILABLE",
-		2: "RUNNING",
-		3: "DONE",
-		4: "FAILED",
-	}
-	ReviewRun_Status_value = map[string]int32{
-		"STATUS_UNSPECIFIED": 0,
-		"AVAILABLE":          1,
-		"RUNNING":            2,
-		"DONE":               3,
-		"FAILED":             4,
-	}
-)
-
-func (x ReviewRun_Status) Enum() *ReviewRun_Status {
-	p := new(ReviewRun_Status)
-	*p = x
-	return p
-}
-
-func (x ReviewRun_Status) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (ReviewRun_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_issue_service_proto_enumTypes[6].Descriptor()
-}
-
-func (ReviewRun_Status) Type() protoreflect.EnumType {
-	return &file_v1_issue_service_proto_enumTypes[6]
-}
-
-func (x ReviewRun_Status) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use ReviewRun_Status.Descriptor instead.
-func (ReviewRun_Status) EnumDescriptor() ([]byte, []int) {
-	return file_v1_issue_service_proto_rawDescGZIP(), []int{23, 1}
 }
 
 type GetIssueRequest struct {
@@ -2216,26 +2159,23 @@ func (x *StatementAnchor) GetEndPosition() *Position {
 
 type ReviewRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-	// The {reviewRun} id is the reviewer: "rule" or "ai". The name
-	// addresses a slot, not an execution.
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Derived from the name.
-	Type   ReviewRun_Type   `protobuf:"varint,2,opt,name=type,proto3,enum=bytebase.v1.ReviewRun_Type" json:"type,omitempty"`
-	Status ReviewRun_Status `protobuf:"varint,3,opt,name=status,proto3,enum=bytebase.v1.ReviewRun_Status" json:"status,omitempty"`
+	// Format: projects/{project}/issues/{issue}/reviewRun
+	// An issue has one review run. The name addresses the current run, which
+	// a re-run replaces.
+	Name  string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	State ReviewRun_State `protobuf:"varint,2,opt,name=state,proto3,enum=bytebase.v1.ReviewRun_State" json:"state,omitempty"`
 	// When the current run was triggered. Reset on every re-run.
-	CreateTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	// When the run reached a terminal status. Unset while AVAILABLE or
-	// RUNNING.
-	EndTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	// Fatal execution error, set if and only if status is FAILED: the review
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// When the run reached a terminal state. Unset while RUNNING.
+	EndTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Fatal execution error, set if and only if state is FAILED: the review
 	// failed to execute (a platform problem, never the SQL — SQL problems are
-	// review results on a DONE run).
-	Error string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	// review results on a SUCCEEDED run).
+	Error *status.Status `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
 	// Whether the plan's SQL changed after this run started, so the run
 	// reviews an earlier version of it. The server starts a new run before it
 	// creates the rollout automatically.
-	Outdated      bool `protobuf:"varint,7,opt,name=outdated,proto3" json:"outdated,omitempty"`
+	Outdated      bool `protobuf:"varint,6,opt,name=outdated,proto3" json:"outdated,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2277,18 +2217,11 @@ func (x *ReviewRun) GetName() string {
 	return ""
 }
 
-func (x *ReviewRun) GetType() ReviewRun_Type {
+func (x *ReviewRun) GetState() ReviewRun_State {
 	if x != nil {
-		return x.Type
+		return x.State
 	}
-	return ReviewRun_TYPE_UNSPECIFIED
-}
-
-func (x *ReviewRun) GetStatus() ReviewRun_Status {
-	if x != nil {
-		return x.Status
-	}
-	return ReviewRun_STATUS_UNSPECIFIED
+	return ReviewRun_STATE_UNSPECIFIED
 }
 
 func (x *ReviewRun) GetCreateTime() *timestamppb.Timestamp {
@@ -2305,11 +2238,11 @@ func (x *ReviewRun) GetEndTime() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *ReviewRun) GetError() string {
+func (x *ReviewRun) GetError() *status.Status {
 	if x != nil {
 		return x.Error
 	}
-	return ""
+	return nil
 }
 
 func (x *ReviewRun) GetOutdated() bool {
@@ -2322,7 +2255,7 @@ func (x *ReviewRun) GetOutdated() bool {
 type GetReviewRunRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the review run to retrieve.
-	// Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+	// Format: projects/{project}/issues/{issue}/reviewRun
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2367,7 +2300,7 @@ func (x *GetReviewRunRequest) GetName() string {
 
 type RunReviewRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+	// Format: projects/{project}/issues/{issue}/reviewRun
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2468,27 +2401,27 @@ func (x *Issue_Approver) GetPrincipal() string {
 // What a review result carries beyond its text.
 type IssueComment_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The reviewer that posted the result.
-	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.v1.ReviewRun_Type" json:"run_type,omitempty"`
-	// The rule judged against. Set if and only if run_type is RULE.
-	RuleType ReviewRuleType                       `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.ReviewRuleType" json:"rule_type,omitempty"`
-	Priority IssueComment_ReviewMetadata_Priority `protobuf:"varint,3,opt,name=priority,proto3,enum=bytebase.v1.IssueComment_ReviewMetadata_Priority" json:"priority,omitempty"`
+	// The standard rule judged against. Set on the result of a standard rule,
+	// and on no other result.
+	RuleType ReviewRuleType                       `protobuf:"varint,1,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.ReviewRuleType" json:"rule_type,omitempty"`
+	Priority IssueComment_ReviewMetadata_Priority `protobuf:"varint,2,opt,name=priority,proto3,enum=bytebase.v1.IssueComment_ReviewMetadata_Priority" json:"priority,omitempty"`
 	// Every database the result applies to, sorted.
 	// Format: instances/{instance}/databases/{database}
-	Targets []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
-	// A later run of the same reviewer has completed without reporting the
-	// result again, whatever its thread state.
-	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
+	Targets []string `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
+	// A later run has completed without reporting the result again, whatever
+	// its thread state.
+	Superseded bool `protobuf:"varint,4,opt,name=superseded,proto3" json:"superseded,omitempty"`
 	// The ReviewRunCompletion.attempt of the run that posted the result. A
 	// result a later run reports again keeps its thread and its attempt.
-	Attempt int64 `protobuf:"varint,6,opt,name=attempt,proto3" json:"attempt,omitempty"`
-	// The conditions a RULE result reports, as finding codes such as
-	// "WT101", one per reason. A code names the same condition on every
-	// engine. Empty for other reviewers.
-	Codes []string `protobuf:"bytes,7,rep,name=codes,proto3" json:"codes,omitempty"`
-	// The name of the problem an AI result reports, on one line; the comment
-	// holds the rest. Empty for a RULE result, which rule_type names.
-	Title         string `protobuf:"bytes,8,opt,name=title,proto3" json:"title,omitempty"`
+	Attempt int64 `protobuf:"varint,5,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// The conditions the result of a standard rule reports, as finding codes
+	// such as "WT101", one per reason. A code names the same condition on
+	// every engine. Empty on any other result.
+	Codes []string `protobuf:"bytes,6,rep,name=codes,proto3" json:"codes,omitempty"`
+	// The name of the problem, on one line, for a result that no standard
+	// rule names; the comment holds the rest. Empty on the result of a
+	// standard rule, which rule_type names.
+	Title         string `protobuf:"bytes,7,opt,name=title,proto3" json:"title,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2521,13 +2454,6 @@ func (x *IssueComment_ReviewMetadata) ProtoReflect() protoreflect.Message {
 // Deprecated: Use IssueComment_ReviewMetadata.ProtoReflect.Descriptor instead.
 func (*IssueComment_ReviewMetadata) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 0}
-}
-
-func (x *IssueComment_ReviewMetadata) GetRunType() ReviewRun_Type {
-	if x != nil {
-		return x.RunType
-	}
-	return ReviewRun_TYPE_UNSPECIFIED
 }
 
 func (x *IssueComment_ReviewMetadata) GetRuleType() ReviewRuleType {
@@ -2763,21 +2689,19 @@ func (*IssueComment_ReviewSubmission) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 3}
 }
 
-// A review run completed, and what it did to the results of its reviewer.
-// Posted by the reviewer, with no creator.
+// A review run completed, and what it did to the earlier results. Posted
+// by the review, with no creator.
 type IssueComment_ReviewRunCompletion struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The reviewer that ran.
-	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.v1.ReviewRun_Type" json:"run_type,omitempty"`
-	// Identifies the run among its reviewer's runs on the issue. The results
-	// it posted carry the same ReviewMetadata.attempt.
-	Attempt int64 `protobuf:"varint,2,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// Identifies the run among the runs on the issue. The results it posted
+	// carry the same ReviewMetadata.attempt.
+	Attempt int64 `protobuf:"varint,1,opt,name=attempt,proto3" json:"attempt,omitempty"`
 	// Results the run posted as new threads.
-	PostedCount int32 `protobuf:"varint,3,opt,name=posted_count,json=postedCount,proto3" json:"posted_count,omitempty"`
+	PostedCount int32 `protobuf:"varint,2,opt,name=posted_count,json=postedCount,proto3" json:"posted_count,omitempty"`
 	// Earlier results the run reported again, which kept their threads.
-	KeptCount int32 `protobuf:"varint,4,opt,name=kept_count,json=keptCount,proto3" json:"kept_count,omitempty"`
+	KeptCount int32 `protobuf:"varint,3,opt,name=kept_count,json=keptCount,proto3" json:"kept_count,omitempty"`
 	// Earlier results the run no longer reports, now superseded.
-	SupersededCount int32 `protobuf:"varint,5,opt,name=superseded_count,json=supersededCount,proto3" json:"superseded_count,omitempty"`
+	SupersededCount int32 `protobuf:"varint,4,opt,name=superseded_count,json=supersededCount,proto3" json:"superseded_count,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2810,13 +2734,6 @@ func (x *IssueComment_ReviewRunCompletion) ProtoReflect() protoreflect.Message {
 // Deprecated: Use IssueComment_ReviewRunCompletion.ProtoReflect.Descriptor instead.
 func (*IssueComment_ReviewRunCompletion) Descriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 4}
-}
-
-func (x *IssueComment_ReviewRunCompletion) GetRunType() ReviewRun_Type {
-	if x != nil {
-		return x.RunType
-	}
-	return ReviewRun_TYPE_UNSPECIFIED
 }
 
 func (x *IssueComment_ReviewRunCompletion) GetAttempt() int64 {
@@ -2905,7 +2822,7 @@ var File_v1_issue_service_proto protoreflect.FileDescriptor
 
 const file_v1_issue_service_proto_rawDesc = "" +
 	"\n" +
-	"\x16v1/issue_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/plan_service.proto\x1a\x14v1/review_rule.proto\"X\n" +
+	"\x16v1/issue_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x16google/type/expr.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x15v1/plan_service.proto\x1a\x14v1/review_rule.proto\"X\n" +
 	"\x0fGetIssueRequest\x12/\n" +
 	"\x04name\x18\x01 \x01(\tB\x1b\xe2A\x01\x02\xfaA\x14\n" +
 	"\x12bytebase.com/IssueR\x04name\x12\x14\n" +
@@ -3037,7 +2954,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12A\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x04\xe2A\x01\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xfe\x12\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\x8e\x12\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -3056,18 +2973,17 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vplan_update\x18\f \x01(\v2$.bytebase.v1.IssueComment.PlanUpdateH\x00R\n" +
 	"planUpdate\x12Y\n" +
 	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x12c\n" +
-	"\x15review_run_completion\x18\x12 \x01(\v2-.bytebase.v1.IssueComment.ReviewRunCompletionH\x00R\x13reviewRunCompletion\x1a\x8f\x03\n" +
-	"\x0eReviewMetadata\x126\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x128\n" +
-	"\trule_type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\bruleType\x12M\n" +
-	"\bpriority\x18\x03 \x01(\x0e21.bytebase.v1.IssueComment.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
-	"\atargets\x18\x04 \x03(\tR\atargets\x12\x1e\n" +
+	"\x15review_run_completion\x18\x12 \x01(\v2-.bytebase.v1.IssueComment.ReviewRunCompletionH\x00R\x13reviewRunCompletion\x1a\xd7\x02\n" +
+	"\x0eReviewMetadata\x128\n" +
+	"\trule_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\bruleType\x12M\n" +
+	"\bpriority\x18\x02 \x01(\x0e21.bytebase.v1.IssueComment.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
+	"\atargets\x18\x03 \x03(\tR\atargets\x12\x1e\n" +
 	"\n" +
-	"superseded\x18\x05 \x01(\bR\n" +
+	"superseded\x18\x04 \x01(\bR\n" +
 	"superseded\x12\x18\n" +
-	"\aattempt\x18\x06 \x01(\x03R\aattempt\x12\x14\n" +
-	"\x05codes\x18\a \x03(\tR\x05codes\x12\x14\n" +
-	"\x05title\x18\b \x01(\tR\x05title\"<\n" +
+	"\aattempt\x18\x05 \x01(\x03R\aattempt\x12\x14\n" +
+	"\x05codes\x18\x06 \x03(\tR\x05codes\x12\x14\n" +
+	"\x05title\x18\a \x01(\tR\x05title\"<\n" +
 	"\bPriority\x12\x18\n" +
 	"\x14PRIORITY_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02P0\x10\x01\x12\x06\n" +
@@ -3099,14 +3015,13 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\f_from_statusB\f\n" +
 	"\n" +
 	"_to_status\x1a\x12\n" +
-	"\x10ReviewSubmission\x1a\xd4\x01\n" +
-	"\x13ReviewRunCompletion\x126\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x12\x18\n" +
-	"\aattempt\x18\x02 \x01(\x03R\aattempt\x12!\n" +
-	"\fposted_count\x18\x03 \x01(\x05R\vpostedCount\x12\x1d\n" +
+	"\x10ReviewSubmission\x1a\x9c\x01\n" +
+	"\x13ReviewRunCompletion\x12\x18\n" +
+	"\aattempt\x18\x01 \x01(\x03R\aattempt\x12!\n" +
+	"\fposted_count\x18\x02 \x01(\x05R\vpostedCount\x12\x1d\n" +
 	"\n" +
-	"kept_count\x18\x04 \x01(\x05R\tkeptCount\x12)\n" +
-	"\x10superseded_count\x18\x05 \x01(\x05R\x0fsupersededCount\x1av\n" +
+	"kept_count\x18\x03 \x01(\x05R\tkeptCount\x12)\n" +
+	"\x10superseded_count\x18\x04 \x01(\x05R\x0fsupersededCount\x1av\n" +
 	"\n" +
 	"PlanUpdate\x125\n" +
 	"\n" +
@@ -3123,34 +3038,28 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04spec\x18\x01 \x01(\tR\x04spec\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12<\n" +
 	"\x0estart_position\x18\x03 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\xac\x04\n" +
+	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\xbd\x03\n" +
 	"\tReviewRun\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x125\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeB\x04\xe2A\x01\x03R\x04type\x12;\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1d.bytebase.v1.ReviewRun.StatusB\x04\xe2A\x01\x03R\x06status\x12A\n" +
-	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
+	"\x05state\x18\x02 \x01(\x0e2\x1c.bytebase.v1.ReviewRun.StateB\x04\xe2A\x01\x03R\x05state\x12A\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\n" +
 	"createTime\x12;\n" +
-	"\bend_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\aendTime\x12\x1a\n" +
-	"\x05error\x18\x06 \x01(\tB\x04\xe2A\x01\x03R\x05error\x12 \n" +
-	"\boutdated\x18\a \x01(\bB\x04\xe2A\x01\x03R\boutdated\".\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04RULE\x10\x01\x12\x06\n" +
-	"\x02AI\x10\x02\"R\n" +
-	"\x06Status\x12\x16\n" +
-	"\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n" +
-	"\tAVAILABLE\x10\x01\x12\v\n" +
-	"\aRUNNING\x10\x02\x12\b\n" +
-	"\x04DONE\x10\x03\x12\n" +
+	"\bend_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\aendTime\x12.\n" +
+	"\x05error\x18\x05 \x01(\v2\x12.google.rpc.StatusB\x04\xe2A\x01\x03R\x05error\x12 \n" +
+	"\boutdated\x18\x06 \x01(\bB\x04\xe2A\x01\x03R\boutdated\"F\n" +
+	"\x05State\x12\x15\n" +
+	"\x11STATE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aRUNNING\x10\x01\x12\r\n" +
+	"\tSUCCEEDED\x10\x02\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x04:U\xeaAR\n" +
-	"\x16bytebase.com/ReviewRun\x128projects/{project}/issues/{issue}/reviewRuns/{reviewRun}\"J\n" +
+	"\x06FAILED\x10\x03:H\xeaAE\n" +
+	"\x16bytebase.com/ReviewRun\x12+projects/{project}/issues/{issue}/reviewRun\"J\n" +
 	"\x13GetReviewRunRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\n" +
 	"\x16bytebase.com/ReviewRunR\x04name\"G\n" +
 	"\x10RunReviewRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe2A\x01\x02\xfaA\x18\n" +
-	"\x16bytebase.com/ReviewRunR\x04name2\xf4\x13\n" +
+	"\x16bytebase.com/ReviewRunR\x04name2\xee\x13\n" +
 	"\fIssueService\x12\x84\x01\n" +
 	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"F\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\xa0\x01\n" +
 	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"\\\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x98\x01\n" +
@@ -3165,9 +3074,9 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\fApproveIssue\x12 .bytebase.v1.ApproveIssueRequest\x1a\x12.bytebase.v1.Issue\"=\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:approve\x12\x80\x01\n" +
 	"\vRejectIssue\x12\x1f.bytebase.v1.RejectIssueRequest\x1a\x12.bytebase.v1.Issue\"<\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=projects/*/issues/*}:reject\x12\x83\x01\n" +
 	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"=\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:request\x12\x99\x01\n" +
-	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"G\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApproval\x12\xa1\x01\n" +
-	"\fGetReviewRun\x12 .bytebase.v1.GetReviewRunRequest\x1a\x16.bytebase.v1.ReviewRun\"W\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02-\x12+/v1/{name=projects/*/issues/*/reviewRuns/*}\x12\xa6\x01\n" +
-	"\tRunReview\x12\x1d.bytebase.v1.RunReviewRequest\x1a\x16.bytebase.v1.ReviewRun\"b\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/issues/*/reviewRuns/*}:runB\xa7\x01\n" +
+	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"G\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApproval\x12\x9e\x01\n" +
+	"\fGetReviewRun\x12 .bytebase.v1.GetReviewRunRequest\x1a\x16.bytebase.v1.ReviewRun\"T\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02*\x12(/v1/{name=projects/*/issues/*/reviewRun}\x12\xa3\x01\n" +
+	"\tRunReview\x12\x1d.bytebase.v1.RunReviewRequest\x1a\x16.bytebase.v1.ReviewRun\"_\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*/reviewRun}:runB\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11IssueServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -3182,7 +3091,7 @@ func file_v1_issue_service_proto_rawDescGZIP() []byte {
 	return file_v1_issue_service_proto_rawDescData
 }
 
-var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_issue_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_v1_issue_service_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_v1_issue_service_proto_goTypes = []any{
 	(Issue_Type)(0),                           // 0: bytebase.v1.Issue.Type
@@ -3190,136 +3099,134 @@ var file_v1_issue_service_proto_goTypes = []any{
 	(IssueComment_ThreadState)(0),             // 2: bytebase.v1.IssueComment.ThreadState
 	(IssueComment_ReviewMetadata_Priority)(0), // 3: bytebase.v1.IssueComment.ReviewMetadata.Priority
 	(IssueComment_Approval_Status)(0),         // 4: bytebase.v1.IssueComment.Approval.Status
-	(ReviewRun_Type)(0),                       // 5: bytebase.v1.ReviewRun.Type
-	(ReviewRun_Status)(0),                     // 6: bytebase.v1.ReviewRun.Status
-	(*GetIssueRequest)(nil),                   // 7: bytebase.v1.GetIssueRequest
-	(*CreateIssueRequest)(nil),                // 8: bytebase.v1.CreateIssueRequest
-	(*ListIssuesRequest)(nil),                 // 9: bytebase.v1.ListIssuesRequest
-	(*ListIssuesResponse)(nil),                // 10: bytebase.v1.ListIssuesResponse
-	(*SearchIssuesRequest)(nil),               // 11: bytebase.v1.SearchIssuesRequest
-	(*SearchIssuesResponse)(nil),              // 12: bytebase.v1.SearchIssuesResponse
-	(*UpdateIssueRequest)(nil),                // 13: bytebase.v1.UpdateIssueRequest
-	(*BatchUpdateIssuesStatusRequest)(nil),    // 14: bytebase.v1.BatchUpdateIssuesStatusRequest
-	(*BatchUpdateIssuesStatusResponse)(nil),   // 15: bytebase.v1.BatchUpdateIssuesStatusResponse
-	(*ApproveIssueRequest)(nil),               // 16: bytebase.v1.ApproveIssueRequest
-	(*RejectIssueRequest)(nil),                // 17: bytebase.v1.RejectIssueRequest
-	(*RequestIssueRequest)(nil),               // 18: bytebase.v1.RequestIssueRequest
-	(*RetryIssueApprovalRequest)(nil),         // 19: bytebase.v1.RetryIssueApprovalRequest
-	(*Issue)(nil),                             // 20: bytebase.v1.Issue
-	(*RoleGrant)(nil),                         // 21: bytebase.v1.RoleGrant
-	(*ApprovalTemplate)(nil),                  // 22: bytebase.v1.ApprovalTemplate
-	(*ApprovalFlow)(nil),                      // 23: bytebase.v1.ApprovalFlow
-	(*ListIssueCommentsRequest)(nil),          // 24: bytebase.v1.ListIssueCommentsRequest
-	(*ListIssueCommentsResponse)(nil),         // 25: bytebase.v1.ListIssueCommentsResponse
-	(*CreateIssueCommentRequest)(nil),         // 26: bytebase.v1.CreateIssueCommentRequest
-	(*UpdateIssueCommentRequest)(nil),         // 27: bytebase.v1.UpdateIssueCommentRequest
-	(*IssueComment)(nil),                      // 28: bytebase.v1.IssueComment
-	(*StatementAnchor)(nil),                   // 29: bytebase.v1.StatementAnchor
-	(*ReviewRun)(nil),                         // 30: bytebase.v1.ReviewRun
-	(*GetReviewRunRequest)(nil),               // 31: bytebase.v1.GetReviewRunRequest
-	(*RunReviewRequest)(nil),                  // 32: bytebase.v1.RunReviewRequest
-	(*Issue_Approver)(nil),                    // 33: bytebase.v1.Issue.Approver
-	(*IssueComment_ReviewMetadata)(nil),       // 34: bytebase.v1.IssueComment.ReviewMetadata
-	(*IssueComment_Approval)(nil),             // 35: bytebase.v1.IssueComment.Approval
-	(*IssueComment_IssueUpdate)(nil),          // 36: bytebase.v1.IssueComment.IssueUpdate
-	(*IssueComment_ReviewSubmission)(nil),     // 37: bytebase.v1.IssueComment.ReviewSubmission
-	(*IssueComment_ReviewRunCompletion)(nil),  // 38: bytebase.v1.IssueComment.ReviewRunCompletion
-	(*IssueComment_PlanUpdate)(nil),           // 39: bytebase.v1.IssueComment.PlanUpdate
-	(*fieldmaskpb.FieldMask)(nil),             // 40: google.protobuf.FieldMask
-	(IssueStatus)(0),                          // 41: bytebase.v1.IssueStatus
-	(*timestamppb.Timestamp)(nil),             // 42: google.protobuf.Timestamp
-	(RiskLevel)(0),                            // 43: bytebase.v1.RiskLevel
-	(ApprovalStatus)(0),                       // 44: bytebase.v1.ApprovalStatus
-	(*expr.Expr)(nil),                         // 45: google.type.Expr
-	(*durationpb.Duration)(nil),               // 46: google.protobuf.Duration
-	(*Position)(nil),                          // 47: bytebase.v1.Position
+	(ReviewRun_State)(0),                      // 5: bytebase.v1.ReviewRun.State
+	(*GetIssueRequest)(nil),                   // 6: bytebase.v1.GetIssueRequest
+	(*CreateIssueRequest)(nil),                // 7: bytebase.v1.CreateIssueRequest
+	(*ListIssuesRequest)(nil),                 // 8: bytebase.v1.ListIssuesRequest
+	(*ListIssuesResponse)(nil),                // 9: bytebase.v1.ListIssuesResponse
+	(*SearchIssuesRequest)(nil),               // 10: bytebase.v1.SearchIssuesRequest
+	(*SearchIssuesResponse)(nil),              // 11: bytebase.v1.SearchIssuesResponse
+	(*UpdateIssueRequest)(nil),                // 12: bytebase.v1.UpdateIssueRequest
+	(*BatchUpdateIssuesStatusRequest)(nil),    // 13: bytebase.v1.BatchUpdateIssuesStatusRequest
+	(*BatchUpdateIssuesStatusResponse)(nil),   // 14: bytebase.v1.BatchUpdateIssuesStatusResponse
+	(*ApproveIssueRequest)(nil),               // 15: bytebase.v1.ApproveIssueRequest
+	(*RejectIssueRequest)(nil),                // 16: bytebase.v1.RejectIssueRequest
+	(*RequestIssueRequest)(nil),               // 17: bytebase.v1.RequestIssueRequest
+	(*RetryIssueApprovalRequest)(nil),         // 18: bytebase.v1.RetryIssueApprovalRequest
+	(*Issue)(nil),                             // 19: bytebase.v1.Issue
+	(*RoleGrant)(nil),                         // 20: bytebase.v1.RoleGrant
+	(*ApprovalTemplate)(nil),                  // 21: bytebase.v1.ApprovalTemplate
+	(*ApprovalFlow)(nil),                      // 22: bytebase.v1.ApprovalFlow
+	(*ListIssueCommentsRequest)(nil),          // 23: bytebase.v1.ListIssueCommentsRequest
+	(*ListIssueCommentsResponse)(nil),         // 24: bytebase.v1.ListIssueCommentsResponse
+	(*CreateIssueCommentRequest)(nil),         // 25: bytebase.v1.CreateIssueCommentRequest
+	(*UpdateIssueCommentRequest)(nil),         // 26: bytebase.v1.UpdateIssueCommentRequest
+	(*IssueComment)(nil),                      // 27: bytebase.v1.IssueComment
+	(*StatementAnchor)(nil),                   // 28: bytebase.v1.StatementAnchor
+	(*ReviewRun)(nil),                         // 29: bytebase.v1.ReviewRun
+	(*GetReviewRunRequest)(nil),               // 30: bytebase.v1.GetReviewRunRequest
+	(*RunReviewRequest)(nil),                  // 31: bytebase.v1.RunReviewRequest
+	(*Issue_Approver)(nil),                    // 32: bytebase.v1.Issue.Approver
+	(*IssueComment_ReviewMetadata)(nil),       // 33: bytebase.v1.IssueComment.ReviewMetadata
+	(*IssueComment_Approval)(nil),             // 34: bytebase.v1.IssueComment.Approval
+	(*IssueComment_IssueUpdate)(nil),          // 35: bytebase.v1.IssueComment.IssueUpdate
+	(*IssueComment_ReviewSubmission)(nil),     // 36: bytebase.v1.IssueComment.ReviewSubmission
+	(*IssueComment_ReviewRunCompletion)(nil),  // 37: bytebase.v1.IssueComment.ReviewRunCompletion
+	(*IssueComment_PlanUpdate)(nil),           // 38: bytebase.v1.IssueComment.PlanUpdate
+	(*fieldmaskpb.FieldMask)(nil),             // 39: google.protobuf.FieldMask
+	(IssueStatus)(0),                          // 40: bytebase.v1.IssueStatus
+	(*timestamppb.Timestamp)(nil),             // 41: google.protobuf.Timestamp
+	(RiskLevel)(0),                            // 42: bytebase.v1.RiskLevel
+	(ApprovalStatus)(0),                       // 43: bytebase.v1.ApprovalStatus
+	(*expr.Expr)(nil),                         // 44: google.type.Expr
+	(*durationpb.Duration)(nil),               // 45: google.protobuf.Duration
+	(*Position)(nil),                          // 46: bytebase.v1.Position
+	(*status.Status)(nil),                     // 47: google.rpc.Status
 	(ReviewRuleType)(0),                       // 48: bytebase.v1.ReviewRuleType
 	(*Plan_Spec)(nil),                         // 49: bytebase.v1.Plan.Spec
 }
 var file_v1_issue_service_proto_depIdxs = []int32{
-	20, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	20, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	20, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
-	20, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
-	40, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
-	41, // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
+	19, // 0: bytebase.v1.CreateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	19, // 1: bytebase.v1.ListIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	19, // 2: bytebase.v1.SearchIssuesResponse.issues:type_name -> bytebase.v1.Issue
+	19, // 3: bytebase.v1.UpdateIssueRequest.issue:type_name -> bytebase.v1.Issue
+	39, // 4: bytebase.v1.UpdateIssueRequest.update_mask:type_name -> google.protobuf.FieldMask
+	40, // 5: bytebase.v1.BatchUpdateIssuesStatusRequest.status:type_name -> bytebase.v1.IssueStatus
 	0,  // 6: bytebase.v1.Issue.type:type_name -> bytebase.v1.Issue.Type
-	41, // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
-	33, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
-	22, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
-	42, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
-	42, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
-	21, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
-	43, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
-	44, // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.ApprovalStatus
-	45, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
-	46, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
-	23, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
-	28, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
-	28, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	28, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
-	40, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
-	42, // 22: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
-	42, // 23: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
+	40, // 7: bytebase.v1.Issue.status:type_name -> bytebase.v1.IssueStatus
+	32, // 8: bytebase.v1.Issue.approvers:type_name -> bytebase.v1.Issue.Approver
+	21, // 9: bytebase.v1.Issue.approval_template:type_name -> bytebase.v1.ApprovalTemplate
+	41, // 10: bytebase.v1.Issue.create_time:type_name -> google.protobuf.Timestamp
+	41, // 11: bytebase.v1.Issue.update_time:type_name -> google.protobuf.Timestamp
+	20, // 12: bytebase.v1.Issue.role_grant:type_name -> bytebase.v1.RoleGrant
+	42, // 13: bytebase.v1.Issue.risk_level:type_name -> bytebase.v1.RiskLevel
+	43, // 14: bytebase.v1.Issue.approval_status:type_name -> bytebase.v1.ApprovalStatus
+	44, // 15: bytebase.v1.RoleGrant.condition:type_name -> google.type.Expr
+	45, // 16: bytebase.v1.RoleGrant.expiration:type_name -> google.protobuf.Duration
+	22, // 17: bytebase.v1.ApprovalTemplate.flow:type_name -> bytebase.v1.ApprovalFlow
+	27, // 18: bytebase.v1.ListIssueCommentsResponse.issue_comments:type_name -> bytebase.v1.IssueComment
+	27, // 19: bytebase.v1.CreateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	27, // 20: bytebase.v1.UpdateIssueCommentRequest.issue_comment:type_name -> bytebase.v1.IssueComment
+	39, // 21: bytebase.v1.UpdateIssueCommentRequest.update_mask:type_name -> google.protobuf.FieldMask
+	41, // 22: bytebase.v1.IssueComment.create_time:type_name -> google.protobuf.Timestamp
+	41, // 23: bytebase.v1.IssueComment.update_time:type_name -> google.protobuf.Timestamp
 	2,  // 24: bytebase.v1.IssueComment.thread_state:type_name -> bytebase.v1.IssueComment.ThreadState
-	29, // 25: bytebase.v1.IssueComment.statement_anchor:type_name -> bytebase.v1.StatementAnchor
-	34, // 26: bytebase.v1.IssueComment.review_metadata:type_name -> bytebase.v1.IssueComment.ReviewMetadata
-	35, // 27: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
-	36, // 28: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
-	39, // 29: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
-	37, // 30: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
-	38, // 31: bytebase.v1.IssueComment.review_run_completion:type_name -> bytebase.v1.IssueComment.ReviewRunCompletion
-	47, // 32: bytebase.v1.StatementAnchor.start_position:type_name -> bytebase.v1.Position
-	47, // 33: bytebase.v1.StatementAnchor.end_position:type_name -> bytebase.v1.Position
-	5,  // 34: bytebase.v1.ReviewRun.type:type_name -> bytebase.v1.ReviewRun.Type
-	6,  // 35: bytebase.v1.ReviewRun.status:type_name -> bytebase.v1.ReviewRun.Status
-	42, // 36: bytebase.v1.ReviewRun.create_time:type_name -> google.protobuf.Timestamp
-	42, // 37: bytebase.v1.ReviewRun.end_time:type_name -> google.protobuf.Timestamp
+	28, // 25: bytebase.v1.IssueComment.statement_anchor:type_name -> bytebase.v1.StatementAnchor
+	33, // 26: bytebase.v1.IssueComment.review_metadata:type_name -> bytebase.v1.IssueComment.ReviewMetadata
+	34, // 27: bytebase.v1.IssueComment.approval:type_name -> bytebase.v1.IssueComment.Approval
+	35, // 28: bytebase.v1.IssueComment.issue_update:type_name -> bytebase.v1.IssueComment.IssueUpdate
+	38, // 29: bytebase.v1.IssueComment.plan_update:type_name -> bytebase.v1.IssueComment.PlanUpdate
+	36, // 30: bytebase.v1.IssueComment.review_submission:type_name -> bytebase.v1.IssueComment.ReviewSubmission
+	37, // 31: bytebase.v1.IssueComment.review_run_completion:type_name -> bytebase.v1.IssueComment.ReviewRunCompletion
+	46, // 32: bytebase.v1.StatementAnchor.start_position:type_name -> bytebase.v1.Position
+	46, // 33: bytebase.v1.StatementAnchor.end_position:type_name -> bytebase.v1.Position
+	5,  // 34: bytebase.v1.ReviewRun.state:type_name -> bytebase.v1.ReviewRun.State
+	41, // 35: bytebase.v1.ReviewRun.create_time:type_name -> google.protobuf.Timestamp
+	41, // 36: bytebase.v1.ReviewRun.end_time:type_name -> google.protobuf.Timestamp
+	47, // 37: bytebase.v1.ReviewRun.error:type_name -> google.rpc.Status
 	1,  // 38: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
-	5,  // 39: bytebase.v1.IssueComment.ReviewMetadata.run_type:type_name -> bytebase.v1.ReviewRun.Type
-	48, // 40: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRuleType
-	3,  // 41: bytebase.v1.IssueComment.ReviewMetadata.priority:type_name -> bytebase.v1.IssueComment.ReviewMetadata.Priority
-	4,  // 42: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
-	41, // 43: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
-	41, // 44: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
-	5,  // 45: bytebase.v1.IssueComment.ReviewRunCompletion.run_type:type_name -> bytebase.v1.ReviewRun.Type
-	49, // 46: bytebase.v1.IssueComment.PlanUpdate.from_specs:type_name -> bytebase.v1.Plan.Spec
-	49, // 47: bytebase.v1.IssueComment.PlanUpdate.to_specs:type_name -> bytebase.v1.Plan.Spec
-	7,  // 48: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
-	8,  // 49: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
-	9,  // 50: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
-	11, // 51: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
-	13, // 52: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
-	24, // 53: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
-	26, // 54: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
-	27, // 55: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
-	14, // 56: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
-	16, // 57: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
-	17, // 58: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
-	18, // 59: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
-	19, // 60: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
-	31, // 61: bytebase.v1.IssueService.GetReviewRun:input_type -> bytebase.v1.GetReviewRunRequest
-	32, // 62: bytebase.v1.IssueService.RunReview:input_type -> bytebase.v1.RunReviewRequest
-	20, // 63: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
-	20, // 64: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
-	10, // 65: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
-	12, // 66: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
-	20, // 67: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
-	25, // 68: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
-	28, // 69: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
-	28, // 70: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
-	15, // 71: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
-	20, // 72: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
-	20, // 73: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
-	20, // 74: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
-	20, // 75: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
-	30, // 76: bytebase.v1.IssueService.GetReviewRun:output_type -> bytebase.v1.ReviewRun
-	30, // 77: bytebase.v1.IssueService.RunReview:output_type -> bytebase.v1.ReviewRun
-	63, // [63:78] is the sub-list for method output_type
-	48, // [48:63] is the sub-list for method input_type
-	48, // [48:48] is the sub-list for extension type_name
-	48, // [48:48] is the sub-list for extension extendee
-	0,  // [0:48] is the sub-list for field type_name
+	48, // 39: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRuleType
+	3,  // 40: bytebase.v1.IssueComment.ReviewMetadata.priority:type_name -> bytebase.v1.IssueComment.ReviewMetadata.Priority
+	4,  // 41: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
+	40, // 42: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus
+	40, // 43: bytebase.v1.IssueComment.IssueUpdate.to_status:type_name -> bytebase.v1.IssueStatus
+	49, // 44: bytebase.v1.IssueComment.PlanUpdate.from_specs:type_name -> bytebase.v1.Plan.Spec
+	49, // 45: bytebase.v1.IssueComment.PlanUpdate.to_specs:type_name -> bytebase.v1.Plan.Spec
+	6,  // 46: bytebase.v1.IssueService.GetIssue:input_type -> bytebase.v1.GetIssueRequest
+	7,  // 47: bytebase.v1.IssueService.CreateIssue:input_type -> bytebase.v1.CreateIssueRequest
+	8,  // 48: bytebase.v1.IssueService.ListIssues:input_type -> bytebase.v1.ListIssuesRequest
+	10, // 49: bytebase.v1.IssueService.SearchIssues:input_type -> bytebase.v1.SearchIssuesRequest
+	12, // 50: bytebase.v1.IssueService.UpdateIssue:input_type -> bytebase.v1.UpdateIssueRequest
+	23, // 51: bytebase.v1.IssueService.ListIssueComments:input_type -> bytebase.v1.ListIssueCommentsRequest
+	25, // 52: bytebase.v1.IssueService.CreateIssueComment:input_type -> bytebase.v1.CreateIssueCommentRequest
+	26, // 53: bytebase.v1.IssueService.UpdateIssueComment:input_type -> bytebase.v1.UpdateIssueCommentRequest
+	13, // 54: bytebase.v1.IssueService.BatchUpdateIssuesStatus:input_type -> bytebase.v1.BatchUpdateIssuesStatusRequest
+	15, // 55: bytebase.v1.IssueService.ApproveIssue:input_type -> bytebase.v1.ApproveIssueRequest
+	16, // 56: bytebase.v1.IssueService.RejectIssue:input_type -> bytebase.v1.RejectIssueRequest
+	17, // 57: bytebase.v1.IssueService.RequestIssue:input_type -> bytebase.v1.RequestIssueRequest
+	18, // 58: bytebase.v1.IssueService.RetryIssueApproval:input_type -> bytebase.v1.RetryIssueApprovalRequest
+	30, // 59: bytebase.v1.IssueService.GetReviewRun:input_type -> bytebase.v1.GetReviewRunRequest
+	31, // 60: bytebase.v1.IssueService.RunReview:input_type -> bytebase.v1.RunReviewRequest
+	19, // 61: bytebase.v1.IssueService.GetIssue:output_type -> bytebase.v1.Issue
+	19, // 62: bytebase.v1.IssueService.CreateIssue:output_type -> bytebase.v1.Issue
+	9,  // 63: bytebase.v1.IssueService.ListIssues:output_type -> bytebase.v1.ListIssuesResponse
+	11, // 64: bytebase.v1.IssueService.SearchIssues:output_type -> bytebase.v1.SearchIssuesResponse
+	19, // 65: bytebase.v1.IssueService.UpdateIssue:output_type -> bytebase.v1.Issue
+	24, // 66: bytebase.v1.IssueService.ListIssueComments:output_type -> bytebase.v1.ListIssueCommentsResponse
+	27, // 67: bytebase.v1.IssueService.CreateIssueComment:output_type -> bytebase.v1.IssueComment
+	27, // 68: bytebase.v1.IssueService.UpdateIssueComment:output_type -> bytebase.v1.IssueComment
+	14, // 69: bytebase.v1.IssueService.BatchUpdateIssuesStatus:output_type -> bytebase.v1.BatchUpdateIssuesStatusResponse
+	19, // 70: bytebase.v1.IssueService.ApproveIssue:output_type -> bytebase.v1.Issue
+	19, // 71: bytebase.v1.IssueService.RejectIssue:output_type -> bytebase.v1.Issue
+	19, // 72: bytebase.v1.IssueService.RequestIssue:output_type -> bytebase.v1.Issue
+	19, // 73: bytebase.v1.IssueService.RetryIssueApproval:output_type -> bytebase.v1.Issue
+	29, // 74: bytebase.v1.IssueService.GetReviewRun:output_type -> bytebase.v1.ReviewRun
+	29, // 75: bytebase.v1.IssueService.RunReview:output_type -> bytebase.v1.ReviewRun
+	61, // [61:76] is the sub-list for method output_type
+	46, // [46:61] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_v1_issue_service_proto_init() }
@@ -3344,7 +3251,7 @@ func file_v1_issue_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_issue_service_proto_rawDesc), len(file_v1_issue_service_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      6,
 			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,

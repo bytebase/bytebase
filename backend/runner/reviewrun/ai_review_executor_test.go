@@ -34,7 +34,7 @@ const fixtureDatabases = 5
 // letting it hang.
 const testWaitLimit = 30 * time.Second
 
-func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
+func TestCISampleBoundsBothReviewers(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	stores, issues := setupReviewFixture(ctx, t, 1)
@@ -61,16 +61,19 @@ func TestCISampleBoundsOnlyTheAIReview(t *testing.T) {
 	var ruleTargets int
 	ruleExecutor := &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
 		storepb.Engine_POSTGRES: func(_ context.Context, _ string, _ review.Options, targets []review.Target) (*review.Result, error) {
-			ruleTargets += len(targets)
+			ruleTargets = len(targets)
 			return &review.Result{}, nil
 		},
 	}}
 	_, err := ruleExecutor.RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
-	require.Equal(t, fixtureDatabases, ruleTargets, "the rule review evaluates every database whatever the sample")
+	require.Equal(t, 2, ruleTargets, "the rule review covers the sample too")
 
 	setCISamplingSize(ctx, t, stores, 0)
 	require.Len(t, reviewedDatabases(), fixtureDatabases)
+	_, err = ruleExecutor.RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	require.Equal(t, fixtureDatabases, ruleTargets)
 }
 
 func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
@@ -137,7 +140,7 @@ func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
 		t.Helper()
 		results, err := executor.RunOnce(ctx, "p", issues[0])
 		require.NoError(t, err)
-		_, err = stores.CreateReviewRun(ctx, "p", issues[0], store.ReviewRunTypeAI)
+		_, err = stores.CreateReviewRun(ctx, "p", issues[0])
 		require.NoError(t, err)
 		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
 		require.NoError(t, err)
@@ -590,9 +593,12 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	}
 	executor := NewAIReviewExecutor(stores, ReviewsEngine)
 
+	// Switched off, the run ends with no finding before it reaches the
+	// target, which does not exist in this fixture.
 	setAISetting(&storepb.AISetting{Enabled: true})
-	_, err = executor.RunOnce(ctx, "p", issue.UID)
-	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	results, err := executor.RunOnce(ctx, "p", issue.UID)
+	require.NoError(t, err)
+	require.Empty(t, results)
 
 	// With the switch on the executor goes on to the target, which does not
 	// exist in this fixture.
@@ -607,6 +613,7 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 	cached, err := stores.GetAISetting(ctx, "ws")
 	require.NoError(t, err)
 	require.True(t, cached.SqlReviewEnabled)
-	_, err = executor.RunOnce(ctx, "p", issue.UID)
-	require.ErrorContains(t, err, "AI SQL review is not enabled")
+	results, err = executor.RunOnce(ctx, "p", issue.UID)
+	require.NoError(t, err, "the run read the switch-off past the cache")
+	require.Empty(t, results)
 }

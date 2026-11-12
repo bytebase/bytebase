@@ -7,7 +7,6 @@ import {
   IssueComment_ReviewMetadataSchema,
   IssueComment_ThreadState,
   IssueCommentSchema,
-  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -71,7 +70,7 @@ const userComment = (text: string) =>
 
 const reviewResult = (
   text: string,
-  runType = ReviewRun_Type.AI,
+  ruleType = ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED,
   priority = IssueComment_ReviewMetadata_Priority.P0
 ) =>
   create(IssueCommentSchema, {
@@ -81,7 +80,7 @@ const reviewResult = (
     updateTime: timestampFromMs(1_000),
     threadState: IssueComment_ThreadState.OPEN,
     reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-      runType,
+      ruleType,
       priority,
       targets: TARGETS,
     }),
@@ -131,22 +130,21 @@ describe("ThreadComment", () => {
 
   test.each([
     {
-      runType: ReviewRun_Type.AI,
-      reviewer: "sql-review.ai-review.self",
+      ruleType: ReviewRuleType.REVIEW_RULE_TYPE_UNSPECIFIED,
       priority: IssueComment_ReviewMetadata_Priority.P0,
       label: "P0",
     },
     {
-      runType: ReviewRun_Type.RULE,
-      reviewer: "sql-review.standard-rules.self",
+      ruleType: ReviewRuleType.REQUIRE_WHERE,
       priority: IssueComment_ReviewMetadata_Priority.P1,
       label: "P1",
     },
   ])(
-    "shows a $label review result as $reviewer, then its databases, then its priority",
-    ({ runType, reviewer, priority, label }) => {
+    "shows a $label review result as the one review, then its databases, then its priority",
+    ({ ruleType, priority, label }) => {
+      const reviewer = "sql-review.reviewer";
       const { container, getByTestId } = renderComment(
-        reviewResult("Missing WHERE clause.", runType, priority)
+        reviewResult("Missing WHERE clause.", ruleType, priority)
       );
       const content = getByTestId("comment-content");
       const header = content.firstElementChild as HTMLElement;
@@ -175,14 +173,13 @@ describe("ThreadComment", () => {
     }
   );
 
-  test("names the standard rule and codes of a RULE result, and no rule for an AI result", () => {
+  test("names the standard rule and codes of a rule result, and no rule for any other", () => {
     const rule = reviewResult(
       "DELETE FROM employee has no WHERE clause",
-      ReviewRun_Type.RULE,
+      ReviewRuleType.REQUIRE_WHERE,
       IssueComment_ReviewMetadata_Priority.P1
     );
     if (rule.reviewMetadata) {
-      rule.reviewMetadata.ruleType = ReviewRuleType.REQUIRE_WHERE;
       rule.reviewMetadata.codes = ["WH101"];
     }
     const { getByTestId } = renderComment(rule);

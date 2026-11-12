@@ -395,10 +395,6 @@ CREATE INDEX idx_issue_comment_open_thread ON issue_comment(project, issue_id)
 CREATE TABLE review_run (
     project text NOT NULL REFERENCES project(resource_id),
     issue_id bigint NOT NULL,
-    -- Reviewer type: 'RULE' (standard rules) or 'AI' (the natural-language AI
-    -- review policy, judged by a model). No CHECK on purpose: the reviewer-id
-    -- space is open.
-    type text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     -- Attempt number of the current run, 0-based like task_run.attempt.
@@ -411,7 +407,7 @@ CREATE TABLE review_run (
     replica_id text,
     -- Stored as ReviewRunPayload (proto/store/store/review_run.proto)
     payload jsonb NOT NULL DEFAULT '{}',
-    PRIMARY KEY (project, issue_id, type),
+    PRIMARY KEY (project, issue_id),
     FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
 );
 

@@ -12,7 +12,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import type { Environment } from "@/types/v1/environment";
@@ -651,7 +650,6 @@ describe("title bar", () => {
   const findingThread = (resolved = false) => {
     const root = comment("root", "Missing WHERE clause.", { creator: "", resolved });
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType: ReviewRun_Type.AI,
       priority: IssueComment_ReviewMetadata_Priority.P1,
       title: "Add a WHERE clause",
     });
@@ -671,7 +669,7 @@ describe("title bar", () => {
     expect(unfolded).toBe("plan.review.thread.comment-title:7P1plan.review.thread.resolved");
     const card = container.querySelector("[data-testid='comment-thread']");
     expect(card?.children).toHaveLength(1);
-    expect(card?.textContent).not.toContain("sql-review.ai-review.self");
+    expect(card?.textContent).not.toContain("sql-review.reviewer");
     expect(card?.textContent).not.toContain("Add a WHERE clause");
     expect(card?.textContent).not.toContain("A reply");
     // The bar says how urgent the thread is; nothing else of the finding shows.
@@ -780,7 +778,7 @@ describe("title bar", () => {
 describe("priority in the bar", () => {
   const finding = (priority: IssueComment_ReviewMetadata_Priority) => {
     const root = comment("root", "Drops a table.", { creator: "" });
-    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { priority });
     return groupThreads([root])[0];
   };
   const changesBar = (folded: boolean) => ({ place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });
@@ -926,7 +924,6 @@ describe("Activity bar", () => {
   test("a folded P0 finding in Activity shows its badge in the bar", () => {
     const root = comment("root", "Drops a table.", { creator: "", resolved: true });
     root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-      runType: ReviewRun_Type.RULE,
       priority: IssueComment_ReviewMetadata_Priority.P0,
     });
     render(<CommentThreadCard bar={activityBar()} issue={issue} project={project} thread={groupThreads([root])[0]} />);
@@ -1011,7 +1008,7 @@ describe("the production badge in the bar", () => {
   });
   const finding = (priority: IssueComment_ReviewMetadata_Priority, targets: string[]) => {
     const root = comment("root", "Drops a table.", { creator: "" });
-    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, priority, targets });
+    root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, { priority, targets });
     return groupThreads([root])[0];
   };
   const changesBar = (folded: boolean) => ({ place: "changes" as const, title: "Comment on line 3", foldLabel: "Comment on line 3", folded, onToggleFold: () => {} });

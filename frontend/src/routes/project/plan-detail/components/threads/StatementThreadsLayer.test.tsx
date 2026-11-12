@@ -16,7 +16,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -38,7 +37,7 @@ const mocks = vi.hoisted(() => ({
   focusInStatement: vi.fn(),
   focusInActivity: vi.fn(),
   sqlReviewV2: false,
-  walkerFilter: undefined as { runType: number; group: string } | undefined,
+  walkerFilter: undefined as { group: string } | undefined,
   setWalkerFilter: vi.fn(),
   placements: new Map<string, unknown>(),
   placementTargets: new Map<string, string>(),
@@ -566,7 +565,6 @@ describe("StatementThreadsLayer", () => {
       create(IssueCommentSchema, {
         ...threadRoot(id, line, line),
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           priority,
         }),
       });
@@ -588,7 +586,7 @@ describe("StatementThreadsLayer", () => {
     }
   });
 
-  test("a filtered walker steps through one reviewer's findings across changes", () => {
+  test("a filtered walker steps through one group of the review's findings across changes", () => {
     const finding = (id: string, line: number, spec = "spec-1") =>
       create(IssueCommentSchema, {
         ...threadRoot(id, line, line),
@@ -599,12 +597,11 @@ describe("StatementThreadsLayer", () => {
           endPosition: create(PositionSchema, { line, column: 0 }),
         }),
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           priority: IssueComment_ReviewMetadata_Priority.P1,
         }),
       });
     mocks.comments = [threadRoot("discussion", 1, 1), finding("first", 3), finding("other-spec", 2, "spec-2")];
-    mocks.walkerFilter = { runType: ReviewRun_Type.RULE, group: "p1" };
+    mocks.walkerFilter = { group: "p1" };
     const fake = createFakeEditor();
     mount(fake.editor);
     const walker = () => hosted(fake.widgets, "[data-testid='thread-walker']");

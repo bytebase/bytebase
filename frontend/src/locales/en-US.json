@@ -2097,13 +2097,6 @@
       "self": "Affected rows",
       "up-to-on": "up to {{rows}} on {{database}}"
     },
-    "ai-review": {
-      "failed-to-run": "Could not start the AI review",
-      "run": "Run AI review",
-      "run-again-description": "A run makes model calls for every database it reviews and may find different issues. Its findings replace the last run's, including the ones people resolved.",
-      "run-again-title": "Run the AI review again?",
-      "save-first": "Save or discard your edits to run the AI review."
-    },
     "automated-review": {
       "checks": "Plan check",
       "details": "Details",
@@ -2120,6 +2113,8 @@
       "no-findings": "No findings",
       "not-run": "Not run yet",
       "nothing-needs-attention": "Nothing needs attention",
+      "off": "off",
+      "off-for-project": "Off for this project",
       "opens-in-sql": "Click to step through them in the SQL.",
       "out-of-date": "out of date",
       "outdated": "SQL changed after this run",
@@ -2131,8 +2126,12 @@
       "rerun": "Rerun",
       "rerun-all": "Re-run all",
       "retry": "Retry",
+      "reviewing": "Reviewing…",
+      "run-again-description": "A run makes model calls for every database it reviews and may find different issues. A finding it reports again keeps its thread, and one it no longer reports is resolved.",
+      "run-again-title": "Run the review again?",
       "running": "Running",
-      "sampled": "a sample of {{count}} of {{total}} databases",
+      "sampled": "The review covered a sample of {{count}} of {{total}} databases",
+      "save-first": "Save or discard your edits to run the review.",
       "scope": "Reviewed {{databases}}",
       "scope-label": "What this review covered",
       "scope-with-engines": "Reviewed {{databases}} ({{engines}})",

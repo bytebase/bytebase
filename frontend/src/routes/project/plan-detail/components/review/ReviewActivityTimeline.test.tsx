@@ -12,7 +12,6 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
   StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -348,7 +347,6 @@ describe("ReviewActivityTimeline", () => {
         event: {
           case: "reviewRunCompletion",
           value: create(IssueComment_ReviewRunCompletionSchema, {
-            runType: ReviewRun_Type.RULE,
             attempt,
             ...counts,
           }),
@@ -374,7 +372,6 @@ describe("ReviewActivityTimeline", () => {
           endPosition: create(PositionSchema, { line: 1, column: 0 }),
         }),
         reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           superseded,
           attempt,
         }),
@@ -428,7 +425,7 @@ describe("ReviewActivityTimeline", () => {
         name: `projects/p1/issues/1/issueComments/${id}`,
         event: {
           case: "reviewRunCompletion",
-          value: create(IssueComment_ReviewRunCompletionSchema, { runType: ReviewRun_Type.RULE, attempt, postedCount }),
+          value: create(IssueComment_ReviewRunCompletionSchema, { attempt, postedCount }),
         },
       });
     const finding = (id: string, attempt: bigint, superseded: boolean) =>
@@ -436,7 +433,7 @@ describe("ReviewActivityTimeline", () => {
         name: `projects/p1/issues/1/issueComments/${id}`,
         comment: "No WHERE clause",
         threadState: superseded ? IssueComment_ThreadState.RESOLVED : IssueComment_ThreadState.OPEN,
-        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, superseded, attempt }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { superseded, attempt }),
       });
     const comments = [
       completion("c0", 0n, 1),
@@ -493,14 +490,14 @@ describe("ReviewActivityTimeline", () => {
         name: "projects/p1/issues/1/issueComments/c0",
         event: {
           case: "reviewRunCompletion",
-          value: create(IssueComment_ReviewRunCompletionSchema, { runType: ReviewRun_Type.RULE, attempt: 0n, postedCount: 1 }),
+          value: create(IssueComment_ReviewRunCompletionSchema, { attempt: 0n, postedCount: 1 }),
         },
       }),
       create(IssueCommentSchema, {
         name,
         comment: "No WHERE clause",
         threadState: IssueComment_ThreadState.RESOLVED,
-        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { runType: ReviewRun_Type.RULE, superseded: true, attempt: 0n }),
+        reviewMetadata: create(IssueComment_ReviewMetadataSchema, { superseded: true, attempt: 0n }),
       }),
     ];
     const scrollIntoView = vi.fn();
@@ -580,7 +577,6 @@ describe("ReviewActivityTimeline", () => {
               event: {
                 case: "reviewRunCompletion",
                 value: create(IssueComment_ReviewRunCompletionSchema, {
-                  runType: ReviewRun_Type.AI,
                   attempt: 3n,
                   ...counts,
                 }),
@@ -592,7 +588,6 @@ describe("ReviewActivityTimeline", () => {
                 comment: "No WHERE clause",
                 threadState,
                 reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-                  runType: ReviewRun_Type.AI,
                   attempt: 3n,
                 }),
               })

@@ -156,6 +156,7 @@
   "policy-update-failed": "Không cập nhật được chính sách đánh giá.",
   "policy-updated": "Đã cập nhật thành công chính sách đánh giá.",
   "review-policy": "Chính sách xem xét",
+  "reviewer": "Đánh giá SQL",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {

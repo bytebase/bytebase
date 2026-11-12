@@ -2097,13 +2097,6 @@
       "self": "Số dòng bị ảnh hưởng",
       "up-to-on": "tối đa {{rows}} trên {{database}}"
     },
-    "ai-review": {
-      "failed-to-run": "Không thể bắt đầu đánh giá bằng AI",
-      "run": "Chạy đánh giá bằng AI",
-      "run-again-description": "Mỗi lần chạy sẽ gọi mô hình cho từng cơ sở dữ liệu được đánh giá và có thể cho kết quả khác. Phát hiện mới sẽ thay thế phát hiện của lần chạy trước, kể cả những mục đã được giải quyết.",
-      "run-again-title": "Chạy lại đánh giá AI?",
-      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá bằng AI."
-    },
     "automated-review": {
       "checks": "Kiểm tra kế hoạch",
       "details": "Chi tiết",
@@ -2120,6 +2113,8 @@
       "no-findings": "Không có phát hiện",
       "not-run": "Chưa chạy",
       "nothing-needs-attention": "Không có mục nào cần xử lý",
+      "off": "đã tắt",
+      "off-for-project": "Đã tắt cho dự án này",
       "opens-in-sql": "Nhấp để xem lần lượt trong SQL.",
       "out-of-date": "đã cũ",
       "outdated": "SQL đã thay đổi sau lần chạy này",
@@ -2131,8 +2126,12 @@
       "rerun": "Chạy lại",
       "rerun-all": "Chạy lại tất cả",
       "retry": "Thử lại",
+      "reviewing": "Đang đánh giá…",
+      "run-again-description": "Mỗi lần chạy sẽ gọi mô hình cho từng cơ sở dữ liệu được đánh giá và có thể cho kết quả khác. Phát hiện được báo cáo lại sẽ giữ nguyên luồng thảo luận, còn phát hiện không còn được báo cáo sẽ được đánh dấu đã giải quyết.",
+      "run-again-title": "Chạy lại đánh giá?",
       "running": "Đang chạy",
-      "sampled": "lấy mẫu {{count}}/{{total}} cơ sở dữ liệu",
+      "sampled": "Đánh giá đã lấy mẫu {{count}}/{{total}} cơ sở dữ liệu",
+      "save-first": "Hãy lưu hoặc hủy các thay đổi để chạy đánh giá.",
       "scope": "Đã đánh giá {{databases}}",
       "scope-label": "Phạm vi của lần đánh giá này",
       "scope-with-engines": "Đã đánh giá {{databases}} ({{engines}})",

@@ -378,14 +378,14 @@ function ReviewRunActivityRow({
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
-  const { runType, postedCount } = source.completion;
+  const { postedCount } = source.completion;
   const summary =
     postedCount > 0
       ? t("plan.review.activity.n-new-findings", { count: postedCount })
       : t("plan.review.activity.no-new-findings");
   const header = (
     <>
-      <span className="font-medium text-main">{reviewerName(t, runType)}</span>
+      <span className="font-medium text-main">{reviewerName(t)}</span>
       <span className="wrap-break-word min-w-0 text-control-light">
         {t("plan.review.activity.reviewed-the-sql")}
       </span>
@@ -410,7 +410,7 @@ function ReviewRunActivityRow({
   const icon = (
     <CommentIconBadge
       className="bg-control-bg text-control"
-      icon={<ReviewerIcon className="size-4" runType={runType} />}
+      icon={<ReviewerIcon className="size-4" />}
     />
   );
   if (source.findings.length === 0) {

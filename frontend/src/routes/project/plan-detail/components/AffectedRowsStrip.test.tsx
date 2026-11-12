@@ -10,7 +10,6 @@ import { AffectedRowsStrip } from "./AffectedRowsStrip";
 const mocks = vi.hoisted(() => ({
   allowRunChecks: true,
   runChecks: vi.fn(async () => {}),
-  reload: vi.fn(async () => {}),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -45,9 +44,6 @@ vi.mock("../hooks/usePlanCheckActions", () => ({
     runChecks: mocks.runChecks,
   }),
 }));
-vi.mock("../hooks/useSqlReviewV2", () => ({
-  useSqlReviewV2: () => ({ ruleReview: { reload: mocks.reload } }),
-}));
 vi.mock("../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({ isCreating: false }),
 }));
@@ -77,7 +73,6 @@ const renderStrip = (
 beforeEach(() => {
   mocks.allowRunChecks = true;
   mocks.runChecks.mockClear();
-  mocks.reload.mockClear();
 });
 afterEach(cleanup);
 
