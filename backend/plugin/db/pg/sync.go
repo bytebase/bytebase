@@ -165,7 +165,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get function dependency tables from database %q", d.databaseName)
 	}
-	functionMap, err := getFunctions(txn, functionDependencyTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
+	functionMap, procedureMap, err := getFunctions(txn, functionDependencyTables, tableOidMap, viewOidMap, materializedViewOidMap, extensionDepend)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", d.databaseName)
 	}
@@ -220,6 +220,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 			ExternalTables:    externalTableMap[schemaName],
 			Views:             views,
 			Functions:         functionMap[schemaName],
+			Procedures:        procedureMap[schemaName],
 			Sequences:         sequenceMap[schemaName],
 			MaterializedViews: materializedViewMap[schemaName],
 			Owner:             schemaOwners[i],
@@ -1897,6 +1898,7 @@ func getFunctionDependencyTables(txn *sql.Tx) (map[int][]int, error) {
 var listFunctionQuery = `
 select p.oid, n.nspname as function_schema,
 	p.proname as function_name,
+	p.prokind,
 	pg_catalog.pg_get_function_identity_arguments(p.oid) as arguments,
 	case when l.lanname = 'internal' then p.prosrc
 			else pg_get_functiondef(p.oid)
@@ -1912,32 +1914,51 @@ where n.nspname not in (%s)
   AND p.prokind <> 'a'
 order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
 
-// getFunctions gets all functions of a database.
+// getFunctions gets all functions and procedures of a database.
 func getFunctions(
 	txn *sql.Tx,
 	functionDependencyTables map[int][]int,
 	tableOidMap map[int]*db.TableKeyWithColumns,
 	viewOidMap, materializedViewOidMap map[int]*db.TableKey,
 	extensionDepend map[int]bool,
-) (map[string][]*metadatapb.FunctionMetadata, error) {
+) (map[string][]*metadatapb.FunctionMetadata, map[string][]*metadatapb.ProcedureMetadata, error) {
 	functionMap := make(map[string][]*metadatapb.FunctionMetadata)
+	procedureMap := make(map[string][]*metadatapb.ProcedureMetadata)
 
 	rows, err := txn.Query(listFunctionQuery)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		function := &metadatapb.FunctionMetadata{}
 		var oid int
-		var schemaName, arguments string
+		var schemaName, name, prokind, arguments, definition string
 		var comment sql.NullString
-		if err := rows.Scan(&oid, &schemaName, &function.Name, &arguments, &function.Definition, &comment); err != nil {
-			return nil, err
+		if err := rows.Scan(&oid, &schemaName, &name, &prokind, &arguments, &definition, &comment); err != nil {
+			return nil, nil, err
 		}
 		// Skip internal functions.
-		if pgparser.IsSystemFunction(function.Name, function.Definition) {
+		if pgparser.IsSystemFunction(name, definition) {
 			continue
+		}
+		if prokind == "p" {
+			procedure := &metadatapb.ProcedureMetadata{
+				Name:       name,
+				Definition: definition,
+				Signature:  fmt.Sprintf("%s(%s)", name, arguments),
+			}
+			if extensionDepend[oid] {
+				procedure.SkipDump = true
+			}
+			if comment.Valid {
+				procedure.Comment = comment.String
+			}
+			procedureMap[schemaName] = append(procedureMap[schemaName], procedure)
+			continue
+		}
+		function := &metadatapb.FunctionMetadata{
+			Name:       name,
+			Definition: definition,
 		}
 		if extensionDepend[oid] {
 			function.SkipDump = true
@@ -1945,8 +1966,7 @@ func getFunctions(
 		if comment.Valid {
 			function.Comment = comment.String
 		}
-
-		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)
+		function.Signature = fmt.Sprintf("%s(%s)", name, arguments)
 		for _, tableOid := range functionDependencyTables[oid] {
 			if table, ok := tableOidMap[tableOid]; ok {
 				function.DependencyTables = append(function.DependencyTables, &metadatapb.DependencyTable{
@@ -1969,10 +1989,10 @@ func getFunctions(
 		functionMap[schemaName] = append(functionMap[schemaName], function)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return functionMap, nil
+	return functionMap, procedureMap, nil
 }
 
 func isAtLeastPG10(version string) bool {
