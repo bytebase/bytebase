@@ -66,10 +66,6 @@ type columnAutoIncrementInitialValueRule struct {
 	value int
 }
 
-func (*columnAutoIncrementInitialValueRule) Name() string {
-	return "ColumnAutoIncrementInitialValueRule"
-}
-
 func (r *columnAutoIncrementInitialValueRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

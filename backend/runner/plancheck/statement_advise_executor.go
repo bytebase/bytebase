@@ -20,19 +20,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// NewStatementAdviseExecutor creates a plan check statement advise executor.
-func NewStatementAdviseExecutor(
-	store *store.Store,
-	sheetManager *sheet.Manager,
-	dbFactory *dbfactory.DBFactory,
-) Executor {
-	return &StatementAdviseExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-	}
-}
-
 // StatementAdviseExecutor is the plan check statement advise executor.
 type StatementAdviseExecutor struct {
 	store        *store.Store

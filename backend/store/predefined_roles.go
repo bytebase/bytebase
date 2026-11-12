@@ -669,9 +669,3 @@ var predefinedRolesMap = func() map[string]*RoleMessage {
 func GetPredefinedRole(roleID string) *RoleMessage {
 	return predefinedRolesMap[roleID]
 }
-
-// IsPredefinedRole returns true if the role ID is a predefined role.
-func IsPredefinedRole(roleID string) bool {
-	_, ok := predefinedRolesMap[roleID]
-	return ok
-}

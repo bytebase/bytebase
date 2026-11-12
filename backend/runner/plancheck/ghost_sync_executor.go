@@ -24,14 +24,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// NewGhostSyncExecutor creates a gh-ost sync check executor.
-func NewGhostSyncExecutor(store *store.Store, dbFactory *dbfactory.DBFactory) Executor {
-	return &GhostSyncExecutor{
-		store:     store,
-		dbFactory: dbFactory,
-	}
-}
-
 // GhostSyncExecutor is the gh-ost sync check executor.
 type GhostSyncExecutor struct {
 	store     *store.Store

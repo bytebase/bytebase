@@ -82,11 +82,6 @@ func NewTableRequirePkRule(level storepb.Advice_Status, title string) *TableRequ
 	}
 }
 
-// Name returns the rule name.
-func (*TableRequirePkRule) Name() string {
-	return "TableRequirePkRule"
-}
-
 // GetAdviceList returns the accumulated advice list, generating final advice for tables without PK.
 func (r *TableRequirePkRule) GetAdviceList() []*storepb.Advice {
 	for tableName, has := range r.tableHasPrimaryKey {

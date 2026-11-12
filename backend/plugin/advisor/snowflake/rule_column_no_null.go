@@ -69,11 +69,6 @@ func NewColumnNoNullRule(level storepb.Advice_Status, title string) *ColumnNoNul
 	}
 }
 
-// Name returns the rule name.
-func (*ColumnNoNullRule) Name() string {
-	return "ColumnNoNullRule"
-}
-
 // checkStatement checks one statement's omni AST node.
 func (r *ColumnNoNullRule) checkStatement(node omniast.Node, stmtText string) {
 	r.stmtText = stmtText

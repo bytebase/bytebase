@@ -93,11 +93,6 @@ type tableRequirePKRule struct {
 	tableMentions map[string]*tableMention
 }
 
-// Name returns the rule name.
-func (*tableRequirePKRule) Name() string {
-	return "table.require-pk"
-}
-
 // OnStatement is called for each top-level statement AST node.
 func (r *tableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {

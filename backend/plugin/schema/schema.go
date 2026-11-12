@@ -514,10 +514,6 @@ func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithCont
 	walkThroughsWithContext[engine] = f
 }
 
-func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(context.Background(), engine, WalkThroughContext{}, d, ast)
-}
-
 func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	if f, ok := walkThroughsWithContext[engine]; ok {
 		return f(ctx, wtCtx, d, ast)

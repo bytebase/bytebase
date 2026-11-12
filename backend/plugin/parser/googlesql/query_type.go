@@ -8,18 +8,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// ClassifyStatement classifies a single GoogleSQL statement via the omni
-// analysis classifier and maps the result onto bytebase's base.QueryType.
-// Config.SetStatementIsSelect re-applies the legacy spanner queryTypeListener's
-// "treat SAFE SET as select" case (omni classifies SET as Unknown).
-func ClassifyStatement(statement string, cfg Config) base.QueryType {
-	qt := MapQueryType(analysis.ClassifySQL(statement, cfg.Dialect))
-	if qt == base.QueryTypeUnknown && cfg.SetStatementIsSelect && IsSetStatement(statement) {
-		return base.Select
-	}
-	return qt
-}
-
 // IsSetStatement reports whether the statement parses to a single SET statement.
 func IsSetStatement(statement string) bool {
 	file, err := parser.Parse(statement)

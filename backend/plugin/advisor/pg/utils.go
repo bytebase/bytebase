@@ -99,7 +99,6 @@ func hasDataModifyingCTE(with *ast.WithClause) bool {
 	return false
 }
 
-// nolint:unused
 // rangeVarTableName extracts the table name from a RangeVar.
 func rangeVarTableName(rv *ast.RangeVar) string {
 	if rv == nil {
@@ -108,7 +107,6 @@ func rangeVarTableName(rv *ast.RangeVar) string {
 	return rv.Relname
 }
 
-// nolint:unused
 // schemaName extracts the schema name from a RangeVar, defaulting to "public".
 func schemaName(rv *ast.RangeVar) string {
 	if rv == nil || rv.Schemaname == "" {
@@ -117,7 +115,6 @@ func schemaName(rv *ast.RangeVar) string {
 	return rv.Schemaname
 }
 
-// nolint:unused
 // constraintColumns extracts column names from a Constraint's Keys list.
 func constraintColumns(c *ast.Constraint) []string {
 	if c == nil || c.Keys == nil {
@@ -132,7 +129,6 @@ func constraintColumns(c *ast.Constraint) []string {
 	return cols
 }
 
-// nolint:unused
 // columnConstraints iterates over a ColumnDef's constraint list.
 func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	if col == nil || col.Constraints == nil {
@@ -147,7 +143,6 @@ func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	return result
 }
 
-// nolint:unused
 // tableElements iterates over a CreateStmt's table elements,
 // returning column defs and table constraints separately.
 func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
@@ -168,7 +163,6 @@ func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint)
 	return cols, cons
 }
 
-// nolint:unused
 // alterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
 func alterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	if alter.Cmds == nil {
@@ -257,7 +251,6 @@ func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
 }
 
-// nolint:unused
 // typeName extracts the type name string from a TypeName node.
 func typeName(tn *ast.TypeName) string {
 	if tn == nil || tn.Names == nil {
@@ -395,7 +388,6 @@ func collectRangeVars(node ast.Node) []*ast.RangeVar {
 	}
 }
 
-// nolint:unused
 // dropObjects extracts object names from a DropStmt.
 // Returns list of (schema, name) pairs.
 func dropObjects(drop *ast.DropStmt) [][2]string {

@@ -68,10 +68,6 @@ type tableTextFieldsTotalLengthRule struct {
 	maximum       int
 }
 
-func (*tableTextFieldsTotalLengthRule) Name() string {
-	return "TableTextFieldsTotalLengthRule"
-}
-
 func (r *tableTextFieldsTotalLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

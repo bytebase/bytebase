@@ -77,10 +77,6 @@ type tableCommentConventionRule struct {
 	tableComments map[string]*tableCommentInfo
 }
 
-func (*tableCommentConventionRule) Name() string {
-	return "table-comment-convention"
-}
-
 func (r *tableCommentConventionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:

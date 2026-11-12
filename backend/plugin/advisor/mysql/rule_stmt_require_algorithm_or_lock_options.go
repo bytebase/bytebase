@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
 
@@ -86,25 +85,4 @@ func (r *requireAlgoLockRule) OnStatement(node ast.Node) {
 			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
 		})
 	}
-}
-
-// nolint:unused
-func alterCmdHasOption(cmds []*ast.AlterTableCmd, optName string) bool {
-	for _, cmd := range cmds {
-		if optName == "ALGORITHM" && cmd.Type == ast.ATAlgorithm {
-			return true
-		}
-		if optName == "LOCK" && cmd.Type == ast.ATLock {
-			return true
-		}
-	}
-	return false
-}
-
-// nolint:unused
-func alterCmdOptionValue(cmd *ast.AlterTableCmd) string {
-	if cmd == nil || cmd.Name == "" {
-		return ""
-	}
-	return strings.ToUpper(cmd.Name)
 }

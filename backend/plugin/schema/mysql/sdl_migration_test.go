@@ -2366,13 +2366,6 @@ func repartitionSalaries(t *testing.T, source string) string {
 	return source[:start] + newStmt + source[start+semi:]
 }
 
-// uniqueDBName mirrors newLiveDatabase's naming for ad hoc probes (kept for symmetry/debug).
-//
-//nolint:unused
-func uniqueDBName(prefix string) string {
-	return fmt.Sprintf("%s_%s", prefix, strings.ReplaceAll(uuid.New().String(), "-", "_"))
-}
-
 // Stress smoke test for the MySQL declarative (SDL) migration path, driving the
 // PRODUCTION entry points end to end against live MySQL 5.7 + 8.0:
 //

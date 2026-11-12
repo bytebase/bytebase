@@ -16,10 +16,6 @@ const (
 	eofRune = rune(-1)
 )
 
-var (
-	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
-)
-
 type Tokenizer struct {
 	buffer           []rune
 	bufferByteOffset []int
@@ -64,158 +60,6 @@ func (t *Tokenizer) aboveNonBlankLineDistance() int {
 			return dis
 		}
 		pos++
-	}
-}
-
-// SplitTiDBMultiSQL splits the statement to a string slice.
-func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.Statement, error) {
-	var res []base.Statement
-	delimiter := []rune{';'}
-
-	t.emptyStatement = true
-	// Record position BEFORE skipping whitespace to include leading whitespace in Text
-	startPos := t.cursor
-	startLine := t.line          // Track the starting line number (1-based)
-	startColumn := t.getColumn() // Track the starting column (1-based)
-	t.skipBlank()
-	for {
-		switch {
-		case t.char(0) == eofRune:
-			s := t.getString(startPos, t.pos()-startPos)
-			if !emptyString(s) {
-				if t.f == nil {
-					res = append(res, base.Statement{
-						Text: s,
-						Start: &store.Position{
-							Line:   int32(startLine),
-							Column: int32(startColumn),
-						},
-						// Consider this text:
-						// CREATE TABLE t(
-						//   a int
-						// )
-						//
-						// EOF line
-						//
-						// Our current location is the EOF line.
-						// The line t.line is the line of ')',
-						// but we want to get the line of last line of the SQL
-						// which means the line of ')'.
-						// So we need minus the aboveNonBlankLineDistance.
-						End: &store.Position{
-							Line:   int32(t.line - t.aboveNonBlankLineDistance()),
-							Column: int32(t.getLastContentColumn()),
-						},
-						Empty: t.emptyStatement,
-						Range: &store.Range{
-							Start: int32(t.getByteOffset(int(startPos))),
-							End:   int32(t.getByteOffset(int(t.pos()))),
-						},
-					})
-				}
-				if err := t.processStreaming(s); err != nil {
-					return nil, err
-				}
-			}
-
-			return res, t.readErr
-		case t.equalWordCaseInsensitive(delimiter):
-			t.skip(uint(len(delimiter)))
-			text := t.getString(startPos, t.pos()-startPos)
-			if t.f == nil {
-				res = append(res, base.Statement{
-					Text: text,
-					Start: &store.Position{
-						Line:   int32(startLine),
-						Column: int32(startColumn),
-					},
-					End: &store.Position{
-						Line:   int32(t.line),
-						Column: int32(t.getColumn()),
-					},
-					Empty: t.emptyStatement,
-					Range: &store.Range{
-						Start: int32(t.getByteOffset(int(startPos))),
-						End:   int32(t.getByteOffset(int(t.pos()))),
-					},
-				})
-			}
-			if err := t.processStreaming(text); err != nil {
-				return nil, err
-			}
-			// Record position BEFORE skipping whitespace to include leading whitespace in Text
-			startPos = t.pos()
-			startLine = t.line          // Update startLine for next statement
-			startColumn = t.getColumn() // Update startColumn for next statement
-			t.skipBlank()
-			t.emptyStatement = true
-		// deal with the DELIMITER statement, see https://dev.mysql.com/doc/refman/8.0/en/stored-programs-defining.html
-		case t.equalWordCaseInsensitive(delimiterRuneList):
-			t.skip(uint(len(delimiterRuneList)))
-			t.skipBlank()
-			delimiterStart := t.pos()
-			t.skipToBlank()
-			delimiter = t.runeList(delimiterStart, t.pos()-delimiterStart)
-			text := t.getString(startPos, t.pos()-startPos)
-			if t.f == nil {
-				res = append(res, base.Statement{
-					Text: text,
-					Start: &store.Position{
-						Line:   int32(startLine),
-						Column: int32(startColumn),
-					},
-					End: &store.Position{
-						Line:   int32(t.line),
-						Column: int32(t.getColumn()),
-					},
-					Empty: false,
-					Range: &store.Range{
-						Start: int32(t.getByteOffset(int(startPos))),
-						End:   int32(t.getByteOffset(int(t.pos()))),
-					},
-				})
-			}
-			if err := t.processStreaming(text); err != nil {
-				return nil, err
-			}
-			// Record position BEFORE skipping whitespace to include leading whitespace in Text
-			startPos = t.pos()
-			startLine = t.line          // Update startLine for next statement
-			startColumn = t.getColumn() // Update startColumn for next statement
-			t.skipBlank()
-			t.emptyStatement = true
-		case t.char(0) == '/' && t.char(1) == '*':
-			if err := t.scanComment(); err != nil {
-				return nil, err
-			}
-			t.skipBlank()
-		case t.char(0) == '-' && t.char(1) == '-':
-			if err := t.scanComment(); err != nil {
-				return nil, err
-			}
-			t.skipBlank()
-		case t.char(0) == '#':
-			if err := t.scanComment(); err != nil {
-				return nil, err
-			}
-			t.skipBlank()
-		case t.char(0) == '\'' || t.char(0) == '"':
-			if err := t.scanString(t.char(0)); err != nil {
-				return nil, err
-			}
-			t.emptyStatement = false
-		case t.char(0) == '`':
-			if err := t.scanIdentifier('`'); err != nil {
-				return nil, err
-			}
-			t.emptyStatement = false
-		case t.char(0) == '\n':
-			t.line++
-			t.skip(1)
-		default:
-			t.skip(1)
-			t.emptyStatement = false
-		}
 	}
 }
 
@@ -514,15 +358,6 @@ func (t *Tokenizer) skipBlank() {
 	}
 }
 
-// skipToBlank skips the cursor to the first blank rune.
-func (t *Tokenizer) skipToBlank() {
-	r := t.char(0)
-	for r != eofRune && !unicode.IsSpace(r) {
-		t.skip(1)
-		r = t.char(0)
-	}
-}
-
 func (t *Tokenizer) skipToNewLine() {
 	r := t.char(0)
 	for r != '\n' {
@@ -581,15 +416,6 @@ func (t *Tokenizer) runeList(startPos uint, length uint) []rune {
 
 func (t *Tokenizer) getByteOffset(runeIndex int) int {
 	return t.bufferByteOffset[runeIndex]
-}
-
-func (t *Tokenizer) equalWordCaseInsensitive(word []rune) bool {
-	for i := range word {
-		if unicode.ToLower(t.char(uint(i))) != unicode.ToLower(word[i]) {
-			return false
-		}
-	}
-	return true
 }
 
 func emptyRune(r rune) bool {

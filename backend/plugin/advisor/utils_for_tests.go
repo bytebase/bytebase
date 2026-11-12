@@ -1,8 +1,6 @@
 package advisor
 
 import (
-	"context"
-	"database/sql"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,13 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	database "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-var (
-	_ database.Driver = (*MockDriver)(nil)
 )
 
 const (
@@ -464,53 +456,4 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		require.NoError(t, err)
 		yamltest.Record(t, filepath, tests)
 	}
-}
-
-// MockDriver is the driver for test only.
-type MockDriver struct {
-}
-
-// Open implements the Driver interface.
-func (d *MockDriver) Open(_ context.Context, _ storepb.Engine, _ database.ConnectionConfig) (database.Driver, error) {
-	return d, nil
-}
-
-// Close implements the Driver interface.
-func (*MockDriver) Close(_ context.Context) error {
-	return nil
-}
-
-// Ping implements the Driver interface.
-func (*MockDriver) Ping(_ context.Context) error {
-	return nil
-}
-
-// GetDB gets the database.
-func (*MockDriver) GetDB() *sql.DB {
-	return nil
-}
-
-// Execute implements the Driver interface.
-func (*MockDriver) Execute(_ context.Context, _ string, _ database.ExecuteOptions) (int64, error) {
-	return 0, nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ database.QueryContext) ([]*v1pb.QueryResult, error) {
-	return nil, nil
-}
-
-// SyncInstance implements the Driver interface.
-func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
-	return nil, nil
-}
-
-// SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
-	return nil, nil
-}
-
-// Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
-	return nil
 }

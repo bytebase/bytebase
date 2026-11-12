@@ -28,15 +28,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// NewStatementReportExecutor creates a statement report executor.
-func NewStatementReportExecutor(store *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory) Executor {
-	return &StatementReportExecutor{
-		store:        store,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-	}
-}
-
 // StatementReportExecutor is the statement report executor.
 type StatementReportExecutor struct {
 	store        *store.Store

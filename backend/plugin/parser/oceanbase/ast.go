@@ -37,11 +37,6 @@ func ParseOceanBase(sql string) (*ast.List, error) {
 	return omniparser.Parse(sql)
 }
 
-// IsKeyword reports whether s is a registered MySQL keyword.
-func IsKeyword(s string) bool {
-	return omniparser.IsKeyword(s)
-}
-
 // GetNode extracts the omni AST node from a base.AST interface.
 // Returns the node and true if it is an AST, nil and false otherwise.
 func GetNode(a base.AST) (ast.Node, bool) {

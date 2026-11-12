@@ -99,12 +99,12 @@ test infrastructure, not a production foundation.
 
 ## Delete before relocating
 
-The unused ANTLR position helpers and their tests have been removed.
-Repository-wide Go searches found no production callers for
-`TrimSuffixAndGetInstanceDatabaseID`, `GetProjectIDPlanIDPlanCheckRunID`,
-`FormatRevision`, `FormatProjectRevision`, or `FormatSpec`.
-Some have tests only. The default test/prod environment constants also have no
-production callers. Treat these as deletion candidates, with a final full-repo
+The unused ANTLR position helpers and their tests have been removed, and so are
+`TrimSuffixAndGetInstanceDatabaseID`, `GetProjectIDPlanIDPlanCheckRunID`, and
+`FormatSpec`, confirmed unreachable by whole-program analysis.
+Repository-wide Go searches found no production callers for `FormatRevision`
+or `FormatProjectRevision`; they have tests only. The default test/prod
+environment constants also have no production callers. Treat these as deletion candidates, with a final full-repo
 reference check before removing them. Do not confuse internally called exported
 helpers such as `GetNameParentTokens` with dead code.
 
