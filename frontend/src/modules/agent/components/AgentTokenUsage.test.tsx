@@ -136,4 +136,19 @@ describe("AgentTokenUsage", () => {
     expect(panel.textContent).toContain("Some token usage was not reported.");
     expect(panel.textContent).not.toContain("%");
   });
+
+  test.each([false, true])("retains completed over-limit usage in the token details with partial=%s", async (hasUnreportedUsage) => {
+    const { panel } = await renderUsage({
+      ...chat, totalTokensUsed: 106028, hasUnreportedUsage,
+      runBudget: { version: 1, runId: "run-1", limit: 100000, totalTokensUsed: 106028, hasUnreportedUsage, providerAttemptCount: hasUnreportedUsage ? 2 : 1, revision: 0 },
+      modelAttempts: [
+        { attemptId: "run-1:1", runId: "run-1", ordinal: 1, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 106028 } },
+        ...(hasUnreportedUsage ? [{ attemptId: "run-1:2", runId: "run-1", ordinal: 2, outcome: "error" as const }] : []),
+      ],
+    });
+    const runUsage = panel.querySelector("[data-agent-run-usage]")?.textContent;
+    expect(runUsage).toContain(`Run usage${hasUnreportedUsage ? "At least " : ""}106,028`);
+    expect(runUsage).toContain("Run limit100,000");
+    expect(runUsage?.includes("Some token usage was not reported.")).toBe(hasUnreportedUsage);
+  });
 });

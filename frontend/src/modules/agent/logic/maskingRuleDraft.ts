@@ -6,7 +6,6 @@ import {
   databaseServiceClientConnect,
   orgPolicyServiceClientConnect,
   projectServiceClientConnect,
-  settingServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import {
@@ -29,10 +28,6 @@ import {
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { GetProjectRequestSchema } from "@/types/proto-es/v1/project_service_pb";
-import {
-  GetSettingRequestSchema,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import {
   CEL_ATTRIBUTE_RESOURCE_CLASSIFICATION_LEVEL,
@@ -52,6 +47,7 @@ import {
   getMaskingRuleEditorSnapshot,
   type MaskingRuleEditorSnapshot,
 } from "./maskingRuleDraftTarget";
+import { readSemanticTypeSetting } from "./semanticTypeSetting";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
 export type MaskingRuleDraftScope =
@@ -305,12 +301,7 @@ export async function validateMaskingRuleDraft(
       context.workspaceName
     );
   }
-  const setting = await settingServiceClientConnect.getSetting(
-    create(GetSettingRequestSchema, {
-      name: `settings/${Setting_SettingName[Setting_SettingName.SEMANTIC_TYPES]}`,
-    }),
-    options
-  );
+  const { setting } = await readSemanticTypeSetting();
   const semanticTypes = setting.value?.value;
   // Review can retain an unavailable type for repair; preparation and save cannot.
   if (

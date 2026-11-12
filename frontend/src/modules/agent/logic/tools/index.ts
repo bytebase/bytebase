@@ -769,7 +769,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             type: "string",
             enum: ["input", "confirm", "choose"],
             description:
-              'Defaults to "input" when omitted. kind="choose" requires a non-empty options array.',
+              'Defaults to "input" when omitted without options. Non-empty options require kind="choose"; kind="choose" requires a non-empty options array.',
           },
           resourceKind: {
             type: "string",
@@ -793,7 +793,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           options: {
             type: "array",
             description:
-              "Required for choose prompts. Each option should include a user-visible label and a stable value.",
+              'Only for kind="choose", where a non-empty array is required. Each option should include a user-visible label and a stable value.',
             items: {
               type: "object",
               properties: {
@@ -1946,7 +1946,7 @@ export function createToolExecutor(
           ? projectName
           : undefined;
         const selectedProject =
-          typeof args.project === "string" && args.project
+          typeof args.project === "string" && args.project.trim()
             ? args.project
             : boundProject;
         if (
@@ -1968,8 +1968,10 @@ export function createToolExecutor(
         const historical = options.historicalDatabase;
         const candidate =
           referencedDatabase ??
-          (typeof args.database === "string" ? args.database : undefined) ??
-          (historical?.project === selectedProject
+          (typeof args.database === "string" && args.database.trim()
+            ? args.database
+            : undefined) ??
+          (!historical?.project || historical.project === selectedProject
             ? historical?.database
             : undefined);
         try {
@@ -2022,7 +2024,9 @@ export function createToolExecutor(
         const historical = options.historicalDatabase;
         const candidate =
           referencedDatabase ??
-          (typeof args.database === "string" ? args.database : undefined) ??
+          (typeof args.database === "string" && args.database.trim()
+            ? args.database
+            : undefined) ??
           (!historical?.project || historical.project === projectName
             ? historical?.database
             : undefined);
@@ -2058,6 +2062,15 @@ export function createToolExecutor(
         if (args.purpose !== undefined) {
           return toToolResult(
             "Error: ask_user no longer accepts purpose and never substitutes scope options. For a missing database scope, use ask_masking_exemption_scope. For expiration, visibility, or other questions, retry ask_user without purpose and include options matching the prompt."
+          );
+        }
+        if (
+          Array.isArray(args.options) &&
+          args.options.length > 0 &&
+          args.kind !== "choose"
+        ) {
+          throw new Error(
+            'ask_user options require choice mode. Retry with kind="choose" and keep the original options; they cannot be used in an input or confirmation prompt.'
           );
         }
         if (

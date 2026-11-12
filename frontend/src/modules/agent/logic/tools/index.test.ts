@@ -29,7 +29,218 @@ import {
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import type { MaskingRuleEditorSnapshot } from "../maskingRuleDraftTarget";
+import { getHistoricalMaskingDatabase } from "../outboundHistory";
 import { getMaskingSkillGuidance } from "../skills";
+import type { AgentMessage } from "../types";
+
+describe.each(["ask_masking_rule_scope", "ask_masking_exemption_scope"])(
+  "%s historical query candidates",
+  (toolName) => {
+    const database = "instances/prod/databases/orders";
+    const project = "projects/sample";
+    const queryHistory = (): AgentMessage[] => [
+      {
+        id: "query-question",
+        chatId: "chat",
+        createdTs: 1,
+        role: "user",
+        content: "Query orders.",
+      },
+      {
+        id: "query-call",
+        chatId: "chat",
+        createdTs: 2,
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "query",
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "SQLService/Query",
+              body: { name: database, statement: "SELECT 1" },
+            }),
+          },
+        ],
+      },
+      {
+        id: "query-result",
+        chatId: "chat",
+        createdTs: 3,
+        role: "tool",
+        toolCallId: "query",
+        content: JSON.stringify({ status: 200, response: {} }),
+      },
+      {
+        id: "masking-question",
+        chatId: "chat",
+        createdTs: 4,
+        role: "user",
+        content: "How to mask email?",
+      },
+    ];
+
+    beforeEach(async () => {
+      const actual =
+        await vi.importActual<typeof import("./resourceChoices")>(
+          "./resourceChoices"
+        );
+      resourceChoiceApi.validate.mockImplementation(
+        actual.validateResourceChoices
+      );
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: database,
+          project,
+          state: State.ACTIVE,
+          instanceResource: { title: "Production" },
+        })
+      );
+    });
+
+    test.each([undefined, "", " "])(
+      "freshly verifies a queried database with no historical owner and optional filter %j",
+      async (blank) => {
+        const historicalDatabase = getHistoricalMaskingDatabase(
+          queryHistory(),
+          project
+        );
+        expect(historicalDatabase).toEqual({ database });
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: project,
+          workspaceName: "workspaces/example",
+          historicalDatabase,
+        });
+        const result = await execute(
+          toolName,
+          blank === undefined
+            ? {}
+            : {
+                database: blank,
+                ...(toolName === "ask_masking_rule_scope"
+                  ? { project: blank }
+                  : {}),
+              },
+          "scope"
+        );
+
+        expect(result).toMatchObject({
+          kind: "ask_user",
+          ask: {
+            options: expect.arrayContaining([
+              { label: "Only orders (Production)", value: database },
+            ]),
+          },
+        });
+        if (result.kind !== "ask_user")
+          throw new Error("Expected scope choices");
+        expect(result.ask.defaultValue).toBeUndefined();
+        expect(databaseApi.getDatabase).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ name: database }),
+          expect.anything()
+        );
+      }
+    );
+
+    test.each(["denied", "moved", "deleted", "renamed"])(
+      "withholds an unknown-owner database after it becomes %s",
+      async (change) => {
+        if (change === "denied")
+          databaseApi.getDatabase.mockRejectedValue(new Error("Forbidden"));
+        else
+          databaseApi.getDatabase.mockResolvedValue(
+            create(DatabaseSchema$, {
+              name:
+                change === "renamed"
+                  ? "instances/prod/databases/renamed"
+                  : database,
+              project: change === "moved" ? "projects/other" : project,
+              state: change === "deleted" ? State.DELETED : State.ACTIVE,
+            })
+          );
+        const execute = createToolExecutor({} as AppRouterInstance, {
+          context: project,
+          workspaceName: "workspaces/example",
+          historicalDatabase: getHistoricalMaskingDatabase(
+            queryHistory(),
+            project
+          ),
+        });
+        const result = await execute(toolName, {}, "scope");
+
+        expect(result.kind).toBe("ask_user");
+        if (result.kind !== "ask_user")
+          throw new Error("Expected scope choices");
+        expect(result.ask.options?.map((option) => option.value)).not.toContain(
+          database
+        );
+        expect(result.ask.options?.map((option) => option.value)).toContain(
+          project
+        );
+        expect(databaseApi.getDatabase).toHaveBeenCalledOnce();
+      }
+    );
+
+    test("does not inspect a historically known foreign project", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: project,
+        workspaceName: "workspaces/example",
+        historicalDatabase: { database, project: "projects/other" },
+      });
+      const result = await execute(toolName, {}, "scope");
+      expect(result.kind).toBe("ask_user");
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+
+    test("prefers the current database reference over model and historical candidates", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: project,
+        workspaceName: "workspaces/example",
+        referencedDatabase: database,
+        historicalDatabase: { database: "instances/prod/databases/previous" },
+      });
+      const result = await execute(
+        toolName,
+        { database: "instances/prod/databases/model" },
+        "scope"
+      );
+      expect(result).toMatchObject({
+        kind: "ask_user",
+        ask: {
+          options: expect.arrayContaining([
+            expect.objectContaining({ value: database }),
+          ]),
+        },
+      });
+      expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+        "database",
+        [database],
+        project,
+        "workspaces/example"
+      );
+    });
+
+    test("does not replace an explicit nonblank invalid candidate with historical scope", async () => {
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: project,
+        workspaceName: "workspaces/example",
+        historicalDatabase: { database },
+      });
+      const result = await execute(
+        toolName,
+        { database: "not-a-database" },
+        "scope"
+      );
+      expect(result.kind).toBe("ask_user");
+      expect(resourceChoiceApi.validate).toHaveBeenCalledWith(
+        "database",
+        ["not-a-database"],
+        project,
+        "workspaces/example"
+      );
+      expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+    });
+  }
+);
 
 describe("progressive masking tool definitions", () => {
   test("keeps masking schemas out of an unrelated Plan request", () => {
@@ -4587,6 +4798,83 @@ describe("agent tools ask_user", () => {
       )
     ).rejects.toThrow('Retry with kind="choose"');
   });
+
+  test.each([undefined, "input", "confirm", "select"])(
+    "rejects expiration options with kind %s instead of dropping them",
+    async (kind) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance);
+      const args = {
+        prompt: "When should this exemption expire?",
+        kind,
+        resourceKind: "none",
+        options: [
+          { label: "In 1 hour", value: "1-hour" },
+          { label: "No expiration", value: "no-expiration" },
+        ],
+      };
+
+      await expect(executeTool("ask_user", args, "expiration")).rejects.toThrow(
+        'Retry with kind="choose"'
+      );
+      expect(
+        await executeTool("ask_user", { ...args, kind: "choose" }, "retry")
+      ).toEqual({
+        kind: "ask_user",
+        ask: {
+          toolCallId: "retry",
+          prompt: args.prompt,
+          kind: "choose",
+          options: args.options,
+        },
+      });
+    }
+  );
+
+  test("rejects database options without choice mode before verifying an input default", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    await expect(
+      executeTool(
+        "ask_user",
+        {
+          prompt: "Which database?",
+          resourceKind: "database",
+          defaultValue: "instances/prod/databases/orders",
+          options: [{ value: "instances/prod/databases/orders" }],
+        },
+        "database"
+      )
+    ).rejects.toThrow('Retry with kind="choose"');
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+    expect(databaseApi.getDatabase).not.toHaveBeenCalled();
+  });
+
+  test.each([undefined, "input"])(
+    "preserves plain input with kind %s and no choices",
+    async (kind) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance);
+      expect(
+        await executeTool(
+          "ask_user",
+          {
+            kind,
+            prompt: "Which date and time?",
+            options: [],
+          },
+          "custom-date"
+        )
+      ).toEqual({
+        kind: "ask_user",
+        ask: {
+          toolCallId: "custom-date",
+          kind: "input",
+          prompt: "Which date and time?",
+        },
+      });
+    }
+  );
 
   test("requests distinct choice values instead of ambiguous options", async () => {
     const executeTool = createToolExecutor({} as AppRouterInstance);

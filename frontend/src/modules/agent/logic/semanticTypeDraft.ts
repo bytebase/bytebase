@@ -1,15 +1,11 @@
 import { create } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
 import { isEqual } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-import { settingServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
 import { useAppStore } from "@/stores/app";
 import {
   type Algorithm,
   Algorithm_InnerOuterMask_MaskType,
   AlgorithmSchema,
-  GetSettingRequestSchema,
   type SemanticTypeSetting_SemanticType,
 } from "@/types/proto-es/v1/setting_service_pb";
 import type { MaskingRuleDraftContext } from "./maskingRuleDraft";
@@ -17,6 +13,7 @@ import {
   getSemanticTypeDraftEditorSnapshot,
   type SemanticTypeDraftEditorSnapshot,
 } from "./semanticTypeDraftTarget";
+import { readSemanticTypeSetting } from "./semanticTypeSetting";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
 export interface SemanticTypeDraft {
@@ -306,10 +303,7 @@ export async function validateSemanticTypeDraftForSave(
       throw new Error(
         `Semantic type permission check failed. Permission status: ${evidence?.status ?? "unknown"}. Required permissions: ${evidence?.requiredPermissions.join(", ") || "bb.settings.get, bb.settings.set, bb.policies.update"}.`
       );
-  const setting = await settingServiceClientConnect.getSetting(
-    create(GetSettingRequestSchema, { name: "settings/SEMANTIC_TYPES" }),
-    { contextValues: createContextValues().set(silentContextKey, true) }
-  );
+  const { setting } = await readSemanticTypeSetting();
   assertContext(context);
   const value = setting.value?.value;
   if (value?.case !== "semanticType")

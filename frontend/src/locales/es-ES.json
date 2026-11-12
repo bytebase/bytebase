@@ -368,7 +368,6 @@
     "token-budget": {
       "action-failed": "No se pudo actualizar esta ejecución. Inténtelo de nuevo.",
       "apply": "Aplicar",
-      "completed-over-limit": "La ejecución finalizó por encima de su límite de tokens.",
       "continuation-unavailable": "No se puede reanudar esta ejecución de forma segura. Sus mensajes y su borrador se conservan. Inicie un chat nuevo para continuar.",
       "end-run": "Finalizar ejecución",
       "increase": "Aumentar límite",

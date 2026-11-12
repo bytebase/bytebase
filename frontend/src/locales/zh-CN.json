@@ -368,7 +368,6 @@
     "token-budget": {
       "action-failed": "无法更新此轮运行，请重试。",
       "apply": "应用",
-      "completed-over-limit": "此轮运行已完成，Token 使用量超出上限。",
       "continuation-unavailable": "无法安全地继续此轮运行。你的消息和草稿均已保留。请开始新对话以继续。",
       "end-run": "结束运行",
       "increase": "提高上限",

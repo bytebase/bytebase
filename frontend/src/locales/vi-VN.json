@@ -368,7 +368,6 @@
     "token-budget": {
       "action-failed": "Không thể cập nhật lượt chạy này. Vui lòng thử lại.",
       "apply": "Áp dụng",
-      "completed-over-limit": "Lượt chạy đã hoàn tất vượt quá giới hạn token.",
       "continuation-unavailable": "Không thể tiếp tục lượt chạy này một cách an toàn. Tin nhắn và bản nháp của bạn được giữ nguyên. Hãy bắt đầu cuộc trò chuyện mới để tiếp tục.",
       "end-run": "Kết thúc lượt chạy",
       "increase": "Tăng giới hạn",

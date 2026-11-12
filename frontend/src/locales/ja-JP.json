@@ -368,7 +368,6 @@
     "token-budget": {
       "action-failed": "この実行を更新できませんでした。もう一度お試しください。",
       "apply": "適用",
-      "completed-over-limit": "トークン上限を超えて実行が完了しました。",
       "continuation-unavailable": "この実行を安全に再開できません。メッセージと下書きは保持されています。新しいチャットを開始して続けてください。",
       "end-run": "実行を終了",
       "increase": "上限を引き上げ",

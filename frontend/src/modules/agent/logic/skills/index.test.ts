@@ -28,6 +28,38 @@ describe("resolveSkill", () => {
     expect(getSkill({ name: "data-masking" })).toBe(result.content);
   });
 
+  test("routes actionable masking questions from overview into the draft workflow", () => {
+    const guidance = getSkill({ name: "data-masking" });
+
+    expect(guidance).toContain('including "how to mask ..."');
+    expect(guidance).toContain(
+      'get_skill(name="data-masking", section="rule")'
+    );
+    expect(guidance).toContain(
+      "If eligible, missing scope/parameters require clarification before done"
+    );
+    expect(guidance).toContain(
+      "Conceptual/effect-only questions can remain explanatory"
+    );
+  });
+
+  test("resumes setup from fresh entitlement without requiring catalog scope first", () => {
+    const guidance = getSkill({ name: "data-masking" });
+
+    expect(guidance).toContain(
+      "This turn's refreshed evidence supersedes historical blockers"
+    );
+    expect(guidance).toContain(
+      "a changed plan is not proof the earlier evidence was wrong"
+    );
+    expect(guidance).toContain(
+      "catalogMasking scope-unverified must not block global-rule scope questions"
+    );
+    expect(guidance).toContain(
+      "When eligibility becomes available, continue setup"
+    );
+  });
+
   test.each(["rule", "exemption", "semantic-type"] as const)(
     "loads %s with overview safety guidance exactly once",
     (section) => {
@@ -139,6 +171,26 @@ describe("getSkill", () => {
     }
   });
 
+  test("retains named columns across masking scope and method clarification", () => {
+    const guidance = getSkill({ name: "data-masking", section: "rule" });
+
+    expect(guidance).toContain(
+      '"mask email" defaults to resource.column_name == "email"'
+    );
+    expect(guidance).toContain(
+      "Preserve named columns through scope/type questions"
+    );
+    expect(guidance).toContain(
+      "Do not ask exact-name versus another pattern merely because broader matches are possible"
+    );
+    expect(guidance).toContain(
+      "Clarify only genuinely ambiguous categories or conflicting column identities"
+    );
+    expect(guidance).toContain(
+      "Never infer suffix, case-insensitive, or semantic-category matching"
+    );
+  });
+
   test("keeps exemption member, expiry, selector, and unsaved-form boundaries", () => {
     const guidance = getSkill({ name: "data-masking", section: "exemption" });
     for (const invariant of [
@@ -248,6 +300,27 @@ describe("getSkill", () => {
     );
   });
 
+  test("offers expiration choices before asking for a custom date and reuses confirmed expiry", () => {
+    const guidance = getSkill({ name: "data-masking", section: "exemption" });
+
+    expect(guidance).toContain('ask_user(kind="choose", resourceKind="none")');
+    for (const label of [
+      "In 1 hour",
+      "In 24 hours",
+      "Choose a date and time",
+      "No expiration",
+    ]) {
+      expect(guidance).toContain(label);
+    }
+    expect(guidance).toContain("Leave all options unselected");
+    expect(guidance).toContain(
+      "If the member selects the custom date/time option"
+    );
+    expect(guidance).toContain('ask_user(kind="input", resourceKind="none")');
+    expect(guidance).toContain("Reuse an already explicit expiration");
+    expect(guidance).toContain("fresh currentTime");
+  });
+
   test("limits permission blockers to dependent steps and reports exact scope", () => {
     const guidance = getSkill({ name: "data-masking" });
 
@@ -305,6 +378,26 @@ describe("getSkill", () => {
     );
     expect(guidance).toContain("view-only destination");
   });
+
+  test.each(["overview", "rule", "exemption", "semantic-type"] as const)(
+    "includes subscription evidence and blocked handoff guidance for %s",
+    (section) => {
+      const guidance = getMaskingSkillGuidance([section]);
+
+      expect(guidance).toContain("setup.subscription");
+      expect(guidance).toContain("setup.featureRequirements");
+      expect(guidance).toContain("planTitle");
+      expect(guidance).toContain("minimumPlanTitle");
+      expect(guidance).toContain("plan-does-not-include-feature");
+      expect(guidance).toContain("subscription-expired");
+      expect(guidance).toContain("instance-license-required");
+      expect(guidance).toContain("subscription-unverified");
+      expect(guidance).toContain("scope-unverified needs scope, not upgrade");
+      expect(guidance).toContain("do not ask dependent setup questions");
+      expect(guidance).toContain("do not offer dependent draft actions");
+      expect(guidance).toContain("Never assume trial eligibility");
+    }
+  );
 
   test("keeps saved policy changes member-owned and previews illustrative", () => {
     const guidance = getSkill({ name: "data-masking" });

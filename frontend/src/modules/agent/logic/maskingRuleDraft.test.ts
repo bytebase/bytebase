@@ -98,6 +98,12 @@ const equals = (factor: string, value: string) =>
 const expressions = new Map<string, Expr>();
 
 function allowedSetup(): Awaited<ReturnType<typeof getMaskingSetup>> {
+  const maskingRequirement = {
+    feature: "FEATURE_DATA_MASKING",
+    featureTitle: "Data masking",
+    minimumPlan: "ENTERPRISE",
+    minimumPlanTitle: "Enterprise",
+  };
   const evidence = {
     status: "allowed" as const,
     scope: context.workspaceName,
@@ -106,6 +112,21 @@ function allowedSetup(): Awaited<ReturnType<typeof getMaskingSetup>> {
   };
   return {
     source: "frontend-permission-check",
+    subscription: {
+      status: "available",
+      plan: "ENTERPRISE",
+      planTitle: "Enterprise",
+      expired: false,
+    },
+    featureRequirements: {
+      masking: maskingRequirement,
+      classification: {
+        ...maskingRequirement,
+        feature: "FEATURE_DATA_CLASSIFICATION",
+        featureTitle: "Data classification",
+      },
+      catalogMasking: maskingRequirement,
+    },
     features: {
       masking: "available",
       classification: "available",
@@ -198,6 +219,62 @@ afterEach(() => {
 });
 
 describe("masking rule drafts", () => {
+  it("prepares a built-in rule before the semantic types setting exists", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("missing", Code.NotFound)
+    );
+
+    const { draft } = await prepareMaskingRuleDraft(
+      { ...input, semanticType: "bb.default" },
+      context
+    );
+
+    expect(draft).toMatchObject({
+      title: "Mask email",
+      semanticType: "bb.default",
+      scope: { kind: "workspace" },
+    });
+  });
+
+  it("prepares full-email and partial-name rules together before the semantic types setting exists", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("missing", Code.NotFound)
+    );
+    const nameCondition = 'resource.column_name == "name"';
+    expressions.set(nameCondition, equals("resource.column_name", "name"));
+
+    const { draftId, drafts } = await prepareMaskingRuleDrafts(
+      {
+        rules: [
+          { ...input, semanticType: "bb.default" },
+          {
+            ...input,
+            title: "Partially mask name",
+            condition: nameCondition,
+            semanticType: "bb.default-partial",
+          },
+        ],
+      },
+      context
+    );
+
+    expect(drafts.map((draft) => draft.semanticType)).toEqual([
+      "bb.default",
+      "bb.default-partial",
+    ]);
+    expect(getMaskingRuleDrafts(draftId, context)).toEqual(drafts);
+    expect(
+      await parseMaskingRuleDraftCondition(drafts[0].condition)
+    ).toMatchObject({
+      args: [{ args: ["resource.column_name", "email"] }],
+    });
+    expect(
+      await parseMaskingRuleDraftCondition(drafts[1].condition)
+    ).toMatchObject({
+      args: [{ args: ["resource.column_name", "name"] }],
+    });
+  });
+
   it("prepares all proposals atomically under one identity-bound, one-use ID", async () => {
     const { draftId, drafts } = await prepareMaskingRuleDrafts(
       { rules: [input, { ...input, title: "Second rule" }] },

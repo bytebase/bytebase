@@ -284,6 +284,7 @@ func TestChatOpenAIResponsesEndpointUsesResponsesWireFormat(t *testing.T) {
 			"name":        "list_tables",
 			"description": "Lists tables",
 			"parameters":  map[string]any{"type": "object"},
+			"strict":      false,
 		}, tools[0])
 
 		_, err := w.Write([]byte(`{
@@ -318,6 +319,73 @@ func TestChatOpenAIResponsesEndpointUsesResponsesWireFormat(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "hello", resp.GetContent())
 	require.EqualValues(t, 3, resp.GetUsage().GetTotalTokens())
+}
+
+func TestChatOpenAIResponsesPreservesOptionalToolParameters(t *testing.T) {
+	t.Parallel()
+
+	for _, provider := range []storepb.AISetting_Provider{storepb.AISetting_OPEN_AI, storepb.AISetting_AZURE_OPENAI} {
+		t.Run(provider.String(), func(t *testing.T) {
+			t.Parallel()
+			for _, requiredName := range []bool{false, true} {
+				t.Run(map[bool]string{false: "all optional", true: "required name"}[requiredName], func(t *testing.T) {
+					t.Parallel()
+					parameters := map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"name": map[string]any{"type": "string"},
+							"section": map[string]any{
+								"type": "string",
+								"enum": []any{"overview", "rule", "exemption", "semantic-type"},
+							},
+						},
+					}
+					if requiredName {
+						parameters["required"] = []any{"name"}
+					}
+					schema, err := json.Marshal(parameters)
+					require.NoError(t, err)
+					requests := make(chan map[string]any, 1)
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						var payload map[string]any
+						if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+							t.Errorf("failed to decode request: %v", err)
+							w.WriteHeader(http.StatusBadRequest)
+							return
+						}
+						requests <- payload
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = w.Write([]byte(`{"status":"completed","output":[{"type":"function_call","call_id":"call-1","name":"get_skill","arguments":"{\"name\":\"query\"}"}]}`))
+					}))
+					t.Cleanup(server.Close)
+					response, err := Chat(context.Background(), &storepb.AISetting{
+						Provider: provider,
+						Endpoint: server.URL + "/v1/responses",
+						Model:    "test-model",
+						ApiKey:   "test-key",
+					}, &v1pb.AIChatRequest{
+						ToolDefinitions: []*v1pb.AIChatToolDefinition{{
+							Name:             "get_skill",
+							Description:      "Load a workflow; section is for data-masking only.",
+							ParametersSchema: string(schema),
+						}},
+					})
+					require.NoError(t, err)
+					payload := <-requests
+					require.Equal(t, []any{map[string]any{
+						"type":        "function",
+						"name":        "get_skill",
+						"description": "Load a workflow; section is for data-masking only.",
+						"parameters":  parameters,
+						"strict":      false,
+					}}, payload["tools"])
+					require.Len(t, response.ToolCalls, 1)
+					require.Equal(t, "get_skill", response.ToolCalls[0].Name)
+					require.JSONEq(t, `{"name":"query"}`, response.ToolCalls[0].Arguments)
+				})
+			}
+		})
+	}
 }
 
 func TestChatOpenAIResponsesReplaysOutputForToolResult(t *testing.T) {

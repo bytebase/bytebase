@@ -2,9 +2,11 @@
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
+import i18n from "@/lib/i18n";
 import type { AppStoreState } from "@/stores/app/types";
 import { bindingMatchesUser } from "@/stores/app/utils";
 import type { Permission } from "@/types/iam/permission";
+import { hasFeature } from "@/types/plan";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
 import {
@@ -15,7 +17,10 @@ import { IamPolicySchema } from "@/types/proto-es/v1/iam_policy_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
-import { SubscriptionSchema } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanType,
+  SubscriptionSchema,
+} from "@/types/proto-es/v1/subscription_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import { getMaskingSetup } from "./maskingSetup";
 
@@ -46,6 +51,7 @@ const mocks = vi.hoisted(() => ({
   fetchCurrentUser: vi.fn(),
   loadWorkspacePermissionState: vi.fn(),
   loadSubscription: vi.fn(),
+  refreshSubscription: vi.fn(),
   getOrFetchProjectByName: vi.fn(),
   deniedWorkspace: new Set<string>(),
   deniedProject: new Set<string>(),
@@ -86,7 +92,7 @@ beforeEach(() => {
     workspacePolicy: create(IamPolicySchema),
     projectPoliciesByName: {},
     roles: [],
-    subscription: create(SubscriptionSchema),
+    subscription: create(SubscriptionSchema, { plan: PlanType.ENTERPRISE }),
     instancesByName: {},
     databasesByName: {
       [databaseName]: create(DatabaseSchema$, {
@@ -98,12 +104,19 @@ beforeEach(() => {
     fetchCurrentUser: mocks.fetchCurrentUser,
     loadWorkspacePermissionState: mocks.loadWorkspacePermissionState,
     loadSubscription: mocks.loadSubscription,
+    refreshSubscription: mocks.refreshSubscription,
     hasWorkspacePermission: (permission) =>
       !mocks.deniedWorkspace.has(permission),
     hasProjectPermission: (_project, permission) =>
       !mocks.deniedProject.has(permission),
-    hasFeature: () => true,
+    currentPlan: () => mocks.state.subscription?.plan ?? PlanType.FREE,
+    isExpired: () => false,
+    hasFeature: (feature) =>
+      !mocks.state.isExpired() &&
+      hasFeature(mocks.state.currentPlan(), feature),
     hasInstanceFeature: (_feature, instance) => Boolean(instance?.activation),
+    instanceMissingLicense: (_feature, instance) =>
+      Boolean(instance && !instance.activation),
     isSaaSMode: () => false,
   } as Partial<AppStoreState> as AppStoreState;
   mocks.loadWorkspacePermissionState.mockImplementation(async () => {
@@ -122,9 +135,186 @@ beforeEach(() => {
   mocks.getOrFetchProjectByName.mockResolvedValue(project);
   mocks.getIamPolicy.mockResolvedValue(create(IamPolicySchema));
   mocks.loadSubscription.mockResolvedValue(undefined);
+  mocks.refreshSubscription.mockImplementation(
+    async () => mocks.state.subscription
+  );
 });
 
 describe("getMaskingSetup", () => {
+  test.each([
+    [PlanType.FREE, "Community"],
+    [PlanType.TEAM, "Pro"],
+  ])(
+    "names the current plan and required plan for unavailable masking on %s",
+    async (plan, title) => {
+      await i18n.changeLanguage("en-US");
+      mocks.state.subscription = create(SubscriptionSchema, { plan });
+
+      const result = await getMaskingSetup({ workspaceName });
+
+      expect(result.subscription).toEqual({
+        status: "available",
+        plan: PlanType[plan],
+        planTitle: title,
+        expired: false,
+      });
+      expect(result.features.masking).toBe("unavailable");
+      expect(result.featureRequirements.masking).toEqual({
+        feature: "FEATURE_DATA_MASKING",
+        featureTitle: "Data masking",
+        minimumPlan: "ENTERPRISE",
+        minimumPlanTitle: "Enterprise",
+        reason: "plan-does-not-include-feature",
+      });
+      expect(step(result, "global-masking").configure.status).toBe("allowed");
+    }
+  );
+
+  test("distinguishes an expired subscription from a plan upgrade and instance licensing", async () => {
+    mocks.state.subscription = create(SubscriptionSchema, {
+      plan: PlanType.ENTERPRISE,
+      expiresTime: { seconds: BigInt(Math.floor(Date.now() / 1000) - 60) },
+    });
+    mocks.database.instanceResource = create(InstanceResourceSchema, {
+      name: "instances/primary",
+      activation: true,
+    });
+
+    const result = await getMaskingSetup({
+      workspaceName,
+      projectName,
+      databaseName,
+      database: mocks.database,
+    });
+
+    expect(result.subscription).toMatchObject({
+      status: "available",
+      plan: "ENTERPRISE",
+      expired: true,
+    });
+    expect(result.features.masking).toBe("unavailable");
+    expect(result.features.catalogMasking).toBe("unavailable");
+    expect(result.featureRequirements.masking.reason).toBe(
+      "subscription-expired"
+    );
+    expect(result.featureRequirements.catalogMasking.reason).toBe(
+      "subscription-expired"
+    );
+  });
+
+  test("recognizes expiration after the server falls back to the Community plan", async () => {
+    mocks.state.subscription = create(SubscriptionSchema, {
+      plan: PlanType.FREE,
+      expiresTime: { seconds: BigInt(Math.floor(Date.now() / 1000) - 60) },
+    });
+
+    const result = await getMaskingSetup({ workspaceName });
+
+    expect(result.subscription).toMatchObject({
+      status: "available",
+      plan: "FREE",
+      expired: true,
+    });
+    expect(result.features.masking).toBe("unavailable");
+    expect(result.featureRequirements.masking.reason).toBe(
+      "subscription-expired"
+    );
+  });
+
+  test.each(["failed", "rejected"])(
+    "keeps a %s subscription refresh unverified despite a cached plan",
+    async (failure) => {
+      if (failure === "failed")
+        mocks.refreshSubscription.mockResolvedValue(undefined);
+      else
+        mocks.refreshSubscription.mockRejectedValue(new Error("Unavailable"));
+
+      const result = await getMaskingSetup({ workspaceName });
+
+      expect(result.subscription).toEqual({ status: "unknown" });
+      expect(result.features.masking).toBe("unknown");
+      expect(result.featureRequirements.masking.reason).toBe(
+        "subscription-unverified"
+      );
+      expect(step(result, "global-masking").configure.status).toBe("allowed");
+    }
+  );
+
+  test.each([
+    [PlanType.FREE, PlanType.ENTERPRISE, "available"],
+    [PlanType.ENTERPRISE, PlanType.FREE, "unavailable"],
+  ])("refreshes cached plan %s to plan %s", async (cached, fresh, status) => {
+    mocks.state.subscription = create(SubscriptionSchema, { plan: cached });
+    mocks.refreshSubscription.mockImplementation(async () => {
+      mocks.state.subscription = create(SubscriptionSchema, { plan: fresh });
+      return mocks.state.subscription;
+    });
+
+    const result = await getMaskingSetup({ workspaceName });
+
+    expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
+    expect(result.subscription).toMatchObject({
+      status: "available",
+      plan: PlanType[fresh],
+    });
+    expect(result.features.masking).toBe(status);
+  });
+
+  test("does not publish subscription details after the account changes during refresh", async () => {
+    mocks.refreshSubscription.mockImplementation(async () => {
+      mocks.state.currentUser = create(UserSchema, {
+        name: "users/other@example.com",
+      });
+      return mocks.state.subscription;
+    });
+
+    const result = await getMaskingSetup({ workspaceName });
+
+    expect(result.subscription).toEqual({ status: "unknown" });
+    expect(result.features.masking).toBe("unknown");
+    expect(result.featureRequirements.masking.reason).toBe(
+      "subscription-unverified"
+    );
+  });
+
+  test.each([0, 99])(
+    "keeps unsupported subscription plan %s unverified",
+    async (plan) => {
+      mocks.state.subscription = create(SubscriptionSchema, {
+        plan: plan as PlanType,
+      });
+
+      const result = await getMaskingSetup({ workspaceName });
+
+      expect(result.subscription).toEqual({ status: "unknown" });
+      expect(result.features.masking).toBe("unknown");
+      expect(result.featureRequirements.masking.reason).toBe(
+        "subscription-unverified"
+      );
+    }
+  );
+
+  test("distinguishes an unlicensed instance from an unavailable workspace plan", async () => {
+    mocks.database.instanceResource = create(InstanceResourceSchema, {
+      name: "instances/primary",
+      activation: false,
+    });
+
+    const result = await getMaskingSetup({
+      workspaceName,
+      projectName,
+      databaseName,
+      database: mocks.database,
+    });
+
+    expect(result.features.masking).toBe("available");
+    expect(result.features.catalogMasking).toBe("unavailable");
+    expect(result.featureRequirements.masking.reason).toBeUndefined();
+    expect(result.featureRequirements.catalogMasking.reason).toBe(
+      "instance-license-required"
+    );
+  });
+
   test("distinguishes workspace read and configuration permissions and unselected scopes", async () => {
     const result = await getMaskingSetup({ workspaceName });
 
@@ -485,7 +675,7 @@ describe("getMaskingSetup", () => {
 
     const result = await getMaskingSetup({ workspaceName });
 
-    expect(mocks.loadSubscription).toHaveBeenCalledOnce();
+    expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
     expect(result.features.masking).toBe("unknown");
     expect(result.features.classification).toBe("unknown");
     expect(step(result, "global-masking").configure.status).toBe("allowed");

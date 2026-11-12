@@ -1051,6 +1051,8 @@ describe("AgentInput", () => {
       });
       act(() => { [...view.container.querySelectorAll("button")].find(button => button.textContent === "agent.stop")?.click(); });
       expect(store.getChat(chat.id)?.interrupted).toBe(true);
+      expect(store.getChat(chat.id)?.interruptionReason).toBe("user");
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
       const result = '{"status":200,"response":{"name":"projects/orders","title":"Updated"}}';
       await act(async () => { settleApproval(result); });
       expect(store.getMessages(chat.id)).toEqual(expect.arrayContaining([
@@ -1058,6 +1060,7 @@ describe("AgentInput", () => {
       ]));
       expect(store.getChat(chat.id)?.interrupted).toBe(true);
       expect(store.getChat(chat.id)?.status).toBe("idle");
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
       expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
       expect(mocks.resolvePendingApiCall).toHaveBeenCalledOnce();
       expect(await store.flushRunPersistence()).toBe(true);

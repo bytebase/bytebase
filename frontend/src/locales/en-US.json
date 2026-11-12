@@ -368,7 +368,6 @@
     "token-budget": {
       "action-failed": "Couldn't update this run. Try again.",
       "apply": "Apply",
-      "completed-over-limit": "Run completed above its token limit.",
       "continuation-unavailable": "This run cannot be resumed safely. Your messages and draft are preserved. Start a new chat to continue.",
       "end-run": "End run",
       "increase": "Increase limit",
