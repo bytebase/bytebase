@@ -38,17 +38,25 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-async function renderUsage(value: AgentChat, pendingAttemptId?: string) {
+async function renderUsage(value: AgentChat | null, pendingAttemptId?: string, showEmpty?: boolean) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
-  await act(async () => root!.render(<AgentTokenUsage chat={value} pendingAttemptId={pendingAttemptId} />));
+  await act(async () => root!.render(<AgentTokenUsage chat={value} pendingAttemptId={pendingAttemptId} showEmpty={showEmpty} />));
   const trigger = container.querySelector("button")!;
   await act(async () => trigger.click());
   return { trigger, panel: document.querySelector("[data-agent-token-usage]")! };
 }
 
 describe("AgentTokenUsage", () => {
+  test("shows zero usage for an explicitly empty new chat without inventing an answer or run", async () => {
+    const { trigger, panel } = await renderUsage(null, undefined, true);
+    expect(trigger.textContent).toContain("Chat tokens: 0");
+    expect(panel.querySelector("[data-agent-run-usage]")).toBeNull();
+    expect(panel.querySelector("table")).toBeNull();
+    expect(panel.textContent).toContain("Not recorded");
+  });
+
   test("does not describe its pending local attempt as missing usage", async () => {
     const { panel } = await renderUsage({
       ...chat, status: "running", runId: "run-1", hasUnreportedUsage: true,

@@ -30,14 +30,16 @@ type Metric =
 export function AgentTokenUsage({
   chat,
   pendingAttemptId,
+  showEmpty = false,
 }: {
   chat: AgentChat | null;
   pendingAttemptId?: string;
+  showEmpty?: boolean;
 }) {
   const { t } = useTranslation();
-  if (!chat) return null;
-  const calls = chat.lastRunUsage?.calls ?? [];
-  const run = getRunTokenBudget(chat, pendingAttemptId);
+  if (!chat && !showEmpty) return null;
+  const calls = chat?.lastRunUsage?.calls ?? [];
+  const run = chat ? getRunTokenBudget(chat, pendingAttemptId) : null;
   const format = (value: number | undefined) =>
     value === undefined
       ? t("agent.token-usage.not-reported")
@@ -57,9 +59,9 @@ export function AgentTokenUsage({
             calls.reduce((value, call) => value + (call.totalTokens ?? 0), 0)
           )
         : format(undefined);
-  const chatTotal = chat.hasUnreportedUsage
+  const chatTotal = chat?.hasUnreportedUsage
     ? partial(chat.totalTokensUsed)
-    : format(chat.totalTokensUsed);
+    : format(chat?.totalTokensUsed ?? 0);
   const callName = (call: AgentModelCallUsage) =>
     call.purpose === "follow-up"
       ? t("agent.token-usage.follow-up-questions")
@@ -165,7 +167,7 @@ export function AgentTokenUsage({
               </TableHeader>
               <TableBody striped={false}>
                 {calls.map((call, index) => (
-                  <TableRow key={`${chat.lastRunUsage!.runId}-${index}`}>
+                  <TableRow key={`${chat?.lastRunUsage?.runId}-${index}`}>
                     <TableCell className="break-all px-1 py-2 text-xs">
                       {callName(call)}
                     </TableCell>

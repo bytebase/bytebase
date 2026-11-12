@@ -1,4 +1,4 @@
-import { Send, Square } from "lucide-react";
+import { Send } from "lucide-react";
 import {
   type RefObject,
   useCallback,
@@ -122,12 +122,9 @@ import {
   selectLoading,
   useAgentStore,
 } from "../store/agent";
-import { AgentComposer } from "./AgentComposer";
-import { AgentContextPicker } from "./AgentContextPicker";
-import { AgentMentionTextarea } from "./AgentMentionTextarea";
+import { AgentChatbox, AgentChatboxFooter } from "./AgentChatbox";
 import { AgentResourcePicker } from "./AgentResourcePicker";
 import { AgentTokenBudgetStatus } from "./AgentTokenBudgetStatus";
-import { AgentTokenUsage } from "./AgentTokenUsage";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
@@ -1071,48 +1068,6 @@ export function AgentInput({
     textareaRef.current?.focus();
     textareaRef.current?.setSelectionRange(caret, caret);
   }, [input]);
-
-  const autoResize = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    el.style.height = "auto";
-
-    const styles = window.getComputedStyle(el);
-    const minHeight =
-      Number.parseFloat(styles.minHeight) || el.getBoundingClientRect().height;
-    const borderHeight = el.offsetHeight - el.clientHeight;
-    const desiredHeight = Math.max(minHeight, el.scrollHeight + borderHeight);
-    const composer = composerRef.current;
-    const parent = composer?.parentElement;
-    const composerChrome = composer
-      ? Math.max(0, composer.offsetHeight - el.offsetHeight)
-      : 0;
-    const availableHeight = parent ? parent.clientHeight - composerChrome : 0;
-    const maxHeight =
-      availableHeight > 0
-        ? Math.max(minHeight, availableHeight)
-        : desiredHeight;
-    const nextHeight = Math.min(desiredHeight, maxHeight);
-
-    el.style.height = `${nextHeight}px`;
-    el.style.overflowY = desiredHeight > maxHeight ? "auto" : "hidden";
-  }, []);
-
-  useEffect(() => {
-    autoResize();
-  }, [input, autoResize]);
-
-  useEffect(() => {
-    const composer = composerRef.current;
-    const parent = composer?.parentElement;
-    if (!composer || !parent || typeof ResizeObserver === "undefined") return;
-
-    const observer = new ResizeObserver(autoResize);
-    observer.observe(composer);
-    observer.observe(parent);
-    return () => observer.disconnect();
-  }, [autoResize]);
 
   // ---------------------------------------------------------------------------
   // Agent loop execution
@@ -3211,27 +3166,19 @@ export function AgentInput({
   };
 
   const inputFooter = (
-    <div
-      className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2 text-xs text-control-light"
-      data-agent-input-footer
-    >
-      <AgentContextPicker
-        context={context}
-        contextTitle={contextTitle}
-        workspace={workspace}
-        disabled={
-          loading ||
-          Boolean(currentPendingAsk) ||
-          currentChat?.status === "paused"
-        }
-        onSelect={selectContext}
-      />
-      <AgentTokenUsage
-        key={currentChat?.id}
-        chat={currentChat}
-        pendingAttemptId={pendingAttemptId}
-      />
-    </div>
+    <AgentChatboxFooter
+      context={context}
+      contextTitle={contextTitle}
+      workspace={workspace}
+      contextDisabled={
+        loading ||
+        Boolean(currentPendingAsk) ||
+        currentChat?.status === "paused"
+      }
+      onSelectContext={selectContext}
+      chat={currentChat}
+      pendingAttemptId={pendingAttemptId}
+    />
   );
 
   return (
@@ -3477,108 +3424,69 @@ export function AgentInput({
           </div>
         ) : (
           <div data-agent-input-row>
-            <AgentComposer
+            <AgentChatbox
+              containerRef={composerRef}
               footer={inputFooter}
-              action={
-                loading ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="shrink-0 whitespace-nowrap"
-                    disabled={remoteBusy}
-                    onClick={() =>
-                      useAgentStore.getState().cancel(currentChat?.id, "user")
-                    }
-                  >
-                    <Square className="size-4" />
-                    {t("agent.stop")}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="shrink-0 whitespace-nowrap"
-                    data-agent-send
-                    disabled={isSendDisabled}
-                    onClick={() => void send()}
-                  >
-                    <Send className="size-4" />
-                    {sendLabel}
-                  </Button>
-                )
+              processing={isCurrentChatRunning}
+              placeholder={`${inputPlaceholder} · ${sendWithEnter ? t("agent.input-keyboard-hint") : t("agent.input-keyboard-hint-newline")}`}
+              onSend={() => void send()}
+              sendDisabled={isSendDisabled}
+              sendLabel={sendLabel}
+              onStop={() =>
+                useAgentStore.getState().cancel(currentChat?.id, "user")
               }
-            >
-              <div className="relative w-full">
-                {!input && (
-                  <div
-                    className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
-                    data-agent-input-placeholder
-                  >
-                    {isCurrentChatRunning ? (
-                      t("agent.input-processing-placeholder")
-                    ) : (
-                      <>
-                        {inputPlaceholder} ·{" "}
-                        {sendWithEnter
-                          ? t("agent.input-keyboard-hint")
-                          : t("agent.input-keyboard-hint-newline")}
-                      </>
-                    )}
-                  </div>
-                )}
-                <AgentMentionTextarea
-                  size="md"
-                  textareaRef={textareaRef}
-                  value={input}
-                  mentions={draftMentions.map(({ resource, range }) => ({
-                    range,
-                    label: resource.label,
-                  }))}
-                  onDeleteMention={({ text, caret }) => {
-                    selectedMentionCaretRef.current = caret;
+              stopDisabled={remoteBusy}
+              textareaProps={{
+                textareaRef,
+                value: input,
+                mentions: draftMentions.map(({ resource, range }) => ({
+                  range,
+                  label: resource.label,
+                })),
+                onDeleteMention: ({ text, caret }) => {
+                  selectedMentionCaretRef.current = caret;
+                  mentionRangeRef.current = null;
+                  setResourcePickerOpen(false);
+                  setInput(text);
+                },
+                "aria-label": inputPlaceholder,
+                disabled: isCurrentChatRunning || isAIConfigurationBlocked,
+                onChange: (event) => {
+                  setInput(event.target.value);
+                  if (!canMentionResource) {
                     mentionRangeRef.current = null;
                     setResourcePickerOpen(false);
-                    setInput(text);
-                  }}
-                  rows={1}
-                  className="block h-9 min-h-9 w-full resize-none overflow-y-hidden border-0 focus:border-0 focus:ring-0 disabled:bg-transparent"
-                  aria-label={inputPlaceholder}
-                  disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-                  onChange={(event) => {
-                    setInput(event.target.value);
-                    if (!canMentionResource) {
-                      mentionRangeRef.current = null;
-                      setResourcePickerOpen(false);
-                      return;
-                    }
-                    const range = getMentionTriggerRange(
-                      event.target.value,
-                      event.target.selectionStart
-                    );
-                    mentionRangeRef.current = range;
-                    setResourcePickerOpen(Boolean(range));
-                  }}
-                  onKeyDown={handleTextareaKeydown}
+                    return;
+                  }
+                  const range = getMentionTriggerRange(
+                    event.target.value,
+                    event.target.selectionStart
+                  );
+                  mentionRangeRef.current = range;
+                  setResourcePickerOpen(Boolean(range));
+                },
+                onKeyDown: handleTextareaKeydown,
+              }}
+            >
+              {canMentionResource && workspace?.name ? (
+                <AgentResourcePicker
+                  open={resourcePickerOpen}
+                  onOpenChange={handleResourcePickerOpenChange}
+                  anchorRef={textareaRef}
+                  workspaceName={workspace.name}
+                  projectName={projectContext}
+                  selectedProjectName={selectedProjectMention?.resource.name}
+                  hasSelectedReference={
+                    draftMentions.length > 1 ||
+                    (draftMentions.length === 1 && !selectedProjectMention)
+                  }
+                  onSelectProject={selectMentionProject}
+                  onSelectDatabase={selectMentionDatabase}
+                  onSelectIssue={selectMentionIssue}
+                  onSelectPlan={selectMentionPlan}
                 />
-                {canMentionResource && workspace?.name ? (
-                  <AgentResourcePicker
-                    open={resourcePickerOpen}
-                    onOpenChange={handleResourcePickerOpenChange}
-                    anchorRef={textareaRef}
-                    workspaceName={workspace.name}
-                    projectName={projectContext}
-                    selectedProjectName={selectedProjectMention?.resource.name}
-                    hasSelectedReference={
-                      draftMentions.length > 1 ||
-                      (draftMentions.length === 1 && !selectedProjectMention)
-                    }
-                    onSelectProject={selectMentionProject}
-                    onSelectDatabase={selectMentionDatabase}
-                    onSelectIssue={selectMentionIssue}
-                    onSelectPlan={selectMentionPlan}
-                  />
-                ) : null}
-              </div>
-            </AgentComposer>
+              ) : null}
+            </AgentChatbox>
           </div>
         )}
       </div>

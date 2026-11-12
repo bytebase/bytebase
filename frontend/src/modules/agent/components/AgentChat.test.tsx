@@ -2943,6 +2943,100 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  test.each([
+    {
+      name: "multiline JSON",
+      content: JSON.stringify({
+        database: `instances/test-instance/databases/${"orders_".repeat(100)}`,
+        policy: "x".repeat(1000),
+      }, null, 2),
+    },
+    { name: "unbroken text", content: "x".repeat(2000) },
+    {
+      name: "canonical resource path",
+      content: `Inspect instances/test-instance/databases/${"orders_".repeat(100)}`,
+    },
+    {
+      name: "bound resource mention",
+      content: `Inspect @${"orders_".repeat(100)}`,
+      metadata: {
+        resourceReference: {
+          kind: "database",
+          name: `instances/test-instance/databases/${"orders_".repeat(100)}`,
+          project: "projects/demo",
+          label: "orders_".repeat(100),
+        },
+      } satisfies AgentMessageMetadata,
+    },
+  ])("bounds $name in a user bubble without changing its text", ({ content, metadata }) => {
+    const message = useAgentStore.getState().addMessage({
+      role: "user",
+      content,
+      metadata,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = Array.from(container.querySelectorAll("div")).find(
+        (element) => element.classList.contains("bg-info/10")
+      );
+      expect(bubble?.textContent).toBe(content);
+      expect(bubble).toHaveClass(
+        "w-fit", "min-w-0", "max-w-full", "wrap-anywhere", "whitespace-pre-wrap"
+      );
+      if (metadata) {
+        expect(bubble?.querySelector("[data-agent-message-mention]")?.textContent).toBe(
+          `@${metadata.resourceReference.label}`
+        );
+      }
+      expect(useAgentStore.getState().getMessages(
+        useAgentStore.getState().currentChatId
+      ).find((current) => current.id === message?.id)?.content).toBe(content);
+    } finally {
+      unmount();
+    }
+  });
+
+  test("wraps long assistant prose within its content-sized bubble", () => {
+    const content = `Resource ${"orders_".repeat(200)} is unavailable.`;
+    useAgentStore.getState().addMessage({ role: "assistant", content });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = container.querySelector("[data-agent-answer]");
+      expect(bubble?.textContent).toBe(content);
+      expect(bubble).toHaveClass("w-fit", "min-w-0", "max-w-full", "wrap-anywhere");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("keeps long fenced code unwrapped in its own horizontal scroll area", () => {
+    const sql = `SELECT '${"x".repeat(2000)}' AS value;`;
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: `Review the statement:\n\n\`\`\`sql\n${sql}\n\`\`\``,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <div style={{ width: 280 }}><AgentChat /></div>
+    );
+    try {
+      render();
+      const bubble = container.querySelector("[data-agent-answer]");
+      const pre = bubble?.querySelector("pre");
+      expect(bubble).toHaveClass("min-w-0", "max-w-full", "wrap-anywhere");
+      expect(pre?.textContent).toBe(`${sql}\n`);
+      expect(pre).toHaveClass("overflow-x-auto", "whitespace-pre");
+      expect(pre).not.toHaveClass("whitespace-pre-wrap", "break-all");
+    } finally {
+      unmount();
+    }
+  });
+
   test("shows timestamps for user messages and final assistant replies", () => {
     const userMessage = useAgentStore.getState().addMessage({
       role: "user",

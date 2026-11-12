@@ -83,6 +83,7 @@ import {
 import {
   formatResourceMention,
   getDatabaseMentionLabel,
+  getDraftResourceMentions,
   getPlanMentionLabel,
   normalizeAgentResourceReference,
   normalizeAgentResourceReferences,
@@ -90,7 +91,9 @@ import {
 import { normalizeAgentResponseActions } from "../logic/responseActions";
 import type {
   AgentChat as AgentChatRecord,
+  AgentDraft,
   AgentResourceReference,
+  AgentRunMode,
 } from "../logic/types";
 import {
   selectContinueChatForContext,
@@ -268,6 +271,9 @@ export function AgentWindow() {
   const [showArchivedOnly, setShowArchivedOnly] = useState(false);
   const [contextualStart, setContextualStart] =
     useState<AgentPageResource | null>(null);
+  const [contextualDraft, setContextualDraft] = useState<AgentDraft>({
+    text: "",
+  });
   const contextualPageHelpRef = useRef<AgentPageHelpRequest | null>(null);
   const [contextualPageHelp, setContextualPageHelp] =
     useState<AgentPageHelpRequest | null>(null);
@@ -364,6 +370,7 @@ export function AgentWindow() {
     (context?: string) => {
       contextualPageHelpRef.current = null;
       setContextualPageHelp(null);
+      setContextualDraft({ text: "" });
       let pageResource = getCurrentAgentPageResource();
       const pageContext = pageResource
         ? ("project" in pageResource && pageResource.project) || workspace?.name
@@ -540,6 +547,7 @@ export function AgentWindow() {
       setPreferencesOpen(false);
       setContextualPageHelp(request);
       setContextualStart(request.page);
+      setContextualDraft({ text: "" });
       setContextualChatScope({
         context:
           ("project" in request.page && request.page.project) ||
@@ -1306,12 +1314,18 @@ export function AgentWindow() {
     [getCurrentPageSnapshot]
   );
   const startContextualChat = useCallback(
-    (prompt: string, reference?: AgentResourceReference) => {
+    (
+      prompt: string,
+      reference?: AgentResourceReference,
+      runMode: AgentRunMode = "read-only",
+      resources?: AgentResourceReference[]
+    ) => {
       if (!contextualStart) return;
       const pageHelp = contextualPageHelpRef.current;
       if (pageHelp) {
         if (!canStartAgentPageHelp(pageHelp)) return;
         if (pageHelp.onStart) {
+          if (resources?.length) return;
           let started = false;
           try {
             started = pageHelp.onStart(prompt);
@@ -1324,6 +1338,7 @@ export function AgentWindow() {
           contextualPageHelpRef.current = null;
           setContextualPageHelp(null);
           setContextualStart(null);
+          setContextualDraft({ text: "" });
           setShowArchivedOnly(false);
           if (isCompactWindow) setCompactPanel(null);
           if (isMobileWindow) setMobileScreen("conversation");
@@ -1338,6 +1353,22 @@ export function AgentWindow() {
         (contextualStart.kind === "plan-create" &&
           Boolean(contextualStart.databaseName));
       if (requiresReference && !reference) return;
+      const requestedReferences = resources ?? (reference ? [reference] : []);
+      const references =
+        requestedReferences.length > 0
+          ? normalizeAgentResourceReferences(requestedReferences)
+          : [];
+      if (references.length !== requestedReferences.length) return;
+      if (
+        reference &&
+        !references.some(
+          (resource) =>
+            resource.kind === reference.kind &&
+            resource.name === reference.name &&
+            resource.project === reference.project
+        )
+      )
+        return;
       const chatContext =
         ("project" in contextualStart && contextualStart.project) ||
         pageHelp?.workspaceName ||
@@ -1351,15 +1382,28 @@ export function AgentWindow() {
         workspaceName: workspace?.name,
       });
       if (useAgentStore.getState().currentChatId !== chat.id) return;
-      const mention = reference ? formatResourceMention(reference.label) : "";
+      const hasBoundMention =
+        runMode === "default" &&
+        reference &&
+        getDraftResourceMentions(contextualDraft).some(
+          ({ resource }) =>
+            resource.kind === reference.kind &&
+            resource.name === reference.name &&
+            resource.project === reference.project
+        );
+      const mention =
+        reference && !hasBoundMention
+          ? formatResourceMention(reference.label)
+          : "";
       if (prompt) {
         store.queueUserMessage({
           chatId: chat.id,
           text: mention ? `${mention} ${prompt}` : prompt,
           page,
-          runMode: "read-only",
-          ...(reference ? { resourceReference: reference } : {}),
-          ...(contextualStart.kind === "project"
+          runMode,
+          ...(references[0] ? { resourceReference: references[0] } : {}),
+          ...(references.length > 1 ? { resourceReferences: references } : {}),
+          ...(contextualStart.kind === "project" && runMode === "read-only"
             ? {
                 starterId: getLandingStarterIdForText({
                   context: chatContext,
@@ -1390,11 +1434,13 @@ export function AgentWindow() {
       contextualPageHelpRef.current = null;
       setContextualPageHelp(null);
       setContextualStart(null);
+      setContextualDraft({ text: "" });
       if (isCompactWindow) setCompactPanel(null);
       if (isMobileWindow) setMobileScreen("conversation");
     },
     [
       contextualStart,
+      contextualDraft,
       getCurrentPageSnapshot,
       isCompactWindow,
       isMobileWindow,
@@ -1429,6 +1475,7 @@ export function AgentWindow() {
     setChatGroupOpen(contextualChatScope.context, true, false);
     setShowArchivedOnly(false);
     setContextualStart(null);
+    setContextualDraft({ text: "" });
     if (isCompactWindow) setCompactPanel(null);
     if (isMobileWindow) setMobileScreen("conversation");
   }, [
@@ -1845,6 +1892,20 @@ export function AgentWindow() {
     contextualStart ? (
       <AgentContextualStart
         page={contextualStart}
+        draft={contextualDraft}
+        onDraftChange={setContextualDraft}
+        context={contextualChatScope?.context}
+        contextTitle={
+          contextualChatScope
+            ? getContextLabel(contextualChatScope.context)
+            : undefined
+        }
+        workspace={
+          workspace
+            ? { name: workspace.name, title: workspace.title }
+            : undefined
+        }
+        canMentionResources={!contextualPageHelp?.onStart}
         title={contextualTitle}
         reference={
           canReferenceContextualResource ? contextualReference : undefined
