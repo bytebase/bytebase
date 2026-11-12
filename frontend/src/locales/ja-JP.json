@@ -1126,6 +1126,7 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
+    "select-no-environment": "環境なし",
     "successfully-exported-schema": "スキーマのエクスポートに成功しました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",

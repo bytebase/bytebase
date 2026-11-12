@@ -117,6 +117,9 @@ let container: HTMLElement;
 const render = async (props: {
   workloadIdentity?: WorkloadIdentity;
   onClose?: () => void;
+  onCreated?: (wi: WorkloadIdentity) => void;
+  closeOnCreate?: boolean;
+  gitProvidersOnly?: boolean;
 }) => {
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -445,6 +448,65 @@ describe("WorkloadIdentityDialog", () => {
 
     expect(text()).toContain("workload-identity.done.title");
     expect(text()).toContain("workload-identity.done.role-not-granted");
+  });
+
+  test("closes after Create with closeOnCreate, returning the identity", async () => {
+    mocks.store.patchWorkspaceIamPolicy.mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    const onCreated = vi.fn();
+    await render({ closeOnCreate: true, onClose, onCreated });
+    await goToAccount("acme-corp");
+    await click("common.create");
+
+    expect(onCreated).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "deploy-ci@workload.bytebase.com" })
+    );
+    expect(mocks.store.patchWorkspaceIamPolicy).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledOnce();
+    // The role was granted before the dialog closed.
+    expect(
+      mocks.store.patchWorkspaceIamPolicy.mock.invocationCallOrder[0]
+    ).toBeLessThan(onClose.mock.invocationCallOrder[0]);
+  });
+
+  test("stays on Done with closeOnCreate when the role grant fails", async () => {
+    mocks.store.patchWorkspaceIamPolicy.mockRejectedValue(
+      new ConnectError("permission denied", Code.PermissionDenied)
+    );
+    const onClose = vi.fn();
+    await render({ closeOnCreate: true, onClose });
+    await goToAccount("acme-corp");
+    await click("common.create");
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(text()).toContain("workload-identity.done.role-not-granted");
+  });
+
+  test("offers every token source by default", async () => {
+    await render({});
+    expect(container.querySelectorAll('[role="radio"]')).toHaveLength(3);
+    expect(text()).toContain("workload-identity.token-source.oidc-title");
+  });
+
+  test("offers GitHub Actions and GitLab CI only with gitProvidersOnly", async () => {
+    await render({ gitProvidersOnly: true });
+    expect(container.querySelectorAll('[role="radio"]')).toHaveLength(2);
+    expect(text()).toContain("workload-identity.token-source.github-title");
+    expect(text()).toContain("workload-identity.token-source.gitlab-title");
+    expect(text()).not.toContain("workload-identity.token-source.oidc-title");
+  });
+
+  test("offers every token source when editing, even with gitProvidersOnly", async () => {
+    await render({
+      gitProvidersOnly: true,
+      workloadIdentity: storedIdentity({
+        providerType: WorkloadIdentityConfig_ProviderType.OIDC,
+        subjectPattern: "system:serviceaccount:ci:deployer",
+      }),
+    });
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(radios[2].getAttribute("aria-checked")).toBe("true");
   });
 
   test("blocks an email another identity uses", async () => {

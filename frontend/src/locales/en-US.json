@@ -1126,6 +1126,7 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
+    "select-no-environment": "No environment",
     "successfully-exported-schema": "Successfully exported schema",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{{0}}'",

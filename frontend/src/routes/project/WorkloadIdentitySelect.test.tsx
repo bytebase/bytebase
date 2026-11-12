@@ -256,4 +256,41 @@ describe("WorkloadIdentitySelect", () => {
     );
     unmount();
   });
+
+  test("describes each identity and disables the ones the caller refuses", async () => {
+    mocks.listWorkloadIdentities.mockResolvedValue({
+      workloadIdentities: [
+        workloadIdentity("workloadIdentities/gh", "GitHub"),
+        workloadIdentity("workloadIdentities/k8s", "Cluster"),
+      ],
+      nextPageToken: "",
+    });
+
+    const { unmount } = render(
+      <WorkloadIdentitySelect
+        projectName="projects/p"
+        value=""
+        onChange={() => {}}
+        describe={(wi) => `about ${wi.title}`}
+        disabledReason={(wi) =>
+          wi.title === "Cluster" ? "no workflow files" : undefined
+        }
+      />
+    );
+    await flush();
+
+    expect(combo.props?.options).toEqual([
+      expect.objectContaining({
+        value: "workloadIdentities/gh",
+        description: "about GitHub",
+        disabled: false,
+      }),
+      expect.objectContaining({
+        value: "workloadIdentities/k8s",
+        description: "no workflow files",
+        disabled: true,
+      }),
+    ]);
+    unmount();
+  });
 });

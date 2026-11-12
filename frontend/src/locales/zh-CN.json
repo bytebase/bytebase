@@ -1126,6 +1126,7 @@
       "unspecified": "未指定"
     },
     "select": "选择数据库",
+    "select-no-environment": "无环境",
     "successfully-exported-schema": "成功导出 Schema",
     "successfully-transferred-databases": "成功转移数据库",
     "sync-complete-for-instance": "实例 '{{0}}' 同步完成",

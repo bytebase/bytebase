@@ -11,6 +11,7 @@ import { TagInput } from "@/components/ui/tag-input";
 import { cn } from "@/lib/utils";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { Field, InlineCode, StepHeading, TextAction } from "./StepParts";
+import { isRepositoryProvider } from "./subjectPattern";
 
 export interface TokenSourceErrors {
   provider?: string;
@@ -22,6 +23,8 @@ export interface TokenSourceErrors {
 interface TokenSourceStepProps {
   readonly providerType?: WorkloadIdentityConfig_ProviderType;
   readonly providerLocked: boolean;
+  // Offer GitHub Actions and GitLab CI only.
+  readonly gitProvidersOnly?: boolean;
   readonly onProviderChange: (
     providerType: WorkloadIdentityConfig_ProviderType
   ) => void;
@@ -70,7 +73,10 @@ export function TokenSourceStep(props: TokenSourceStepProps) {
       title: t("workload-identity.token-source.oidc-title"),
       subtitle: t("workload-identity.token-source.oidc-subtitle"),
     },
-  ];
+  ].filter(
+    (provider) =>
+      !props.gitProvidersOnly || isRepositoryProvider(provider.value)
+  );
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -89,7 +95,10 @@ export function TokenSourceStep(props: TokenSourceStepProps) {
               Number(value) as WorkloadIdentityConfig_ProviderType
             )
           }
-          className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-3"
+          className={cn(
+            "grid grid-cols-1 items-stretch gap-2",
+            providers.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"
+          )}
         >
           {providers.map((provider) => {
             const selected = providerType === provider.value;
