@@ -138,8 +138,8 @@ export function DatabaseResourceSelector({
   const project = useAppStore((s) => s.projectsByName[projectName]);
   const canListDatabases = useAppStore(
     (s) =>
-      s.hasWorkspacePermission("bb.databases.list") ||
-      Boolean(project && s.hasProjectPermission(project, "bb.databases.list"))
+      s.hasWorkspacePermission("bb.projects.get") ||
+      Boolean(project && s.hasProjectPermission(project, "bb.projects.get"))
   );
 
   const searchInstances = useCallback(

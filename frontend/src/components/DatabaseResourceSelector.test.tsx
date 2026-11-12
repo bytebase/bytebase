@@ -13,8 +13,8 @@ const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
   fetchInstanceList: vi.fn(),
   getOrFetchDatabaseMetadata: vi.fn(),
-  canListWorkspaceDatabases: false,
-  canListProjectDatabases: true,
+  workspacePermissions: [] as string[],
+  projectPermissions: ["bb.projects.get"],
   instanceStore: undefined as
     | { fetchInstanceList: ReturnType<typeof vi.fn> }
     | undefined,
@@ -108,9 +108,11 @@ vi.mock("@/stores/app", () => {
       "projects/project": { name: "projects/project" },
       "projects/default": { name: "projects/default" },
     },
-    hasProjectPermission: () =>
-      mocks.canListWorkspaceDatabases || mocks.canListProjectDatabases,
-    hasWorkspacePermission: () => mocks.canListWorkspaceDatabases,
+    hasProjectPermission: (_project: { name: string }, permission: string) =>
+      mocks.workspacePermissions.includes(permission) ||
+      mocks.projectPermissions.includes(permission),
+    hasWorkspacePermission: (permission: string) =>
+      mocks.workspacePermissions.includes(permission),
   });
   return {
     useAppStore: Object.assign(
@@ -301,8 +303,8 @@ const waitForText = async (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.canListWorkspaceDatabases = false;
-  mocks.canListProjectDatabases = true;
+  mocks.workspacePermissions = [];
+  mocks.projectPermissions = ["bb.projects.get"];
   mocks.fetchDatabases.mockResolvedValue({
     databases: [
       {
@@ -324,7 +326,7 @@ beforeEach(async () => {
 
 describe("DatabaseResourceSelector", () => {
   test("does not list databases without permission and preserves selected resources", async () => {
-    mocks.canListProjectDatabases = false;
+    mocks.projectPermissions = [];
     const { container, unmount } = renderIntoContainer(
       <Harness initialValue={[{ databaseFullName: databaseName }]} />
     );
@@ -336,10 +338,10 @@ describe("DatabaseResourceSelector", () => {
   });
 
   test.each(["project", "workspace"])(
-    "lists databases silently with a %s permission grant",
+    "lists databases with bb.projects.get but without bb.databases.list at %s scope",
     async (scope) => {
-      mocks.canListProjectDatabases = scope === "project";
-      mocks.canListWorkspaceDatabases = scope === "workspace";
+      mocks.projectPermissions = scope === "project" ? ["bb.projects.get"] : [];
+      mocks.workspacePermissions = scope === "workspace" ? ["bb.projects.get"] : [];
       const { container, unmount } = renderIntoContainer(<Harness />);
       await flushPromises();
 
@@ -347,6 +349,20 @@ describe("DatabaseResourceSelector", () => {
         expect.objectContaining({ parent: "projects/project", silent: true })
       );
       expect(container.textContent).toContain("hr");
+      unmount();
+    }
+  );
+
+  test.each(["project", "workspace"])(
+    "does not list project databases with only bb.databases.list at %s scope",
+    async (scope) => {
+      mocks.projectPermissions = scope === "project" ? ["bb.databases.list"] : [];
+      mocks.workspacePermissions = scope === "workspace" ? ["bb.databases.list"] : [];
+      const { container, unmount } = renderIntoContainer(<Harness />);
+      await flushPromises();
+
+      expect(mocks.fetchDatabases).not.toHaveBeenCalled();
+      expect(container.textContent).not.toContain("hr");
       unmount();
     }
   );
@@ -362,7 +378,7 @@ describe("DatabaseResourceSelector", () => {
   });
 
   test("allows a workspace grant before the project is cached", async () => {
-    mocks.canListWorkspaceDatabases = true;
+    mocks.workspacePermissions = ["bb.projects.get"];
     const { unmount } = renderIntoContainer(
       <Harness projectName="projects/unknown" />
     );
@@ -375,12 +391,12 @@ describe("DatabaseResourceSelector", () => {
   });
 
   test("starts discovery when permission becomes available", async () => {
-    mocks.canListProjectDatabases = false;
+    mocks.projectPermissions = [];
     const { container, rerender, unmount } = renderIntoContainer(<Harness />);
     await flushPromises();
     expect(mocks.fetchDatabases).not.toHaveBeenCalled();
 
-    mocks.canListProjectDatabases = true;
+    mocks.projectPermissions = ["bb.projects.get"];
     rerender(<Harness />);
     await flushPromises();
 
@@ -402,7 +418,7 @@ describe("DatabaseResourceSelector", () => {
     );
     expect(loadMore).toBeTruthy();
 
-    mocks.canListProjectDatabases = false;
+    mocks.projectPermissions = [];
     rerender(<Harness />);
     await flushPromises();
 
@@ -436,7 +452,7 @@ describe("DatabaseResourceSelector", () => {
         await flushPromises();
       }
 
-      mocks.canListProjectDatabases = false;
+      mocks.projectPermissions = [];
       rerender(<Harness />);
       await flushPromises();
       resolvePage({
