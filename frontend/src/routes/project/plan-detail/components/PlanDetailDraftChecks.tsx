@@ -1,12 +1,19 @@
 import { create } from "@bufbuild/protobuf";
+import { SHA256 } from "crypto-js";
 import { CircleQuestionMark } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { releaseServiceClientConnect } from "@/api";
 import { PlanCheckSection } from "@/components/plan-check/PlanCheckSection";
 import { Tooltip } from "@/components/ui/tooltip";
-import { transformReleaseCheckResultsToPlanCheckRuns } from "@/lib/plan/check";
+import {
+  expandSpecTargets,
+  transformReleaseCheckResultsToPlanCheckRuns,
+} from "@/lib/plan/check";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   CheckReleaseRequestSchema,
@@ -17,36 +24,63 @@ import { extractProjectResourceName } from "@/utils";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
   getSpecStatementContent,
+  isSameStatementContent,
   useLocalSheetsVersion,
 } from "../utils/localSheet";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
 
 export function PlanDetailDraftChecks({
+  checkedContent,
   checkResults,
+  content: contentOverride,
+  canDiagnose,
   onCheckResultsChange,
   selectedSpec,
+  title,
 }: {
+  checkedContent?: Uint8Array;
   checkResults?: CheckReleaseResponse_CheckResult[];
+  content?: Uint8Array;
+  canDiagnose?: boolean;
   onCheckResultsChange: (
     content: Uint8Array | undefined,
     results: CheckReleaseResponse_CheckResult[] | undefined
   ) => void;
   selectedSpec: Plan_Spec;
+  title?: string;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const [isRunningChecks, setIsRunningChecks] = useState(false);
+  const databasesByName = useAppStore((state) => state.databasesByName);
+  const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
 
-  // Re-read the statement bytes whenever a local sheet edit bumps the version,
-  // so "Run checks" sends the current SQL rather than the bytes captured on the
-  // first render.
   const localSheetsVersion = useLocalSheetsVersion();
-  // content is already the UTF-8 statement bytes, so we send it as-is and use
-  // its reference as the staleness signature — no decode/re-encode roundtrip.
+  // An editor override is authoritative, including an empty statement.
   const content = useMemo(
-    // localSheetsVersion is a dep so the read re-runs on a local sheet edit.
-    () => getSpecStatementContent(selectedSpec),
-    [selectedSpec, localSheetsVersion]
+    () => contentOverride ?? getSpecStatementContent(selectedSpec),
+    [contentOverride, selectedSpec, localSheetsVersion]
+  );
+  const checkedSql = useMemo(() => {
+    if (
+      !checkResults?.length ||
+      !checkedContent?.length ||
+      !isSameStatementContent(checkedContent, content)
+    )
+      return undefined;
+    try {
+      // Retain the BOM so the hash identifies the exact checked bytes.
+      const text = new TextDecoder("utf-8", {
+        fatal: true,
+        ignoreBOM: true,
+      }).decode(checkedContent);
+      return { text, sha256: SHA256(text).toString() };
+    } catch {
+      return undefined;
+    }
+  }, [checkResults, checkedContent, content]);
+  const checkedTargets = expandSpecTargets(selectedSpec, (target) =>
+    dbGroupsByName[target]?.matchedDatabases.map((database) => database.name)
   );
 
   const formattedCheckRuns = useMemo(
@@ -110,10 +144,45 @@ export function PlanDetailDraftChecks({
 
   return (
     <PlanCheckSection
+      title={title}
       canRun
       isRunning={isRunningChecks}
       onRun={runChecks}
       planCheckRuns={formattedCheckRuns}
+      renderResultAction={(result) => {
+        const project = `projects/${page.projectId}`;
+        const database = databasesByName[result.target];
+        if (
+          !(canDiagnose ?? page.isCreating) ||
+          !checkedSql ||
+          !database ||
+          database.name !== result.target ||
+          database.project !== project ||
+          !checkedTargets.includes(result.target)
+        )
+          return null;
+        const context = getPlanCheckDiagnosticContext({
+          resource: {
+            kind: "database",
+            name: database.name,
+            project,
+            label: database.name,
+          },
+          result,
+          specId: selectedSpec.id,
+          sourceId: `${project}/draftChecks/${selectedSpec.id}/${checkedSql.sha256}`,
+          sql: {
+            source: "draft",
+            ...checkedSql,
+            sheet:
+              selectedSpec.config.case === "changeDatabaseConfig"
+                ? selectedSpec.config.value.sheet
+                : undefined,
+          },
+          facts: [{ label: "Spec", value: selectedSpec.id }],
+        });
+        return context ? <AgentDiagnosticHelpButton context={context} /> : null;
+      }}
       renderTarget={(target) => (
         <PlanTargetDisplay showEnvironment target={target} />
       )}

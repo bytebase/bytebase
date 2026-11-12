@@ -40,14 +40,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AgentDiagnosticHelpButton } from "@/modules/agent/components/AgentDiagnosticHelpButton";
+import { normalizeAgentDiagnosticCapability } from "@/modules/agent/logic/diagnosticCapability";
+import type { AgentDiagnosticContext } from "@/modules/agent/logic/diagnosticHelp";
+import { getPlanCheckDiagnosticContext } from "@/modules/agent/logic/planCheckDiagnostics";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   type IssueComment,
   IssueComment_ReviewMetadata_Priority,
+  ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
+import {
+  type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
+  PlanCheckRun_Status,
+} from "@/types/proto-es/v1/plan_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { engineNameV1 } from "@/utils/v1/instance";
 import { useFocusThread } from "../../hooks/useFocusThread";
@@ -84,6 +95,18 @@ const NAMED_OVERRIDES = 3;
 const NAMED_DATABASES = 3;
 const NO_COMMENTS: IssueComment[] = [];
 
+function diagnosticPlanResource(planName: string, projectId: string) {
+  return normalizeAgentDiagnosticCapability({
+    kind: "diagnostic",
+    resource: {
+      kind: "plan",
+      name: planName,
+      project: `projects/${projectId}`,
+      label: planName,
+    },
+  })?.resource;
+}
+
 // The review and the plan checks, one line each, between Approval and
 // Activity: the conclusion, the open findings by priority, what people
 // resolved, and what the review covered on hover. The findings themselves
@@ -117,6 +140,54 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
     reviewReruns && rerun.confirmFirst
       ? setConfirmAllOpen(true)
       : void rerunAll();
+  const renderCheckAction = (result: PlanCheckRun_Result) => {
+    const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+    if (!resource || (page.issue && page.issue.plan !== page.plan.name))
+      return null;
+    const sourceId = `${page.plan.name}/planCheckRun`;
+    const matchingRuns = page.planCheckRuns.filter((run) => {
+      if (run.name !== sourceId) return false;
+      if (run.results.includes(result)) return true;
+      const stopped =
+        run.status === PlanCheckRun_Status.FAILED ||
+        run.status === PlanCheckRun_Status.CANCELED;
+      return (
+        stopped &&
+        !run.results.some((entry) => entry.status === Advice_Level.ERROR) &&
+        result.status === Advice_Level.ERROR &&
+        result.type === PlanCheckRun_Result_Type.TYPE_UNSPECIFIED &&
+        !result.target &&
+        result.content ===
+          (run.error ||
+            t(
+              run.status === PlanCheckRun_Status.CANCELED
+                ? "common.canceled"
+                : "common.failed"
+            ))
+      );
+    });
+    if (matchingRuns.length !== 1) return null;
+    const run = matchingRuns[0];
+    const context = getPlanCheckDiagnosticContext({
+      resource,
+      result,
+      sourceId,
+      facts: [
+        { label: "Plan", value: page.plan.name },
+        { label: "Status", value: PlanCheckRun_Status[run.status] },
+        ...(page.issue ? [{ label: "Issue", value: page.issue.name }] : []),
+        ...(run.createTime
+          ? [
+              {
+                label: "Started",
+                value: `${run.createTime.seconds}.${String(run.createTime.nanos).padStart(9, "0")}`,
+              },
+            ]
+          : []),
+      ],
+    });
+    return context ? <AgentDiagnosticHelpButton context={context} /> : null;
+  };
 
   if (rows.length === 0) return null;
 
@@ -195,6 +266,7 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         onOpenChange={setChecksDrawerOpen}
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
+        renderResultAction={renderCheckAction}
       />
       <RerunConfirmDialog
         confirmLabel={t("plan.automated-review.rerun-all")}
@@ -301,6 +373,56 @@ function ReviewerRow({
   );
 
   const actions: ReactNode[] = [];
+  const reviewRun = review?.run;
+  const reviewError = reviewRun?.error;
+  const resource = diagnosticPlanResource(page.plan.name, page.projectId);
+  let diagnosticHelp: ReactNode;
+  if (
+    row.conclusion === "failed" &&
+    isReview &&
+    resource &&
+    page.issue &&
+    page.issue.plan === page.plan.name &&
+    /^projects\/[^/]+\/issues\/[1-9]\d*$/.test(page.issue.name) &&
+    page.issue.name.startsWith(`${resource.project}/issues/`) &&
+    reviewRun?.name === `${page.issue.name}/reviewRun` &&
+    reviewRun.state === ReviewRun_State.FAILED &&
+    reviewError &&
+    (reviewError.message.trim() || reviewError.code !== 0) &&
+    !review?.loadFailed
+  ) {
+    const facts: NonNullable<AgentDiagnosticContext["facts"]>[number][] = [
+      { label: "Plan", value: page.plan.name },
+      { label: "Issue", value: page.issue.name },
+      { label: "Status", value: ReviewRun_State[reviewRun.state] },
+      { label: "Error code", value: String(reviewError.code) },
+      { label: "Earlier SQL revision", value: String(reviewRun.outdated) },
+    ];
+    for (const [label, time] of [
+      ["Started", reviewRun.createTime],
+      ["Ended", reviewRun.endTime],
+    ] as const) {
+      if (time)
+        facts.push({
+          label,
+          value: `${time.seconds}.${String(time.nanos).padStart(9, "0")}`,
+        });
+    }
+    diagnosticHelp = (
+      <AgentDiagnosticHelpButton
+        context={{
+          resource,
+          kind: "review-run",
+          sourceId: reviewRun.name,
+          summary: "SQL review execution failed",
+          detail: reviewError.message.trim()
+            ? reviewError.message
+            : `Review execution failed (code ${reviewError.code})`,
+          facts,
+        }}
+      />
+    );
+  }
   if (isReview) {
     if (review?.loadFailed) {
       actions.push(
@@ -383,8 +505,10 @@ function ReviewerRow({
       </span>
       {/* Below the name on a narrow screen, lined up with it. */}
       <span className="order-last flex min-w-0 basis-full flex-wrap items-center gap-x-1.5 gap-y-1 pl-7 text-control sm:order-none sm:flex-1 sm:pl-0">
-        <ConclusionText comments={comments} onOpen={openGroup} row={row} />
-        {isReview && hasResult && <ScopeInfo />}
+        <ConclusionText comments={comments} onOpen={openGroup} row={row}>
+          {isReview && hasResult && <ScopeInfo />}
+          {diagnosticHelp}
+        </ConclusionText>
       </span>
       {actions.length > 0 && (
         <span className="flex shrink-0 items-center gap-x-2">{actions}</span>
@@ -574,10 +698,12 @@ function ConclusionText({
   row,
   comments,
   onOpen,
+  children,
 }: {
   row: AutomatedReviewRow;
   comments: readonly IssueComment[];
   onOpen: (group: FindingGroup) => void;
+  children?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { findings } = row;
@@ -654,6 +780,30 @@ function ConclusionText({
     }
     return counts;
   };
+  if (row.conclusion === "failed") {
+    // A failed run changes no finding, so the earlier ones still stand.
+    const metadata = isReview ? findingParts() : [];
+    if (time) metadata.push(time);
+    return (
+      <span className="flex min-w-0 flex-col gap-y-1">
+        <span className="wrap-anywhere whitespace-normal text-main">
+          {row.error || t("plan.automated-review.failed")}
+        </span>
+        <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+          {metadata.map((part, index) => (
+            <span
+              className="flex items-center gap-x-1.5 whitespace-nowrap"
+              key={index}
+            >
+              {index > 0 && <span className="text-control-light">·</span>}
+              {part}
+            </span>
+          ))}
+          {children}
+        </span>
+      </span>
+    );
+  }
   const parts: ReactNode[] = [];
   switch (row.conclusion) {
     case "loading":
@@ -674,15 +824,6 @@ function ConclusionText({
       break;
     case "off":
       parts.push(t("plan.automated-review.off-for-project"));
-      break;
-    case "failed":
-      parts.push(
-        <span className="break-words whitespace-normal text-main" key="error">
-          {row.error || t("plan.automated-review.failed")}
-        </span>
-      );
-      // A failed run changes no finding, so the earlier ones still stand.
-      if (isReview) parts.push(...findingParts());
       break;
     case "passed":
       parts.push(
@@ -728,6 +869,7 @@ function ConclusionText({
           {part}
         </span>
       ))}
+      {children}
     </>
   );
 }

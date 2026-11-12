@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppStoreState } from "@/stores/app/types";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
@@ -48,6 +49,12 @@ const proposal = {
 const snapshot = { sessionId: "page-1", revision: "1", busy: false };
 
 function setup(): Awaited<ReturnType<typeof getMaskingSetup>> {
+  const maskingRequirement = {
+    feature: "FEATURE_DATA_MASKING",
+    featureTitle: "Data masking",
+    minimumPlan: "ENTERPRISE",
+    minimumPlanTitle: "Enterprise",
+  };
   const evidence = {
     status: "allowed" as const,
     scope: context.workspaceName,
@@ -56,6 +63,21 @@ function setup(): Awaited<ReturnType<typeof getMaskingSetup>> {
   };
   return {
     source: "frontend-permission-check",
+    subscription: {
+      status: "available",
+      plan: "ENTERPRISE",
+      planTitle: "Enterprise",
+      expired: false,
+    },
+    featureRequirements: {
+      masking: maskingRequirement,
+      classification: {
+        ...maskingRequirement,
+        feature: "FEATURE_DATA_CLASSIFICATION",
+        featureTitle: "Data classification",
+      },
+      catalogMasking: maskingRequirement,
+    },
     features: {
       masking: "available",
       classification: "available",
@@ -88,6 +110,22 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("semanticTypeDraft", () => {
+  it("prepares the first custom type when no semantic type setting exists", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("Setting not found", Code.NotFound)
+    );
+
+    const prepared = await prepareSemanticTypeDraft(proposal, context);
+    const validated = await validateSemanticTypeDraftForSave(
+      prepared.draft,
+      context
+    );
+
+    expect(prepared.draft.title).toBe(proposal.title);
+    expect(validated.draft).toEqual(prepared.draft);
+    expect(validated.types).toEqual([]);
+  });
+
   it("prepares a new unsaved type and preserves duplicate title and configuration", async () => {
     const first = await prepareSemanticTypeDraft(proposal, context);
     mocks.getSetting.mockResolvedValue(

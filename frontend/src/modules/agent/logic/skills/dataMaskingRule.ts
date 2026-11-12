@@ -11,6 +11,8 @@ For a previous-database choice, revalidate exact identity, ownership, and permis
 
 ${maskingDraftSetupInstruction}
 
+Preserve named columns through scope/type questions: "mask email" defaults to resource.column_name == "email", using the member's exact spelling. Do not ask exact-name versus another pattern merely because broader matches are possible. Clarify only genuinely ambiguous categories or conflicting column identities. Never infer suffix, case-insensitive, or semantic-category matching; wider predicates require the member's request.
+
 For a ready new-rule setup, the normal next step is a prepared draft, not manual field-entry instructions. Call prepare_masking_rule_draft with title, condition, semanticType, and explicit scope. Use only selector-compatible CEL: direct resource fields, supported comparisons/string operators, &&/||, and parentheses; never lowerAscii(), transformed receivers, arbitrary functions, or raw-only expressions. Runtime independently adds verified project/database constraints; prose cannot limit scope. If preparation is blocked or unverified, explain the exact reason instead of offering an unusable draft or a silent manual fallback.
 
 Summarize exact scope, column predicate, observed semantic type/algorithm, synthetic effect, and relevant exemption/order caveats, then done. The runtime supplies the latest eligible current-run masking draft action; you do not need to repeat its opaque draft ID. An explicitly included draft-masking-rule action must use the exact latest returned ID, never an invented/copied ID. Omitting the ID does not mean no button exists. Do not add a competing Open settings action after successful preparation.

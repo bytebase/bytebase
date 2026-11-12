@@ -37,6 +37,7 @@ import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThre
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
 import { usePlanReviewState } from "./hooks/usePlanReviewState";
+import { PlanSqlFixTargetProvider } from "./hooks/usePlanSqlFixTarget";
 import { SqlReviewV2Provider } from "./hooks/useSqlReviewV2";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
@@ -213,90 +214,95 @@ function ProjectPlanDetailPageInner({
 
   return (
     <PlanDetailProvider value={page}>
-      <ReleaseFileViewerProvider docked={viewerDocked}>
-        <SqlReviewV2Provider>
-          <div
-            ref={setPageHost}
-            data-testid="plan-detail-page"
-            className="relative min-h-full overflow-x-clip bg-control-bg/50"
-          >
+      <PlanSqlFixTargetProvider
+        selectedSpecId={effectiveSelectedSpecId}
+        onSelectedSpecIdChange={setSelectedSpecId}
+      >
+        <ReleaseFileViewerProvider docked={viewerDocked}>
+          <SqlReviewV2Provider>
             <div
-              className={cn(
-                "flex min-h-full flex-col",
-                page.ready ? "" : "invisible pointer-events-none"
-              )}
+              ref={setPageHost}
+              data-testid="plan-detail-page"
+              className="relative min-h-full overflow-x-clip bg-control-bg/50"
             >
-              {/* Only the title/action row is sticky (GitHub issue-header pattern);
+              <div
+                className={cn(
+                  "flex min-h-full flex-col",
+                  page.ready ? "" : "invisible pointer-events-none"
+                )}
+              >
+                {/* Only the title/action row is sticky (GitHub issue-header pattern);
               the description + metadata below scroll away beneath it. The
               dashboard main pane is the scroll container, so top-0 pins to it;
               z-20 keeps it above the phase rail nodes (z-10). The border appears
               only when stuck, so the row is flat at the top. */}
-              <header
-                ref={setHeader}
-                className={cn(
-                  "sticky top-0 z-20 shrink-0 bg-background",
-                  headerStuck && "border-b"
-                )}
-              >
-                <PlanDetailHeader />
-              </header>
-              <PlanDetailHeaderDetails />
+                <header
+                  ref={setHeader}
+                  className={cn(
+                    "sticky top-0 z-20 shrink-0 bg-background",
+                    headerStuck && "border-b"
+                  )}
+                >
+                  <PlanDetailHeader />
+                </header>
+                <PlanDetailHeaderDetails />
 
-              <ReleaseFileViewerDock
-                columnStyle={{
-                  top: layoutSize.header,
-                  height: Math.max(layoutSize.pane - layoutSize.header, 0),
+                <ReleaseFileViewerDock
+                  columnStyle={{
+                    top: layoutSize.header,
+                    height: Math.max(layoutSize.pane - layoutSize.header, 0),
+                  }}
+                >
+                  <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
+                    <PlanPhaseRail
+                      onSelectedSpecIdChange={setSelectedSpecId}
+                      selectedSpecId={effectiveSelectedSpecId}
+                    />
+                  </main>
+                </ReleaseFileViewerDock>
+              </div>
+
+              {!page.ready && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
+                  <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                  <div className="text-sm text-control-light">
+                    {t("common.loading")}
+                  </div>
+                </div>
+              )}
+
+              <AlertDialog
+                open={page.pendingLeaveConfirm}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    page.resolveLeaveConfirm(false);
+                  }
                 }}
               >
-                <main className="min-h-[calc(100vh-4rem)] min-w-0 flex-1">
-                  <PlanPhaseRail
-                    onSelectedSpecIdChange={setSelectedSpecId}
-                    selectedSpecId={effectiveSelectedSpecId}
-                  />
-                </main>
-              </ReleaseFileViewerDock>
+                <AlertDialogContent>
+                  <AlertDialogTitle>
+                    {t("common.leave-without-saving")}
+                  </AlertDialogTitle>
+                  <AlertDialogFooter>
+                    <Button
+                      appearance="outline"
+                      onClick={() => page.resolveLeaveConfirm(false)}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => page.resolveLeaveConfirm(true)}
+                    >
+                      {t("common.discard-changes")}
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-
-            {!page.ready && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-accent" />
-                <div className="text-sm text-control-light">
-                  {t("common.loading")}
-                </div>
-              </div>
-            )}
-
-            <AlertDialog
-              open={page.pendingLeaveConfirm}
-              onOpenChange={(open) => {
-                if (!open) {
-                  page.resolveLeaveConfirm(false);
-                }
-              }}
-            >
-              <AlertDialogContent>
-                <AlertDialogTitle>
-                  {t("common.leave-without-saving")}
-                </AlertDialogTitle>
-                <AlertDialogFooter>
-                  <Button
-                    appearance="outline"
-                    onClick={() => page.resolveLeaveConfirm(false)}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => page.resolveLeaveConfirm(true)}
-                  >
-                    {t("common.discard-changes")}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </SqlReviewV2Provider>
-      </ReleaseFileViewerProvider>
+          </SqlReviewV2Provider>
+        </ReleaseFileViewerProvider>
+      </PlanSqlFixTargetProvider>
     </PlanDetailProvider>
   );
 }

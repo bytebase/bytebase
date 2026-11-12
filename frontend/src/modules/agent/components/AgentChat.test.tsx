@@ -282,6 +282,8 @@ beforeEach(async () => {
     abortControllersByChatId: {},
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
+    sqlFixSourcesByChatId: {},
+    sqlFixDraftsById: {},
   });
 
   mocks.useTranslation.mockReset();
@@ -327,6 +329,33 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("offers a diagnostic SQL fix review without preparing or applying on render", async () => {
+    const store = useAgentStore.getState();
+    const resource = { kind: "plan" as const, name: "projects/sample/plans/9", project: "projects/sample", label: "projects/sample/plans/9" };
+    const chat = store.createChat({ context: resource.project, capability: { kind: "diagnostic", resource } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Review the SQL suggestion.", metadata: { actions: [{ kind: "review-sql-fix", draftId: "missing-local-source" }] } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    const button = container.querySelector<HTMLButtonElement>("[data-agent-action-review-sql-fix]");
+    expectCompactPrimaryAction(button, "agent.sql-fix.review");
+    expect(document.querySelector("[role=dialog]")).toBeNull();
+    await act(async () => button?.click());
+    expect(document.querySelector("[role=dialog]")?.textContent).toContain("agent.sql-fix.original-unavailable");
+    expect(mocks.applyPlanDraftToCurrent).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("does not turn a forged SQL fix action in a normal chat into a handoff", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "A normal answer.", metadata: { actions: [{ kind: "review-sql-fix", draftId: "forged" }] } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    expect(container.querySelector("[data-agent-action-review-sql-fix]")).toBeNull();
+    unmount();
+  });
+
   test("hides application preflight rows without deleting canonical outbound tool groups", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -1517,6 +1546,166 @@ describe("AgentChat", () => {
       });
     });
     expect(followUp?.disabled).toBe(true);
+    unmount();
+  });
+
+  test.each(
+    (["issue", "plan"] as const).flatMap((kind) =>
+      (["actions", "handoff", "both"] as const).map((format) => ({ kind, format }))
+    )
+  )("hides redundant Issue navigation in a $kind diagnostic with $format metadata", ({ kind, format }) => {
+    mocks.currentPath = "/projects/sample/issues/7?panel=checks#comments";
+    mocks.resolvedPath = "/projects/sample/issues/7";
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: {
+          kind,
+          name: `projects/sample/${kind}s/7`,
+          project: "projects/sample",
+          label: "Selected problem",
+        },
+      },
+    });
+    const handoff = { kind: "open-issue" as const, issue: "projects/sample/issues/7" };
+    const prompt = "How can I verify the corrected SQL?";
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "The diagnostic answer is still available.",
+      metadata: {
+        ...(format !== "actions" ? { handoff } : {}),
+        actions: [
+          ...(format !== "handoff" ? [{ kind: "open" as const, target: handoff }] : []),
+          { kind: "continue", prompt },
+        ],
+      },
+    });
+    const metadata = structuredClone(store.getMessages(chat.id)[0].metadata);
+    const onContinueAction = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <AgentChat onContinueAction={onContinueAction} />
+    );
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")).toBeNull();
+    expect(container.querySelector("[data-agent-answer]")?.textContent).toContain(
+      "The diagnostic answer is still available."
+    );
+    const followUp = container.querySelector<HTMLButtonElement>("[data-agent-action-continue]");
+    expect(followUp?.textContent).toContain(prompt);
+    act(() => followUp?.click());
+    expect(onContinueAction).toHaveBeenCalledWith(chat.id, prompt, []);
+    expect(store.getMessages(chat.id)[0].metadata).toEqual(metadata);
+    unmount();
+  });
+
+  test.each(["issue", "plan"] as const)("keeps navigation to another Issue in a %s diagnostic", (kind) => {
+    mocks.currentPath = `/projects/sample/${kind}s/7`;
+    mocks.resolvedPath = "/projects/sample/issues/8";
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: { kind, name: `projects/sample/${kind}s/7`, project: "projects/sample", label: "Selected problem" },
+      },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Inspect the related issue.",
+      metadata: { actions: [{ kind: "open", target: { kind: "open-issue", issue: "projects/sample/issues/8" } }] },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")?.getAttribute("href")).toBe(
+      "/projects/sample/issues/8"
+    );
+    unmount();
+  });
+
+  test("restores the diagnostic Issue handoff after navigating away", () => {
+    mocks.currentPath = "/projects/sample/issues/7";
+    mocks.resolvedPath = "/projects/sample/issues/7";
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: { kind: "issue", name: "projects/sample/issues/7", project: "projects/sample", label: "Selected issue" },
+      },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Return to the issue.",
+      metadata: { handoff: { kind: "open-issue", issue: "projects/sample/issues/7" } },
+    });
+    const metadata = structuredClone(store.getMessages(chat.id)[0].metadata);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")).toBeNull();
+    act(() => {
+      mocks.currentPath = "/projects/sample/plans/9";
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(container.querySelector("[data-agent-action-open]")?.getAttribute("href")).toBe(
+      "/projects/sample/issues/7"
+    );
+    act(() => {
+      mocks.currentPath = "/projects/sample/issues/7?panel=checks";
+      for (const listener of mocks.routeListeners) listener();
+    });
+    expect(container.querySelector("[data-agent-action-open]")).toBeNull();
+    expect(store.getMessages(chat.id)[0].metadata).toEqual(metadata);
+    unmount();
+  });
+
+  test.each(["actions", "handoff"] as const)("keeps normal Issue navigation from %s metadata", (format) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/sample" });
+    const handoff = { kind: "open-issue" as const, issue: "projects/sample/issues/7" };
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Review this issue.",
+      metadata: format === "actions" ? { actions: [{ kind: "open", target: handoff }] } : { handoff },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")?.textContent).toContain(
+      "agent.handoff.open-issue"
+    );
+    unmount();
+  });
+
+  test("keeps useful task navigation in a diagnostic chat", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      context: "projects/sample",
+      capability: {
+        kind: "diagnostic",
+        resource: { kind: "plan", name: "projects/sample/plans/7", project: "projects/sample", label: "Selected Plan" },
+      },
+    });
+    store.addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Inspect the failed task.",
+      metadata: { actions: [{ kind: "open", target: { kind: "view-failed-task", task: "projects/sample/plans/7/rollout/stages/prod/tasks/t1" } }] },
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+
+    expect(container.querySelector("[data-agent-action-open]")?.textContent).toContain(
+      "agent.handoff.view-failed-task"
+    );
     unmount();
   });
 
@@ -2941,6 +3130,48 @@ describe("AgentChat", () => {
     }
 
     unmount();
+  });
+
+  test.each(["user", "assistant"] as const)(
+    "wraps unbroken %s message text without changing its content",
+    (role) => {
+      const content =
+        'Diagnostic snapshot: {"sha256":"354b7196c9ba5fb4b21cf615bb6ec4cd5c3c0c26c8f296b0f42b0f8a1d4e9abc"}';
+      useAgentStore.getState().addMessage({ role, content });
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      render();
+      try {
+        const bubble =
+          role === "user"
+            ? Array.from(container.querySelectorAll("div")).find((element) =>
+                element.classList.contains("bg-info/10")
+              )
+            : container.querySelector("[data-agent-answer]");
+        expect(bubble?.textContent).toBe(content);
+        expect(bubble).toHaveClass("w-fit", "max-w-full", "wrap-anywhere");
+        expect(bubble).not.toHaveClass("truncate", "overflow-hidden", "break-all");
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("keeps wide fenced SQL in its own horizontal scroller", () => {
+    const sql = `SELECT '${"a".repeat(256)}';`;
+    useAgentStore.getState().addMessage({
+      role: "assistant",
+      content: `\`\`\`sql\n${sql}\n\`\`\``,
+    });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const pre = container.querySelector("[data-agent-answer] pre");
+      expect(pre?.textContent).toBe(`${sql}\n`);
+      expect(pre).toHaveClass("overflow-x-auto");
+      expect(pre).not.toHaveClass("whitespace-normal", "whitespace-pre-wrap");
+    } finally {
+      unmount();
+    }
   });
 
   test.each([

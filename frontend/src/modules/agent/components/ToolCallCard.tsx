@@ -321,11 +321,21 @@ export function ToolCallCard({ toolCall, result }: Props) {
     [toolCall.arguments]
   );
   const parsedResult = useMemo(() => parseJson(resultText), [resultText]);
-  const hasErrorResult =
+  const resultRecord =
     typeof parsedResult === "object" &&
     parsedResult !== null &&
-    !Array.isArray(parsedResult) &&
-    typeof (parsedResult as Record<string, unknown>).error === "string";
+    !Array.isArray(parsedResult)
+      ? (parsedResult as Record<string, unknown>)
+      : undefined;
+  const errorMessage =
+    typeof resultRecord?.error === "string"
+      ? resultRecord.error
+      : resultRecord?.kind === "error" &&
+          typeof resultRecord.message === "string"
+        ? resultRecord.message
+        : undefined;
+  const hasErrorResult =
+    errorMessage !== undefined || resultRecord?.kind === "error";
   const operationId =
     typeof parsedArguments === "object" &&
     parsedArguments !== null &&
@@ -363,7 +373,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
   const isAskUser = toolCall.name === "ask_user" || !!runtimeQuestionKey;
   const askError = isAskUser
     ? hasErrorResult
-      ? ((parsedResult as Record<string, unknown>).error as string)
+      ? errorMessage
       : resultText.startsWith("Error:")
         ? resultText
         : undefined

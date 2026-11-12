@@ -3,6 +3,7 @@ import { act, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
+import type { AgentSqlFixTargetAdapter } from "@/modules/agent/logic/sqlFix";
 import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import type { PlanDetailPageState } from "./shell/hooks/types";
 
@@ -23,6 +24,13 @@ const mocks = vi.hoisted(() => ({
   routerReplace: vi.fn(),
   selectedSpecRender: vi.fn(),
   usePlanDetailPage: vi.fn(),
+  sqlFixTarget: undefined as AgentSqlFixTargetAdapter | undefined,
+}));
+
+vi.mock("@/modules/agent/logic/sqlFix", () => ({
+  getAgentSqlFixIdentity: () => '["workspaces/example","users/me@example.com"]',
+  notifyAgentSqlFixTargetChanged: () => {},
+  registerAgentSqlFixTarget: (adapter: AgentSqlFixTargetAdapter) => { mocks.sqlFixTarget = adapter; return () => { mocks.sqlFixTarget = undefined; }; },
 }));
 
 vi.stubGlobal("localStorage", mocks.localStorage);
@@ -210,6 +218,15 @@ const changesMountIdText = () =>
   container.querySelector('[data-testid="changes-mount-id"]')?.textContent;
 
 describe("ProjectPlanDetailPage", () => {
+  it("keeps the SQL-fix target available when saved Changes is collapsed", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.activePhases = new Set(["review"]);
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    await act(async () => { root.render(<ProjectPlanDetailPage planId="42" projectId="foo" />); });
+    expect(changesMountIdText()).toBeUndefined();
+    expect(mocks.sqlFixTarget).toBeDefined();
+  });
   it("only expands phases while creating a plan", async () => {
     const page = buildPage();
     mocks.usePlanDetailPage.mockReturnValue(page);

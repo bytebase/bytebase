@@ -12,8 +12,11 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
+  StatementAnchorSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import type { Environment } from "@/types/v1/environment";
 
 const mocks = vi.hoisted(() => ({
@@ -21,12 +24,25 @@ const mocks = vi.hoisted(() => ({
   createIssueComment: vi.fn(),
   notify: vi.fn(),
   updateIssueComment: vi.fn(),
+  openAgentWithPrompt: vi.fn(),
+  diagnosticHelp: vi.fn(),
   hasPermission: vi.fn((_project: unknown, _permission: unknown) => true),
   envTier: true,
   databasesByName: {} as Record<string, unknown>,
   environmentList: [] as unknown[],
   batchFetch: vi.fn(async (_names: string[]) => [] as unknown[]),
 }));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.openAgentWithPrompt,
+}));
+vi.mock("@/modules/agent/logic/diagnosticHelp", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/modules/agent/logic/diagnosticHelp")>();
+  return { ...original, openAgentDiagnosticHelp: (context: Parameters<typeof original.openAgentDiagnosticHelp>[0]) => {
+    mocks.diagnosticHelp(context);
+    return original.openAgentDiagnosticHelp(context);
+  } };
+});
 
 vi.mock("@/utils/featureGates", () => ({
   sqlReviewV2Enabled: () => mocks.sqlReviewV2,
@@ -210,6 +226,232 @@ const buttonByText = (text: string) =>
   );
 
 const stateCheckbox = () => container.querySelector('[role="checkbox"]');
+
+const originalHash = "a".repeat(64);
+const finding = () => {
+  const root = comment("finding", "Missing WHERE clause in the original SQL.", {
+    creator: "",
+  });
+  root.statementAnchor = create(StatementAnchorSchema, {
+    spec: "spec-1",
+    sheetSha256: originalHash,
+    startPosition: { line: 3, column: 0 },
+    endPosition: { line: 5, column: 0 },
+  });
+  root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+    ruleType: ReviewRuleType.WALK_THROUGH,
+    priority: IssueComment_ReviewMetadata_Priority.P0,
+    attempt: 7n,
+    codes: ["WT101"],
+    targets: ["instances/main/databases/books"],
+  });
+  const spec = create(Plan_SpecSchema, {
+    id: "spec-1",
+    config: {
+      case: "changeDatabaseConfig",
+      value: {
+        targets: ["instances/main/databases/books"],
+        sheet: `projects/p/sheets/${"b".repeat(64)}`,
+      },
+    },
+  });
+  return { root, spec };
+};
+
+const diagnosticSnapshot = () => {
+  const [prompt, references, , options] = mocks.openAgentWithPrompt.mock.lastCall!;
+  return {
+    snapshot: JSON.parse(prompt.slice(prompt.indexOf("\n") + 1)),
+    references,
+    options,
+  };
+};
+
+describe("automated finding diagnostic help", () => {
+  test("title-bar folding preserves SQL excerpt, finding markers, diagnostic help and original SQL provenance", () => {
+    const { root: findingRoot, spec } = finding();
+    if (spec.config.case === "changeDatabaseConfig")
+      spec.config.value.targets = ["instances/main/databases/other"];
+    const onToggleFold = vi.fn();
+    const thread = groupThreads([findingRoot])[0];
+    const view = (folded: boolean) => (
+      <CommentThreadCard
+        bar={{ place: "changes", title: "Comment on lines 3-5", foldLabel: "Comment on lines 3-5", folded, onToggleFold }}
+        excerpt={<div data-testid="finding-sql-excerpt">DELETE FROM books;</div>}
+        issue={create(IssueSchema, { name: ISSUE, plan: "projects/p/plans/42" })}
+        project={project}
+        spec={spec}
+        thread={thread}
+      />
+    );
+
+    render(view(true));
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    expect(container.querySelector('[data-testid="finding-sql-excerpt"]')).toBeNull();
+    expect(container.querySelector('[data-testid="thread-reply-footer"]')).toBeNull();
+    expect(container.querySelector('[data-testid="thread-bar"] [data-testid="review-priority"]')?.textContent).toBe("P0");
+    expect(mocks.openAgentWithPrompt).not.toHaveBeenCalled();
+
+    render(view(false));
+    const askAgent = buttonByText("agent.diagnostic-help.ask-agent");
+    expect(container.querySelectorAll('[aria-label="agent.diagnostic-help.ask-agent"]')).toHaveLength(1);
+    expect(container.querySelector('[data-testid="thread-comment"]')?.contains(askAgent!)).toBe(true);
+    expect(container.querySelector('[data-testid="thread-bar"]')?.contains(askAgent!)).toBe(false);
+    expect(container.querySelector('[data-testid="finding-sql-excerpt"]')?.textContent).toBe("DELETE FROM books;");
+    expect(container.querySelector('[data-testid="thread-reply-footer"]')).not.toBeNull();
+    click(askAgent);
+
+    expect(onToggleFold).not.toHaveBeenCalled();
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({
+      specId: "spec-1",
+      sha256: originalHash,
+      targets: ["instances/main/databases/books"],
+    });
+    expect(diagnosticSnapshot().references).toEqual([{
+      kind: "plan",
+      name: "projects/p/plans/42",
+      project: "projects/p",
+      label: "projects/p/plans/42",
+    }]);
+
+    render(view(true));
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    expect(container.querySelector('[data-testid="thread-comment"]')).toBeNull();
+    expect(mocks.openAgentWithPrompt).toHaveBeenCalledTimes(1);
+    expect(onToggleFold).not.toHaveBeenCalled();
+  });
+
+  test("click binds one owning Plan and preserves original finding evidence, not the current sheet", () => {
+    mocks.sqlReviewV2 = true;
+    const { root: findingRoot, spec } = finding();
+    render(<CommentThreadCard bar={OPEN_BAR} issue={create(IssueSchema, { name: ISSUE, plan: "projects/p/plans/42" })} project={project} spec={spec} thread={groupThreads([findingRoot])[0]} />);
+    expect(mocks.openAgentWithPrompt).not.toHaveBeenCalled();
+    expect(container.querySelectorAll('[aria-label="agent.diagnostic-help.ask-agent"]')).toHaveLength(1);
+
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+
+    const { snapshot, references, options } = diagnosticSnapshot();
+    expect(references).toEqual([{ kind: "plan", name: "projects/p/plans/42", project: "projects/p", label: "projects/p/plans/42" }]);
+    expect(options).toEqual({ capability: { kind: "diagnostic", resource: references[0] } });
+    expect(snapshot).toMatchObject({ kind: "review-finding", sourceId: `${ISSUE}/issueComments/finding`, detail: "Missing WHERE clause in the original SQL." });
+    expect(snapshot.facts).toEqual(expect.arrayContaining([
+      { label: "Issue", value: ISSUE },
+      { label: "Review run", value: `${ISSUE}/reviewRun, attempt 7` },
+      { label: "Rule", value: "WALK_THROUGH: WT101" },
+      { label: "Priority", value: "P0" },
+      { label: "Targets", value: "instances/main/databases/books" },
+      { label: "Spec", value: "spec-1" },
+      { label: "Original sheet SHA256", value: originalHash },
+      { label: "Original SQL range", value: "3:0-5:0" },
+    ]));
+    expect(snapshot.facts).toContainEqual({ label: "Evidence", value: "Partial: original SQL snapshot unavailable; use the original revision identifiers, not current SQL." });
+    expect(snapshot.sql).toBeUndefined();
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash, targets: ["instances/main/databases/books"] });
+    expect(JSON.stringify(snapshot)).not.toContain("b".repeat(64));
+    expect(mocks.createIssueComment).not.toHaveBeenCalled();
+    expect(mocks.updateIssueComment).not.toHaveBeenCalled();
+  });
+
+  test("resolved and ordinary threads have no action; an explicitly reopened superseded finding retains its revision", () => {
+    const { root: findingRoot, spec } = finding();
+    findingRoot.reviewMetadata!.superseded = true;
+    const props = { bar: OPEN_BAR, issue, project, spec };
+    const view = () => <CommentThreadCard {...props} thread={groupThreads([findingRoot])[0]} />;
+    findingRoot.threadState = IssueComment_ThreadState.RESOLVED;
+    render(view());
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    findingRoot.threadState = IssueComment_ThreadState.OPEN;
+    render(view());
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+    expect(diagnosticSnapshot().references).toEqual([{ kind: "issue", name: ISSUE, project: "projects/p", label: ISSUE }]);
+    expect(diagnosticSnapshot().snapshot.facts).toContainEqual({ label: "Original sheet SHA256", value: originalHash });
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({ specId: "spec-1", sha256: originalHash, targets: ["instances/main/databases/books"] });
+    findingRoot.threadState = IssueComment_ThreadState.RESOLVED;
+    render(view());
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    render(<CommentThreadCard {...props} thread={groupThreads([comment("ordinary", "A normal comment")])[0]} />);
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+  });
+
+  test("an unanchored AI finding uses its Issue without inventing a SQL revision", () => {
+    const findingRoot = comment("ai-finding", "The proposed change may discard records.", { creator: "" });
+    findingRoot.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
+      title: "Potential data loss",
+      priority: IssueComment_ReviewMetadata_Priority.P1,
+      attempt: 2n,
+    });
+    render(<CommentThreadCard bar={OPEN_BAR} issue={issue} project={project} thread={groupThreads([findingRoot])[0]} />);
+
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+
+    const { snapshot, references } = diagnosticSnapshot();
+    expect(references).toEqual([{ kind: "issue", name: ISSUE, project: "projects/p", label: ISSUE }]);
+    expect(snapshot.summary).toBe("Potential data loss");
+    expect(snapshot.detail).toBe("The proposed change may discard records.");
+    expect(snapshot.facts).toContainEqual({ label: "Review run", value: `${ISSUE}/reviewRun, attempt 2` });
+    expect(snapshot.facts.some((fact: { label: string }) => fact.label === "Rule")).toBe(false);
+    expect(snapshot.facts.some((fact: { label: string }) => fact.label === "Original sheet SHA256")).toBe(false);
+    expect(snapshot.sql).toBeUndefined();
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toBeUndefined();
+  });
+
+  test("retains the finding's database targets instead of its retargeted spec", () => {
+    const { root: findingRoot, spec } = finding();
+    if (spec.config.case === "changeDatabaseConfig")
+      spec.config.value.targets = ["instances/main/databases/other"];
+    render(<CommentThreadCard bar={OPEN_BAR} issue={issue} project={project} spec={spec} thread={groupThreads([findingRoot])[0]} />);
+
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+    findingRoot.reviewMetadata!.targets.push("instances/main/databases/later");
+
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toEqual({
+      specId: "spec-1",
+      sha256: originalHash,
+      targets: ["instances/main/databases/books"],
+    });
+  });
+
+  test.each(["missing-spec", "missing-hash", "invalid-hash"])("keeps incomplete anchor %s diagnose-only", (missing) => {
+    const { root: findingRoot } = finding();
+    findingRoot.reviewMetadata!.targets = [];
+    if (missing === "missing-spec") findingRoot.statementAnchor!.spec = "";
+    if (missing === "missing-hash") findingRoot.statementAnchor!.sheetSha256 = "";
+    if (missing === "invalid-hash") findingRoot.statementAnchor!.sheetSha256 = "g".repeat(64);
+    render(<CommentThreadCard bar={OPEN_BAR} issue={issue} project={project} thread={groupThreads([findingRoot])[0]} />);
+
+    click(buttonByText("agent.diagnostic-help.ask-agent"));
+
+    expect(mocks.diagnosticHelp.mock.lastCall?.[0].sqlFixSource).toBeUndefined();
+  });
+
+  test.each(["project", "comment", "spec"])("suppresses mismatched %s evidence", (mismatch) => {
+    const { root: findingRoot, spec } = finding();
+    if (mismatch === "comment") findingRoot.name = "projects/p/issues/2/issueComments/finding";
+    if (mismatch === "spec") findingRoot.reviewMetadata!.targets = [];
+    const thread = groupThreads([findingRoot])[0];
+    render(<CommentThreadCard bar={OPEN_BAR} issue={issue} project={mismatch === "project" ? { ...project, name: "projects/other" } : project} spec={mismatch === "spec" ? create(Plan_SpecSchema, { ...spec, id: "another-spec" }) : spec} thread={thread} />);
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    expect(mocks.openAgentWithPrompt).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { name: "projects/p/issues/create" },
+    { name: "projects/p/issues/-" },
+    { name: "projects/other/issues/1" },
+    { name: ISSUE, plan: "projects/other/plans/42" },
+    { name: ISSUE, plan: "projects/p/plans/create" },
+    { name: ISSUE, plan: "projects/p/plans/0" },
+    { name: ISSUE, plan: "projects/p/plans/42/extra" },
+  ])("suppresses invalid or mismatched owning names %j after a valid render", (owner) => {
+    const { root: findingRoot, spec } = finding();
+    const thread = groupThreads([findingRoot])[0];
+    render(<CommentThreadCard bar={OPEN_BAR} issue={issue} project={project} spec={spec} thread={thread} />);
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeDefined();
+    render(<CommentThreadCard bar={OPEN_BAR} issue={create(IssueSchema, owner)} project={project} spec={spec} thread={thread} />);
+    expect(buttonByText("agent.diagnostic-help.ask-agent")).toBeUndefined();
+    expect(mocks.openAgentWithPrompt).not.toHaveBeenCalled();
+  });
+});
 
 // Submits the open composer, optionally flipping the thread-state checkbox
 // first so the reply also resolves or reopens the thread.

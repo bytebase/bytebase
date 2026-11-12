@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { v4 as uuidv4 } from "uuid";
 import type { AgentPageHelpRequest } from "@/modules/agent/logic/contextualHelp";
@@ -287,6 +288,7 @@ vi.mock("@/types/proto-es/v1/org_policy_service_pb", () => ({
 }));
 vi.mock("@/types/proto-es/v1/setting_service_pb", () => ({
   GetSettingRequestSchema: {},
+  SettingSchema: {},
   Setting_SettingName: { DATA_CLASSIFICATION: 2, SEMANTIC_TYPES: 1 },
 }));
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
@@ -443,6 +445,55 @@ function openRuleHelp() {
 }
 
 describe("GlobalMaskingPage", () => {
+  it("opens and saves both queued rules when no semantic type setting exists", async () => {
+    freshSemanticSetting.mockRejectedValue(
+      new ConnectError("Setting not found", Code.NotFound)
+    );
+    await renderPage();
+    state.upsertPolicy.mockImplementation(async (request) => {
+      const { policy } = request as { policy: { policy: unknown } };
+      state.getOrFetchPolicyByParentAndType.mockResolvedValue(policy);
+    });
+
+    await act(async () =>
+      openMaskingRuleDraftsInEditor(
+        [agentDraft, { ...agentDraft, title: "Name masking", semanticType: "PARTIAL" }],
+        agentContext
+      )
+    );
+    expect(screen.getByRole("textbox", { name: prefix + "name" })).toHaveValue(agentDraft.title);
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(state.upsertPolicy).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByRole("button", { name: "agent.masking-rule-draft.queue.review" }));
+    await screen.findByDisplayValue("Name masking");
+    fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+    await waitFor(() => expect(state.upsertPolicy).toHaveBeenCalledTimes(2));
+
+    expect(savedRules().slice(0, 2)).toEqual(fixtures);
+    expect(savedRules().slice(2).map((rule) => rule.semanticType)).toEqual(["DEFAULT", "PARTIAL"]);
+  });
+
+  it.each([Code.PermissionDenied, Code.Unavailable])(
+    "preserves queued drafts and existing rules after semantic setting read failure %s",
+    async (code) => {
+      await renderPage();
+      await act(async () =>
+        openMaskingRuleDraftsInEditor(
+          [agentDraft, { ...agentDraft, title: "Second draft" }],
+          agentContext
+        )
+      );
+      freshSemanticSetting.mockRejectedValue(new ConnectError("Read failed", code));
+      fireEvent.click(screen.getAllByRole("button", { name: prefix + "create-rule" }).at(-1)!);
+
+      await screen.findByText(prefix + "error.save-failed");
+      expect(state.upsertPolicy).not.toHaveBeenCalled();
+      expect(screen.getByRole("textbox", { name: prefix + "name" })).toHaveValue(agentDraft.title);
+      expect(screen.getByText("Test masking")).toBeInTheDocument();
+      expect(screen.getByText("Production masking")).toBeInTheDocument();
+    }
+  );
+
   it.each(["undefined", "rejected", "incompatible"])(
     "preserves existing rules when a %s policy read cannot verify a recheck",
     async (failure) => {

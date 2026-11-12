@@ -5,6 +5,26 @@ import {
   openAgentDiagnosticHelp,
 } from "./diagnosticHelp";
 import { openAgentWithPrompt } from "./instanceConnectionHelp";
+import { type AgentSqlFixSource, registerAgentSqlFixTarget } from "./sqlFix";
+
+const sqlFixMocks = vi.hoisted(() => ({
+  setSource: vi.fn(),
+  workspace: "workspaces/example",
+  user: "users/member@example.com",
+}));
+vi.mock("../store/agent", () => ({
+  useAgentStore: {
+    getState: () => ({ setSqlFixSource: sqlFixMocks.setSource }),
+  },
+}));
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({
+      workspaceResourceName: () => sqlFixMocks.workspace,
+      currentUser: { name: sqlFixMocks.user },
+    }),
+  },
+}));
 
 vi.mock("./instanceConnectionHelp", () => ({ openAgentWithPrompt: vi.fn() }));
 
@@ -32,6 +52,206 @@ export const snapshotFromPrompt = (prompt: string) =>
   JSON.parse(prompt.slice(prompt.indexOf("\n") + 1));
 
 describe("Agent diagnostic snapshot", () => {
+  test("marks the complete replacement separately from explanatory snippets", () => {
+    expect(buildAgentDiagnosticPrompt(context())).toContain("sql replacement");
+  });
+
+  test.each([
+    "user-resolve",
+    "user-reject",
+    "workspace-resolve",
+    "workspace-reject",
+  ])(
+    "does not queue old evidence after an async %s scope change",
+    async (scenario) => {
+      const input = context();
+      input.sqlFixSource = { sha256: "a".repeat(64) };
+      let resolve!: (value: undefined) => void;
+      let reject!: (reason: Error) => void;
+      const unregister = registerAgentSqlFixTarget({
+        capture: () =>
+          new Promise<undefined>((done, fail) => {
+            resolve = done;
+            reject = fail;
+          }),
+        reveal: () => {},
+        inspect: () => ({ status: "unavailable" }),
+        apply: () => false,
+      });
+      const before = vi.mocked(openAgentWithPrompt).mock.calls.length;
+      try {
+        const pending = openAgentDiagnosticHelp(input);
+        if (scenario.startsWith("user"))
+          sqlFixMocks.user = "users/other@example.com";
+        else sqlFixMocks.workspace = "workspaces/other";
+        if (scenario.endsWith("reject"))
+          reject(new Error("old request failed"));
+        else resolve(undefined);
+        await pending;
+        expect(vi.mocked(openAgentWithPrompt).mock.calls.length).toBe(before);
+      } finally {
+        sqlFixMocks.user = "users/member@example.com";
+        sqlFixMocks.workspace = "workspaces/example";
+        unregister();
+      }
+    }
+  );
+
+  const sqlFixSource = (input = context()): AgentSqlFixSource => ({
+    identity: JSON.stringify([
+      "workspaces/example",
+      "users/member@example.com",
+    ]),
+    pageKey: "/projects/example/plans/42",
+    resource: input.resource,
+    sourceId: input.sourceId,
+    plan: "projects/example/plans/42",
+    specId: "spec-1",
+    sheet: "projects/example/sheets/9",
+    targets: ["instances/prod/databases/example"],
+    sha256: "a".repeat(64),
+    sql: input.sql!.text,
+  });
+
+  test("registers the full trusted source before queueing its diagnostic run", () => {
+    const input = context();
+    input.sqlFixSource = { specId: "spec-1", sha256: "a".repeat(64) };
+    const source = sqlFixSource(input);
+    const unregister = registerAgentSqlFixTarget({
+      capture: () => source,
+      reveal: vi.fn(),
+      inspect: () => ({ status: "ready", currentSql: source.sql }),
+      apply: () => true,
+    });
+    try {
+      openAgentDiagnosticHelp(input);
+      const [prompt, , onChatCreated, options] =
+        vi.mocked(openAgentWithPrompt).mock.lastCall!;
+      expect(snapshotFromPrompt(prompt).sql.text).toBe(source.sql);
+      expect(prompt).toContain("COMPLETE replacement");
+      expect(options?.capability).toEqual({
+        kind: "diagnostic",
+        resource: { ...input.resource, label: input.resource.name },
+      });
+      expect(options).not.toHaveProperty("sqlFixSource");
+      expect(onChatCreated).toBeTypeOf("function");
+      onChatCreated!("trusted-chat");
+      expect(sqlFixMocks.setSource).toHaveBeenLastCalledWith(
+        "trusted-chat",
+        source
+      );
+    } finally {
+      unregister();
+    }
+  });
+
+  test.each([
+    { label: "SQL source", value: "Unavailable for this result" },
+    {
+      label: "Evidence",
+      value:
+        "Partial: original SQL snapshot unavailable; use the original revision identifiers, not current SQL.",
+    },
+  ])(
+    "replaces obsolete unavailable-source evidence after capture: $label",
+    (fact) => {
+      const input = context();
+      input.sqlFixSource = { sha256: "a".repeat(64) };
+      input.sql = undefined;
+      input.facts = [fact, { label: "Rule", value: "syntax" }];
+      const source = { ...sqlFixSource(), sourceId: input.sourceId };
+      const unregister = registerAgentSqlFixTarget({
+        capture: () => source,
+        reveal: vi.fn(),
+        inspect: () => ({ status: "ready" }),
+        apply: () => true,
+      });
+      try {
+        openAgentDiagnosticHelp(input);
+        const [prompt] = vi.mocked(openAgentWithPrompt).mock.lastCall!;
+        const snapshot = snapshotFromPrompt(prompt);
+        expect(snapshot.sql.text).toBe(source.sql);
+        expect(snapshot.facts).toContainEqual({
+          label: "Rule",
+          value: "syntax",
+        });
+        expect(snapshot.facts).not.toContainEqual(fact);
+        expect(snapshot.facts).toContainEqual({
+          label: fact.label,
+          value: "Exact checked SQL snapshot included",
+        });
+      } finally {
+        unregister();
+      }
+    }
+  );
+
+  test.each(["redacted", "bounded-prompt", "oversized"])(
+    "keeps %s SQL diagnosis-only",
+    (reason) => {
+      const input = context();
+      input.sqlFixSource = { sha256: "a".repeat(64) };
+      const source = sqlFixSource(input);
+      if (reason === "redacted")
+        source.sql = "ALTER USER app PASSWORD 'not-to-persist';";
+      if (reason === "bounded-prompt") {
+        input.detail = '"'.repeat(2000);
+        source.sql = "SELECT 1;".repeat(200);
+      }
+      if (reason === "oversized") source.sql = "SELECT 1;".repeat(300);
+      const unregister = registerAgentSqlFixTarget({
+        capture: () => source,
+        reveal: vi.fn(),
+        inspect: () => ({ status: "ready" }),
+        apply: () => true,
+      });
+      try {
+        openAgentDiagnosticHelp(input);
+        const [prompt, , onChatCreated] =
+          vi.mocked(openAgentWithPrompt).mock.lastCall!;
+        expect(prompt).not.toContain("not-to-persist");
+        expect(onChatCreated).toBeUndefined();
+      } finally {
+        unregister();
+      }
+    }
+  );
+
+  test("awaits source capture before launching and safely falls back after failure", async () => {
+    const input = context();
+    input.sqlFixSource = { sha256: "a".repeat(64) };
+    const source = sqlFixSource(input);
+    let resolve: (value: AgentSqlFixSource) => void = () => {};
+    const unregister = registerAgentSqlFixTarget({
+      capture: () =>
+        new Promise<AgentSqlFixSource>((done) => {
+          resolve = done;
+        }),
+      reveal: vi.fn(),
+      inspect: () => ({ status: "ready" }),
+      apply: () => true,
+    });
+    const before = vi.mocked(openAgentWithPrompt).mock.calls.length;
+    const pending = openAgentDiagnosticHelp(input);
+    expect(vi.mocked(openAgentWithPrompt).mock.calls.length).toBe(before);
+    resolve(source);
+    await pending;
+    expect(vi.mocked(openAgentWithPrompt).mock.calls.length).toBe(before + 1);
+    unregister();
+    const unregisterFailure = registerAgentSqlFixTarget({
+      capture: () => Promise.reject(new Error("SQL unavailable")),
+      reveal: vi.fn(),
+      inspect: () => ({ status: "unavailable" }),
+      apply: () => false,
+    });
+    try {
+      await expect(openAgentDiagnosticHelp(input)).resolves.toBeUndefined();
+      expect(vi.mocked(openAgentWithPrompt).mock.lastCall![2]).toBeUndefined();
+    } finally {
+      unregisterFailure();
+    }
+  });
+
   test("preserves source identity and draft evidence as parseable data", () => {
     const prompt = buildAgentDiagnosticPrompt(context());
     const snapshot = snapshotFromPrompt(prompt);
@@ -237,6 +457,114 @@ describe("Agent diagnostic snapshot", () => {
 
     expect(snapshotFromPrompt(prompt).sql.text).toBe(input.sql!.text);
   });
+
+  test.each([
+    [
+      "ALTER USER app IDENTIFIED BY 'new-example-password' REPLACE 'old-example-password'; SELECT 1;",
+      "ALTER USER app IDENTIFIED BY [redacted] REPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      "ALTER USER app IDENTIFIED WITH caching_sha2_password BY 'new-example-password'\nREPLACE 'old-example-password'; SELECT 1;",
+      "ALTER USER app IDENTIFIED WITH caching_sha2_password BY [redacted]\nREPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      "ALTER USER app IDENTIFIED BY RANDOM PASSWORD REPLACE 'old-example-password'; SELECT 1;",
+      "ALTER USER app IDENTIFIED BY RANDOM PASSWORD REPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      "ALTER USER app IDENTIFIED WITH caching_sha2_password BY RANDOM PASSWORD REPLACE 'old-example-password'; SELECT 1;",
+      "ALTER USER app IDENTIFIED WITH caching_sha2_password BY RANDOM PASSWORD REPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      'ALTER USER app IDENTIFIED BY "new-example-password" REPLACE "old-example-password"; SELECT 1;',
+      "ALTER USER app IDENTIFIED BY [redacted] REPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      "SET PASSWORD FOR 'app'@'localhost' = 'new-example-password' REPLACE 'old-example-password'; SELECT 1;",
+      "SET PASSWORD FOR 'app'@'localhost' = [redacted] REPLACE [redacted]; SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING PASSWORD('old-example-password'); SELECT 1;",
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING PASSWORD([redacted]); SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED WITH 'ed25519' AS PASSWORD ('old-example-password'); SELECT 1;",
+      "CREATE USER app IDENTIFIED WITH 'ed25519' AS PASSWORD ([redacted]); SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED BY PASSWORD '*0123456789ABCDEF0123456789ABCDEF01234567'; SELECT 1;",
+      "CREATE USER app IDENTIFIED BY PASSWORD [redacted]; SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING '*0123456789ABCDEF0123456789ABCDEF01234567' OR ed25519 USING PASSWORD('old-example-password'); SELECT 1;",
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING [redacted] OR ed25519 USING PASSWORD([redacted]); SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING '*0123456789ABCDEF0123456789ABCDEF01234567' OR ed25519 USING 'old-example-password'; SELECT 1;",
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING [redacted] OR ed25519 USING [redacted]; SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING PASSWORD('new-example-password') OR unix_socket OR ed25519 AS 'old-example-password'; SELECT 1;",
+      "CREATE USER app IDENTIFIED VIA mysql_native_password USING PASSWORD([redacted]) OR unix_socket OR ed25519 AS [redacted]; SELECT 1;",
+    ],
+    [
+      "CREATE USER app IDENTIFIED VIA unix_socket OR ed25519 USING 'old-example-password'; SELECT 1;",
+      "CREATE USER app IDENTIFIED VIA unix_socket OR ed25519 USING [redacted]; SELECT 1;",
+    ],
+  ])(
+    "redacts complete account authentication credentials before launch: %s",
+    (evidence, expected) => {
+      vi.mocked(openAgentWithPrompt).mockClear();
+      const input = context();
+      input.summary = evidence;
+      input.detail = evidence;
+      input.sql!.text = evidence;
+      input.sql!.sheet = evidence;
+      input.facts = [{ label: "evidence", value: evidence }];
+
+      openAgentDiagnosticHelp(input);
+
+      expect(openAgentWithPrompt).toHaveBeenCalledOnce();
+      const [prompt, references, , options] =
+        vi.mocked(openAgentWithPrompt).mock.lastCall!;
+      const outbound = JSON.stringify({ prompt, references, options });
+      expect(outbound).not.toContain("new-example-password");
+      expect(outbound).not.toContain("old-example-password");
+      expect(outbound).not.toContain("0123456789ABCDEF");
+      expect(snapshotFromPrompt(prompt)).toMatchObject({
+        summary: expected,
+        detail: expected,
+        sql: {
+          source: "draft",
+          text: expected,
+          sheet: expected,
+          sha256: input.sql!.sha256,
+        },
+        facts: [{ label: "evidence", value: expected }],
+        truncated: [],
+      });
+    }
+  );
+
+  test.each([
+    "CREATE TABLE accounts (password TEXT NOT NULL);",
+    "ALTER TABLE accounts ADD password VARCHAR(255);",
+    "SELECT password FROM accounts;",
+    "SELECT password AS current_password FROM accounts;",
+    "SELECT REPLACE('before', 'old', 'new') FROM accounts;",
+    "CREATE USER app IDENTIFIED VIA unix_socket;",
+    "ALTER USER app IDENTIFIED BY RANDOM PASSWORD;",
+  ])(
+    "preserves noncredential SQL involving password identifiers: %s",
+    (sql) => {
+      const input = context();
+      input.sql!.text = sql;
+      const snapshot = snapshotFromPrompt(buildAgentDiagnosticPrompt(input));
+      expect(snapshot.sql.text).toBe(sql);
+      expect(snapshot.sql.sha256).toBe(input.sql!.sha256);
+      expect(snapshot.truncated).toEqual([]);
+    }
+  );
 
   test.each([
     ["SET PASSWORD FOR 'app'@'localhost' =", "'example-secret'"],

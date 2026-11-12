@@ -69,6 +69,7 @@ import {
   dispatchPreparedApiCall,
   prepareApiCall,
   type CallApiArgs,
+  type PreparedApiCall,
 } from "./callApi";
 import { createDatabaseCountTool } from "./databaseCount";
 import { createDatabaseOverviewTool } from "./databaseOverview";
@@ -92,7 +93,10 @@ import {
   getMaskingScopeChoices,
 } from "./maskingChoices";
 import { createProjectOverviewTool } from "./projectOverview";
-import { apiTargetsAnotherProject } from "./referencedProjectApiScope";
+import {
+  apiTargetsAnotherProject,
+  isApiFilterConstrainedToProject,
+} from "./referencedProjectApiScope";
 import { searchApi, type SearchApiArgs } from "./searchApi";
 import { createWorkspaceOverviewTool } from "./workspaceOverview";
 import { createWorkspaceRecentActivityTool } from "./workspaceRecentActivity";
@@ -170,7 +174,9 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
     ? normalizeAgentHandoff(args.handoff)
     : undefined;
   const actions = args.success
-    ? normalizeAgentResponseActions(args.actions)
+    ? normalizeAgentResponseActions(args.actions).filter(
+        (action) => action.kind !== "review-sql-fix"
+      )
     : [];
   return {
     kind: "done",
@@ -376,6 +382,30 @@ const targetsSelectedPlan = (
     return false;
   }
   return (args.body as Record<string, unknown>).name === referencedPlan;
+};
+
+const databaseListIsProjectConstrained = async (
+  call: PreparedApiCall,
+  project: string
+): Promise<boolean> => {
+  try {
+    const body = JSON.parse(call.body) as Record<string, unknown>;
+    if (
+      body.parent === project ||
+      (typeof body.parent === "string" &&
+        body.parent.startsWith(`${project}/instances/`) &&
+        /^projects\/[^/]+\/instances\/[^/]+$/.test(body.parent))
+    ) {
+      return true;
+    }
+    // Workspace and shared-instance parents can include other projects' databases.
+    return (
+      typeof body.filter === "string" &&
+      (await isApiFilterConstrainedToProject(body.filter, project))
+    );
+  } catch {
+    return false;
+  }
 };
 
 export interface AgentToolDefinitionOptions {
@@ -739,7 +769,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             type: "string",
             enum: ["input", "confirm", "choose"],
             description:
-              'Defaults to "input" when omitted. kind="choose" requires a non-empty options array.',
+              'Defaults to "input" when omitted without options. Non-empty options require kind="choose"; kind="choose" requires a non-empty options array.',
           },
           resourceKind: {
             type: "string",
@@ -763,7 +793,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           options: {
             type: "array",
             description:
-              "Required for choose prompts. Each option should include a user-visible label and a stable value.",
+              'Only for kind="choose", where a non-empty array is required. Each option should include a user-visible label and a stable value.',
             items: {
               type: "object",
               properties: {
@@ -1555,7 +1585,14 @@ export function createToolExecutor(
         }
         if (
           referencedProject &&
-          (await apiTargetsAnotherProject(prepared.call, referencedProject))
+          ((await apiTargetsAnotherProject(prepared.call, referencedProject)) ||
+            (isDiagnostic &&
+              prepared.call.operationId ===
+                "bytebase.v1.DatabaseService.ListDatabases" &&
+              !(await databaseListIsProjectConstrained(
+                prepared.call,
+                referencedProject
+              ))))
         ) {
           return toToolResult(
             JSON.stringify({
@@ -1909,7 +1946,7 @@ export function createToolExecutor(
           ? projectName
           : undefined;
         const selectedProject =
-          typeof args.project === "string" && args.project
+          typeof args.project === "string" && args.project.trim()
             ? args.project
             : boundProject;
         if (
@@ -1931,8 +1968,10 @@ export function createToolExecutor(
         const historical = options.historicalDatabase;
         const candidate =
           referencedDatabase ??
-          (typeof args.database === "string" ? args.database : undefined) ??
-          (historical?.project === selectedProject
+          (typeof args.database === "string" && args.database.trim()
+            ? args.database
+            : undefined) ??
+          (!historical?.project || historical.project === selectedProject
             ? historical?.database
             : undefined);
         try {
@@ -1985,7 +2024,9 @@ export function createToolExecutor(
         const historical = options.historicalDatabase;
         const candidate =
           referencedDatabase ??
-          (typeof args.database === "string" ? args.database : undefined) ??
+          (typeof args.database === "string" && args.database.trim()
+            ? args.database
+            : undefined) ??
           (!historical?.project || historical.project === projectName
             ? historical?.database
             : undefined);
@@ -2021,6 +2062,15 @@ export function createToolExecutor(
         if (args.purpose !== undefined) {
           return toToolResult(
             "Error: ask_user no longer accepts purpose and never substitutes scope options. For a missing database scope, use ask_masking_exemption_scope. For expiration, visibility, or other questions, retry ask_user without purpose and include options matching the prompt."
+          );
+        }
+        if (
+          Array.isArray(args.options) &&
+          args.options.length > 0 &&
+          args.kind !== "choose"
+        ) {
+          throw new Error(
+            'ask_user options require choice mode. Retry with kind="choose" and keep the original options; they cannot be used in an input or confirmation prompt.'
           );
         }
         if (

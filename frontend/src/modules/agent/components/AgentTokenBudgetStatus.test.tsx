@@ -271,20 +271,16 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onResume).toHaveBeenCalledOnce();
   });
 
-  test("keeps a completed over-budget answer completed without recovery commands", () => {
-    setup({ ...chat, status: "idle", runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 } });
-    expect(screen.getByRole("status")).toHaveTextContent("Run completed above its token limit.");
-    expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  test("does not call a completed answer above-limit when its usage equals the limit", () => {
-    const { container } = setup({ ...chat, status: "idle", runBudget: { ...chat.runBudget!, totalTokensUsed: 1000 } });
-    expect(container.textContent).toBe("");
-  });
-
-  test("does not offer a run increase for a completed answer below its limit", () => {
-    const { container } = setup({ ...chat, status: "idle" });
-    expect(container.textContent).toBe("");
+  test.each([
+    [80000, false], [80000, true],
+    [100000, false], [100000, true],
+    [106028, false], [106028, true],
+  ] as const)("leaves completed usage of %i tokens and partial=%s to the token details", (totalTokensUsed, hasUnreportedUsage) => {
+    const { container } = setup({
+      ...chat, status: "idle",
+      runBudget: { ...chat.runBudget!, limit: 100000, totalTokensUsed, hasUnreportedUsage },
+    });
+    expect(container).toBeEmptyDOMElement();
   });
 
   test("does not present a token increase as recovery from a provider error", () => {
@@ -302,6 +298,34 @@ describe("AgentTokenBudgetStatus", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
     expect(onEndRun).toHaveBeenCalledOnce();
     expect(onResume).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [17783, false], [17783, true], [110000, false], [110000, true],
+  ] as const)("leaves manually stopped work at %i tokens and partial=%s to its existing stop notice", (totalTokensUsed, hasUnreportedUsage) => {
+    const { container, onEndRun, onResume, onIncreaseLimit } = setup({
+      ...chat, runId: "run-1", status: "idle", interrupted: true, interruptionReason: "user",
+      runCheckpoint: { ...checkpoint, suspension: "interrupted" },
+      runBudget: { ...chat.runBudget!, limit: 100000, totalTokensUsed, hasUnreportedUsage },
+    });
+    expect(container).toBeEmptyDOMElement();
+    expect(onEndRun).not.toHaveBeenCalled();
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { status: "idle" as const, interruptionReason: "unexpected" as const, suspension: "interrupted" as const, remoteBusy: false, title: "Interrupted" },
+    { status: "error" as const, interruptionReason: "user" as const, suspension: "interrupted" as const, remoteBusy: false, title: "Interrupted" },
+    { status: "idle" as const, interruptionReason: "user" as const, suspension: "token-limit" as const, remoteBusy: false, title: "Run paused at its token limit." },
+    { status: "idle" as const, interruptionReason: "user" as const, suspension: "interrupted" as const, remoteBusy: true, title: "This run may be active in another tab." },
+  ])("preserves recovery feedback for $status/$interruptionReason/$suspension with remoteBusy=$remoteBusy", ({ status, interruptionReason, suspension, remoteBusy, title }) => {
+    setup({
+      ...chat, runId: "run-1", status, interrupted: true, interruptionReason,
+      runCheckpoint: { ...checkpoint, suspension },
+    }, false, { remoteBusy });
+    expect(screen.getByRole("status")).toHaveTextContent(title);
+    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
   });
 
   test("leaves End run available even when managed recovery metadata is missing", () => {

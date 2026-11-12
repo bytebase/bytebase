@@ -24,10 +24,16 @@ import {
 import { Engine, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
+  type PlanCheckRun,
+  type PlanCheckRun_Result,
+  PlanCheckRun_Result_Type,
+  PlanCheckRun_Status,
+  PlanCheckRunSchema,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
 import { shownTimestampPrecisions } from "@/test-utils/humanizeTs";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
   type AutomatedReviewRow,
   emptyFindings,
@@ -45,10 +51,19 @@ const mocks = vi.hoisted(() => ({
   rules: undefined as unknown,
   runReview: vi.fn(async () => ({})),
   pushNotification: vi.fn(),
+  launchDiagnostic: vi.fn(),
+  planName: "projects/p/plans/42",
+  issuePlan: "projects/p/plans/42",
+  issueName: "projects/p/issues/1",
+  planCheckRuns: [] as PlanCheckRun[],
   serverInfo: undefined as unknown,
   editing: false,
   ciSamplingSize: 0,
   targets: [] as string[],
+}));
+
+vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
+  openAgentWithPrompt: mocks.launchDiagnostic,
 }));
 
 vi.mock("@/api", () => ({
@@ -93,14 +108,28 @@ vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
-vi.mock("@/components/plan-check/PlanCheckSection", () => ({
-  PlanCheckResultsDrawer: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="checks-drawer" /> : null,
-}));
+vi.mock("@/components/plan-check/PlanCheckSection", async () => {
+  const { getFilteredResultGroups } = await import("@/lib/plan/check");
+  return {
+    PlanCheckResultsDrawer: ({ open, planCheckRuns, renderResultAction }: {
+      open: boolean;
+      planCheckRuns: PlanCheckRun[];
+      renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
+    }) => open ? (
+      <div data-testid="checks-drawer">
+        {getFilteredResultGroups({ includeRunFailure: true, planCheckRuns,
+          runFailureTitle: "common.failed", runFailureContent: "common.failed",
+          runCanceledTitle: "common.canceled", runCanceledContent: "common.canceled",
+        }).flatMap((group) => group.results).map((result, index) => (
+          <div key={index}>{renderResultAction?.(result)}</div>
+        ))}
+      </div>
+    ) : null,
+  };
+});
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: (selector: (state: unknown) => unknown) =>
-    selector({
+vi.mock("@/stores/app", () => {
+  const getState = () => ({
       getIssueComments: () => mocks.comments,
       serverInfo: mocks.serverInfo,
       databasesByName: {
@@ -113,8 +142,11 @@ vi.mock("@/stores/app", () => ({
       },
       dbGroupsByName: {},
       dbGroupViewByName: {},
-    }),
-}));
+      workspaceResourceName: () => "workspaces/example",
+      currentUser: { name: "users/member@example.com" },
+    });
+  return { useAppStore: Object.assign((selector: (state: unknown) => unknown) => selector(getState()), { getState }) };
+});
 
 vi.mock("../../hooks/usePlanCheckActions", () => ({
   usePlanCheckActions: () => ({
@@ -152,13 +184,15 @@ vi.mock("../../shared/stores/usePlanDetailStore", () => {
 vi.mock("../../shell/PlanDetailContext", () => ({
   usePlanDetailContext: () => ({
     issue: create(IssueSchema, {
-      name: "projects/p/issues/1",
+      name: mocks.issueName,
+      plan: mocks.issuePlan,
       status: IssueStatus.OPEN,
     }),
     isEditing: mocks.editing,
     readonly: false,
     rollout: undefined,
     plan: create(PlanSchema, {
+      name: mocks.planName,
       specs: [
         {
           id: "spec-1",
@@ -171,7 +205,7 @@ vi.mock("../../shell/PlanDetailContext", () => ({
         },
       ],
     }),
-    planCheckRuns: [],
+    planCheckRuns: mocks.planCheckRuns,
     project: { ciSamplingSize: mocks.ciSamplingSize },
     projectId: "p",
   }),
@@ -226,6 +260,24 @@ const renderSection = (rows: AutomatedReviewRow[]) =>
     <AutomatedReviewSection state={{ rows, gates: [], openDiscussions: 0 }} />
   );
 
+const failedReview = () =>
+  create(ReviewRunSchema, {
+    name: "projects/p/issues/1/reviewRun",
+    state: ReviewRun_State.FAILED,
+    error: { code: 14, message: "review service unavailable" },
+    createTime: { seconds: 100n, nanos: 123 },
+    endTime: { seconds: 110n, nanos: 456 },
+  });
+
+const diagnosticSnapshot = () => {
+  const [prompt, references, , options] = mocks.launchDiagnostic.mock.calls[0];
+  expect(references).toEqual([{
+    kind: "plan", name: "projects/p/plans/42", project: "projects/p",
+    label: "projects/p/plans/42",
+  }]);
+  expect(options.capability).toEqual({ kind: "diagnostic", resource: references[0] });
+  return JSON.parse(prompt.slice(prompt.indexOf("\n") + 1));
+};
 const AI_ON = { aiEnabled: true, aiSqlReviewEnabled: true };
 const reviewRun = (state: ReviewRun_State, outdated = false) =>
   create(ReviewRunSchema, { state, outdated });
@@ -235,6 +287,10 @@ beforeEach(() => {
   mocks.comments = [];
   mocks.review = { loadFailed: false, reload: mocks.reload, run: null };
   mocks.rules = { rules: [1, 2, 3], source: "project" };
+  mocks.planName = "projects/p/plans/42";
+  mocks.issuePlan = mocks.planName;
+  mocks.issueName = "projects/p/issues/1";
+  mocks.planCheckRuns = [];
   mocks.serverInfo = undefined;
   mocks.editing = false;
   mocks.ciSamplingSize = 0;
@@ -244,6 +300,146 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("AutomatedReviewSection", () => {
+  test("keeps failed review help with the error metadata and earlier findings, separate from Retry", () => {
+    const run = failedReview();
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed", findings({ open: 1, p0: 1, resolved: 2, overridden: 1 }), { error: run.error!.message, time: run.endTime })]);
+
+    const errorSummary = screen.getByText(run.error!.message).parentElement!;
+    const help = within(errorSummary).getByRole("button", { name: "agent.diagnostic-help.ask-agent" });
+    const metadata = help.parentElement!;
+    expect(within(metadata).getByTestId("humanize-ts").textContent).toBe("110000.000456");
+    expect(within(metadata).getByRole("button", { name: "plan.automated-review.scope-label" })).toBeDefined();
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-priority:1" }).textContent).toBe("P01");
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-resolved:2" })).toBeDefined();
+    expect(within(metadata).getByRole("button", { name: "plan.findings.n-overridden:1" })).toBeDefined();
+    expect(within(metadata).queryByText(run.error!.message)).toBeNull();
+    const retryName = "plan.automated-review.retry";
+    expect(within(errorSummary).queryByRole("button", { name: retryName })).toBeNull();
+    expect(screen.getByRole("button", { name: retryName }).textContent).toContain("plan.automated-review.retry");
+  });
+
+  test("diagnoses the exact failed unified review execution on click", () => {
+    const run = failedReview();
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed", undefined, { error: run.error!.message })]);
+    expect(mocks.launchDiagnostic).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
+    expect(mocks.launchDiagnostic).toHaveBeenCalledOnce();
+    const snapshot = diagnosticSnapshot();
+    expect(snapshot.kind).toBe("review-run");
+    expect(snapshot.sourceId).toBe(run.name);
+    expect(snapshot.summary).toMatch(/execution failed/i);
+    expect(snapshot.summary).not.toMatch(/finding/i);
+    expect(snapshot.detail).toBe(run.error!.message);
+    expect(snapshot.facts).toEqual(expect.arrayContaining([
+      { label: "Status", value: "FAILED" },
+      { label: "Error code", value: "14" },
+      { label: "Issue", value: "projects/p/issues/1" },
+      { label: "Plan", value: "projects/p/plans/42" },
+      { label: "Started", value: "100.000000123" },
+      { label: "Ended", value: "110.000000456" },
+    ]));
+    expect(snapshot.sql).toBeUndefined();
+  });
+
+  test("diagnoses a failed review with a status code but no error message", () => {
+    const run = failedReview();
+    run.error = { ...run.error!, code: 8, message: "" };
+    mocks.review = { run, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
+    fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
+    const snapshot = diagnosticSnapshot();
+    expect(snapshot.sourceId).toBe(run.name);
+    expect(snapshot.detail).toBe("Review execution failed (code 8)");
+    expect(snapshot.facts).toContainEqual({ label: "Error code", value: "8" });
+  });
+
+  test.each(["passed", "resolved", "not-run", "outdated", "running", "loading", "open", "off"] as const)("does not turn %s review state into another diagnostic action", (conclusion) => {
+    mocks.review = { run: failedReview(), loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", conclusion, findings({ open: 1, p1: 1 }))]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+  });
+
+  test.each([ReviewRun_State.SUCCEEDED, ReviewRun_State.RUNNING, ReviewRun_State.STATE_UNSPECIFIED])("requires a failed underlying review execution, not only the row conclusion (%s)", (state) => {
+    mocks.review = { run: { ...failedReview(), state }, loadFailed: false, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+  });
+
+  test.each(["invalid-plan", "different-project", "linked-plan", "invalid-issue", "run-issue", "legacy-run", "missing-run", "missing-error", "empty-error", "whitespace-error", "load-failed"])("hides failed review help for %s evidence", (failure) => {
+    const run = failedReview();
+    if (failure === "invalid-plan") mocks.planName = "projects/p/plans/create";
+    if (failure === "different-project") mocks.planName = "projects/other/plans/42";
+    if (failure === "linked-plan") mocks.issuePlan = "projects/p/plans/43";
+    if (failure === "invalid-issue") {
+      mocks.issueName = "projects/p/issues/create";
+      run.name = `${mocks.issueName}/reviewRun`;
+    }
+    if (failure === "run-issue") run.name = "projects/p/issues/2/reviewRun";
+    if (failure === "legacy-run") run.name = "projects/p/issues/1/reviewRuns/rule";
+    if (failure === "missing-error") run.error = undefined;
+    if (failure === "empty-error") run.error = { ...run.error!, code: 0, message: "" };
+    if (failure === "whitespace-error") run.error = { ...run.error!, code: 0, message: " \n " };
+    mocks.review = { run: failure === "missing-run" ? undefined : run, loadFailed: failure === "load-failed", reload: mocks.reload };
+    renderSection([row("review", "failed")]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+    expect(screen.getByRole("button", { name: /plan.automated-review.retry/ })).toBeDefined();
+  });
+
+  test("keeps a generic review load failure on its existing Retry path", () => {
+    mocks.review = { loadFailed: true, reload: mocks.reload };
+    renderSection([row("review", "failed")]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /plan.automated-review.retry/ }));
+    expect(mocks.reload).toHaveBeenCalledOnce();
+    expect(mocks.launchDiagnostic).not.toHaveBeenCalled();
+  });
+
+  test.each(["success", "running", "invalid-plan", "mismatched-run", "linked-plan"])("does not diagnose %s check evidence", (scenario) => {
+    mocks.planCheckRuns = [create(PlanCheckRunSchema, {
+      name: scenario === "mismatched-run" ? "projects/p/plans/43/planCheckRun" : "projects/p/plans/42/planCheckRun",
+      status: scenario === "running" ? PlanCheckRun_Status.RUNNING : PlanCheckRun_Status.DONE,
+      results: scenario === "running" ? [] : [{ status: scenario === "success" ? Advice_Level.SUCCESS : Advice_Level.ERROR, title: "Check evidence" }],
+    })];
+    if (scenario === "invalid-plan") mocks.planName = "projects/p/plans/create";
+    if (scenario === "linked-plan") mocks.issuePlan = "projects/p/plans/43";
+    renderSection([row("checks", "running")]);
+    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+  });
+
+  test.each([Advice_Level.ERROR, Advice_Level.WARNING])("wires check result diagnostics only in the details drawer (%s)", (status) => {
+    mocks.planCheckRuns = [create(PlanCheckRunSchema, {
+      name: "projects/p/plans/42/planCheckRun", status: PlanCheckRun_Status.DONE,
+      results: [{ status, title: "Check evidence", content: "Unsafe statement", type: PlanCheckRun_Result_Type.STATEMENT_ADVISE, target: "instances/i/databases/hr_test" }],
+    })];
+    renderSection([row("policy", "open")]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
+    const snapshot = diagnosticSnapshot();
+    expect(snapshot.kind).toBe("sql-check");
+    expect(snapshot.sourceId).toBe("projects/p/plans/42/planCheckRun");
+    expect(JSON.stringify(snapshot)).toContain("Unsafe statement");
+  });
+
+  test.each([PlanCheckRun_Status.FAILED, PlanCheckRun_Status.CANCELED])("keeps exactly one diagnostic beside synthetic stopped check evidence (%s)", (status) => {
+    mocks.planCheckRuns = [create(PlanCheckRunSchema, {
+      name: "projects/p/plans/42/planCheckRun", status, error: "Unable to resolve targets",
+      createTime: { seconds: 120n, nanos: 0 },
+    })];
+    renderSection([row("checks", "failed", undefined, { error: "Unable to resolve targets" })]);
+    expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
+    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
+    expect(mocks.launchDiagnostic).toHaveBeenCalledOnce();
+    const snapshot = diagnosticSnapshot();
+    expect(snapshot.sourceId).toBe("projects/p/plans/42/planCheckRun");
+    expect(JSON.stringify(snapshot)).toContain("Unable to resolve targets");
+    expect(JSON.stringify(snapshot)).toContain(PlanCheckRun_Status[status]);
+  });
+
   test("puts the review on one line with its open findings by priority", () => {
     renderSection([
       row("review", "open", findings({ open: 3, p0: 1, p1: 2 })),

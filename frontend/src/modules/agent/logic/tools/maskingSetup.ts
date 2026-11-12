@@ -2,17 +2,40 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { projectServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import i18n from "@/lib/i18n";
 import { useAppStore } from "@/stores/app";
 import type { AppStoreState } from "@/stores/app/types";
 import { projectWideBindings } from "@/stores/app/utils";
 import type { Permission } from "@/types/iam/permission";
+import {
+  getMinimumRequiredPlan,
+  hasFeature as planHasFeature,
+} from "@/types/plan";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { GetIamPolicyRequestSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  PlanFeature,
+  PlanType,
+  type Subscription,
+} from "@/types/proto-es/v1/subscription_service_pb";
+import { getTimeForPbTimestampProtoEs } from "@/types/timestamp";
 
 type PermissionStatus = "allowed" | "denied" | "unknown" | "needs-scope";
 type FeatureStatus = "available" | "unavailable" | "unknown";
+interface FeatureRequirement {
+  feature: string;
+  featureTitle: string;
+  minimumPlan: string;
+  minimumPlanTitle: string;
+  reason?:
+    | "subscription-unverified"
+    | "subscription-expired"
+    | "plan-does-not-include-feature"
+    | "instance-license-required"
+    | "scope-unverified"
+    | "feature-unavailable";
+}
 type SetupStepId =
   | "semantic-types"
   | "data-classification"
@@ -86,6 +109,13 @@ export async function getMaskingSetup({
     classification: FeatureStatus;
     catalogMasking: FeatureStatus;
   };
+  subscription:
+    | { status: "available"; plan: string; planTitle: string; expired: boolean }
+    | { status: "unknown" };
+  featureRequirements: Record<
+    "masking" | "classification" | "catalogMasking",
+    FeatureRequirement
+  >;
   steps: SetupStep[];
   scopeAccess?: {
     project: PermissionEvidence;
@@ -124,14 +154,12 @@ export async function getMaskingSetup({
   };
   workspaceReady &&= sameContext();
 
-  let subscriptionKnown = Boolean(useAppStore.getState().subscription);
-  if (!subscriptionKnown && sameContext()) {
+  let verifiedSubscription: Subscription | undefined;
+  if (sameContext()) {
     try {
-      subscriptionKnown = Boolean(
-        await useAppStore.getState().loadSubscription()
-      );
+      verifiedSubscription = await useAppStore.getState().refreshSubscription();
     } catch {
-      subscriptionKnown = false;
+      verifiedSubscription = undefined;
     }
   }
 
@@ -168,6 +196,25 @@ export async function getMaskingSetup({
   }
 
   const state = useAppStore.getState();
+  const subscriptionKnown = Boolean(
+    verifiedSubscription &&
+      state.subscription === verifiedSubscription &&
+      [PlanType.FREE, PlanType.TEAM, PlanType.ENTERPRISE].includes(
+        verifiedSubscription.plan
+      ) &&
+      sameContext()
+  );
+  const currentPlan = subscriptionKnown
+    ? verifiedSubscription?.plan
+    : undefined;
+  // Expired licenses retain their expiration when the effective plan becomes Community.
+  const expiresAt = getTimeForPbTimestampProtoEs(
+    verifiedSubscription?.expiresTime
+  );
+  const expired =
+    subscriptionKnown && expiresAt !== undefined && expiresAt < Date.now();
+  const planTitle = (plan: PlanType) =>
+    i18n.t(`subscription.plan.${PlanType[plan].toLowerCase()}.title`);
   workspaceReady &&= sameContext();
   projectReady &&= workspaceReady;
   const rolesByName = new Map(state.roles.map((role) => [role.name, role]));
@@ -238,19 +285,81 @@ export async function getMaskingSetup({
   const feature = (feature: PlanFeature): FeatureStatus =>
     !subscriptionKnown || !sameContext()
       ? "unknown"
-      : state.hasFeature(feature)
+      : !expired && state.hasFeature(feature)
         ? "available"
         : "unavailable";
   const instance = databaseScopeKnown ? database?.instanceResource : undefined;
+  const masking = feature(PlanFeature.FEATURE_DATA_MASKING);
+  const classification = feature(PlanFeature.FEATURE_DATA_CLASSIFICATION);
   const catalogMasking: FeatureStatus =
-    !subscriptionKnown || !sameContext() || !instance
-      ? "unknown"
-      : state.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
-        ? "available"
-        : "unavailable";
+    masking !== "available"
+      ? masking
+      : !instance
+        ? "unknown"
+        : state.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
+          ? "available"
+          : "unavailable";
+  const requirement = (
+    feature: PlanFeature,
+    status: FeatureStatus,
+    instanceLicenseRequired = false
+  ): FeatureRequirement => {
+    const minimumPlan = getMinimumRequiredPlan(feature);
+    const reason: FeatureRequirement["reason"] =
+      status === "available"
+        ? undefined
+        : !subscriptionKnown
+          ? "subscription-unverified"
+          : expired
+            ? "subscription-expired"
+            : currentPlan !== undefined && !planHasFeature(currentPlan, feature)
+              ? "plan-does-not-include-feature"
+              : instanceLicenseRequired
+                ? "instance-license-required"
+                : status === "unknown"
+                  ? "scope-unverified"
+                  : "feature-unavailable";
+    return {
+      feature: PlanFeature[feature],
+      featureTitle: i18n.t(
+        `dynamic.subscription.features.${PlanFeature[feature]}.title`
+      ),
+      minimumPlan: PlanType[minimumPlan],
+      minimumPlanTitle: planTitle(minimumPlan),
+      ...(reason ? { reason } : {}),
+    };
+  };
 
   return {
     source: "frontend-permission-check",
+    subscription:
+      subscriptionKnown && currentPlan !== undefined
+        ? {
+            status: "available",
+            plan: PlanType[currentPlan],
+            planTitle: planTitle(currentPlan),
+            expired,
+          }
+        : { status: "unknown" },
+    featureRequirements: {
+      masking: requirement(PlanFeature.FEATURE_DATA_MASKING, masking),
+      classification: requirement(
+        PlanFeature.FEATURE_DATA_CLASSIFICATION,
+        classification
+      ),
+      catalogMasking: requirement(
+        PlanFeature.FEATURE_DATA_MASKING,
+        catalogMasking,
+        Boolean(
+          masking === "available" &&
+            instance &&
+            state.instanceMissingLicense(
+              PlanFeature.FEATURE_DATA_MASKING,
+              instance
+            )
+        )
+      ),
+    },
     scopeAccess: {
       project: projectPermission(["bb.projects.get"]),
       databasePicker: projectPermission([
@@ -260,8 +369,8 @@ export async function getMaskingSetup({
       projects: workspacePermission(["bb.projects.list"]),
     },
     features: {
-      masking: feature(PlanFeature.FEATURE_DATA_MASKING),
-      classification: feature(PlanFeature.FEATURE_DATA_CLASSIFICATION),
+      masking,
+      classification,
       catalogMasking,
     },
     steps: [

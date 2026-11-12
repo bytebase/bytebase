@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { resolveSkill } from "../logic/skills";
 import { ToolCallCard } from "./ToolCallCard";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -62,6 +63,90 @@ const renderCard = (operationId: string, result: string) => {
 };
 
 describe("ToolCallCard", () => {
+  test("marks a rejected skill load as failed rather than showing a success check", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const args = { name: "query", section: "overview" as const };
+    const result = resolveSkill(args);
+    expect(result.kind).toBe("error");
+
+    act(() =>
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "skill",
+            name: "get_skill",
+            arguments: JSON.stringify(args),
+          }}
+          result={JSON.stringify(result)}
+        />
+      )
+    );
+
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    expect(container.querySelector("button .text-success")).toBeNull();
+    act(() => (container.querySelector("button") as HTMLElement).click());
+    expect(
+      JSON.parse(container.querySelectorAll("pre")[1].textContent ?? "null")
+    ).toEqual(result);
+    act(() => root.unmount());
+  });
+
+  test("keeps a loaded masking skill successful", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() =>
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "skill",
+            name: "get_skill",
+            arguments: '{"name":"data-masking","section":"rule"}',
+          }}
+          result={JSON.stringify({
+            kind: "loaded",
+            name: "data-masking",
+            section: "rule",
+          })}
+        />
+      )
+    );
+
+    expect(container.querySelector("button .text-success")).not.toBeNull();
+    expect(container.querySelector("button .text-error")).toBeNull();
+    act(() => root.unmount());
+  });
+
+  test("shows a structured runtime-choice error message without a success status", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() =>
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "scope",
+            name: "ask_masking_rule_scope",
+            arguments: "{}",
+          }}
+          result={JSON.stringify({
+            kind: "error",
+            message: "Scope access is unverified.",
+          })}
+        />
+      )
+    );
+
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    expect(container.querySelector('[role="alert"]')).toHaveTextContent(
+      "Scope access is unverified."
+    );
+    act(() => root.unmount());
+  });
+
   test.each([
     ["ask_masking_rule_scope", "agent.masking.rule-scope.question"],
     ["ask_masking_semantic_type", "agent.masking.semantic-type-choice.question"],

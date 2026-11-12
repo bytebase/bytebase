@@ -96,6 +96,7 @@ import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
+import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
 import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
 import { MaskingRuleDraftButton } from "./MaskingRuleDraftButton";
 import { SemanticTypeDraftButton } from "./SemanticTypeDraftButton";
@@ -830,6 +831,7 @@ export function AgentChat({
   onContinueAction,
 }: AgentChatProps) {
   const { t } = useTranslation();
+  const currentRoute = useReactiveRoute();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [
     isAIConfigurationRecoveryDismissed,
@@ -1091,9 +1093,29 @@ export function AgentChat({
         const isPending = msg.metadata?.pending === true;
         const actions = normalizeAgentResponseActions(msg.metadata?.actions);
         const openAction = actions.find((action) => action.kind === "open");
+        const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
+        const diagnosticIssueRoute =
+          currentChat?.capability?.kind === "diagnostic" &&
+          (currentChat.capability.resource.kind === "issue" ||
+            currentChat.capability.resource.kind === "plan") &&
+          proposedHandoff?.kind === "open-issue"
+            ? resolveAgentHandoffRoute(proposedHandoff)
+            : undefined;
+        const handoff =
+          diagnosticIssueRoute &&
+          sameRoutePathname(
+            currentRoute.fullPath,
+            router.resolve(diagnosticIssueRoute).fullPath
+          )
+            ? undefined
+            : proposedHandoff;
         const planDraftAction = actions.find(
           (action) => action.kind === "draft-plan"
         );
+        const sqlFixAction =
+          currentChat?.capability?.kind === "diagnostic"
+            ? actions.find((action) => action.kind === "review-sql-fix")
+            : undefined;
         const issueCommentDraftAction = actions.find(
           (action) => action.kind === "draft-issue-comment"
         );
@@ -1280,16 +1302,21 @@ export function AgentChat({
                       {!currentChat?.archived &&
                         !msg.metadata?.pending &&
                         !msg.metadata?.error &&
-                        (openAction ||
+                        (handoff ||
+                          sqlFixAction ||
                           planDraftAction ||
                           issueCommentDraftAction ||
                           maskingRuleDraftAction ||
                           maskingExemptionDraftAction ||
                           semanticTypeDraftAction ||
-                          msg.metadata?.accessRequestDraft ||
-                          msg.metadata?.handoff) && (
+                          msg.metadata?.accessRequestDraft) && (
                           <div className="mt-2 max-w-full">
-                            {semanticTypeDraftAction ? (
+                            {sqlFixAction ? (
+                              <AgentSqlFixReviewAction
+                                action={sqlFixAction}
+                                chatId={msg.chatId}
+                              />
+                            ) : semanticTypeDraftAction ? (
                               <SemanticTypeDraftButton
                                 draftId={semanticTypeDraftAction.draftId}
                                 chatId={msg.chatId}
@@ -1321,11 +1348,7 @@ export function AgentChat({
                                 draft={msg.metadata.accessRequestDraft}
                               />
                             ) : (
-                              <HandoffLink
-                                handoff={
-                                  openAction?.target ?? msg.metadata?.handoff
-                                }
-                              />
+                              <HandoffLink handoff={handoff} />
                             )}
                           </div>
                         )}

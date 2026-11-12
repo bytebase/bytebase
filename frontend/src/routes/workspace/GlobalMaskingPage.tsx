@@ -20,7 +20,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import { settingServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureAttention } from "@/components/FeatureAttention";
@@ -63,6 +62,7 @@ import {
   type MaskingRuleEditorSnapshot,
   registerMaskingRuleDraftTarget,
 } from "@/modules/agent/logic/maskingRuleDraftTarget";
+import { readSemanticTypeSetting } from "@/modules/agent/logic/semanticTypeSetting";
 import { type AgentState, useAgentStore } from "@/modules/agent/store/agent";
 import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/modules/cel";
 import {
@@ -86,10 +86,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  GetSettingRequestSchema,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   arraySwap,
@@ -766,9 +763,7 @@ export function GlobalMaskingPage() {
       (policy !== null && policy.policy.case !== "maskingRulePolicy")
     )
       throw new Error("The masking rule policy could not be verified.");
-    const setting = await settingServiceClientConnect.getSetting(
-      create(GetSettingRequestSchema, { name: "settings/SEMANTIC_TYPES" })
-    );
+    const { setting } = await readSemanticTypeSetting();
     if (
       app.workspaceResourceName() !== workspaceName ||
       useAppStore.getState().currentUser?.name !== userName
