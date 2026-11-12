@@ -1594,7 +1594,48 @@ func TestActionErrorScenarios_InvalidServiceAccountSecret(t *testing.T) {
 	)
 
 	a.Error(err, "Command should fail with invalid service account secret")
-	a.Contains(result.Stderr, "failed to login", "Expected authentication error in stderr")
+	a.Contains(result.Stderr, "Error: sign in as demo@example.com: ", "Expected authentication error in stderr")
+	a.NotContains(result.Stderr, "Unable to get server version", "A refused sign-in should end the run before the version check")
+}
+
+// A successful exchange needs an HTTPS issuer on a public host, so this covers
+// the request reaching the real ExchangeToken and its refusal reaching the job.
+// Not parallel: the action reads the job's ID token from the process
+// environment.
+func TestActionErrorScenarios_RefusedWorkloadIdentity(t *testing.T) {
+	t.Setenv("BYTEBASE_ID_TOKEN", "not-a-token")
+	t.Setenv("BYTEBASE_ACCESS_TOKEN", "")
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startProject(ctx, t)
+
+	identity, err := ctl.workloadIdentityServiceClient.CreateWorkloadIdentity(ctx, connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{
+		Parent:             getCurrentWorkspace(ctx, t, ctl),
+		WorkloadIdentityId: generateRandomString("wi"),
+		WorkloadIdentity: &v1pb.WorkloadIdentity{
+			Title: "Action sign-in identity",
+			WorkloadIdentityConfig: &v1pb.WorkloadIdentityConfig{
+				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				IssuerUrl:        "https://token.actions.githubusercontent.com",
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "repo:my-org/*",
+			},
+		},
+	}))
+	a.NoError(err)
+
+	result, err := executeActionCommand(ctx,
+		"check",
+		"--url", ctl.rootURL,
+		"--workload-identity", identity.Msg.Email,
+		"--project", ctl.project.Name,
+		"--targets", "instances/example/databases/example",
+	)
+
+	a.Error(err, "Command should fail when the exchange is refused")
+	a.Contains(result.Stderr, "Error: sign in as "+identity.Msg.Email+": unauthenticated: token validation failed")
+	a.NotContains(result.Stderr, "not-a-token", "The ID token should not be printed")
+	a.NotContains(result.Stderr, "Usage:", "A runtime failure should not print the flag list")
 }
 
 func TestActionErrorScenarios_NonExistentDatabase(t *testing.T) {

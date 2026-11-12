@@ -20,7 +20,7 @@ func TestNewClientWithOptionsUsesServiceAccountAuth(t *testing.T) {
 	t.Parallel()
 
 	httpClient := &http.Client{}
-	client, err := newClient("https://example.com", "", "sa@example.com", "secret", clientOptions{
+	client, err := newClient("https://example.com", credential{serviceAccount: "sa@example.com", serviceAccountSecret: "secret"}, clientOptions{
 		httpClient: httpClient,
 		pageSize:   -1,
 	})
@@ -116,7 +116,7 @@ func TestCustomHeadersAreSentOnLoginRequest(t *testing.T) {
 	})
 
 	httpClient := &http.Client{Transport: transport}
-	client, err := newClient("https://example.com", "", "sa@example.com", "secret", clientOptions{
+	client, err := newClient("https://example.com", credential{serviceAccount: "sa@example.com", serviceAccountSecret: "secret"}, clientOptions{
 		httpClient:    httpClient,
 		customHeaders: customHeaders,
 	})
@@ -136,7 +136,7 @@ func TestNewClientDoesNotMutateProvidedHTTPClientTransport(t *testing.T) {
 	transport := &closeIdleRoundTripper{}
 	httpClient := &http.Client{Transport: transport}
 
-	client, err := newClient("https://example.com", "token", "", "", clientOptions{
+	client, err := newClient("https://example.com", credential{accessToken: "token"}, clientOptions{
 		httpClient:    httpClient,
 		customHeaders: customHeaders,
 	})
@@ -206,7 +206,7 @@ func (t *closeIdleRoundTripper) CloseIdleConnections() {
 func TestNewClientWithAccessTokenUsesAccessTokenAuth(t *testing.T) {
 	t.Parallel()
 
-	client, err := newClient("https://example.com", "token", "", "", defaultClientOptions())
+	client, err := newClient("https://example.com", credential{accessToken: "token"}, defaultClientOptions())
 	require.NoError(t, err)
 
 	t.Cleanup(client.close)
@@ -233,7 +233,7 @@ func TestRejectedAccessTokenFailsAfterOneReauthentication(t *testing.T) {
 	opts := defaultClientOptions()
 	opts.httpClient = &http.Client{Transport: transport}
 	opts.retryConfig = &retryConfig{maxAttempts: 3, initialInterval: time.Millisecond, maxInterval: time.Millisecond}
-	client, err := newClient("https://example.com", "null", "", "", opts)
+	client, err := newClient("https://example.com", credential{accessToken: "null"}, opts)
 	require.NoError(t, err)
 	t.Cleanup(client.close)
 
@@ -246,7 +246,7 @@ func TestRejectedAccessTokenFailsAfterOneReauthentication(t *testing.T) {
 	require.Equal(t, int32(2), requests.Load())
 }
 
-func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
+func TestNewClientFromWorldUsesTheChosenSignIn(t *testing.T) {
 	t.Parallel()
 
 	w := &world.World{
@@ -255,6 +255,7 @@ func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
 		AccessToken:          "token",
 		ServiceAccount:       "sa@example.com",
 		ServiceAccountSecret: "secret",
+		SignIn:               world.SignInAccessToken,
 	}
 
 	client, err := newClientFromWorld(w)
@@ -263,6 +264,7 @@ func TestNewClientFromWorldPrefersAccessToken(t *testing.T) {
 	t.Cleanup(client.close)
 
 	require.Equal(t, 5*time.Second, client.httpClient.Timeout)
+	require.Equal(t, "with the access token", client.auth.who)
 	require.Equal(t, "", client.serviceAccount)
 	require.Equal(t, "", client.serviceAccountSecret)
 }

@@ -62,7 +62,7 @@ Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-c
 - `plan_check_run (project, id)`
 - `plan_webhook_delivery (project, plan_id)`
 - `issue (project, id)`
-- `review_run (project, issue_id, type)`
+- `review_run (project, issue_id)`
 - `task (project, id)`
 - `task_run (project, id)`
 - `db_group (project, resource_id)`

@@ -37,15 +37,26 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 
 var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
 
-// convertValueIn binds the row value converter to the location timestamptz values
-// render in, which the caller reads from the session once per statement.
-func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
-	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-		return convertValue(typeName, columnType, value, location)
+// convertValueIn binds the row value converter to the location timestamptz values render in
+// and the per-column type modifiers, both read once per statement: the location from the
+// session, the modifiers from the native field descriptions via util.PgColumnTypeModifiers.
+func convertValueIn(location *time.Location, typeModifiers []int32) func(int, string, *sql.ColumnType, any) *v1pb.RowValue {
+	return func(columnIndex int, typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+		return convertValue(typeName, columnType, value, location, columnScale(typeModifiers, columnIndex))
 	}
 }
 
-func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
+// columnScale maps a column's PostgreSQL type modifier to the fractional-seconds precision to
+// render: the modifier itself (0-6), or PostgreSQL's default of 6 when it is unspecified (-1)
+// or the describe that produced the modifiers was unavailable.
+func columnScale(typeModifiers []int32, columnIndex int) int32 {
+	if columnIndex < len(typeModifiers) && typeModifiers[columnIndex] != -1 {
+		return typeModifiers[columnIndex]
+	}
+	return 6
+}
+
+func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location, scale int32) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -121,16 +132,12 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 					},
 				}
 			}
-			_, scale, _ := columnType.DecimalSize()
-			if scale == -1 {
-				scale = 6
-			}
 			if typeName == "TIMESTAMP" {
 				return &v1pb.RowValue{
 					Kind: &v1pb.RowValue_TimestampValue{
 						TimestampValue: &v1pb.RowValue_Timestamp{
 							GoogleTimestamp: timestamppb.New(raw.Time),
-							Accuracy:        int32(scale),
+							Accuracy:        scale,
 						},
 					},
 				}
@@ -142,7 +149,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 						GoogleTimestamp: timestamppb.New(raw.Time),
 						Zone:            zone,
 						Offset:          int32(offset),
-						Accuracy:        int32(scale),
+						Accuracy:        scale,
 					},
 				},
 			}
@@ -154,7 +161,8 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 
 // Padding 0's to nanosecond precision to make sure it's always 6 digits.
 // Since the data cannot be formatted into a time.Time, we need to pad it here.
-// Accuracy is passed as argument since we cannot determine the precision of the data type using DecimalSize().
+// The value arrives as trimmed text (PostgreSQL drops trailing fractional zeros), so the
+// accuracy to pad to is supplied by the caller rather than derived from the value.
 func padZeroes(rawStr string, acc int) string {
 	dotIndex := strings.Index(rawStr, ".")
 	if dotIndex < 0 {

@@ -208,6 +208,64 @@ func TestMigration3_25_2_AIReviewResultTitle(t *testing.T) {
 	}
 }
 
+func TestMigration3_25_3_ReviewRunOnePerIssue(t *testing.T) {
+	ctx := context.Background()
+	_, db := testcontainer.NewPgDatabase(t)
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE review_run (
+			project TEXT NOT NULL,
+			issue_id BIGINT NOT NULL,
+			type TEXT NOT NULL,
+			attempt INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL,
+			PRIMARY KEY (project, issue_id, type)
+		);
+		INSERT INTO review_run (project, issue_id, type, attempt, status) VALUES
+			('a', 101, 'RULE', 4, 'DONE'),
+			('a', 101, 'AI', 2, 'FAILED'),
+			('a', 101, 'REVIEW', 1, 'DONE'),
+			('a', 102, 'RULE', 0, 'DONE'),
+			('a', 102, 'AI', 0, 'RUNNING'),
+			('b', 101, 'REVIEW', 3, 'AVAILABLE'),
+			('b', 102, 'AI', 5, 'DONE');
+	`)
+	require.NoError(t, err)
+
+	statement, err := migrator.MigrationFS.ReadFile("migration/3.25/0003##review_run_one_per_issue.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT project || ' ' || issue_id || ' ' || attempt || ' ' || status
+		FROM review_run ORDER BY project, issue_id
+	`)
+	require.NoError(t, err)
+	defer rows.Close()
+	var got []string
+	for rows.Next() {
+		var row string
+		require.NoError(t, rows.Scan(&row))
+		got = append(got, row)
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, []string{"a 101 1 DONE", "b 101 3 AVAILABLE"}, got, "only the review's own job of each issue stays")
+
+	var hasType bool
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name = 'review_run' AND column_name = 'type'
+		)
+	`).Scan(&hasType))
+	require.False(t, hasType)
+
+	_, err = db.ExecContext(ctx, `INSERT INTO review_run (project, issue_id, status) VALUES ('a', 101, 'AVAILABLE')`)
+	require.ErrorContains(t, err, "review_run_pkey", "an issue holds one review run")
+	_, err = db.ExecContext(ctx, `INSERT INTO review_run (project, issue_id, status) VALUES ('b', 102, 'AVAILABLE')`)
+	require.NoError(t, err, "an issue whose earlier jobs were removed takes a new one")
+}
+
 func TestMigration3_25_0_SQLExportPermission(t *testing.T) {
 	ctx := context.Background()
 	_, db := testcontainer.NewPgDatabase(t)

@@ -88,16 +88,16 @@ type IssueServiceClient interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(ctx context.Context, in *RetryIssueApprovalRequest, opts ...grpc.CallOption) (*Issue, error)
-	// Gets the current run of one reviewer on an issue. The run carries
-	// execution status only; review results are issue comments. A reviewer
-	// that has never run on the issue is NOT_FOUND.
+	// Gets the review run of an issue. The run carries the execution state
+	// only; review results are issue comments. An issue the review has never
+	// run on is NOT_FOUND.
 	// Permissions required: bb.reviewRuns.get
 	GetReviewRun(ctx context.Context, in *GetReviewRunRequest, opts ...grpc.CallOption) (*ReviewRun, error)
-	// Triggers a review run. The slot is reset unconditionally: a RUNNING
-	// execution is superseded (its completion is fenced off), the attempt
-	// number is bumped, and the returned run is AVAILABLE.
+	// Starts the review of an issue. It replaces the current run
+	// unconditionally: an execution in flight is superseded (its completion is
+	// fenced off), and the returned run is RUNNING.
 	// Review results are not returned by this RPC: they are posted as issue
-	// comments. The returned run carries execution status only, and
+	// comments. The returned run carries the execution state only, and
 	// GetReviewRun reads it back.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run
@@ -314,16 +314,16 @@ type IssueServiceServer interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *RetryIssueApprovalRequest) (*Issue, error)
-	// Gets the current run of one reviewer on an issue. The run carries
-	// execution status only; review results are issue comments. A reviewer
-	// that has never run on the issue is NOT_FOUND.
+	// Gets the review run of an issue. The run carries the execution state
+	// only; review results are issue comments. An issue the review has never
+	// run on is NOT_FOUND.
 	// Permissions required: bb.reviewRuns.get
 	GetReviewRun(context.Context, *GetReviewRunRequest) (*ReviewRun, error)
-	// Triggers a review run. The slot is reset unconditionally: a RUNNING
-	// execution is superseded (its completion is fenced off), the attempt
-	// number is bumped, and the returned run is AVAILABLE.
+	// Starts the review of an issue. It replaces the current run
+	// unconditionally: an execution in flight is superseded (its completion is
+	// fenced off), and the returned run is RUNNING.
 	// Review results are not returned by this RPC: they are posted as issue
-	// comments. The returned run carries execution status only, and
+	// comments. The returned run carries the execution state only, and
 	// GetReviewRun reads it back.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run

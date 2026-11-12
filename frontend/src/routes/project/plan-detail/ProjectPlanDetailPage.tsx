@@ -156,7 +156,7 @@ function ProjectPlanDetailPageInner({
     stageId,
     taskId,
   });
-  useIssueCommentThreadsSync(page.issue, page.aiReviewRun);
+  useIssueCommentThreadsSync(page.issue);
   usePlacementSync({
     issueName: page.issue?.name,
     projectId,

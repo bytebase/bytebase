@@ -156,6 +156,7 @@
   "policy-update-failed": "Failed to update the review policy.",
   "policy-updated": "Successfully updated the review policy.",
   "review-policy": "Review policy",
+  "reviewer": "SQL review",
   "rule": {
     "ADVICE_ONLINE_MIGRATION": {
       "component": {

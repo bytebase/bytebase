@@ -409,38 +409,72 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
-	require.False(t, tryCreateRollout(), "the rule review has not finished")
+	require.False(t, tryCreateRollout(), "the review is queued")
 
 	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
-	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, []*store.IssueCommentMessage{{
-		ProjectID: issue.ProjectID,
-		IssueUID:  issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: "UPDATE without WHERE",
-			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-				RunType:  storepb.ReviewRun_RULE,
-				RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
-				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
-			},
-		},
-	}})
+	require.False(t, tryCreateRollout(), "the review is running")
+
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "rate limited"}, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
-	require.False(t, tryCreateRollout(), "the finding's thread is open")
+	require.False(t, tryCreateRollout(), "the review failed")
+	failed, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID)
+	require.NoError(t, err)
+	require.Equal(t, storepb.ReviewRun_FAILED, failed.Status)
+	require.Equal(t, int64(0), failed.Attempt, "a failed review of the current SQL is not restarted")
+
+	// A re-run succeeds with a finding of each reviewer.
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
+	require.NoError(t, err)
+	claimed, err = s.ClaimAvailableReviewRuns(ctx, "replica")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica", storepb.ReviewRun_DONE, &storepb.ReviewRunPayload{}, []*store.IssueCommentMessage{
+		{
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Comment: "UPDATE without WHERE",
+				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
+					RunType:  storepb.ReviewRun_RULE,
+					RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
+					Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
+				},
+			},
+		},
+		{
+			ProjectID: issue.ProjectID,
+			IssueUID:  issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Comment: "A view reads the dropped column.",
+				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
+					RunType:  storepb.ReviewRun_AI,
+					Priority: storepb.IssueCommentPayload_ReviewMetadata_P0,
+					Title:    "DROP COLUMN breaks a view",
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, updated)
+	require.False(t, tryCreateRollout(), "the findings' threads are open")
 
 	threads, err := s.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: issue.ProjectID, IssueUID: &issue.UID, ThreadState: &open})
 	require.NoError(t, err)
-	require.Len(t, threads, 1)
+	require.Len(t, threads, 2)
 	resolved := store.ThreadStateResolved
-	require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
-		ProjectID:   issue.ProjectID,
-		ResourceID:  threads[0].ResourceID,
-		ThreadState: &resolved,
-	}))
+	for i, thread := range threads {
+		require.False(t, tryCreateRollout(), "thread %d is open", i)
+		require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
+			ProjectID:   issue.ProjectID,
+			ResourceID:  thread.ResourceID,
+			ThreadState: &resolved,
+		}))
+	}
 	require.True(t, tryCreateRollout(), "every thread is resolved")
 }
 
@@ -457,13 +491,13 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 		require.NoError(t, err)
 		return got.Config.GetHasRollout()
 	}
-	ruleRun := func(projectID string) *store.ReviewRunMessage {
+	reviewRun := func(projectID string) *store.ReviewRunMessage {
 		t.Helper()
-		run, err := s.GetReviewRun(ctx, projectID, issue.UID, store.ReviewRunTypeRule)
+		run, err := s.GetReviewRun(ctx, projectID, issue.UID)
 		require.NoError(t, err)
 		return run
 	}
-	completeRuleRun := func() {
+	completeReviewRun := func() {
 		t.Helper()
 		claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
 		require.NoError(t, err)
@@ -490,16 +524,16 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 	require.Equal(t, issue.UID, issueB.UID, "issue ids should collide")
 
 	require.False(t, tryCreateRollout(), "the review never started")
-	run := ruleRun(issue.ProjectID)
+	run := reviewRun(issue.ProjectID)
 	require.NotNil(t, run)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 	require.Equal(t, int64(2), run.Payload.GetApprovalInputVersion())
 	require.Len(t, b.ReviewRunTickleChan, 1)
-	require.Nil(t, ruleRun("project-b"))
+	require.Nil(t, reviewRun("project-b"))
 
 	// The plan's SQL changes and is approved again, but the slot was not
 	// reset: the DONE run reviewed version 2.
-	completeRuleRun()
+	completeReviewRun()
 	_, err = s.GetDB().ExecContext(ctx, `
 		UPDATE plan SET config = jsonb_set(config, '{approvalInputVersion}', '"3"')
 		WHERE project = $1 AND id = $2
@@ -511,12 +545,12 @@ func TestTryCreateRolloutStartsAMissingOrStaleReview(t *testing.T) {
 	`, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	require.False(t, tryCreateRollout(), "the done run reviewed older SQL")
-	run = ruleRun(issue.ProjectID)
+	run = reviewRun(issue.ProjectID)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 	require.Equal(t, int64(1), run.Attempt)
 	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
 
-	completeRuleRun()
+	completeReviewRun()
 	require.True(t, tryCreateRollout(), "the review of the current SQL is done")
 }
 
@@ -530,7 +564,7 @@ func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
 	creator := NewRolloutCreator(s, b, nil, true)
 
 	// The review of version 2 left an open finding.
-	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	_, err = s.CreateReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica")
 	require.NoError(t, err)
@@ -563,7 +597,7 @@ func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
 	blocked, err := creator.reviewBlocksRollout(ctx, project, plan, issue)
 	require.NoError(t, err)
 	require.True(t, blocked)
-	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 	require.Equal(t, int64(3), run.Payload.GetApprovalInputVersion())
@@ -592,7 +626,7 @@ func TestReviewDoesNotHoldARolloutWithNothingToRead(t *testing.T) {
 	blocked, err := NewRolloutCreator(s, b, nil, true).reviewBlocksRollout(ctx, project, plan, issue)
 	require.NoError(t, err)
 	require.False(t, blocked)
-	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID, store.ReviewRunTypeRule)
+	run, err := s.GetReviewRun(ctx, issue.ProjectID, issue.UID)
 	require.NoError(t, err)
 	require.Nil(t, run, "no review starts without SQL to read")
 }

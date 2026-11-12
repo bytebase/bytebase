@@ -46,6 +46,7 @@
 import {
   test,
   expect,
+  type Locator,
   type Page,
   type BrowserContext,
 } from "@playwright/test";
@@ -680,6 +681,7 @@ test.describe("Inline comment threads (CUJ K)", () => {
   let specId: string;
   let sheetSha256: string;
   const seededRoot = `K seeded root ${Date.now()}`;
+  let seededRootName = "";
   const seededReply = `K seeded reply ${Date.now()}`;
   const createdRoot = `K gutter root ${Date.now()}`;
   const typedReply = `K typed reply ${Date.now()}`;
@@ -709,6 +711,7 @@ test.describe("Inline comment threads (CUJ K)", () => {
     const root = await env.api.createIssueComment(issueName, seededRoot, {
       statementAnchor: { spec: specId, sheetSha256, startLine: 2, endLine: 3 },
     });
+    seededRootName = root.name;
     await env.api.createIssueComment(issueName, seededReply, { root: root.name });
     await goReview(planId);
     await planPage.expandSection("Changes");
@@ -727,11 +730,13 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(timelineCard).toContainText(seededReply);
     // The recorded statement downloads once the card nears the viewport.
     await timelineCard.scrollIntoViewIfNeeded();
-    const anchor = timelineCard.getByTestId("statement-anchor");
-    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
-    await expect(anchor).toContainText("Lines 2–3");
-    await expect(anchor).toContainText("e2e_rev_k2_");
-    await expect(anchor.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    const bar = timelineCard.getByTestId("thread-bar");
+    await expect(bar).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
+    await expect(bar).toContainText("Lines 2–3");
+    await expect(bar.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    // The excerpt is in the body, under the bar.
+    await expect(bar).not.toContainText("e2e_rev_k2_");
+    await expect(timelineCard).toContainText("e2e_rev_k2_");
     // The reply never renders as its own timeline row.
     await expect(
       page.locator("#plan-phase-review [data-testid='comment-thread']"),
@@ -756,14 +761,12 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(planPage.inlineComposer).not.toBeVisible({ timeout: 15_000 });
     await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
     await expect(planPage.threadMarkers).toHaveCount(2);
-    const createdAnchor = planPage
-      .threadCardIn("review", createdRoot)
-      .getByTestId("statement-anchor");
-    await expect(createdAnchor).toBeVisible({ timeout: 15_000 });
-    await expect(createdAnchor).toContainText("Line 1");
+    const createdCard = planPage.threadCardIn("review", createdRoot);
+    await expect(createdCard).toBeVisible({ timeout: 15_000 });
+    await expect(createdCard.getByTestId("thread-bar")).toContainText("Line 1");
     // The recorded statement downloads once the card nears the viewport.
-    await createdAnchor.scrollIntoViewIfNeeded();
-    await expect(createdAnchor).toContainText("e2e_rev_k1_", { timeout: 15_000 });
+    await createdCard.scrollIntoViewIfNeeded();
+    await expect(createdCard).toContainText("e2e_rev_k1_", { timeout: 15_000 });
 
     const timelineCard = planPage.threadCardIn("review", seededRoot);
     await timelineCard.scrollIntoViewIfNeeded();
@@ -772,23 +775,32 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await timelineCard.getByRole("button", { name: "Reply", exact: true }).click();
     await expect(timelineCard).toContainText(typedReply, { timeout: 15_000 });
 
-    // Resolving collapses the timeline card to its summary row.
+    // Resolving folds the timeline card to its title bar.
     await timelineCard.getByRole("button", { name: "Resolve", exact: true }).click();
-    const resolvedCard = planPage.threadCardIn("review", seededRoot);
+    const resolvedCard = planPage.threadCardOf("review", seededRootName);
+    const fold = planPage.cardFoldControl(resolvedCard);
     await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await expect(resolvedCard).toContainText("Resolved");
-    await expect(resolvedCard).toContainText("2 replies");
-    await expect(resolvedCard).toContainText(seededRoot);
+    await expect(fold).toHaveAttribute("aria-expanded", "false");
+    await expect(resolvedCard.getByTestId("thread-bar")).toContainText("Resolved");
+    await expect(resolvedCard.getByTestId("thread-bar")).toContainText("Lines 2–3");
+    await expect(resolvedCard).not.toContainText(seededRoot);
     await expect(resolvedCard.getByTestId("thread-comment")).toHaveCount(0);
 
-    // Expanding keeps it resolved and offers Reopen.
-    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    // Unfolding keeps it resolved and offers Reopen; reopening keeps it open.
+    await fold.click();
     await expect(resolvedCard).toContainText(seededRoot);
     await resolvedCard.getByRole("button", { name: "Reopen", exact: true }).click();
-    const reopened = planPage.threadCardIn("review", seededRoot);
+    const reopened = planPage.threadCardOf("review", seededRootName);
     await expect(reopened.getByRole("button", { name: "Resolve", exact: true })).toBeVisible({
       timeout: 15_000,
     });
+    await expect(fold).toHaveAttribute("aria-expanded", "true");
+
+    // An open thread folds too, and unfolds again.
+    await fold.click();
+    await expect(reopened.getByTestId("thread-comment")).toHaveCount(0);
+    await fold.click();
+    await expect(reopened).toContainText(seededRoot);
 
     // View in Statement lands on the anchored lines with the seeded thread
     // expanded. Threads expand independently (#21543), so the thread created
@@ -1180,6 +1192,36 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await expect(planPage.threadCardIn("changes", rootResolved)).not.toBeVisible();
   });
 
+  test("a card in the Changes section folds to its title bar, and the reader's Resolve folds it", async () => {
+    const foldA = planPage.threadFoldControl("Comment on line 2");
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
+    await expect(foldA).toHaveAttribute("aria-expanded", "true");
+    await foldA.click();
+    // Folded, the card is its bar: the title stays, the comment goes.
+    await expect(foldA).toHaveAttribute("aria-expanded", "false");
+    await expect(planPage.threadCardIn("changes", rootA)).toHaveCount(0);
+    // A click on the bar's title unfolds it too.
+    await planPage.threadBar("Comment on line 2").getByText("Comment on line 2", { exact: true }).click();
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
+
+    const foldB = planPage.threadFoldControl("Comment on lines 4–5");
+    if ((await foldB.getAttribute("aria-expanded")) === "false") await foldB.click();
+    const cardB = planPage.threadCardIn("changes", rootB);
+    await cardB.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(foldB).toHaveAttribute("aria-expanded", "false", { timeout: 15_000 });
+    const barB = planPage.threadBar("Comment on lines 4–5");
+    await expect(barB).toContainText("Resolved");
+
+    // Leave B open but folded, as its Resolve left it, for the next journeys.
+    await foldB.click();
+    await cardB.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(cardB).toHaveAttribute("data-thread-state", "open", { timeout: 15_000 });
+    await expect(barB).not.toContainText("Resolved");
+    await expect(planPage.specUnresolvedCounts).toHaveText("2");
+    await foldB.click();
+    await expect(foldB).toHaveAttribute("aria-expanded", "false");
+  });
+
   test("several composers stay open with their own drafts, and each closes on its own", async () => {
     const first = await planPage.openInlineComposerOn(1);
     const firstEditor = first.locator("textarea");
@@ -1226,26 +1268,28 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     await editor.fill(replyResolving);
     await resolveBox.click();
     await expect(resolveBox).toHaveAttribute("aria-checked", "true");
+    const rootAName = (await card.getAttribute("id")) ?? "";
     await reply.click();
 
-    const resolvedCard = planPage.threadCardIn("review", rootA);
+    // Resolving folds the card to its title bar.
+    const resolvedCard = planPage.threadCardOf("review", rootAName);
     await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await expect(resolvedCard).toContainText("1 reply");
+    await expect(planPage.cardFoldControl(resolvedCard)).toHaveAttribute("aria-expanded", "false");
     // The counts follow: A left the placed-unresolved set.
     await expect(planPage.specUnresolvedCounts).toHaveText("2");
     await expect(planPage.threadWalker).toContainText("2");
     await expectReviewSummary("3 unresolved threads");
 
-    // Expand and reply again: a resolved thread offers Reopen thread,
+    // Unfold and reply again: a resolved thread offers Reopen thread,
     // checked by default, so an untouched reply reopens it.
-    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    await planPage.cardFoldControl(resolvedCard).click();
     await expect(resolvedCard).toContainText(replyResolving);
     await resolvedCard.getByRole("button", { name: "Reply..." }).click();
     const reopenBox = planPage.threadStateCheckbox(resolvedCard, "Reopen thread");
     await expect(reopenBox).toHaveAttribute("aria-checked", "true");
     await resolvedCard.locator("textarea[placeholder='Reply...']").fill(replyReopening);
     await resolvedCard.getByRole("button", { name: "Reply", exact: true }).click();
-    const reopenedCard = planPage.threadCardIn("review", rootA);
+    const reopenedCard = planPage.threadCardOf("review", rootAName);
     await expect(reopenedCard).toHaveAttribute("data-thread-state", "open", { timeout: 15_000 });
     await expect(reopenedCard).toContainText(replyReopening);
     await expect(planPage.specUnresolvedCounts).toHaveText("3");
@@ -1253,7 +1297,7 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
     // Unticking it keeps the thread resolved.
     await reopenedCard.getByRole("button", { name: "Resolve", exact: true }).click();
     await expect(reopenedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
-    await reopenedCard.getByRole("button", { name: /Resolved/ }).click();
+    await planPage.cardFoldControl(reopenedCard).click();
     await reopenedCard.getByRole("button", { name: "Reply..." }).click();
     await planPage.threadStateCheckbox(reopenedCard, "Reopen thread").click();
     await reopenedCard.locator("textarea[placeholder='Reply...']").fill(`${replyReopening} still`);
@@ -1264,26 +1308,51 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
 
     // Leave A open for the next journey.
     await reopenedCard.getByRole("button", { name: "Reopen", exact: true }).click();
-    await expect(planPage.threadCardIn("review", rootA)).toHaveAttribute("data-thread-state", "open", {
+    await expect(reopenedCard).toHaveAttribute("data-thread-state", "open", {
       timeout: 15_000,
     });
     await expect(planPage.specUnresolvedCounts).toHaveText("3");
   });
 
+  test("a reply sits in the first comment's text column, joined to it by a line", async () => {
+    const card = planPage.threadCardIn("review", rootA);
+    await card.scrollIntoViewIfNeeded();
+    const comments = card.getByTestId("thread-comment");
+    await expect(comments).toHaveCount(4);
+    const box = async (locator: Locator) => {
+      const found = await locator.boundingBox();
+      if (!found) throw new Error("no box");
+      return found;
+    };
+    const firstAvatar = await box(comments.first().getByTestId("comment-avatar"));
+    const firstText = await box(comments.first().getByTestId("comment-content"));
+    const replyAvatar = await box(comments.nth(1).getByTestId("comment-avatar"));
+    expect(firstText.x).toBeGreaterThanOrEqual(firstAvatar.x + firstAvatar.width);
+    expect(Math.abs(replyAvatar.x - firstText.x)).toBeLessThanOrEqual(1);
+    const rail = await box(card.getByTestId("thread-replies-rail"));
+    expect(rail.x).toBeGreaterThan(firstAvatar.x);
+    expect(rail.x).toBeLessThan(firstAvatar.x + firstAvatar.width);
+  });
+
   test("resolving every placed thread removes the walker and the tab count, and reopening restores them", async () => {
+    const names = new Map<string, string>();
     for (const rootText of [rootA, rootB, draftOne]) {
-      const card = planPage.threadCardIn("review", rootText);
-      await card.scrollIntoViewIfNeeded();
-      await card.getByRole("button", { name: "Resolve", exact: true }).click();
-      await expect(card).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+      const byText = planPage.threadCardIn("review", rootText);
+      await byText.scrollIntoViewIfNeeded();
+      const name = (await byText.getAttribute("id")) ?? "";
+      names.set(rootText, name);
+      await byText.getByRole("button", { name: "Resolve", exact: true }).click();
+      await expect(planPage.threadCardOf("review", name)).toHaveAttribute("data-thread-state", "resolved", {
+        timeout: 15_000,
+      });
     }
     await expect(planPage.threadWalker).toHaveCount(0);
     await expect(planPage.specUnresolvedCounts).toHaveCount(0);
     // Only the stale thread remains open.
     await expectReviewSummary(/1 unresolved thread(?!s)/);
 
-    const card = planPage.threadCardIn("review", rootB);
-    await card.getByRole("button", { name: /Resolved/ }).click();
+    const card = planPage.threadCardOf("review", names.get(rootB) ?? "");
+    await planPage.cardFoldControl(card).click();
     await card.getByRole("button", { name: "Reopen", exact: true }).click();
     await expect(planPage.threadWalker).toContainText("1", { timeout: 15_000 });
     await expect(planPage.specUnresolvedCounts).toHaveText("1");
@@ -1385,8 +1454,6 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   let issueName: string;
   let specId: string;
   let sheetSha256: string;
-  let earlierRootName = "";
-  let laterRootName = "";
   const stamp = Date.now();
   const earlierRoot = `M earlier root lines 4-5 ${stamp}`;
   const laterRoot = `M later root line 5 ${stamp}`;
@@ -1413,10 +1480,8 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
       statementAnchor: { spec: specId, sheetSha256, startLine, endLine },
     });
     // Both end on line 5, so they share its marker.
-    const earlier = await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
-    earlierRootName = earlier.name;
-    const later = await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
-    laterRootName = later.name;
+    await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
+    await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
     await goReview(planId);
     await planPage.expandSection("Changes");
   });
@@ -1427,6 +1492,12 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
 
   test("dragging across line numbers starts a thread on that range", async () => {
     await planPage.selectStatementLines(2, 3);
+    const selected = planPage.statementEditor.locator(".bb-thread-line--selecting").first();
+    await expect(selected).toBeVisible();
+    const gray = await page.evaluate(
+      () => `rgba(${getComputedStyle(document.documentElement).getPropertyValue("--color-control-bg-hover").trim().split(/\s+/).join(", ")}, 0.6)`,
+    );
+    await expect(selected).toHaveCSS("background-color", gray);
     await planPage.clickAddThreadGlyph();
     const composer = planPage.inlineComposer;
     await expect(composer).toBeVisible();
@@ -1437,10 +1508,43 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     await expect(planPage.threadCardIn("changes", rangeRoot)).toBeVisible();
     // One marker on line 3 for the new thread, one shared marker on line 5.
     await expect(planPage.threadMarkers).toHaveCount(2);
-    const anchorContext = planPage.threadCardIn("review", rangeRoot).getByTestId("statement-anchor");
-    await anchorContext.scrollIntoViewIfNeeded();
-    await expect(anchorContext).toContainText("Lines 2–3", { timeout: 15_000 });
-    await expect(anchorContext).toContainText(`e2e_rev_m2_${stamp}`);
+    const rangeCard = planPage.threadCardIn("review", rangeRoot);
+    await rangeCard.scrollIntoViewIfNeeded();
+    await expect(rangeCard.getByTestId("thread-bar")).toContainText("Lines 2–3", { timeout: 15_000 });
+    await expect(rangeCard).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("the statement sits on its gray ground on every line, with or without a thread", async () => {
+    const ground = page.locator("#plan-phase-changes [data-testid='statement-ground']").first();
+    await expect(ground).toBeVisible();
+    // Tailwind computes the token's opacity in its own color space, so the
+    // expected value comes from a probe drawn with the same utility.
+    const groundColor = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.className = "bg-control-bg/50";
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    });
+    await expect(ground).toHaveCSS("background-color", groundColor);
+    // Monaco's own layers are transparent, so the ground shows behind every
+    // line: the commented ones and the rest alike.
+    await expect(planPage.statementEditor).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    for (const layer of [".monaco-editor-background", ".margin"]) {
+      await expect(planPage.statementEditor.locator(layer).first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    }
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+  });
+
+  test("an unfolded card is at most 768px wide and ends 16px or more before the editor's right edge", async () => {
+    const card = planPage.threadCardIn("changes", rangeRoot);
+    await expect(card).toBeVisible();
+    await expect(planPage.statementEditor.locator(".view-overlays [class*='bb-thread-line']:not(.bb-thread-line--selecting)")).toHaveCount(0);
+    const [cardBox, editorBox] = await Promise.all([card.boundingBox(), planPage.statementEditor.boundingBox()]);
+    if (!cardBox || !editorBox) throw new Error("no box");
+    expect(cardBox.width).toBeLessThanOrEqual(768);
+    expect(editorBox.x + editorBox.width - (cardBox.x + cardBox.width)).toBeGreaterThanOrEqual(16);
   });
 
   test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {
@@ -1451,22 +1555,24 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
     // open it only when it is not showing.
     const stack = page
       .locator("#plan-phase-changes [data-testid='thread-stack']")
-      .filter({ hasText: laterRoot });
+      .filter({ has: page.getByRole("button", { name: "Comment on line 5", exact: true }) });
     if (!(await stack.isVisible().catch(() => false))) {
       await shared.click();
     }
     await expect(stack).toBeVisible();
-    // Each thread in the stack opens on its own, and expanding one leaves the
-    // other open: both cards end up visible.
-    for (const [rootName, rootText] of [
-      [earlierRootName, earlierRoot],
-      [laterRootName, laterRoot],
+    // Each folded card is titled by its own range. Each unfolds on its own,
+    // and unfolding one leaves the other open: both cards end up visible.
+    for (const [title, rootText] of [
+      ["Comment on lines 4–5", earlierRoot],
+      ["Comment on line 5", laterRoot],
     ]) {
-      const row = planPage.collapsedThreadRow(rootName);
-      if (await row.isVisible().catch(() => false)) {
-        await expect(row).toContainText(rootText);
-        await row.click();
+      const fold = planPage.threadFoldControl(title);
+      await expect(fold).toHaveCount(1);
+      if ((await fold.getAttribute("aria-expanded")) === "false") {
+        await expect(planPage.threadCardIn("changes", rootText)).toHaveCount(0);
+        await fold.click();
       }
+      await expect(fold).toHaveAttribute("aria-expanded", "true");
       await expect(planPage.threadCardIn("changes", rootText)).toBeVisible();
     }
     await expect(planPage.threadCardIn("changes", earlierRoot)).toBeVisible();
@@ -1507,10 +1613,72 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
         { timeout: 5_000 },
       )
       .toEqual({ rightEdgeInside: true, belowEditorTop: true, nearEditorTop: true });
+    // The walker's last step may have scrolled line 1 above the editor's top.
+    await planPage.scrollStatementEditorToTop();
     const composer = await planPage.openInlineComposerOn(1);
     await expect(composer.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
     await composer.getByRole("button", { name: "Cancel" }).click();
     await expect(planPage.inlineComposer).toHaveCount(0);
+  });
+
+  test("on a phone, every part of an Activity card's bar stays inside the card, with nothing overlapping", async () => {
+    await page.setViewportSize({ width: 375, height: 1200 });
+    const card = planPage.threadCardIn("review", earlierRoot);
+    await card.scrollIntoViewIfNeeded();
+    const bar = card.getByTestId("thread-bar");
+    await expect(bar.getByTestId("thread-bar-lines")).toBeVisible();
+    await expect(bar.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    await expect
+      .poll(
+        async () => {
+          const cardBox = await card.boundingBox();
+          if (!cardBox) return ["no card box"];
+          const boxes = [];
+          // The title, markers and state labels sit in a box-less wrapper, so measure them too.
+          for (const part of await bar.locator(":scope > *, [data-testid='thread-bar-lead'] > *").all()) {
+            const box = await part.boundingBox();
+            if (box && box.width > 0) boxes.push(box);
+          }
+          const problems: string[] = [];
+          for (const box of boxes) {
+            if (box.x + box.width > cardBox.x + cardBox.width + 0.5) problems.push("past the card's edge");
+          }
+          for (let i = 0; i < boxes.length; i++) {
+            for (let j = i + 1; j < boxes.length; j++) {
+              const [a, b] = [boxes[i], boxes[j]];
+              const sameRow = a.y < b.y + b.height && b.y < a.y + a.height;
+              const apart = a.x + a.width <= b.x + 0.5 || b.x + b.width <= a.x + 0.5;
+              if (sameRow && !apart) problems.push("parts overlap");
+            }
+          }
+          const barBox = await bar.boundingBox();
+          const linesBox = await bar.getByTestId("thread-bar-lines").boundingBox();
+          const linkBox = await bar.getByRole("button", { name: "View in Statement" }).boundingBox();
+          if (barBox && linesBox && linkBox) {
+            if (Math.abs(linesBox.y - linkBox.y) > 4) problems.push("lines and link on different rows");
+            if (barBox.x + barBox.width - (linkBox.x + linkBox.width) > 12) problems.push("link not at the right end");
+          }
+          return problems;
+        },
+        { timeout: 5_000 },
+      )
+      .toEqual([]);
+    // At desktop width the same bar is one row.
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await expect.poll(async () => (await bar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+  });
+
+  test("at desktop width a long title truncates and keeps its bar on one row", async () => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    const changesBar = planPage.threadBar("Comment on lines 4–5");
+    await changesBar.scrollIntoViewIfNeeded();
+    const title = changesBar.locator("[data-testid='thread-bar-lead'] > *").first();
+    // No seeded title is long enough, so lengthen this one in the page.
+    await title.evaluate((node) => {
+      node.textContent = "Comment on lines 4–5 of a statement with a very long title ".repeat(6);
+    });
+    await expect.poll(async () => (await changesBar.boundingBox())?.height ?? 0, { timeout: 5_000 }).toBeLessThanOrEqual(34);
+    expect(await title.evaluate((node) => node.scrollWidth > node.clientWidth)).toBe(true);
   });
 });
 
@@ -1808,13 +1976,14 @@ test.describe("The project setting and plan edits move who may approve (L2/L3)",
 // comments plain; #21386's placement engine shifts or outdates an anchor when
 // the statement changes — the one flow that PR left unverified in a browser.)
 
-// A timeline card's statement anchor. The recorded statement downloads only
-// once the card nears the viewport (StatementAnchorContext's useInViewOnce),
-// so the card is scrolled in first; until then the anchor reads PENDING.
+// A timeline card's title bar, which carries its anchor state and lines. The
+// recorded statement downloads only once the card nears the viewport
+// (StatementAnchorContext's useInViewOnce), so the card is scrolled in first;
+// until then the anchor reads PENDING.
 async function timelineAnchor(rootText: string) {
   const card = planPage.threadCardIn("review", rootText);
   await card.scrollIntoViewIfNeeded();
-  return card.getByTestId("statement-anchor");
+  return card.getByTestId("thread-bar");
 }
 
 // The line the editor's single thread marker sits on, by matching its top edge

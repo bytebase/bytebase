@@ -1,11 +1,13 @@
 import {
   Check,
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  ExternalLink,
   Loader2,
   RotateCcw,
 } from "lucide-react";
 import {
+  type MouseEvent,
   type ReactNode,
   type SetStateAction,
   useContext,
@@ -17,23 +19,39 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { HumanizeTs } from "@/components/HumanizeTs";
-import { MarkdownEditor, markdownSummary } from "@/components/MarkdownEditor";
+import { EnvironmentBadge } from "@/components/EnvironmentLabel";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useCurrentUser } from "@/hooks/useAppState";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useCurrentUser, usePlanFeature } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { useAppStore } from "@/stores/app";
+import {
+  type Issue,
+  IssueComment_ReviewMetadata_Priority,
+} from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { isValidDatabaseName } from "@/types/v1/database";
 import "./CommentThreadCard.css";
-import { ReviewPriorityBadge, useCommentAuthor } from "./ReviewResult";
+import {
+  productionEnvironmentsOf,
+  requestMissingDatabases,
+} from "./productionTargets";
+import { ReviewPriorityBadge } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
 import { ThreadStateBadge } from "./ThreadStateBadge";
-import type { CommentThread } from "./threadModel";
+import {
+  type AnchorState,
+  type CommentThread,
+  type LineRange,
+  lineRangeLabel,
+} from "./threadModel";
 import {
   canReplyToThread,
   canSettleThread,
@@ -46,17 +64,15 @@ const FOLD_REPLIES_ABOVE = 4;
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer, where a resolved thread also says so. The reply composer
-// carries a checkbox that mirrors the thread state and, when toggled, settles
-// the thread after the reply is posted. Resolved threads collapse to a
-// summary row.
+// in the footer. The reply composer carries a checkbox that mirrors the thread
+// state and, when toggled, settles the thread after the reply is posted.
+// Every card starts with a title bar that holds the fold control and the
+// state, and folding leaves the bar alone.
 export function CommentThreadCard({
+  bar,
   className,
-  collapsible = true,
-  renderContext,
+  excerpt,
   issue,
-  label,
-  onClose,
   onThreadStateChanged,
   replyDraft: savedReplyDraft,
   onReplyDraftChange,
@@ -64,16 +80,11 @@ export function CommentThreadCard({
   spec,
   thread,
 }: {
+  bar: ThreadBarProps;
   className?: string;
-  // Whether a resolved thread may collapse to its summary row.
-  collapsible?: boolean;
-  // Full-width statement context above the root author and discussion.
-  renderContext?: (onCollapse?: () => void) => ReactNode;
+  // The recorded SQL the thread is on, above the first comment.
+  excerpt?: ReactNode;
   issue: Issue;
-  // Extra header text after the timestamp (the anchored line range).
-  label?: ReactNode;
-  // Editor placement: closes the expanded thread back to its marker.
-  onClose?: () => void;
   // Fired only after this card successfully changes state, never on refresh.
   onThreadStateChanged?: (resolved: boolean) => void;
   replyDraft?: string;
@@ -86,7 +97,7 @@ export function CommentThreadCard({
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const actions = useThreadActions(issue.name);
-  const [collapsed, setCollapsed] = useState(collapsible && thread.resolved);
+  const [ownFolded, setOwnFolded] = useState(thread.resolved);
   const [showAllReplies, setShowAllReplies] = useState(
     () => thread.replies.length <= FOLD_REPLIES_ABOVE
   );
@@ -129,11 +140,14 @@ export function CommentThreadCard({
     if (updated && mounted.current) stateChanged.current?.(resolved);
   };
 
-  // Resolving collapses the thread; reopening expands it again.
+  // A card that keeps its own fold state folds when the thread becomes
+  // resolved and unfolds when it is reopened.
   useEffect(() => {
-    if (!collapsible) return;
-    setCollapsed(thread.resolved);
-  }, [collapsible, thread.resolved]);
+    setOwnFolded(thread.resolved);
+  }, [thread.resolved]);
+  const folded = bar.folded ?? ownFolded;
+  const toggleFold =
+    bar.onToggleFold ?? (() => setOwnFolded((current) => !current));
 
   const allowReply = canReplyToThread(project, issue);
   const allowSettle = canSettleThread(project);
@@ -190,106 +204,78 @@ export function CommentThreadCard({
     }
   };
 
-  if (collapsed) {
-    return (
-      <div
-        className={cn(
-          "rounded-sm border border-block-border bg-background",
-          className
-        )}
-        data-testid="comment-thread"
-        data-thread-state="resolved"
-        id={thread.root.name}
-      >
-        <ThreadSummary thread={thread} onExpand={() => setCollapsed(false)} />
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
-        "@container/thread flex min-w-0 flex-col rounded-sm border border-block-border bg-background",
+        "@container/thread flex min-w-0 flex-col rounded-lg border border-control-border bg-background",
         className
       )}
       data-testid="comment-thread"
       data-thread-state={thread.resolved ? "resolved" : "open"}
       id={thread.root.name}
     >
-      {renderContext && (
-        <div className="min-w-0 overflow-hidden rounded-t-sm border-b border-block-border">
-          {renderContext(
-            thread.resolved && collapsible
-              ? () => setCollapsed(true)
-              : undefined
-          )}
+      <ThreadBar
+        {...bar}
+        folded={folded}
+        markers={<ThreadMarkers thread={thread} />}
+        onToggleFold={toggleFold}
+        resolved={thread.resolved}
+      />
+      {!folded && excerpt && (
+        <div className="min-w-0 overflow-hidden border-b border-block-border">
+          {excerpt}
         </div>
       )}
-      <ThreadComment
-        actions={
-          <>
-            {thread.resolved && collapsible && !renderContext && (
-              <Button
-                aria-label={t("common.collapse")}
-                onClick={() => setCollapsed(true)}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-            {onClose && (
-              <Button
-                aria-label={t("common.close")}
-                onClick={onClose}
-                size="xs"
-                appearance="secondary"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-            )}
-          </>
-        }
-        comment={thread.root}
-        label={label}
-        onEdit={actions.edit}
-        project={project}
-        spec={spec}
-      />
-      {(hiddenCount > 0 || visibleReplies.length > 0) && (
-        <div
-          className="bb-thread-replies bg-control-bg/50"
-          data-testid="thread-replies"
-        >
-          {hiddenCount > 0 && (
-            <div className="flex justify-center py-1">
-              <Button
-                onClick={() => setShowAllReplies(true)}
-                size="xs"
-                appearance="link"
-              >
-                <ChevronDown className="size-3.5" />
-                {t("plan.review.thread.n-replies-hidden", {
-                  count: hiddenCount,
-                })}
-                <span className="text-control-placeholder">·</span>
-                {t("plan.review.activity.show-all")}
-              </Button>
+      {!folded && (
+        <div className="relative">
+          <ThreadComment
+            comment={thread.root}
+            onEdit={actions.edit}
+            project={project}
+            spec={spec}
+          />
+          {(hiddenCount > 0 || visibleReplies.length > 0) && (
+            <div
+              className="bb-thread-replies ml-7"
+              data-testid="thread-replies"
+            >
+              {/* Joins the replies to the first comment, under its avatar. */}
+              <Separator
+                className="absolute top-9 bottom-2 left-4.5 h-auto sm:left-5.5"
+                data-testid="thread-replies-rail"
+                orientation="vertical"
+              />
+              {hiddenCount > 0 && (
+                <div className="flex justify-center py-1">
+                  <Button
+                    onClick={() => setShowAllReplies(true)}
+                    size="xs"
+                    appearance="link"
+                  >
+                    <ChevronDown className="size-3.5" />
+                    {t("plan.review.thread.n-replies-hidden", {
+                      count: hiddenCount,
+                    })}
+                    <span className="text-control-placeholder">·</span>
+                    {t("plan.review.activity.show-all")}
+                  </Button>
+                </div>
+              )}
+              {visibleReplies.map((reply) => (
+                <ThreadComment
+                  comment={reply}
+                  key={reply.name}
+                  onEdit={actions.edit}
+                  project={project}
+                />
+              ))}
             </div>
           )}
-          {visibleReplies.map((reply) => (
-            <ThreadComment
-              comment={reply}
-              key={reply.name}
-              onEdit={actions.edit}
-              project={project}
-            />
-          ))}
         </div>
       )}
-      {(allowReply || allowSettle || thread.resolved) && (
+      {!folded && (allowReply || allowSettle) && (
         <div
-          className="flex flex-wrap items-center gap-2 border-t border-block-border bg-control-bg/50 px-2 py-2 sm:px-3"
+          className="flex flex-wrap items-center gap-2 rounded-b-lg border-t border-block-border bg-background px-2 py-2 sm:px-3"
           ref={replyFooterRef}
           data-testid="thread-reply-footer"
         >
@@ -368,7 +354,6 @@ export function CommentThreadCard({
             </>
           )}
           {!allowReply && <span className="flex-1" />}
-          {thread.resolved && !replyOpen && <ThreadStateBadge />}
           {allowSettle && !replyOpen && (
             <Button
               appearance="outline"
@@ -393,44 +378,210 @@ export function CommentThreadCard({
   );
 }
 
-function ThreadSummary({
-  thread,
-  onExpand,
-}: {
-  thread: CommentThread;
-  onExpand: () => void;
+export type ThreadBarProps = {
+  // Where the card is drawn.
+  place: "changes" | "activity";
+  // Names what the thread is on.
+  title: ReactNode;
+  // The fold control's name: the title's text, then the lines when the bar
+  // shows them apart from the title.
+  foldLabel: string;
+  // Activity only: the lines on the right, the placement state, and the link.
+  lines?: LineRange;
+  anchorState?: AnchorState;
+  stateTooltip?: string;
+  onViewInStatement?: () => void;
+  // The Changes section keeps the fold state; Activity leaves both unset and
+  // the card keeps it.
+  folded?: boolean;
+  onToggleFold?: () => void;
+};
+
+// A click inside the bar folds unless it lands on a control, which keeps its
+// own meaning, or ends a drag that selected text.
+const shouldFoldFromBarClick = (event: MouseEvent<HTMLElement>): boolean => {
+  const target = event.target as Element;
+  if (target.closest("button, a, input, [role='button']")) return false;
+  return !window.getSelection()?.toString();
+};
+
+// What a folded thread must still say about how urgent it is: the badge of a
+// P0 or P1 finding, which needs someone to act, and the badge of each
+// production environment a finding applies to. A person's thread shows
+// neither.
+function ThreadMarkers({ thread }: { thread: CommentThread }) {
+  const review = thread.root.reviewMetadata;
+  const targets = review?.targets ?? EMPTY_TARGETS;
+  const databasesByName = useAppStore((state) => state.databasesByName);
+  const environmentList = useAppStore((state) => state.environmentList);
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
+  );
+  const targetKey = targets.join("\n");
+  useEffect(() => {
+    const names = targetKey.split("\n").filter(isValidDatabaseName);
+    if (names.length === 0) return;
+    const store = useAppStore.getState();
+    void requestMissingDatabases(
+      names,
+      (name) => Boolean(useAppStore.getState().databasesByName[name]),
+      (missing) => store.batchGetOrFetchDatabases(missing, true)
+    ).catch(() => {
+      // Without the databases the bar just shows no environment badge.
+    });
+  }, [targetKey]);
+  if (!review) return null;
+  const urgent =
+    review.priority === IssueComment_ReviewMetadata_Priority.P0 ||
+    review.priority === IssueComment_ReviewMetadata_Priority.P1;
+  const productionEnvironments = productionEnvironmentsOf(
+    targets,
+    { databasesByName, environmentList },
+    hasEnvTierFeature
+  );
+  return (
+    <>
+      {urgent && <ReviewPriorityBadge priority={review.priority} />}
+      {productionEnvironments.map((environment) => (
+        // The environment's own badge, unchanged; the bar only caps its width.
+        <span
+          className="inline-flex max-w-40 min-w-0 shrink-0"
+          data-testid="thread-production"
+          key={environment.name}
+          title={environment.title}
+        >
+          <EnvironmentBadge
+            className="max-w-full"
+            environment={environment}
+            hasEnvTierFeature={hasEnvTierFeature}
+          />
+        </span>
+      ))}
+    </>
+  );
+}
+
+const EMPTY_TARGETS: readonly string[] = [];
+
+// The bar's words and icons are text-control: text-control-light falls under
+// the 4.5:1 contrast minimum.
+function ThreadBar({
+  anchorState,
+  place,
+  folded,
+  foldLabel,
+  lines,
+  markers,
+  onToggleFold,
+  onViewInStatement,
+  resolved,
+  stateTooltip,
+  title,
+}: Omit<ThreadBarProps, "folded" | "onToggleFold"> & {
+  folded: boolean;
+  markers: ReactNode;
+  onToggleFold: () => void;
+  resolved: boolean;
 }) {
   const { t } = useTranslation();
-  const author = useCommentAuthor(thread.root);
-  const review = thread.root.reviewMetadata;
-  // An AI result is summarized by its title, any other comment by its text.
-  const summary = markdownSummary(review?.title || thread.root.comment);
+  const labels = (
+    <>
+      {resolved && <ThreadStateBadge state="resolved" />}
+      {anchorState === "OUTDATED" &&
+        (stateTooltip ? (
+          <Tooltip
+            content={stateTooltip}
+            render={<span className="inline-flex" tabIndex={0} />}
+          >
+            <ThreadStateBadge state="outdated" />
+          </Tooltip>
+        ) : (
+          <ThreadStateBadge state="outdated" />
+        ))}
+      {anchorState === "UNAVAILABLE" && (
+        <ThreadStateBadge state="unavailable" />
+      )}
+    </>
+  );
   return (
-    <Button
-      appearance="secondary"
-      className="w-full min-w-0 justify-start text-left font-normal"
-      onClick={onExpand}
-      size="md"
+    // A click on the bar folds too: anywhere in the Changes section, and on the
+    // title, markers or state labels in Activity, whose right end holds the
+    // lines and a link. It is a pointer shortcut: the fold control stays the
+    // one focusable control, and the keyboard's path.
+    <div
+      className={cn(
+        "flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1 bg-background px-2 py-1 text-xs text-control",
+        place === "changes" && "cursor-pointer",
+        folded ? "rounded-lg" : "rounded-t-lg border-b border-block-border"
+      )}
+      data-anchor-state={anchorState}
+      data-testid="thread-bar"
+      onClick={(event) => {
+        if (!shouldFoldFromBarClick(event)) return;
+        const target = event.target as Element;
+        if (place === "activity" && !target.closest("[data-bar-lead]")) return;
+        onToggleFold();
+      }}
     >
-      {author.avatar}
-      <span className="max-w-24 truncate font-medium text-main">
-        {author.name}
+      <Button
+        appearance="secondary"
+        aria-expanded={!folded}
+        aria-label={foldLabel}
+        className="shrink-0"
+        onClick={onToggleFold}
+        size="xs"
+      >
+        {folded ? (
+          <ChevronRight className="size-3.5" />
+        ) : (
+          <ChevronDown className="size-3.5" />
+        )}
+      </Button>
+      {/* The title is as wide as its text, at least 64px, so the labels stay
+          beside it; it shrinks to 64px before the bar wraps. */}
+      <span
+        className={cn("contents", place === "activity" && "cursor-pointer")}
+        data-bar-lead
+        data-testid="thread-bar-lead"
+      >
+        {typeof title === "string" ? (
+          <span
+            className="min-w-16 max-w-max flex-1 basis-0 truncate"
+            title={title}
+          >
+            {title}
+          </span>
+        ) : (
+          <span className="flex min-w-16 max-w-max flex-1 basis-0">
+            {title}
+          </span>
+        )}
+        {markers}
+        {labels}
       </span>
-      {review && <ReviewPriorityBadge priority={review.priority} />}
-      <span className="min-w-0 flex-1 truncate text-control" title={summary}>
-        {summary}
-      </span>
-      {thread.replies.length > 0 && (
-        <span className="shrink-0 text-xs text-control-light">
-          {t("plan.review.thread.n-replies", { count: thread.replies.length })}
+      {(lines || onViewInStatement) && (
+        <span
+          className="ml-auto flex shrink-0 items-center gap-x-2"
+          data-testid="thread-bar-end"
+        >
+          {lines && (
+            <span data-testid="thread-bar-lines">
+              {lineRangeLabel(t, lines)}
+            </span>
+          )}
+          {onViewInStatement && (
+            <Button
+              appearance="link"
+              className="h-auto p-0"
+              onClick={onViewInStatement}
+              size="xs"
+            >
+              {t("plan.review.thread.anchor.view-in-statement")}
+              <ExternalLink className="size-3" />
+            </Button>
+          )}
         </span>
       )}
-      <HumanizeTs
-        className="hidden shrink-0 text-xs text-control-light sm:inline"
-        tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
-      />
-      <ThreadStateBadge />
-      <ChevronDown className="size-4 shrink-0 text-control-light" />
-    </Button>
+    </div>
   );
 }

@@ -8,8 +8,7 @@ import {
   IssueComment_ThreadState,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Status,
-  ReviewRun_Type,
+  ReviewRun_State,
   ReviewRunSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -20,25 +19,24 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  aiReviewRow,
   computePlanGates,
   countFindings,
   countOpenDiscussions,
   emptyFindings,
   findingSetOf,
+  findingsRow,
   inFindingGroup,
   planCheckRow,
   planCheckRunRow,
   type ReviewerFindings,
   resolvedByPeople,
+  reviewApplies,
+  reviewRow,
   rowNeedsAttention,
-  ruleReviewApplies,
-  ruleReviewRow,
   statementReportFails,
 } from "./planGates";
 
 const finding = (
-  runType: ReviewRun_Type,
   threadState: IssueComment_ThreadState,
   options: {
     priority?: IssueComment_ReviewMetadata_Priority;
@@ -49,7 +47,6 @@ const finding = (
     name: `c${Math.random()}`,
     threadState,
     reviewMetadata: create(IssueComment_ReviewMetadataSchema, {
-      runType,
       priority: options.priority ?? IssueComment_ReviewMetadata_Priority.P1,
       superseded: options.superseded ?? false,
     }),
@@ -58,8 +55,10 @@ const finding = (
 const discussion = (threadState: IssueComment_ThreadState) =>
   create(IssueCommentSchema, { name: `d${Math.random()}`, threadState });
 
-const run = (status: ReviewRun_Status, extra: { outdated?: boolean } = {}) =>
-  create(ReviewRunSchema, { status, ...extra });
+const run = (
+  state: ReviewRun_State,
+  extra: { outdated?: boolean; error?: { message: string } } = {}
+) => create(ReviewRunSchema, { state, ...extra });
 
 const NO_FINDINGS = emptyFindings();
 const findings = (extra: Partial<ReviewerFindings>): ReviewerFindings => ({
@@ -82,11 +81,7 @@ describe("findingSetOf", () => {
   ] as const)(
     "a %s %s finding (superseded %s) is %s",
     (state, priority, superseded, set) => {
-      expect(
-        findingSetOf(
-          finding(ReviewRun_Type.RULE, state, { priority, superseded })
-        )
-      ).toBe(set);
+      expect(findingSetOf(finding(state, { priority, superseded }))).toBe(set);
     }
   );
 
@@ -98,51 +93,47 @@ describe("findingSetOf", () => {
 describe("inFindingGroup", () => {
   test("open covers every open finding, whatever its priority", () => {
     for (const priority of [P0, P1, P2]) {
-      expect(
-        inFindingGroup(finding(ReviewRun_Type.RULE, OPEN, { priority }), "open")
-      ).toBe(true);
+      expect(inFindingGroup(finding(OPEN, { priority }), "open")).toBe(true);
     }
-    expect(
-      inFindingGroup(finding(ReviewRun_Type.RULE, RESOLVED, {}), "open")
-    ).toBe(false);
+    expect(inFindingGroup(finding(RESOLVED, {}), "open")).toBe(false);
   });
 });
 
 describe("countFindings", () => {
   test("splits open findings by priority and sets resolved P0s apart", () => {
     const comments = [
-      finding(ReviewRun_Type.RULE, OPEN, { priority: P0 }),
-      finding(ReviewRun_Type.RULE, OPEN, { superseded: true }),
-      finding(ReviewRun_Type.RULE, RESOLVED, { priority: P0 }),
-      finding(ReviewRun_Type.RULE, RESOLVED, {}),
-      finding(ReviewRun_Type.RULE, RESOLVED, { priority: P2 }),
-      finding(ReviewRun_Type.RULE, RESOLVED, { superseded: true }),
-      finding(ReviewRun_Type.AI, OPEN, { priority: P2 }),
+      finding(OPEN, { priority: P0 }),
+      finding(OPEN, { superseded: true }),
+      finding(OPEN, { priority: P2 }),
+      finding(RESOLVED, { priority: P0 }),
+      finding(RESOLVED, {}),
+      finding(RESOLVED, { priority: P2 }),
+      finding(RESOLVED, { superseded: true }),
       discussion(OPEN),
     ];
-    const rule = countFindings(comments, "rule");
-    expect(rule).toEqual({
-      open: 2,
+    const counts = countFindings(comments);
+    expect(counts).toEqual({
+      open: 3,
       p0: 1,
       p1: 1,
-      p2: 0,
+      p2: 1,
       overridden: 1,
       resolved: 2,
       earlier: 1,
     });
-    expect(resolvedByPeople(rule)).toBe(3);
-    expect(countFindings(comments, "ai")).toMatchObject({ open: 1, p2: 1 });
+    expect(resolvedByPeople(counts)).toBe(3);
     expect(countOpenDiscussions(comments)).toBe(1);
   });
 });
 
 describe("rowNeedsAttention", () => {
   test("a P0 resolved without a change needs attention though it holds nothing", () => {
-    const row = ruleReviewRow({
-      run: run(ReviewRun_Status.DONE),
+    const row = reviewRow({
+      run: run(ReviewRun_State.SUCCEEDED),
       stale: false,
       loadFailed: false,
       findings: findings({ overridden: 1 }),
+      off: false,
     });
     expect(row.conclusion).toBe("resolved");
     expect(row.holdsRollout).toBe(false);
@@ -150,37 +141,41 @@ describe("rowNeedsAttention", () => {
   });
 });
 
-describe("ruleReviewApplies", () => {
+describe("reviewApplies", () => {
   test.each([
     ["a missing run on a plan with SQL", null, true, true],
     ["a missing run on a plan with nothing to review", null, false, false],
     [
       "a run on a plan with nothing left to review",
-      run(ReviewRun_Status.DONE),
+      run(ReviewRun_State.SUCCEEDED),
       false,
       true,
     ],
     ["a run not loaded yet", undefined, false, true],
   ] as const)("%s", (_, reviewRun, reviewsSQL, applies) => {
-    expect(ruleReviewApplies(reviewRun, reviewsSQL)).toBe(applies);
+    expect(reviewApplies(reviewRun, reviewsSQL)).toBe(applies);
   });
 });
 
-describe("ruleReviewRow", () => {
+describe("reviewRow", () => {
   test.each([
-    [run(ReviewRun_Status.DONE), NO_FINDINGS, "passed", false],
-    [run(ReviewRun_Status.DONE), findings({ resolved: 3 }), "resolved", false],
+    [run(ReviewRun_State.SUCCEEDED), NO_FINDINGS, "passed", false],
     [
-      run(ReviewRun_Status.DONE),
+      run(ReviewRun_State.SUCCEEDED),
+      findings({ resolved: 3 }),
+      "resolved",
+      false,
+    ],
+    [
+      run(ReviewRun_State.SUCCEEDED),
       findings({ open: 2, p1: 2, resolved: 1 }),
       "open",
       true,
     ],
-    [run(ReviewRun_Status.RUNNING), NO_FINDINGS, "running", true],
-    [run(ReviewRun_Status.AVAILABLE), NO_FINDINGS, "running", true],
-    [run(ReviewRun_Status.FAILED), NO_FINDINGS, "failed", true],
+    [run(ReviewRun_State.RUNNING), NO_FINDINGS, "running", true],
+    [run(ReviewRun_State.FAILED), NO_FINDINGS, "failed", true],
     [
-      run(ReviewRun_Status.DONE, { outdated: true }),
+      run(ReviewRun_State.SUCCEEDED, { outdated: true }),
       NO_FINDINGS,
       "outdated",
       true,
@@ -188,67 +183,120 @@ describe("ruleReviewRow", () => {
     [null, NO_FINDINGS, "not-run", true],
     [undefined, NO_FINDINGS, "loading", true],
   ] as const)("run %# concludes %s", (input, findings, conclusion, holds) => {
-    const row = ruleReviewRow({
+    const row = reviewRow({
       run: input,
       stale: false,
       loadFailed: false,
       findings,
+      off: false,
     });
+    expect(row.reviewer).toBe("review");
     expect(row.conclusion).toBe(conclusion);
     expect(row.holdsRollout).toBe(holds);
   });
 
   test("a stale completion is not a result yet", () => {
-    const row = ruleReviewRow({
-      run: run(ReviewRun_Status.DONE),
+    const row = reviewRow({
+      run: run(ReviewRun_State.SUCCEEDED),
       stale: true,
       loadFailed: false,
       findings: NO_FINDINGS,
+      off: false,
     });
     expect(row.conclusion).toBe("running");
   });
 
   test("a load failure is a failure", () => {
-    const row = ruleReviewRow({
+    const row = reviewRow({
       run: undefined,
       stale: false,
       loadFailed: true,
       findings: NO_FINDINGS,
+      off: false,
     });
     expect(row.conclusion).toBe("failed");
   });
-});
 
-describe("aiReviewRow", () => {
-  test("holds the rollout only through open findings", () => {
-    expect(
-      aiReviewRow({
-        run: run(ReviewRun_Status.RUNNING),
-        runFetched: true,
+  test("a failed run carries its error message and the findings that stand", () => {
+    const row = reviewRow({
+      run: run(ReviewRun_State.FAILED, { error: { message: "rate limited" } }),
+      stale: false,
+      loadFailed: false,
+      findings: findings({ open: 1, p0: 1 }),
+      off: false,
+    });
+    expect(row.conclusion).toBe("failed");
+    expect(row.error).toBe("rate limited");
+    expect(row.findings.p0).toBe(1);
+  });
+
+  test("a review that is off is never a pass", () => {
+    for (const input of [run(ReviewRun_State.SUCCEEDED), null]) {
+      const row = reviewRow({
+        run: input,
+        stale: false,
+        loadFailed: false,
         findings: NO_FINDINGS,
-      }).holdsRollout
-    ).toBe(false);
+        off: true,
+      });
+      expect(row.conclusion).toBe("off");
+      expect(row.holdsRollout).toBe(false);
+      expect(rowNeedsAttention(row)).toBe(false);
+    }
+  });
+
+  test("a review that is off still shows a run the server waits for", () => {
+    const conclude = (input: Parameters<typeof reviewRow>[0]["run"]) =>
+      reviewRow({
+        run: input,
+        stale: false,
+        loadFailed: false,
+        findings: NO_FINDINGS,
+        off: true,
+      });
+    const failed = conclude(
+      run(ReviewRun_State.FAILED, { error: { message: "rate limited" } })
+    );
+    expect(failed.conclusion).toBe("failed");
+    expect(failed.error).toBe("rate limited");
+    expect(failed.holdsRollout).toBe(true);
+    expect(conclude(run(ReviewRun_State.RUNNING)).conclusion).toBe("running");
     expect(
-      aiReviewRow({ run: null, runFetched: true, findings: NO_FINDINGS })
-        .conclusion
-    ).toBe("not-run");
-    const open = aiReviewRow({
-      run: run(ReviewRun_Status.DONE),
-      runFetched: true,
+      conclude(run(ReviewRun_State.SUCCEEDED, { outdated: true })).conclusion
+    ).toBe("outdated");
+    expect(conclude(undefined).conclusion).toBe("loading");
+  });
+
+  test("a review that is off still shows the findings earlier runs left", () => {
+    const open = reviewRow({
+      run: run(ReviewRun_State.SUCCEEDED),
+      stale: false,
+      loadFailed: false,
       findings: findings({ open: 1, p1: 1 }),
+      off: true,
     });
     expect(open.conclusion).toBe("open");
     expect(open.holdsRollout).toBe(true);
-  });
-
-  test("concludes from the findings when the page does not read the run", () => {
-    const row = aiReviewRow({
-      run: undefined,
-      runFetched: false,
-      findings: findings({ resolved: 2, overridden: 1 }),
+    const resolved = reviewRow({
+      run: run(ReviewRun_State.SUCCEEDED),
+      stale: false,
+      loadFailed: false,
+      findings: findings({ resolved: 1 }),
+      off: true,
     });
-    expect(row.conclusion).toBe("resolved");
-    expect(rowNeedsAttention(row)).toBe(true);
+    expect(resolved.conclusion).toBe("resolved");
+  });
+});
+
+describe("findingsRow", () => {
+  test("holds the rollout only through open findings", () => {
+    const open = findingsRow(findings({ open: 1, p1: 1 }));
+    expect(open.conclusion).toBe("open");
+    expect(open.holdsRollout).toBe(true);
+    const resolved = findingsRow(findings({ resolved: 2, overridden: 1 }));
+    expect(resolved.conclusion).toBe("resolved");
+    expect(resolved.holdsRollout).toBe(false);
+    expect(rowNeedsAttention(resolved)).toBe(true);
   });
 });
 
@@ -359,22 +407,31 @@ describe("run rows", () => {
 describe("computePlanGates", () => {
   const issue = (extra: Parameters<typeof create<typeof IssueSchema>>[1]) =>
     create(IssueSchema, { status: IssueStatus.OPEN, ...extra });
-  const openRule = ruleReviewRow({
-    run: run(ReviewRun_Status.DONE),
+  const openReview = reviewRow({
+    run: run(ReviewRun_State.SUCCEEDED),
     stale: false,
     loadFailed: false,
     findings: findings({ open: 2, p1: 2 }),
+    off: false,
   });
-  const pendingAI = aiReviewRow({
-    run: run(ReviewRun_Status.RUNNING),
-    runFetched: true,
-    findings: NO_FINDINGS,
-  });
+  const passedChecks = planCheckRow("ghost", [
+    create(PlanCheckRunSchema, {
+      status: PlanCheckRun_Status.DONE,
+      results: [
+        create(PlanCheckRun_ResultSchema, {
+          type: PlanCheckRun_Result_Type.GHOST_SYNC,
+          status: Advice_Level.SUCCESS,
+          target: "db1",
+        }),
+      ],
+    }),
+  ]);
+  if (!passedChecks) throw new Error("expected a gh-ost row");
 
   test("a draft waits on submission and its open findings", () => {
     const gates = computePlanGates({
       issue: issue({ draft: true }),
-      rows: [openRule, pendingAI],
+      rows: [openReview, passedChecks],
       openDiscussions: 0,
     });
     expect(gates.map((gate) => gate.kind)).toEqual(["submit", "review"]);
@@ -384,12 +441,12 @@ describe("computePlanGates", () => {
     const gates = computePlanGates({
       issue: issue({ approvalStatus: ApprovalStatus.PENDING }),
       currentApprovalRole: "roles/workspaceDBA",
-      rows: [openRule, pendingAI],
+      rows: [openReview, passedChecks],
       openDiscussions: 1,
     });
     expect(gates).toEqual([
       { kind: "approval", rejected: false, role: "roles/workspaceDBA" },
-      { kind: "review", row: openRule },
+      { kind: "review", row: openReview },
       { kind: "discussion", open: 1 },
     ]);
   });
@@ -398,15 +455,32 @@ describe("computePlanGates", () => {
     expect(
       computePlanGates({
         issue: issue({ approvalStatus: ApprovalStatus.SKIPPED }),
-        rows: [pendingAI],
+        rows: [passedChecks],
         openDiscussions: 0,
       })
     ).toEqual([]);
     expect(
       computePlanGates({
         issue: issue({ status: IssueStatus.DONE }),
-        rows: [openRule],
+        rows: [openReview],
         openDiscussions: 3,
+      })
+    ).toEqual([]);
+  });
+
+  test("a review that is off holds nothing", () => {
+    const off = reviewRow({
+      run: null,
+      stale: false,
+      loadFailed: false,
+      findings: NO_FINDINGS,
+      off: true,
+    });
+    expect(
+      computePlanGates({
+        issue: issue({ approvalStatus: ApprovalStatus.SKIPPED }),
+        rows: [off],
+        openDiscussions: 0,
       })
     ).toEqual([]);
   });

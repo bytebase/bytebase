@@ -4,11 +4,8 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
-  IssueComment_ReviewMetadata_Priority,
-  IssueComment_ReviewMetadataSchema,
   IssueCommentSchema,
   IssueSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { Plan_SpecSchema } from "@/types/proto-es/v1/plan_service_pb";
 import type { EditorThread } from "./threadModel";
@@ -16,7 +13,10 @@ import { ThreadStack } from "./ThreadStack";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: { range?: string }) =>
+      options?.range ? `${key}:${options.range}` : key,
+  }),
 }));
 vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
@@ -26,27 +26,32 @@ vi.mock("@/stores/app", () => ({
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),
 }));
 vi.mock("./CommentThreadCard", () => ({
-  CommentThreadCard: ({ thread, onClose, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
+  CommentThreadCard: ({ bar, className, thread, onThreadStateChanged, replyDraft, onReplyDraftChange, spec }: {
+    className?: string;
+    bar: { title: string; folded: boolean; onToggleFold: () => void };
     thread: EditorThread["thread"];
-    onClose: () => void;
     onThreadStateChanged: (resolved: boolean) => void;
     replyDraft: string;
     onReplyDraftChange: (draft: string) => void;
     spec?: { id: string };
   }) => (
-    <div data-thread-name={thread.root.name} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
-      <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
-      <button onClick={onClose}>Close</button>
-      <button onClick={() => onThreadStateChanged(true)}>Resolved here</button>
-      <button onClick={() => onThreadStateChanged(false)}>Reopened here</button>
+    <div data-class-name={className ?? ""} data-thread-name={thread.root.name} data-folded={String(bar.folded)} data-title={bar.title} data-resolved={String(thread.resolved)} data-spec={spec?.id}>
+      <button onClick={bar.onToggleFold}>Fold</button>
+      {!bar.folded && (
+        <>
+          <input aria-label="Reply draft" value={replyDraft} onChange={(e) => onReplyDraftChange(e.target.value)} />
+          <button onClick={() => onThreadStateChanged(true)}>Resolved here</button>
+          <button onClick={() => onThreadStateChanged(false)}>Reopened here</button>
+        </>
+      )}
     </div>
   ),
 }));
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-const entry = (name: string, resolved: boolean, seconds: number): EditorThread => ({
-  range: { startLine: 2, endLine: 2 },
+const entry = (name: string, resolved: boolean, seconds: number, range = { startLine: 2, endLine: 2 }): EditorThread => ({
+  range,
   thread: {
     root: create(IssueCommentSchema, {
       name,
@@ -94,7 +99,7 @@ describe("ThreadStack", () => {
     expect(order(container)).toEqual(["a", "b"]);
   });
 
-  test("keeps multiple threads expanded and closes only the chosen one", () => {
+  test("keeps multiple threads expanded and folds only the chosen one", () => {
     const threads = [entry("a", false, 1), entry("b", false, 2)];
     const { container } = render(
       <ThreadStack {...props} expandedRoots={new Set(["a", "b"])} threads={threads} />
@@ -132,13 +137,15 @@ describe("ThreadStack", () => {
       />;
     }
     const { container } = render(<Harness />);
+    const fold = (name: string) => fireEvent.click(container.querySelector(`[data-thread-name="${name}"] button`)!);
     fireEvent.change(container.querySelector('[data-thread-name="a"] input')!, { target: { value: "unfinished reply" } });
-    fireEvent.click(container.querySelector('[data-thread-name="b"]')!);
+    fold("b");
     expect(container.querySelectorAll("input")).toHaveLength(2);
     expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
-    fireEvent.click(container.querySelector('[data-thread-name="a"] button')!);
+    fold("a");
+    expect(container.querySelector('[data-thread-name="a"] input')).toBeNull();
     expect(container.querySelector('[data-thread-name="b"] input')).not.toBeNull();
-    fireEvent.click(container.querySelector('[data-thread-name="a"]')!);
+    fold("a");
     expect((container.querySelector('[data-thread-name="a"] input') as HTMLInputElement).value).toBe("unfinished reply");
   });
 
@@ -153,37 +160,28 @@ describe("ThreadStack", () => {
 });
 
 
-test("shows a collapsed review result as its reviewer with its priority", () => {
-  const review = entry("finding", false, 1);
-  review.thread.root.creator = "";
-  review.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-    runType: ReviewRun_Type.RULE,
-    priority: IssueComment_ReviewMetadata_Priority.P0,
-  });
-  const { container } = render(<ThreadStack {...props} threads={[review, entry("person", false, 2)]} />);
-  const rows = container.querySelectorAll("[data-testid='thread-row']");
-  expect(rows[0].textContent).toContain("sql-review.standard-rules.self");
-  expect(rows[0].querySelector("[data-testid='review-priority']")?.textContent).toBe("P0");
-  expect(rows[0].textContent).not.toContain("Aurora");
-  expect(rows[1].textContent).toContain("Aurora");
-  expect(rows[1].querySelector("[data-testid='review-priority']")).toBeNull();
+test("draws a folded thread as its card, titled by the lines it is on", () => {
+  const { container } = render(
+    <ThreadStack {...props} threads={[entry("one", false, 1), entry("range", true, 2, { startLine: 1, endLine: 7 })]} />
+  );
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-folded"))).toEqual(["true", "true"]);
+  expect(cards.map((card) => card.getAttribute("data-title"))).toEqual([
+    "plan.review.thread.comment-title:2",
+    "plan.review.thread.comment-title:1–7",
+  ]);
+  expect(container.querySelector("[data-testid='thread-row']")).toBeNull();
 });
 
-test("summarizes a collapsed AI result by its title and a rule result by its text", () => {
-  const ai = entry("ai", false, 1);
-  ai.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-    runType: ReviewRun_Type.AI,
-    title: "Create the index `concurrently`",
-  });
-  const rule = entry("rule", false, 2);
-  rule.thread.root.reviewMetadata = create(IssueComment_ReviewMetadataSchema, {
-    runType: ReviewRun_Type.RULE,
-  });
-  const { container } = render(<ThreadStack {...props} threads={[ai, rule]} />);
-  const rows = container.querySelectorAll("[data-testid='thread-row']");
-  expect(rows[0].textContent).toContain("Create the index concurrently");
-  expect(rows[0].textContent).not.toContain("ai summary");
-  expect(rows[1].textContent).toContain("rule summary");
+test("the bar's fold control unfolds a folded thread and folds an unfolded one", () => {
+  const { container } = render(
+    <ThreadStack {...props} expandedRoots={new Set(["open"])} threads={[entry("open", false, 1), entry("folded", false, 2)]} />
+  );
+  fireEvent.click(container.querySelector('[data-thread-name="folded"] button')!);
+  expect(props.onExpand).toHaveBeenCalledExactlyOnceWith("folded");
+  expect(props.onCollapse).not.toHaveBeenCalled();
+  fireEvent.click(container.querySelector('[data-thread-name="open"] button')!);
+  expect(props.onCollapse).toHaveBeenCalledExactlyOnceWith("open");
 });
 
 test("hands each expanded card the spec of the statement it sits on", () => {
@@ -199,4 +197,10 @@ test("exposes the expanded card for editor reveal", () => {
   expect(ref.current?.querySelector('[data-thread-name="a"]')).not.toBeNull();
   rerender(<ThreadStack {...props} threads={threads} expandedRoots={new Set(["a", "b"])} expandedThreadRef={ref} revealRoot="b" />);
   expect(ref.current?.querySelector('[data-thread-name="b"]')).not.toBeNull();
+});
+
+test("passes the card no classes, so its own frame stands in the Changes section", () => {
+  const { container } = render(<ThreadStack {...props} expandedRoots={new Set(["a"])} threads={[entry("a", false, 1), entry("b", true, 2)]} />);
+  const cards = Array.from(container.querySelectorAll("[data-thread-name]"));
+  expect(cards.map((card) => card.getAttribute("data-class-name"))).toEqual(["", ""]);
 });

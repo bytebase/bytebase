@@ -4,7 +4,6 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   IssueComment_ReviewMetadata_Priority,
   IssueComment_ReviewMetadataSchema,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import {
@@ -110,7 +109,6 @@ describe("ReviewHeading", () => {
     const { getByTestId } = render(
       <ReviewHeading
         review={create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           ruleType: ReviewRuleType.PRIOR_BACKUP,
           priority: IssueComment_ReviewMetadata_Priority.P0,
           codes: ["PB103", "PB102"],
@@ -128,7 +126,6 @@ describe("ReviewHeading", () => {
     const { container, getByTestId } = render(
       <ReviewHeading
         review={create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           ruleType: ReviewRuleType.REQUIRE_WHERE,
           priority: IssueComment_ReviewMetadata_Priority.P1,
         })}
@@ -138,11 +135,10 @@ describe("ReviewHeading", () => {
     expect(codesOf(container)).toEqual([]);
   });
 
-  test("shows an AI result by its priority and title", () => {
+  test("shows a result no rule names by its priority and title", () => {
     const { container, getByTestId } = render(
       <ReviewHeading
         review={create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.AI,
           priority: IssueComment_ReviewMetadata_Priority.P2,
           codes: ["WT101"],
           title: "Create `idx_rental` *concurrently*",
@@ -165,7 +161,6 @@ describe("ReviewHeading", () => {
     const { container } = render(
       <ReviewHeading
         review={create(IssueComment_ReviewMetadataSchema, {
-          runType: ReviewRun_Type.RULE,
           ruleType: ReviewRuleType.REQUIRE_WHERE,
           priority: IssueComment_ReviewMetadata_Priority.P1,
           title: "ignored",

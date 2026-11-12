@@ -525,11 +525,10 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		}
 	}
 
-	// The reviews start before the workflow, whose approval check can create
-	// the rollout: a rule slot already in place holds it until that review is
-	// done.
+	// The review starts before the workflow, whose approval check can create
+	// the rollout: a slot already in place holds it until the review is done.
 	if created {
-		startReviews(ctx, s.profile, s.store, s.bus, issue, store.ReviewRunTypeRule, store.ReviewRunTypeAI)
+		startReview(ctx, s.profile, s.store, s.bus, issue)
 	}
 	if created && !issue.Payload.GetDraft() {
 		issue, err = startIssueWorkflow(ctx, s.store, s.webhookManager, s.licenseService, s.bus, project, user.Name, user.Email, issue)

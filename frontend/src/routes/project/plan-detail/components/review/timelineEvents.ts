@@ -7,15 +7,14 @@ import { isThreadReply, isThreadRoot } from "@/stores/app/issueComment";
 import type {
   IssueComment,
   IssueComment_ReviewRunCompletion,
-  ReviewRun_Type,
 } from "@/types/proto-es/v1/issue_service_pb";
 
 export type TimelineSource =
   | { type: "plan-created"; creator: string; time?: Timestamp }
   | { type: "ready-for-review"; creator: string; time?: Timestamp }
   | { type: "comment"; comment: IssueComment }
-  // One line for a reviewer's completed run, which opens to the findings it
-  // posted.
+  // One line for a completed review run, the first line of the group that
+  // holds the findings it posted.
   | {
       type: "review-run";
       completion: IssueComment_ReviewRunCompletion;
@@ -24,9 +23,6 @@ export type TimelineSource =
       open: boolean;
     };
 
-const runKey = (runType: ReviewRun_Type, attempt: bigint) =>
-  `${runType}/${attempt}`;
-
 export interface TimelineEntry {
   id: string;
   source: TimelineSource;
@@ -34,9 +30,11 @@ export interface TimelineEntry {
   // consecutive similar activities (e.g. repeated label edits). Drives the
   // "(N similar activities)" badge. Absent means a standalone row.
   similarCount?: number;
-  // The line and cards of an open run, which the long-history fold leaves in
-  // place.
+  // An open run, which the long-history fold leaves in place.
   pinned?: boolean;
+  // A run's group: the card of every finding it posted while open, none while
+  // hidden.
+  children?: TimelineEntry[];
 }
 
 export function buildTimelineEntries(input: {
@@ -46,9 +44,9 @@ export function buildTimelineEntries(input: {
   issueCreateTime?: Timestamp;
   issueDraft?: boolean;
   comments: IssueComment[];
-  // Under SQL Review V2, findings become one line per completed run. An open
-  // run shows every finding's card; a folded one only those this keeps.
-  keepFindingCard?: (root: IssueComment) => boolean;
+  // Under SQL Review V2, a completed run is one line heading a group of the
+  // findings it posted.
+  sqlReviewV2?: boolean;
   // Runs someone opened or folded, by entry id. The rest follow the default:
   // only the runs with a finding still current are open.
   runToggles?: ReadonlyMap<string, boolean>;
@@ -78,21 +76,36 @@ export function buildTimelineEntries(input: {
     });
   }
   // A run's findings follow its completion. A finding a later run reports
-  // again keeps its thread, so stays with the run that posted it.
+  // again keeps its thread, so stays with the run that posted it. A run posts
+  // its completion just before its findings, so a finding belongs to the
+  // latest completion before it that carries its attempt, else to the first
+  // one after it: two runs can share an attempt number while the backend
+  // still counts attempts per job.
   const findingsByRun = new Map<string, IssueComment[]>();
-  const completedRuns = new Set<string>();
-  for (const comment of input.comments) {
+  const runOfFinding = new Map<string, string>();
+  const completions: { name: string; attempt: bigint; index: number }[] = [];
+  input.comments.forEach((comment, index) => {
+    if (comment.event.case !== "reviewRunCompletion") return;
+    completions.push({
+      name: comment.name,
+      attempt: comment.event.value.attempt,
+      index,
+    });
+    findingsByRun.set(comment.name, []);
+  });
+  input.comments.forEach((comment, index) => {
     const review = comment.reviewMetadata;
-    if (review && isThreadRoot(comment)) {
-      const key = runKey(review.runType, review.attempt);
-      const findings = findingsByRun.get(key);
-      if (findings) findings.push(comment);
-      else findingsByRun.set(key, [comment]);
-    } else if (comment.event.case === "reviewRunCompletion") {
-      const { runType, attempt } = comment.event.value;
-      completedRuns.add(runKey(runType, attempt));
-    }
-  }
+    if (!review || !isThreadRoot(comment)) return;
+    const sameAttempt = completions.filter(
+      (completion) => completion.attempt === review.attempt
+    );
+    const run =
+      sameAttempt.findLast((completion) => completion.index < index) ??
+      sameAttempt[0];
+    if (!run) return;
+    runOfFinding.set(comment.name, run.name);
+    findingsByRun.get(run.name)?.push(comment);
+  });
   for (const comment of input.comments) {
     // Replies render inside their thread's entry, never as their own row.
     if (isThreadReply(comment)) continue;
@@ -110,10 +123,9 @@ export function buildTimelineEntries(input: {
       continue;
     }
     if (comment.event.case === "reviewRunCompletion") {
-      if (!input.keepFindingCard) continue;
+      if (!input.sqlReviewV2) continue;
       const completion = comment.event.value;
-      const findings =
-        findingsByRun.get(runKey(completion.runType, completion.attempt)) ?? [];
+      const findings = findingsByRun.get(comment.name) ?? [];
       const id = `review-run:${comment.name}`;
       const open =
         input.runToggles?.get(id) ??
@@ -128,25 +140,16 @@ export function buildTimelineEntries(input: {
           open,
         },
         pinned: open,
+        children: open
+          ? findings.map((finding) => ({
+              id: finding.name,
+              source: { type: "comment", comment: finding },
+            }))
+          : [],
       });
-      for (const finding of findings) {
-        if (!open && !input.keepFindingCard(finding)) continue;
-        entries.push({
-          id: finding.name,
-          source: { type: "comment", comment: finding },
-          pinned: open,
-        });
-      }
       continue;
     }
-    const review = comment.reviewMetadata;
-    if (
-      input.keepFindingCard &&
-      review &&
-      completedRuns.has(runKey(review.runType, review.attempt))
-    ) {
-      continue;
-    }
+    if (input.sqlReviewV2 && runOfFinding.has(comment.name)) continue;
     entries.push({ id: comment.name, source: { type: "comment", comment } });
   }
   return entries;

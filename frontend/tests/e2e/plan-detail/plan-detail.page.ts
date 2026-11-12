@@ -321,6 +321,19 @@ export class PlanDetailPage {
     return this.page.getByTestId("comment-thread").filter({ hasText: rootText });
   }
 
+  // A thread card by its root comment's resource name. Unlike the root's
+  // text, the name stays on the card when it folds to its title bar.
+  threadCardOf(phase: "changes" | "review", rootName: string): Locator {
+    return this.page.locator(
+      `#plan-phase-${phase} [data-testid='comment-thread'][id='${rootName}']`,
+    );
+  }
+
+  // The fold control on a thread card's title bar, whatever its name.
+  cardFoldControl(card: Locator): Locator {
+    return card.getByTestId("thread-bar").locator("button[aria-expanded]");
+  }
+
   threadCardIn(phase: "changes" | "review", rootText: string): Locator {
     return this.page
       .locator(`#plan-phase-${phase}`)
@@ -382,11 +395,40 @@ export class PlanDetailPage {
       .first();
   }
 
-  // A collapsed thread row in the editor's open line stack, by root name.
-  collapsedThreadRow(rootName: string): Locator {
-    return this.page.locator(
-      `#plan-phase-changes [data-testid='thread-row'][data-thread-name='${rootName}']`,
-    );
+  // A thread card's title bar in the Changes section, by its title, such as
+  // "Comment on lines 4–5". The bar's fold control is named by the title.
+  threadBar(title: string): Locator {
+    return this.page
+      .locator("#plan-phase-changes")
+      .getByTestId("thread-bar")
+      .filter({ has: this.page.getByRole("button", { name: title, exact: true }) });
+  }
+
+  threadFoldControl(title: string): Locator {
+    return this.threadBar(title).getByRole("button", { name: title, exact: true });
+  }
+
+  // Wheel the statement editor up until line 1 is inside it, then take the
+  // pointer off the editor so its next hover starts fresh. Monaco scrolls
+  // itself, so Playwright's own scrolling cannot bring a line back.
+  async scrollStatementEditorToTop(): Promise<void> {
+    await this.statementEditor.hover({ position: { x: 20, y: 60 } });
+    await expect
+      .poll(async () => {
+        await this.page.mouse.wheel(0, -60);
+        return this.statementLineOffset(1);
+      })
+      .toBeGreaterThanOrEqual(0);
+    await this.page.mouse.move(0, 0);
+    let previous: number | undefined;
+    await expect
+      .poll(async () => {
+        const y = (await this.statementLineNumber(1).boundingBox())?.y;
+        const settled = y !== undefined && y === previous;
+        previous = y;
+        return settled;
+      })
+      .toBe(true);
   }
 
   // The offset of a line's number cell from the statement editor's top edge.

@@ -28,8 +28,21 @@ composition.
 - Make primary and destructive actions unambiguous.
 - Avoid decorative cards, oversized page headings, and visual effects that do
   not communicate state or hierarchy.
-- Do not put cards inside cards. A page section is an unframed layout region;
-  cards are for repeated items or genuinely framed tools.
+- Do not put cards inside cards, with one exception. A **group frame** MAY
+  hold the cards that belong to one parent entry in a list or timeline when
+  all of the following hold:
+  - The frame's first line names the parent and carries the control that
+    shows or hides the group.
+  - The frame is a border only: `border-block-border`, with the corners of the
+    cards it holds and with no shadow, no fill and no title bar. The cards
+    inside keep their own.
+  - Nesting stops there. A card inside a group frame MUST NOT contain another
+    framed box.
+  - Only a parent that has cards gets a frame. Hiding them folds the frame to
+    its first line. A parent with no cards is a plain line.
+
+  A page section is an unframed layout region; cards are for repeated items or
+  genuinely framed tools.
 
 ## Implementation Ownership
 
@@ -144,8 +157,15 @@ Use semantic utilities backed by CSS custom properties:
   badges, tags, and selected tokens. Use `rounded-sm` for ordinary framed
   surfaces, and `rounded-full` only for circular controls, avatars, and
   lifecycle status stamps that must remain distinct from adjacent actions.
+  A comment card, and a group frame that holds comment cards, use
+  `rounded-lg`, so the card reads as laid on the statement rather than as a
+  panel of it. The scanner allows `rounded-lg` only in the files that draw
+  them; every other surface keeps the scale.
 - Use `border-control-border` for controls and `border-block-border` for region
-  boundaries.
+  boundaries. The frame of a comment card is the one region boundary that
+  takes `border-control-border`, in the Changes section and in Activity, so
+  its edge shows on the gray statement without a shadow. A group frame keeps
+  `border-block-border`.
 - Interactive elements MUST have a visible keyboard focus state. Prefer the
   focus behavior owned by the shared primitive.
 - Use the `overlay`, `agent`, and `critical` semantic layer families described

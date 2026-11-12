@@ -10,7 +10,7 @@ import {
   type Plan_Spec,
   PlanSchema,
 } from "@/types/proto-es/v1/plan_service_pb";
-import { hasReviewableSQL, loadedMatchedDatabaseCount } from "./aiReviewRun";
+import { hasReviewableSQL, loadedMatchedDatabaseCount } from "./reviewRun";
 
 const GROUP = "projects/p/databaseGroups/g";
 const DATABASE = "instances/i/databases/d";
