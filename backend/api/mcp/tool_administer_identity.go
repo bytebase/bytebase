@@ -193,7 +193,7 @@ func (s *Server) grantIdentityRole(ctx context.Context, c *identityCreation) (st
 	if why == "" || !mayHaveApplied(resp, err) {
 		return why, false
 	}
-	// Only a read that holds the member settles it. A call past its deadline may
+	// Only a read that holds the grant settles it. A call past its deadline may
 	// still be storing the grant, and a commit that reports an error returns
 	// before store.SetIamPolicy evicts the policy cache, which then serves the
 	// policy from before the grant on a server that is not HA.
