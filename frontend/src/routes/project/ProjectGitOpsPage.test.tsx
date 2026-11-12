@@ -75,6 +75,8 @@ const mocks = vi.hoisted(() => {
     identitiesByName: {} as Record<string, WorkloadIdentity>,
     // Members that hold a role in the project.
     members: [] as string[],
+    // Bytebase Cloud.
+    saas: false,
   };
   const store = {
     fetchDBGroupListByProjectName: vi.fn(async () => state.groups),
@@ -90,7 +92,8 @@ const mocks = vi.hoisted(() => {
     fetchWorkloadIdentity: vi.fn(async () => undefined),
     getWorkloadIdentity: (name: string) => state.identitiesByName[name],
     projectPoliciesByName: {} as Record<string, unknown>,
-    workspacePolicy: undefined,
+    workspacePolicy: undefined as unknown,
+    isSaaSMode: () => state.saas,
   };
   const useAppStore = vi.fn((selector: (s: typeof store) => unknown) =>
     selector(store)
@@ -349,6 +352,17 @@ const setPolicy = () => {
   };
 };
 
+// A policy whose one binding grants the GitOps role to every account.
+const allUsersPolicy = () =>
+  create(IamPolicySchema, {
+    bindings: [
+      create(BindingSchema, {
+        role: "roles/gitopsServiceAgent",
+        members: ["allUsers"],
+      }),
+    ],
+  });
+
 const setProject = ({
   groups = 0,
   databases = [],
@@ -438,6 +452,8 @@ beforeEach(() => {
   mocks.canCreate = true;
   mocks.serverState.externalUrl = "https://bytebase.example.com";
   mocks.serverState.needConfigureExternalUrl = false;
+  mocks.store.workspacePolicy = undefined;
+  mocks.state.saas = false;
 });
 
 afterEach(() => {
@@ -483,6 +499,47 @@ describe("ProjectGitOpsPage", () => {
     await click(continueButton());
 
     expect(currentStep()).toBe("gitops.setup.steps.workload-identity");
+    expect(container.textContent).toContain(
+      "gitops.setup.identity.no-role-title"
+    );
+    expect(continueButton()?.disabled).toBe(true);
+  });
+
+  test("a role granted to allUsers in the project counts for the identity", async () => {
+    setProject({
+      groups: 1,
+      databases: [databaseOf("shop", "environments/prod")],
+      identities: [DEPLOY_CI],
+    });
+    mocks.store.projectPoliciesByName = {
+      "projects/shop": allUsersPolicy(),
+    };
+    await render();
+    await click(continueButton());
+
+    expect(container.textContent).toContain("roles/gitopsServiceAgent");
+    expect(container.textContent).not.toContain(
+      "gitops.setup.identity.no-role-title"
+    );
+    expect(continueButton()?.disabled).toBe(false);
+  });
+
+  test("a role granted to allUsers in the workspace counts, except on Bytebase Cloud", async () => {
+    setProject({
+      groups: 1,
+      databases: [databaseOf("shop", "environments/prod")],
+      identities: [DEPLOY_CI],
+    });
+    mocks.store.workspacePolicy = allUsersPolicy();
+    await render();
+    await click(continueButton());
+    expect(continueButton()?.disabled).toBe(false);
+
+    act(() => root.unmount());
+    container.remove();
+    mocks.state.saas = true;
+    await render();
+    await click(continueButton());
     expect(container.textContent).toContain(
       "gitops.setup.identity.no-role-title"
     );

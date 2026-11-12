@@ -1,6 +1,10 @@
 import { useMemo } from "react";
 import { useAppStore } from "@/stores/app";
-import { getWorkloadIdentityNameInBinding } from "@/types";
+import {
+  ALL_USERS_USER_EMAIL,
+  getWorkloadIdentityNameInBinding,
+} from "@/types";
+import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import {
   type WorkloadIdentity,
   WorkloadIdentityConfig_ProviderType,
@@ -52,8 +56,11 @@ export function repositoryUrlOf(identity: WorkloadIdentity): string {
 }
 
 // The roles an identity holds in the project, from the project's bindings and
-// the workspace's. Undefined while the project policy cannot be read, so the
-// caller skips the role check instead of reporting a missing role.
+// the workspace's. A binding counts when it names the identity or `allUsers`,
+// as the server's permission check does: `allUsers` in a project covers every
+// account, and `allUsers` in the workspace is skipped on Bytebase Cloud.
+// Undefined while the project policy cannot be read, so the caller skips the
+// role check instead of reporting a missing role.
 export function useIdentityRoles(
   projectName: string,
   identity: WorkloadIdentity | undefined
@@ -62,17 +69,24 @@ export function useIdentityRoles(
     (state) => state.projectPoliciesByName[projectName]
   );
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   return useMemo(() => {
     if (!identity || !projectPolicy) return undefined;
     const member = getWorkloadIdentityNameInBinding(identity.email);
     const roles = new Set<string>();
-    for (const binding of [
-      ...projectPolicy.bindings,
-      ...(workspacePolicy?.bindings ?? []),
-    ]) {
-      if (isBindingPolicyExpired(binding)) continue;
-      if (binding.members.includes(member)) roles.add(binding.role);
-    }
+    const collect = (bindings: Binding[], allUsersCounts: boolean) => {
+      for (const binding of bindings) {
+        if (isBindingPolicyExpired(binding)) continue;
+        if (
+          binding.members.includes(member) ||
+          (allUsersCounts && binding.members.includes(ALL_USERS_USER_EMAIL))
+        ) {
+          roles.add(binding.role);
+        }
+      }
+    };
+    collect(projectPolicy.bindings, true);
+    collect(workspacePolicy?.bindings ?? [], !isSaaSMode);
     return [...roles];
-  }, [identity, projectPolicy, workspacePolicy]);
+  }, [identity, projectPolicy, workspacePolicy, isSaaSMode]);
 }

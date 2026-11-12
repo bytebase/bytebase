@@ -288,7 +288,9 @@ Resolves part 2.
     because opened from setup it does not offer Other OIDC (D10).
   - The identity has a role that allows GitOps in this project, such as GitOps Service Agent. An
     identity with no role cannot review or deploy, so Continue is disabled and a warning links to
-    the Members page.
+    the Members page. A role granted to `allUsers` counts, as in the server's permission check
+    (`backend/component/iam/manager.go`): always in the project, and in the workspace except on
+    Bytebase Cloud.
 - *Goes into the files:* the identity's email and its git provider.
 - *Not asked:* git provider, owner, repository, owner ID, email, role, issuer and audience. The
   identity already holds them.
@@ -600,6 +602,8 @@ Tests:
 - `ProjectGitOpsPage.test.tsx`:
   - A project with one database and no identity opens on the Databases tab with the database picked.
   - Continue is disabled with nothing picked, and with an identity that has no role.
+  - A role granted to `allUsers` counts for the identity: in the project always, in the workspace
+    except on Bytebase Cloud.
   - The scope line shows on every step.
   - An identity for another OIDC provider cannot be picked.
   - The Create dialog opens with GitHub Actions and GitLab CI only.
