@@ -10,6 +10,7 @@ import { buildPlanCreatePrompt } from "./planIssueAssistance";
 import { buildSystemPrompt } from "./prompt";
 import {
   measureAgentRequest,
+  normalizeAgentStopReason,
   serializedAgentRequestBytes,
 } from "./requestDiagnostics";
 import { getMaskingSkillGuidance } from "./skills";
@@ -52,6 +53,17 @@ const recordBenchmarkMetrics = (metrics: Record<string, unknown>) => {
 };
 
 describe("measureAgentRequest", () => {
+  test("normalizes only known provider stop reasons", () => {
+    expect([0, 1, 2, 3, 4, 5, 99].map(normalizeAgentStopReason)).toEqual([
+      "unknown",
+      "turn-completed",
+      "token-limit",
+      "blocked",
+      "malformed-tool-call",
+      "other",
+      "unknown",
+    ]);
+  });
   test("matches the request guard's UTF-8 serialization without exposing content", () => {
     const messages = [
       create(AIChatMessageSchema, {

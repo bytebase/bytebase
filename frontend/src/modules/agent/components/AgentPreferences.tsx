@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { formatTokenLimit, parseTokenLimit } from "../logic/tokenLimit";
 import { useAgentStore } from "../store/agent";
 import { DEFAULT_AGENT_PREFERENCES } from "../store/preferences";
 import {
@@ -35,18 +36,16 @@ export function AgentPreferences() {
   const [resetOpen, setResetOpen] = useState(false);
   const id = useId();
   const [tokenDraft, setTokenDraft] = useState(
-    String(preferences.tokenLimitPerRun)
+    formatTokenLimit(preferences.tokenLimitPerRun)
   );
-  const tokenLimit = Number(tokenDraft);
-  const invalidTokenLimit =
-    !tokenDraft.trim() || !Number.isSafeInteger(tokenLimit) || tokenLimit < 1;
+  const invalidTokenLimit = parseTokenLimit(tokenDraft) === null;
 
   useEffect(() => {
     sectionRef.current?.focus();
   }, []);
 
   useEffect(() => {
-    setTokenDraft(String(preferences.tokenLimitPerRun));
+    setTokenDraft(formatTokenLimit(preferences.tokenLimitPerRun));
   }, [preferences.tokenLimitPerRun]);
 
   return (
@@ -112,34 +111,35 @@ export function AgentPreferences() {
                   <Input
                     id={`${id}-tokens`}
                     type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={Number.MAX_SAFE_INTEGER}
-                    step={1}
+                    inputMode="decimal"
+                    min="0.001"
+                    max={formatTokenLimit(Number.MAX_SAFE_INTEGER)}
+                    step="0.001"
                     required
                     value={tokenDraft}
-                    className="w-40 min-w-0 max-w-full pointer-coarse:text-base"
+                    className="w-32 min-w-0 max-w-full pointer-coarse:text-base"
                     aria-invalid={Boolean(invalidTokenLimit)}
                     aria-describedby={
-                      invalidTokenLimit ? `${id}-token-error` : undefined
+                      invalidTokenLimit
+                        ? `${id}-tokens-unit ${id}-token-error`
+                        : `${id}-tokens-unit`
                     }
                     onChange={(event) => {
                       const value = event.target.value;
                       setTokenDraft(value);
-                      const parsed = Number(value);
-                      if (
-                        value.trim() &&
-                        Number.isSafeInteger(parsed) &&
-                        parsed > 0
-                      ) {
+                      const parsed = parseTokenLimit(value);
+                      if (parsed !== null) {
                         useAgentStore
                           .getState()
                           .updatePreferences({ tokenLimitPerRun: parsed });
                       }
                     }}
                   />
-                  <span className="shrink-0 text-sm text-control-light">
-                    {t("agent.preferences.tokens")}
+                  <span
+                    id={`${id}-tokens-unit`}
+                    className="shrink-0 text-sm text-control-light"
+                  >
+                    {t("agent.preferences.thousand-tokens")}
                   </span>
                 </FormControlRow>
                 {invalidTokenLimit && (
@@ -232,7 +232,9 @@ export function AgentPreferences() {
                     setResetOpen(false);
                     useAgentStore.getState().resetPreferences();
                     setTokenDraft(
-                      String(DEFAULT_AGENT_PREFERENCES.tokenLimitPerRun)
+                      formatTokenLimit(
+                        DEFAULT_AGENT_PREFERENCES.tokenLimitPerRun
+                      )
                     );
                   }}
                 >

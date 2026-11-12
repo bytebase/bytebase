@@ -7,10 +7,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { projectNamePrefix } from "@/lib/resourceName";
@@ -70,6 +72,12 @@ import {
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { acceptAgentResponseActions } from "../logic/responseActions";
+import { getAgentRunContinuation } from "../logic/runCheckpoint";
+import {
+  type AgentRunLease,
+  supportsAgentRunRecovery,
+  withAgentRunLease,
+} from "../logic/runOwnership";
 import { isAgentSendShortcut } from "../logic/sendShortcut";
 import {
   getMaskingSkillGuidance,
@@ -99,12 +107,15 @@ import type {
   AgentMessage,
   AgentModelCallUsage,
   AgentResourceReference,
+  AgentRunBindings,
+  AgentRunCheckpoint,
   AgentRunMode,
   Message,
   ToolExecutionResult,
 } from "../logic/types";
 import {
   type AgentState,
+  getAgentStateKey,
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
   selectCurrentPendingAsk,
@@ -115,10 +126,45 @@ import { AgentComposer } from "./AgentComposer";
 import { AgentContextPicker } from "./AgentContextPicker";
 import { AgentMentionTextarea } from "./AgentMentionTextarea";
 import { AgentResourcePicker } from "./AgentResourcePicker";
+import { AgentTokenBudgetStatus } from "./AgentTokenBudgetStatus";
 import { AgentTokenUsage } from "./AgentTokenUsage";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
+
+// Pending usage belongs to the live controller, even when the composer unmounts.
+const pendingProviderAttempts = new WeakMap<AbortController, string>();
+const pendingAttemptListeners = new Set<() => void>();
+const subscribePendingAttempts = (listener: () => void) => {
+  pendingAttemptListeners.add(listener);
+  return () => pendingAttemptListeners.delete(listener);
+};
+const setPendingProviderAttempt = (
+  controller: AbortController,
+  attemptId?: string
+) => {
+  if (attemptId) pendingProviderAttempts.set(controller, attemptId);
+  else pendingProviderAttempts.delete(controller);
+  for (const listener of pendingAttemptListeners) listener();
+};
+
+const withChatRunSegment = async (
+  chatId: string,
+  action: (lease?: AgentRunLease) => Promise<void>,
+  lease?: AgentRunLease
+) => {
+  const store = useAgentStore.getState();
+  if (!store.canUseAgentExecution()) return;
+  if (!supportsAgentRunRecovery()) return action();
+  if (lease) return lease.run(() => action(lease));
+  if (!store.workspaceName || !store.userEmail) return;
+  const scopeKey = getAgentStateKey(store.workspaceName, store.userEmail);
+  if (!scopeKey) return;
+  await withAgentRunLease(scopeKey, chatId, async (owner) => {
+    if (!isCurrentChatScope(store, chatId)) return;
+    await action(owner);
+  });
+};
 const maskingHandoffKinds = new Set<AgentHandoff["kind"]>([
   "open-global-masking",
   "open-semantic-types",
@@ -436,6 +482,9 @@ export function AgentInput({
   const currentChat = useAgentStore(selectCurrentChat);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
+  const executionAvailable = useAgentStore((state) =>
+    state.canUseAgentExecution()
+  );
   const remoteBusy = useAgentStore((state) =>
     Boolean(state.currentChatId && state.remoteBusyChatIds[state.currentChatId])
   );
@@ -572,6 +621,19 @@ export function AgentInput({
   } | null>(null);
   const [, setPermissionTick] = useState(0);
   const [resourcePickerOpen, setResourcePickerOpen] = useState(false);
+  const currentController = useAgentStore((state) =>
+    state.currentChatId
+      ? state.abortControllersByChatId[state.currentChatId]
+      : undefined
+  );
+  const pendingAttemptId = useSyncExternalStore(
+    subscribePendingAttempts,
+    () =>
+      currentController
+        ? pendingProviderAttempts.get(currentController)
+        : undefined,
+    () => undefined
+  );
   const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
   const selectedMentionCaretRef = useRef<number | null>(null);
   const previousChatIdRef = useRef<string | null>(null);
@@ -712,7 +774,10 @@ export function AgentInput({
   const hasAdditionalMention =
     draftMentions.length > 0 && hasUnboundResourceMention(input, draftMentions);
   const isSendDisabled =
+    !executionAvailable ||
     currentChat?.archived ||
+    currentChat?.status === "paused" ||
+    currentChat?.runCheckpoint?.suspension === "token-limit" ||
     isCurrentChatRunning ||
     isAwaitingConfirm ||
     isAwaitingChoose ||
@@ -1074,6 +1139,8 @@ export function AgentInput({
         case "awaiting_user":
           store.awaitUser(chatId, outcome.ask);
           return;
+        case "paused":
+          return;
         case "aborted":
           store.interruptChatRun(chatId, getCurrentPageSnapshot());
           return;
@@ -1095,12 +1162,23 @@ export function AgentInput({
       page: { path: string; title: string },
       runId: string,
       runMode: AgentRunMode,
-      skipReferencePreflight = false
+      skipReferencePreflight = false,
+      resumeCheckpoint?: AgentRunCheckpoint
     ) => {
       const store = useAgentStore.getState();
       if (!store.getChat(chatId)) return;
+      const managed = supportsAgentRunRecovery();
+      const bindings = managed
+        ? store.getChat(chatId)?.runCheckpoint?.bindings
+        : undefined;
+      page = bindings?.page ?? page;
+      runMode = bindings?.runMode ?? runMode;
+      const runContext = bindings
+        ? bindings.context
+        : store.getChat(chatId)?.context;
       const maxTotalTokens = store.preferences.tokenLimitPerRun;
-      const rawCapability = store.getChat(chatId)?.capability;
+      const rawCapability =
+        bindings?.capability ?? store.getChat(chatId)?.capability;
       const capability = normalizeAgentDiagnosticCapability(rawCapability);
       const turnReferences = getCurrentTurnResourceReferences(
         store.getMessages(chatId)
@@ -1126,7 +1204,11 @@ export function AgentInput({
         store.finishChatRun(chatId);
         return;
       }
-      const references = capability ? [capability.resource] : turnReferences;
+      const references = bindings
+        ? bindings.references
+        : capability
+          ? [capability.resource]
+          : turnReferences;
       const projectReference = references.find(
         (reference) => reference.kind === "project"
       );
@@ -1150,12 +1232,16 @@ export function AgentInput({
       const currentPageResource = capability
         ? undefined
         : getCurrentAgentPageResource();
-      const maskingPage = isAgentMaskingPageResource(currentPageResource)
-        ? currentPageResource
-        : undefined;
-      const instanceName = referencedProject
-        ? undefined
-        : resolveInstanceNameFromPagePath(page.path);
+      const maskingPage = bindings
+        ? bindings.maskingPage
+        : isAgentMaskingPageResource(currentPageResource)
+          ? currentPageResource
+          : undefined;
+      const instanceName = bindings
+        ? bindings.instanceName
+        : referencedProject
+          ? undefined
+          : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
       const recordUsage = (usage: AgentModelCallUsage) => {
         if (isCurrentChatScope(store, chatId)) {
@@ -1165,10 +1251,29 @@ export function AgentInput({
       const runToken = (runTokens.get(chatId) ?? 0) + 1;
       runTokens.set(chatId, runToken);
       store.setAbortController(chatId, controller);
+      const ownsInvocation = () =>
+        !controller.signal.aborted &&
+        runTokens.get(chatId) === runToken &&
+        isCurrentChatScope(store, chatId) &&
+        useAgentStore.getState().getChat(chatId)?.runId === runId &&
+        useAgentStore.getState().getAbortController(chatId) === controller;
+      const reportPersistenceFailure = () => {
+        const current = useAgentStore.getState().getChat(chatId);
+        if (
+          isCurrentChatScope(store, chatId) &&
+          runTokens.get(chatId) === runToken &&
+          current?.runBudget?.runId === runId &&
+          !current.archived
+        ) {
+          useAgentStore.getState().setChatStatus(chatId, "error", {
+            lastError: t("agent.token-budget.action-failed"),
+          });
+        }
+      };
 
       const systemPrompt = buildSystemPrompt({
         ...page,
-        context: store.getChat(chatId)?.context,
+        context: runContext,
         referencedProject,
         referencedDatabase,
         referencedIssue,
@@ -1186,6 +1291,7 @@ export function AgentInput({
         capability
           ? []
           : [
+              ...(resumeCheckpoint?.maskingSections ?? []),
               ...getMaskingSectionsForPage(maskingPage),
               ...getMaskingSectionsForTurn(messages),
             ]
@@ -1210,7 +1316,7 @@ export function AgentInput({
       const executor = createToolExecutor(router, {
         chatId,
         userName: useAppStore.getState().currentUser?.name,
-        context: store.getChat(chatId)?.context,
+        context: runContext,
         workspaceName: workspace?.name,
         referencedProject,
         pagePath: page.path,
@@ -1297,10 +1403,72 @@ export function AgentInput({
           ...collectAgentHandoffs(name, result, handoffScope)
         );
       };
+      if (resumeCheckpoint) {
+        const calls = new Map<
+          string,
+          { name: string; args: Record<string, unknown> }
+        >();
+        const invalidate = () => {
+          overviewEvidence = undefined;
+          handoffCandidates.length = 0;
+          maskingDraftIds.length = 0;
+          exemptionDraftIds.length = 0;
+          semanticTypeDraftIds.length = 0;
+        };
+        const runMessages = messages.slice(
+          messages.findIndex(
+            (message) => message.id === resumeCheckpoint.rootUserMessageId
+          ) + 1
+        );
+        for (const message of runMessages) {
+          for (const call of message.toolCalls ?? []) {
+            let args: Record<string, unknown> = {};
+            try {
+              const value: unknown = JSON.parse(call.arguments);
+              if (value && typeof value === "object" && !Array.isArray(value))
+                args = value as Record<string, unknown>;
+            } catch {
+              // Malformed calls cannot establish evidence.
+            }
+            calls.set(call.id, { name: call.name, args });
+          }
+          if (message.role !== "tool" || !message.toolCallId) continue;
+          const call = calls.get(message.toolCallId);
+          calls.delete(message.toolCallId);
+          if (call && invalidatesPlanDraftEvidence(call.name, call.args))
+            invalidate();
+          const name = call?.name;
+          if (!message.content) continue;
+          if (name) observeHandoffs(name, message.content);
+          const extract =
+            name === "get_project_overview"
+              ? extractProjectOverviewEvidence
+              : name === "get_plan_overview"
+                ? extractPlanOverviewEvidence
+                : name === "get_issue_overview"
+                  ? extractIssueOverviewEvidence
+                  : name === "get_database_overview"
+                    ? extractDatabaseOverviewEvidence
+                    : name === "get_workspace_overview"
+                      ? extractWorkspaceOverviewEvidence
+                      : undefined;
+          if (extract)
+            overviewEvidence = mergeOverviewEvidence(
+              overviewEvidence,
+              extract(message.content)
+            );
+        }
+        if (
+          [...calls.values()].some((call) =>
+            invalidatesPlanDraftEvidence(call.name, call.args)
+          )
+        )
+          invalidate();
+      }
 
       try {
         const history = buildChatHistory(chatId, systemPrompt);
-        if (maskingResumeArgs) {
+        if (maskingResumeArgs && !resumeCheckpoint) {
           const toolCallId = uuidv4();
           const toolCall = {
             id: toolCallId,
@@ -1352,6 +1520,7 @@ export function AgentInput({
             { role: "tool", toolCallId, content: result }
           );
         }
+        const startupStart = history.length;
         let prefetchedProjectOverview: string | undefined;
         if (
           !skipReferencePreflight &&
@@ -1630,6 +1799,42 @@ export function AgentInput({
             }
           );
         }
+        if (managed && !resumeCheckpoint) {
+          const startupPairs = history.slice(startupStart);
+          for (const message of startupPairs) {
+            useAgentStore.getState().addMessage({
+              ...message,
+              chatId,
+              metadata: { route: page.path, runId, runPreflight: true },
+            });
+          }
+        }
+        let checkpointPhase: Pick<
+          AgentRunCheckpoint,
+          "phase" | "finalizationText"
+        > = resumeCheckpoint ?? { phase: "working" };
+        const saveCheckpoint = async (phase = checkpointPhase) => {
+          if (!ownsInvocation()) return false;
+          checkpointPhase = phase;
+          const current = useAgentStore.getState();
+          const previous = current.getChat(chatId)?.runCheckpoint;
+          const throughMessageId = current.getMessages(chatId).at(-1)?.id;
+          if (!previous || !throughMessageId) return false;
+          return current.saveChatRunCheckpoint(chatId, {
+            ...previous,
+            ...phase,
+            suspension: "interrupted",
+            throughMessageId,
+            maskingSections: [...maskingSections],
+            startupComplete: true,
+          });
+        };
+        if (managed && !(await saveCheckpoint())) {
+          useAgentStore.getState().setChatStatus(chatId, "error", {
+            lastError: t("agent.token-budget.action-failed"),
+          });
+          return;
+        }
         let finalText: string | undefined;
         let finalHandoffProposal: AgentHandoff | undefined;
         const outcome = await runAgentLoop(
@@ -1642,6 +1847,9 @@ export function AgentInput({
               overviewEvidence = undefined;
               verifiedDatabase = undefined;
               readDatabaseSchema = false;
+              maskingDraftIds.length = 0;
+              exemptionDraftIds.length = 0;
+              semanticTypeDraftIds.length = 0;
             }
             const execution =
               name === "get_project_overview" && prefetchedProjectOverview
@@ -1666,8 +1874,9 @@ export function AgentInput({
             });
           },
           {
-            onUsage: recordUsage,
+            ...(!managed ? { onUsage: recordUsage } : {}),
             onAssistantMessage: (message) => {
+              if (managed && !ownsInvocation()) return;
               for (const toolCall of message.toolCalls ?? []) {
                 toolNamesByCallId.set(toolCall.id, toolCall.name);
               }
@@ -1680,7 +1889,31 @@ export function AgentInput({
                 metadata: { route: page.path, runId },
               });
             },
-            onToolResult: (toolCallId, result) => {
+            onToolResult: async (toolCallId, result) => {
+              if (
+                managed &&
+                (runTokens.get(chatId) !== runToken ||
+                  !isCurrentChatScope(store, chatId) ||
+                  (useAgentStore.getState().getChat(chatId)?.runId !== runId &&
+                    !(
+                      useAgentStore.getState().getChat(chatId)?.archived &&
+                      useAgentStore.getState().getChat(chatId)?.runBudget
+                        ?.runId === runId
+                    )))
+              )
+                return;
+              if (managed && controller.signal.aborted) {
+                useAgentStore.getState().addMessage({
+                  chatId,
+                  role: "tool",
+                  toolCallId,
+                  content: result,
+                  metadata: { route: page.path, runId },
+                });
+                if (!(await useAgentStore.getState().flushRunPersistence()))
+                  throw new Error("Agent tool result could not be persisted");
+                return;
+              }
               const toolName = toolNamesByCallId.get(toolCallId);
               if (toolName) observeHandoffs(toolName, result);
               if (toolName === "get_project_overview") {
@@ -1716,6 +1949,11 @@ export function AgentInput({
                 content: result,
                 metadata: { route: page.path, runId },
               });
+              if (
+                managed &&
+                !(await useAgentStore.getState().flushRunPersistence())
+              )
+                throw new Error("Agent tool result could not be persisted");
             },
             onText: (text, proposedHandoff) => {
               if (!text) return;
@@ -1728,6 +1966,46 @@ export function AgentInput({
             allowPlainTextCompletion: runMode === "read-only",
             maxTotalTokens,
             resolveRequestContext,
+            ...(managed
+              ? {
+                  runId,
+                  checkpoint: resumeCheckpoint,
+                  reserveProviderAttempt: async () => {
+                    const reservation = ownsInvocation()
+                      ? await useAgentStore
+                          .getState()
+                          .reserveChatRunAttempt(chatId, runId)
+                      : { kind: "superseded" as const };
+                    if (reservation.kind === "allowed") {
+                      setPendingProviderAttempt(
+                        controller,
+                        reservation.attemptId
+                      );
+                    }
+                    return reservation;
+                  },
+                  onAttemptSettled: async (attempt) => {
+                    try {
+                      return isCurrentChatScope(store, chatId)
+                        ? await useAgentStore
+                            .getState()
+                            .recordChatModelAttempt(chatId, attempt)
+                        : false;
+                    } finally {
+                      if (
+                        pendingProviderAttempts.get(controller) ===
+                        attempt.attemptId
+                      )
+                        setPendingProviderAttempt(controller);
+                    }
+                  },
+                  onCheckpoint: saveCheckpoint,
+                  beforeToolExecution: async () =>
+                    ownsInvocation() &&
+                    !useAgentStore.getState().getChat(chatId)?.archived &&
+                    (await saveCheckpoint()),
+                }
+              : {}),
           }
         );
 
@@ -1804,8 +2082,52 @@ export function AgentInput({
           });
         }
 
-        handleOutcome(chatId, outcome);
+        if (managed && outcome.kind === "paused") {
+          const checkpoint = useAgentStore
+            .getState()
+            .getChat(chatId)?.runCheckpoint;
+          if (
+            !checkpoint ||
+            !(await useAgentStore.getState().pauseChatRun(chatId, {
+              ...checkpoint,
+              phase: outcome.phase,
+              finalizationText: outcome.finalizationText,
+              suspension: "token-limit",
+            }))
+          )
+            reportPersistenceFailure();
+        } else {
+          if (managed && outcome.kind === "awaiting_user") {
+            if (!(await saveCheckpoint())) {
+              reportPersistenceFailure();
+              return;
+            }
+            const checkpoint = useAgentStore
+              .getState()
+              .getChat(chatId)?.runCheckpoint;
+            if (
+              !checkpoint ||
+              !(await useAgentStore.getState().saveChatRunCheckpoint(chatId, {
+                ...checkpoint,
+                suspension: "awaiting-user",
+              }))
+            ) {
+              reportPersistenceFailure();
+              return;
+            }
+          }
+          handleOutcome(chatId, outcome);
+          if (
+            managed &&
+            !(await useAgentStore.getState().flushRunPersistence())
+          )
+            reportPersistenceFailure();
+        }
+      } catch (error) {
+        if (!managed) throw error;
+        reportPersistenceFailure();
       } finally {
+        setPendingProviderAttempt(controller);
         if (
           useAgentStore.getState().getAbortController(chatId) === controller
         ) {
@@ -2001,71 +2323,164 @@ export function AgentInput({
       currentPage: { path: string; title: string },
       runMode: AgentRunMode = "default",
       starterId?: LandingStarterId,
-      skipReferencePreflight = false
+      skipReferencePreflight = false,
+      intent: "new" | "continue" = "new",
+      lease?: AgentRunLease
     ) => {
-      const runId = uuidv4();
-      const store = useAgentStore.getState();
-      store.syncState();
-      const currentStore = useAgentStore.getState();
-      const chat = currentStore.getChat(chatId);
-      if (!chat || chat.archived || currentStore.remoteBusyChatIds[chatId]) {
-        return;
-      }
-      const references = getCurrentTurnResourceReferences(
-        store.getMessages(chatId)
-      );
-      const hasResourceReference =
-        references.some(
-          (reference) =>
-            reference.kind === "project" ||
-            reference.kind === "database" ||
-            reference.kind === "issue" ||
-            reference.kind === "plan"
-        ) || currentStore.getChat(chatId)?.capability !== undefined;
-      const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
-      store.updateChatPage(chatId, currentPage);
-      store.startChatRun(chatId, currentPage, {
-        runId,
-        runMode: effectiveRunMode,
-      });
-      if (!hasResourceReference && starterId === "workspace-recent") {
-        await runRecentActivityStarter(
-          chatId,
-          currentPage,
-          runId,
-          "projects/-"
-        );
-        return;
-      }
-      if (!hasResourceReference && starterId === "project-open-recent") {
-        const projectName = store.getChat(chatId)?.context;
-        if (projectName?.startsWith(projectNamePrefix)) {
-          await runRecentActivityStarter(
+      return withChatRunSegment(
+        chatId,
+        async () => {
+          let runId = uuidv4();
+          const store = useAgentStore.getState();
+          store.syncState();
+          const currentStore = useAgentStore.getState();
+          const chat = currentStore.getChat(chatId);
+          if (
+            !chat ||
+            chat.archived ||
+            (currentStore.remoteBusyChatIds[chatId] &&
+              !supportsAgentRunRecovery())
+          ) {
+            return;
+          }
+          const references = getCurrentTurnResourceReferences(
+            store.getMessages(chatId)
+          );
+          const hasResourceReference =
+            references.some(
+              (reference) =>
+                reference.kind === "project" ||
+                reference.kind === "database" ||
+                reference.kind === "issue" ||
+                reference.kind === "plan"
+            ) || currentStore.getChat(chatId)?.capability !== undefined;
+          const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
+          let resumeCheckpoint: AgentRunCheckpoint | undefined;
+          if (supportsAgentRunRecovery()) {
+            if (intent === "continue") {
+              const continuation = getAgentRunContinuation(
+                chat,
+                currentStore.getMessages(chatId)
+              );
+              if (!continuation) return;
+              if (
+                !(await currentStore.continueChatRun(
+                  chatId,
+                  continuation.checkpoint.runId
+                ))
+              ) {
+                currentStore.setChatStatus(chatId, "error", {
+                  lastError: t("agent.token-budget.action-failed"),
+                });
+                return;
+              }
+              resumeCheckpoint = continuation.checkpoint;
+              runId = resumeCheckpoint.runId;
+              currentPage = resumeCheckpoint.bindings.page;
+            } else {
+              const capability = normalizeAgentDiagnosticCapability(
+                chat.capability
+              );
+              const pageResource = getCurrentAgentPageResource();
+              const bindings: AgentRunBindings = {
+                page: currentPage,
+                context: chat.context,
+                references: capability ? [capability.resource] : references,
+                runMode: effectiveRunMode,
+                ...(capability ? { capability } : {}),
+                ...(isAgentMaskingPageResource(pageResource)
+                  ? { maskingPage: pageResource }
+                  : {}),
+                ...(!hasResourceReference
+                  ? {
+                      instanceName: resolveInstanceNameFromPagePath(
+                        currentPage.path
+                      ),
+                    }
+                  : {}),
+              };
+              const rootMessage = currentStore
+                .getMessages(chatId)
+                .findLast((message) => message.role === "user");
+              if (!rootMessage) return;
+              const started = await currentStore.beginChatRun(
+                chatId,
+                rootMessage.id,
+                bindings
+              );
+              if (!started) {
+                currentStore.setChatStatus(chatId, "error", {
+                  lastError: t("agent.token-budget.action-failed"),
+                });
+                return;
+              }
+              runId = started;
+            }
+          } else {
+            store.updateChatPage(chatId, currentPage);
+            store.startChatRun(chatId, currentPage, {
+              runId,
+              runMode: effectiveRunMode,
+            });
+          }
+          if (
+            !resumeCheckpoint &&
+            !hasResourceReference &&
+            starterId === "workspace-recent"
+          ) {
+            await runRecentActivityStarter(
+              chatId,
+              currentPage,
+              runId,
+              "projects/-"
+            );
+            return;
+          }
+          if (
+            !resumeCheckpoint &&
+            !hasResourceReference &&
+            starterId === "project-open-recent"
+          ) {
+            const projectName = store.getChat(chatId)?.context;
+            if (projectName?.startsWith(projectNamePrefix)) {
+              await runRecentActivityStarter(
+                chatId,
+                currentPage,
+                runId,
+                projectName
+              );
+              return;
+            }
+          }
+          if (
+            !resumeCheckpoint &&
+            !hasResourceReference &&
+            starterId === "workspace-attention"
+          ) {
+            await runWorkspaceAttentionStarter(chatId, currentPage, runId);
+            return;
+          }
+          if (
+            !resumeCheckpoint &&
+            !hasResourceReference &&
+            starterId === "project-open-blockers"
+          ) {
+            const projectName = store.getChat(chatId)?.context;
+            if (projectName?.startsWith(projectNamePrefix)) {
+              await runProjectAttentionStarter(chatId, currentPage, runId);
+              return;
+            }
+          }
+          await runChat(
             chatId,
             currentPage,
             runId,
-            projectName
+            effectiveRunMode,
+            skipReferencePreflight || Boolean(resumeCheckpoint),
+            resumeCheckpoint
           );
-          return;
-        }
-      }
-      if (!hasResourceReference && starterId === "workspace-attention") {
-        await runWorkspaceAttentionStarter(chatId, currentPage, runId);
-        return;
-      }
-      if (!hasResourceReference && starterId === "project-open-blockers") {
-        const projectName = store.getChat(chatId)?.context;
-        if (projectName?.startsWith(projectNamePrefix)) {
-          await runProjectAttentionStarter(chatId, currentPage, runId);
-          return;
-        }
-      }
-      await runChat(
-        chatId,
-        currentPage,
-        runId,
-        effectiveRunMode,
-        skipReferencePreflight
+        },
+        lease
       );
     },
     [
@@ -2073,6 +2488,7 @@ export function AgentInput({
       runProjectAttentionStarter,
       runRecentActivityStarter,
       runWorkspaceAttentionStarter,
+      t,
     ]
   );
 
@@ -2144,15 +2560,28 @@ export function AgentInput({
           store.finishQueuedUserMessage(message.chatId);
           return;
         }
-        const committed = store.commitQueuedUserMessage(message.chatId);
-        if (!committed) return;
-        store.clearError(message.chatId);
-        await startChatRun(
-          message.chatId,
-          message.page,
-          message.runMode ?? "default",
-          message.starterId
-        );
+        await withChatRunSegment(message.chatId, async (lease) => {
+          if (
+            supportsAgentRunRecovery() &&
+            store.getChat(message.chatId)?.runId
+          ) {
+            restoreQueuedText();
+            store.finishQueuedUserMessage(message.chatId);
+            return;
+          }
+          const committed = store.commitQueuedUserMessage(message.chatId);
+          if (!committed) return;
+          store.clearError(message.chatId);
+          await startChatRun(
+            message.chatId,
+            message.page,
+            message.runMode ?? "default",
+            message.starterId,
+            false,
+            "new",
+            lease
+          );
+        });
       })();
     }
   }, [blockWhenAIIsNotConfigured, queuedUserMessagesByChatId, startChatRun]);
@@ -2160,7 +2589,14 @@ export function AgentInput({
   const send = useCallback(async () => {
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
-    if (chat?.archived || store.isChatRunning(chat?.id)) return;
+    if (
+      chat?.archived ||
+      chat?.status === "paused" ||
+      chat?.runCheckpoint?.suspension === "token-limit" ||
+      !store.canUseAgentExecution() ||
+      store.isChatRunning(chat?.id)
+    )
+      return;
 
     const currentPage = getCurrentPageSnapshot();
     const sourceThread = store.ensureCurrentChat(
@@ -2176,6 +2612,9 @@ export function AgentInput({
     const currentStore = useAgentStore.getState();
     if (
       currentStore.getChat(sourceChatId)?.archived ||
+      currentStore.getChat(sourceChatId)?.status === "paused" ||
+      currentStore.getChat(sourceChatId)?.runCheckpoint?.suspension ===
+        "token-limit" ||
       currentStore.isChatRunning(sourceChatId)
     ) {
       return;
@@ -2191,42 +2630,48 @@ export function AgentInput({
     currentStore.clearError(sourceChatId);
 
     if (pendingAsk) {
-      const answer = input.trim();
-      if (!answer) return;
-      let answered;
-      if (pendingAsk.kind === "input") {
-        const mentions = getDraftResourceMentions(askDraft);
-        if (
-          mentions.length > 0 &&
-          hasUnboundResourceMention(askDraft.text, mentions)
-        ) {
+      return withChatRunSegment(sourceChatId, async (lease) => {
+        const answer = input.trim();
+        if (!answer) return;
+        let answered;
+        if (pendingAsk.kind === "input") {
+          const mentions = getDraftResourceMentions(askDraft);
+          if (
+            mentions.length > 0 &&
+            hasUnboundResourceMention(askDraft.text, mentions)
+          ) {
+            return;
+          }
+          const references = normalizeAgentResourceReferences(
+            mentions.map(({ resource }) => resource)
+          );
+          answered = currentStore.answerPendingAsk(
+            sourceChatId,
+            { kind: "input", answer },
+            {
+              route: currentPage.path,
+              ...(references[0] ? { resourceReference: references[0] } : {}),
+              ...(references.length > 1
+                ? { resourceReferences: references }
+                : {}),
+            }
+          );
+        } else {
           return;
         }
-        const references = normalizeAgentResourceReferences(
-          mentions.map(({ resource }) => resource)
-        );
-        answered = currentStore.answerPendingAsk(
+        if (!answered) return;
+        setAskDraft({ text: "" });
+        await startChatRun(
           sourceChatId,
-          { kind: "input", answer },
-          {
-            route: currentPage.path,
-            ...(references[0] ? { resourceReference: references[0] } : {}),
-            ...(references.length > 1
-              ? { resourceReferences: references }
-              : {}),
-          }
+          currentPage,
+          currentStore.getChat(sourceChatId)?.runMode ?? "default",
+          undefined,
+          false,
+          "continue",
+          lease
         );
-      } else {
         return;
-      }
-      if (!answered) return;
-      setAskDraft({ text: "" });
-      await startChatRun(
-        sourceChatId,
-        currentPage,
-        currentStore.getChat(sourceChatId)?.runMode ?? "default"
-      );
-      return;
+      });
     }
 
     const text = submittedDraft.text.trim();
@@ -2253,28 +2698,53 @@ export function AgentInput({
         : sourceThread;
     if (!thread) return;
     const chatId = thread.id;
-    const submittedMessage = store.addMessage({
-      chatId,
-      role: "user",
-      content: text,
-      metadata: {
-        route: currentPage.path,
-        ...(stagedReference ? { resourceReference: stagedReference } : {}),
-        ...(references.length > 1 ? { resourceReferences: references } : {}),
-      },
+    return withChatRunSegment(chatId, async (lease) => {
+      const latest = useAgentStore.getState().getChat(chatId);
+      if (
+        !latest ||
+        latest.archived ||
+        latest.status === "paused" ||
+        latest.runCheckpoint?.suspension === "token-limit" ||
+        useAgentStore.getState().isChatRunning(chatId)
+      )
+        return;
+      if (
+        supportsAgentRunRecovery() &&
+        latest.runId &&
+        !(await store.endPausedRun(chatId))
+      )
+        return;
+      const submittedMessage = store.addMessage({
+        chatId,
+        role: "user",
+        content: text,
+        metadata: {
+          route: currentPage.path,
+          ...(stagedReference ? { resourceReference: stagedReference } : {}),
+          ...(references.length > 1 ? { resourceReferences: references } : {}),
+        },
+      });
+      if (!submittedMessage) return;
+      if (store.getDraft(sourceChatId) === submittedDraft) {
+        store.clearDraft(sourceChatId);
+      }
+      setResourcePickerOpen(false);
+      mentionRangeRef.current = null;
+      const starterId = getLandingStarterIdForText({
+        context: thread.context,
+        text,
+        translate: t,
+      });
+      await startChatRun(
+        chatId,
+        currentPage,
+        "default",
+        starterId,
+        false,
+        "new",
+        lease
+      );
     });
-    if (!submittedMessage) return;
-    if (store.getDraft(sourceChatId) === submittedDraft) {
-      store.clearDraft(sourceChatId);
-    }
-    setResourcePickerOpen(false);
-    mentionRangeRef.current = null;
-    const starterId = getLandingStarterIdForText({
-      context: thread.context,
-      text,
-      translate: t,
-    });
-    await startChatRun(chatId, currentPage, "default", starterId);
   }, [
     askDraft,
     blockWhenAIIsNotConfigured,
@@ -2295,6 +2765,7 @@ export function AgentInput({
         store.getPendingAsk(chat.id) ||
         store.queuedUserMessagesByChatId[chat.id] ||
         store.queuedUserMessageInFlightByChatId[chat.id] ||
+        chat.runCheckpoint?.suspension === "token-limit" ||
         messageActionInFlightRef.current
       ) {
         return;
@@ -2311,6 +2782,7 @@ export function AgentInput({
         return;
       }
 
+      const messageText = message.content;
       const action = Symbol();
       messageActionInFlightRef.current = action;
       const currentPage = getCurrentPageSnapshot();
@@ -2335,38 +2807,49 @@ export function AgentInput({
         ) {
           return;
         }
-        current.clearError(chat.id);
-        let starterId: LandingStarterId | undefined;
-        if (messageId) {
-          const references = normalizeAgentResourceReferences(
-            message.metadata?.resourceReferences,
-            message.metadata?.resourceReference
+        await withChatRunSegment(chat.id, async (lease) => {
+          current.clearError(chat.id);
+          let starterId: LandingStarterId | undefined;
+          if (messageId) {
+            if (
+              supportsAgentRunRecovery() &&
+              current.getChat(chat.id)?.runId &&
+              !(await current.endPausedRun(chat.id))
+            )
+              return;
+            const references = normalizeAgentResourceReferences(
+              message.metadata?.resourceReferences,
+              message.metadata?.resourceReference
+            );
+            const submittedMessage = current.addMessage({
+              chatId: chat.id,
+              role: "user",
+              content: messageText,
+              metadata: {
+                route: currentPage.path,
+                ...(references[0] ? { resourceReference: references[0] } : {}),
+                ...(references.length > 1
+                  ? { resourceReferences: references }
+                  : {}),
+              },
+            });
+            if (!submittedMessage) return;
+            starterId = getLandingStarterIdForText({
+              context: chat.context,
+              text: messageText,
+              translate: t,
+            });
+          }
+          await startChatRun(
+            chat.id,
+            currentPage,
+            messageId ? "default" : (chat.runMode ?? "default"),
+            starterId,
+            false,
+            messageId ? "new" : "continue",
+            lease
           );
-          const submittedMessage = current.addMessage({
-            chatId: chat.id,
-            role: "user",
-            content: message.content,
-            metadata: {
-              route: currentPage.path,
-              ...(references[0] ? { resourceReference: references[0] } : {}),
-              ...(references.length > 1
-                ? { resourceReferences: references }
-                : {}),
-            },
-          });
-          if (!submittedMessage) return;
-          starterId = getLandingStarterIdForText({
-            context: chat.context,
-            text: message.content,
-            translate: t,
-          });
-        }
-        return startChatRun(
-          chat.id,
-          currentPage,
-          messageId ? "default" : (chat.runMode ?? "default"),
-          starterId
-        );
+        });
       } finally {
         if (messageActionInFlightRef.current === action) {
           messageActionInFlightRef.current = null;
@@ -2395,11 +2878,19 @@ export function AgentInput({
   }, [resendActionRef, runMessageAction]);
 
   const cancelPendingRequest = useCallback(() => {
-    const store = useAgentStore.getState();
-    const chat = selectCurrentChat(store);
-    if (!store.cancelPendingAsk(chat?.id)) return;
-    setAskDraft({ text: "" });
-  }, []);
+    const chat = selectCurrentChat(useAgentStore.getState());
+    if (!chat) return;
+    void withChatRunSegment(chat.id, async () => {
+      const store = useAgentStore.getState();
+      if (!store.cancelPendingAsk(chat.id)) return;
+      setAskDraft({ text: "" });
+      if (supportsAgentRunRecovery() && !(await store.flushRunPersistence())) {
+        store.setChatStatus(chat.id, "error", {
+          lastError: t("agent.token-budget.action-failed"),
+        });
+      }
+    });
+  }, [t]);
 
   const submitConfirmation = useCallback(
     async (confirmed: boolean) => {
@@ -2417,6 +2908,7 @@ export function AgentInput({
       }
 
       if (pendingAsk.apiPermission && chat) {
+        const permission = pendingAsk.apiPermission;
         confirmationInFlightRef.current = true;
         let approvalController: AbortController | undefined;
         try {
@@ -2435,71 +2927,117 @@ export function AgentInput({
             return;
           }
 
-          const currentStore = useAgentStore.getState();
-          if (
-            currentStore.getChat(chatId)?.archived ||
-            currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
-              pendingAsk.apiPermission.actionId ||
-            currentStore.isChatRunning(chatId)
-          ) {
-            return;
-          }
+          await withChatRunSegment(chatId, async (lease) => {
+            const currentStore = useAgentStore.getState();
+            if (
+              currentStore.getChat(chatId)?.archived ||
+              currentStore.getPendingAsk(chatId)?.apiPermission?.actionId !==
+                permission.actionId ||
+              currentStore.isChatRunning(chatId)
+            ) {
+              return;
+            }
+            if (
+              supportsAgentRunRecovery() &&
+              !(await currentStore.flushRunPersistence())
+            )
+              return;
 
-          const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
-          const capability = currentStore.getChat(chatId)?.capability;
-          currentStore.setChatStatus(chatId, "running");
-          approvalController = new AbortController();
-          currentStore.setAbortController(chatId, approvalController);
-          const result = await resolvePendingApiCall({
-            ...permissionArgs,
-            approved: confirmed && requestAvailable,
-            signal: approvalController.signal,
-            ...(capability !== undefined ? { capability } : {}),
-          });
-          const currentChat = currentStore.getChat(chatId);
-          if (
-            approvalController.signal.aborted ||
-            !currentChat ||
-            currentChat.status !== "running" ||
-            currentChat.runId !== chat.runId
-          ) {
-            return;
-          }
-          currentStore.addMessage({
-            chatId,
-            role: "tool",
-            toolCallId: pendingAsk.toolCallId,
-            content: result,
-            metadata: {
-              route: currentPage.path,
-              runId: chat.runId ?? undefined,
-            },
-          });
-          if (
-            !requestAvailable ||
-            result === '{"error":"Permission request expired."}' ||
-            result ===
-              '{"error":"Permission request not found or already used."}'
-          ) {
+            const runMode = currentStore.getChat(chatId)?.runMode ?? "default";
+            const capability = currentStore.getChat(chatId)?.capability;
+            currentStore.setChatStatus(chatId, "running");
+            approvalController = new AbortController();
+            currentStore.setAbortController(chatId, approvalController);
+            const result = await resolvePendingApiCall({
+              ...permissionArgs,
+              approved: confirmed && requestAvailable,
+              signal: approvalController.signal,
+              ...(capability !== undefined ? { capability } : {}),
+            });
+            const currentChat = currentStore.getChat(chatId);
+            if (
+              !isCurrentChatScope(store, chatId) ||
+              !currentChat ||
+              (currentChat.runId !== chat.runId &&
+                !(
+                  currentChat.archived &&
+                  currentChat.runBudget?.runId === chat.runId
+                )) ||
+              (!supportsAgentRunRecovery() &&
+                (approvalController.signal.aborted ||
+                  currentChat.status !== "running"))
+            ) {
+              return;
+            }
             currentStore.addMessage({
               chatId,
-              role: "assistant",
-              content: t("agent.api-permission-expired"),
+              role: "tool",
+              toolCallId: pendingAsk.toolCallId,
+              content: result,
               metadata: {
                 route: currentPage.path,
                 runId: chat.runId ?? undefined,
               },
             });
-            currentStore.finishChatRun(chatId);
-            return;
+            if (supportsAgentRunRecovery()) {
+              if (!(await currentStore.flushRunPersistence())) {
+                currentStore.setChatStatus(chatId, "error", {
+                  lastError: t("agent.token-budget.action-failed"),
+                });
+                return;
+              }
+              if (approvalController.signal.aborted || currentChat.archived)
+                return;
+            }
+            if (
+              !requestAvailable ||
+              result === '{"error":"Permission request expired."}' ||
+              result ===
+                '{"error":"Permission request not found or already used."}'
+            ) {
+              currentStore.addMessage({
+                chatId,
+                role: "assistant",
+                content: t("agent.api-permission-expired"),
+                metadata: {
+                  route: currentPage.path,
+                  runId: chat.runId ?? undefined,
+                },
+              });
+              currentStore.finishChatRun(chatId);
+              return;
+            }
+            if (currentChat.archived) {
+              currentStore.finishChatRun(chatId);
+              return;
+            }
+            // An approved write can make the selected resource unavailable.
+            // Resume from its recorded result; the executor still checks further access.
+            if (
+              supportsAgentRunRecovery() &&
+              !(await currentStore.flushRunPersistence())
+            )
+              return;
+            await startChatRun(
+              chatId,
+              currentPage,
+              runMode,
+              undefined,
+              true,
+              "continue",
+              lease
+            );
+          });
+        } catch (error) {
+          if (!supportsAgentRunRecovery()) throw error;
+          if (
+            isCurrentChatScope(store, chat.id) &&
+            useAgentStore.getState().getChat(chat.id)?.runId === chat.runId
+          ) {
+            useAgentStore.getState().setChatStatus(chat.id, "error", {
+              lastError: t("agent.token-budget.action-failed"),
+            });
           }
-          if (currentChat.archived) {
-            currentStore.finishChatRun(chatId);
-            return;
-          }
-          // An approved write can make the selected resource unavailable.
-          // Resume from its recorded result; the executor still checks further access.
-          await startChatRun(chatId, currentPage, runMode, undefined, true);
         } finally {
           if (
             approvalController &&
@@ -2527,17 +3065,23 @@ export function AgentInput({
         return;
       }
       currentStore.clearError(chatId);
-      const answered = currentStore.answerPendingAsk(
-        chatId,
-        { kind: "confirm", answer, confirmed },
-        { route: currentPage.path }
-      );
-      if (!answered) return;
-      await startChatRun(
-        chatId,
-        currentPage,
-        currentStore.getChat(chatId)?.runMode ?? "default"
-      );
+      await withChatRunSegment(chatId, async (lease) => {
+        const answered = currentStore.answerPendingAsk(
+          chatId,
+          { kind: "confirm", answer, confirmed },
+          { route: currentPage.path }
+        );
+        if (!answered) return;
+        await startChatRun(
+          chatId,
+          currentPage,
+          currentStore.getChat(chatId)?.runMode ?? "default",
+          undefined,
+          false,
+          "continue",
+          lease
+        );
+      });
     },
     [blockWhenAIIsNotConfigured, confirmLabel, cancelLabel, startChatRun, t]
   );
@@ -2575,22 +3119,28 @@ export function AgentInput({
       return;
     }
     currentStore.clearError(chatId);
-    const answered = currentStore.answerPendingAsk(
-      chatId,
-      {
-        kind: "choose",
-        answer: selectedChoice.label,
-        value: selectedChoice.value,
-      },
-      { route: currentPage.path }
-    );
-    if (!answered) return;
-    setChoiceSelection(null);
-    await startChatRun(
-      chatId,
-      currentPage,
-      currentStore.getChat(chatId)?.runMode ?? "default"
-    );
+    await withChatRunSegment(chatId, async (lease) => {
+      const answered = currentStore.answerPendingAsk(
+        chatId,
+        {
+          kind: "choose",
+          answer: selectedChoice.label,
+          value: selectedChoice.value,
+        },
+        { route: currentPage.path }
+      );
+      if (!answered) return;
+      setChoiceSelection(null);
+      await startChatRun(
+        chatId,
+        currentPage,
+        currentStore.getChat(chatId)?.runMode ?? "default",
+        undefined,
+        false,
+        "continue",
+        lease
+      );
+    });
   }, [
     blockWhenAIIsNotConfigured,
     choiceSelection,
@@ -2669,286 +3219,369 @@ export function AgentInput({
         context={context}
         contextTitle={contextTitle}
         workspace={workspace}
-        disabled={loading || Boolean(currentPendingAsk)}
+        disabled={
+          loading ||
+          Boolean(currentPendingAsk) ||
+          currentChat?.status === "paused"
+        }
         onSelect={selectContext}
       />
-      <AgentTokenUsage key={currentChat?.id} chat={currentChat} />
+      <AgentTokenUsage
+        key={currentChat?.id}
+        chat={currentChat}
+        pendingAttemptId={pendingAttemptId}
+      />
     </div>
   );
 
   return (
-    <div ref={composerRef} className="border-t p-3">
-      {/* Pending ask banner */}
-      {currentPendingAsk && (
-        <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
-          {apiPermission ? (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="font-medium">
-                  {apiPermissionPreview
-                    ? t("agent.api-permission-title")
-                    : t("agent.api-permission-expired-title")}
-                </div>
-                {apiPermissionPreview && (
-                  <span role="timer" className="tabular-nums">
-                    {t("agent.api-permission-expires-in", {
-                      time: formatPermissionTime(
-                        apiPermissionPreview.expiresAt
-                      ),
-                    })}
-                  </span>
-                )}
-              </div>
-              {apiPermissionPreview ? (
-                <>
-                  <div className="mt-1">
-                    {t("agent.api-permission-request")}
-                  </div>
-                  <div className="mt-2 font-mono break-all">
-                    {apiPermissionPreview.operationId}
-                  </div>
-                  {apiPermissionPreview.issueDecision && (
-                    <div className="mt-2 border-l-2 border-warning pl-2">
-                      <div className="font-medium">
-                        {apiPermissionPreview.issueDecision.issueTitle}
-                      </div>
-                      <div className="font-mono break-all text-control-light">
-                        {apiPermissionPreview.issueDecision.issueName}
-                      </div>
-                      <div className="mt-1">
-                        {issueDecisionPermissionText(
-                          apiPermissionPreview.issueDecision.impact
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
-                    {JSON.stringify(
-                      JSON.parse(apiPermissionPreview.body),
-                      null,
-                      2
-                    )}
-                  </pre>
-                </>
-              ) : (
-                <div className="mt-1">{t("agent.api-permission-expired")}</div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="font-medium">{currentPendingAsk.prompt}</div>
-              <div className="mt-1">
-                {currentPendingAsk.kind === "confirm"
-                  ? t("agent.pending-confirm-hint")
-                  : currentPendingAsk.kind === "choose"
-                    ? t("agent.pending-choose-hint")
-                    : t("agent.pending-input-hint")}
-              </div>
-              {canCancelPendingRequest && (
-                <div className="mt-2 flex justify-end">
-                  <Button
-                    appearance="secondary"
-                    size="sm"
-                    className="rounded-xs border text-control hover:bg-control-bg"
-                    onClick={cancelPendingRequest}
-                  >
-                    {t("agent.cancel-request")}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+    <div ref={composerRef} className="flex flex-col gap-3 border-t p-3">
+      {!executionAvailable && (
+        <Alert appearance="caption" variant="warning">
+          {t("agent.token-budget.recovery-unavailable")}
+        </Alert>
       )}
-
-      {isAwaitingConfirm && <div className="mb-1">{inputFooter}</div>}
-
-      {/* Confirm buttons */}
-      {isAwaitingConfirm ? (
-        <div className="flex flex-wrap gap-x-2 gap-y-2">
-          <Button
-            appearance="secondary"
-            size={apiPermission ? "sm" : "md"}
-            className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
-            disabled={
-              isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
-            }
-            onClick={() => submitConfirmation(true)}
-          >
-            {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
-          </Button>
-          <Button
-            appearance="secondary"
-            size={apiPermission ? "sm" : "md"}
-            className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
-            disabled={isCurrentChatRunning}
-            onClick={() => submitConfirmation(false)}
-          >
-            {apiPermission
-              ? apiPermissionPreview
-                ? t("agent.api-permission-deny")
-                : t("agent.api-permission-dismiss")
-              : cancelLabel}
-          </Button>
-        </div>
-      ) : isAwaitingChoose ? (
-        /* Choose options */
-        <div className="flex min-w-0 flex-col gap-3">
-          <RadioGroup
-            aria-label={currentPendingAsk.prompt}
-            className="max-h-48 flex-col items-stretch gap-2 overflow-y-auto"
-            value={selectedChoice?.value ?? null}
-            disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-            onValueChange={(value) => {
-              if (currentChatId && typeof value === "string") {
-                setChoiceSelection({
-                  chatId: currentChatId,
-                  toolCallId: currentPendingAsk.toolCallId,
-                  value,
-                });
-              }
-            }}
-          >
-            {chooseOptions.map((option) => (
-              <RadioGroupItem
-                key={option.value}
-                value={option.value}
-                className="items-start rounded-xs p-2 hover:bg-control-bg"
-                contentClassName="min-w-0 break-words"
-                radioClassName="mt-0.5"
-              >
-                <div className="font-medium text-main">{option.label}</div>
-                {option.description && (
-                  <div className="text-xs text-control-light">
-                    {option.description}
+      <AgentTokenBudgetStatus
+        chat={currentChat}
+        pendingAttemptId={pendingAttemptId}
+        disabled={!executionAvailable}
+        remoteBusy={remoteBusy}
+        canResume={Boolean(
+          currentChat &&
+            getAgentRunContinuation(
+              currentChat,
+              useAgentStore.getState().getMessages(currentChat.id)
+            )
+        )}
+        onIncreaseLimit={async (limit) => {
+          if (!currentChat) return false;
+          const store = useAgentStore.getState();
+          if (store.getAbortController(currentChat.id))
+            return store.increaseRunTokenLimit(currentChat.id, limit);
+          let increased = false;
+          await withChatRunSegment(currentChat.id, async () => {
+            increased = await useAgentStore
+              .getState()
+              .increaseRunTokenLimit(currentChat.id, limit);
+          });
+          return increased;
+        }}
+        onResume={async () => {
+          if (
+            !currentChat ||
+            (await blockWhenAIIsNotConfigured(currentChat.id))
+          )
+            return false;
+          let resumed = false;
+          await withChatRunSegment(currentChat.id, async (lease) => {
+            const store = useAgentStore.getState();
+            store.syncState();
+            const latest = useAgentStore.getState();
+            const chat = latest.getChat(currentChat.id);
+            if (
+              !chat ||
+              chat.runId !== currentChat.runId ||
+              latest.getAbortController(chat.id) ||
+              !getAgentRunContinuation(chat, latest.getMessages(chat.id))
+            )
+              return;
+            resumed = true;
+            await startChatRun(
+              chat.id,
+              chat.page ?? getCurrentPageSnapshot(),
+              chat.runMode ?? "default",
+              undefined,
+              true,
+              "continue",
+              lease
+            );
+          });
+          return resumed;
+        }}
+        onEndRun={async () => {
+          if (!currentChat) return;
+          let ended = false;
+          await withChatRunSegment(currentChat.id, async () => {
+            ended = await useAgentStore.getState().endPausedRun(currentChat.id);
+          });
+          if (!ended) throw new Error("Agent run could not be ended");
+        }}
+      />
+      <div className="min-w-0">
+        {/* Pending ask banner */}
+        {currentPendingAsk && (
+          <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
+            {apiPermission ? (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-medium">
+                    {apiPermissionPreview
+                      ? t("agent.api-permission-title")
+                      : t("agent.api-permission-expired-title")}
+                  </div>
+                  {apiPermissionPreview && (
+                    <span role="timer" className="tabular-nums">
+                      {t("agent.api-permission-expires-in", {
+                        time: formatPermissionTime(
+                          apiPermissionPreview.expiresAt
+                        ),
+                      })}
+                    </span>
+                  )}
+                </div>
+                {apiPermissionPreview ? (
+                  <>
+                    <div className="mt-1">
+                      {t("agent.api-permission-request")}
+                    </div>
+                    <div className="mt-2 font-mono break-all">
+                      {apiPermissionPreview.operationId}
+                    </div>
+                    {apiPermissionPreview.issueDecision && (
+                      <div className="mt-2 border-l-2 border-warning pl-2">
+                        <div className="font-medium">
+                          {apiPermissionPreview.issueDecision.issueTitle}
+                        </div>
+                        <div className="font-mono break-all text-control-light">
+                          {apiPermissionPreview.issueDecision.issueName}
+                        </div>
+                        <div className="mt-1">
+                          {issueDecisionPermissionText(
+                            apiPermissionPreview.issueDecision.impact
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-xs border bg-background p-2 font-mono text-control">
+                      {JSON.stringify(
+                        JSON.parse(apiPermissionPreview.body),
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </>
+                ) : (
+                  <div className="mt-1">
+                    {t("agent.api-permission-expired")}
                   </div>
                 )}
-              </RadioGroupItem>
-            ))}
-          </RadioGroup>
-          <div className="flex min-w-0 items-center gap-2">
-            {inputFooter}
+              </>
+            ) : (
+              <>
+                <div className="font-medium">{currentPendingAsk.prompt}</div>
+                <div className="mt-1">
+                  {currentPendingAsk.kind === "confirm"
+                    ? t("agent.pending-confirm-hint")
+                    : currentPendingAsk.kind === "choose"
+                      ? t("agent.pending-choose-hint")
+                      : t("agent.pending-input-hint")}
+                </div>
+                {canCancelPendingRequest && (
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      appearance="secondary"
+                      size="sm"
+                      className="rounded-xs border text-control hover:bg-control-bg"
+                      onClick={cancelPendingRequest}
+                    >
+                      {t("agent.cancel-request")}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {isAwaitingConfirm && <div className="mb-1">{inputFooter}</div>}
+
+        {/* Confirm buttons */}
+        {isAwaitingConfirm ? (
+          <div className="flex flex-wrap gap-x-2 gap-y-2">
             <Button
-              size="sm"
-              className="shrink-0"
+              appearance="secondary"
+              size={apiPermission ? "sm" : "md"}
+              className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
               disabled={
-                !selectedChoice ||
-                isCurrentChatRunning ||
-                isAIConfigurationBlocked
+                isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
               }
-              onClick={() => void submitChoice()}
+              onClick={() => submitConfirmation(true)}
             >
-              <Send className="size-4" />
-              {t("agent.reply")}
+              {apiPermission ? t("agent.api-permission-allow") : confirmLabel}
+            </Button>
+            <Button
+              appearance="secondary"
+              size={apiPermission ? "sm" : "md"}
+              className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
+              disabled={isCurrentChatRunning}
+              onClick={() => submitConfirmation(false)}
+            >
+              {apiPermission
+                ? apiPermissionPreview
+                  ? t("agent.api-permission-deny")
+                  : t("agent.api-permission-dismiss")
+                : cancelLabel}
             </Button>
           </div>
-        </div>
-      ) : (
-        <div data-agent-input-row>
-          <AgentComposer
-            footer={inputFooter}
-            action={
-              loading ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="shrink-0 whitespace-nowrap"
-                  disabled={remoteBusy}
-                  onClick={() =>
-                    useAgentStore.getState().cancel(currentChat?.id, "user")
-                  }
+        ) : isAwaitingChoose ? (
+          /* Choose options */
+          <div className="flex min-w-0 flex-col gap-3">
+            <RadioGroup
+              aria-label={currentPendingAsk.prompt}
+              className="max-h-48 flex-col items-stretch gap-2 overflow-y-auto"
+              value={selectedChoice?.value ?? null}
+              disabled={isCurrentChatRunning || isAIConfigurationBlocked}
+              onValueChange={(value) => {
+                if (currentChatId && typeof value === "string") {
+                  setChoiceSelection({
+                    chatId: currentChatId,
+                    toolCallId: currentPendingAsk.toolCallId,
+                    value,
+                  });
+                }
+              }}
+            >
+              {chooseOptions.map((option) => (
+                <RadioGroupItem
+                  key={option.value}
+                  value={option.value}
+                  className="items-start rounded-xs p-2 hover:bg-control-bg"
+                  contentClassName="min-w-0 break-words"
+                  radioClassName="mt-0.5"
                 >
-                  <Square className="size-4" />
-                  {t("agent.stop")}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  className="shrink-0 whitespace-nowrap"
-                  data-agent-send
-                  disabled={isSendDisabled}
-                  onClick={() => void send()}
-                >
-                  <Send className="size-4" />
-                  {sendLabel}
-                </Button>
-              )
-            }
-          >
-            <div className="relative w-full">
-              {!input && (
-                <div
-                  className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
-                  data-agent-input-placeholder
-                >
-                  {isCurrentChatRunning ? (
-                    t("agent.input-processing-placeholder")
-                  ) : (
-                    <>
-                      {inputPlaceholder} ·{" "}
-                      {sendWithEnter
-                        ? t("agent.input-keyboard-hint")
-                        : t("agent.input-keyboard-hint-newline")}
-                    </>
+                  <div className="font-medium text-main">{option.label}</div>
+                  {option.description && (
+                    <div className="text-xs text-control-light">
+                      {option.description}
+                    </div>
                   )}
-                </div>
-              )}
-              <AgentMentionTextarea
-                size="md"
-                textareaRef={textareaRef}
-                value={input}
-                mentions={draftMentions.map(({ resource, range }) => ({
-                  range,
-                  label: resource.label,
-                }))}
-                onDeleteMention={({ text, caret }) => {
-                  selectedMentionCaretRef.current = caret;
-                  mentionRangeRef.current = null;
-                  setResourcePickerOpen(false);
-                  setInput(text);
-                }}
-                rows={1}
-                className="block h-9 min-h-9 w-full resize-none overflow-y-hidden border-0 focus:border-0 focus:ring-0 disabled:bg-transparent"
-                aria-label={inputPlaceholder}
-                disabled={isCurrentChatRunning || isAIConfigurationBlocked}
-                onChange={(event) => {
-                  setInput(event.target.value);
-                  if (!canMentionResource) {
+                </RadioGroupItem>
+              ))}
+            </RadioGroup>
+            <div className="flex min-w-0 items-center gap-2">
+              {inputFooter}
+              <Button
+                size="sm"
+                className="shrink-0"
+                disabled={
+                  !selectedChoice ||
+                  isCurrentChatRunning ||
+                  isAIConfigurationBlocked
+                }
+                onClick={() => void submitChoice()}
+              >
+                <Send className="size-4" />
+                {t("agent.reply")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div data-agent-input-row>
+            <AgentComposer
+              footer={inputFooter}
+              action={
+                loading ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
+                    disabled={remoteBusy}
+                    onClick={() =>
+                      useAgentStore.getState().cancel(currentChat?.id, "user")
+                    }
+                  >
+                    <Square className="size-4" />
+                    {t("agent.stop")}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="shrink-0 whitespace-nowrap"
+                    data-agent-send
+                    disabled={isSendDisabled}
+                    onClick={() => void send()}
+                  >
+                    <Send className="size-4" />
+                    {sendLabel}
+                  </Button>
+                )
+              }
+            >
+              <div className="relative w-full">
+                {!input && (
+                  <div
+                    className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
+                    data-agent-input-placeholder
+                  >
+                    {isCurrentChatRunning ? (
+                      t("agent.input-processing-placeholder")
+                    ) : (
+                      <>
+                        {inputPlaceholder} ·{" "}
+                        {sendWithEnter
+                          ? t("agent.input-keyboard-hint")
+                          : t("agent.input-keyboard-hint-newline")}
+                      </>
+                    )}
+                  </div>
+                )}
+                <AgentMentionTextarea
+                  size="md"
+                  textareaRef={textareaRef}
+                  value={input}
+                  mentions={draftMentions.map(({ resource, range }) => ({
+                    range,
+                    label: resource.label,
+                  }))}
+                  onDeleteMention={({ text, caret }) => {
+                    selectedMentionCaretRef.current = caret;
                     mentionRangeRef.current = null;
                     setResourcePickerOpen(false);
-                    return;
-                  }
-                  const range = getMentionTriggerRange(
-                    event.target.value,
-                    event.target.selectionStart
-                  );
-                  mentionRangeRef.current = range;
-                  setResourcePickerOpen(Boolean(range));
-                }}
-                onKeyDown={handleTextareaKeydown}
-              />
-              {canMentionResource && workspace?.name ? (
-                <AgentResourcePicker
-                  open={resourcePickerOpen}
-                  onOpenChange={handleResourcePickerOpenChange}
-                  anchorRef={textareaRef}
-                  workspaceName={workspace.name}
-                  projectName={projectContext}
-                  selectedProjectName={selectedProjectMention?.resource.name}
-                  hasSelectedReference={
-                    draftMentions.length > 1 ||
-                    (draftMentions.length === 1 && !selectedProjectMention)
-                  }
-                  onSelectProject={selectMentionProject}
-                  onSelectDatabase={selectMentionDatabase}
-                  onSelectIssue={selectMentionIssue}
-                  onSelectPlan={selectMentionPlan}
+                    setInput(text);
+                  }}
+                  rows={1}
+                  className="block h-9 min-h-9 w-full resize-none overflow-y-hidden border-0 focus:border-0 focus:ring-0 disabled:bg-transparent"
+                  aria-label={inputPlaceholder}
+                  disabled={isCurrentChatRunning || isAIConfigurationBlocked}
+                  onChange={(event) => {
+                    setInput(event.target.value);
+                    if (!canMentionResource) {
+                      mentionRangeRef.current = null;
+                      setResourcePickerOpen(false);
+                      return;
+                    }
+                    const range = getMentionTriggerRange(
+                      event.target.value,
+                      event.target.selectionStart
+                    );
+                    mentionRangeRef.current = range;
+                    setResourcePickerOpen(Boolean(range));
+                  }}
+                  onKeyDown={handleTextareaKeydown}
                 />
-              ) : null}
-            </div>
-          </AgentComposer>
-        </div>
-      )}
+                {canMentionResource && workspace?.name ? (
+                  <AgentResourcePicker
+                    open={resourcePickerOpen}
+                    onOpenChange={handleResourcePickerOpenChange}
+                    anchorRef={textareaRef}
+                    workspaceName={workspace.name}
+                    projectName={projectContext}
+                    selectedProjectName={selectedProjectMention?.resource.name}
+                    hasSelectedReference={
+                      draftMentions.length > 1 ||
+                      (draftMentions.length === 1 && !selectedProjectMention)
+                    }
+                    onSelectProject={selectMentionProject}
+                    onSelectDatabase={selectMentionDatabase}
+                    onSelectIssue={selectMentionIssue}
+                    onSelectPlan={selectMentionPlan}
+                  />
+                ) : null}
+              </div>
+            </AgentComposer>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

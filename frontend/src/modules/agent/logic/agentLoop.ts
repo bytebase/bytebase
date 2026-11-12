@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
+import { v4 as uuidv4 } from "uuid";
 import { aiServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import type {
@@ -9,19 +10,25 @@ import type {
 import {
   AIChatMessageRole,
   AIChatMessageSchema,
+  AIChatResponse_StopReason,
   AIChatToolDefinitionSchema,
 } from "@/types/proto-es/v1/ai_service_pb";
 import { DEFAULT_AGENT_PREFERENCES } from "../store/preferences";
 import { parseCallApiResult } from "./callApiResult";
 import {
+  type AgentProviderAttemptDiagnostics,
   measureAgentRequest,
+  normalizeAgentStopReason,
   serializedAgentRequestBytes,
 } from "./requestDiagnostics";
 import { getModelCallUsage } from "./tokenUsage";
 import type {
+  AgentAttemptReservation,
   AgentHandoff,
   AgentLoopOutcome,
+  AgentModelAttempt,
   AgentModelCallUsage,
+  AgentRunCheckpoint,
   Message,
   ToolCall,
   ToolDefinition,
@@ -36,27 +43,41 @@ const COMPACTION_NOTE =
   "Earlier tool calls and results were omitted to fit the context limit. Re-fetch any state you need and verify it before repeating an action.";
 
 class ProviderAttemptLimitError extends Error {}
+class PersistenceBoundaryError extends Error {}
+class SupersededInvocationError extends Error {}
+class TokenBudgetPause extends Error {}
+
+type LoopCheckpoint = Pick<AgentRunCheckpoint, "phase" | "finalizationText">;
+
+function finalizationInstruction(hasText: boolean): Message {
+  return {
+    role: "user",
+    content: hasText
+      ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task."
+      : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task.",
+  };
+}
 
 async function callWithRetry<T>(
   fn: () => Promise<T>,
   signal: AbortSignal | undefined,
-  reserveProviderAttempt: () => boolean
+  reserveProviderAttempt: () => Promise<void>
 ): Promise<T> {
   let lastError: Error | undefined;
   for (let attempt = 0; attempt <= MAX_RETRIES_PER_REQUEST; attempt++) {
     if (signal?.aborted) {
       throw new DOMException("Agent loop aborted", "AbortError");
     }
-    if (!reserveProviderAttempt()) {
-      if (lastError) throw lastError;
-      throw new ProviderAttemptLimitError(
-        "Agent provider attempt limit reached."
-      );
-    }
+    await reserveProviderAttempt();
     try {
       return await fn();
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
+      if (
+        lastError instanceof PersistenceBoundaryError ||
+        lastError instanceof SupersededInvocationError
+      )
+        throw lastError;
       if (signal?.aborted || lastError.name === "AbortError") throw lastError;
       const msg = lastError.message.toLowerCase();
       if (
@@ -176,18 +197,25 @@ export interface AgentCallbacks {
   onAssistantMessage?: (
     message: Pick<Message, "content" | "toolCalls">
   ) => void;
-  onToolResult?: (toolCallId: string, result: string) => void;
+  onToolResult?: (toolCallId: string, result: string) => void | Promise<void>;
   onText?: (text: string, handoff?: AgentHandoff) => void;
   onError?: (error: Error) => void;
   onUsage?: (usage: AgentModelCallUsage) => void;
   onRequestDiagnostics?: (
     diagnostics: ReturnType<typeof measureAgentRequest>
   ) => void;
+  onProviderAttempt?: (diagnostics: AgentProviderAttemptDiagnostics) => void;
 }
 
 export interface AgentLoopOptions {
   allowPlainTextCompletion?: boolean;
   maxTotalTokens?: number;
+  runId?: string;
+  reserveProviderAttempt?: () => Promise<AgentAttemptReservation>;
+  onAttemptSettled?: (attempt: AgentModelAttempt) => Promise<boolean>;
+  checkpoint?: LoopCheckpoint;
+  onCheckpoint?: (checkpoint: LoopCheckpoint) => Promise<boolean>;
+  beforeToolExecution?: () => Promise<boolean>;
   resolveRequestContext?: () => {
     tools: ToolDefinition[];
     systemGuidance: string;
@@ -271,6 +299,7 @@ export async function runAgentLoop(
   options: AgentLoopOptions = {}
 ): Promise<AgentLoopOutcome> {
   const conversation: Message[] = [...messages];
+  const runId = options.runId ?? uuidv4();
   const configuredTokenLimit = options.maxTotalTokens;
   const tokenLimitPerRun =
     typeof configuredTokenLimit === "number" &&
@@ -288,8 +317,43 @@ export async function runAgentLoop(
   let totalTokensUsed = 0;
   let providerAttemptCount = 0;
   let contextCompacted = false;
-  let awaitingTerminalCall = false;
+  let awaitingTerminalCall = options.checkpoint?.phase === "finalizing";
+  let finalizationText = options.checkpoint?.finalizationText;
+  if (awaitingTerminalCall) {
+    if (finalizationText)
+      conversation.push({ role: "assistant", content: finalizationText });
+    conversation.push(finalizationInstruction(Boolean(finalizationText)));
+  }
   const apiAttempts = getCurrentTurnApiAttempts(messages);
+  const checkpoint = (): LoopCheckpoint => ({
+    phase: awaitingTerminalCall ? "finalizing" : "working",
+    ...(finalizationText !== undefined ? { finalizationText } : {}),
+  });
+  const persistCheckpoint = async () => {
+    try {
+      if (options.onCheckpoint && !(await options.onCheckpoint(checkpoint()))) {
+        throw new PersistenceBoundaryError(
+          "Agent checkpoint could not be saved."
+        );
+      }
+    } catch (error) {
+      throw error instanceof PersistenceBoundaryError
+        ? error
+        : new PersistenceBoundaryError("Agent checkpoint could not be saved.");
+    }
+    if (signal?.aborted)
+      throw new DOMException("Agent loop aborted", "AbortError");
+  };
+  const recordToolResult = async (toolCallId: string, result: string) => {
+    try {
+      await callbacks?.onToolResult?.(toolCallId, result);
+    } catch {
+      throw new PersistenceBoundaryError(
+        "Agent tool result could not be saved."
+      );
+    }
+    conversation.push({ role: "tool", toolCallId, content: result });
+  };
 
   const completeWithApiError = (error: string): AgentLoopOutcome => {
     callbacks?.onText?.(error);
@@ -316,8 +380,8 @@ export async function runAgentLoop(
         return { kind: "aborted", totalTokensUsed };
       }
       if (
-        totalTokensUsed >= tokenLimitPerRun ||
-        providerAttemptCount >= MAX_PROVIDER_ATTEMPTS_PER_RUN
+        !options.reserveProviderAttempt &&
+        totalTokensUsed >= tokenLimitPerRun
       ) {
         return completeWithRunLimit();
       }
@@ -350,36 +414,178 @@ export async function runAgentLoop(
         return completeWithRequestLimit();
       }
 
+      let reservation: Extract<AgentAttemptReservation, { kind: "allowed" }>;
       const response = await callWithRetry(
-        () => {
+        async () => {
           callbacks?.onRequestDiagnostics?.(
             measureAgentRequest(protoMessages, toolDefinitions)
           );
-          return aiServiceClientConnect.chat(
-            {
-              messages: protoMessages,
-              toolDefinitions,
-            },
-            {
-              signal,
-              contextValues: createContextValues().set(silentContextKey, true),
+          const measurement = callbacks?.onProviderAttempt
+            ? measureAgentRequest(protoMessages, toolDefinitions)
+            : undefined;
+          const startedAt = measurement ? performance.now() : 0;
+          let result:
+            | Awaited<ReturnType<typeof aiServiceClientConnect.chat>>
+            | undefined;
+          let providerError: unknown;
+          let providerFailed = false;
+          try {
+            result = await aiServiceClientConnect.chat(
+              {
+                messages: protoMessages,
+                toolDefinitions,
+              },
+              {
+                signal,
+                contextValues: createContextValues().set(
+                  silentContextKey,
+                  true
+                ),
+              }
+            );
+          } catch (error) {
+            providerFailed = true;
+            providerError = error;
+          }
+          const roundTripMs = measurement
+            ? Math.max(0, performance.now() - startedAt)
+            : 0;
+          const usage = result
+            ? {
+                ...getModelCallUsage("agent", result),
+                attemptId: reservation.attemptId,
+              }
+            : undefined;
+          const attempt: AgentModelAttempt = {
+            attemptId: reservation.attemptId,
+            runId,
+            ordinal: reservation.ordinal,
+            outcome: result
+              ? "response"
+              : signal?.aborted ||
+                  (providerError instanceof Error &&
+                    providerError.name === "AbortError")
+                ? "aborted"
+                : "error",
+            ...(usage ? { usage } : {}),
+          };
+          totalTokensUsed += usage?.totalTokens ?? 0;
+          let settlementAccepted = true;
+          if (options.onAttemptSettled) {
+            try {
+              settlementAccepted = await options.onAttemptSettled(attempt);
+            } catch {
+              throw new PersistenceBoundaryError(
+                "Agent attempt could not be saved."
+              );
             }
-          );
+          } else if (result) {
+            callbacks?.onUsage?.(getModelCallUsage("agent", result));
+          }
+          if (measurement) {
+            const { usage: _usage, ...identity } = attempt;
+            const diagnostics: AgentProviderAttemptDiagnostics = {
+              ...identity,
+              phase: checkpoint().phase,
+              roundTripMs,
+              request: measurement,
+              ...(usage
+                ? {
+                    usage: {
+                      ...(usage.totalTokens !== undefined
+                        ? { totalTokens: usage.totalTokens }
+                        : {}),
+                      ...(usage.inputTokens !== undefined
+                        ? { inputTokens: usage.inputTokens }
+                        : {}),
+                      ...(usage.outputTokens !== undefined
+                        ? { outputTokens: usage.outputTokens }
+                        : {}),
+                      ...(usage.cachedInputTokens !== undefined
+                        ? { cachedInputTokens: usage.cachedInputTokens }
+                        : {}),
+                    },
+                  }
+                : {}),
+              ...(result
+                ? { stopReason: normalizeAgentStopReason(result.stopReason) }
+                : {
+                    errorCategory:
+                      attempt.outcome === "aborted"
+                        ? "aborted"
+                        : "provider-error",
+                  }),
+            };
+            try {
+              callbacks?.onProviderAttempt?.(diagnostics);
+            } catch {
+              /* Diagnostics must not affect execution or accounting. */
+            }
+          }
+          if (!settlementAccepted)
+            throw new SupersededInvocationError(
+              "Agent invocation is no longer current."
+            );
+          if (providerFailed) throw providerError;
+          return result!;
         },
         signal,
-        () => {
+        async () => {
+          await persistCheckpoint();
+          if (options.reserveProviderAttempt) {
+            let reserved: AgentAttemptReservation;
+            try {
+              reserved = await options.reserveProviderAttempt();
+            } catch {
+              throw new PersistenceBoundaryError(
+                "Agent attempt could not be reserved."
+              );
+            }
+            if (reserved.kind === "token-limit") throw new TokenBudgetPause();
+            if (reserved.kind === "attempt-limit")
+              throw new ProviderAttemptLimitError(
+                "Agent provider attempt limit reached."
+              );
+            if (reserved.kind === "superseded")
+              throw new SupersededInvocationError(
+                "Agent invocation is no longer current."
+              );
+            if (reserved.kind === "storage-unavailable")
+              throw new PersistenceBoundaryError(
+                "Agent attempt could not be reserved."
+              );
+            reservation = reserved;
+            if (signal?.aborted)
+              throw new DOMException("Agent loop aborted", "AbortError");
+            return;
+          }
           if (providerAttemptCount >= MAX_PROVIDER_ATTEMPTS_PER_RUN)
-            return false;
+            throw new ProviderAttemptLimitError(
+              "Agent provider attempt limit reached."
+            );
           providerAttemptCount++;
-          return true;
+          reservation = {
+            kind: "allowed",
+            attemptId: `${runId}:${providerAttemptCount}`,
+            ordinal: providerAttemptCount,
+          };
         }
       );
 
-      totalTokensUsed += response.usage?.totalTokens ?? 0;
-      callbacks?.onUsage?.(getModelCallUsage("agent", response));
-
       if (signal?.aborted) {
         return { kind: "aborted", totalTokensUsed };
+      }
+
+      if (
+        response.stopReason === AIChatResponse_StopReason.TOKEN_LIMIT ||
+        response.stopReason === AIChatResponse_StopReason.BLOCKED ||
+        response.stopReason === AIChatResponse_StopReason.MALFORMED_TOOL_CALL
+      ) {
+        const error = new Error(
+          `Agent provider stopped with ${normalizeAgentStopReason(response.stopReason)}.`
+        );
+        callbacks?.onError?.(error);
+        return { kind: "error", error, totalTokensUsed };
       }
 
       if (response.toolCalls.length > 0) {
@@ -423,13 +629,23 @@ export async function runAgentLoop(
             const skippedResult = createSkippedToolResult(
               terminalState.blockedBy
             );
-            callbacks?.onToolResult?.(tc.id, skippedResult);
-            conversation.push({
-              role: "tool",
-              content: skippedResult,
-              toolCallId: tc.id,
-            });
+            await recordToolResult(tc.id, skippedResult);
             continue;
+          }
+
+          await persistCheckpoint();
+          if (options.beforeToolExecution) {
+            let canExecute = false;
+            try {
+              canExecute = await options.beforeToolExecution();
+            } catch {
+              /* Fail closed at the durable execution boundary. */
+            }
+            if (!canExecute)
+              throw new PersistenceBoundaryError(
+                "Agent tool execution could not be saved."
+              );
+            if (signal?.aborted) return { kind: "aborted", totalTokensUsed };
           }
 
           let executionResult;
@@ -449,6 +665,14 @@ export async function runAgentLoop(
           }
 
           if (signal?.aborted) {
+            if (
+              options.reserveProviderAttempt &&
+              options.onAttemptSettled &&
+              executionResult.kind === "tool_result"
+            ) {
+              // A known tool outcome must remain recoverable after Stop.
+              await recordToolResult(tc.id, executionResult.result);
+            }
             return { kind: "aborted", totalTokensUsed };
           }
 
@@ -456,12 +680,7 @@ export async function runAgentLoop(
             if (tc.name === "call_api") {
               recordCallApiResult(apiAttempts, tc, executionResult.result);
             }
-            callbacks?.onToolResult?.(tc.id, executionResult.result);
-            conversation.push({
-              role: "tool",
-              content: executionResult.result,
-              toolCallId: tc.id,
-            });
+            await recordToolResult(tc.id, executionResult.result);
             continue;
           }
 
@@ -492,12 +711,7 @@ export async function runAgentLoop(
               ? { failedApiCallCount: apiAttempts.failedApiCallCount }
               : {}),
           });
-          callbacks?.onToolResult?.(tc.id, doneResult);
-          conversation.push({
-            role: "tool",
-            content: doneResult,
-            toolCallId: tc.id,
-          });
+          await recordToolResult(tc.id, doneResult);
           terminalState = {
             outcome: {
               kind: "completed",
@@ -514,6 +728,7 @@ export async function runAgentLoop(
           };
         }
 
+        await persistCheckpoint();
         if (terminalState) {
           if (terminalState.outcome.kind === "completed") {
             if (terminalState.outcome.handoff) {
@@ -533,6 +748,7 @@ export async function runAgentLoop(
 
       const text = response.content?.trim() ?? "";
       if (options.allowPlainTextCompletion && text) {
+        await persistCheckpoint();
         const apiError = apiAttempts.lastApiError;
         if (apiError) {
           return completeWithApiError(apiError);
@@ -553,13 +769,10 @@ export async function runAgentLoop(
         if (text) {
           conversation.push({ role: "assistant", content: response.content });
         }
-        conversation.push({
-          role: "user",
-          content: text
-            ? "Finalize your preceding answer by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task."
-            : "Your previous response was empty. Answer the user's request by calling done({ text, success, actions }), using actions: [] when none apply, or call ask_user, ask_masking_exemption_scope, ask_masking_rule_scope, or ask_masking_semantic_type if input is required. Do not call any other tools or start another task.",
-        });
+        conversation.push(finalizationInstruction(Boolean(text)));
         awaitingTerminalCall = true;
+        finalizationText = response.content ?? "";
+        await persistCheckpoint();
         continue;
       }
 
@@ -580,11 +793,28 @@ export async function runAgentLoop(
     }
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
+    if (error instanceof PersistenceBoundaryError) {
+      return { kind: "error", error, totalTokensUsed };
+    }
     if (signal?.aborted || error.name === "AbortError") {
       return { kind: "aborted", totalTokensUsed };
     }
+    if (error instanceof TokenBudgetPause) {
+      return {
+        kind: "paused",
+        reason: "token-limit",
+        ...checkpoint(),
+        totalTokensUsed,
+      };
+    }
+    if (error instanceof SupersededInvocationError) {
+      return { kind: "aborted", totalTokensUsed };
+    }
     if (error instanceof ProviderAttemptLimitError) {
-      return completeWithRunLimit();
+      const text =
+        "I stopped before making another AI request because this run reached its provider attempt limit. Earlier actions may already have completed; check their status before asking me to retry.";
+      callbacks?.onText?.(text);
+      return { kind: "completed", text, success: false, totalTokensUsed };
     }
     return {
       kind: "error",

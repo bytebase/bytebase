@@ -72,6 +72,7 @@ import {
   extractPlanDraftSQL,
   normalizeAgentResponseActions,
 } from "../logic/responseActions";
+import { getAgentRunContinuation } from "../logic/runCheckpoint";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -870,6 +871,7 @@ export function AgentChat({
       messages.filter(
         (message): message is AgentMessage =>
           (message.role === "user" || message.role === "assistant") &&
+          !message.metadata?.runPreflight &&
           !(
             message.role === "assistant" &&
             error &&
@@ -932,6 +934,11 @@ export function AgentChat({
     Boolean(latestUserMessageId) &&
     !isChatActionBlocked &&
     Boolean(onRetry);
+  const stoppedRunContinuation =
+    currentChat?.interruptionReason === "user" &&
+    (currentChat.status === "idle" || currentChat.status === "error")
+      ? getAgentRunContinuation(currentChat, messages)
+      : undefined;
 
   function getToolResult(
     messageId: string,
@@ -1070,10 +1077,14 @@ export function AgentChat({
       {displayMessages.map((msg) => {
         const interruption = interruptionByLastMessageId.get(msg.id);
         const canRetry =
-          interruption?.reason === "unexpected" &&
+          interruption &&
+          (interruption.reason === "unexpected" ||
+            (stoppedRunContinuation?.checkpoint.suspension === "interrupted" &&
+              stoppedRunContinuation.checkpoint.rootUserMessageId ===
+                interruption.userMessageId)) &&
           interruption.userMessageId === latestUserMessageId &&
           currentChat?.interrupted &&
-          currentChat.interruptionReason === "unexpected" &&
+          currentChat.interruptionReason === interruption.reason &&
           !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;

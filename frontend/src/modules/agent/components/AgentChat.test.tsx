@@ -12,8 +12,13 @@ import {
 } from "@/app/router/handles";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
+import { buildOutboundHistory } from "../logic/outboundHistory";
 import { acceptAgentResponseActions } from "../logic/responseActions";
-import type { AgentHandoff, AgentMessageMetadata } from "../logic/types";
+import type {
+  AgentChat as AgentChatRecord,
+  AgentHandoff,
+  AgentMessageMetadata,
+} from "../logic/types";
 import { createAgentStore, useAgentStore } from "../store/agent";
 
 (
@@ -322,6 +327,28 @@ afterEach(() => {
 });
 
 describe("AgentChat", () => {
+  test("hides application preflight rows without deleting canonical outbound tool groups", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Inspect workspace metadata" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Internal startup evidence", toolCalls: [{ id: "preflight-read", name: "get_page_state", arguments: "{}", metadata: "opaque-provider-metadata" }], metadata: { runPreflight: true, hidden: true } });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "preflight-read", content: '{"result":"Canonical startup result"}', metadata: { runPreflight: true, hidden: true } });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Visible reviewed answer" });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      expect(container.textContent).not.toContain("Internal startup evidence");
+      expect(container.textContent).not.toContain("Canonical startup result");
+      expect(container.textContent).toContain("Visible reviewed answer");
+      expect(store.getMessages(chat.id)).toHaveLength(4);
+      const outbound = buildOutboundHistory("System instruction", store.getMessages(chat.id));
+      expect(outbound.find((row) => row.toolCalls?.some((call) => call.id === "preflight-read"))?.toolCalls?.[0].metadata).toBe("opaque-provider-metadata");
+      expect(outbound.find((row) => row.toolCallId === "preflight-read")?.content).toContain("Canonical startup result");
+    } finally {
+      unmount();
+    }
+  });
+
   test("copies each user message's original text without changing the draft", async () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
@@ -2110,6 +2137,138 @@ describe("AgentChat", () => {
     } finally {
       unmount();
     }
+  });
+
+  describe("user-stopped managed run Retry", () => {
+    const prepareStoppedRun = () => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const user = store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Count databases",
+      })!;
+      store.startChatRun(chat.id, undefined, { runId: "run-1" });
+      useAgentStore.setState((state) => ({
+        chats: state.chats.map((current): AgentChatRecord => current.id === chat.id
+          ? {
+              ...current,
+              runBudget: {
+                version: 1,
+                runId: "run-1",
+                limit: 1000,
+                totalTokensUsed: 100,
+                hasUnreportedUsage: false,
+                providerAttemptCount: 1,
+                revision: 1,
+              },
+              runCheckpoint: {
+                version: 1,
+                runId: "run-1",
+                suspension: "interrupted",
+                rootUserMessageId: user.id,
+                throughMessageId: user.id,
+                bindings: {
+                  page: { path: "/projects/sample", title: "Sample" },
+                  references: [],
+                  runMode: "default",
+                },
+                maskingSections: [],
+                phase: "working",
+                startupComplete: true,
+              },
+            }
+          : current),
+      }));
+      store.interruptChatRun(chat.id, undefined, "user");
+      return { store, chatId: chat.id };
+    };
+
+    test.each(["idle", "error"] as const)(
+      "offers Retry for a recoverable stopped run in %s without replacing its budget",
+      (status) => {
+        const { store, chatId } = prepareStoppedRun();
+        if (status === "error") {
+          store.setChatStatus(chatId, status, {
+            interrupted: true,
+            interruptionReason: "user",
+            lastError: "Request stopped",
+          });
+        }
+        const runBeforeRetry = store.getChat(chatId);
+        const onRetry = vi.fn();
+        const { container, render, unmount } = renderIntoContainer(
+          <AgentChat onRetry={onRetry} />
+        );
+        render();
+        try {
+          const result = container.querySelector("[data-agent-interruption-status]");
+          expect(result?.textContent).toContain("agent.request-stopped-by-user");
+          const retry = Array.from(result?.querySelectorAll("button") ?? []).find(
+            (button) => button.textContent === "agent.retry-last-chat-turn"
+          );
+          expect(retry).toBeDefined();
+          act(() => retry?.click());
+          expect(onRetry).toHaveBeenCalledOnce();
+          expect(store.getChat(chatId)?.runId).toBe("run-1");
+          expect(store.getChat(chatId)?.runBudget).toEqual(runBeforeRetry?.runBudget);
+          expect(store.getMessages(chatId)).toHaveLength(1);
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test.each([
+      "missing checkpoint", "missing budget", "incomplete startup", "stale cursor",
+      "different root", "mismatched budget", "token limit", "archived",
+      "running", "awaiting_user", "paused", "queued", "remote busy",
+    ] as const)("does not offer Retry for a %s stopped run", (state) => {
+      const { store, chatId } = prepareStoppedRun();
+      if (state === "different root") {
+        store.addMessage({ chatId, role: "user", content: "A later request" });
+        store.interruptChatRun(chatId, undefined, "user");
+      }
+      useAgentStore.setState((current) => ({
+        chats: current.chats.map((chat): AgentChatRecord => {
+          if (chat.id !== chatId) return chat;
+          switch (state) {
+            case "missing checkpoint": return { ...chat, runCheckpoint: undefined };
+            case "missing budget": return { ...chat, runBudget: undefined };
+            case "incomplete startup": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, startupComplete: false } };
+            case "stale cursor": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, throughMessageId: "missing" } };
+            case "mismatched budget": return { ...chat, runBudget: { ...chat.runBudget!, runId: "other-run" } };
+            case "token limit": return { ...chat, runCheckpoint: { ...chat.runCheckpoint!, suspension: "token-limit" } };
+            case "archived": return { ...chat, archived: true };
+            case "running":
+            case "awaiting_user":
+            case "paused": return { ...chat, status: state };
+            default: return chat;
+          }
+        }),
+        ...(state === "queued" ? {
+          queuedUserMessagesByChatId: {
+            [chatId]: { id: "queued-message", chatId, text: "Queued request", page: { path: "/demo", title: "Demo" } },
+          },
+        } : {}),
+      }));
+      if (state === "remote busy") {
+        useAgentStore.setState({ remoteBusyChatIds: { [chatId]: true } });
+      }
+      const onRetry = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onRetry={onRetry} />
+      );
+      render();
+      try {
+        expect(container.querySelector("[data-agent-interruption-status]")).not.toBeNull();
+        expect(container.textContent).not.toContain("agent.retry-last-chat-turn");
+        expect(onRetry).not.toHaveBeenCalled();
+      } finally {
+        unmount();
+        useAgentStore.setState({ remoteBusyChatIds: {} });
+      }
+    });
   });
 
   test("offers Retry for the current unexpected interruption", () => {
