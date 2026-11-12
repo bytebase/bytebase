@@ -155,10 +155,9 @@ func TestPadZeroes(t *testing.T) {
 // TestConvertValueTimestampFromDriver reads timestamps through the driver rather than
 // from a constructed time.Time, exercising the session time zone the way QueryConn does:
 // read once per statement, then applied to every timestamptz in the result. It also
-// covers the fractional-seconds precision QueryConn reads from the native field
-// descriptions via util.PgColumnTypeModifiers, the describe path that lets Bytebase render
-// timestamp(N) results without a patched pgx driver: tz_scale3 must report Accuracy 3 and
-// the unspecified columns 6.
+// covers the fractional-seconds precision pgx v5.13+ reports as the column's scale
+// (jackc/pgx#2704), which lets Bytebase render timestamp(N) results without a patched
+// pgx driver: tz_scale3 must report Accuracy 3 and the unspecified columns 6.
 func TestConvertValueTimestampFromDriver(t *testing.T) {
 	const (
 		sessionZone   = "Asia/Shanghai"
@@ -181,13 +180,11 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	_, err = conn.ExecContext(ctx, "SET TimeZone TO '"+sessionZone+"'")
 	require.NoError(t, err)
 
-	// QueryConn reads the zone and the per-column type modifiers once per statement, after
-	// any preceding SET and before running the statement.
+	// QueryConn reads the zone once per statement, after any preceding SET and before
+	// running the statement.
 	location := util.PgSessionLocation(conn)
 	require.Equal(t, sessionZone, location.String())
-	typeModifiers := util.PgColumnTypeModifiers(ctx, conn, query)
-	require.Equal(t, []int32{-1, 3, -1, -1, -1}, typeModifiers)
-	convert := convertValueIn(location, typeModifiers)
+	convert := convertValueIn(location)
 
 	rows, err := conn.QueryContext(ctx, query)
 	require.NoError(t, err)
@@ -207,7 +204,7 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 
 	values := make(map[string]*v1pb.RowValue, len(columnTypes))
 	for i, columnType := range columnTypes {
-		values[columnType.Name()] = convert(i, columnType.DatabaseTypeName(), columnType, dest[i])
+		values[columnType.Name()] = convert(columnType.DatabaseTypeName(), columnType, dest[i])
 	}
 
 	tzDefault := values["tz_default"].GetTimestampTzValue()
@@ -237,33 +234,4 @@ func TestConvertValueTimestampFromDriver(t *testing.T) {
 	// zone-less timestamp keeps the stored wall clock and gains no offset.
 	require.Equal(t, "10000-01-01 08:00:00+08:00", values["tz_out_of_range"].GetStringValue())
 	require.Equal(t, "10000-01-01 00:00:00", values["ts_out_of_range"].GetStringValue())
-}
-
-// TestPgColumnTypeModifiersSkipsInTransaction guards the describe against aborting a caller's
-// open transaction: a failed describe inside one would abort it, so the caller's own execution
-// would report "25P02 current transaction is aborted" and lose the real error. The helper must
-// skip describe there and leave the transaction untouched.
-func TestPgColumnTypeModifiersSkipsInTransaction(t *testing.T) {
-	ctx := context.Background()
-	_, db := testcontainer.NewPgDatabase(t)
-
-	conn, err := db.Conn(ctx)
-	require.NoError(t, err)
-	defer func() { require.NoError(t, conn.Close()) }()
-
-	_, err = conn.ExecContext(ctx, "BEGIN")
-	require.NoError(t, err)
-
-	// Describing a missing table here would abort the transaction; the helper declines and
-	// returns nil (the caller falls back to the default precision).
-	require.Nil(t, util.PgColumnTypeModifiers(ctx, conn, "SELECT * FROM a_missing_table"))
-
-	// The transaction is still live, proving the helper left it alone: a valid query succeeds
-	// rather than failing with 25P02.
-	var one int
-	require.NoError(t, conn.QueryRowContext(ctx, "SELECT 1").Scan(&one))
-	require.Equal(t, 1, one)
-
-	_, err = conn.ExecContext(ctx, "ROLLBACK")
-	require.NoError(t, err)
 }
