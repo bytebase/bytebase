@@ -143,12 +143,23 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 	}
 	resp, err := s.apiRequest(confirmedCtx, change.confirmedProcedure(), json.RawMessage(body))
 	if why := refusal(resp, err); why != "" {
+		if mayHaveApplied(resp, err) {
+			return formatToolError(&toolError{
+				Code:       "CREATE_UNCONFIRMED",
+				Message:    fmt.Sprintf("the create did not finish (%s), and Bytebase could not confirm whether workload identity %q was created", why, change.email),
+				Suggestion: fmt.Sprintf("check the workload identities page before trying again, since creating it under another ID makes a second identity for the same repository: %s. If it is there, grant it the %s role on the members page: %s", link, identityRoleTitle, s.consoleLink(ctx, project+"/members")),
+			}), nil, nil
+		}
 		return formatToolError(errors.Errorf("failed to create the workload identity: %s", why)), nil, nil
 	}
-	if why := s.grantIdentityRole(ctx, change); why != "" {
+	if why, unconfirmed := s.grantIdentityRole(ctx, change); why != "" {
 		membersLink := s.consoleLink(ctx, project+"/members")
-		text := fmt.Sprintf("Created workload identity %q in project %q, but Bytebase did not grant it the %s role: %s. It can sign in, and it does not have that role until it is granted signed in to the console. %s\nMembers: %s\nWorkload identities: %s",
-			change.email, change.projectID, identityRoleTitle, why, identityConsoleOnly, membersLink, link)
+		outcome := fmt.Sprintf("but Bytebase did not grant it the %s role: %s. It can sign in, and it does not have that role until it is granted signed in to the console.", identityRoleTitle, why)
+		if unconfirmed {
+			outcome = fmt.Sprintf("but Bytebase could not confirm whether it has the %s role: %s. It can sign in. If the members page does not list it with that role, grant the role there, signed in to the console.", identityRoleTitle, why)
+		}
+		text := fmt.Sprintf("Created workload identity %q in project %q, %s %s\nMembers: %s\nWorkload identities: %s",
+			change.email, change.projectID, outcome, identityConsoleOnly, membersLink, link)
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: membersLink}, nil
 	}
 	gitopsLink := s.consoleLink(ctx, project+"/gitops")
@@ -159,28 +170,64 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 
 // grantIdentityRole adds the new identity to the role's binding that has no
 // condition, or appends that binding, with the etag of the policy it read. It
-// returns why the grant was not made, or "".
-func (s *Server) grantIdentityRole(ctx context.Context, c *identityCreation) string {
+// returns why the grant was not made, or "", and whether it may have been made
+// anyway.
+func (s *Server) grantIdentityRole(ctx context.Context, c *identityCreation) (string, bool) {
 	project := common.FormatProject(c.projectID)
-	resp, err := s.apiRequest(ctx, v1connect.ProjectServiceGetIamPolicyProcedure, map[string]any{"resource": project})
-	if why := refusal(resp, err); why != "" {
-		return "the project's IAM policy could not be read: " + why
+	member := common.WorkloadIdentityBindingPrefix + c.email
+	policy, why := s.readIamPolicy(ctx, project)
+	if why != "" {
+		return "the project's IAM policy could not be read: " + why, false
 	}
-	policy := &v1pb.IamPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, policy); err != nil {
-		return "the project's IAM policy could not be read: " + err.Error()
-	}
-	addToRole(policy, identityRole, common.WorkloadIdentityBindingPrefix+c.email)
+	addToRole(policy, identityRole, member)
 	body, err := protojson.Marshal(&v1pb.SetIamPolicyRequest{Resource: project, Policy: policy})
 	if err != nil {
-		return "the grant could not be built: " + err.Error()
+		return "the grant could not be built: " + err.Error(), false
 	}
 	confirmedCtx := auth.WithMCPConfirmedDecision(ctx, auth.MCPConfirmedDecision{
 		Procedure: v1connect.ProjectServiceSetIamPolicyProcedure,
 		Resource:  project,
 	})
-	resp, err = s.apiRequest(confirmedCtx, v1connect.ProjectServiceSetIamPolicyProcedure, json.RawMessage(body))
-	return refusal(resp, err)
+	resp, err := s.apiRequest(confirmedCtx, v1connect.ProjectServiceSetIamPolicyProcedure, json.RawMessage(body))
+	why = refusal(resp, err)
+	if why == "" || !mayHaveApplied(resp, err) {
+		return why, false
+	}
+	// The policy shows whether the write was stored. Without the member, a 5xx
+	// means no grant, since its handler has returned; a call that ran past its
+	// deadline may still be storing it.
+	stored, readWhy := s.readIamPolicy(ctx, project)
+	switch {
+	case readWhy == "" && hasRole(stored, identityRole, member):
+		return "", false
+	case readWhy == "" && err == nil:
+		return why, false
+	default:
+		return why, true
+	}
+}
+
+// readIamPolicy reads the project's IAM policy, or says why it could not.
+func (s *Server) readIamPolicy(ctx context.Context, project string) (*v1pb.IamPolicy, string) {
+	resp, err := s.apiRequest(ctx, v1connect.ProjectServiceGetIamPolicyProcedure, map[string]any{"resource": project})
+	if why := refusal(resp, err); why != "" {
+		return nil, why
+	}
+	policy := &v1pb.IamPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, policy); err != nil {
+		return nil, err.Error()
+	}
+	return policy, ""
+}
+
+// hasRole reports whether member is in a binding of the role.
+func hasRole(policy *v1pb.IamPolicy, role, member string) bool {
+	for _, binding := range policy.GetBindings() {
+		if binding.GetRole() == role && slices.Contains(binding.GetMembers(), member) {
+			return true
+		}
+	}
+	return false
 }
 
 // addToRole adds member to the role's binding with no condition, or appends

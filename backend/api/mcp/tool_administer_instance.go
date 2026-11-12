@@ -167,7 +167,7 @@ func (s *Server) createdInstance(ctx context.Context, c *instanceCreation, attem
 		}
 		return created, false, nil
 	}
-	if sendErr == nil && resp.Status < http.StatusInternalServerError {
+	if !mayHaveApplied(resp, sendErr) {
 		return nil, false, errors.Errorf("failed to add the instance: %s", why)
 	}
 	read, err := s.apiRequest(ctx, v1connect.InstanceServiceGetInstanceProcedure, map[string]string{"name": c.confirmedResource()})
@@ -209,6 +209,13 @@ func refusal(resp *apiResponse, err error) string {
 	default:
 		return ""
 	}
+}
+
+// mayHaveApplied reports whether a failed write may have been stored anyway:
+// the call ended before the handler answered, or the handler failed with a 5xx
+// rather than refusing the request.
+func mayHaveApplied(resp *apiResponse, err error) bool {
+	return err != nil || resp.Status >= http.StatusInternalServerError
 }
 
 // parseInstanceCreation reads the request and the project it adds the instance

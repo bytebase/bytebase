@@ -63,17 +63,72 @@ type identityMock struct {
 	createRefusal    int
 	grantRefusal     int
 	policyReadStatus int
-	policy           *v1pb.IamPolicy
-	creations        []approvalCall
-	grants           []approvalCall
-	policyReads      int
+	// createFails and grantFails, when set, are how the create or the grant
+	// fails without refusing, and readBackStatus the status a policy read after
+	// a grant answers with.
+	createFails    writeFailure
+	grantFails     writeFailure
+	readBackStatus int
+	// release ends a write that runs past its caller's deadline.
+	release     chan struct{}
+	policy      *v1pb.IamPolicy
+	creations   []approvalCall
+	grants      []approvalCall
+	policyReads int
 }
+
+// writeFailure is how the create or the grant fails: with a 5xx, or by running
+// past the caller's deadline, before or after it stores the write.
+type writeFailure int
+
+const (
+	fails500BeforeStore writeFailure = iota + 1
+	fails500AfterStore
+	timesOutBeforeStore
+	timesOutAfterStore
+)
 
 func newIdentityMock() *identityMock {
 	return &identityMock{policy: &v1pb.IamPolicy{
 		Bindings: []*v1pb.Binding{{Role: "roles/projectOwner", Members: []string{"user:alice@example.com"}}},
 		Etag:     journeyFourEtag,
-	}}
+	}, release: make(chan struct{})}
+}
+
+// fail answers as failure makes the write fail, calling store first when it
+// fails after storing, and reports whether it failed.
+func (m *identityMock) fail(failure writeFailure, refuse func(status int, code, message string), store func()) bool {
+	switch failure {
+	case fails500BeforeStore:
+		refuse(http.StatusInternalServerError, "internal", "failed to begin transaction")
+	case fails500AfterStore:
+		store()
+		refuse(http.StatusInternalServerError, "internal", "failed to commit transaction")
+	case timesOutBeforeStore:
+		m.runPastTheDeadline()
+	case timesOutAfterStore:
+		store()
+		m.runPastTheDeadline()
+	default:
+		return false
+	}
+	return true
+}
+
+// runPastTheDeadline keeps the write running, without the lock, until the test
+// releases it.
+func (m *identityMock) runPastTheDeadline() {
+	m.mu.Unlock()
+	<-m.release
+	m.mu.Lock()
+}
+
+// sentPolicy is the policy a grant's request sets.
+func sentPolicy(call approvalCall) *v1pb.IamPolicy {
+	encoded, _ := json.Marshal(call.body["policy"])
+	policy := &v1pb.IamPolicy{}
+	_ = common.ProtojsonUnmarshaler.Unmarshal(encoded, policy)
+	return policy
 }
 
 func (m *identityMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -99,10 +154,17 @@ func (m *identityMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			refuse(m.createRefusal, "already_exists", `workload identity with email "`+journeyFourEmail+`" already exists`)
 			return
 		}
+		if m.fail(m.createFails, refuse, func() {}) {
+			return
+		}
 		body, _ := protojson.Marshal(&v1pb.WorkloadIdentity{Name: common.FormatWorkloadIdentityEmail(journeyFourEmail), Email: journeyFourEmail})
 		_, _ = w.Write(body)
 	case v1connect.ProjectServiceGetIamPolicyProcedure:
 		m.policyReads++
+		if len(m.grants) > 0 && m.readBackStatus != 0 {
+			refuse(m.readBackStatus, "internal", "the policy read failed")
+			return
+		}
 		if m.policyReadStatus != 0 {
 			refuse(m.policyReadStatus, "permission_denied", "permission denied")
 			return
@@ -110,11 +172,17 @@ func (m *identityMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		body, _ := protojson.Marshal(m.policy)
 		_, _ = w.Write(body)
 	case v1connect.ProjectServiceSetIamPolicyProcedure:
-		m.grants = append(m.grants, record())
+		call := record()
+		m.grants = append(m.grants, call)
 		if m.grantRefusal != 0 {
 			refuse(m.grantRefusal, "invalid_argument", "failed to validate expiration for binding roles/gitopsServiceAgent: request.time is required")
 			return
 		}
+		store := func() { m.policy = sentPolicy(call) }
+		if m.fail(m.grantFails, refuse, store) {
+			return
+		}
+		store()
 		_, _ = w.Write([]byte(`{}`))
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -628,8 +696,87 @@ func TestAdministerIdentityReportsARoleItCouldNotGrant(t *testing.T) {
 			output, err := json.Marshal(res.StructuredContent)
 			require.NoError(t, err)
 			require.Contains(t, string(output), `"changed":true`)
-			_, grants, _ := mock.calls()
+			_, grants, policyReads := mock.calls()
 			require.Len(t, grants, tc.grants)
+			require.Equal(t, 1, policyReads, "a refused grant and a failed read are not read back")
+		})
+	}
+}
+
+func TestAdministerIdentityReportsACreateItCannotConfirm(t *testing.T) {
+	for name, failure := range map[string]writeFailure{
+		"a timeout after the store": timesOutAfterStore,
+		"a 5xx":                     fails500BeforeStore,
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := newIdentityMock()
+			mock.createFails = failure
+			s, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
+			s.internalAPITimeoutOverride = 200 * time.Millisecond
+			// Registered last, so it runs first and ends a create still running.
+			t.Cleanup(func() { close(mock.release) })
+
+			res := callAdminister(t, session, identityParams(identityBody(t, nil)))
+			refusal := resultToolError(t, res)
+			require.Equal(t, "CREATE_UNCONFIRMED", refusal.Code)
+			require.Contains(t, refusal.Message, `Bytebase could not confirm whether workload identity "`+journeyFourEmail+`" was created`)
+			require.Equal(t, "check the workload identities page before trying again, since creating it under another ID makes a second identity for the same repository: "+
+				"https://bb.example.com/projects/hr/workload-identities. If it is there, grant it the GitOps Service Agent role on the members page: "+
+				"https://bb.example.com/projects/hr/members", refusal.Suggestion)
+			_, grants, policyReads := mock.calls()
+			require.Empty(t, grants)
+			require.Zero(t, policyReads)
+		})
+	}
+}
+
+func TestAdministerIdentityReadsBackAGrantThatDidNotFinish(t *testing.T) {
+	created := `Created workload identity "` + journeyFourEmail + `" in project "hr", `
+	notGranted := created + "but Bytebase did not grant it the GitOps Service Agent role: HTTP 500: failed to begin transaction. " +
+		"It can sign in, and it does not have that role until it is granted signed in to the console. "
+	unconfirmed := created + "but Bytebase could not confirm whether it has the GitOps Service Agent role: "
+	for name, tc := range map[string]struct {
+		fails          writeFailure
+		readBackStatus int
+		// want is the whole result when the grant was made, and wantPrefix the
+		// start of the result otherwise.
+		want, wantPrefix string
+	}{
+		"a timeout after the store, with the grant still running": {fails: timesOutAfterStore, want: journeyFourResult},
+		"a 5xx after the store":                                   {fails: fails500AfterStore, want: journeyFourResult},
+		"a 5xx before the store":                                  {fails: fails500BeforeStore, wantPrefix: notGranted},
+		"a timeout before the store":                              {fails: timesOutBeforeStore, wantPrefix: unconfirmed + "failed to execute API request: "},
+		"a read that fails":                                       {fails: fails500AfterStore, readBackStatus: http.StatusInternalServerError, wantPrefix: unconfirmed + "HTTP 500: failed to commit transaction. "},
+	} {
+		t.Run(name, func(t *testing.T) {
+			mock := newIdentityMock()
+			mock.grantFails = tc.fails
+			mock.readBackStatus = tc.readBackStatus
+			s, session := connectToIdentityServer(t, mock, newTestServerStore(), &mcp.ClientOptions{ElicitationHandler: (&asker{answer: confirmAnswer(confirmChoiceApply)}).handle})
+			s.internalAPITimeoutOverride = 200 * time.Millisecond
+			// Registered last, so it runs first and ends a grant still running.
+			t.Cleanup(func() { close(mock.release) })
+
+			res := callAdminister(t, session, identityParams(identityBody(t, nil)))
+			require.False(t, res.IsError, "the identity was created, so the result is not a refusal: %s", resultText(t, res))
+			_, grants, policyReads := mock.calls()
+			require.Len(t, grants, 1)
+			require.Equal(t, 2, policyReads, "the policy is read before the grant and once after it")
+			text := resultText(t, res)
+			if tc.want != "" {
+				require.Equal(t, tc.want, text)
+				return
+			}
+			require.True(t, strings.HasPrefix(text, tc.wantPrefix), text)
+			if strings.HasPrefix(tc.wantPrefix, unconfirmed) {
+				require.Contains(t, text, ". It can sign in. If the members page does not list it with that role, grant the role there, signed in to the console. "+
+					"MCP cannot change or remove a workload identity: change or remove it in the console.")
+			}
+			require.True(t, strings.HasSuffix(text, "\nMembers: https://bb.example.com/projects/hr/members\n"+
+				"Workload identities: https://bb.example.com/projects/hr/workload-identities"), text)
+			output, err := json.Marshal(res.StructuredContent)
+			require.NoError(t, err)
+			require.Contains(t, string(output), `"changed":true`)
 		})
 	}
 }
