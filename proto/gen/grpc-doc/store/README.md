@@ -2175,8 +2175,8 @@ on every stored comment that used it.
 <a name="bytebase-store-ReviewRun"></a>
 
 ### ReviewRun
-ReviewRun is the status slot of one reviewer (rule engine or AI) on one
-issue. Results live in issue comments; the run carries none.
+ReviewRun is the status slot of the review on one issue. Results live in
+issue comments; the run carries none.
 
 
 
@@ -2193,6 +2193,7 @@ issue. Results live in issue comments; the run carries none.
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
 | approval_input_version | [int64](#int64) |  | The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the version of the plan&#39;s SQL this run reviews. Completion keeps it. |
+| code | [google.rpc.Code](#google-rpc-Code) |  | The kind of failure behind `error`, for the FAILED status. Unset when the failure fits no more specific code. |
 
 
 
@@ -2219,9 +2220,8 @@ Strictly 1:1 with the status CHECK constraint — no unpersisted values.
 <a name="bytebase-store-ReviewRun-Type"></a>
 
 ### ReviewRun.Type
-The reviewer. Stored by name in review_run.type, which has no CHECK:
-like Issue.Type and Task.Type, the enum is the source of truth and a
-new reviewer is a new value, not a migration.
+The reviewer that found a result. One run holds every reviewer, so the
+type is recorded on each result, not on the run.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -2327,21 +2327,21 @@ add/remove/update from the snapshot pair.
 
 ### IssueCommentPayload.ReviewMetadata
 ReviewMetadata is what a review result carries beyond its text: which
-reviewer posted it, what it was judged against, its priority, the
+reviewer found it, what it was judged against, its priority, the
 databases it applies to, and for an AI result, its title. When a run
-completes, an earlier result of its type whose fingerprint the run
-reports again keeps its thread, and the run posts no new result for it;
-every other earlier root of its type is resolved and marked superseded,
-in the transaction that posts the new results.
+completes, an earlier result whose fingerprint the run reports again
+keeps its thread, and the run posts no new result for it; every other
+earlier result on the issue is resolved and marked superseded, in the
+transaction that posts the new results.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
+| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer that found the result. One run holds the results of every reviewer. |
 | rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
-| superseded | [bool](#bool) |  | A later run of the same reviewer has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
+| superseded | [bool](#bool) |  | A later run has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
 | fingerprint | [string](#string) |  | Identifies the finding across runs: equal fingerprints are the same finding on the same SQL. The rule review derives it from what it judged. The AI review starts it with a hash of its statement and ends it at random, and a later run carries it over to the finding its merge matches to the result. Unique among the results of one run. Empty on a result that predates it, and an empty fingerprint matches nothing. |
 | attempt | [int64](#int64) |  | The review_run.attempt of the run that posted the result. A result a later run reports again keeps its attempt. |
 | codes | [string](#string) | repeated | The conditions a RULE result reports, as omni finding codes such as &#34;WT101&#34;, one per reason. Empty for other reviewers. |
@@ -2356,13 +2356,13 @@ in the transaction that posts the new results.
 
 ### IssueCommentPayload.ReviewRunCompletion
 ReviewRunCompletion records that a review run completed DONE, and what
-it did to the results of its reviewer. Posted with no creator, in the
+it did to the earlier results. Posted with no creator, in the
 transaction that posts the run&#39;s results.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  |  |
+| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | Set on a completion from before an issue had one review run, and on no later one. |
 | attempt | [int64](#int64) |  | The run&#39;s review_run.attempt; its new results carry the same ReviewMetadata.attempt. |
 | posted_count | [int32](#int32) |  | Results the run posted as new threads. |
 | kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |

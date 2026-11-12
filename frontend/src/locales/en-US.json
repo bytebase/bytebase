@@ -2098,7 +2098,6 @@
       "up-to-on": "up to {{rows}} on {{database}}"
     },
     "automated-review": {
-      "ai-sampled": "The AI review covered a sample of {{count}} of {{total}} databases",
       "checks": "Plan check",
       "details": "Details",
       "failed": "Couldn't run",
@@ -2132,6 +2131,7 @@
       "run-again-description": "A run makes model calls for every database it reviews and may find different issues. A finding it reports again keeps its thread, and one it no longer reports is resolved.",
       "run-again-title": "Run the review again?",
       "running": "Running",
+      "sampled": "The review covered a sample of {{count}} of {{total}} databases",
       "save-first": "Save or discard your edits to run the review.",
       "scope": "Reviewed {{databases}}",
       "scope-label": "What this review covered",

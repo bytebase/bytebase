@@ -16,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -23,22 +24,22 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// waitReviewRunTerminal polls the review_run slot raw until it reaches a
-// terminal status and returns the row.
-func waitReviewRunTerminal(ctx context.Context, t *testing.T, ctl *controller, projectID string, issueUID int64, reviewType string) *reviewRun {
+// waitReviewRunTerminal polls the issue's review_run slot raw until it
+// reaches a terminal status and returns the row.
+func waitReviewRunTerminal(ctx context.Context, t *testing.T, ctl *controller, projectID string, issueUID int64) *reviewRun {
 	t.Helper()
 	a := require.New(t)
 	var row *reviewRun
 	a.Eventually(func() bool {
 		for _, r := range listReviewRuns(ctx, t, ctl, projectID) {
-			if r.IssueID == issueUID && r.Type == reviewType && (r.Status == "DONE" || r.Status == "FAILED") {
+			if r.IssueID == issueUID && (r.Status == "DONE" || r.Status == "FAILED") {
 				row = r
 				return true
 			}
 		}
 		return false
 	}, 90*time.Second, 500*time.Millisecond,
-		"review run (%s, %d, %s) should reach a terminal status", projectID, issueUID, reviewType)
+		"review run (%s, %d) should reach a terminal status", projectID, issueUID)
 	return row
 }
 
@@ -64,7 +65,7 @@ func getReviewRun(ctx context.Context, t *testing.T, ctl *controller, issueName 
 // TestCollision_RunReviewLifecycle drives RunReview end to end on two
 // projects whose issue ids collide: the scheduler claims and executes the
 // review for real, completions land on the right project, and a re-run on one
-// project leaves the other project's slots untouched.
+// project leaves the other project's slot untouched.
 func TestCollision_RunReviewLifecycle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -88,12 +89,12 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.NoError(err)
 	a.Equal(issueAUID, issueBUID, "fixture issue ids should collide")
 
-	// Creating an issue starts its rule review.
-	rowA := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal("DONE", rowA.Status, "rule review on project A, got payload %s", rowA.Payload)
+	// Creating an issue starts its review.
+	rowA := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
+	a.Equal("DONE", rowA.Status, "review on project A, got payload %s", rowA.Payload)
 	a.Equal(int64(0), rowA.Attempt)
-	rowB := waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
-	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
+	rowB := waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID)
+	a.Equal("DONE", rowB.Status, "review on project B, got payload %s", rowB.Payload)
 	a.Equal(int64(0), rowB.Attempt)
 
 	// A name that names a reviewer is not a review run.
@@ -101,7 +102,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	// Review on both colliding issues. AI is off in the test workspace, so
-	// the review is the rule job alone.
+	// the review is the standard rules alone.
 	runA, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
 	a.Equal(issueA.Name+"/reviewRun", runA.Name)
@@ -115,11 +116,11 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 
 	// The scheduler claims and executes both. The rule executor evaluates
 	// the real test databases through omni's SQL Review V2 contract.
-	rowA = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal("DONE", rowA.Status, "rule review on project A, got payload %s", rowA.Payload)
+	rowA = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
+	a.Equal("DONE", rowA.Status, "review on project A, got payload %s", rowA.Payload)
 	a.Equal(int64(1), rowA.Attempt)
-	rowB = waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
-	a.Equal("DONE", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
+	rowB = waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID)
+	a.Equal("DONE", rowB.Status, "review on project B, got payload %s", rowB.Payload)
 	a.Equal(int64(1), rowB.Attempt)
 	doneA := getReviewRun(ctx, t, ctl, issueA.Name)
 	a.Equal(v1pb.ReviewRun_SUCCEEDED, doneA.State)
@@ -140,20 +141,19 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	runA2, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_RUNNING, runA2.State)
-	rowA2 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
+	rowA2 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
 	a.Equal(int64(2), rowA2.Attempt)
 	a.Equal("DONE", rowA2.Status)
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
 
-	// Running the plan checks re-runs the rule review, and the checks leave
+	// Running the plan checks leaves the review alone, and the checks leave
 	// the SQL review to it.
 	_, err = ctl.planServiceClient.RunPlanChecks(ctx, connect.NewRequest(&v1pb.RunPlanChecksRequest{Name: planA.Name}))
 	a.NoError(err)
-	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(3), rowA2.Attempt)
-	a.Equal("DONE", rowA2.Status)
 	waitPlanCheckRunSettled(ctx, t, ctl, planA.Name)
+	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
+	a.Equal(int64(2), rowA2.Attempt, "rerunning the plan checks starts no review")
 	checkRun, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{Name: planA.Name + "/planCheckRun"}))
 	a.NoError(err)
 	var checkTypes []v1pb.PlanCheckRun_Result_Type
@@ -168,19 +168,18 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	}))
 	defer brokenModel.Close()
 
-	// With the AI review switched off, a review starts no AI job.
+	// With the AI review switched off, the review skips it: the model is
+	// never called, and the run succeeds on the standard rules.
 	setting := setAISetting(ctx, t, ctl, brokenModel.URL, false)
 	a.False(setting.GetValue().GetAi().GetSqlReviewEnabled())
 	_, err = runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(4), rowA2.Attempt)
-	for _, r := range listReviewRuns(ctx, t, ctl, projectAID) {
-		a.NotEqual("AI", r.Type, "the AI review is switched off")
-	}
+	rowA2 = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
+	a.Equal(int64(3), rowA2.Attempt)
+	a.Equal("DONE", rowA2.Status, "payload %s", rowA2.Payload)
 
-	// With the review switched on but the model failing, the AI job is
-	// created, claimed, and fails honestly with the model's error.
+	// With the AI review switched on but the model failing, the whole review
+	// fails honestly with the model's error.
 	setting = setAISetting(ctx, t, ctl, brokenModel.URL, true)
 	a.True(setting.GetValue().GetAi().GetSqlReviewEnabled())
 
@@ -194,16 +193,13 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	aiRun, err := runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_RUNNING, aiRun.State)
-	aiRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	aiRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
+	a.Equal(int64(4), aiRow.Attempt)
 	a.Equal("FAILED", aiRow.Status, "payload %s", aiRow.Payload)
 	a.Contains(aiRow.Payload, "model call 1 failed")
-	// The rule job of the same review finished on its own.
-	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal(int64(5), rowA3.Attempt)
-	a.Equal("DONE", rowA3.Status)
-	// One failed job fails the review run, with that job's error.
 	failedRun := getReviewRun(ctx, t, ctl, issueA.Name)
 	a.Equal(v1pb.ReviewRun_FAILED, failedRun.State)
+	a.Equal(int32(code.Code_UNAVAILABLE), failedRun.GetError().GetCode(), "the model answered 503")
 	a.Contains(failedRun.GetError().GetMessage(), "model call 1 failed")
 
 	// A table in A's database for the model to read through the tools.
@@ -252,9 +248,9 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	aiRun, err = runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_RUNNING, aiRun.State)
-	aiRow = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	aiRow = waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
 	a.Equal("DONE", aiRow.Status, "payload %s", aiRow.Payload)
-	a.Equal(int64(1), aiRow.Attempt)
+	a.Equal(int64(5), aiRow.Attempt)
 	readResult, ok := toolResults.Load("read")
 	a.True(ok, "the model read the table")
 	a.Contains(readResult, `CREATE TABLE \"public\".\"review_target\"`, "the tools read the synced schema of the database under review")
@@ -278,9 +274,10 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal(int32(1), result.GetStatementAnchor().GetStartPosition().GetLine())
 	a.Equal(v1pb.IssueComment_OPEN, result.GetThreadState())
 
-	// Switching the review off stops a run in flight at its next model call.
-	// This model answers its first call with a tool call, which asks for a
-	// second call, and the review is switched off in between.
+	// Switching the AI review off stops it in flight at its next model call,
+	// and the run goes on without it. This model answers its first call with
+	// a tool call, which asks for a second call, and the AI review is
+	// switched off in between.
 	var modelCalls atomic.Int32
 	switchedOff := make(chan error, 1)
 	switchingModel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -301,16 +298,24 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	setAISetting(ctx, t, ctl, switchingModel.URL, true)
 	_, err = runReview(ctx, ctl, issueA.Name)
 	a.NoError(err)
-	stoppedRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	stoppedRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID)
 	select {
 	case err := <-switchedOff:
 		a.NoError(err)
 	default:
 		a.Fail("the model was never called")
 	}
-	a.Equal("FAILED", stoppedRow.Status, "payload %s", stoppedRow.Payload)
-	a.Contains(stoppedRow.Payload, "AI SQL review is not enabled")
-	a.Equal(int32(1), modelCalls.Load(), "no call reaches the model after the review is switched off")
+	a.Equal("DONE", stoppedRow.Status, "payload %s", stoppedRow.Payload)
+	a.Equal(int32(1), modelCalls.Load(), "no call reaches the model after the AI review is switched off")
+	// A run without the AI review no longer reports its result.
+	comments, err = ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issueA.Name}))
+	a.NoError(err)
+	for _, comment := range comments.Msg.IssueComments {
+		if comment.Name == result.Name {
+			a.True(comment.GetReviewMetadata().GetSuperseded())
+			a.Equal(v1pb.IssueComment_RESOLVED, comment.GetThreadState())
+		}
+	}
 }
 
 // setAISetting enables AI in the test workspace with a Gemini model served at
@@ -368,7 +373,7 @@ func setStoredAISQLReviewEnabled(ctx context.Context, t *testing.T, ctl *control
 	require.Equal(t, int64(1), affected)
 }
 
-// TestRuleReviewKeepsThreadsAcrossRuns drives the rule review through a re-run
+// TestRuleReviewKeepsThreadsAcrossRuns drives the review's standard rules through a re-run
 // and two SQL edits: a finding reported again keeps its thread, a person's
 // resolution included, and is not posted twice; a finding the SQL no longer
 // has is superseded; an edited statement is judged anew.
@@ -414,13 +419,13 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		t.Helper()
 		a.Eventually(func() bool {
 			for _, r := range listReviewRuns(ctx, t, ctl, projectID) {
-				if r.IssueID == issueUID && r.Type == "RULE" && r.Attempt == attempt && (r.Status == "DONE" || r.Status == "FAILED") {
+				if r.IssueID == issueUID && r.Attempt == attempt && (r.Status == "DONE" || r.Status == "FAILED") {
 					a.Equal("DONE", r.Status, "payload %s", r.Payload)
 					return true
 				}
 			}
 			return false
-		}, 90*time.Second, 500*time.Millisecond, "rule review attempt %d should finish", attempt)
+		}, 90*time.Second, 500*time.Millisecond, "review attempt %d should finish", attempt)
 	}
 	// The DROP findings, by thread name.
 	drops := func() map[string]*v1pb.IssueComment {
@@ -435,8 +440,7 @@ func TestRuleReviewKeepsThreadsAcrossRuns(t *testing.T) {
 		}
 		return out
 	}
-	// The review's latest completion event. AI is off, so every one is the
-	// rule job's.
+	// The review's latest completion event.
 	lastCompletion := func() *v1pb.IssueComment_ReviewRunCompletion {
 		t.Helper()
 		resp, err := ctl.issueServiceClient.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{Parent: issue.Msg.Name}))

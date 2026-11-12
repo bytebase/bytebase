@@ -92,19 +92,31 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
-  const review = useSqlReviewV2()?.review;
+  const rerun = useReviewRerun();
   const { rows } = state;
   const attention = rows.filter(rowNeedsAttention).length;
   // A review that is off checked nothing, so it is neither counted nor
   // summed up as needing no attention.
   const reviewed = rows.filter((row) => row.conclusion !== "off");
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
-  // Running the checks also starts the review on the server.
+  const [confirmAllOpen, setConfirmAllOpen] = useState(false);
+  const requestRerunChecks = () => void runChecks();
+  // Running the checks does not start the review, so Re-run all starts both.
+  // It leaves the review alone where its own Rerun is not offered. The review
+  // starts first: the checks can finish at once, and the server would then
+  // create the rollout on the review that was about to be replaced.
+  const reviewReruns =
+    rerun.allowed &&
+    !rerun.disabled &&
+    rows.some((row) => row.reviewer === "review" && row.conclusion !== "off");
   const rerunAll = async () => {
+    if (reviewReruns) await rerun.run();
     await runChecks();
-    await review?.reload();
   };
-  const requestRerunChecks = () => void rerunAll();
+  const requestRerunAll = () =>
+    reviewReruns && rerun.confirmFirst
+      ? setConfirmAllOpen(true)
+      : void rerunAll();
 
   if (rows.length === 0) return null;
 
@@ -160,7 +172,7 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
             <DropdownMenuContent>
               <DropdownMenuItem
                 disabled={isRunningChecks}
-                onClick={requestRerunChecks}
+                onClick={requestRerunAll}
               >
                 {t("plan.automated-review.rerun-all")}
               </DropdownMenuItem>
@@ -183,6 +195,15 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         onOpenChange={setChecksDrawerOpen}
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
+      />
+      <RerunConfirmDialog
+        confirmLabel={t("plan.automated-review.rerun-all")}
+        description={t("plan.automated-review.run-again-description")}
+        disabled={isRunningChecks || !reviewReruns}
+        onConfirm={() => void rerunAll()}
+        onOpenChange={setConfirmAllOpen}
+        open={confirmAllOpen}
+        title={t("plan.automated-review.run-again-title")}
       />
     </div>
   );
@@ -317,7 +338,7 @@ function ReviewerRow({
       );
     }
   }
-  // Plan checks run together, and the run restarts the review too.
+  // Plan checks run together. The review has its own Rerun.
   if (!isReview && allowRunChecks && row.conclusion !== "running") {
     actions.push(
       <RunButton
@@ -739,11 +760,9 @@ function PriorityCount({
   );
 }
 
-// What the review covered, on hover: the databases, a sample the AI review
-// took of them, and the standard rules it applies. A "No findings" means
-// little without it. The standard rules review every database on an engine
-// they cover, and the AI review a sample when the project sets a sample
-// size, so the line names the wider of the two scopes that ran.
+// What the review covered, on hover: a pass over three databases says very
+// little without it. The review reads a sample when the project sets a sample
+// size, and the AI review reads engines the standard rules do not.
 function ScopeInfo() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -752,41 +771,32 @@ function ScopeInfo() {
   const databasesByName = useAppStore((s) => s.databasesByName);
   const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const dbGroupViewByName = useAppStore((s) => s.dbGroupViewByName);
-  const { ruleScope, aiScope } = useMemo(() => {
-    const options = {
-      sampleSize: page.project.ciSamplingSize ?? 0,
-      matchedDatabases: (group: string) =>
-        dbGroupViewByName[group] === DatabaseGroupView.FULL
-          ? (dbGroupsByName[group]?.matchedDatabases.map(
-              (database) => database.name
-            ) ?? [])
-          : undefined,
-      engineOf: (database: string) =>
-        databasesByName[database]?.instanceResource?.engine,
-    };
-    return {
-      ruleScope: reviewScope(page.plan, { ...options, reviewer: "rule" }),
-      aiScope: reviewScope(page.plan, { ...options, reviewer: "ai" }),
-    };
-  }, [
-    databasesByName,
-    dbGroupViewByName,
-    dbGroupsByName,
-    page.plan,
-    page.project.ciSamplingSize,
-  ]);
-  // Rules not known yet count as on. The review covered what its reviewers
-  // that are on covered between them: the AI review reads engines the
-  // standard rules do not.
+  // Rules not known yet count as on.
   const rulesOn = !rules || rules.rules.length > 0;
-  const scopes = [
-    ...(rulesOn ? [ruleScope] : []),
-    ...(aiReviewOn ? [aiScope] : []),
-  ];
-  const scope = {
-    databases: [...new Set(scopes.flatMap((s) => s.databases))],
-    engines: [...new Set(scopes.flatMap((s) => s.engines))],
-  };
+  const scope = useMemo(
+    () =>
+      reviewScope(page.plan, {
+        reviewers: { rules: rulesOn, ai: aiReviewOn },
+        sampleSize: page.project.ciSamplingSize ?? 0,
+        matchedDatabases: (group: string) =>
+          dbGroupViewByName[group] === DatabaseGroupView.FULL
+            ? (dbGroupsByName[group]?.matchedDatabases.map(
+                (database) => database.name
+              ) ?? [])
+            : undefined,
+        engineOf: (database: string) =>
+          databasesByName[database]?.instanceResource?.engine,
+      }),
+    [
+      aiReviewOn,
+      databasesByName,
+      dbGroupViewByName,
+      dbGroupsByName,
+      page.plan,
+      page.project.ciSamplingSize,
+      rulesOn,
+    ]
+  );
   if (scope.databases.length === 0) return null;
 
   const names =
@@ -805,11 +815,11 @@ function ScopeInfo() {
         })
       : t("plan.automated-review.scope", { databases: names }),
   ];
-  if (aiReviewOn && aiScope.total > aiScope.databases.length) {
+  if (scope.total > scope.databases.length) {
     lines.push(
-      t("plan.automated-review.ai-sampled", {
-        count: aiScope.databases.length,
-        total: aiScope.total,
+      t("plan.automated-review.sampled", {
+        count: scope.databases.length,
+        total: scope.total,
       })
     );
   }

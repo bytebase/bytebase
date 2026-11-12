@@ -367,31 +367,25 @@ describe("AutomatedReviewSection", () => {
       "plan.automated-review.scope-with-engines"
     );
     expect(scope.textContent).toContain("plan.automated-review.project-rules");
-    expect(scope.textContent).not.toContain("plan.automated-review.ai-sampled");
+    expect(scope.textContent).not.toContain("plan.automated-review.sampled");
   });
 
-  test("says when the AI review covered only a sample", () => {
-    mocks.serverInfo = AI_ON;
+  test("says when the review covered only a sample, whichever reviewer is on", () => {
     mocks.ciSamplingSize = 1;
     mocks.targets = [
       "instances/i/databases/hr_test",
       "instances/i/databases/hr_prod",
     ];
+    const { unmount } = renderSection([row("review", "passed")]);
+    expect(screen.getByTestId("review-scope").textContent).toContain(
+      "plan.automated-review.sampled:1"
+    );
+    unmount();
+
+    mocks.serverInfo = AI_ON;
     renderSection([row("review", "passed")]);
     expect(screen.getByTestId("review-scope").textContent).toContain(
-      "plan.automated-review.ai-sampled:1"
-    );
-  });
-
-  test("keeps the sample out of the hover while the AI review is off", () => {
-    mocks.ciSamplingSize = 1;
-    mocks.targets = [
-      "instances/i/databases/hr_test",
-      "instances/i/databases/hr_prod",
-    ];
-    renderSection([row("review", "passed")]);
-    expect(screen.getByTestId("review-scope").textContent).not.toContain(
-      "plan.automated-review.ai-sampled"
+      "plan.automated-review.sampled:1"
     );
   });
 
@@ -576,16 +570,75 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runReview).not.toHaveBeenCalled();
   });
 
-  test("Re-run all reruns the checks and reads the review again without asking", async () => {
-    renderSection([row("review", "resolved", findings({ resolved: 3 }))]);
+  const rerunAll = async () => {
     fireEvent.click(screen.getByRole("button", { name: "common.more" }));
     await act(async () => {
       fireEvent.click(
         await screen.findByText("plan.automated-review.rerun-all")
       );
     });
+  };
+
+  test("Re-run all reruns the checks and the review", async () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([row("review", "resolved", findings({ resolved: 3 }))]);
+    await rerunAll();
     expect(mocks.runChecks).toHaveBeenCalledOnce();
-    expect(mocks.reload).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+    // The review is reset before the checks can finish.
+    expect(mocks.runReview.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.runChecks.mock.invocationCallOrder[0]
+    );
+  });
+
+  test("Re-run all asks first when the review makes model calls", async () => {
+    mocks.serverInfo = AI_ON;
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([row("review", "passed")]);
+    await rerunAll();
+    expect(mocks.runChecks).not.toHaveBeenCalled();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "plan.automated-review.rerun-all" })
+      );
+    });
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.runReview).toHaveBeenCalledOnce();
+  });
+
+  test("Re-run all leaves alone a review that is running or off", async () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.RUNNING),
+    };
+    const { unmount } = renderSection([row("review", "running")]);
+    await rerunAll();
+    expect(mocks.runChecks).toHaveBeenCalledOnce();
+    expect(mocks.runReview).not.toHaveBeenCalled();
+    unmount();
+
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([
+      row("review", "off", undefined, { holdsRollout: false }),
+      row("policy", "passed", undefined, { targets: 1 }),
+    ]);
+    await rerunAll();
+    expect(mocks.runChecks).toHaveBeenCalledTimes(2);
+    expect(mocks.runReview).not.toHaveBeenCalled();
   });
 
   test("a plan check row reruns the checks", async () => {

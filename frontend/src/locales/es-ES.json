@@ -2098,7 +2098,6 @@
       "up-to-on": "hasta {{rows}} en {{database}}"
     },
     "automated-review": {
-      "ai-sampled": "La revisión con IA cubrió una muestra de {{count}} de {{total}} bases de datos",
       "checks": "Comprobación del plan",
       "details": "Detalles",
       "failed": "No se pudo ejecutar",
@@ -2132,6 +2131,7 @@
       "run-again-description": "Cada ejecución llama al modelo por cada base de datos revisada y puede encontrar problemas distintos. Un hallazgo que vuelve a aparecer conserva su hilo, y uno que ya no aparece queda resuelto.",
       "run-again-title": "¿Ejecutar de nuevo la revisión?",
       "running": "En ejecución",
+      "sampled": "La revisión cubrió una muestra de {{count}} de {{total}} bases de datos",
       "save-first": "Guarda o descarta tus cambios para ejecutar la revisión.",
       "scope": "Se revisó {{databases}}",
       "scope-label": "Qué cubrió esta revisión",

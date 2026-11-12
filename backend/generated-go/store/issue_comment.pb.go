@@ -424,11 +424,13 @@ func (*IssueCommentPayload_ReviewSubmission) Descriptor() ([]byte, []int) {
 }
 
 // ReviewRunCompletion records that a review run completed DONE, and what
-// it did to the results of its reviewer. Posted with no creator, in the
+// it did to the earlier results. Posted with no creator, in the
 // transaction that posts the run's results.
 type IssueCommentPayload_ReviewRunCompletion struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	RunType ReviewRun_Type         `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Set on a completion from before an issue had one review run, and on no
+	// later one.
+	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
 	// The run's review_run.attempt; its new results carry the same
 	// ReviewMetadata.attempt.
 	Attempt int64 `protobuf:"varint,2,opt,name=attempt,proto3" json:"attempt,omitempty"`
@@ -564,16 +566,16 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 }
 
 // ReviewMetadata is what a review result carries beyond its text: which
-// reviewer posted it, what it was judged against, its priority, the
+// reviewer found it, what it was judged against, its priority, the
 // databases it applies to, and for an AI result, its title. When a run
-// completes, an earlier result of its type whose fingerprint the run
-// reports again keeps its thread, and the run posts no new result for it;
-// every other earlier root of its type is resolved and marked superseded,
-// in the transaction that posts the new results.
+// completes, an earlier result whose fingerprint the run reports again
+// keeps its thread, and the run posts no new result for it; every other
+// earlier result on the issue is resolved and marked superseded, in the
+// transaction that posts the new results.
 type IssueCommentPayload_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The reviewer slot that posted the result; review_run.type stores the
-	// same enum by name.
+	// The reviewer that found the result. One run holds the results of every
+	// reviewer.
 	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
 	// The rule judged against. Set if and only if run_type is RULE.
 	RuleType ReviewRuleType `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.store.ReviewRuleType" json:"rule_type,omitempty"`
@@ -584,9 +586,9 @@ type IssueCommentPayload_ReviewMetadata struct {
 	// renderer collapses it when it equals the spec's target set.
 	// Format: instances/{instance}/databases/{database}
 	Targets []string `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
-	// A later run of the same reviewer has completed without reporting the
-	// result again, so the latest review does not hold it. Set by that run
-	// whatever the thread state, and never cleared.
+	// A later run has completed without reporting the result again, so the
+	// latest review does not hold it. Set by that run whatever the thread
+	// state, and never cleared.
 	Superseded bool `protobuf:"varint,5,opt,name=superseded,proto3" json:"superseded,omitempty"`
 	// Identifies the finding across runs: equal fingerprints are the same
 	// finding on the same SQL. The rule review derives it from what it
