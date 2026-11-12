@@ -39,26 +39,15 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 
 var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
 
-// convertValueIn binds the row value converter to the location timestamptz values render in
-// and the per-column type modifiers, both read once per statement: the location from the
-// session, the modifiers from the native field descriptions via util.PgColumnTypeModifiers.
-func convertValueIn(location *time.Location, typeModifiers []int32) func(int, string, *sql.ColumnType, any) *v1pb.RowValue {
-	return func(columnIndex int, typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-		return convertValue(typeName, columnType, value, location, columnScale(typeModifiers, columnIndex))
+// convertValueIn binds the row value converter to the location timestamptz values
+// render in, which the caller reads from the session once per statement.
+func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
+	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
+		return convertValue(typeName, columnType, value, location)
 	}
 }
 
-// columnScale maps a column's PostgreSQL type modifier to the fractional-seconds precision to
-// render: the modifier itself (0-6), or PostgreSQL's default of 6 when it is unspecified (-1)
-// or the describe that produced the modifiers was unavailable.
-func columnScale(typeModifiers []int32, columnIndex int) int32 {
-	if columnIndex < len(typeModifiers) && typeModifiers[columnIndex] != -1 {
-		return typeModifiers[columnIndex]
-	}
-	return 6
-}
-
-func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location, scale int32) *v1pb.RowValue {
+func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -134,6 +123,13 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 					},
 				}
 			}
+			// pgx v5.13+ reports a temporal column's fractional-seconds precision as its
+			// scale, an unspecified precision already normalized to PostgreSQL's default
+			// of 6 (jackc/pgx#2704).
+			_, scale, ok := columnType.DecimalSize()
+			if !ok {
+				scale = 6
+			}
 			// Only timestamptz carries a zone to render. A zone-less timestamp must keep
 			// its wall clock, and buildTimestamptzRowValue formats those fields verbatim
 			// for a date outside the protobuf timestamp range, so converting it there
@@ -142,7 +138,7 @@ func convertValue(typeName string, columnType *sql.ColumnType, value any, locati
 			if typeName != "TIMESTAMP" {
 				t = t.In(location)
 			}
-			return buildTimestamptzRowValue(typeName, t, scale)
+			return buildTimestamptzRowValue(typeName, t, int32(scale))
 		}
 	default:
 	}

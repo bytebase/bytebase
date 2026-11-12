@@ -406,13 +406,12 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
 				location := util.PgSessionLocation(conn)
-				typeModifiers := util.PgColumnTypeModifiers(ctx, conn, statement)
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResultIndexed(rows, makeValueByTypeName, convertValueIn(location, typeModifiers), queryContext.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
