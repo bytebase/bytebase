@@ -48,7 +48,16 @@ describe("StepIndicator", () => {
     expect(labels[1].className).toContain("text-accent");
     expect(labels[2].className).toContain("text-control-light");
     expect(container.querySelector("svg")).toBeTruthy();
+    // A completed step shows a check, which carries the number it replaced.
     expect(container.textContent).not.toContain("1");
+    expect(container.querySelector("svg")?.getAttribute("aria-label")).toBe(
+      "1"
+    );
+    expect(
+      [...container.querySelectorAll("li")].map((item) =>
+        item.getAttribute("aria-current")
+      )
+    ).toEqual([null, "step", null]);
     expect(container.textContent).toContain("2");
     expect(container.textContent).toContain("3");
     expect(container.querySelectorAll(".bg-control-border")).toHaveLength(2);

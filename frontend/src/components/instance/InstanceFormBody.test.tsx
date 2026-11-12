@@ -15,6 +15,7 @@ import {
   DataSourceType,
   InstanceSchema,
   SyncDatabasesSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -692,4 +693,202 @@ test("Redis connection mode belongs to the selected data source", async () => {
   expect(context.adminDataSource.redisType).not.toBe(
     DataSource_RedisType.CLUSTER
   );
+});
+
+function mountCreate(engine: Engine) {
+  render(
+    <InstanceFormProvider>
+      <Editor />
+    </InstanceFormProvider>
+  );
+  act(() => context.setBasicInfo((previous) => ({ ...previous, engine })));
+}
+const hosting = (name: RegExp) => screen.getByRole("radio", { name });
+
+test("PostgreSQL reveals where it is hosted, with self-managed as the default", () => {
+  mountCreate(Engine.POSTGRES);
+  expect(hosting(/^instance.vendor.generic/)).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  expect(context.basicInfo.vendor).toBe(Vendor.NEON);
+  expect(context.basicInfo.engine).toBe(Engine.POSTGRES);
+});
+
+test("does not ask where other engines are hosted", () => {
+  mountCreate(Engine.MYSQL);
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+});
+
+test("preserves separate self-managed and Neon manual connection drafts", () => {
+  mountCreate(Engine.POSTGRES);
+  const genericDraft = context.dataSourceEditState;
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  expect(context.adminDataSource.useSsl).toBe(true);
+  expect(context.adminDataSource.verifyTlsCertificate).toBe(true);
+  expect(context.adminDataSource.port).toBe("5432");
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example.neon.tech",
+      })),
+    }))
+  );
+  fireEvent.click(hosting(/^instance.vendor.generic/));
+  expect(context.dataSourceEditState).toBe(genericDraft);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  expect(context.adminDataSource.host).toBe("ep-example.neon.tech");
+});
+
+const NEON_STRING =
+  "postgresql://app_owner:example-password@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=require";
+const paste = (field: HTMLElement, text: string) =>
+  fireEvent.paste(field, { clipboardData: { getData: () => text } });
+
+test("a pasted Neon connection string fills the connection fields and is not kept", () => {
+  mountCreate(Engine.POSTGRES);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  paste(field, NEON_STRING);
+  expect(context.adminDataSource).toMatchObject({
+    host: "ep-example-123456.us-east-2.aws.neon.tech",
+    port: "5432",
+    username: "app_owner",
+    database: "storefront",
+    updatedPassword: "example-password",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(field).toHaveValue("");
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-filled"
+  );
+  expect(screen.getByText("instance.neon.manual.tls-note")).toBeVisible();
+});
+
+test("a connection string typed by hand is read when the field is left, not per keystroke", () => {
+  mountCreate(Engine.POSTGRES);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  // This prefix already parses, with a one-letter database name.
+  const partial = NEON_STRING.slice(0, NEON_STRING.indexOf("/storefront") + 2);
+  fireEvent.change(field, { target: { value: partial } });
+  expect(field).toHaveValue(partial);
+  expect(context.adminDataSource.database).not.toBe("s");
+  expect(
+    screen.queryByText("instance.neon.manual.connection-string-invalid")
+  ).toBeNull();
+  fireEvent.change(field, { target: { value: NEON_STRING } });
+  expect(field).toHaveValue(NEON_STRING);
+  fireEvent.blur(field);
+  expect(field).toHaveValue("");
+  expect(context.adminDataSource).toMatchObject({
+    username: "app_owner",
+    database: "storefront",
+  });
+});
+
+test("text that is not a connection string is reported once the field is left and stays to be corrected", () => {
+  mountCreate(Engine.POSTGRES);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  fireEvent.change(field, { target: { value: "not a connection string" } });
+  expect(
+    screen.queryByText("instance.neon.manual.connection-string-invalid")
+  ).toBeNull();
+  fireEvent.blur(field);
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-invalid"
+  );
+  expect(field).toHaveValue("not a connection string");
+});
+
+test("a pasted pooled connection string says so beside the field until the host is corrected", () => {
+  mountCreate(Engine.POSTGRES);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  paste(
+    field,
+    NEON_STRING.replace("ep-example-123456", "ep-example-123456-pooler")
+  );
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-pooled"
+  );
+  expect(
+    screen.getByText("instance.validation.neon-pooled-host")
+  ).toBeVisible();
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example-123456.us-east-2.aws.neon.tech",
+      })),
+    }))
+  );
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-filled"
+  );
+});
+
+test("rejects a pooled Neon host and asks for the direct endpoint", () => {
+  mountCreate(Engine.POSTGRES);
+  fireEvent.click(hosting(/^instance.vendor.neon/));
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example-123456-pooler.us-east-2.aws.neon.tech",
+      })),
+    }))
+  );
+  expect(
+    screen.getByText("instance.validation.neon-pooled-host")
+  ).toBeVisible();
+  expect(context.getDataSourceErrors(context.adminDataSource).host).toBe(
+    "neon-pooled-host"
+  );
+});
+
+test("editing a Neon instance shows its connection settings without the hosting or setup choices", () => {
+  render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/neon-storefront-main",
+        title: "storefront / main",
+        engine: Engine.POSTGRES,
+        vendor: Vendor.NEON,
+        state: State.ACTIVE,
+        dataSources: [
+          {
+            id: "admin",
+            type: DataSourceType.ADMIN,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            host: "ep-example-123456.us-east-2.aws.neon.tech",
+            port: "5432",
+            useSsl: true,
+            verifyTlsCertificate: true,
+          },
+        ],
+      })}
+    >
+      <Editor />
+    </InstanceFormProvider>
+  );
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByLabelText(/instance.neon.manual.connection-string/)
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText(/instance.hostname/)).toHaveValue(
+    "ep-example-123456.us-east-2.aws.neon.tech"
+  );
+  expect(screen.getByText("instance.neon.manual.tls-note")).toBeVisible();
 });

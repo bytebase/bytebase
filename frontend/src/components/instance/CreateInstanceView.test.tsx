@@ -1,4 +1,7 @@
 import { act } from "react";
+import { render, fireEvent, cleanup } from "@testing-library/react";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { Vendor } from "@/types/proto-es/v1/instance_service_pb";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -23,7 +26,7 @@ const mocks = vi.hoisted(() => ({
   activatedInstanceCount: 0,
   providerProps: undefined as Record<string, unknown> | undefined,
   instanceFormContext: {
-    basicInfo: { engine: 0 },
+    basicInfo: { engine: 0, vendor: 0 },
     state: { isRequesting: false },
     setState: vi.fn(),
     valueChanged: false,
@@ -31,6 +34,40 @@ const mocks = vi.hoisted(() => ({
 }));
 
 let CreateInstanceView: typeof import("./CreateInstanceView").CreateInstanceView;
+
+vi.mock("./NeonImportForm", () => ({
+  NeonStepIndicator: () => <div data-testid="neon-steps" />,
+  neonDestinationLabel: (_t: unknown, parent?: string) =>
+    parent ? `project ${parent}` : "workspace",
+  NeonImportForm: ({
+    active,
+    onStepChange,
+    onBusyChange,
+    onDirtyChange,
+  }: {
+    active: boolean;
+    onStepChange: (step: number) => void;
+    onBusyChange: (busy: boolean) => void;
+    onDirtyChange: (dirty: boolean) => void;
+  }) => (
+    <div hidden={!active}>
+      <input
+        aria-label="discovery draft"
+        defaultValue=""
+        onChange={() => onDirtyChange(true)}
+      />
+      <button type="button" onClick={() => onStepChange(1)}>
+        mock discovered
+      </button>
+      <button type="button" onClick={() => onStepChange(0)}>
+        mock back to connect
+      </button>
+      <button type="button" onClick={() => onBusyChange(true)}>
+        mock busy
+      </button>
+    </div>
+  ),
+}));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -80,6 +117,9 @@ vi.mock("@/stores/app", () => ({
           },
         },
         totalInstanceCount: () => mocks.totalInstanceCount,
+        instanceCountLimit: () => mocks.instanceCountLimit,
+        instanceLicenseCount: () => mocks.instanceCountLimit,
+        activatedInstanceCount: () => mocks.activatedInstanceCount,
         prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       }),
     {
@@ -110,11 +150,20 @@ vi.mock("@/components/instance", () => ({
     <div>{children}</div>
   ),
   InfoPanelContent: () => <div />,
-  InstanceFormBody: ({ onAskAgent }: { onAskAgent?: () => void }) => (
+  InstanceFormBody: ({
+    hideEngine,
+    onAskAgent,
+  }: {
+    hideEngine?: boolean;
+    onAskAgent?: () => void;
+  }) => (
     <div data-testid="instance-form-body">
-      <button type="button" onClick={() => onAskAgent?.()}>
-        instance.ask-agent
-      </button>
+      {hideEngine && <input aria-label="manual draft" defaultValue="" />}
+      {onAskAgent && (
+        <button type="button" onClick={() => onAskAgent()}>
+          instance.ask-agent
+        </button>
+      )}
     </div>
   ),
   InstanceFormButtons: ({ className }: { className?: string }) => (
@@ -166,6 +215,7 @@ beforeEach(async () => {
   });
   mocks.providerProps = undefined;
   mocks.instanceFormContext.state.isRequesting = false;
+  mocks.instanceFormContext.basicInfo = { engine: 0, vendor: 0 };
   mocks.instanceFormContext.setState.mockImplementation(
     (
       updater: (state: { isRequesting: boolean }) => {
@@ -233,11 +283,11 @@ describe("CreateInstanceView", () => {
     expect(page).not.toHaveClass("px-4");
     expect(page).not.toHaveClass("sm:px-6");
 
-    const bodyPadding = container.querySelector(
-      "[data-testid='instance-form-body']"
-    )?.parentElement;
-    expect(bodyPadding).toHaveClass("px-4");
-    expect(bodyPadding).toHaveClass("sm:px-6");
+    const scroller = container
+      .querySelector("[data-testid='instance-form-body']")
+      ?.closest(".overflow-auto");
+    expect(scroller?.firstElementChild).toHaveClass("px-4");
+    expect(scroller?.firstElementChild).toHaveClass("sm:px-6");
 
     const buttons = container.querySelector(
       "[data-testid='instance-form-buttons']"
@@ -670,4 +720,133 @@ describe("CreateInstanceView", () => {
       root.unmount();
     });
   });
+});
+
+const neon = () => {
+  mocks.instanceFormContext.basicInfo = {
+    engine: Engine.POSTGRES,
+    vendor: Vendor.NEON,
+  };
+};
+const props = { onDismiss: mocks.onDismiss, onCreated: mocks.onCreated };
+
+test("Neon reveals both setup methods as peers and keeps a separate draft for each", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  const discovery = view.getByRole("radio", {
+    name: /instance.neon.method.discover/,
+  });
+  expect(discovery).toHaveAttribute("aria-checked", "true");
+  expect(view.getByTestId("neon-steps")).toBeInTheDocument();
+  fireEvent.change(view.getByLabelText("discovery draft"), {
+    target: { value: "retained key" },
+  });
+  fireEvent.click(
+    view.getByRole("radio", { name: /instance.neon.method.manual/ })
+  );
+  expect(view.getByLabelText("manual draft")).toBeVisible();
+  expect(view.getByLabelText("discovery draft")).not.toBeVisible();
+  // Manual entry is the existing form, with no step indicator.
+  expect(view.queryByTestId("neon-steps")).toBeNull();
+  fireEvent.change(view.getByLabelText("manual draft"), {
+    target: { value: "retained host" },
+  });
+  fireEvent.click(discovery);
+  expect(view.getByLabelText("discovery draft")).toHaveValue("retained key");
+  fireEvent.click(
+    view.getByRole("radio", { name: /instance.neon.method.manual/ })
+  );
+  expect(view.getByLabelText("manual draft")).toHaveValue("retained host");
+  cleanup();
+});
+
+test("collapses the engine, hosting, and method controls after Connect", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  expect(view.getByText("instance.neon.entry.summary")).toBeVisible();
+  fireEvent.click(view.getByText("mock discovered"));
+  expect(
+    view.queryByRole("radiogroup", { name: "instance.neon.method.title" })
+  ).toBeNull();
+  expect(view.getByText("instance.neon.entry.summary")).not.toBeVisible();
+  fireEvent.click(view.getByText("mock back to connect"));
+  expect(
+    view.getByRole("radiogroup", { name: "instance.neon.method.title" })
+  ).toBeVisible();
+  cleanup();
+});
+
+test("opens each wizard step at its top", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  const scroller = view.container.querySelector(".overflow-auto") as HTMLElement;
+  scroller.scrollTop = 480;
+  fireEvent.click(view.getByText("mock discovered"));
+  expect(scroller.scrollTop).toBe(0);
+  scroller.scrollTop = 480;
+  fireEvent.click(view.getByText("mock back to connect"));
+  expect(scroller.scrollTop).toBe(0);
+  cleanup();
+});
+
+test("warns on the Neon entry screen, for either method, when no instance can be added", () => {
+  neon();
+  mocks.totalInstanceCount = 10;
+  const view = render(<CreateInstanceView {...props} />);
+  expect(view.getByText("instance.neon.limit-reached.title")).toBeVisible();
+  fireEvent.click(
+    view.getByRole("radio", { name: /instance.neon.method.manual/ })
+  );
+  expect(view.getByText("instance.neon.limit-reached.title")).toBeVisible();
+  cleanup();
+  mocks.totalInstanceCount = 9;
+  const room = render(<CreateInstanceView {...props} />);
+  expect(room.queryByText("instance.neon.limit-reached.title")).toBeNull();
+  cleanup();
+});
+
+test("keeps the engine and hosting pickers behind Change once Neon is chosen", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  const engine = view.getAllByTestId("instance-form-body")[0];
+  expect(engine).not.toBeVisible();
+  fireEvent.click(
+    view.getByRole("button", { name: "instance.neon.entry.change" })
+  );
+  expect(engine).toBeVisible();
+  cleanup();
+});
+
+test("states the destination setup was opened from and offers no control to change it", () => {
+  neon();
+  const workspace = render(<CreateInstanceView {...props} />);
+  expect(
+    workspace.getByText("instance.neon.destination.adding")
+  ).toBeVisible();
+  expect(
+    workspace.getByText(/instance.neon.destination.workspace-help/)
+  ).toBeVisible();
+  cleanup();
+  const project = render(
+    <CreateInstanceView {...props} parent="projects/checkout" />
+  );
+  expect(
+    project.getByText(/instance.neon.destination.project-help/)
+  ).toBeVisible();
+  expect(project.queryAllByRole("combobox")).toHaveLength(0);
+  cleanup();
+});
+
+test("disables switching methods while either one is submitting", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  fireEvent.click(view.getByText("mock busy"));
+  for (const radio of view.getAllByRole("radio"))
+    expect(radio).toHaveAttribute("aria-disabled", "true");
+  cleanup();
+  mocks.instanceFormContext.state.isRequesting = true;
+  const manual = render(<CreateInstanceView {...props} />);
+  for (const radio of manual.getAllByRole("radio"))
+    expect(radio).toHaveAttribute("aria-disabled", "true");
+  cleanup();
 });

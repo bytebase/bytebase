@@ -22,6 +22,7 @@ func convertToV1Instance(instance *store.InstanceMessage, activation bool) *v1pb
 		Name:          buildInstanceName(instance.ResourceID, instance.ProjectID),
 		Title:         instance.Metadata.GetTitle(),
 		Engine:        engine,
+		Vendor:        v1pb.Vendor(instance.Metadata.GetVendor()),
 		EngineVersion: instance.Metadata.GetVersion(),
 		ExternalLink:  instance.Metadata.GetExternalLink(),
 		DataSources:   dataSources,
@@ -89,12 +90,17 @@ func convertToStoreInstance(instanceID string, instance *v1pb.Instance) (*store.
 		environmentID = &envID
 	}
 
+	if err := validateInstanceVendor(&storepb.Instance{Engine: convertEngine(instance.Engine), Vendor: storepb.Vendor(instance.Vendor), DataSources: datasources}); err != nil {
+		return nil, err
+	}
+
 	return &store.InstanceMessage{
 		ResourceID:    instanceID,
 		EnvironmentID: environmentID,
 		Metadata: &storepb.Instance{
 			Title:         instance.GetTitle(),
 			Engine:        convertEngine(instance.Engine),
+			Vendor:        storepb.Vendor(instance.Vendor),
 			ExternalLink:  instance.GetExternalLink(),
 			Activation:    instance.GetActivation(),
 			DataSources:   datasources,
@@ -780,5 +786,27 @@ func convertV1DataSourceType(tp v1pb.DataSourceType) (storepb.DataSourceType, er
 		return storepb.DataSourceType_ADMIN, nil
 	default:
 		return storepb.DataSourceType_DATA_SOURCE_UNSPECIFIED, errors.Errorf("invalid data source type %v", tp)
+	}
+}
+
+func validateInstanceVendor(instance *storepb.Instance) error {
+	switch instance.Vendor {
+	case storepb.Vendor_VENDOR_UNSPECIFIED:
+		return nil
+	case storepb.Vendor_NEON:
+		if instance.Engine != storepb.Engine_POSTGRES {
+			return errors.New("Neon requires PostgreSQL")
+		}
+		for _, ds := range instance.DataSources {
+			if !ds.UseSsl || !ds.VerifyTlsCertificate {
+				return errors.New("Neon requires TLS with certificate verification")
+			}
+			if strings.Contains(strings.Split(ds.Host, ".")[0], "-pooler") {
+				return errors.New("Neon requires a direct endpoint")
+			}
+		}
+		return nil
+	default:
+		return errors.New("unsupported vendor")
 	}
 }
