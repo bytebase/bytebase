@@ -144,7 +144,7 @@ func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request samp
 			return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
 		}
 		if created {
-			return m.prepareOwned(lifecycleCtx, setup, payload, false)
+			return m.prepareOwned(lifecycleCtx, setup, payload, false, request.Limits)
 		}
 		if setup.ActivatedAt != nil {
 			return m.activeSetup(lifecycleCtx, setup, payload)
@@ -165,7 +165,7 @@ func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request samp
 			if err != nil {
 				return nil, err
 			}
-			return m.prepareOwned(lifecycleCtx, claimed, claimedPayload, true)
+			return m.prepareOwned(lifecycleCtx, claimed, claimedPayload, true, request.Limits)
 		}
 		if err := sample.SleepContext(lifecycleCtx, delay); err != nil {
 			return nil, sample.NewFailure(sample.FailureDeadlineExceeded, err)
@@ -235,7 +235,7 @@ func decodePayload(setup *store.SampleInstanceSetupMessage) (*storepb.SaaSSample
 	return payload, nil
 }
 
-func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, takeover bool) (*store.InstanceMessage, error) {
+func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, takeover bool, limits *store.InstanceLimits) (*store.InstanceMessage, error) {
 	workCtx, cancel := preparationWorkContext(ctx)
 	defer cancel()
 	if takeover {
@@ -274,6 +274,7 @@ func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceS
 	}
 	projectID := payload.ProjectId
 	registered, err := sample.CreateMetadata(workCtx, m.store, sample.Registration{
+		Limits:            limits,
 		WorkspaceID:       setup.WorkspaceID,
 		InstanceProjectID: &projectID,
 		EnvironmentID:     payload.EnvironmentId,

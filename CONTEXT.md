@@ -32,6 +32,10 @@ _Avoid_: Workspace, repository, environment
 A registered database server, cluster, or service connection that Bytebase syncs and operates against. An instance is registered as either a workspace instance or a project instance, and its scope does not change.
 _Avoid_: Database, environment
 
+**Vendor Type**:
+The database service variant hosting an instance, distinct from its database engine and how the instance was registered. Neon is a vendor type for PostgreSQL; vendor types distinguish services, not only their operating companies.
+_Avoid_: Deployment type, engine type, import source
+
 **Workspace Instance**:
 An instance governed directly by the workspace. Its databases may belong to different projects.
 _Avoid_: Project instance, unassigned instance

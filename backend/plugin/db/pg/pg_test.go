@@ -254,15 +254,19 @@ func TestGetPGConnectionConfigVerifiesCustomCAForAllHosts(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, connConfig.TLSConfig)
+	require.Equal(t, hosts[0], connConfig.TLSConfig.ServerName)
 	require.NotNil(t, connConfig.TLSConfig.RootCAs)
 	require.NotNil(t, connConfig.TLSConfig.VerifyPeerCertificate)
 	require.NoError(t, connConfig.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[0]]}, nil))
+	require.Error(t, connConfig.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[1]]}, nil))
 	require.Len(t, connConfig.Fallbacks, 2)
 	for i, fallback := range connConfig.Fallbacks {
 		require.NotNil(t, fallback.TLSConfig)
+		require.Equal(t, hosts[i+1], fallback.TLSConfig.ServerName)
 		require.NotNil(t, fallback.TLSConfig.RootCAs)
 		require.NotNil(t, fallback.TLSConfig.VerifyPeerCertificate)
 		require.NoError(t, fallback.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[i+1]]}, nil))
+		require.Error(t, fallback.TLSConfig.VerifyPeerCertificate([][]byte{serverCertDERByHost[hosts[0]]}, nil))
 	}
 }
 
@@ -699,4 +703,16 @@ func TestOpenFailureReleasesConnectionPool(t *testing.T) {
 	// be closed already. database/sql reports that only by message.
 	require.NotNil(t, driver.db)
 	require.ErrorContains(t, driver.db.PingContext(ctx), "database is closed")
+}
+
+func TestGetPGConnectionConfigSetsSNIWithoutCertificateVerification(t *testing.T) {
+	config, err := getPGConnectionConfig(db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Username: "owner", Host: "primary.example.com,fallback.example.com", Port: "5432", UseSsl: true},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "primary.example.com", config.TLSConfig.ServerName)
+	require.True(t, config.TLSConfig.InsecureSkipVerify)
+	require.Len(t, config.Fallbacks, 1)
+	require.Equal(t, "fallback.example.com", config.Fallbacks[0].TLSConfig.ServerName)
+	require.True(t, config.Fallbacks[0].TLSConfig.InsecureSkipVerify)
 }
