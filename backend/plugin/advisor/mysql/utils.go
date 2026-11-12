@@ -74,7 +74,6 @@ func isKeyword(suspect string) bool {
 	return mysqlparser.IsKeyword(suspect)
 }
 
-// nolint:unused
 // tableName extracts the table name from a TableRef.
 func tableName(ref *ast.TableRef) string {
 	if ref == nil {
@@ -83,16 +82,6 @@ func tableName(ref *ast.TableRef) string {
 	return ref.Name
 }
 
-// nolint:unused
-// columnNames extracts column name list from a table-level constraint.
-func columnNames(constraint *ast.Constraint) []string {
-	if constraint == nil {
-		return nil
-	}
-	return constraint.Columns
-}
-
-// nolint:unused
 // indexColumns extracts column names from an index column list.
 // For expression-based index columns, it falls back to the column reference name.
 func indexColumns(cols []*ast.IndexColumn) []string {
@@ -108,16 +97,6 @@ func indexColumns(cols []*ast.IndexColumn) []string {
 	return names
 }
 
-// nolint:unused
-// dataTypeName extracts the normalized (upper-case) type name string from a DataType.
-func dataTypeName(dt *ast.DataType) string {
-	if dt == nil {
-		return ""
-	}
-	return strings.ToUpper(dt.Name)
-}
-
-// nolint:unused
 // isNullable checks if a column allows NULL.
 // A column is nullable unless it has a NOT NULL constraint or is a PRIMARY KEY.
 func isNullable(col *ast.ColumnDef) bool {
@@ -132,7 +111,6 @@ func isNullable(col *ast.ColumnDef) bool {
 	return true
 }
 
-// nolint:unused
 // hasDefault checks if a column has a DEFAULT value.
 func hasDefault(col *ast.ColumnDef) bool {
 	if col == nil {
@@ -149,7 +127,6 @@ func hasDefault(col *ast.ColumnDef) bool {
 	return false
 }
 
-// nolint:unused
 // isAutoIncrement checks if a column has AUTO_INCREMENT.
 func isAutoIncrement(col *ast.ColumnDef) bool {
 	if col == nil {
@@ -158,7 +135,6 @@ func isAutoIncrement(col *ast.ColumnDef) bool {
 	return col.AutoIncrement
 }
 
-// nolint:unused
 // columnComment extracts the COMMENT string from a column definition.
 func columnComment(col *ast.ColumnDef) string {
 	if col == nil {
@@ -167,7 +143,6 @@ func columnComment(col *ast.ColumnDef) string {
 	return col.Comment
 }
 
-// nolint:unused
 // tableOptionValue extracts a table option value by name (case-insensitive).
 func tableOptionValue(opts []*ast.TableOption, name string) string {
 	for _, opt := range opts {
@@ -176,18 +151,6 @@ func tableOptionValue(opts []*ast.TableOption, name string) string {
 		}
 	}
 	return ""
-}
-
-// nolint:unused
-// constraintsByType filters constraints by the given type.
-func constraintsByType(constraints []*ast.Constraint, typ ast.ConstraintType) []*ast.Constraint {
-	var result []*ast.Constraint
-	for _, c := range constraints {
-		if c.Type == typ {
-			result = append(result, c)
-		}
-	}
-	return result
 }
 
 // constraintName returns the CONSTRAINT symbol, else the name written after
@@ -286,15 +249,6 @@ func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 	return nil
 }
 
-// nolint:unused
-// alterCmdColumnName returns the effective column name for a command.
-func alterCmdColumnName(cmd *ast.AlterTableCmd) string {
-	if cmd.Column != nil {
-		return cmd.Column.Name
-	}
-	return cmd.Name
-}
-
 func renameTableName(cmd *ast.AlterTableCmd) string {
 	if cmd == nil || cmd.Type != ast.ATRenameTable {
 		return ""
@@ -334,15 +288,6 @@ func pKColumnNames(columns []*ast.ColumnDef, constraints []*ast.Constraint) map[
 		}
 	}
 	return result
-}
-
-// columnNeedDefault checks if a column is NOT NULL and needs a DEFAULT.
-// nolint:unused
-func columnNeedDefault(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	return !isNullable(col) && !hasDefault(col) && !isPrimaryKey(col)
 }
 
 // isDefaultExemptType checks if a column type is exempt from requiring DEFAULT

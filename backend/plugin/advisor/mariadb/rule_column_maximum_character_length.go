@@ -65,10 +65,6 @@ type columnMaximumCharacterLengthRule struct {
 	maximum int
 }
 
-func (*columnMaximumCharacterLengthRule) Name() string {
-	return "ColumnMaximumCharacterLengthRule"
-}
-
 func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

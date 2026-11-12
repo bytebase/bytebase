@@ -84,10 +84,6 @@ type columnNoNullRule struct {
 	nullableColumns  columnMap
 }
 
-func (*columnNoNullRule) Name() string {
-	return string(storepb.SQLReviewRule_COLUMN_NO_NULL)
-}
-
 func (r *columnNoNullRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:

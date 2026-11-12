@@ -65,10 +65,6 @@ type columnMaximumVarcharLengthRule struct {
 	maximum int
 }
 
-func (*columnMaximumVarcharLengthRule) Name() string {
-	return "VarcharLengthRule"
-}
-
 func (r *columnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

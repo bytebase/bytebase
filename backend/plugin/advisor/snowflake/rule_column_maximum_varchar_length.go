@@ -88,11 +88,6 @@ func NewColumnMaximumVarcharLengthRule(level storepb.Advice_Status, title string
 	}
 }
 
-// Name returns the rule name.
-func (*ColumnMaximumVarcharLengthRule) Name() string {
-	return "ColumnMaximumVarcharLengthRule"
-}
-
 // checkStatement walks one statement's omni AST and checks every data type.
 // This mirrors the legacy ANTLR listener that fired on every Data_type context
 // anywhere in the statement.

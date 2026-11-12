@@ -57,10 +57,6 @@ type columnAutoIncrementMustIntegerRule struct {
 	BaseRule
 }
 
-func (*columnAutoIncrementMustIntegerRule) Name() string {
-	return "ColumnAutoIncrementMustIntegerRule"
-}
-
 func (r *columnAutoIncrementMustIntegerRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

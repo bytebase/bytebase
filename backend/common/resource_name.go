@@ -129,15 +129,6 @@ func FormatAccessGrant(projectID string, id string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), AccessGrantNamePrefix, id)
 }
 
-// TrimSuffixAndGetInstanceDatabaseID trims the suffix from the name and returns the instance ID and database ID.
-func TrimSuffixAndGetInstanceDatabaseID(name string, suffix string) (string, string, error) {
-	trimmed, err := TrimSuffix(name, suffix)
-	if err != nil {
-		return "", "", err
-	}
-	return GetInstanceDatabaseID(trimmed)
-}
-
 // GetEnvironmentID returns the environment ID from a resource name.
 func GetEnvironmentID(name string) (string, error) {
 	tokens, err := GetNameParentTokens(name, EnvironmentNamePrefix)
@@ -340,23 +331,6 @@ func GetProjectIDPlanID(name string) (string, int64, error) {
 		return "", 0, errors.Errorf("invalid plan ID %q", tokens[1])
 	}
 	return tokens[0], planID, nil
-}
-
-// GetProjectIDPlanIDPlanCheckRunID returns the project ID, plan ID and plan check run ID from a resource name.
-func GetProjectIDPlanIDPlanCheckRunID(name string) (string, int64, int64, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix, PlanCheckRunPrefix)
-	if err != nil {
-		return "", 0, 0, err
-	}
-	planID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid plan ID %q", tokens[1])
-	}
-	planCheckRunID, err := strconv.ParseInt(tokens[2], 10, 64)
-	if err != nil {
-		return "", 0, 0, errors.Errorf("invalid plan check run ID %q", tokens[2])
-	}
-	return tokens[0], planID, planCheckRunID, nil
 }
 
 // GetProjectIDPlanIDFromPlanCheckRun returns the project ID and plan ID from a plan check run singleton resource name.
@@ -804,10 +778,6 @@ func FormatPlan(projectID string, planUID int64) string {
 // Format: projects/{project}/plans/{plan}/planCheckRun
 func FormatPlanCheckRun(projectID string, planUID int64) string {
 	return fmt.Sprintf("%s/planCheckRun", FormatPlan(projectID, planUID))
-}
-
-func FormatSpec(projectID string, planUID int64, specID string) string {
-	return fmt.Sprintf("%s/%s%s", FormatPlan(projectID, planUID), SpecPrefix, specID)
 }
 
 func GetPolicyResourceTypeAndResource(requestName string) (storepb.Policy_Resource, *string, error) {

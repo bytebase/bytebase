@@ -1,8 +1,6 @@
 package oceanbase
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/oceanbase/ast"
 	"github.com/pkg/errors"
 
@@ -35,51 +33,6 @@ type StatementTypeWithPosition struct {
 	// Line is the one-based line number where the statement ends.
 	Line int
 	Text string
-}
-
-// GetStatementTypesWithPositions returns statement types with position information,
-// preserving statement order. Line numbers are one-based. It mirrors
-// pg.GetStatementTypes so the declarative-release gating can surface disallowed SDL
-// statements with positions for MySQL.
-func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPosition, error) {
-	if len(asts) == 0 {
-		return []StatementTypeWithPosition{}, nil
-	}
-
-	var results []StatementTypeWithPosition
-	for _, a := range asts {
-		node, ok := a.(*AST)
-		if !ok {
-			return nil, errors.New("expected AST for OceanBase")
-		}
-		if node.Node == nil {
-			continue
-		}
-
-		// STATEMENT_TYPE_UNSPECIFIED entries (statements omni parses but the classifier
-		// does not know — GRANT, SET, PREPARE, …) are INCLUDED, with their positions and
-		// text, so the SDL statement-type gate fails closed: dropping them here would
-		// let an unclassified statement bypass the release-check allowlist entirely.
-		stmtType := classifyStatementType(node.Node)
-
-		line := 0
-		if node.StartPosition != nil {
-			line = int(node.StartPosition.Line)
-		}
-		// End line = start line + embedded newlines in the statement text.
-		endLine := line
-		if node.Text != "" {
-			endLine += strings.Count(node.Text, "\n")
-		}
-
-		results = append(results, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: endLine,
-			Text: node.Text,
-		})
-	}
-
-	return results, nil
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {

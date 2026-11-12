@@ -57,10 +57,6 @@ type columnAutoIncrementMustUnsignedRule struct {
 	BaseRule
 }
 
-func (*columnAutoIncrementMustUnsignedRule) Name() string {
-	return "ColumnAutoIncrementMustUnsignedRule"
-}
-
 func (r *columnAutoIncrementMustUnsignedRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

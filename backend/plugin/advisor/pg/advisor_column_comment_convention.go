@@ -78,10 +78,6 @@ type columnCommentConventionRule struct {
 	comments []commentInfo
 }
 
-func (*columnCommentConventionRule) Name() string {
-	return "column_comment_convention"
-}
-
 func (r *columnCommentConventionRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:

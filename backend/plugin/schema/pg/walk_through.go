@@ -21,11 +21,6 @@ func init() {
 	schema.RegisterWalkThroughWithContext(storepb.Engine_POSTGRES, WalkThroughWithContext)
 }
 
-// WalkThrough walks through the PostgreSQL DDL and builds catalog metadata.
-func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(context.Background(), schema.WalkThroughContext{}, d, ast)
-}
-
 // WalkThroughWithContext performs DDL simulation using the omni catalog.
 //  1. catalog.LoadMetadata(metadata) → load existing schema into catalog
 //  2. catalog.Exec(userSQL) → execute user DDL, collect per-statement Changes

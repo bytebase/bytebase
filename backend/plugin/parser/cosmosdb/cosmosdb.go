@@ -15,23 +15,6 @@ type AST struct {
 	StartPosition *storepb.Position
 }
 
-// ASTStartPosition implements base.AST.
-func (a *AST) ASTStartPosition() *storepb.Position {
-	return a.StartPosition
-}
-
-// GetNode extracts the omni AST node from a base.AST interface.
-func GetNode(a base.AST) (ast.Node, bool) {
-	if a == nil {
-		return nil, false
-	}
-	wrapped, ok := a.(*AST)
-	if !ok {
-		return nil, false
-	}
-	return wrapped.Node, true
-}
-
 // ParseCosmosDB parses the given CosmosDB SQL statement using omni's parser.
 func ParseCosmosDB(statement string) ([]*AST, error) {
 	stmts, err := omnicosmosdb.Parse(statement)

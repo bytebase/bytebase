@@ -146,11 +146,3 @@ func convertParseError(statement string, err error, basePos *storepb.Position) e
 		RawMessage: pe.Message,
 	}
 }
-
-// NormalizeTrinoIdentifier normalizes a Trino identifier. Trino folds unquoted
-// identifiers to lower case and preserves the case of double-quoted identifiers
-// (stripping the surrounding quotes). This delegates to the omni normalizer so
-// the bytebase adapter and the omni parser agree on identifier folding.
-func NormalizeTrinoIdentifier(ident string) string {
-	return parser.NormalizeTrinoIdentifier(ident)
-}

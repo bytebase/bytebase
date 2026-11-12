@@ -85,11 +85,6 @@ func NewColumnRequireRule(level storepb.Advice_Status, title string, requireColu
 	}
 }
 
-// Name returns the rule name.
-func (*ColumnRequireRule) Name() string {
-	return "ColumnRequireRule"
-}
-
 // checkStatement checks one statement's omni AST node.
 func (r *ColumnRequireRule) checkStatement(node omniast.Node, stmtText string) {
 	r.stmtText = stmtText

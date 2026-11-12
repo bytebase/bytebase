@@ -74,10 +74,6 @@ type columnCurrentTimeCountLimitRule struct {
 	tableSet map[string]currentTimeTableData
 }
 
-func (*columnCurrentTimeCountLimitRule) Name() string {
-	return "ColumnCurrentTimeCountLimitRule"
-}
-
 func (r *columnCurrentTimeCountLimitRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

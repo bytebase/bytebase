@@ -82,11 +82,6 @@ func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string) *TableN
 	}
 }
 
-// Name returns the rule name.
-func (*TableNoForeignKeyRule) Name() string {
-	return "TableNoForeignKeyRule"
-}
-
 // GetAdviceList returns the accumulated advice list, generating final advice for tables with FK.
 func (r *TableNoForeignKeyRule) GetAdviceList() []*storepb.Advice {
 	for tableName, times := range r.tableForeignKeyTimes {

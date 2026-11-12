@@ -66,10 +66,6 @@ type columnTypeDisallowListRule struct {
 	typeRestriction map[string]bool
 }
 
-func (*columnTypeDisallowListRule) Name() string {
-	return "ColumnTypeDisallowListRule"
-}
-
 func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:

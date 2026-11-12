@@ -485,18 +485,6 @@ func (idx *OpenAPIIndex) Search(query string) []*EndpointInfo {
 	return endpoints
 }
 
-// SearchInService searches for endpoints matching the query within a specific service.
-func (idx *OpenAPIIndex) SearchInService(query, service string) []*EndpointInfo {
-	allResults := idx.Search(query)
-	var filtered []*EndpointInfo
-	for _, ep := range allResults {
-		if ep.Service == service {
-			filtered = append(filtered, ep)
-		}
-	}
-	return filtered
-}
-
 // GetRequestSchema returns the simplified schema properties for a request type.
 func (idx *OpenAPIIndex) GetRequestSchema(schemaRef string) []PropertyInfo {
 	if schemaRef == "" || idx.doc.Model.Components == nil || idx.doc.Model.Components.Schemas == nil {
