@@ -37,7 +37,6 @@ import {
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { IssueComment_ThreadState } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
@@ -362,9 +361,11 @@ function ActivityRow({
   );
 }
 
-// One line per completed run: what it found. A run with findings is a group,
-// a border holding the line and, while open, the card of every finding it
-// posted; Show and Hide fold it to the line. A run with none is a plain line.
+// One line per completed run: how many findings it posted. A finding it
+// reports again keeps its earlier thread and is not counted. A run with
+// findings is a group, a border holding the line and, while open, the card of
+// every finding it posted; Show and Hide fold it to the line. A run with none
+// is a plain line.
 function ReviewRunActivityRow({
   cards,
   isLast,
@@ -377,34 +378,11 @@ function ReviewRunActivityRow({
   source: Extract<TimelineSource, { type: "review-run" }>;
 }) {
   const { t } = useTranslation();
-  const { postedCount, keptCount, supersededCount } = source.completion;
-  // A run with nothing earlier to compare reads as a first review, with how
-  // many of its findings are still open. A later one says only what changed:
-  // an open count beside "still found" would read as covering those too.
-  const firstReview = keptCount === 0 && supersededCount === 0;
-  const open = firstReview
-    ? source.findings.filter(
-        (finding) => finding.threadState === IssueComment_ThreadState.OPEN
-      ).length
-    : 0;
-  const summary = firstReview
-    ? [
-        postedCount === 0
-          ? t("plan.review.activity.no-findings")
-          : t("plan.review.activity.n-findings", { count: postedCount }),
-      ]
-    : [
-        postedCount > 0 &&
-          t("plan.review.activity.n-new", { count: postedCount }),
-        keptCount > 0 &&
-          t("plan.review.activity.n-still-found", { count: keptCount }),
-        supersededCount > 0 &&
-          t("plan.review.activity.n-no-longer-found", {
-            count: supersededCount,
-          }),
-      ].filter((part) => part !== false);
-  if (open > 0)
-    summary.push(t("plan.automated-review.n-open", { count: open }));
+  const { postedCount } = source.completion;
+  const summary =
+    postedCount > 0
+      ? t("plan.review.activity.n-new-findings", { count: postedCount })
+      : t("plan.review.activity.no-new-findings");
   const header = (
     <>
       <span className="font-medium text-main">{reviewerName(t)}</span>
@@ -412,9 +390,7 @@ function ReviewRunActivityRow({
         {t("plan.review.activity.reviewed-the-sql")}
       </span>
       <span className="text-control-light">·</span>
-      <span className="text-control">
-        {summary.join(t("plan.findings.separator"))}
-      </span>
+      <span className="text-control">{summary}</span>
       <HumanizeTs
         className="text-xs text-control-light"
         tsMs={getTimeForPbTimestampProtoEs(source.time)}
