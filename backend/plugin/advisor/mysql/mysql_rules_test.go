@@ -166,6 +166,9 @@ func TestMySQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_TABLE_DISALLOW_DML, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"t", "u"}}}},
 		{Type: storepb.SQLReviewRule_TABLE_REQUIRE_CHARSET, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_TABLE_REQUIRE_COLLATION, Level: storepb.SQLReviewRule_WARNING},
+		// The mock tables report 0 rows, so a limit of 0 is the one that fires.
+		{Type: storepb.SQLReviewRule_TABLE_LIMIT_SIZE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 0}}},
+		{Type: storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 1000}}},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_NO_NULL, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, Level: storepb.SQLReviewRule_WARNING},

@@ -11,14 +11,6 @@ import (
 
 type columnSet map[string]bool
 
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
 type tableState map[string]columnSet
 
 // tableList returns table list in lexicographical order.

@@ -42,18 +42,6 @@ func (t tableState) tableList() []string {
 	return tableList
 }
 
-type tablePK map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tablePK) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
-
 // Stmt bundles an omni/tidb AST node with the source text and base line of
 // the statement it came from. The base line is needed to convert byte offsets
 // inside Text into absolute line numbers in the original full SQL.
