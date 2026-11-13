@@ -83,7 +83,170 @@ const exemptionScopeTurn = (
   { role: "tool", toolCallId: "question", content: JSON.stringify(answer) },
 ];
 
+const unmaskMethodTurn = (
+  args: Record<string, unknown> = {},
+  answer: Record<string, unknown> = {
+    kind: "choose",
+    answer: "Masking exemption",
+    value: "masking-exemption",
+  }
+): Message[] => [
+  { role: "user", content: "Help me view unmasked data." },
+  {
+    role: "assistant",
+    toolCalls: [
+      {
+        id: "method",
+        name: "ask_unmask_method",
+        arguments: JSON.stringify(args),
+      },
+    ],
+  },
+  { role: "tool", toolCallId: "method", content: JSON.stringify(answer) },
+];
+
 describe("getMaskingResumeArgs", () => {
+  test.each(["masking-exemption", "just-in-time"])(
+    "resumes %s without a preceding masking overview",
+    (value) => {
+      expect(
+        getMaskingResumeArgs(
+          unmaskMethodTurn(
+            { queryAccessMissing: true, forCurrentUser: false },
+            { kind: "choose", answer: "Selected method", value }
+          )
+        )
+      ).toEqual({});
+    }
+  );
+
+  test.each([
+    { project: "projects/orders" },
+    { database: "instances/prod/databases/orders" },
+    { database: "projects/orders/instances/prod/databases/orders" },
+    {
+      project: "projects/orders",
+      database: "instances/prod/databases/orders",
+    },
+    {
+      project: "projects/orders",
+      database: "projects/orders/instances/prod/databases/orders",
+    },
+  ])("preserves explicit unmask method scope %j", (scope) => {
+    const messages = unmaskMethodTurn({
+      ...scope,
+      queryAccessMissing: false,
+      forCurrentUser: true,
+    });
+    const before = structuredClone(messages);
+    expect(getMaskingResumeArgs(messages)).toEqual(scope);
+    expect(messages).toEqual(before);
+  });
+
+  test.each(["", " \t "])(
+    "treats blank optional method scope %j as omitted",
+    (blank) => {
+      expect(
+        getMaskingResumeArgs(
+          unmaskMethodTurn({ project: "projects/orders", database: blank })
+        )
+      ).toEqual({ project: "projects/orders" });
+      expect(
+        getMaskingResumeArgs(
+          unmaskMethodTurn({
+            project: blank,
+            database: "instances/prod/databases/orders",
+          })
+        )
+      ).toEqual({ database: "instances/prod/databases/orders" });
+      expect(
+        getMaskingResumeArgs(
+          unmaskMethodTurn({ project: blank, database: blank })
+        )
+      ).toEqual({});
+    }
+  );
+
+  test("does not revive an overview scope or interpret the method as a resource", () => {
+    expect(
+      getMaskingResumeArgs([
+        ...maskingTurn.slice(0, 3),
+        ...unmaskMethodTurn().slice(1),
+      ])
+    ).toEqual({});
+  });
+
+  test.each([
+    { kind: "cancelled", reason: "user" },
+    { kind: "input", answer: "Masking exemption", value: "masking-exemption" },
+    {
+      kind: "confirm",
+      answer: "Masking exemption",
+      value: "masking-exemption",
+    },
+    { kind: "choose", answer: "Masking exemption" },
+    { kind: "choose", answer: "Masking exemption", value: 7 },
+    { kind: "choose", answer: "Masking exemption", value: "projects/orders" },
+    {
+      kind: "choose",
+      answer: "Masking exemption",
+      value: "instances/prod/databases/orders",
+    },
+    {
+      kind: "choose",
+      answer: "Masking exemption",
+      value: "semantic-type:email",
+    },
+    { kind: "choose", answer: "Masking exemption", value: "MASKING-EXEMPTION" },
+    { kind: "choose", answer: "Masking exemption", value: "just-in-time " },
+  ])("rejects an invalid unmask method answer %j", (answer) => {
+    expect(getMaskingResumeArgs(unmaskMethodTurn({}, answer))).toBeUndefined();
+  });
+
+  test.each([
+    { project: 7 },
+    { database: 7 },
+    { queryAccessMissing: "true" },
+    { forCurrentUser: "false" },
+    { project: "orders" },
+    { project: "projects/-" },
+    { project: "projects/*" },
+    { project: "projects/orders/" },
+    { project: " projects/orders " },
+    { database: "orders" },
+    { database: " instances/prod/databases/orders " },
+    { database: "instances/-/databases/orders" },
+    { database: "instances/*/databases/orders" },
+    { database: "instances/prod/databases/-" },
+    { database: "instances/prod/databases/*" },
+    { database: "projects/-/instances/prod/databases/orders" },
+    { database: "projects/*/instances/prod/databases/orders" },
+    { database: "projects/orders/instances/-/databases/orders" },
+    { database: "instances/prod/databases/orders/metadata" },
+    {
+      project: "projects/orders",
+      database: "projects/other/instances/prod/databases/orders",
+    },
+    { semanticTypeId: "email" },
+  ])("rejects malformed or conflicting unmask method arguments %j", (args) => {
+    expect(getMaskingResumeArgs(unmaskMethodTurn(args))).toBeUndefined();
+  });
+
+  test("does not resume an unmask method after the run has completed", () => {
+    const messages = unmaskMethodTurn();
+    expect(
+      getMaskingResumeArgs([
+        messages[0]!,
+        {
+          role: "assistant",
+          toolCalls: [{ id: "done", name: "done", arguments: "{}" }],
+        },
+        { role: "tool", toolCallId: "done", content: '{"success":true}' },
+        ...messages.slice(1),
+      ])
+    ).toBeUndefined();
+  });
+
   test.each([
     {
       name: "another rule database",
@@ -290,6 +453,96 @@ describe("getMaskingResumeArgs", () => {
     );
     messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
     expect(getMaskingResumeArgs(messages)).toEqual(expected);
+  });
+
+  test.each([
+    ["projects/billing", { project: "projects/billing" }],
+    ["another-database", { project: "projects/billing" }],
+    [
+      "instances/prod/databases/billing",
+      {
+        project: "projects/billing",
+        database: "instances/prod/databases/billing",
+      },
+    ],
+    [
+      "projects/billing/instances/prod/databases/billing",
+      {
+        project: "projects/billing",
+        database: "projects/billing/instances/prod/databases/billing",
+      },
+    ],
+  ])(
+    "uses the explicit exemption question project for scope %s",
+    (value, expected) => {
+      const messages = exemptionScopeTurn(
+        { kind: "choose", answer: "Selected scope", value },
+        { askArgs: { project: "projects/billing" } }
+      );
+      messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
+      expect(getMaskingResumeArgs(messages)).toEqual(expected);
+    }
+  );
+
+  test.each([
+    "projects/orders",
+    "projects/orders/instances/prod/databases/orders",
+    "instances/-/databases/billing",
+    "instances/prod/databases/-",
+    "instances/prod/databases/*",
+  ])("rejects an invalid or foreign explicit exemption scope %s", (value) => {
+    const messages = exemptionScopeTurn(
+      { kind: "choose", answer: "Selected scope", value },
+      { askArgs: { project: "projects/billing" } }
+    );
+    messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
+    expect(getMaskingResumeArgs(messages)).toBeUndefined();
+  });
+
+  test.each([
+    null,
+    7,
+    "billing",
+    "projects/-",
+    "projects/*",
+    "projects/billing/",
+    " projects/billing ",
+  ])("rejects an invalid explicit exemption question project %j", (project) => {
+    const messages = exemptionScopeTurn(
+      { kind: "choose", answer: "Another database", value: "another-database" },
+      { askArgs: { project } }
+    );
+    messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
+    expect(getMaskingResumeArgs(messages)).toBeUndefined();
+  });
+
+  test.each(["", " \t "])(
+    "uses the overview project when the optional exemption question project is blank %j",
+    (project) => {
+      const messages = exemptionScopeTurn(
+        {
+          kind: "choose",
+          answer: "Another database",
+          value: "another-database",
+        },
+        { askArgs: { project } }
+      );
+      messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
+      expect(getMaskingResumeArgs(messages)).toEqual({
+        project: "projects/orders",
+      });
+    }
+  );
+
+  test("still requires a preceding overview for an explicit exemption question project", () => {
+    const messages = exemptionScopeTurn(
+      { kind: "choose", answer: "Selected project", value: "projects/billing" },
+      { askArgs: { project: "projects/billing" } }
+    );
+    messages[3].toolCalls![0].name = "ask_masking_exemption_scope";
+    expect(
+      getMaskingResumeArgs([messages[0]!, ...messages.slice(3)])
+    ).toBeUndefined();
   });
 
   test.each([

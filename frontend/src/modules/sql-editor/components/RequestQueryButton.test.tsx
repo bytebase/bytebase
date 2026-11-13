@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -22,7 +23,7 @@ const mocks = vi.hoisted(() => ({
   hasFeature: vi.fn(() => true),
   loadSubscription: vi.fn(),
   hasInstanceFeature: vi.fn(() => true),
-  appHasFeature: vi.fn(() => true),
+  appHasFeature: vi.fn((_feature: number) => true),
   parseStringToResource: vi.fn((s: string) => ({
     databaseFullName: s,
     databaseName: s,
@@ -283,6 +284,61 @@ describe("RequestQueryButton", () => {
     );
     render();
     expect(container.textContent).toContain("sql-editor.request-query");
+    unmount();
+  });
+
+  test.each([
+    ["data write", ["bb.sql.dml"]],
+    ["schema write", ["bb.sql.ddl"]],
+    ["mixed read and data write", ["bb.sql.select", "bb.sql.dml"]],
+  ])(
+    "%s uses Request Role when both workflows are enabled",
+    (_, requiredPermissions) => {
+      setupDefaultMocks(true, true);
+      const { container, render, unmount } = renderIntoContainer(
+        <RequestQueryButton
+          permissionDeniedDetail={makePermissionDeniedDetail({
+            requiredPermissions,
+          })}
+        />
+      );
+      render();
+      expect(container.textContent).toContain("issue.title.request-role");
+      expect(container.textContent).not.toContain("sql-editor.request-query");
+      unmount();
+    }
+  );
+
+  test("does not offer a write request when only JIT is enabled", () => {
+    setupDefaultMocks(true, false);
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.dml"],
+        })}
+      />
+    );
+    render();
+    expect(container.querySelector("button")).toBeNull();
+    unmount();
+  });
+
+  test("does not switch to Request Role when the JIT feature is unavailable", () => {
+    setupDefaultMocks(true, true);
+    mocks.appHasFeature.mockImplementation(
+      (feature) => feature !== PlanFeature.FEATURE_JIT
+    );
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        permissionDeniedDetail={makePermissionDeniedDetail()}
+      />
+    );
+    render();
+    expect(container.textContent).toContain("sql-editor.request-query");
+    expect(container.querySelector("button")?.disabled).toBe(true);
+    expect(
+      container.querySelector("[data-testid='feature-badge']")
+    ).not.toBeNull();
     unmount();
   });
 

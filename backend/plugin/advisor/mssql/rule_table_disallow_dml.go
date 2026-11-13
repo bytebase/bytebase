@@ -57,27 +57,27 @@ func (r *tableDisallowDMLRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.InsertStmt:
 		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
+			tableName = normalizeTableRef(ref, "")
 			loc = n.Loc
 		}
 	case *ast.UpdateStmt:
 		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
+			tableName = normalizeTableRef(ref, "")
 			loc = n.Loc
 		}
 	case *ast.DeleteStmt:
 		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
+			tableName = normalizeTableRef(ref, "")
 			loc = n.Loc
 		}
 	case *ast.MergeStmt:
 		if ref, ok := n.Target.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
+			tableName = normalizeTableRef(ref, "")
 			loc = n.Loc
 		}
 	case *ast.SelectStmt:
 		if n.IntoTable != nil {
-			tableName = normalizeTableRef(n.IntoTable, "", "")
+			tableName = normalizeTableRef(n.IntoTable, "")
 			loc = n.Loc
 		}
 	default:

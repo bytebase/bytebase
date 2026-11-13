@@ -23,6 +23,8 @@
   },
   "agent": {
     "access-grant-draft": {
+      "default-reason": "申请临时查询 {{database}} 的权限。",
+      "default-unmask-reason": "申请临时查询 {{database}} 的权限，并查看未脱敏的查询结果。",
       "open": "Open access request draft",
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
@@ -197,6 +199,13 @@
         "create": "创建自定义脱敏类型…",
         "create-description": "按所需脱敏配置准备新的语义类型。",
         "question": "应使用哪种语义类型对这些列进行脱敏？"
+      },
+      "unmask-method": {
+        "exemption": "脱敏豁免",
+        "exemption-description": "对所选资源解除脱敏。需要已有查询权限。",
+        "jit": "访问授权",
+        "jit-description": "仅限你本人，为一条确定的只读查询申请临时访问权限，并启用查看未脱敏数据。",
+        "question": "你希望通过哪种方式访问未脱敏数据？"
       }
     },
     "masking-exemption-draft": {
@@ -378,8 +387,6 @@
       "paused": "此轮运行已达到 Token 上限，现已暂停。",
       "reached": "此轮运行已达到 Token 上限。",
       "recovery-unavailable": "此浏览器无法安全地继续已保存的 Agent 运行。请使用受支持且已更新的浏览器。",
-      "remote-busy": "此轮运行可能仍在另一个标签页中进行。",
-      "resume": "继续运行",
       "run-limit": "此轮运行的 Token 上限",
       "title": "运行 Token 预算",
       "usage": "{{used}} / {{limit}} Token",
@@ -2098,8 +2105,7 @@
       "visit-issues": "访问工单",
       "visit-prjects": "访问项目",
       "yours": "你的快捷链接"
-    },
-    "workspace": "工作空间"
+    }
   },
   "masking": {
     "reason": {

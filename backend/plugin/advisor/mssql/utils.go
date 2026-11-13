@@ -8,14 +8,11 @@ import (
 
 // normalizeTableRef joins non-empty parts of a TableRef into a dot-separated string.
 // Case is preserved to match the original NormalizeTSQLTableName behavior.
-func normalizeTableRef(ref *ast.TableRef, fallbackDB, fallbackSchema string) string {
+func normalizeTableRef(ref *ast.TableRef, fallbackSchema string) string {
 	if ref == nil {
 		return ""
 	}
 	db, schema, obj := ref.Database, ref.Schema, ref.Object
-	if db == "" {
-		db = fallbackDB
-	}
 	if schema == "" {
 		schema = fallbackSchema
 	}

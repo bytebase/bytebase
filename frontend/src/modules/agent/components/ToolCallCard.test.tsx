@@ -686,6 +686,117 @@ describe("ToolCallCard", () => {
     act(() => root.unmount());
   });
 
+  test("warns when a failed done result has a verified recovery draft", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const result = { text: "Query blocked; access draft prepared", success: false };
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{ id: "done-1", name: "done", arguments: "{}" }}
+          result={JSON.stringify(result)}
+          hasRecoveryDraft
+        />
+      );
+    });
+
+    expect(container.querySelector("button .text-warning")).toHaveTextContent(
+      "agent.tool-completed-with-warnings"
+    );
+    expect(container.querySelector("button .text-error")).toBeNull();
+    expect(container.querySelector("button .text-success")).toBeNull();
+    act(() => (container.querySelector("button") as HTMLElement).click());
+    expect(container.querySelector("pre")).toHaveTextContent(result.text);
+    act(() => root.unmount());
+  });
+
+  test.each([
+    ["missing", undefined],
+    ["invalid JSON", "invalid JSON"],
+    ["array", JSON.stringify([{ success: false, text: "Blocked" }])],
+    ["missing success", JSON.stringify({ text: "Blocked" })],
+    ["non-boolean success", JSON.stringify({ success: "false", text: "Blocked" })],
+    ["missing text", JSON.stringify({ success: false })],
+    ["empty text", JSON.stringify({ success: false, text: "   " })],
+    ["skipped", JSON.stringify({ success: false, text: "Skipped", skipped: true })],
+    ["error", JSON.stringify({ success: false, text: "Blocked", kind: "error" })],
+  ])("does not label a %s done result as recovered", (_name, result) => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify({ success: false, text: "Draft prepared" }),
+          }}
+          result={result}
+          hasRecoveryDraft
+        />
+      );
+    });
+
+    expect(container.querySelector("button .text-warning")).toBeNull();
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    act(() => root.unmount());
+  });
+
+  test("does not treat model recovery claims as runtime evidence", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    const recoveryClaim = {
+      success: false,
+      text: "Access draft prepared",
+      hasRecoveryDraft: true,
+      accessRequestDraft: { statement: "SELECT 1" },
+    };
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "done-1",
+            name: "done",
+            arguments: JSON.stringify(recoveryClaim),
+          }}
+          result={JSON.stringify(recoveryClaim)}
+        />
+      );
+    });
+
+    expect(container.querySelector("button .text-warning")).toBeNull();
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    act(() => root.unmount());
+  });
+
+  test("keeps failed API calls failed when a recovery draft exists", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ToolCallCard
+          toolCall={{
+            id: "query-1",
+            name: "call_api",
+            arguments: JSON.stringify({ operationId: "SQLService/Query" }),
+          }}
+          result={JSON.stringify({ status: 403, error: "Permission denied" })}
+          hasRecoveryDraft
+        />
+      );
+    });
+
+    expect(container.querySelector("button .text-warning")).toBeNull();
+    expect(container.querySelector("button .text-error")).toHaveTextContent(
+      "agent.tool-failed"
+    );
+    act(() => root.unmount());
+  });
+
   test("keeps malformed SQL tool results behind the raw disclosure", () => {
     const { container, unmount } = renderCard(
       "SQLService/Query",

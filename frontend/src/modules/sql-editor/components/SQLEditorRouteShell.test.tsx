@@ -362,6 +362,7 @@ describe("SQLEditorRouteShell", () => {
       targets: ["instances/inst1/databases/db1"],
       statement: "SELECT id FROM users",
       schema: "public",
+      reason: "Investigate a reported account issue",
     };
     const accessGrantDraftKey = saveAccessGrantDraft(draft);
     mocks.renderRoute = {
@@ -382,6 +383,7 @@ describe("SQLEditorRouteShell", () => {
       query: draft.statement,
       targets: draft.targets,
       schema: draft.schema,
+      reason: draft.reason,
     });
     expect(sessionStorage.getItem(accessGrantDraftKey)).toBeNull();
     expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(true);
@@ -393,6 +395,48 @@ describe("SQLEditorRouteShell", () => {
     );
     unmount();
   });
+
+  test.each([true, false])(
+    "opens an Access Grant draft with its explicit unmask=%s preference",
+    async (unmask) => {
+      const draft = {
+        project: "projects/proj1",
+        sourceDatabase: "instances/inst1/databases/db1",
+        targets: [
+          "instances/inst1/databases/db1",
+          "instances/inst1/databases/db2",
+        ],
+        statement: "SELECT email FROM public.users WHERE id = 42;",
+        schema: "public",
+        container: "tenant1",
+        unmask,
+      };
+      const accessGrantDraftKey = saveAccessGrantDraft(draft);
+      mocks.renderRoute = {
+        ...mocks.renderRoute,
+        query: { accessGrantDraftKey },
+      };
+      mocks.currentRoute = mocks.renderRoute;
+
+      const { unmount } = renderShell();
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(mocks.openAccessGrantDrawer).toHaveBeenCalledOnce();
+      expect(mocks.openAccessGrantDrawer).toHaveBeenCalledWith({
+        query: draft.statement,
+        targets: draft.targets,
+        schema: draft.schema,
+        container: draft.container,
+        unmask,
+      });
+      expect(wasDeniedQueryRequestDraftDelivered(accessGrantDraftKey)).toBe(true);
+      unmount();
+    }
+  );
 
   test("opens a project instance draft when workspace IDs collide", async () => {
     const sourceDatabase =

@@ -74,7 +74,7 @@ func (r *tableRequirePkRule) handleCreateTable(n *ast.CreateTableStmt) {
 	if n.Name == nil {
 		return
 	}
-	norm := normalizeTableRef(n.Name, "", "dbo")
+	norm := normalizeTableRef(n.Name, "dbo")
 	original := tableRefText(n.Name)
 
 	r.tableHasPK[norm] = false
@@ -123,7 +123,7 @@ func (r *tableRequirePkRule) handleAlterTable(n *ast.AlterTableStmt) {
 	if n.Name == nil || n.Actions == nil {
 		return
 	}
-	norm := normalizeTableRef(n.Name, "", "dbo")
+	norm := normalizeTableRef(n.Name, "dbo")
 
 	for _, item := range n.Actions.Items {
 		action, ok := item.(*ast.AlterTableAction)

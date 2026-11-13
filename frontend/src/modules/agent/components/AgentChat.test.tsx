@@ -1,5 +1,7 @@
+import { fireEvent, within } from "@testing-library/react";
+import { createInstance } from "i18next";
 import type { ReactElement } from "react";
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -10,6 +12,9 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   SETTING_ROUTE_WORKSPACE_GENERAL,
 } from "@/app/router/handles";
+import enUS from "@/locales/en-US.json";
+import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
+import { reactI18nextStub } from "@/test-utils/i18n";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
 import { buildOutboundHistory } from "../logic/outboundHistory";
@@ -45,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   prepareAgentPlanDraftRoute: vi.fn(),
   applyPlanDraftToCurrent: vi.fn(),
   prepareAgentDeniedQueryRequestRoute: vi.fn(),
+  validateDeniedQueryRequestDraft: vi.fn(),
   prepareIssueCommentDraftRoute: vi.fn(),
   wasDeniedQueryRequestDraftDelivered: vi.fn(),
   wasIssueCommentDraftDelivered: vi.fn(),
@@ -158,10 +164,15 @@ vi.mock("@/app/router", async (importOriginal) => {
   };
 });
 
-vi.mock("@/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
-  hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
-}));
+vi.mock("@/utils", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/utils")>();
+  return {
+    ...original,
+    extractDatabaseResourceName: (resource: string) =>
+      original.extractDatabaseResourceName(resource),
+    hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
+  };
+});
 
 vi.mock("@/lib/clipboard", () => ({
   writeTextToClipboard: mocks.writeTextToClipboard,
@@ -170,6 +181,7 @@ vi.mock("@/lib/clipboard", () => ({
 vi.mock("@/stores/app", () => {
   const state = {
     getSettingByName: mocks.getSettingByName,
+    getWorkspaceProfile: () => ({}),
     currentUser: { name: "users/member@example.com" },
     workspaceResourceName: () => "workspaces/demo",
     get serverInfo() {
@@ -182,6 +194,16 @@ vi.mock("@/stores/app", () => {
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("@/components/DatabaseSelect", () => ({
+  DatabaseSelect: ({ value }: { value: string[] }) => (
+    <div>{value.join(", ")}</div>
+  ),
+}));
+
+vi.mock("@/components/monaco/MonacoEditor", () => ({
+  MonacoEditor: ({ content }: { content: string }) => <pre>{content}</pre>,
+}));
 
 vi.mock("../logic/semanticTypeDraft", () => ({
   getSemanticTypeDraft: mocks.getSemanticTypeDraft,
@@ -217,6 +239,7 @@ vi.mock("@/lib/plan/agentDraftHandoff", () => ({
 }));
 
 vi.mock("../logic/deniedQueryAccess", () => ({
+  validateDeniedQueryRequestDraft: mocks.validateDeniedQueryRequestDraft,
   prepareAgentDeniedQueryRequestRoute: mocks.prepareAgentDeniedQueryRequestRoute,
   DeniedQueryRequestDraftStorageError: class DeniedQueryRequestDraftStorageError extends Error {},
 }));
@@ -307,6 +330,7 @@ beforeEach(async () => {
   mocks.prepareAgentPlanDraftRoute.mockReset();
   mocks.applyPlanDraftToCurrent.mockReset();
   mocks.prepareAgentDeniedQueryRequestRoute.mockReset();
+  mocks.validateDeniedQueryRequestDraft.mockReset().mockResolvedValue(true);
   mocks.prepareIssueCommentDraftRoute.mockReset();
   mocks.wasDeniedQueryRequestDraftDelivered.mockReset();
   mocks.wasDeniedQueryRequestDraftDelivered.mockReturnValue(true);
@@ -972,7 +996,191 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("opens a denied Query as an unsent Access Grant draft", async () => {
+  describe("Access Grant recovery status", () => {
+    const draft = {
+      project: "projects/sample",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      statement: "SELECT * FROM orders",
+    };
+    const addAttempt = (runId?: string) => {
+      const store = useAgentStore.getState();
+      store.addMessage({
+        role: "user",
+        content: "Query orders",
+        metadata: { runId },
+      });
+      store.addMessage({
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "query",
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "SQLService/Query",
+              body: {
+                name: draft.sourceDatabase,
+                statement: draft.statement,
+              },
+            }),
+          },
+          {
+            id: "prepare",
+            name: "prepare_access_grant_draft",
+            arguments: "{}",
+          },
+          {
+            id: "done",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "The query was denied. An access request draft is ready.",
+              success: false,
+              hasRecoveryDraft: true,
+            }),
+          },
+        ],
+        metadata: { runId },
+      });
+      store.addMessage({
+        role: "tool",
+        toolCallId: "query",
+        content: JSON.stringify({
+          status: 403,
+          error: "Permission denied",
+          response: null,
+        }),
+        metadata: { runId },
+      });
+      store.addMessage({
+        role: "tool",
+        toolCallId: "prepare",
+        content: JSON.stringify({ status: "unsaved", draft }),
+        metadata: { runId },
+      });
+      return store.addMessage({
+        role: "tool",
+        toolCallId: "done",
+        content: JSON.stringify({
+          text: "The query was denied. An access request draft is ready.",
+          success: false,
+        }),
+        metadata: { runId },
+      })!;
+    };
+
+    test.each([undefined, "run-1"])(
+      "shows a warning for a failed query with a runtime-prepared draft, run %s",
+      (runId) => {
+        const store = useAgentStore.getState();
+        const result = addAttempt(runId);
+        store.addMessage({
+          role: "assistant",
+          content: "The query was denied. Review the draft before submitting.",
+          metadata: { runId, accessRequestDraft: draft },
+        });
+        const messages = store.getMessages(result.chatId);
+        expect(messages).toHaveLength(6);
+        const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+        try {
+          render();
+          expect(
+            within(container).getByRole("button", { name: /^call_api/ })
+          ).toHaveTextContent("agent.tool-failed");
+          expect(
+            within(container).getByRole("button", { name: /^done/ })
+          ).toHaveTextContent("agent.tool-completed-with-warnings");
+          expect(
+            container.querySelector("[data-agent-action-request-access]")
+          ).not.toBeNull();
+          expect(store.getMessages(result.chatId)).toEqual(messages);
+          expect(JSON.parse(result.content!)).toMatchObject({ success: false });
+          expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+          expect(mocks.routerPush).not.toHaveBeenCalled();
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test.each([
+      {
+        name: "a model claim without runtime metadata",
+        metadata: { runId: "run-1" },
+      },
+      {
+        name: "another run's draft",
+        metadata: { runId: "run-2", accessRequestDraft: draft },
+      },
+      {
+        name: "a pending answer",
+        metadata: { runId: "run-1", pending: true, accessRequestDraft: draft },
+      },
+      {
+        name: "an error answer",
+        metadata: {
+          runId: "run-1",
+          error: "Preparation failed",
+          accessRequestDraft: draft,
+        },
+      },
+      {
+        name: "a Request Role draft",
+        metadata: {
+          runId: "run-1",
+          accessRequestDraft: {
+            ...draft,
+            kind: "requestRole",
+            resources: [],
+            requiredPermissions: [],
+          },
+        },
+      },
+    ] satisfies { name: string; metadata: AgentMessageMetadata }[])(
+      "does not recover done from $name",
+      ({ metadata }) => {
+        addAttempt("run-1");
+        useAgentStore.getState().addMessage({
+          role: "assistant",
+          content: "An access request draft is ready.",
+          metadata,
+        });
+        const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+        try {
+          render();
+          const done = within(container).getByRole("button", { name: /^done/ });
+          expect(done).toHaveTextContent("agent.tool-failed");
+          expect(done).not.toHaveTextContent("agent.tool-completed-with-warnings");
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test("does not apply a later turn's draft to an earlier done with reused call IDs", () => {
+      const store = useAgentStore.getState();
+      addAttempt();
+      store.addMessage({ role: "assistant", content: "The query was denied." });
+      addAttempt();
+      store.addMessage({
+        role: "assistant",
+        content: "Review the access request draft.",
+        metadata: { accessRequestDraft: draft },
+      });
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      try {
+        render();
+        const done = within(container).getAllByRole("button", { name: /^done/ });
+        expect(done[0]).toHaveTextContent("agent.tool-failed");
+        expect(done[1]).toHaveTextContent(
+          "agent.tool-completed-with-warnings"
+        );
+      } finally {
+        unmount();
+      }
+    });
+  });
+
+  test("opens a freshly validated Access Grant draft inline without navigating", async () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     const draft = {
@@ -980,6 +1188,9 @@ describe("AgentChat", () => {
       sourceDatabase: "instances/prod/databases/app",
       targets: ["instances/prod/databases/app"],
       statement: "SELECT * FROM orders",
+      schema: "",
+      container: "",
+      unmask: true,
     };
     store.addMessage({
       chatId: chat.id,
@@ -987,17 +1198,9 @@ describe("AgentChat", () => {
       content: "The API denied this query.",
       metadata: { accessRequestDraft: draft },
     });
-    const route = {
-      fullPath:
-        "/sql-editor/sample/prod/app?accessGrantDraftKey=draft-1",
-      query: { accessGrantDraftKey: "draft-1" },
-    };
-    mocks.prepareAgentDeniedQueryRequestRoute.mockResolvedValue(route);
-    mocks.routerPush.mockImplementation(async () => {
-      mocks.currentPath = "/sql-editor/sample/prod/app";
-    });
     useAgentStore.setState({ visible: true, minimized: false });
-    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    const onOpenAccessGrantDraft = vi.fn(() => true);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onOpenAccessGrantDraft={onOpenAccessGrantDraft} />);
     render();
 
     const button = container.querySelector<HTMLButtonElement>(
@@ -1008,10 +1211,176 @@ describe("AgentChat", () => {
     expect(button).toHaveClass("-ml-2");
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
     await act(async () => button?.click());
-    expect(mocks.prepareAgentDeniedQueryRequestRoute).toHaveBeenCalledWith(draft);
-    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
+    expect(onOpenAccessGrantDraft).toHaveBeenCalledWith({
+      ...draft,
+      reason: "Request temporary query access to app with unmasked results.",
+    });
+    expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(useAgentStore.getState().minimized).toBe(true);
     unmount();
+  });
+
+  describe.each([false, true])("Access Grant Reason with Unmask=%s", (unmask) => {
+    test.each([undefined, "", " \n ", "  Investigate the reported discrepancy.\n"])(
+      "prefills an editable Reason from %j without changing the draft's scope",
+      async (reason) => {
+        mocks.useTranslation.mockReturnValue(reactI18nextStub().useTranslation());
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: "projects/sample" });
+        const draft = {
+          project: "projects/sample",
+          sourceDatabase: "projects/sample/instances/prod/databases/app",
+          targets: ["projects/sample/instances/prod/databases/app"],
+          statement: "SELECT id FROM orders",
+          unmask,
+          reason,
+        };
+        store.addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          content: "Review the access request draft.",
+          metadata: { accessRequestDraft: draft },
+        });
+        const onOpenAccessGrantDraft = vi.fn(() => true);
+        const { container, render, unmount } = renderIntoContainer(
+          <AgentChat onOpenAccessGrantDraft={onOpenAccessGrantDraft} />
+        );
+        try {
+          render();
+          await act(async () => {
+            container.querySelector<HTMLButtonElement>(
+              "[data-agent-action-request-access]"
+            )?.click();
+          });
+          expect(onOpenAccessGrantDraft).toHaveBeenCalledWith({
+            ...draft,
+            reason: reason?.trim()
+              ? reason
+              : unmask
+                ? "Request temporary query access to app with unmasked results."
+                : "Request temporary query access to app.",
+          });
+          expect(draft.reason).toBe(reason);
+          expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
+          expect(mocks.routerPush).not.toHaveBeenCalled();
+          expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test.each([undefined, "", " \n ", "  Investigate the reported discrepancy.\n"])(
+      "opens the actual request form with an editable English Reason from %j",
+      async (reason) => {
+        const actualI18next = await vi.importActual<typeof import("react-i18next")>(
+          "react-i18next"
+        );
+        const i18n = createInstance();
+        await i18n.init({
+          lng: "en-US",
+          fallbackLng: "en-US",
+          resources: { "en-US": { translation: enUS } },
+          interpolation: { escapeValue: false },
+        });
+        mocks.useTranslation.mockImplementation(() => {
+          const translation = actualI18next.useTranslation();
+          return { t: translation.t, i18n: translation.i18n };
+        });
+        const { AccessGrantRequestDrawer } = await import(
+          "@/modules/access-control/AccessGrantRequestDrawer"
+        );
+        const { accessGrantServiceClientConnect } = await import("@/api");
+        const createGrant = vi.spyOn(
+          accessGrantServiceClientConnect,
+          "createAccessGrant"
+        );
+        const draft: AccessGrantDraft = {
+          project: "projects/sample",
+          sourceDatabase: "projects/sample/instances/prod/databases/app",
+          targets: ["projects/sample/instances/prod/databases/app"],
+          statement: "SELECT id FROM orders",
+          unmask,
+          reason,
+        };
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: draft.project });
+        store.addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          content: "Review the access request draft.",
+          metadata: { accessRequestDraft: draft },
+        });
+        function DraftHost() {
+          const [opened, setOpened] = useState<AccessGrantDraft>();
+          return (
+            <>
+              <AgentChat
+                onOpenAccessGrantDraft={(next) => {
+                  setOpened(next);
+                  return true;
+                }}
+              />
+              {opened && (
+                <AccessGrantRequestDrawer
+                  project={opened.project}
+                  targets={opened.targets}
+                  query={opened.statement}
+                  unmask={opened.unmask}
+                  reason={opened.reason}
+                  onClose={() => setOpened(undefined)}
+                />
+              )}
+            </>
+          );
+        }
+        const { container, render, unmount } = renderIntoContainer(
+          <actualI18next.I18nextProvider i18n={i18n}>
+            <DraftHost />
+          </actualI18next.I18nextProvider>
+        );
+        try {
+          render();
+          await act(async () => {
+            container.querySelector<HTMLButtonElement>(
+              "[data-agent-action-request-access]"
+            )?.click();
+          });
+          const dialog = within(document.body).getByRole("dialog");
+          const reasonInput = within(dialog).getByRole<HTMLTextAreaElement>(
+            "textbox"
+          );
+          const submit = within(dialog).getByRole("button", { name: "Submit" });
+          const expectedReason = reason?.trim()
+            ? reason
+            : unmask
+              ? "Request temporary query access to app with unmasked results."
+              : "Request temporary query access to app.";
+          expect(reasonInput).toHaveValue(expectedReason);
+          expect(submit).toBeEnabled();
+          act(() => {
+            fireEvent.change(reasonInput, {
+              target: { value: "Investigate a reported discrepancy." },
+            });
+          });
+          expect(reasonInput).toHaveValue("Investigate a reported discrepancy.");
+          expect(submit).toBeEnabled();
+          act(() => {
+            fireEvent.change(reasonInput, { target: { value: "" } });
+          });
+          expect(reasonInput).toHaveValue("");
+          expect(submit).toBeDisabled();
+          expect(createGrant).not.toHaveBeenCalled();
+          expect(mocks.routerPush).not.toHaveBeenCalled();
+          expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+        } finally {
+          unmount();
+          createGrant.mockRestore();
+        }
+      }
+    );
   });
 
   test("opens a denied Query as an unsent Request Role draft", async () => {
@@ -1058,7 +1427,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("keeps the Agent visible when an existing access drawer rejects the draft", async () => {
+  test.each(["invalid", "unavailable", "rejected"])("keeps the Agent visible when the inline draft is %s", async (failure) => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -1074,17 +1443,10 @@ describe("AgentChat", () => {
         },
       },
     });
-    const route = {
-      fullPath: "/sql-editor/sample/prod/app?accessGrantDraftKey=draft-2",
-      query: { accessGrantDraftKey: "draft-2" },
-    };
-    mocks.prepareAgentDeniedQueryRequestRoute.mockResolvedValue(route);
-    mocks.routerPush.mockImplementation(async () => {
-      mocks.currentPath = "/sql-editor/sample/prod/app";
-    });
-    mocks.wasDeniedQueryRequestDraftDelivered.mockReturnValue(false);
+    mocks.validateDeniedQueryRequestDraft.mockResolvedValue(failure !== "invalid");
+    const onOpenAccessGrantDraft = vi.fn(() => false);
     useAgentStore.setState({ visible: true, minimized: false });
-    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onOpenAccessGrantDraft={failure === "unavailable" ? undefined : onOpenAccessGrantDraft} />);
     render();
 
     await act(async () => {
@@ -1103,7 +1465,9 @@ describe("AgentChat", () => {
       );
     });
 
-    expect(mocks.routerPush).toHaveBeenCalledWith(route);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+    if (failure === "invalid") expect(onOpenAccessGrantDraft).not.toHaveBeenCalled();
     expect(useAgentStore.getState().minimized).toBe(false);
     expect(mocks.notify).toHaveBeenCalledWith(
       expect.objectContaining({
