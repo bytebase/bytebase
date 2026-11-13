@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -313,5 +314,44 @@ func TestCollectResult(t *testing.T) {
 		w.Rollout = nil
 
 		require.Nil(t, collectResult(context.Background(), w, c))
+	})
+}
+
+func TestCollectionContext(t *testing.T) {
+	done := func(ctx context.Context) bool {
+		select {
+		case <-ctx.Done():
+			return true
+		case <-time.After(5 * time.Second):
+			return false
+		}
+	}
+
+	t.Run("a job canceled during the read gets the grace period, not the full timeout", func(t *testing.T) {
+		commandCtx, cancelCommand := context.WithCancel(context.Background())
+		ctx, cancel := collectionContext(commandCtx, time.Hour, 10*time.Millisecond)
+		defer cancel()
+		require.NoError(t, ctx.Err())
+
+		cancelCommand()
+
+		require.True(t, done(ctx))
+	})
+
+	t.Run("a job canceled before the read still gets the grace period", func(t *testing.T) {
+		commandCtx, cancelCommand := context.WithCancel(context.Background())
+		cancelCommand()
+		ctx, cancel := collectionContext(commandCtx, time.Hour, time.Hour)
+		defer cancel()
+
+		require.NoError(t, ctx.Err(), "the result is still read after a cancel")
+	})
+
+	t.Run("a job that is not canceled gets the full timeout", func(t *testing.T) {
+		ctx, cancel := collectionContext(context.Background(), 10*time.Millisecond, time.Hour)
+		defer cancel()
+
+		require.True(t, done(ctx))
+		require.ErrorIs(t, ctx.Err(), context.DeadlineExceeded)
 	})
 }

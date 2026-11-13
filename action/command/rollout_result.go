@@ -37,13 +37,7 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 	if w.Rollout == nil {
 		return nil
 	}
-	// The command's context is canceled when the job is, and the result is
-	// still read then, within a shorter bound.
-	timeout := resultTimeout
-	if commandCtx.Err() != nil {
-		timeout = canceledResultTimeout
-	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(commandCtx), timeout)
+	ctx, cancel := collectionContext(commandCtx, resultTimeout, canceledResultTimeout)
 	defer cancel()
 
 	in := result.Input{
@@ -114,6 +108,27 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 	in.Sources = readSources(ctx, w, client, releases, result.NeededSources(stage, taskRuns, in.Logs))
 	in.Releases = releases.read
 	return result.Build(in)
+}
+
+// collectionContext bounds reading the result. The command's context is
+// canceled when the job is, and the result is still read then: the returned
+// context outlives that cancellation by grace, whether it came before the
+// read started or during it, and never lasts longer than timeout.
+func collectionContext(commandCtx context.Context, timeout, grace time.Duration) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(commandCtx), timeout)
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-commandCtx.Done():
+		}
+		select {
+		case <-ctx.Done():
+		case <-time.After(grace):
+			cancel()
+		}
+	}()
+	return ctx, cancel
 }
 
 // releaseReader reads each release once. A release that cannot be read is
