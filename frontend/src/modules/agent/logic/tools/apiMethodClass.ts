@@ -1,4 +1,4 @@
-import { getOption, hasOption } from "@bufbuild/protobuf";
+import { type DescMethod, getOption, hasOption } from "@bufbuild/protobuf";
 import { AccessGrantService } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ActuatorService } from "@/types/proto-es/v1/actuator_service_pb";
 import { AIService } from "@/types/proto-es/v1/ai_service_pb";
@@ -88,6 +88,7 @@ const services = [
 ];
 
 const methodClasses = new Map<string, MCPMethodClass>();
+const methods = new Map<string, DescMethod>();
 type ApiAuthorization =
   | { authMethod: "IAM"; permission: string }
   | { authMethod: "CUSTOM" };
@@ -95,6 +96,7 @@ const authorizations = new Map<string, ApiAuthorization>();
 for (const service of services) {
   for (const method of service.methods) {
     const path = `/${service.typeName}/${method.name}`;
+    methods.set(path, method);
     const authMethod = getOption(method, auth_method);
     if (authMethod === AuthMethod.IAM) {
       authorizations.set(path, {
@@ -113,6 +115,13 @@ for (const service of services) {
     }
   }
 }
+
+export const getApiMethodDescriptor = (
+  operationId: string
+): DescMethod | undefined => {
+  const path = getEndpointPath(operationId);
+  return path ? methods.get(path) : undefined;
+};
 
 export const getApiAuthorization = (
   operationId: string

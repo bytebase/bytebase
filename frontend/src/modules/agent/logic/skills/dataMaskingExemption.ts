@@ -5,6 +5,20 @@ import {
 
 export const guidance = `## Project Masking Exemptions
 
+## Choose an unmask method
+
+For a general "I want unmasked data" request without an explicit or confirmed method, call ask_unmask_method({project?,database?,queryAccessMissing?,forCurrentUser?}) with confirmed canonical scope. It freshly checks each method independently, without reading masking policy; do not require get_masking_overview first. Do not supply options, a default, or a preferred method. When both methods are eligible, the runtime offers unselected Masking exemption and JIT Access Grant choices; wait for Reply. When only one is eligible, continue the returned method directly. A method:null result means explain the returned setup blockers, not offer an unusable draft. For needsScope, ask only for the missing project and call again.
+
+Set queryAccessMissing:true only when the member explicitly says they cannot query or a structured select/info permission denial establishes it. Masked values, a generic query error, or inferred roles are not that evidence. Known missing query access needs JIT: an exemption alone cannot grant query access. Set forCurrentUser:false for another member's request; JIT is self-only. Preserve the confirmed database, SQL, and intended data scope through the choice.
+
+Explain the distinction: a masking exemption covers selected resources and members, with its own expiration or no expiration, independently of an exact SQL query. A JIT Access Grant covers the current user, one exact read-only query and its targets, with finite expiration; Unmask affects the approved query's whole result, not just one column.
+
+Use the answer or returned method unchanged: masking-exemption continues below; just-in-time loads get_skill(name="just-in-time"). Honor an explicitly requested method the same way, even when both are eligible. Do not repeat ask_unmask_method after a confirmed choice or explicit method, prefer exemption automatically, or require exemption denial before JIT. Recheck the selected method's eligibility before preparation; if it became unavailable, explain its blocker rather than silently changing methods. Unreadable exemption policy alone must not block independent JIT eligibility. Neither method promises exclusive visibility.
+
+## Prepare an exemption
+
+For the selected exemption flow, check fresh get_masking_overview eligibility before exemption-specific scope/member/expiration questions. Do not ask dependent questions or offer an unusable draft when blocked or unverified. Exemptions do not grant missing query access; explain that limitation even for an explicitly requested exemption.
+
 ${maskingExemptionScopeInstruction}
 
 ${maskingExemptionDraftSetupInstruction}

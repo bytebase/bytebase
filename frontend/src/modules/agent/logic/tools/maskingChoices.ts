@@ -1,5 +1,6 @@
 import i18n from "@/lib/i18n";
 import { useAppStore } from "@/stores/app";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import { readSemanticTypeSetting } from "../semanticTypeSetting";
 import type { AgentAskUserOption } from "../types";
@@ -34,6 +35,84 @@ function contextGuard(context: Context): () => void {
   };
   check();
   return check;
+}
+
+export async function getUnmaskMethodChoices(
+  context: Context & {
+    projectName?: string;
+    database?: string;
+    queryAccessMissing?: boolean;
+    forCurrentUser?: boolean;
+  }
+): Promise<{
+  project?: string;
+  database?: string;
+  options: AgentAskUserOption[];
+  needsScope: boolean;
+  setup: Awaited<ReturnType<typeof getMaskingSetup>>;
+}> {
+  const check = contextGuard(context);
+  if (
+    context.projectName !== undefined &&
+    (!/^projects\/[A-Za-z0-9_-]+$/.test(context.projectName) ||
+      context.projectName === "projects/-")
+  )
+    throw new Error(
+      "Select an exact project before choosing an unmask method."
+    );
+  const setup = await getMaskingSetup({
+    workspaceName: context.workspaceName,
+    projectName: context.projectName,
+  });
+  check();
+  if (context.database && context.projectName) {
+    const verified = await validateResourceChoices(
+      "database",
+      [context.database],
+      context.projectName,
+      context.workspaceName
+    );
+    check();
+    if (verified?.length !== 1 || verified[0].value !== context.database)
+      throw new Error("The selected database is unavailable in this project.");
+  }
+  const options: AgentAskUserOption[] = [];
+  const exemption = setup.steps.find(
+    (step) => step.id === "masking-exemptions"
+  );
+  if (context.projectName) {
+    if (
+      setup.project?.name === context.projectName &&
+      setup.project.state === State.ACTIVE &&
+      setup.features.masking === "available" &&
+      setup.scopeAccess?.project.status === "allowed" &&
+      exemption?.readAccess.status === "allowed" &&
+      exemption.configure.status === "allowed" &&
+      !context.queryAccessMissing
+    )
+      options.push({
+        value: "masking-exemption",
+        label: i18n.t("agent.masking.unmask-method.exemption"),
+        description: i18n.t(
+          "agent.masking.unmask-method.exemption-description"
+        ),
+      });
+    if (setup.justInTime.eligible && context.forCurrentUser !== false)
+      options.push({
+        value: "just-in-time",
+        label: i18n.t("agent.masking.unmask-method.jit"),
+        description: i18n.t("agent.masking.unmask-method.jit-description"),
+      });
+  }
+  return {
+    ...(context.projectName ? { project: context.projectName } : {}),
+    ...(context.database && context.projectName
+      ? { database: context.database }
+      : {}),
+    options,
+    needsScope: !context.projectName,
+    setup,
+  };
 }
 
 export async function getMaskingSemanticTypeChoices(

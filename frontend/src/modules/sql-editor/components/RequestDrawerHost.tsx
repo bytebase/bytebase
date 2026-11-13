@@ -20,6 +20,7 @@ type RequestRoleArgs = {
 };
 
 type AccessGrantArgs = {
+  reason?: string;
   query?: string;
   targets: string[];
   schema?: string;
@@ -75,9 +76,8 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
   // This host only renders inside the SQL Editor, so resolve the ACTIVE theme
   // (the dark admin fallback in admin mode) and hand it to RequestRoleSheet as
   // an explicit prop. RequestRoleSheet is shared with non-SQL-Editor pages, so
-  // it stays light unless a host passes a theme — this is the only caller that
-  // does. (AccessGrantRequestDrawer is SQL-Editor-only and reads the active
-  // theme itself.)
+  // it uses the app theme unless a host passes a theme. The SQL Editor grant
+  // drawer adapter resolves the active theme itself.
   const activeTheme = useActiveSQLEditorTheme();
 
   return (
@@ -105,6 +105,7 @@ export function RequestDrawerHost({ children }: { children: ReactNode }) {
           container={grantArgs.container}
           unmask={grantArgs.unmask}
           export={grantArgs.export}
+          reason={grantArgs.reason}
           onClose={() => {
             requestOpenRef.current = false;
             setGrantArgs(null);

@@ -3,6 +3,7 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, expect, test, vi } from "vitest";
+import { State } from "@/types/proto-es/v1/common_pb";
 import {
   SemanticTypeSetting_SemanticTypeSchema,
   SettingSchema,
@@ -10,6 +11,7 @@ import {
 import {
   getMaskingScopeChoices,
   getMaskingSemanticTypeChoices,
+  getUnmaskMethodChoices,
 } from "./maskingChoices";
 
 const mocks = vi.hoisted(() => ({
@@ -40,6 +42,8 @@ const allowed = {
   scope: "workspaces/example",
 };
 const setup = () => ({
+  project: { name: "projects/sample", state: State.ACTIVE },
+  justInTime: { eligible: true },
   features: { masking: "available" },
   scopeAccess: {
     project: { ...allowed },
@@ -54,6 +58,7 @@ const context = {
   workspaceName: "workspaces/example",
   userName: "users/member@example.com",
 };
+const methodContext = { ...context, projectName: "projects/sample" };
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.user = context.userName;
@@ -66,6 +71,120 @@ beforeEach(() => {
   mocks.database.mockResolvedValue([
     { value: "instances/prod/databases/app", label: "app (Production)" },
   ]);
+});
+test("offers both eligible unmask methods with no selection or default", async () => {
+  const result = await getUnmaskMethodChoices(methodContext);
+  expect(result.options.map(({ value }) => value)).toEqual([
+    "masking-exemption",
+    "just-in-time",
+  ]);
+  expect(result).not.toHaveProperty("defaultValue");
+  expect(result.project).toBe("projects/sample");
+  expect(result.needsScope).toBe(false);
+});
+test.each(["denied", "unknown"])(
+  "excludes exemption with %s configure access",
+  async (status) => {
+    const state = setup();
+    state.steps[2].configure.status = status;
+    mocks.setup.mockResolvedValue(state);
+    expect(
+      (await getUnmaskMethodChoices(methodContext)).options.map(
+        ({ value }) => value
+      )
+    ).toEqual(["just-in-time"]);
+  }
+);
+test("excludes an unreadable exemption without hiding independently eligible JIT", async () => {
+  const state = setup();
+  state.steps[2].readAccess.status = "unknown";
+  mocks.setup.mockResolvedValue(state);
+  expect(
+    (await getUnmaskMethodChoices(methodContext)).options.map(
+      ({ value }) => value
+    )
+  ).toEqual(["just-in-time"]);
+});
+test("does not offer JIT when its feature, setting, or create permission is ineligible", async () => {
+  const state = setup();
+  state.justInTime.eligible = false;
+  mocks.setup.mockResolvedValue(state);
+  expect(
+    (await getUnmaskMethodChoices(methodContext)).options.map(
+      ({ value }) => value
+    )
+  ).toEqual(["masking-exemption"]);
+});
+test("known missing query access excludes an exemption even when it can be configured", async () => {
+  expect(
+    (
+      await getUnmaskMethodChoices({
+        ...methodContext,
+        queryAccessMissing: true,
+      })
+    ).options.map(({ value }) => value)
+  ).toEqual(["just-in-time"]);
+});
+test("requests for other members never offer a self-only Access Grant", async () => {
+  expect(
+    (
+      await getUnmaskMethodChoices({ ...methodContext, forCurrentUser: false })
+    ).options.map(({ value }) => value)
+  ).toEqual(["masking-exemption"]);
+});
+test("returns blockers instead of unusable choices when neither method is eligible", async () => {
+  const state = setup();
+  state.justInTime.eligible = false;
+  mocks.setup.mockResolvedValue(state);
+  const result = await getUnmaskMethodChoices({
+    ...methodContext,
+    queryAccessMissing: true,
+  });
+  expect(result.options).toEqual([]);
+  expect(result.setup.justInTime.eligible).toBe(false);
+});
+test("requires project scope before choosing a method", async () => {
+  const result = await getUnmaskMethodChoices(context);
+  expect(result.needsScope).toBe(true);
+  expect(result.options).toEqual([]);
+});
+test("does not offer either method for a deleted project", async () => {
+  const state = setup();
+  state.project.state = State.DELETED;
+  state.justInTime.eligible = false;
+  mocks.setup.mockResolvedValue(state);
+  expect((await getUnmaskMethodChoices(methodContext)).options).toEqual([]);
+});
+test("preserves an independently verified database in the selected project", async () => {
+  const result = await getUnmaskMethodChoices({
+    ...methodContext,
+    database: "instances/prod/databases/app",
+  });
+  expect(result.database).toBe("instances/prod/databases/app");
+  expect(mocks.database).toHaveBeenCalledWith(
+    "database",
+    ["instances/prod/databases/app"],
+    "projects/sample",
+    "workspaces/example"
+  );
+});
+test("rejects a changed or inaccessible database before showing methods", async () => {
+  mocks.database.mockResolvedValue(undefined);
+  await expect(
+    getUnmaskMethodChoices({
+      ...methodContext,
+      database: "instances/prod/databases/app",
+    })
+  ).rejects.toThrow(/database/i);
+});
+test("rejects account drift while computing method availability", async () => {
+  mocks.setup.mockImplementation(async () => {
+    mocks.user = "users/other@example.com";
+    return setup();
+  });
+  await expect(getUnmaskMethodChoices(methodContext)).rejects.toThrow(
+    /context/
+  );
 });
 test("offers built-in full and partial types before the semantic types setting exists", async () => {
   mocks.setting.mockRejectedValue(new ConnectError("missing", Code.NotFound));
