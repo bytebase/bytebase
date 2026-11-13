@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { SecretInput } from "@/components/SecretInput";
 import { Alert } from "@/components/ui/alert";
 import {
@@ -183,11 +184,14 @@ function SharePointForm({
           variant="info"
           title={t("settings.sharepoint.setup.title")}
           description={
-            <ol className="list-decimal pl-4">
-              <li>{t("settings.sharepoint.setup.register")}</li>
-              <li>{t("settings.sharepoint.setup.grant")}</li>
-              <li>{t("settings.sharepoint.setup.project")}</li>
-            </ol>
+            <>
+              <ol className="list-decimal pl-4">
+                <li>{t("settings.sharepoint.setup.register")}</li>
+                <li>{t("settings.sharepoint.setup.grant")}</li>
+                <li>{t("settings.sharepoint.setup.project")}</li>
+              </ol>
+              <LearnMoreLink href="https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console" />
+            </>
           }
         />
         <FormFieldGroup>

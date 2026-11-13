@@ -22,7 +22,10 @@ describe("ProjectExportDestinationField", () => {
     expect(
       screen.getByLabelText("export-data.destination.sharepoint")
     ).toHaveValue(savedUrl);
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console"
+    );
   });
 
   test("shows the server error beside the field", () => {
