@@ -297,28 +297,3 @@ func indexColumns(idx *ast.IndexStmt) []string {
 	}
 	return cols
 }
-
-// dropObjectNames extracts object names from a DropStmt.
-// Returns list of qualified name string slices.
-func dropObjectNames(drop *ast.DropStmt) [][]string {
-	if drop.Objects == nil {
-		return nil
-	}
-	var result [][]string
-	for _, item := range drop.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		if len(parts) > 0 {
-			result = append(result, parts)
-		}
-	}
-	return result
-}
