@@ -101,3 +101,151 @@
       endposition: null
 - statement: "CREATE TABLE public.pokes (foo int);\nWITH foo1 AS (SELECT * FROM public.tech_book) \nSELECT * FROM foo1;"
   changeType: 1
+- statement: |-
+    CREATE INDEX idx ON tech_book(id);
+    CREATE INDEX idx ON public.tech_book(id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN c INT;
+    ALTER SEQUENCE seq RESTART;
+    ALTER INDEX old_index RENAME TO new_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''seq'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''old_index'''
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    DROP TABLE tech_book, public.orders, products;
+    DROP SCHEMA bbdataarchive;
+    DROP INDEX old_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''products'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''bbdataarchive'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''old_index'''
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE "public.pokes" (foo int);
+    DROP TABLE "public.pokes"
+  changeType: 1
+- statement: SELECT * FROM tech_book JOIN public.orders ON true, products, no_such_table
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''products'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book UNION SELECT * FROM orders
+  changeType: 1
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT order_id FROM orders)
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''tech_book'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: WITH orders AS (SELECT 1) SELECT * FROM orders
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''orders'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DELETE FROM tech_book WHERE id = 1
+  changeType: 1
+- statement: |-
+    UPDATE public.tech_book SET id = 1 FROM orders WHERE true;
+    INSERT INTO public.tech_book SELECT * FROM orders
+  changeType: 1
+- statement: |-
+    CREATE TABLE pokes (
+      foo int
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 310
+      title: NAMING_FULLY_QUALIFIED
+      content: 'unqualified object name: ''pokes'''
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
