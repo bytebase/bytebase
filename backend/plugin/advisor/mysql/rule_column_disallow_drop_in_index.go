@@ -3,14 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -22,6 +22,7 @@ func init() {
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
+// The judgment lives in omni (mysql/v1review.ColumnDisallowDropInIndex).
 type ColumnDisallowDropInIndexAdvisor struct {
 }
 
@@ -32,93 +33,34 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &columnDisallowDropInIndexRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		tables:           make(tableState),
-		originalMetadata: checkCtx.OriginalMetadata,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	if checkCtx.OriginalMetadata == nil && slices.ContainsFunc(nodes, dropsColumn) {
+		// V1 read the snapshot at the first DROP COLUMN and panicked on a nil
+		// one; advisor.Check reports that panic as the rule's error.
+		checkCtx.OriginalMetadata.GetSchemaMetadata("")
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.ColumnDisallowDropInIndex(nodes, v1reviewSchema(checkCtx.OriginalMetadata)) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.DropIndexColumn.Int32(),
+			Title:         checkCtx.Rule.Type.String(),
+			Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name),
+			StartPosition: findingPosition(stmts[f.Statement], f),
+		})
+	}
+	return adviceList, nil
 }
 
-type columnDisallowDropInIndexRule struct {
-	BaseRule
-	tables           tableState
-	originalMetadata *model.DatabaseMetadata
-}
-
-func (*columnDisallowDropInIndexRule) Name() string {
-	return "ColumnDisallowDropInIndexRule"
-}
-
-func (r *columnDisallowDropInIndexRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
+// dropsColumn reports whether the statement is an ALTER TABLE naming a table
+// with a DROP COLUMN action, at which the rule reads the snapshot.
+func dropsColumn(node ast.Node) bool {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok || alter.Table == nil {
+		return false
 	}
-}
-
-func (r *columnDisallowDropInIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
-			continue
-		}
-		if constraint.Type != ast.ConstrIndex {
-			continue
-		}
-		for _, col := range constraint.Columns {
-			if r.tables[tableName] == nil {
-				r.tables[tableName] = make(columnSet)
-			}
-			r.tables[tableName][col] = true
-		}
-	}
-}
-
-func (r *columnDisallowDropInIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-
-	for _, cmd := range n.Commands {
-		if cmd == nil || cmd.Type != ast.ATDropColumn {
-			continue
-		}
-
-		// Load index columns from metadata.
-		table := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName)
-		if table != nil {
-			if r.tables[tableName] == nil {
-				r.tables[tableName] = make(columnSet)
-			}
-			for _, indexColumn := range table.ListIndexes() {
-				for _, column := range indexColumn.GetProto().GetExpressions() {
-					r.tables[tableName][column] = true
-				}
-			}
-		}
-
-		columnName := cmd.Name
-		if _, exists := r.tables[tableName][columnName]; exists {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.DropIndexColumn.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
-			})
-		}
-	}
+	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
+		return cmd != nil && cmd.Type == ast.ATDropColumn
+	})
 }

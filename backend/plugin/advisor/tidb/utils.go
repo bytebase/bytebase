@@ -12,12 +12,14 @@ import (
 	"github.com/pkg/errors"
 
 	omniast "github.com/bytebase/omni/tidb/ast"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type columnSet map[string]bool
@@ -29,8 +31,6 @@ func newColumnSet(columns []string) columnSet {
 	}
 	return res
 }
-
-type tableState map[string]columnSet
 
 type tablePK map[string]columnSet
 
@@ -581,4 +581,13 @@ func runNamingConventionRule(
 		}
 	}
 	return adviceList, nil
+}
+
+// v1reviewSchema returns the snapshot md holds for an omni rule, an empty
+// one when md is nil.
+func v1reviewSchema(md *model.DatabaseMetadata) v1review.Schema {
+	if md == nil {
+		return v1review.Schema{}
+	}
+	return v1review.Schema{Metadata: md.GetProto(), ObjectCaseSensitive: md.GetIsObjectCaseSensitive()}
 }

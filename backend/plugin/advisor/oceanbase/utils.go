@@ -10,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type columnSet map[string]bool
@@ -21,8 +22,6 @@ func newColumnSet(columns []string) columnSet {
 	}
 	return res
 }
-
-type tableState map[string]columnSet
 
 // getTemplateRegexp formats the template as regex.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
@@ -143,4 +142,13 @@ func findingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Pos
 // of the statement's first non-blank character.
 func statementPosition(stmt base.ParsedStatement) *storepb.Position {
 	return findingPosition(stmt, v1review.Finding{})
+}
+
+// v1reviewSchema returns the snapshot md holds for an omni rule, an empty
+// one when md is nil.
+func v1reviewSchema(md *model.DatabaseMetadata) v1review.Schema {
+	if md == nil {
+		return v1review.Schema{}
+	}
+	return v1review.Schema{Metadata: md.GetProto(), ObjectCaseSensitive: md.GetIsObjectCaseSensitive()}
 }

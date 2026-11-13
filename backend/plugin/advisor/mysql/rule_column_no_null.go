@@ -1,17 +1,18 @@
 package mysql
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -23,6 +24,7 @@ func init() {
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
+// The judgment lives in omni (mysql/v1review.ColumnNoNull).
 type ColumnNoNullAdvisor struct {
 }
 
@@ -33,151 +35,65 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		return nil, err
 	}
 
-	rule := &columnNoNullRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		columnSet:     make(map[string]columnName),
-		finalMetadata: checkCtx.FinalMetadata,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	if checkCtx.FinalMetadata == nil && slices.ContainsFunc(nodes, definesColumn) {
+		// V1 read the snapshot for each column it collected and panicked on
+		// a nil one; advisor.Check reports that panic as the rule's error.
+		checkCtx.FinalMetadata.GetSchemaMetadata("")
 	}
 
-	// Walk all statements to collect columns.
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	// Generate advice after walking all statements.
-	rule.generateAdvice()
-
-	return rule.GetAdviceList(), nil
-}
-
-type columnName struct {
-	tableName  string
-	columnName string
-	line       int
-}
-
-func (c columnName) name() string {
-	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
-}
-
-type columnNoNullRule struct {
-	BaseRule
-	columnSet     map[string]columnName
-	finalMetadata *model.DatabaseMetadata
-}
-
-func (*columnNoNullRule) Name() string {
-	return "ColumnNoNullRule"
-}
-
-func (r *columnNoNullRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
+	type placed struct {
+		line   int
+		column string
+		table  string
 	}
-}
-
-func (r *columnNoNullRule) generateAdvice() {
-	var columnList []columnName
-	for _, column := range r.columnSet {
-		columnList = append(columnList, column)
+	var columns []placed
+	for _, f := range mysqlv1review.ColumnNoNull(nodes, v1reviewSchema(checkCtx.FinalMetadata)) {
+		stmt := stmts[f.Statement]
+		columns = append(columns, placed{line: stmt.BaseLine() + int(findingLine(stmt.Text, f)), column: f.Name, table: f.Table})
 	}
-	slices.SortFunc(columnList, func(a, b columnName) int {
-		if a.line != b.line {
-			if a.line < b.line {
-				return -1
-			}
-			return 1
-		}
-		if a.columnName < b.columnName {
-			return -1
-		}
-		if a.columnName > b.columnName {
-			return 1
-		}
-		return 0
+	slices.SortStableFunc(columns, func(a, b placed) int {
+		return cmp.Or(cmp.Compare(a.line, b.line), cmp.Compare(a.column, b.column))
 	})
 
-	for _, column := range columnList {
-		schema := r.finalMetadata.GetSchemaMetadata("")
-		if schema == nil {
-			continue
-		}
-		table := schema.GetTable(column.tableName)
-		if table == nil {
-			continue
-		}
-		col := table.GetColumn(column.columnName)
-		if col != nil && col.GetProto().Nullable {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.ColumnCannotNull.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: base.ConvertANTLRLineToPosition(column.line),
-			})
-		}
+	var adviceList []*storepb.Advice
+	for _, c := range columns {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.ColumnCannotNull.Int32(),
+			Title:         checkCtx.Rule.Type.String(),
+			Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", c.table, c.column),
+			StartPosition: base.ConvertANTLRLineToPosition(c.line),
+		})
 	}
+	return adviceList, nil
 }
 
-func (r *columnNoNullRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, col := range n.Columns {
-		if col == nil {
-			continue
+// definesColumn reports whether the statement defines a column the rule
+// collects: a column of a CREATE TABLE, or one ALTER TABLE's ADD or CHANGE
+// COLUMN writes, in a statement naming a table.
+func definesColumn(node ast.Node) bool {
+	switch n := node.(type) {
+	case *ast.CreateTableStmt:
+		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
+	case *ast.AlterTableStmt:
+		if n.Table == nil {
+			return false
 		}
-		c := columnName{
-			tableName:  tableName,
-			columnName: col.Name,
-			line:       r.BaseLine + int(r.LocToLine(col.Loc)),
-		}
-		if _, exists := r.columnSet[c.name()]; !exists {
-			r.columnSet[c.name()] = c
-		}
-	}
-}
-
-func (r *columnNoNullRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		var columns []string
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				columns = append(columns, cmd.Column.Name)
+		return slices.ContainsFunc(n.Commands, func(cmd *ast.AlterTableCmd) bool {
+			if cmd == nil {
+				return false
 			}
-			for _, col := range cmd.Columns {
-				columns = append(columns, col.Name)
+			switch cmd.Type {
+			case ast.ATAddColumn:
+				return cmd.Column != nil || len(cmd.Columns) > 0
+			case ast.ATChangeColumn:
+				return cmd.Column != nil
+			default:
+				return false
 			}
-		case ast.ATChangeColumn:
-			// Only care about the new column name.
-			if cmd.Column != nil {
-				columns = append(columns, cmd.Column.Name)
-			}
-		default:
-		}
-		for _, column := range columns {
-			c := columnName{
-				tableName:  tableName,
-				columnName: column,
-				line:       r.BaseLine + int(r.LocToLine(cmd.Loc)),
-			}
-			if _, exists := r.columnSet[c.name()]; !exists {
-				r.columnSet[c.name()] = c
-			}
-		}
+		})
+	default:
+		return false
 	}
 }
