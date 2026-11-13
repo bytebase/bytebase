@@ -97,3 +97,118 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
+  changeType: 1
+- statement: CREATE TABLE book(id INT CONSTRAINT book_id UNIQUE, name VARCHAR(20), CONSTRAINT book_name UNIQUE (name))
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_id$" but found "book_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_name$" but found "book_name"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN code INT CONSTRAINT tech_book_code UNIQUE
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_code$" but found "tech_book_code"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE USING INDEX no_such_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_$" but found "uk_tech_book_id_name"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE bbdataarchive.tech_book ADD CONSTRAINT uk_tech_book UNIQUE USING INDEX old_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER INDEX old_index RENAME TO bad;
+    ALTER INDEX old_pk RENAME TO bad;
+    ALTER INDEX no_such_index RENAME TO bad
+  changeType: 1
+- statement: ALTER INDEX bbdataarchive.old_uk RENAME TO uk_tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "tech_book" mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found "uk_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO bad;
+    ALTER TABLE tech_book RENAME CONSTRAINT old_index TO bad;
+    ALTER TABLE bbdataarchive.tech_book RENAME CONSTRAINT old_uk TO bad
+  changeType: 1
+- statement: ALTER TABLE "a(" ADD CONSTRAINT uk_a_x UNIQUE (x)
+  changeType: 1
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for unique key naming convention rule
+      content: 'Failed to compile regex for unique key naming convention: error parsing regexp: missing closing ): `^$|^uk_a(_x$`'
+      startposition: null
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id INT,
+      name VARCHAR(20),
+      CONSTRAINT name UNIQUE (id)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_id$" but found "name"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id INT,
+      CONSTRAINT Book_Id UNIQUE (id)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table "book" mismatches the naming convention, expect "^$|^uk_book_id$" but found "book_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
