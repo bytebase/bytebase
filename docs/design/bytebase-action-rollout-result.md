@@ -137,7 +137,8 @@ One field says how the run ended. It restates today's behavior and changes none 
 | `INTERRUPTED` | The action stopped first: a signal, a lost sign-in or an API error | 1 |
 
 - **`DONE` is not "deployed".** The headline counts changed, unchanged and skipped databases
-  apart. A task that applied no file is unchanged.
+  apart. A task is unchanged when it applied no file, or when a declarative release computed an
+  empty diff.
 - **`NOT_WAITED` and `STAGE_NOT_FOUND` never read as success.** Their headline says nothing was
   deployed by this job.
 - **`INTERRUPTED` reports the last state seen** and says it is not final.
@@ -386,6 +387,11 @@ bytebase-deploy-to-prod:
   after a failure. It uses a fresh context when the command's is canceled, as `cancelRollout`
   does.
 - **Log calls are bounded in parallel**, and one that fails does not stop the rest.
+- **Collection is bounded in time.** It has five minutes, or fifteen seconds once the job is
+  canceled. When the rollout itself cannot be read again, the result stops at the last state seen
+  and no call is made per database.
+- **A checked-out file is read only when it is an ordinary file** of at most 100 MiB, since its
+  path comes from the release.
 - **`action/README.md`** documents the result, and its `--output` entry changes.
 
 ### Compatibility

@@ -1254,6 +1254,15 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	a.True(ok, "the output should name the rollout")
 	a.NotEmpty(rolloutName, "Rollout should be created for second execution")
 
+	// The first run changed the database, and the second found nothing to do.
+	_, firstTasks := readRolloutResult(t, outputFile1)
+	a.Len(firstTasks, 1)
+	a.False(firstTasks[0].Unchanged)
+	_, secondTasks := readRolloutResult(t, outputFile2)
+	a.Len(secondTasks, 1)
+	a.Equal("DONE", secondTasks[0].Status)
+	a.True(secondTasks[0].Unchanged, "an empty diff changes nothing")
+
 	// Execute third declarative rollout with same schema (should also succeed with task as no-op)
 	result3, err := executeActionCommand(ctx,
 		"rollout",

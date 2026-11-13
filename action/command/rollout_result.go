@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"connectrpc.com/connect"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/bytebase/bytebase/action/result"
@@ -20,26 +21,30 @@ const (
 	// resultTimeout bounds reading the result, so that a slow server delays
 	// the job's exit and never hangs it.
 	resultTimeout = 5 * time.Minute
+	// canceledResultTimeout is the bound once the job is canceled, when
+	// whoever stopped it is waiting for the process to exit.
+	canceledResultTimeout = 15 * time.Second
 	// resultLogCalls is how many task run logs are read at once.
 	resultLogCalls = 8
+	// maxCheckedOutFileSize bounds a migration file read from the checkout.
+	maxCheckedOutFileSize = 100 << 20
 )
 
 // collectResult reads the rollout's final state and the logs of the stage the
 // run ended on. It returns nil when no rollout was created. A read that fails
 // costs detail and is logged; it never fails the command.
-func collectResult(w *world.World, client *client) *result.Result {
+func collectResult(commandCtx context.Context, w *world.World, client *client) *result.Result {
 	if w.Rollout == nil {
 		return nil
 	}
-	// The command's context is canceled when the job is.
-	ctx, cancel := context.WithTimeout(context.Background(), resultTimeout)
-	defer cancel()
-
-	if rollout, err := client.getRollout(ctx, w.Rollout.GetName()); err != nil {
-		w.Logger.Warn("failed to refresh the rollout for its result, using the last state seen", "error", err)
-	} else {
-		w.Rollout = rollout
+	// The command's context is canceled when the job is, and the result is
+	// still read then, within a shorter bound.
+	timeout := resultTimeout
+	if commandCtx.Err() != nil {
+		timeout = canceledResultTimeout
 	}
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(commandCtx), timeout)
+	defer cancel()
 
 	in := result.Input{
 		URL:         strings.TrimSuffix(w.URL, "/"),
@@ -47,6 +52,15 @@ func collectResult(w *world.World, client *client) *result.Result {
 		Rollout:     w.Rollout,
 		Logs:        map[string]*v1pb.TaskRunLog{},
 	}
+	rollout, err := client.getRollout(ctx, w.Rollout.GetName())
+	if err != nil {
+		// A server that does not answer this will not answer a call per
+		// database either, so the result stops at the last state seen.
+		w.Logger.Warn("failed to refresh the rollout for its result, reporting the last state seen without task detail", "error", err)
+		return result.Build(in)
+	}
+	w.Rollout = rollout
+	in.Rollout = rollout
 	_, stage := result.DetailStage(w.Rollout, w.TargetStage)
 	if stage == nil {
 		return result.Build(in)
@@ -129,7 +143,7 @@ func (r *releaseReader) get(ctx context.Context, name string) *v1pb.Release {
 func readSources(ctx context.Context, w *world.World, client *client, releases *releaseReader, refs []result.SourceRef) map[string][]byte {
 	sources := map[string][]byte{}
 	var missing int
-	// Set once a sheet read fails, so that an identity that may not read
+	// Set once a sheet read is refused, so that an identity that may not read
 	// sheets is refused once and not once per file.
 	var sheetErr error
 	for _, ref := range refs {
@@ -157,7 +171,11 @@ func readSources(ctx context.Context, w *world.World, client *client, releases *
 		}
 		content, err := client.getSheetContent(ctx, sheet)
 		if err != nil {
-			sheetErr = err
+			if connect.CodeOf(err) == connect.CodePermissionDenied {
+				sheetErr = err
+			} else {
+				w.Logger.Warn("failed to read a sheet for the rollout result", "sheet", sheet, "error", err)
+			}
 			missing++
 			continue
 		}
@@ -173,6 +191,12 @@ func readSources(ctx context.Context, w *world.World, client *client, releases *
 // used only when it is byte for byte what the release holds.
 func readCheckedOutFile(file *v1pb.Release_File) ([]byte, bool) {
 	if file.GetPath() == "" || file.GetSheetSha256() == "" {
+		return nil, false
+	}
+	// The path comes from the release, so it is read only when it names an
+	// ordinary file of a plausible size.
+	info, err := os.Stat(file.GetPath())
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxCheckedOutFileSize {
 		return nil, false
 	}
 	content, err := os.ReadFile(file.GetPath())

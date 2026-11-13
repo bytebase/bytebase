@@ -78,7 +78,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 		// The result is read after the command stops waiting, whether it
 		// succeeded or not, and before the client closes.
 		defer func() {
-			w.Result = collectResult(w, client)
+			w.Result = collectResult(ctx, w, client)
 			client.close()
 			output.WriteOutput(w, command.OutOrStdout())
 			if w.Result == nil || (!errors.Is(err, errFailedTasks) && !errors.Is(err, errCanceledTasks)) {

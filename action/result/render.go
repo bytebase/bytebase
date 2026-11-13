@@ -316,7 +316,7 @@ func (t *Task) note() string {
 		case t.LogUnavailable:
 			parts = append(parts, "log not available")
 		case t.Unchanged:
-			parts = append(parts, "unchanged, every version was already applied")
+			parts = append(parts, "unchanged, nothing to apply")
 		default:
 			if len(t.Files) > 0 {
 				parts = append(parts, plural(len(t.Files), "file"))

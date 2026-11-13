@@ -502,7 +502,7 @@ func rangeEntry(start, end int32, rows int64) *v1pb.TaskRunLogEntry {
 }
 
 func TestBuildCommandsCutStatementsFromTheSource(t *testing.T) {
-	source := []byte("UPDATE t SET a = 1;\nDELETE FROM t WHERE 你好 = 1;")
+	source := "UPDATE t SET a = 1;\nDELETE FROM t WHERE 你好 = 1;"
 	entries := []*v1pb.TaskRunLogEntry{
 		rangeEntry(0, 19, 3),
 		rangeEntry(19, int32(len(source)), 1),
@@ -516,7 +516,7 @@ func TestBuildCommandsCutStatementsFromTheSource(t *testing.T) {
 	require.Empty(t, commands[2].Statement, "a range past the source is not guessed at")
 	require.Equal(t, "SELECT 1", commands[3].Statement, "a logged statement needs no source")
 
-	commands, _ = buildCommands(entries, nil)
+	commands, _ = buildCommands(entries, "")
 	require.Empty(t, commands[0].Statement)
 	require.Equal(t, int64(3), *commands[0].AffectedRows, "the count does not depend on the statement text")
 }
@@ -566,7 +566,7 @@ func TestExecutedSourceMatchesTheDrivers(t *testing.T) {
 	}
 	for _, script := range scripts {
 		_, want := base.ParseTransactionConfig(script)
-		require.Equal(t, want, string(executedSource([]byte(script))), "script %q", script)
+		require.Equal(t, want, executedSource(script), "script %q", script)
 	}
 }
 
@@ -763,4 +763,34 @@ func TestBuildCutsStatementsFromTheStoredFileWhenTheRangesNeedIt(t *testing.T) {
 	split := build(rangeEntry(0, first, 3), rangeEntry(first, int32(len(source)), 1))
 	require.Equal(t, "-- txn-mode = off\nUPDATE t SET a = 1;", split[0].Statement)
 	require.Equal(t, "DELETE FROM t WHERE a = 2;", split[1].Statement)
+}
+
+func computeDiffEntry() *v1pb.TaskRunLogEntry {
+	return &v1pb.TaskRunLogEntry{
+		Type:        v1pb.TaskRunLogEntry_COMPUTE_DIFF,
+		ComputeDiff: &v1pb.TaskRunLogEntry_ComputeDiff{},
+	}
+}
+
+// A declarative run always logs its one file. It changed nothing when the
+// diff it computed came out empty.
+func TestBuildTaskUnchangedDeclarativeRun(t *testing.T) {
+	noDiff := buildStage(t, taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log:  []*v1pb.TaskRunLogEntry{fileEntry("20261112.100000", ""), computeDiffEntry()},
+	})
+	require.True(t, noDiff[0].Unchanged)
+	require.Len(t, noDiff[0].Files, 1)
+
+	withDiff := buildStage(t, taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("20261112.100000", ""),
+			computeDiffEntry(),
+			commandEntry("ALTER TABLE t ADD COLUMN b int", 0),
+		},
+	})
+	require.False(t, withDiff[0].Unchanged)
 }

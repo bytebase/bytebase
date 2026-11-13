@@ -226,7 +226,7 @@ func TestTaskNoteDistinguishesMissingRowsFromZero(t *testing.T) {
 
 	require.Equal(t, "1 file · 0 rows", reported.note())
 	require.Equal(t, "1 file · rows not reported", missing.note())
-	require.Equal(t, "unchanged, every version was already applied", unchanged.note())
+	require.Equal(t, "unchanged, nothing to apply", unchanged.note())
 }
 
 func TestCommandLinesCountsWhatItLeavesOut(t *testing.T) {
