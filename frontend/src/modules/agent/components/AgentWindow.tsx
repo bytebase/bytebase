@@ -20,8 +20,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  lazy,
   type ReactNode,
   type RefObject,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -57,7 +59,6 @@ import {
   workspaceNamePrefix,
 } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
-import { AccessGrantRequestDrawer } from "@/modules/access-control/AccessGrantRequestDrawer";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { GetIssueRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
@@ -148,6 +149,13 @@ import {
 } from "./window-resize";
 
 type AnchoredResizeDirection = Extract<ResizeDirection, "n" | "w" | "nw">;
+
+// Keep SQL Editor stores out of the app shell's initialization path.
+const AgentAccessGrantRequestDrawer = lazy(() =>
+  import("./AgentAccessGrantRequestDrawer").then((module) => ({
+    default: module.AgentAccessGrantRequestDrawer,
+  }))
+);
 
 const resizeZoneClasses: Record<AnchoredResizeDirection, string> = {
   n: "left-[12px] top-[-6px] h-[6px] w-[calc(100%-24px)] cursor-n-resize",
@@ -2112,37 +2120,38 @@ export function AgentWindow() {
   const accessGrantDrawer = accessGrantDraft &&
     accessGrantDraft.workspace === workspace?.name &&
     accessGrantDraft.userEmail === userEmail && (
-      <AccessGrantRequestDrawer
-        key={accessGrantDraft.id}
-        project={accessGrantDraft.draft.project}
-        targets={accessGrantDraft.draft.targets}
-        query={accessGrantDraft.draft.statement}
-        schema={accessGrantDraft.draft.schema}
-        container={accessGrantDraft.draft.container}
-        unmask={accessGrantDraft.draft.unmask}
-        reason={accessGrantDraft.draft.reason}
-        onClose={() =>
-          setAccessGrantDraft((current) =>
-            current?.id === accessGrantDraft.id ? undefined : current
-          )
-        }
-      />
+      <Suspense fallback={null}>
+        <AgentAccessGrantRequestDrawer
+          key={accessGrantDraft.id}
+          project={accessGrantDraft.draft.project}
+          targets={accessGrantDraft.draft.targets}
+          query={accessGrantDraft.draft.statement}
+          schema={accessGrantDraft.draft.schema}
+          container={accessGrantDraft.draft.container}
+          unmask={accessGrantDraft.draft.unmask}
+          reason={accessGrantDraft.draft.reason}
+          onClose={() =>
+            setAccessGrantDraft((current) =>
+              current?.id === accessGrantDraft.id ? undefined : current
+            )
+          }
+        />
+      </Suspense>
     );
   if (minimized) {
     return (
       <>
         {accessGrantDrawer}
-        {!accessGrantDrawer &&
-          createPortal(
-            <AgentMinimizedLauncher
-              initialPosition={launcherPositionRef.current}
-              onPositionChange={(position) => {
-                launcherPositionRef.current = position;
-              }}
-              onOpen={() => useAgentStore.getState().open()}
-            />,
-            getLayerRoot("agent")
-          )}
+        {createPortal(
+          <AgentMinimizedLauncher
+            initialPosition={launcherPositionRef.current}
+            onPositionChange={(position) => {
+              launcherPositionRef.current = position;
+            }}
+            onOpen={() => useAgentStore.getState().open()}
+          />,
+          getLayerRoot("agent")
+        )}
       </>
     );
   }

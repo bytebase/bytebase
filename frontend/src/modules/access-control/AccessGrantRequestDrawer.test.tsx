@@ -1,7 +1,9 @@
+import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -157,8 +159,8 @@ vi.mock("@/components/ui/sheet", () => ({
   SheetBody: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="sheet-body">{children}</div>
   ),
-  SheetFooter: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="sheet-footer">{children}</div>
+  SheetFooter: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    <div data-testid="sheet-footer" {...props}>{children}</div>
   ),
 }));
 
@@ -218,12 +220,14 @@ vi.mock("@/components/ui/combobox", () => ({
     options,
     multiple,
     onSearch,
+    portal,
   }: {
     value: string | string[];
     onChange: (val: string | string[]) => void;
     options: { value: string; label: string }[];
     multiple?: boolean;
     onSearch?: (q: string) => void;
+    portal?: boolean;
   }) => {
     // Only the multi database picker sets this; the single Expiration combobox
     // (multiple falsy) is skipped. Pre-fix the local MultiDatabaseSelect passes
@@ -232,6 +236,7 @@ vi.mock("@/components/ui/combobox", () => ({
     return (
       <select
         data-testid={multiple ? "multi-combobox" : "combobox"}
+        data-portal={String(portal === true)}
         multiple={multiple}
         value={multiple ? (value as string[]) : (value as string)}
         onChange={(e) => {
@@ -318,9 +323,9 @@ const renderIntoContainer = (element: ReactElement) => {
   document.body.appendChild(container);
   return {
     container,
-    render: async () => {
+    render: async (nextElement = element) => {
       await act(async () => {
-        root.render(element);
+        root.render(nextElement);
       });
     },
     unmount: () => {
@@ -364,6 +369,74 @@ afterEach(() => {
 });
 
 describe("AccessGrantRequestDrawer", () => {
+  test("keeps edited query and reason when entering and leaving the SQL Editor theme", async () => {
+    const props = {
+      project: "projects/explicit",
+      query: "SELECT 1",
+      reason: "Review access",
+      onClose: vi.fn(),
+    };
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer {...props} />
+    );
+    await render();
+    const query = container.querySelector<HTMLTextAreaElement>("[data-testid='monaco-editor']")!;
+    const reason = container.querySelector<HTMLTextAreaElement>("[data-testid='textarea']")!;
+    act(() => {
+      fireEvent.change(query, { target: { value: "SELECT id FROM orders" } });
+      fireEvent.change(reason, { target: { value: "Investigate order access" } });
+    });
+
+    for (const theme of [PRESET_BY_ID.dark, undefined]) {
+      await render(<AccessGrantRequestDrawer {...props} theme={theme} />);
+      expect(container.querySelector("[data-testid='monaco-editor']")).toBe(query);
+      expect(query.value).toBe("SELECT id FROM orders");
+      expect(container.querySelector("[data-testid='textarea']")).toBe(reason);
+      expect(reason.value).toBe("Investigate order access");
+    }
+
+    unmount();
+  });
+
+  test("marks its action footer for launcher collision avoidance", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantRequestDrawer
+        project="projects/explicit"
+        onClose={vi.fn()}
+      />
+    );
+    await render();
+
+    expect(
+      container
+        .querySelector("[data-testid='sheet-footer']")
+        ?.getAttribute("data-slot")
+    ).toBe("sticky-action-footer");
+
+    unmount();
+  });
+
+  test.each(["multi-combobox", "combobox"])(
+    "%s opens outside the scrolling sheet body",
+    async (testId) => {
+      const { container, render, unmount } = renderIntoContainer(
+        <AccessGrantRequestDrawer
+          project="projects/explicit"
+          onClose={vi.fn()}
+        />
+      );
+      await render();
+
+      expect(
+        container
+          .querySelector(`[data-testid='${testId}']`)
+          ?.getAttribute("data-portal")
+      ).toBe("true");
+
+      unmount();
+    }
+  );
+
   test("does not infer targets from the SQL Editor tab", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <AccessGrantRequestDrawer project="projects/explicit" query="SELECT 1" reason="Review" onClose={vi.fn()} />

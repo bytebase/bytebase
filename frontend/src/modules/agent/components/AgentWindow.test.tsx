@@ -5,6 +5,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
 import enUS from "@/locales/en-US.json";
+import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
+import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
@@ -19,6 +21,8 @@ import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 
 const mocks = vi.hoisted(() => ({
   accessGrantDrawerOnClose: undefined as (() => void) | undefined,
+  routeName: "project.plan.detail",
+  activeSQLTheme: undefined as SQLEditorTheme | undefined,
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
     i18n: { language: "en-US" },
@@ -136,6 +140,14 @@ vi.mock("@/stores/app", () => {
 vi.mock("../logic/chatContext", () => ({
   getCurrentChatContext: () => mocks.currentContext,
   getCurrentAgentPageResource: () => mocks.pageResource,
+}));
+
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => ({ name: mocks.routeName }),
+}));
+
+vi.mock("@/modules/sql-editor/components/theme/useActiveSQLEditorTheme", () => ({
+  useActiveSQLEditorTheme: () => mocks.activeSQLTheme,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -395,6 +407,8 @@ beforeEach(async () => {
   mocks.projectErrorsByName = {};
   mocks.currentContext = "projects/orders";
   mocks.pageResource = undefined;
+  mocks.routeName = "project.plan.detail";
+  mocks.activeSQLTheme = PRESET_BY_ID.light;
   mocks.currentUser = {
     name: "users/first@example.com",
     email: "first@example.com",
@@ -427,11 +441,12 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-test("keeps the inline access draft mounted while minimized and switching chats, and clears it on close", () => {
+test("keeps the inline access draft mounted while minimized and switching chats, and clears it on close", async () => {
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
     const drawer = screen.getByTestId("access-grant-drawer");
     expect(JSON.parse(drawer.getAttribute("data-draft")!)).toMatchObject({project: "projects/orders", targets: ["instances/prod/databases/orders"], query: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order"});
     expect(JSON.parse(drawer.getAttribute("data-draft")!)).not.toHaveProperty("theme");
@@ -441,6 +456,9 @@ test("keeps the inline access draft mounted while minimized and switching chats,
     expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
     act(() => useAgentStore.setState({ minimized: false }));
     expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    mocks.routeName = "sql-editor.database";
+    render();
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
     act(() => useAgentStore.setState({ visible: false }));
     expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
     act(() => useAgentStore.setState({ visible: true, minimized: false }));
@@ -448,11 +466,12 @@ test("keeps the inline access draft mounted while minimized and switching chats,
   } finally { unmount(); }
 });
 
-test("resets the form for each explicitly opened access draft without losing edits on restore", () => {
+test("resets the form for each explicitly opened access draft without losing edits on restore", async () => {
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
     const firstDrawer = screen.getByTestId("access-grant-drawer");
     act(() => fireEvent.change(screen.getByRole("textbox", { name: "Draft query" }), {target: {value: "SELECT edited"}}));
     act(() => useAgentStore.setState({ minimized: true }));
@@ -466,25 +485,59 @@ test("resets the form for each explicitly opened access draft without losing edi
   } finally { unmount(); }
 });
 
-test("hides the minimized launcher while its access draft is open and restores it on close", () => {
+test("keeps the minimized launcher available to consult the chat without losing draft edits", async () => {
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const drawer = screen.getByTestId("access-grant-drawer");
+    act(() => fireEvent.change(screen.getByRole("textbox", { name: "Draft query" }), {target: {value: "SELECT edited"}}));
     act(() => useAgentStore.setState({ minimized: true }));
-    expect(screen.getByTestId("access-grant-drawer")).toBeInTheDocument();
-    expect(screen.queryByRole("button", {name: "agent.self"})).toBeNull();
+    act(() => screen.getByRole("button", {name: "agent.self"}).click());
+    expect(useAgentStore.getState().minimized).toBe(false);
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    expect(screen.getByRole("textbox", { name: "Draft query" })).toHaveValue("SELECT edited");
+    act(() => useAgentStore.setState({ minimized: true }));
+    expect(screen.getByRole("button", {name: "agent.self"})).toBeInTheDocument();
     act(() => screen.getByTestId("access-grant-drawer").click());
     expect(screen.getByRole("button", {name: "agent.self"})).toBeInTheDocument();
     expect(useAgentStore.getState().minimized).toBe(true);
   } finally { unmount(); }
 });
 
-test("does not let an earlier access draft close its replacement", () => {
+test.each([
+  ["dark", PRESET_BY_ID.dark],
+  ["custom", { ...PRESET_BY_ID.dark, id: "custom-review", name: "Custom review" }],
+])("preserves the active SQL Editor %s theme when opening an access draft", async (_name, theme) => {
+  mocks.routeName = "sql-editor.detail";
+  mocks.activeSQLTheme = theme;
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    expect(JSON.parse(screen.getByTestId("access-grant-drawer").getAttribute("data-draft")!)).toMatchObject({theme});
+  } finally { unmount(); }
+});
+
+test("does not apply a retained SQL Editor admin theme to a console access draft", async () => {
+  mocks.activeSQLTheme = PRESET_BY_ID.dark;
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    expect(JSON.parse(screen.getByTestId("access-grant-drawer").getAttribute("data-draft")!)).not.toHaveProperty("theme");
+  } finally { unmount(); }
+});
+
+test("does not let an earlier access draft close its replacement", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
     const closeFirstDraft = mocks.accessGrantDrawerOnClose!;
     act(() => screen.getByTestId("open-another-access-draft").click());
     const replacement = screen.getByTestId("access-grant-drawer");
@@ -495,11 +548,12 @@ test("does not let an earlier access draft close its replacement", () => {
   } finally { unmount(); }
 });
 
-test.each(["logout", "user", "workspace"])("discards the inline access draft on %s changes", (change) => {
+test.each(["logout", "user", "workspace"])("discards the inline access draft on %s changes", async (change) => {
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
     expect(screen.getByTestId("access-grant-drawer")).toBeInTheDocument();
     const currentUser = mocks.currentUser;
     const workspace = mocks.workspace;
@@ -515,11 +569,12 @@ test.each(["logout", "user", "workspace"])("discards the inline access draft on 
   } finally { unmount(); }
 });
 
-test("dismisses the inline access draft without navigating or closing the Agent", () => {
+test("dismisses the inline access draft without navigating or closing the Agent", async () => {
   const { render, unmount } = renderIntoContainer(<AgentWindow />);
   try {
     render();
-    act(() => screen.getByTestId("open-access-draft").click());
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
     act(() => screen.getByTestId("access-grant-drawer").click());
     expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
     expect(useAgentStore.getState().visible).toBe(true);

@@ -36,6 +36,7 @@ import {
   themeColorScheme,
   themeToCssVars,
 } from "@/modules/sql-editor/components/theme/derive";
+import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
 import { SQLEditorThemeScope } from "@/modules/sql-editor/components/theme/SQLEditorThemeScope";
 import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types";
 import { useAppStore } from "@/stores/app";
@@ -293,6 +294,7 @@ function AccessGrantRequestDrawerInner({
           >
             <DatabaseSelect
               multiple
+              portal
               value={targets}
               onChange={setTargets}
               projectName={project as string}
@@ -372,6 +374,7 @@ function AccessGrantRequestDrawerInner({
             }
           >
             <Combobox
+              portal
               value={String(duration)}
               onChange={(val) => setDuration(Number(val))}
               options={durationOptions}
@@ -415,7 +418,7 @@ function AccessGrantRequestDrawerInner({
           </FormField>
         </div>
       </SheetBody>
-      <SheetFooter>
+      <SheetFooter data-slot="sticky-action-footer">
         <Button appearance="outline" onClick={onClose} disabled={isRequesting}>
           {t("common.cancel")}
         </Button>
@@ -495,13 +498,9 @@ export function AccessGrantRequestDrawer({
         onClick={stopDrawerEvent}
         onPointerDown={stopDrawerEvent}
       >
-        {theme ? (
-          <SQLEditorThemeScope theme={theme} asContents>
-            {content}
-          </SQLEditorThemeScope>
-        ) : (
-          content
-        )}
+        <SQLEditorThemeScope theme={theme ?? PRESET_BY_ID.light} asContents>
+          {content}
+        </SQLEditorThemeScope>
       </SheetContent>
     </Sheet>
   );
