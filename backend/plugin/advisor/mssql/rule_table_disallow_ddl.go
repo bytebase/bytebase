@@ -48,11 +48,11 @@ func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateTableStmt:
 		if n.Name != nil {
-			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+			r.checkTableName(normalizeTableRef(n.Name, ""), r.LocToLine(n.Loc))
 		}
 	case *ast.AlterTableStmt:
 		if n.Name != nil {
-			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+			r.checkTableName(normalizeTableRef(n.Name, ""), r.LocToLine(n.Loc))
 		}
 	case *ast.DropStmt:
 		if n.ObjectType != ast.DropTable || n.Names == nil {
@@ -63,11 +63,11 @@ func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
 			if !ok || ref == nil {
 				continue
 			}
-			r.checkTableName(normalizeTableRef(ref, "", ""), r.LocToLine(n.Loc))
+			r.checkTableName(normalizeTableRef(ref, ""), r.LocToLine(n.Loc))
 		}
 	case *ast.TruncateStmt:
 		if n.Table != nil {
-			r.checkTableName(normalizeTableRef(n.Table, "", ""), r.LocToLine(n.Loc))
+			r.checkTableName(normalizeTableRef(n.Table, ""), r.LocToLine(n.Loc))
 		}
 	default:
 	}
