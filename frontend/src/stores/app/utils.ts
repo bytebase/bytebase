@@ -24,6 +24,7 @@ import {
   unknownEnvironment,
 } from "@/types/v1/environment";
 import { isValidInstanceName } from "@/types/v1/instance";
+import { getGuaranteedExpiration } from "@/utils/issue/cel";
 import { workspaceCacheScope } from "@/utils/storage-keys";
 import { celMapField, celString, celStringList } from "@/utils/v1/celLiteral";
 import { bindingScopesResources } from "@/utils/v1/iam";
@@ -173,13 +174,19 @@ function bindingMemberToNames(member: string): string[] {
   return [getUserName(member)];
 }
 
+const CANONICAL_EXPIRY_CONDITION =
+  /^\s*request\.time\s*<\s*timestamp\(\s*"([^"]+)"\s*\)\s*$/;
+
 export function getBindingExpirationDate(binding: Binding): Date | undefined {
-  const expression = binding.condition?.expression;
-  const match = expression?.match(/request\.time\s*<\s*timestamp\("([^"]+)"\)/);
-  if (match) {
-    return new Date(match[1]);
+  if (binding.parsedExpr) {
+    return getGuaranteedExpiration(binding.parsedExpr);
   }
-  return undefined;
+  // Without a parsed condition, only the whole canonical form proves expiry;
+  // a deadline in an OR branch does not necessarily expire the binding.
+  const match = binding.condition?.expression.match(CANONICAL_EXPIRY_CONDITION);
+  if (!match) return undefined;
+  const expiration = new Date(match[1]);
+  return Number.isNaN(expiration.getTime()) ? undefined : expiration;
 }
 
 export function isBindingExpired(binding: Binding): boolean {
@@ -210,12 +217,6 @@ export function bindingMatchesUser(
     });
   });
 }
-
-// The canonical expiry condition is the only non-empty form the client
-// evaluates, and the whole expression must be it — matching a substring would
-// let a lower-bounded window ("not before") read as already granting.
-const CANONICAL_EXPIRY_CONDITION =
-  /^\s*request\.time\s*<\s*timestamp\(\s*"([^"]+)"\s*\)\s*$/;
 
 // Whether the client can positively evaluate the binding's condition as
 // granting right now. The server evaluates the full CEL expression; the

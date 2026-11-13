@@ -4,6 +4,7 @@
 package v1
 
 import (
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	proto "google.golang.org/protobuf/proto"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
@@ -362,6 +363,270 @@ func (x *UpdateDataSourceRequest) Equal(y *UpdateDataSourceRequest) bool {
 	return true
 }
 
+func (x *DiscoverNeonBranchesRequest) Equal(y *DiscoverNeonBranchesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if x.ApiKey != y.ApiKey {
+		return false
+	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if x.PageSize != y.PageSize {
+		return false
+	}
+	if x.PageToken != y.PageToken {
+		return false
+	}
+	return true
+}
+
+func (x *DiscoverNeonBranchesResponse) Equal(y *DiscoverNeonBranchesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Branches) != len(y.Branches) {
+		return false
+	}
+	for i := 0; i < len(x.Branches); i++ {
+		if !x.Branches[i].Equal(y.Branches[i]) {
+			return false
+		}
+	}
+	if x.NextPageToken != y.NextPageToken {
+		return false
+	}
+	if len(x.Failures) != len(y.Failures) {
+		return false
+	}
+	for i := 0; i < len(x.Failures); i++ {
+		if !x.Failures[i].Equal(y.Failures[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *NeonBranch) Equal(y *NeonBranch) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if x.ProjectTitle != y.ProjectTitle {
+		return false
+	}
+	if x.BranchId != y.BranchId {
+		return false
+	}
+	if x.BranchTitle != y.BranchTitle {
+		return false
+	}
+	if len(x.Databases) != len(y.Databases) {
+		return false
+	}
+	for i := 0; i < len(x.Databases); i++ {
+		if !x.Databases[i].Equal(y.Databases[i]) {
+			return false
+		}
+	}
+	if len(x.Roles) != len(y.Roles) {
+		return false
+	}
+	for i := 0; i < len(x.Roles); i++ {
+		if x.Roles[i] != y.Roles[i] {
+			return false
+		}
+	}
+	if equal, ok := interface{}(x.DiscoveryError).(interface{ Equal(*status.Status) bool }); !ok || !equal.Equal(y.DiscoveryError) {
+		return false
+	} else if !proto.Equal(x.DiscoveryError, y.DiscoveryError) {
+		return false
+	}
+	return true
+}
+
+func (x *NeonDatabase) Equal(y *NeonDatabase) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Owner != y.Owner {
+		return false
+	}
+	return true
+}
+
+func (x *NeonProjectDiscoveryFailure) Equal(y *NeonProjectDiscoveryFailure) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if equal, ok := interface{}(x.Status).(interface{ Equal(*status.Status) bool }); !ok || !equal.Equal(y.Status) {
+		return false
+	} else if !proto.Equal(x.Status, y.Status) {
+		return false
+	}
+	return true
+}
+
+func (x *ImportInstancesRequest) Equal(y *ImportInstancesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if p, q := x.Parent, y.Parent; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if !x.GetNeonCredential().Equal(y.GetNeonCredential()) {
+		return false
+	}
+	if len(x.Imports) != len(y.Imports) {
+		return false
+	}
+	for i := 0; i < len(x.Imports); i++ {
+		if !x.Imports[i].Equal(y.Imports[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *NeonCredential) Equal(y *NeonCredential) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.ApiKey != y.ApiKey {
+		return false
+	}
+	return true
+}
+
+func (x *InstanceImport) Equal(y *InstanceImport) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.InstanceId != y.InstanceId {
+		return false
+	}
+	if !x.Instance.Equal(y.Instance) {
+		return false
+	}
+	if x.Username != y.Username {
+		return false
+	}
+	if x.ConnectionDatabase != y.ConnectionDatabase {
+		return false
+	}
+	if p, q := x.Password, y.Password; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if !x.GetNeonBranch().Equal(y.GetNeonBranch()) {
+		return false
+	}
+	return true
+}
+
+func (x *NeonBranchSource) Equal(y *NeonBranchSource) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.ProjectId != y.ProjectId {
+		return false
+	}
+	if x.BranchId != y.BranchId {
+		return false
+	}
+	return true
+}
+
+func (x *ImportInstancesResponse) Equal(y *ImportInstancesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Results) != len(y.Results) {
+		return false
+	}
+	for i := 0; i < len(x.Results); i++ {
+		if !x.Results[i].Equal(y.Results[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *InstanceImportResult) Equal(y *InstanceImportResult) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if !x.GetImported().Equal(y.GetImported()) {
+		return false
+	}
+	if !x.GetFailure().Equal(y.GetFailure()) {
+		return false
+	}
+	return true
+}
+
+func (x *InstanceImportFailure) Equal(y *InstanceImportFailure) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if equal, ok := interface{}(x.Status).(interface{ Equal(*status.Status) bool }); !ok || !equal.Equal(y.Status) {
+		return false
+	} else if !proto.Equal(x.Status, y.Status) {
+		return false
+	}
+	if x.CreationOutcome != y.CreationOutcome {
+		return false
+	}
+	return true
+}
+
 func (x *SyncDatabases) Equal(y *SyncDatabases) bool {
 	if x == y {
 		return true
@@ -447,6 +712,9 @@ func (x *Instance) Equal(y *Instance) bool {
 		if x.Labels[k] != y.Labels[k] {
 			return false
 		}
+	}
+	if x.Vendor != y.Vendor {
+		return false
 	}
 	return true
 }

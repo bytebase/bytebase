@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAppProject } from "@/hooks/useAppProject";
 import { cn } from "@/lib/utils";
 import { RequestRoleSheet } from "@/modules/access-control/RequestRoleSheet";
+import { getQueryAccessRequest } from "@/modules/sql-editor/model/queryAccessRequest";
 import { getDefaultQueryRole } from "@/modules/sql-editor/model/requestQueryRole";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useAppStore } from "@/stores/app";
@@ -65,24 +66,18 @@ export function RequestQueryButton({
     [roleList, permissionDeniedDetail.requiredPermissions, hasCustomRoleFeature]
   );
 
-  const useJIT = useMemo(
+  const request = useMemo(
     () =>
-      !!project?.allowJustInTimeAccess &&
-      permissionDeniedDetail.requiredPermissions.every(
-        (perm) => perm === "bb.sql.select" || perm === "bb.sql.info"
+      getQueryAccessRequest(
+        project,
+        permissionDeniedDetail.requiredPermissions
       ),
     [project, permissionDeniedDetail.requiredPermissions]
   );
-
-  const requiredPermission: Permission = useJIT
-    ? "bb.accessGrants.create"
-    : "bb.issues.create";
-
-  const requiredFeature = useJIT
-    ? PlanFeature.FEATURE_JIT
-    : PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW;
-
-  const hasRequestFeature = useAppStore((s) => s.hasFeature(requiredFeature));
+  const useJIT = request?.kind === "accessGrant";
+  const hasRequestFeature = useAppStore((s) =>
+    request ? s.hasFeature(request.requiredFeature) : false
+  );
 
   const missingResources = useMemo((): DatabaseResource[] => {
     const resources: DatabaseResource[] = [];
@@ -94,8 +89,6 @@ export function RequestQueryButton({
     }
     return resources;
   }, [permissionDeniedDetail.resources]);
-
-  const available = !!project?.allowRequestRole || useJIT;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -123,9 +116,10 @@ export function RequestQueryButton({
     }
   };
 
-  if (!available) {
+  if (!request) {
     return null;
   }
+  const { requiredPermission, requiredFeature } = request;
 
   return (
     <div>

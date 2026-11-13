@@ -1053,6 +1053,384 @@ describe("durable run recovery", () => {
     expect(result.value).toBeTruthy();
     expect(s(store).getChat(chat.id)?.runId).toBe(result.value);
   });
+  test("keeps this tab's API approval answerable when another tab saves an unrelated chat", async () => {
+    const { store, chat, root } = await create();
+    const other = s(store).createChat();
+    await s(store).flushRunPersistence();
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    await s(follower).flushRunPersistence();
+    const controller = new AbortController();
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        const runId = (await s(store).beginChatRun(
+          chat.id,
+          root!.id,
+          bindings
+        ))!;
+        s(store).setAbortController(chat.id, controller);
+        const call = s(store).addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "query-call",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "bytebase.v1.SQLService.Query",
+                body: { statement: "SELECT * FROM example", limit: 100 },
+              }),
+            },
+          ],
+          metadata: { runId },
+        });
+        await s(store).saveChatRunCheckpoint(chat.id, {
+          ...s(store).getChat(chat.id)!.runCheckpoint!,
+          throughMessageId: call!.id,
+          startupComplete: true,
+          suspension: "awaiting-user",
+        });
+        s(store).awaitUser(chat.id, {
+          kind: "confirm",
+          toolCallId: "query-call",
+          prompt: "Allow this API request?",
+          apiPermission: {
+            actionId: "local-query-approval",
+            operationId: "bytebase.v1.SQLService.Query",
+          },
+        });
+        expect(await s(store).flushRunPersistence()).toBe(true);
+        s(store).setAbortController(chat.id, null);
+        expect(await s(store).flushRunPersistence()).toBe(true);
+      }
+    );
+    s(store).syncState();
+    expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+
+    s(follower).syncState();
+    s(follower).renameChat(other.id, "Other tab's chat");
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    expect(s(follower).remoteBusyChatIds[chat.id]).toBe(true);
+    s(store).syncState();
+
+    expect(s(store).getChat(chat.id)?.status).toBe("awaiting_user");
+    expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(store).isChatRunning(chat.id)).toBe(false);
+    expect(
+      s(store).answerPendingAsk(chat.id, {
+        kind: "confirm",
+        answer: "Declined",
+        confirmed: false,
+      })
+    ).not.toBeNull();
+  });
+  const restoredPendingApproval = async () => {
+    const { store: owner, chat, root } = await create();
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    let runId!: string;
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        runId = (await s(owner).beginChatRun(chat.id, root!.id, bindings))!;
+        s(owner).setAbortController(chat.id, new AbortController());
+        const call = s(owner).addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          toolCalls: [{ id: "query", name: "call_api", arguments: "{}" }],
+          metadata: { runId },
+        });
+        await s(owner).saveChatRunCheckpoint(chat.id, {
+          ...s(owner).getChat(chat.id)!.runCheckpoint!,
+          throughMessageId: call!.id,
+          startupComplete: true,
+          suspension: "awaiting-user",
+        });
+        s(owner).awaitUser(chat.id, {
+          kind: "confirm",
+          toolCallId: "query",
+          prompt: "Allow this API request?",
+          apiPermission: { actionId: "stale-approval", operationId: "Query" },
+        });
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+      }
+    );
+    s(store).syncState();
+    expect(s(store).remoteBusyChatIds[chat.id]).toBe(true);
+    return { store, chat, runId };
+  };
+  test("recovers a restored approval without answering it or refreshing its run allowance", async () => {
+    const { store, chat, runId } = await restoredPendingApproval();
+    const previous = {
+      chat: s(store).getChat(chat.id),
+      ask: s(store).getPendingAsk(chat.id),
+      messages: s(store).getMessages(chat.id),
+    };
+
+    const result = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => s(store).recoverPendingAsk(chat.id, runId)
+    );
+
+    expect(result).toEqual({ acquired: true, value: true });
+    s(store).syncState();
+    expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(store).getChat(chat.id)).toEqual(previous.chat);
+    expect(s(store).getPendingAsk(chat.id)).toEqual(previous.ask);
+    expect(s(store).getMessages(chat.id)).toEqual(previous.messages);
+    expect(s(store).getAbortController(chat.id)).toBeNull();
+  });
+  test("keeps restored approval controls blocked when recovery cannot be persisted", async () => {
+    const { store, chat, runId } = await restoredPendingApproval();
+    const ask = s(store).getPendingAsk(chat.id);
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new Error("Storage unavailable");
+    });
+    const result = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      () => s(store).recoverPendingAsk(chat.id, runId)
+    );
+    expect(result).toEqual({ acquired: true, value: false });
+    expect(s(store).remoteBusyChatIds[chat.id]).toBe(true);
+    expect(s(store).getPendingAsk(chat.id)).toEqual(ask);
+    write.mockRestore();
+  });
+  test.each([
+    "no-lease",
+    "active-controller",
+    "archived",
+    "changed-run",
+    "unstarted-checkpoint",
+    "missing-ask",
+    "running",
+  ] as const)("does not recover an approval with %s", async (condition) => {
+    const { store, chat, runId } = await restoredPendingApproval();
+    if (condition === "active-controller")
+      s(store).setAbortController(chat.id, new AbortController());
+    if (
+      condition === "archived" ||
+      condition === "unstarted-checkpoint" ||
+      condition === "running" ||
+      condition === "missing-ask"
+    ) {
+      const key = getAgentStateKey(workspaceName);
+      const incoming = JSON.parse(mockStorage.getItem(key)!);
+      const target = incoming.chats.find(
+        (entry: AgentChat) => entry.id === chat.id
+      );
+      if (condition === "archived") target.archived = true;
+      if (condition === "running") target.status = "running";
+      if (condition === "unstarted-checkpoint")
+        target.runCheckpoint.startupComplete = false;
+      if (condition === "missing-ask")
+        delete incoming.pendingAskByChatId[chat.id];
+      mockStorage.setItem(key, JSON.stringify(incoming));
+    }
+    const before = s(store).getMessages(chat.id);
+    const persistedBefore = mockStorage.getItem(
+      getAgentStateKey(workspaceName)
+    );
+    const recover = () =>
+      s(store).recoverPendingAsk(
+        chat.id,
+        condition === "changed-run" ? "earlier-run" : runId
+      );
+    const result =
+      condition === "no-lease"
+        ? await recover()
+        : (
+            await withAgentRunLease(
+              getAgentStateKey(workspaceName),
+              chat.id,
+              recover
+            )
+          ).value;
+
+    expect(result).toBe(false);
+    expect(s(store).getMessages(chat.id)).toEqual(
+      condition === "archived"
+        ? before.map((message) =>
+            message.role === "user"
+              ? {
+                  ...message,
+                  metadata: {
+                    ...message.metadata,
+                    interruptionReason: "unexpected",
+                  },
+                }
+              : message
+          )
+        : before
+    );
+    if (condition !== "active-controller")
+      expect(mockStorage.getItem(getAgentStateKey(workspaceName))).toBe(
+        persistedBefore
+      );
+  });
+  const restoredWorkingRun = async () => {
+    const result = await restoredPendingApproval();
+    const key = getAgentStateKey(workspaceName);
+    const saved = JSON.parse(mockStorage.getItem(key)!);
+    const chat = saved.chats.find(
+      (entry: AgentChat) => entry.id === result.chat.id
+    );
+    chat.status = "running";
+    chat.runCheckpoint.suspension = "interrupted";
+    mockStorage.setItem(key, JSON.stringify(saved));
+    s(result.store).syncState();
+    return result;
+  };
+  test("restores orphaned execution as interrupted without continuing or answering it", async () => {
+    const { store, chat, runId } = await restoredWorkingRun();
+    const budget = s(store).getChat(chat.id)!.runBudget;
+    const messages = s(store).getMessages(chat.id);
+    const result = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      () => s(store).recoverChatRun(chat.id, runId)
+    );
+    expect(result).toEqual({ acquired: true, value: true });
+    s(store).syncState();
+    expect(s(store).getChat(chat.id)).toMatchObject({
+      runId,
+      status: "idle",
+      interrupted: true,
+      interruptionReason: "unexpected",
+      runCheckpoint: { suspension: "interrupted" },
+      runBudget: budget,
+    });
+    expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(store).getPendingAsk(chat.id)).toBeNull();
+    expect(s(store).getMessages(chat.id)).toEqual(
+      messages.map((message) =>
+        message.role === "user"
+          ? {
+              ...message,
+              metadata: {
+                ...message.metadata,
+                interruptionReason: "unexpected",
+              },
+            }
+          : message
+      )
+    );
+    expect(s(store).getAbortController(chat.id)).toBeNull();
+  });
+  test("retries passive run recovery after a persistence failure without replaying work", async () => {
+    const { store, chat, runId } = await restoredWorkingRun();
+    const budget = s(store).getChat(chat.id)!.runBudget;
+    const count = s(store).getMessages(chat.id).length;
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new Error("Storage unavailable");
+    });
+    const recover = () =>
+      withAgentRunLease(getAgentStateKey(workspaceName), chat.id, () =>
+        s(store).recoverChatRun(chat.id, runId)
+      );
+    expect(await recover()).toEqual({ acquired: true, value: false });
+    expect(s(store).remoteBusyChatIds[chat.id]).toBe(true);
+    write.mockRestore();
+    expect(await recover()).toEqual({ acquired: true, value: true });
+    expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(store).getChat(chat.id)?.runBudget).toEqual(budget);
+    expect(s(store).getMessages(chat.id)).toHaveLength(count);
+    expect(s(store).getChat(chat.id)?.interruptionReason).toBe("unexpected");
+  });
+  test.each(["paused", "error", "idle", "completed"] as const)(
+    "clears abandoned %s ownership without changing the saved outcome",
+    async (status) => {
+      const { store, chat, runId } = await restoredWorkingRun();
+      const key = getAgentStateKey(workspaceName);
+      const saved = JSON.parse(mockStorage.getItem(key)!);
+      const entry = saved.chats.find(
+        (entry: AgentChat) => entry.id === chat.id
+      );
+      entry.status = status === "completed" ? "idle" : status;
+      delete saved.pendingAskByChatId[chat.id];
+      if (status === "paused") entry.runCheckpoint.suspension = "token-limit";
+      if (status === "error") entry.lastError = "Connection lost";
+      if (status === "idle") {
+        entry.interrupted = true;
+        entry.interruptionReason = "user";
+      }
+      if (status === "completed") {
+        entry.runId = null;
+        delete entry.runCheckpoint;
+      }
+      mockStorage.setItem(key, JSON.stringify(saved));
+      s(store).syncState();
+      const previous = s(store).getChat(chat.id);
+      const messages = s(store).getMessages(chat.id);
+      const result = await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        chat.id,
+        () =>
+          s(store).recoverChatRun(
+            chat.id,
+            status === "completed" ? null : runId
+          )
+      );
+      expect(result).toEqual({ acquired: true, value: true });
+      s(store).syncState();
+      expect(s(store).remoteBusyChatIds[chat.id]).toBeUndefined();
+      expect(s(store).getChat(chat.id)).toEqual(previous);
+      expect(s(store).getMessages(chat.id)).toEqual(messages);
+    }
+  );
+  test.each([
+    "no-lease",
+    "local-controller",
+    "changed-run",
+    "archived",
+    "awaiting-user",
+    "queued",
+  ] as const)(
+    "does not restore orphaned execution with %s",
+    async (condition) => {
+      const { store, chat, runId } = await restoredWorkingRun();
+      if (condition === "local-controller")
+        s(store).setAbortController(chat.id, new AbortController());
+      else if (["archived", "awaiting-user", "queued"].includes(condition)) {
+        const key = getAgentStateKey(workspaceName);
+        const saved = JSON.parse(mockStorage.getItem(key)!);
+        const entry = saved.chats.find(
+          (entry: AgentChat) => entry.id === chat.id
+        );
+        if (condition === "archived") entry.archived = true;
+        if (condition === "awaiting-user") entry.status = "awaiting_user";
+        if (condition === "queued")
+          saved.queuedUserMessagesByChatId[chat.id] = {
+            id: "queued",
+            chatId: chat.id,
+            text: "Next question",
+            page: bindings.page,
+          };
+        mockStorage.setItem(key, JSON.stringify(saved));
+      }
+      const recover = () =>
+        s(store).recoverChatRun(
+          chat.id,
+          condition === "changed-run" ? "earlier-run" : runId
+        );
+      const result =
+        condition === "no-lease"
+          ? await recover()
+          : (
+              await withAgentRunLease(
+                getAgentStateKey(workspaceName),
+                chat.id,
+                recover
+              )
+            ).value;
+      expect(result).toBe(false);
+    }
+  );
   test("a newly acquired lease recovers an abandoned persisted active owner", async () => {
     const { store, chat, root } = await create();
     const follower = createAgentStore();

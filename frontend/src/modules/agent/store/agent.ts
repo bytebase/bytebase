@@ -24,7 +24,10 @@ import {
   normalizeAgentResourceReferences,
 } from "../logic/resourceMention";
 import { normalizeAgentResponseActions } from "../logic/responseActions";
-import { getAgentRunClarificationBindings } from "../logic/runCheckpoint";
+import {
+  getAgentRunClarificationBindings,
+  getAgentRunContinuation,
+} from "../logic/runCheckpoint";
 import {
   hasAgentRunLease,
   supportsAgentRunRecovery,
@@ -1081,6 +1084,7 @@ export interface AgentState {
     page?: AgentChatSnapshot,
     reason?: AgentInterruptionReason
   ) => void;
+  recoverChatRun: (chatId: string, runId: string | null) => Promise<boolean>;
 
   // Pending ask
   setPendingAsk: (
@@ -1089,6 +1093,7 @@ export interface AgentState {
   ) => AgentPendingAsk;
   clearPendingAsk: (chatId?: string | null) => void;
   awaitUser: (chatId: string, pendingAsk: AgentPendingAsk) => AgentPendingAsk;
+  recoverPendingAsk: (chatId: string, runId: string) => Promise<boolean>;
   cancelPendingAsk: (chatId?: string | null) => boolean;
   answerPendingAsk: (
     chatId: string,
@@ -1631,6 +1636,11 @@ const mergeDraftHandoffs = (
 };
 
 const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
+  // Hydration must not look like remote progress just because it normalizes records.
+  const messages = (state.messagesByChatId[chat.id] ?? []).map(
+    (message, index) =>
+      normalizeMessage(message, chat.id, chat.createdTs + index)
+  );
   const {
     title: _title,
     context: _context,
@@ -1665,7 +1675,7 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
           revision: 0,
         }
       : undefined,
-    messages: (state.messagesByChatId[chat.id] ?? []).map((message) => {
+    messages: messages.map((message) => {
       if (!message.metadata) return message;
       const {
         maskingRuleDraftHandoff: _ruleReceipt,
@@ -1675,7 +1685,10 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
       } = message.metadata;
       return { ...message, metadata };
     }),
-    pendingAsk: state.pendingAskByChatId[chat.id],
+    pendingAsk: normalizePendingAsk(
+      state.pendingAskByChatId[chat.id],
+      getCurrentTurnResourceReferences(messages).at(-1)?.project ?? chat.context
+    ),
     queuedMessage: state.queuedUserMessagesByChatId[chat.id],
     active: state.activeChatIds?.includes(chat.id) ?? false,
   };
@@ -1686,7 +1699,8 @@ const rebasePersistedChanges = (
   base: PersistedAgentState,
   local: PersistedAgentState,
   remote: PersistedAgentState,
-  locallyBusy: Set<string>
+  locallyBusy: Set<string>,
+  remoteBusyChatIds: Record<string, boolean>
 ): PersistedAgentState => {
   const baseChats = new Map(base.chats.map((chat) => [chat.id, chat]));
   const localChats = new Map(local.chats.map((chat) => [chat.id, chat]));
@@ -1700,6 +1714,7 @@ const rebasePersistedChanges = (
     if (previous && (!current || (!incoming && !locallyBusy.has(id)))) continue;
     const useLocal =
       current &&
+      !remoteBusyChatIds[id] &&
       (!previous ||
         locallyBusy.has(id) ||
         !samePersistedValue(
@@ -3302,6 +3317,43 @@ export const createAgentStore = () => {
           });
         },
 
+        recoverChatRun: async (chatId, runId) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          if (
+            !chat ||
+            chat.archived ||
+            (chat.runId ?? null) !== runId ||
+            chat.status === "awaiting_user" ||
+            !get().remoteBusyChatIds[chatId] ||
+            get().getAbortController(chatId) ||
+            get().queuedUserMessagesByChatId[chatId] ||
+            get().queuedUserMessageInFlightByChatId[chatId] ||
+            !supportsAgentRunRecovery() ||
+            !canOwnRun(get(), chatId)
+          )
+            return false;
+          set((state) => {
+            delete state.remoteBusyChatIds[chatId];
+          });
+          if (chat.status === "running") {
+            if (chat.runCheckpoint?.suspension === "token-limit") {
+              get().setChatStatus(chatId, "paused");
+            } else {
+              get().interruptChatRun(chatId);
+              get().clearPendingAsk(chatId);
+            }
+          }
+          if (await get().flushRunPersistence()) return true;
+          const current = _getChat(chatId);
+          if (current && (current.runId ?? null) === runId) {
+            set((state) => {
+              state.remoteBusyChatIds[chatId] = true;
+            });
+          }
+          return false;
+        },
+
         // Pending ask
         setPendingAsk: (chatId, pendingAsk) => {
           set((state) => {
@@ -3336,6 +3388,32 @@ export const createAgentStore = () => {
         awaitUser: (chatId, pendingAsk) => {
           get().setChatStatus(chatId, "awaiting_user");
           return get().setPendingAsk(chatId, pendingAsk);
+        },
+
+        recoverPendingAsk: async (chatId, runId) => {
+          get().syncState();
+          const chat = _getChat(chatId);
+          if (
+            !chat ||
+            chat.runId !== runId ||
+            chat.status !== "awaiting_user" ||
+            !get().getPendingAsk(chatId) ||
+            get().getAbortController(chatId) ||
+            !supportsAgentRunRecovery() ||
+            !canOwnRun(get(), chatId) ||
+            !getAgentRunContinuation(chat, get().getMessages(chatId))
+          )
+            return false;
+          set((state) => {
+            delete state.remoteBusyChatIds[chatId];
+          });
+          if (await get().flushRunPersistence()) return true;
+          if (_getChat(chatId)?.runId === runId) {
+            set((state) => {
+              state.remoteBusyChatIds[chatId] = true;
+            });
+          }
+          return false;
         },
 
         cancelPendingAsk: (chatId) => {
@@ -3792,7 +3870,13 @@ export const createAgentStore = () => {
         })
         .map((chat) => chat.id)
     );
-    const merged = rebasePersistedChanges(base, local, remote, locallyBusy);
+    const merged = rebasePersistedChanges(
+      base,
+      local,
+      remote,
+      locallyBusy,
+      state.remoteBusyChatIds
+    );
     const serialized = persist ? JSON.stringify(merged) : saved;
     if (persist && serialized !== saved) {
       try {

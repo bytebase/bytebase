@@ -16,6 +16,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { projectNamePrefix } from "@/lib/resourceName";
+import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import {
   getNameParentTokens,
@@ -41,6 +42,11 @@ import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
+import {
+  parsePreparedAccessGrantDraft,
+  withDefaultAccessGrantReason,
+  withPreparedAccessGrantReason,
+} from "../logic/justInTime";
 import {
   getLandingStarterIdForText,
   type LandingStarterId,
@@ -713,6 +719,92 @@ export function AgentInput({
         })
       : undefined;
   useEffect(() => {
+    if (
+      !executionAvailable ||
+      !remoteBusy ||
+      !currentChatId ||
+      !currentChat ||
+      currentController ||
+      (currentChat.status === "awaiting_user" && !apiPermissionPreview)
+    )
+      return;
+    const chatId = currentChatId;
+    const runId = currentChat.runId ?? null;
+    const scope = { workspaceName, userEmail };
+    let cancelled = false;
+    let recovering = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const restore = async () => {
+      if (cancelled || recovering) return;
+      recovering = true;
+      try {
+        await withChatRunSegment(chatId, async () => {
+          if (cancelled || !isCurrentChatScope(scope, chatId)) return;
+          useAgentStore.getState().syncState();
+          const store = useAgentStore.getState();
+          const chat = store.getChat(chatId);
+          if (
+            store.currentChatId !== chatId ||
+            !chat ||
+            (chat.runId ?? null) !== runId ||
+            !store.remoteBusyChatIds[chatId] ||
+            store.getAbortController(chatId)
+          )
+            return;
+          if (chat.status !== "awaiting_user") {
+            await store.recoverChatRun(chatId, runId);
+          } else if (chat.status === "awaiting_user") {
+            const ask = store.getPendingAsk(chatId);
+            if (
+              ask?.apiPermission &&
+              getPendingApiCallPreview({
+                actionId: ask.apiPermission.actionId,
+                chatId,
+                toolCallId: ask.toolCallId,
+                userName: currentUserName,
+              })
+            ) {
+              if (runId) await store.recoverPendingAsk(chatId, runId);
+            }
+          }
+        });
+      } catch {
+        // Lease and persistence failures remain passive until a later attempt.
+      } finally {
+        recovering = false;
+        if (
+          !cancelled &&
+          isCurrentChatScope(scope, chatId) &&
+          useAgentStore.getState().remoteBusyChatIds[chatId]
+        ) {
+          timer = setTimeout(() => void restore(), 500);
+        }
+      }
+    };
+    const onFocus = () => {
+      clearTimeout(timer);
+      void restore();
+    };
+    void restore();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [
+    apiPermissionPreview?.expiresAt,
+    currentChat?.runId,
+    currentChat?.status,
+    currentChatId,
+    currentController,
+    currentUserName,
+    executionAvailable,
+    remoteBusy,
+    userEmail,
+    workspaceName,
+  ]);
+  useEffect(() => {
     if (!apiPermissionPreview) return;
     const timer = window.setInterval(
       () => setPermissionTick((tick) => tick + 1),
@@ -1351,6 +1443,7 @@ export function AgentInput({
       const maskingDraftIds: string[] = [];
       const exemptionDraftIds: string[] = [];
       const semanticTypeDraftIds: string[] = [];
+      let preparedAccessRequestDraft: AccessGrantDraft | undefined;
       const chatContext = store.getChat(chatId)?.context;
       const handoffScope = {
         workspaceName: chatContext?.startsWith("workspaces/")
@@ -1363,12 +1456,19 @@ export function AgentInput({
             : undefined),
       };
       const observeHandoffs = (name: string, result: string) => {
+        if (name === "prepare_access_grant_draft") {
+          maskingDraftIds.length = 0;
+          exemptionDraftIds.length = 0;
+          semanticTypeDraftIds.length = 0;
+          preparedAccessRequestDraft = parsePreparedAccessGrantDraft(result);
+        }
         if (
           name === "prepare_masking_rule_draft" ||
           name === "prepare_masking_rule_drafts" ||
           name === "prepare_masking_exemption_draft" ||
           name === "prepare_semantic_type_draft"
         ) {
+          preparedAccessRequestDraft = undefined;
           maskingDraftIds.length = 0;
           exemptionDraftIds.length = 0;
           semanticTypeDraftIds.length = 0;
@@ -1412,6 +1512,7 @@ export function AgentInput({
           maskingDraftIds.length = 0;
           exemptionDraftIds.length = 0;
           semanticTypeDraftIds.length = 0;
+          preparedAccessRequestDraft = undefined;
         };
         const runMessages = messages.slice(
           messages.findIndex(
@@ -1849,6 +1950,7 @@ export function AgentInput({
               maskingDraftIds.length = 0;
               exemptionDraftIds.length = 0;
               semanticTypeDraftIds.length = 0;
+              preparedAccessRequestDraft = undefined;
             }
             const execution =
               name === "get_project_overview" && prefetchedProjectOverview
@@ -2030,17 +2132,26 @@ export function AgentInput({
         const queryCalls = getCurrentTurnQueryCalls(
           useAgentStore.getState().getMessages(chatId)
         );
-        const accessRequestDraft =
-          !capability &&
-          outcome.kind === "completed" &&
-          !outcome.success &&
-          queryCalls.length === 1 &&
-          queryCalls[0].result !== undefined
-            ? await resolveDeniedQueryAccessDraft(
-                queryCalls[0].args,
-                queryCalls[0].result
-              ).catch(() => undefined)
-            : undefined;
+        const accessRequestDraft = withDefaultAccessGrantReason(
+          withPreparedAccessGrantReason(
+            !capability &&
+              outcome.kind === "completed" &&
+              (!outcome.success ||
+                (maskingDraftIds.length === 0 &&
+                  exemptionDraftIds.length === 0 &&
+                  semanticTypeDraftIds.length === 0))
+              ? outcome.success && preparedAccessRequestDraft
+                ? preparedAccessRequestDraft
+                : queryCalls.length === 1 && queryCalls[0].result !== undefined
+                  ? await resolveDeniedQueryAccessDraft(
+                      queryCalls[0].args,
+                      queryCalls[0].result
+                    ).catch(() => undefined)
+                  : undefined
+              : undefined,
+            preparedAccessRequestDraft
+          )
+        );
         if (
           controller.signal.aborted ||
           runToken !== runTokens.get(chatId) ||
@@ -2083,6 +2194,10 @@ export function AgentInput({
                 semanticTypeDraftIds
               )
             : [];
+          if (outcome.success && accessRequestDraft) {
+            actions = actions.filter((action) => action.kind === "continue");
+            handoff = undefined;
+          }
           const sqlFixAction =
             capability && outcome.success
               ? useAgentStore.getState().prepareSqlFixDraft(chatId, finalText)
@@ -3362,6 +3477,7 @@ export function AgentInput({
               !chat ||
               chat.runId !== currentChat.runId ||
               latest.getAbortController(chat.id) ||
+              chat.runCheckpoint?.suspension !== "token-limit" ||
               !getAgentRunContinuation(chat, latest.getMessages(chat.id))
             )
               return;

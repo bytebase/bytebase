@@ -7,9 +7,9 @@ const overview = `# Data Masking Overview
 
 ## Boundaries and discovery
 
-Do not write saved masking policy, even from a workspace or project chat. Never modify masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM. Typed tools prepare NEW unsaved forms; only member clicks open/apply and UI saves. Other forms are guide-only. Never query or read real row values or request them; use labeled synthetic values, not access proof. Never accept, ask for, or reveal a hash salt.
+Do not write saved masking policy, even from a workspace or project chat. Never modify masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM. Typed tools prepare NEW unsaved forms; only member clicks open/apply and UI saves. Never query or read real row values or request them; use labeled synthetic values. Never accept, ask for, or reveal a hash salt.
 
-For new rule/unspecified column-masking setup, including "how to mask ...", load get_skill(name="data-masking", section="rule"). If eligible, missing scope/parameters require clarification before done. Conceptual/effect-only questions can remain explanatory. Use section="exemption" for exemptions or section="semantic-type" for custom types. These include overview. Explicit classification/catalog help is guide-only.
+For new rule/unspecified column-masking setup, including "how to mask ...", load get_skill(name="data-masking", section="rule"). If eligible, missing scope/parameters require clarification before done. Conceptual/effect-only questions can remain explanatory. Use section="exemption" for exemptions or section="semantic-type" for custom types. Explicit classification/catalog help is guide-only.
 
 ## Goal and evidence
 
@@ -26,6 +26,8 @@ Use setup.subscription and setup.featureRequirements for license explanations: p
 This turn's refreshed evidence supersedes historical blockers; a changed plan is not proof the earlier evidence was wrong. When eligibility becomes available, continue setup rather than ending with a correction or conceptual explanation.
 
 Block only that step and its dependent steps; continue independent allowed steps and synthetic explanations. Existing types can remain usable when only creation is blocked. Before suggesting catalog assignment instead of denied global configuration, confirm that no global rule assigns a semantic type to the target columns. If global rule evidence is unavailable, explain that the effect remains unverified. Check alternatives independently; never bypass permissions.
+
+For unmasked data, load section="exemption"; for explicit JIT load get_skill(name="just-in-time").
 
 ## Smallest useful setup
 

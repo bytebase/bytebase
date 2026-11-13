@@ -12,6 +12,32 @@ import {
 import { skill as querySkill } from "./query";
 
 describe("resolveSkill", () => {
+  test("discovers and loads the standalone just-in-time workflow", () => {
+    const list = resolveSkill({});
+    expect(list.kind).toBe("listed");
+    if (list.kind !== "listed") throw new Error("Expected skill list");
+    const names = [...list.content.matchAll(/^- \*\*([^*]+)\*\*:/gm)].map(
+      (match) => match[1]
+    );
+    expect(names).toContain("just-in-time");
+
+    const result = resolveSkill({ name: "just-in-time" });
+    expect(result).toMatchObject({ kind: "loaded", name: "just-in-time" });
+    if (result.kind !== "loaded") throw new Error("Expected loaded skill");
+    expect(result.section).toBeUndefined();
+    expect(result.content.length).toBeGreaterThan(0);
+    expect(getSkill({ name: "just-in-time" })).toBe(result.content);
+  });
+
+  test("rejects a section on the standalone just-in-time workflow", () => {
+    expect(resolveSkill({ name: "just-in-time", section: "overview" })).toEqual(
+      {
+        kind: "error",
+        message: 'Skill "just-in-time" does not support sections.',
+      }
+    );
+  });
+
   test("defaults masking loads to a bounded discoverable overview", () => {
     const result = resolveSkill({ name: "data-masking" });
     expect(result).toMatchObject({
@@ -280,8 +306,10 @@ describe("getSkill", () => {
   test("uses the dedicated runtime-owned project exemption scope question", () => {
     const guidance = getSkill({ name: "data-masking", section: "exemption" });
 
-    expect(guidance).toContain("call ask_masking_exemption_scope()");
-    expect(guidance).toContain("The only optional argument is database");
+    expect(guidance).toContain(
+      "call ask_masking_exemption_scope({project?,database?})"
+    );
+    expect(guidance).toContain("pass its canonical name in a workspace chat");
     expect(guidance).toContain("Do not pass a question, options, or a default");
     expect(guidance).toContain("runtime supplies the localized scope question");
     expect(guidance).toContain("wait for Reply");
