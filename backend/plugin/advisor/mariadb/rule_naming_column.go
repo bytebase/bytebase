@@ -3,15 +3,17 @@ package mariadb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var _ advisor.Advisor = (*NamingColumnConventionAdvisor)(nil)
@@ -20,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
 }
 
-// NamingColumnConventionAdvisor is the advisor checking for column naming convention.
+// NamingColumnConventionAdvisor is the advisor checking for column naming
+// convention. The judgment lives in omni (mariadb/v1review.NamingColumn); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingColumnConventionAdvisor struct {
 }
 
@@ -36,98 +41,47 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, errors.New("naming_payload is required for naming column rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingColumnRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingColumnRule) Name() string {
-	return "NamingColumnRule"
-}
-
-func (r *namingColumnRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		tableName := n.Table.Name
-		for _, col := range n.Columns {
-			if col == nil {
-				continue
-			}
-			r.handleColumn(tableName, col.Name, r.LocToLine(col.Loc))
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		tableName := ""
-		if n.Table != nil {
-			tableName = n.Table.Name
+		findings, err := mariadbv1review.NamingColumn([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATAddColumn:
-				for _, col := range getColumnsFromCmd(cmd) {
-					r.handleColumn(tableName, col.Name, r.LocToLine(n.Loc))
-				}
-			case ast.ATRenameColumn:
-				if cmd.NewName != "" {
-					r.handleColumn(tableName, cmd.NewName, r.LocToLine(n.Loc))
-				}
-			case ast.ATChangeColumn:
-				if cmd.Column != nil {
-					r.handleColumn(tableName, cmd.Column.Name, r.LocToLine(n.Loc))
-				}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", f.Table, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
 			default:
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingColumnConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-	default:
 	}
-}
-
-func (r *namingColumnRule) handleColumn(tableName, columnName string, lineNumber int32) {
-	absoluteLine := r.BaseLine + int(lineNumber)
-	if !r.format.MatchString(columnName) {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingColumnConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, columnName, r.format),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
-	}
-	if r.maxLength > 0 && len(columnName) > r.maxLength {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingColumnConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
-	}
+	return adviceList, nil
 }

@@ -3,15 +3,17 @@ package mariadb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
-// TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
+// TableDropNamingConventionAdvisor is the advisor checking the
+// MySQLTableDropNamingConvention rule. The judgment lives in omni
+// (mariadb/v1review.TableDropNaming); this adapter converts the rule's payload
+// into the omni config and renders the findings as advice.
 type TableDropNamingConventionAdvisor struct {
 }
 
@@ -37,46 +42,37 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for table drop naming convention rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format}
+	if _, err := cfg.Compile(); err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	rule := &tableDropNamingConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format: format,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDropNamingConventionRule struct {
-	BaseRule
-	format *regexp.Regexp
-}
-
-func (*tableDropNamingConventionRule) Name() string {
-	return "TableDropNamingConventionRule"
-}
-
-func (r *tableDropNamingConventionRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.DropTableStmt)
-	if !ok {
-		return
-	}
-	for _, tbl := range n.Tables {
-		if !r.format.MatchString(tbl.Name) {
-			absoluteLine := r.BaseLine + int(r.LocToLine(n.Loc))
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := mariadbv1review.TableDropNaming([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			if f.Code != v1review.NameMismatch {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDropNamingConventionMismatch.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tbl.Name, r.format),
-				StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
+				Title:         title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, namingPayload.Format),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
 	}
+	return adviceList, nil
 }

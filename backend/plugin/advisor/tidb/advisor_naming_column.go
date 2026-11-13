@@ -3,9 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
 }
 
-// NamingColumnConventionAdvisor is the advisor checking for column naming convention.
+// NamingColumnConventionAdvisor is the advisor checking for column naming
+// convention. The judgment lives in omni (tidb/v1review.NamingColumn); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingColumnConventionAdvisor struct {
 }
 
@@ -42,133 +46,40 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-	checker := &namingColumnConventionChecker{
-		level:     level,
-		title:     checkCtx.Rule.Type.String(),
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type namingColumnConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-	maxLength  int
-}
-
-type columnDataNamingColumn struct {
-	name string
-	line int
-}
-
-func (c *namingColumnConventionChecker) checkStmt(ostmt Stmt) {
-	var columnList []columnDataNamingColumn
-	var tableName string
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings, err := tidbv1review.NamingColumn([]ast.Node{stmt.Node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		tableName = n.Table.Name
-		for _, col := range n.Columns {
-			if col == nil {
-				continue
-			}
-			columnList = append(columnList, columnDataNamingColumn{
-				name: col.Name,
-				line: ostmt.AbsoluteLine(col.Loc.Start),
-			})
-		}
-	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName = n.Table.Name
-		// Use the ALTER statement's line for all column references — pingcap parity.
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATRenameColumn:
-				if cmd.NewName != "" {
-					columnList = append(columnList, columnDataNamingColumn{
-						name: cmd.NewName,
-						line: stmtLine,
-					})
-				}
-			case ast.ATAddColumn:
-				// omni populates either Columns (multi-form) or Column (single).
-				// Mutually exclusive in practice but not enforced by the type.
-				if len(cmd.Columns) > 0 {
-					for _, col := range cmd.Columns {
-						if col != nil {
-							columnList = append(columnList, columnDataNamingColumn{
-								name: col.Name,
-								line: stmtLine,
-							})
-						}
-					}
-				} else if cmd.Column != nil {
-					columnList = append(columnList, columnDataNamingColumn{
-						name: cmd.Column.Name,
-						line: stmtLine,
-					})
-				}
-			case ast.ATChangeColumn:
-				// Only the new column name matters here.
-				if cmd.Column != nil {
-					columnList = append(columnList, columnDataNamingColumn{
-						name: cmd.Column.Name,
-						line: stmtLine,
-					})
-				}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", f.Table, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
 			default:
-				// MODIFY COLUMN (ATModifyColumn) and other forms intentionally
-				// not handled — pre-existing inheritance from the pingcap-AST
-				// version of this advisor.
+				continue
 			}
-		}
-	default:
-		return
-	}
-
-	for _, column := range columnList {
-		if !c.format.MatchString(column.name) {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NamingColumnConventionMismatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, naming format should be %q", tableName, column.name, c.format),
-				StartPosition: base.ConvertANTLRLineToPosition(column.line),
-			})
-		}
-		if c.maxLength > 0 && len(column.name) > c.maxLength {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
-				Code:          code.NamingColumnConventionMismatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s`.`%s` mismatches column naming convention, its length should be within %d characters", tableName, column.name, c.maxLength),
-				StartPosition: base.ConvertANTLRLineToPosition(column.line),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
 	}
+	return adviceList, nil
 }

@@ -725,8 +725,8 @@ func getTiDBNodes(checkCtx advisor.Context) ([]Stmt, error) {
 	return result, nil
 }
 
-// indexMetaData captures naming metadata used by the index/UK/FK convention
-// rules. Plain Go fields, AST-agnostic — shared between all 3 advisors that
+// indexMetaData captures naming metadata used by the index/UK convention
+// rules. Plain Go fields, AST-agnostic — shared between the two advisors that
 // were previously coupled via this struct in advisor_naming_index_convention.go.
 type indexMetaData struct {
 	indexName string
@@ -736,7 +736,7 @@ type indexMetaData struct {
 }
 
 // getTemplateRegexp formats the template as regex by substituting tokens.
-// Shared by the index/UK/FK naming convention rules.
+// Shared by the index/UK naming convention rules.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
 	for _, key := range templateList {
 		if token, ok := tokens[key]; ok {
@@ -770,22 +770,22 @@ func indexColumns(cols []*omniast.IndexColumn) []string {
 }
 
 // namingRuleConfig parameterizes the naming-convention rule scaffold for the
-// index, unique-key, and foreign-key advisors. Only the per-rule labels and
+// index and unique-key advisors. Only the per-rule labels and
 // the mismatch advice code differ — everything else (payload validation,
 // regex match, length check, advice emission) is shared.
 type namingRuleConfig struct {
 	mismatchCode       code.Code
-	typeNoun           string // "Index" / "Unique key" / "Foreign key" — embedded in advice content
+	typeNoun           string // "Index" / "Unique key" — embedded in advice content
 	internalErrorTitle string
 }
 
-// runNamingConventionRule is the shared scaffold for the index/UK/FK naming
+// runNamingConventionRule is the shared scaffold for the index/UK naming
 // rules. The collect closure returns []*indexMetaData, so all callers are
 // coupled to that 4-field shape. If a future naming rule needs additional
 // per-finding fields (e.g. an isUnique flag or a per-finding line distinct
 // from the metadata's), expect either widening indexMetaData (everyone
 // pays) or replacing the closure return type (breaks the helper). The
-// current shape is the lowest common denominator across the 3 rules.
+// current shape is the lowest common denominator across the 2 rules.
 //
 // Behavior: parses the naming payload, walks each statement through `collect`,
 // and emits regex-mismatch + length-overflow advices.

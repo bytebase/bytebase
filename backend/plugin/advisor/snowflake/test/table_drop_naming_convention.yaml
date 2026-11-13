@@ -11,3 +11,95 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP TABLE foo_delete
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"FOO_DELETE" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE "foo_delete"
+  changeType: 1
+- statement: DROP TABLE "x_delete"."y_delete"."Foo""Bar" CASCADE
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"Foo\"Bar" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE "数据表"
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"数据表" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE ""
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE IDENTIFIER('db.sch.foo_delete')
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"IDENTIFIER(''DB.SCH.FOO_DELETE'')" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- keep
+    DROP TABLE "a_delete";
+
+    /* drop the
+       second */
+    DROP TABLE
+      sch
+      .
+      Foo;
+    DROP TABLE Bar;
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"FOO" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 9
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '"BAR" mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 10
+        column: 0
+      endposition: null
+- statement: DROP VIEW Foo
+  changeType: 1
+- statement: EXPLAIN DROP TABLE Foo
+  changeType: 1
+- statement: BEGIN DROP TABLE Foo; END;
+  changeType: 1

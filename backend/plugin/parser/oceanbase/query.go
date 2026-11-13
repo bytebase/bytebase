@@ -86,6 +86,10 @@ func selectIntoTargets(n *ast.SelectStmt) (writesFile, assignsVariables bool) {
 // EXPLAIN ANALYZE runs what it wraps, so there the wrapped statement has to be
 // a read in full.
 func explainReads(explain *ast.ExplainStmt) bool {
+	// EXPLAIN INTO stores the plan in the table it names.
+	if explain.Into != "" {
+		return false
+	}
 	if sel, ok := explain.Stmt.(*ast.SelectStmt); ok {
 		if writesFile, _ := selectIntoTargets(sel); writesFile {
 			return false

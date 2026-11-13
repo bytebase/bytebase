@@ -152,3 +152,139 @@
         line: 9
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      ADD COLUMN contentString varchar(255);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int);
+
+    -- rename and change on later lines
+    ALTER TABLE book
+      RENAME COLUMN id TO bookId,
+      CHANGE COLUMN bookId
+        bookID int;
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`bookID` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`bookId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book MODIFY COLUMN creatorId int;
+- statement: CREATE TABLE Shop.book(creatorId int);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE Shop.tech_book ADD COLUMN creatorId int;
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(`creator``Id` int, `creator_id` int, `creator id` int);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creator id` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creator`Id` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(creatorId int) AS SELECT 1 AS otherId;
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book RENAME COLUMN id TO `数数数数数数数数数数数数数数数数数数数数数`;
+    ALTER TABLE tech_book RENAME COLUMN id TO `数数数数数数数数数数数数数数数数数数数数数数`;
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`tech_book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      `数数数数数数数数数数数数数数数数数数数数数数` int);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE pr() BEGIN CREATE TABLE book(creatorId int); ALTER TABLE book ADD COLUMN otherId int; END;
