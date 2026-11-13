@@ -24,3 +24,41 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE t ADD (a int, b int DEFAULT 0);
+    ALTER TABLE t MODIFY a varchar2(10);
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column "A" doesn't have default value
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t ADD a int;
+    ALTER TABLE t MODIFY a DEFAULT 1;
+  changeType: 1
+- statement: |-
+    CREATE TABLE z (a int DEFAULT 0, b int);
+    CREATE TABLE y (c int);
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column "B" doesn't have default value
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column "C" doesn't have default value
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

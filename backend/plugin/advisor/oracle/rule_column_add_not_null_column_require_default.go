@@ -6,11 +6,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // ColumnAddNotNullColumnRequireDefaultAdvisor is the advisor checking for adding not null column requires default.
+// The judgment lives in omni (oracle/v1review.ColumnAddNotNullRequireDefault);
+// this adapter renders the findings as advice.
 type ColumnAddNotNullColumnRequireDefaultAdvisor struct {
 }
 
@@ -32,53 +36,25 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 		return nil, err
 	}
 
-	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnAddNotNullColumnRequireDefaultRule is the rule implementation for adding not null column requires default.
-type ColumnAddNotNullColumnRequireDefaultRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewColumnAddNotNullColumnRequireDefaultRule creates a new ColumnAddNotNullColumnRequireDefaultRule.
-func NewColumnAddNotNullColumnRequireDefaultRule(level storepb.Advice_Status, title string, currentDatabase string) *ColumnAddNotNullColumnRequireDefaultRule {
-	return &ColumnAddNotNullColumnRequireDefaultRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnAddNotNullColumnRequireDefaultRule) Name() string {
-	return "column.add-not-null-column-require-default"
-}
-
-// OnStatement checks ADD COLUMN actions for NOT NULL columns without DEFAULT.
-func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
-	stmt, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-	for _, cmd := range alterTableCmds(stmt) {
-		if cmd.Action != ast.AT_ADD_COLUMN {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
-			if col == nil || col.Default != nil {
-				continue
-			}
-			if col.NotNull || columnHasConstraint(col, ast.CONSTRAINT_NOT_NULL) {
-				r.AddAdvice(
-					r.level,
-					code.NotNullColumnWithNoDefault.Int32(),
-					fmt.Sprintf("Adding not null column %q requires default.", col.Name),
-					base.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
-				)
-			}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.ColumnAddNotNullRequireDefault([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NotNullColumnWithNoDefault.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Adding not null column %q requires default.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
 	}
+	return adviceList, nil
 }

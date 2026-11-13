@@ -11,3 +11,31 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD reader int DEFAULT 0 NOT NULL
   changeType: 1
+- statement: |-
+    ALTER TABLE tech_book ADD (
+      a int NOT NULL,
+      b int,
+      "c" int CONSTRAINT c_nn NOT NULL
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 404
+      title: COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT
+      content: Adding not null column "A" requires default.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 404
+      title: COLUMN_ADD_NOT_NULL_REQUIRE_DEFAULT
+      content: Adding not null column "c" requires default.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD a int PRIMARY KEY
+  changeType: 1
+- statement: ALTER TABLE tech_book MODIFY a int NOT NULL
+  changeType: 1

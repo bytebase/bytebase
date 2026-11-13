@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -23,6 +25,8 @@ func init() {
 }
 
 // ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length.
+// The judgment lives in omni (oracle/v1review.ColumnMaximumVarcharLength);
+// this adapter passes the limit and renders the findings as advice.
 type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
@@ -37,59 +41,30 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if int(numberPayload.Number) <= 0 {
+	maximum := int(numberPayload.Number)
+	if maximum <= 0 {
 		return nil, nil
 	}
 
-	rule := NewColumnMaximumVarcharLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnMaximumVarcharLengthRule is the rule implementation for maximum varchar length.
-type ColumnMaximumVarcharLengthRule struct {
-	BaseRule
-
-	maximum int
-}
-
-// NewColumnMaximumVarcharLengthRule creates a new ColumnMaximumVarcharLengthRule.
-func NewColumnMaximumVarcharLengthRule(level storepb.Advice_Status, title string, maximum int) *ColumnMaximumVarcharLengthRule {
-	return &ColumnMaximumVarcharLengthRule{
-		BaseRule: NewBaseRule(level, title, 0),
-		maximum:  maximum,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.ColumnMaximumVarcharLength([]ast.Node{node}, maximum) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.VarcharLengthExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The maximum varchar length is %d.", maximum),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
-
-// Name returns the rule name.
-func (*ColumnMaximumVarcharLengthRule) Name() string {
-	return "column.maximum-varchar-length"
-}
-
-// OnStatement checks VARCHAR/VARCHAR2 type modifiers in the omni AST.
-func (r *ColumnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		col, ok := n.(*ast.ColumnDef)
-		if !ok || col.TypeName == nil {
-			return
-		}
-		typeName := typeName(col.TypeName)
-		if typeName != "VARCHAR" && typeName != "VARCHAR2" {
-			return
-		}
-		length, ok := firstTypeModInt(col.TypeName)
-		if !ok || length <= r.maximum {
-			return
-		}
-		r.AddAdvice(
-			r.level,
-			code.VarcharLengthExceedsLimit.Int32(),
-			fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-			base.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
-		)
-	})
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

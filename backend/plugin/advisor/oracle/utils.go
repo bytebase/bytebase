@@ -2,8 +2,6 @@ package oracle
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
 )
@@ -27,23 +25,6 @@ func lastObjectName(name *ast.ObjectName) string {
 		return ""
 	}
 	return name.Name
-}
-
-func listStrings(list *ast.List) []string {
-	if list == nil {
-		return nil
-	}
-	result := make([]string, 0, len(list.Items))
-	for _, item := range list.Items {
-		switch n := item.(type) {
-		case *ast.String:
-			result = append(result, n.Str)
-		case *ast.ColumnRef:
-			result = append(result, n.Column)
-		default:
-		}
-	}
-	return result
 }
 
 func listItems(list *ast.List) []ast.Node {
@@ -103,32 +84,6 @@ func columnConstraints(col *ast.ColumnDef) []*ast.ColumnConstraint {
 		}
 	}
 	return result
-}
-
-func typeName(tn *ast.TypeName) string {
-	parts := listStrings(tnNames(tn))
-	return strings.ToUpper(strings.Join(parts, "."))
-}
-
-func tnNames(tn *ast.TypeName) *ast.List {
-	if tn == nil {
-		return nil
-	}
-	return tn.Names
-}
-
-func firstTypeModInt(tn *ast.TypeName) (int, bool) {
-	if tn == nil || tn.TypeMods == nil || len(tn.TypeMods.Items) == 0 {
-		return 0, false
-	}
-	switch n := tn.TypeMods.Items[0].(type) {
-	case *ast.Integer:
-		return int(n.Ival), true
-	case *ast.Float:
-		v, err := strconv.Atoi(n.Fval)
-		return v, err == nil
-	}
-	return 0, false
 }
 
 func columnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
