@@ -35,3 +35,91 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE UNIQUE INDEX tech_book_id_name ON tech_book(id, name)
+  changeType: 1
+- statement: CREATE INDEX ON tech_book(id, name)
+  changeType: 1
+- statement: |-
+    CREATE INDEX idx_tech_book_id ON tech_book(id, lower(name));
+    CREATE INDEX idx_tech_book_id_name ON tech_book(id, lower(name))
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found "idx_tech_book_id_name"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE INDEX IDX_Tech_Book_Id ON Tech_Book(Id)
+  changeType: 1
+- statement: |-
+    ALTER INDEX old_uk RENAME TO bad;
+    ALTER INDEX old_pk RENAME TO bad;
+    ALTER INDEX no_such_index RENAME TO bad
+  changeType: 1
+- statement: ALTER INDEX bbdataarchive.old_index RENAME TO idx_tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER INDEX idx_orders_customer RENAME TO idx_orders_customer_name;
+    ALTER INDEX idx_orders_amount RENAME TO idx_tech_book_amount
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table "orders" mismatches the naming convention, expect "^$|^idx_orders_amount$" but found "idx_tech_book_amount"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx_a_x ON "a(" (x)
+  changeType: 1
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for index naming convention rule
+      content: 'Failed to compile regex: error parsing regexp: missing closing ): `^$|^idx_a(_x$`'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- the index is named two lines down
+    CREATE INDEX
+      tech_book_id
+      ON tech_book(id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found "tech_book_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE INDEX idx_tech_book_id ON tech_book(id);
+
+    CREATE INDEX tech_book_name ON tech_book(name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_name$" but found "tech_book_name"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

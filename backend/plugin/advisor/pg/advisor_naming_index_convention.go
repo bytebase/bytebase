@@ -3,16 +3,17 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -23,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
 }
 
-// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
+// NamingIndexConventionAdvisor is the advisor checking for index naming
+// convention. The judgment lives in omni (pg/v1review.NamingIndex); this
+// adapter validates the template's tokens, converts the rule's payload into
+// the omni config, and renders the findings as advice.
 type NamingIndexConventionAdvisor struct {
 }
 
@@ -52,151 +56,44 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
+	cfg := v1review.TemplateConfig{Format: format, MaxLength: maxLength}
+	schema := originalSchema(checkCtx.OriginalMetadata)
 
-	rule := &namingIndexConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:           format,
-		maxLength:        maxLength,
-		templateList:     templateList,
-		originalMetadata: checkCtx.OriginalMetadata,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingIndexConventionRule struct {
-	BaseRule
-
-	format           string
-	maxLength        int
-	templateList     []string
-	originalMetadata *model.DatabaseMetadata
-}
-
-// Name returns the rule name.
-func (*namingIndexConventionRule) Name() string {
-	return "naming-index-convention"
-}
-
-func (r *namingIndexConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.IndexStmt:
-		r.handleIndexStmt(n)
-	case *ast.RenameStmt:
-		r.handleRenameStmt(n)
-	default:
-	}
-}
-
-func (r *namingIndexConventionRule) handleIndexStmt(n *ast.IndexStmt) {
-	// Skip UNIQUE indexes - they are handled by the UK naming rule
-	if n.Unique {
-		return
-	}
-
-	indexName := n.Idxname
-	if indexName == "" {
-		return
-	}
-
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	columnList := indexColumns(n)
-	r.checkIndexName(indexName, tableName, columnList)
-}
-
-func (r *namingIndexConventionRule) handleRenameStmt(n *ast.RenameStmt) {
-	// ALTER INDEX ... RENAME TO
-	if n.RenameType == ast.OBJECT_INDEX {
-		oldIndexName := ""
-		if n.Relation != nil {
-			oldIndexName = n.Relation.Relname
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		newIndexName := n.Newname
-
-		if r.originalMetadata != nil && oldIndexName != "" {
-			tableName, index := r.findIndex("", "", oldIndexName)
-			if index != nil && !index.GetProto().GetUnique() && !index.GetProto().GetPrimary() {
-				r.checkIndexName(newIndexName, tableName, index.GetProto().GetExpressions())
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		// V1 anchored every finding on the statement text's first
+		// non-whitespace line, which can be a leading comment above the
+		// statement node the finding's range covers.
+		line := (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine())
+		for _, f := range pgv1review.NamingIndex([]ast.Node{node}, cfg, schema) {
+			advice := &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingIndexConventionMismatch.Int32(),
+				Title:         title,
+				StartPosition: &storepb.Position{Line: line},
 			}
+			switch f.Code {
+			case v1review.PatternInvalid:
+				advice.Code = code.Internal.Int32()
+				advice.Title = "Internal error for index naming convention rule"
+				advice.Content = fmt.Sprintf("Failed to compile regex: %s", f.Detail)
+			case v1review.NameMismatch:
+				advice.Content = fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				advice.Content = fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, advice)
 		}
 	}
-}
-
-func (r *namingIndexConventionRule) checkIndexName(indexName, tableName string, columnList []string) {
-	metaData := map[string]string{
-		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-		advisor.TableNameTemplateToken:  tableName,
-	}
-
-	regex, err := getTemplateRegexp(r.format, r.templateList, metaData)
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.Internal.Int32(),
-			Title:   "Internal error for index naming convention rule",
-			Content: fmt.Sprintf("Failed to compile regex: %v", err),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-		return
-	}
-
-	if !regex.MatchString(indexName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingIndexConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Index in table %q mismatches the naming convention, expect %q but found %q", tableName, regex, indexName),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-
-	if r.maxLength > 0 && len(indexName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingIndexConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Index %q in table %q mismatches the naming convention, its length should be within %d characters", indexName, tableName, r.maxLength),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-// findIndex returns index found in catalogs, nil if not found.
-func (r *namingIndexConventionRule) findIndex(schemaName string, tableName string, indexName string) (string, *model.IndexMetadata) {
-	if r.originalMetadata == nil {
-		return "", nil
-	}
-	schema := r.originalMetadata.GetSchemaMetadata(normalizeSchemaName(schemaName))
-	if schema == nil {
-		return "", nil
-	}
-	if tableName != "" {
-		index := schema.GetTable(tableName).GetIndex(indexName)
-		if index != nil {
-			return tableName, index
-		}
-		return "", nil
-	}
-	// tableName is empty, search all tables
-	index := schema.GetIndex(indexName)
-	if index != nil {
-		return index.GetTableProto().Name, index
-	}
-	return "", nil
+	return adviceList, nil
 }

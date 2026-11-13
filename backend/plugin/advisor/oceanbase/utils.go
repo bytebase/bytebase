@@ -2,7 +2,6 @@
 package oceanbase
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 
@@ -31,38 +30,12 @@ func (t tableState) tableList() []string {
 	return tableList
 }
 
-// getTemplateRegexp formats the template as regex.
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
-}
-
 // tableName extracts the table name from a TableRef.
 func tableName(ref *ast.TableRef) string {
 	if ref == nil {
 		return ""
 	}
 	return ref.Name
-}
-
-// indexColumns extracts column names from an index column list.
-// For expression-based index columns, it falls back to the column reference name.
-func indexColumns(cols []*ast.IndexColumn) []string {
-	if len(cols) == 0 {
-		return nil
-	}
-	var names []string
-	for _, col := range cols {
-		if ref, ok := col.Expr.(*ast.ColumnRef); ok {
-			names = append(names, ref.Column)
-		}
-	}
-	return names
 }
 
 // isNullable checks if a column allows NULL.
