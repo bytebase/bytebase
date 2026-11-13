@@ -68,3 +68,142 @@
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO age;
   changeType: 1
+- statement: CREATE TABLE t(id INT, issue INT, Trigger INT, "CONNECTS" INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier Trigger is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier issue is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      CONSTRAINT "select" PRIMARY KEY (id),
+      id INT,
+      "from" INT,
+      "where" INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "where" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE HYBRID TABLE t(
+      INDEX idx (id),
+      id INT PRIMARY KEY,
+      "from" INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE mytable RENAME COLUMN name
+      TO "connect";
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "connect" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE mytable RENAME COLUMN a TO "select",
+      RENAME COLUMN b TO c,
+      RENAME COLUMN d TO "from";
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    -- Only declared columns and renamed columns are checked.
+    CREATE TABLE "SELECT"(id INT);
+    ALTER TABLE mytable ADD COLUMN "select" INT;
+    ALTER TABLE mytable RENAME COLUMN "select" TO b;
+    ALTER TABLE mytable RENAME TO "SELECT";
+  changeType: 1
+- statement: |-
+    EXPLAIN CREATE TABLE t("select" INT);
+    CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTE' AS CREATE TABLE t("select" INT);
+  changeType: 1
+- statement: |-
+    BEGIN
+      CREATE TABLE t("select" INT);
+    END;
+  changeType: 1
+- statement: |-
+    CREATE TABLE a(id INT);
+
+    /* second statement */
+    CREATE TABLE b(
+      id INT,
+      "to" INT
+    );
+    ALTER TABLE b RENAME COLUMN id TO
+      "of";
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "to" is a keyword and should be avoided
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "of" is a keyword and should be avoided
+      startposition:
+        line: 9
+        column: 0
+      endposition: null

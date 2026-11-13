@@ -3,7 +3,6 @@ package plsql
 import (
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
@@ -90,13 +89,4 @@ func ParseVersion(banner string) (*Version, error) {
 		return &Version{First: firstVersion, Second: secondVersion}, nil
 	}
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
-}
-
-// IsOracleKeyword returns true if the given text is an Oracle keyword.
-func IsOracleKeyword(text string) bool {
-	if len(text) == 0 {
-		return false
-	}
-
-	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }

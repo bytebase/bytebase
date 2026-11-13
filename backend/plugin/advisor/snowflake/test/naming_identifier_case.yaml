@@ -56,3 +56,139 @@
       endposition: null
 - statement: ALTER TABLE mytable RENAME COLUMN name TO address;
   changeType: 1
+- statement: |-
+    CREATE TABLE t(
+      "ID" INT,
+      "Zip" INT,
+      "a""b" INT,
+      "数据" INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "Zip" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "a\"b" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      CONSTRAINT "pk" PRIMARY KEY (id),
+      id INT,
+      "address" INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "address" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE HYBRID TABLE t(
+      INDEX "idx" (id),
+      id INT PRIMARY KEY,
+      "address" INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "address" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE mytable RENAME COLUMN name
+      TO "address";
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "address" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE mytable RENAME COLUMN a TO "b",
+      RENAME COLUMN c TO D,
+      RENAME COLUMN e TO "f";
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "b" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "f" should be upper case
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    -- Only declared columns and renamed columns are checked.
+    CREATE TABLE "tbl"(id INT);
+    ALTER TABLE mytable ADD COLUMN "address" INT;
+    ALTER TABLE mytable RENAME COLUMN "address" TO b;
+    ALTER TABLE mytable RENAME TO "tbl";
+  changeType: 1
+- statement: |-
+    EXPLAIN CREATE TABLE t("address" INT);
+    CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTE' AS CREATE TABLE t("address" INT);
+  changeType: 1
+- statement: |-
+    BEGIN
+      CREATE TABLE t("address" INT);
+    END;
+  changeType: 1
+- statement: |-
+    CREATE TABLE a(id INT);
+
+    /* second statement */
+    CREATE TABLE b(
+      id INT,
+      "name" INT
+    );
+    ALTER TABLE b RENAME COLUMN id TO
+      "ident";
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "name" should be upper case
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "ident" should be upper case
+      startposition:
+        line: 9
+        column: 0
+      endposition: null

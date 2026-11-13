@@ -55,3 +55,115 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE t_order ("id" NUMBER CONSTRAINT "pk_order" PRIMARY KEY, total NUMBER)
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "id" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "pk_order" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT "id" AS "orderId" FROM "t_order" "o"
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "o" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "orderId" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME TO "tech_book_tmp"
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "tech_book_tmp" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "shop".t_order (id NUMBER)
+  changeType: 1
+- statement: CREATE TABLE "123" (id NUMBER)
+  changeType: 1
+- statement: CREATE TABLE "été" (été NUMBER)
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "été" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE VIEW v_order ("id") AS
+      SELECT 1 AS "one" FROM dual
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "id" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "one" should be upper case
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: EXPLAIN PLAN FOR SELECT 1 AS "one" FROM dual
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "one" should be upper case
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (id NUMBER);
+    CREATE TABLE t2 (
+      id NUMBER,
+      "createdAt" DATE
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 309
+      title: NAMING_IDENTIFIER_CASE
+      content: Identifier "createdAt" should be upper case
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

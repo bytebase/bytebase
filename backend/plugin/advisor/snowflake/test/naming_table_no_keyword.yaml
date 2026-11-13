@@ -27,3 +27,88 @@
       content: Table name "CONNECT" is a keyword identifier and should be avoided.
       startposition: null
       endposition: null
+- statement: |-
+    CREATE TABLE "connect"(ID INT);
+    CREATE TABLE "Select"(ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "connect" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "Select" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+- statement: |-
+    CREATE TABLE issue(ID INT);
+    CREATE TABLE db.sch.Trigger(ID INT);
+    CREATE TABLE account(ID INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "ISSUE" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "TRIGGER" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "ACCOUNT" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+- statement: |-
+    -- The database and schema parts are not checked.
+    CREATE TABLE "SELECT"."FROM".t(ID INT);
+    CREATE TABLE "CONNECTS"(ID INT);
+  changeType: 1
+- statement: |-
+    -- CREATE TABLE ... AS SELECT, LIKE and CLONE are not checked.
+    CREATE TABLE "SELECT" AS SELECT 1 AS a;
+    CREATE TABLE "SELECT" LIKE t;
+    CREATE TABLE "SELECT" CLONE t;
+  changeType: 1
+- statement: |-
+    ALTER TABLE t SWAP WITH "SELECT";
+    ALTER TABLE t RENAME COLUMN a TO "SELECT";
+    ALTER VIEW v RENAME TO "SELECT";
+  changeType: 1
+- statement: ALTER TABLE t RENAME TO "SELECT", RENAME TO x, RENAME TO "from";
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "SELECT" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "from" is a keyword identifier and should be avoided.
+      startposition: null
+      endposition: null
+- statement: |-
+    CREATE TABLE IDENTIFIER('SELECT')(ID INT);
+    ALTER TABLE t RENAME TO IDENTIFIER('SELECT');
+  changeType: 1
+- statement: |-
+    EXPLAIN CREATE TABLE "SELECT"(ID INT);
+    CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTE' AS CREATE TABLE "SELECT"(ID INT);
+  changeType: 1
+- statement: |-
+    BEGIN
+      CREATE TABLE "SELECT"(ID INT);
+    END;
+  changeType: 1

@@ -37,3 +37,61 @@
     create table techBook(id int);
     ALTER TABLE techBook RENAME TO tech_book_tmp;
   changeType: 1
+- statement: CREATE TABLE "DATE" AS SELECT 1 AS id FROM dual
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "DATE" is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE shop."Level" (id NUMBER)
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "Level" is a keyword identifier and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "LEVEL".t_order ("DATE" DATE)
+  changeType: 1
+- statement: ALTER TABLE tech_book RENAME COLUMN id TO "LEVEL"
+  changeType: 1
+- statement: RENAME tech_book TO "LEVEL"
+  changeType: 1
+- statement: CREATE VIEW "LEVEL" AS SELECT 1 AS id FROM dual
+  changeType: 1
+- statement: EXPLAIN PLAN FOR CREATE TABLE "LEVEL" AS SELECT 1 AS id FROM dual
+  changeType: 1
+- statement: CREATE SCHEMA AUTHORIZATION shop CREATE TABLE "LEVEL" (id NUMBER)
+  changeType: 1
+- statement: |-
+    CREATE TABLE t1 (id NUMBER);
+    CREATE TABLE
+      "DATE" (id NUMBER);
+    ALTER TABLE t1
+      RENAME TO "LEVEL";
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "DATE" is a keyword identifier and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name "LEVEL" is a keyword identifier and should be avoided.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
