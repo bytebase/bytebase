@@ -34,6 +34,7 @@ import type {
 interface Props {
   toolCall: ToolCall;
   result?: string;
+  hasRecoveryDraft?: boolean;
 }
 
 const parseJson = (value?: string): unknown => {
@@ -311,7 +312,7 @@ const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
   };
 };
 
-export function ToolCallCard({ toolCall, result }: Props) {
+export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -523,6 +524,13 @@ export function ToolCallCard({ toolCall, result }: Props) {
       "number" &&
     ((parsedResult as Record<string, unknown>).failedApiCallCount as number) >
       0;
+  const doneHasRecoveryDraft =
+    isDone &&
+    hasRecoveryDraft &&
+    resultRecord?.success === false &&
+    typeof resultRecord.text === "string" &&
+    resultRecord.text.trim().length > 0 &&
+    resultRecord.skipped !== true;
   const renderStatus = () => {
     if (hasErrorResult || callApiError || askError) {
       return <span className="text-error">{t("agent.tool-failed")}</span>;
@@ -551,7 +559,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
       );
     }
     if (isDone) {
-      if (doneHasApiWarnings) {
+      if (doneHasApiWarnings || doneHasRecoveryDraft) {
         return (
           <span className="text-warning">
             {t("agent.tool-completed-with-warnings")}

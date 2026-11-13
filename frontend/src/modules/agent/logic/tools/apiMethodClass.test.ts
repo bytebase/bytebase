@@ -4,6 +4,7 @@ import {
   apiCallNeedsConfirmation,
   getApiAuthorization,
   getApiMethodClass,
+  getApiMethodDescriptor,
 } from "./apiMethodClass";
 import { endpoints } from "./gen/openapi-index";
 
@@ -37,6 +38,22 @@ describe("getApiMethodClass", () => {
       )
       .map((endpoint) => endpoint.operationId);
     expect(unclassified).toEqual([]);
+  });
+});
+
+describe("getApiMethodDescriptor", () => {
+  it("returns the request descriptor for short and full operation IDs", () => {
+    const method = getApiMethodDescriptor("InstanceService/UpdateInstance");
+    expect(method?.input.typeName).toBe("bytebase.v1.UpdateInstanceRequest");
+    expect(
+      getApiMethodDescriptor("bytebase.v1.InstanceService.UpdateInstance")
+    ).toBe(method);
+  });
+
+  it("does not infer a descriptor for an unknown operation", () => {
+    expect(
+      getApiMethodDescriptor("InstanceService/DoesNotExist")
+    ).toBeUndefined();
   });
 });
 

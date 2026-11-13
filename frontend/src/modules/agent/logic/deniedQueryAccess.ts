@@ -11,6 +11,10 @@ import {
   type DeniedQueryRequestDraft,
   saveAccessGrantDraft,
 } from "@/modules/sql-editor/model/accessGrantDraft";
+import {
+  getQueryAccessRequest,
+  isQueryAccessGrantPermission,
+} from "@/modules/sql-editor/model/queryAccessRequest";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -22,9 +26,9 @@ import {
   GetProjectRequestSchema,
   type Project,
 } from "@/types/proto-es/v1/project_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { parseStringToResource } from "@/utils/v1/databaseResource";
+import { getMaskingSetup } from "./tools/maskingSetup";
 
 export type {
   AccessGrantDraft,
@@ -35,7 +39,6 @@ export type {
 const MAX_STATEMENT_LENGTH = 100_000;
 const DATABASE_NAME =
   /^(?:projects\/[^/]+\/)?instances\/[^/]+\/databases\/[^/]+$/;
-const READ_PERMISSIONS = new Set(["bb.sql.select", "bb.sql.info"]);
 
 export type DeniedQueryAccessRequest = {
   sourceDatabase: string;
@@ -90,54 +93,71 @@ export function extractDeniedQueryAccessRequest(
   } catch {
     return undefined;
   }
-  if (
-    !isRecord(parsed) ||
-    parsed.status !== 200 ||
-    !isRecord(parsed.response)
-  ) {
+  if (!isRecord(parsed) || !isRecord(parsed.response)) {
     return undefined;
   }
-  const results = parsed.response.results;
-  if (!Array.isArray(results) || results.length !== 1) return undefined;
-  for (const entry of results) {
-    if (
-      !isRecord(entry) ||
-      typeof entry.error !== "string" ||
-      !entry.error.trim() ||
-      !isRecord(entry.permissionDenied)
-    ) {
-      continue;
+  const details: unknown[] = [];
+  if (parsed.status === 200) {
+    const results = parsed.response.results;
+    if (!Array.isArray(results) || !results.length) return undefined;
+    for (const entry of results) {
+      if (
+        !isRecord(entry) ||
+        typeof entry.error !== "string" ||
+        !entry.error.trim() ||
+        !isRecord(entry.permissionDenied)
+      )
+        return undefined;
+      details.push(entry.permissionDenied);
     }
-    const { requiredPermissions, resources } = entry.permissionDenied;
-    if (
-      !Array.isArray(requiredPermissions) ||
-      requiredPermissions.length === 0 ||
-      !requiredPermissions.every(
-        (permission) =>
-          typeof permission === "string" && READ_PERMISSIONS.has(permission)
-      ) ||
-      !Array.isArray(resources) ||
-      resources.length === 0
-    ) {
-      continue;
-    }
-    const targets = resources.map(databaseFromResource);
-    if (targets.some((target) => !target)) continue;
-    return {
-      sourceDatabase,
-      targets: [...new Set(targets as string[])],
-      resources: resources as string[],
-      statement,
-      requiredPermissions,
-      ...(typeof args.body.schema === "string" && args.body.schema
-        ? { schema: args.body.schema }
-        : {}),
-      ...(typeof args.body.container === "string" && args.body.container
-        ? { container: args.body.container }
-        : {}),
-    };
+  } else if (
+    parsed.status === 403 &&
+    parsed.response.code === "permission_denied"
+  ) {
+    details.push(parsed.response);
+  } else {
+    return undefined;
   }
-  return undefined;
+  const requiredPermissions = new Set<string>();
+  const resources = new Set<string>();
+  const targets = new Set<string>();
+  for (const detail of details) {
+    if (!isRecord(detail)) return undefined;
+    const permissions = detail.requiredPermissions;
+    const deniedResources = detail.resources;
+    if (
+      !Array.isArray(permissions) ||
+      permissions.length === 0 ||
+      !permissions.every(
+        (permission) =>
+          typeof permission === "string" &&
+          isQueryAccessGrantPermission(permission)
+      ) ||
+      !Array.isArray(deniedResources) ||
+      !deniedResources.length
+    )
+      return undefined;
+    for (const resource of deniedResources) {
+      const target = databaseFromResource(resource);
+      if (!target) return undefined;
+      targets.add(target);
+      resources.add(resource);
+    }
+    for (const permission of permissions) requiredPermissions.add(permission);
+  }
+  return {
+    sourceDatabase,
+    targets: [...targets],
+    resources: [...resources],
+    statement,
+    requiredPermissions: [...requiredPermissions],
+    ...(typeof args.body.schema === "string" && args.body.schema
+      ? { schema: args.body.schema }
+      : {}),
+    ...(typeof args.body.container === "string" && args.body.container
+      ? { container: args.body.container }
+      : {}),
+  };
 }
 
 async function checkDeniedQueryRequestDraft(
@@ -157,6 +177,13 @@ async function checkDeniedQueryRequestDraft(
     return false;
   }
   if (
+    draft.kind !== "requestRole" &&
+    ((draft.unmask !== undefined && typeof draft.unmask !== "boolean") ||
+      (draft.reason !== undefined && typeof draft.reason !== "string"))
+  ) {
+    return false;
+  }
+  if (
     draft.kind === "requestRole" &&
     (!draft.resources.length ||
       !draft.resources.every((resource) =>
@@ -164,7 +191,7 @@ async function checkDeniedQueryRequestDraft(
       ) ||
       !draft.requiredPermissions.length ||
       !draft.requiredPermissions.every((permission) =>
-        READ_PERMISSIONS.has(permission)
+        isQueryAccessGrantPermission(permission)
       ))
   ) {
     return false;
@@ -198,25 +225,39 @@ async function checkDeniedQueryRequestDraft(
         create(GetProjectRequestSchema, { name: draft.project }),
         { contextValues }
       ));
+    const request = getQueryAccessRequest(
+      project,
+      draft.kind === "requestRole"
+        ? draft.requiredPermissions
+        : ["bb.sql.select"]
+    );
     if (
       project.name !== draft.project ||
       project.state !== State.ACTIVE ||
-      !(draft.kind === "requestRole"
-        ? project.allowRequestRole && !project.allowJustInTimeAccess
-        : project.allowJustInTimeAccess)
+      !request ||
+      request.kind !== (draft.kind ?? "accessGrant")
     ) {
       return false;
+    }
+    if (draft.kind !== "requestRole") {
+      const state = useAppStore.getState();
+      const workspaceName =
+        state.serverInfo?.workspace ?? state.currentUser?.workspace;
+      if (!workspaceName || !/^workspaces\/[^/]+$/.test(workspaceName)) {
+        return false;
+      }
+      const setup = await getMaskingSetup({
+        workspaceName,
+        projectName: draft.project,
+        databaseName: draft.sourceDatabase,
+        database: databases[0],
+      });
+      return setup.justInTime.eligible;
     }
     const subscription = await useAppStore.getState().loadSubscription();
     return (
       !subscription ||
-      useAppStore
-        .getState()
-        .hasFeature(
-          draft.kind === "requestRole"
-            ? PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW
-            : PlanFeature.FEATURE_JIT
-        )
+      useAppStore.getState().hasFeature(request.requiredFeature)
     );
   } catch {
     return false;
@@ -254,24 +295,30 @@ export async function resolveDeniedQueryAccessDraft(
       create(GetProjectRequestSchema, { name: database.project }),
       { contextValues }
     );
+    const accessRequest = getQueryAccessRequest(
+      project,
+      request.requiredPermissions
+    );
+    if (!accessRequest) return undefined;
     const common = {
       project: database.project,
       sourceDatabase: request.sourceDatabase,
       targets: request.targets,
       statement: request.statement,
     };
-    const draft: DeniedQueryRequestDraft = project.allowJustInTimeAccess
-      ? {
-          ...common,
-          ...(request.schema ? { schema: request.schema } : {}),
-          ...(request.container ? { container: request.container } : {}),
-        }
-      : {
-          kind: "requestRole",
-          ...common,
-          resources: request.resources,
-          requiredPermissions: request.requiredPermissions as Permission[],
-        };
+    const draft: DeniedQueryRequestDraft =
+      accessRequest.kind === "accessGrant"
+        ? {
+            ...common,
+            ...(request.schema ? { schema: request.schema } : {}),
+            ...(request.container ? { container: request.container } : {}),
+          }
+        : {
+            kind: "requestRole",
+            ...common,
+            resources: request.resources,
+            requiredPermissions: request.requiredPermissions as Permission[],
+          };
     return (await checkDeniedQueryRequestDraft(draft, database, project))
       ? draft
       : undefined;

@@ -1,22 +1,28 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { act, cloneElement } from "react";
+import { act, cloneElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
 import enUS from "@/locales/en-US.json";
+import { PRESET_BY_ID } from "@/modules/sql-editor/components/theme/presets";
+import type { SQLEditorTheme } from "@/modules/sql-editor/components/theme/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { createAgentStore, useAgentStore } from "../store/agent";
 import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/preferences";
 import type { AgentPageResource } from "../logic/chatContext";
 import { openAgentPageHelp } from "../logic/contextualHelp";
+import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  accessGrantDrawerOnClose: undefined as (() => void) | undefined,
+  routeName: "project.plan.detail",
+  activeSQLTheme: undefined as SQLEditorTheme | undefined,
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
     i18n: { language: "en-US" },
@@ -136,6 +142,14 @@ vi.mock("../logic/chatContext", () => ({
   getCurrentAgentPageResource: () => mocks.pageResource,
 }));
 
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => ({ name: mocks.routeName }),
+}));
+
+vi.mock("@/modules/sql-editor/components/theme/useActiveSQLEditorTheme", () => ({
+  useActiveSQLEditorTheme: () => mocks.activeSQLTheme,
+}));
+
 vi.mock("@/hooks/useAppState", () => ({
   useProjectList: () => ({
     projects: Object.entries(mocks.projectsByName).map(([name, project]) => ({ name, title: project.title })),
@@ -168,13 +182,23 @@ vi.mock("@/api", async (importOriginal) => {
   };
 });
 
+vi.mock("@/modules/access-control/AccessGrantRequestDrawer", () => ({
+  AccessGrantRequestDrawer: ({onClose, ...props}: {onClose: () => void; query?: string}) => {
+    mocks.accessGrantDrawerOnClose = onClose;
+    const [draft, setDraft] = useState(props);
+    return <><button type="button" data-testid="access-grant-drawer" data-draft={JSON.stringify(draft)} onClick={onClose} /><input aria-label="Draft query" value={draft.query ?? ""} onChange={(event) => setDraft({...draft, query: event.target.value})} /></>;
+  },
+}));
+
 vi.mock("./AgentChat", () => ({
   AgentChat: ({
     contextLabel,
     onSelectSuggestion,
     onContinueAction,
+    onOpenAccessGrantDraft,
   }: {
     contextLabel?: string;
+    onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
     onSelectSuggestion?: (starterId: "project-open-blockers") => void;
     onContinueAction?: (
       chatId: string,
@@ -183,6 +207,12 @@ vi.mock("./AgentChat", () => ({
     ) => void;
   }) => (
     <div data-testid="agent-chat" data-context-label={contextLabel}>
+      <button type="button" data-testid="open-access-draft" onClick={() => {
+        onOpenAccessGrantDraft?.({ project: "projects/orders", sourceDatabase: "instances/prod/databases/orders", targets: ["instances/prod/databases/orders"], statement: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order" });
+      }} />
+      <button type="button" data-testid="open-another-access-draft" onClick={() => {
+        onOpenAccessGrantDraft?.({ project: "projects/analytics", sourceDatabase: "instances/staging/databases/analytics", targets: ["instances/staging/databases/analytics"], statement: "SELECT 2", schema: "public", container: "warehouse", unmask: false, reason: "Investigate analytics" });
+      }} />
       <button
         type="button"
         data-testid="agent-empty-suggestion"
@@ -377,6 +407,8 @@ beforeEach(async () => {
   mocks.projectErrorsByName = {};
   mocks.currentContext = "projects/orders";
   mocks.pageResource = undefined;
+  mocks.routeName = "project.plan.detail";
+  mocks.activeSQLTheme = PRESET_BY_ID.light;
   mocks.currentUser = {
     name: "users/first@example.com",
     email: "first@example.com",
@@ -407,6 +439,146 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
+});
+
+test("keeps the inline access draft mounted while minimized and switching chats, and clears it on close", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const drawer = screen.getByTestId("access-grant-drawer");
+    expect(JSON.parse(drawer.getAttribute("data-draft")!)).toMatchObject({project: "projects/orders", targets: ["instances/prod/databases/orders"], query: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order"});
+    expect(JSON.parse(drawer.getAttribute("data-draft")!)).not.toHaveProperty("theme");
+    act(() => useAgentStore.setState({ minimized: true }));
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    act(() => { useAgentStore.getState().createChat({context: "projects/analytics"}); });
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    act(() => useAgentStore.setState({ minimized: false }));
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    mocks.routeName = "sql-editor.database";
+    render();
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    act(() => useAgentStore.setState({ visible: false }));
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+    act(() => useAgentStore.setState({ visible: true, minimized: false }));
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+  } finally { unmount(); }
+});
+
+test("resets the form for each explicitly opened access draft without losing edits on restore", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const firstDrawer = screen.getByTestId("access-grant-drawer");
+    act(() => fireEvent.change(screen.getByRole("textbox", { name: "Draft query" }), {target: {value: "SELECT edited"}}));
+    act(() => useAgentStore.setState({ minimized: true }));
+    act(() => useAgentStore.setState({ minimized: false }));
+    expect(screen.getByTestId("access-grant-drawer")).toBe(firstDrawer);
+    expect(screen.getByRole("textbox", { name: "Draft query" })).toHaveValue("SELECT edited");
+    act(() => screen.getByTestId("open-another-access-draft").click());
+    expect(screen.getByTestId("access-grant-drawer")).not.toBe(firstDrawer);
+    expect(JSON.parse(screen.getByTestId("access-grant-drawer").getAttribute("data-draft")!)).toEqual({project: "projects/analytics", targets: ["instances/staging/databases/analytics"], query: "SELECT 2", schema: "public", container: "warehouse", unmask: false, reason: "Investigate analytics"});
+    expect(screen.getByRole("textbox", { name: "Draft query" })).toHaveValue("SELECT 2");
+  } finally { unmount(); }
+});
+
+test("keeps the minimized launcher available to consult the chat without losing draft edits", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const drawer = screen.getByTestId("access-grant-drawer");
+    act(() => fireEvent.change(screen.getByRole("textbox", { name: "Draft query" }), {target: {value: "SELECT edited"}}));
+    act(() => useAgentStore.setState({ minimized: true }));
+    act(() => screen.getByRole("button", {name: "agent.self"}).click());
+    expect(useAgentStore.getState().minimized).toBe(false);
+    expect(screen.getByTestId("access-grant-drawer")).toBe(drawer);
+    expect(screen.getByRole("textbox", { name: "Draft query" })).toHaveValue("SELECT edited");
+    act(() => useAgentStore.setState({ minimized: true }));
+    expect(screen.getByRole("button", {name: "agent.self"})).toBeInTheDocument();
+    act(() => screen.getByTestId("access-grant-drawer").click());
+    expect(screen.getByRole("button", {name: "agent.self"})).toBeInTheDocument();
+    expect(useAgentStore.getState().minimized).toBe(true);
+  } finally { unmount(); }
+});
+
+test.each([
+  ["dark", PRESET_BY_ID.dark],
+  ["custom", { ...PRESET_BY_ID.dark, id: "custom-review", name: "Custom review" }],
+])("preserves the active SQL Editor %s theme when opening an access draft", async (_name, theme) => {
+  mocks.routeName = "sql-editor.detail";
+  mocks.activeSQLTheme = theme;
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    expect(JSON.parse(screen.getByTestId("access-grant-drawer").getAttribute("data-draft")!)).toMatchObject({theme});
+  } finally { unmount(); }
+});
+
+test("does not apply a retained SQL Editor admin theme to a console access draft", async () => {
+  mocks.activeSQLTheme = PRESET_BY_ID.dark;
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    expect(JSON.parse(screen.getByTestId("access-grant-drawer").getAttribute("data-draft")!)).not.toHaveProperty("theme");
+  } finally { unmount(); }
+});
+
+test("does not let an earlier access draft close its replacement", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    const closeFirstDraft = mocks.accessGrantDrawerOnClose!;
+    act(() => screen.getByTestId("open-another-access-draft").click());
+    const replacement = screen.getByTestId("access-grant-drawer");
+    act(() => closeFirstDraft());
+    expect(screen.getByTestId("access-grant-drawer")).toBe(replacement);
+    act(() => screen.getByTestId("access-grant-drawer").click());
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+  } finally { unmount(); }
+});
+
+test.each(["logout", "user", "workspace"])("discards the inline access draft on %s changes", async (change) => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    expect(screen.getByTestId("access-grant-drawer")).toBeInTheDocument();
+    const currentUser = mocks.currentUser;
+    const workspace = mocks.workspace;
+    if (change === "logout") mocks.currentUser = undefined;
+    if (change === "user") mocks.currentUser = { ...currentUser!, email: "second@example.com" };
+    if (change === "workspace") mocks.workspace = {name: "workspaces/other", title: "Other"};
+    render();
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+    mocks.currentUser = currentUser;
+    mocks.workspace = workspace;
+    render();
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+  } finally { unmount(); }
+});
+
+test("dismisses the inline access draft without navigating or closing the Agent", async () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await act(async () => screen.getByTestId("open-access-draft").click());
+    await screen.findByTestId("access-grant-drawer");
+    act(() => screen.getByTestId("access-grant-drawer").click());
+    expect(screen.queryByTestId("access-grant-drawer")).toBeNull();
+    expect(useAgentStore.getState().visible).toBe(true);
+  } finally { unmount(); }
 });
 
 test("opens preferences without unmounting the conversation and restores trigger focus", () => {
@@ -1211,6 +1383,91 @@ describe("AgentWindow", () => {
         project: "projects/orders",
       };
     });
+
+    test.each([1200, 700, 390])("reuses the startup chat for the first contextual message at %ipx", async (width) => {
+      vi.stubGlobal("innerWidth", width);
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const initialChatId = useAgentStore.getState().currentChatId!;
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        typePrompt("Explain this project's databases");
+        submitPrompt();
+
+        const store = useAgentStore.getState();
+        expect(store.currentChatId).toBe(initialChatId);
+        expect(store.chats).toHaveLength(1);
+        expect(store.getChat(initialChatId)).toMatchObject({
+          context: "projects/orders",
+          workspaceName: "workspaces/acme",
+          page: { path: expect.any(String), title: document.title },
+        });
+        expect(getCurrentQueuedUserMessage()).toMatchObject({
+          chatId: initialChatId,
+          text: "Explain this project's databases",
+          runMode: "default",
+        });
+        await openChatList(width);
+        expect(document.querySelector('[data-agent-chat-group="unscoped"]')).toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("reuses the startup chat for the first contextual starter", () => {
+      const initialChatId = useAgentStore.getState().currentChatId!;
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        act(() => document.querySelector<HTMLButtonElement>("[data-agent-contextual-suggestion]")!.click());
+        expect(useAgentStore.getState().currentChatId).toBe(initialChatId);
+        expect(useAgentStore.getState().chats).toHaveLength(1);
+        expect(getCurrentQueuedUserMessage()).toMatchObject({ chatId: initialChatId, runMode: "read-only" });
+        expect(document.querySelector('[data-agent-chat-group="unscoped"]')).toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test.each(["title", "context", "page", "history", "text-draft", "project-draft", "resource-draft", "remote-run", "interrupted", "diagnostic"])(
+      "preserves a selected unscoped chat with %s when starting a contextual message",
+      (state) => {
+        const store = useAgentStore.getState();
+        const initialChatId = store.currentChatId!;
+        if (state === "title") store.renameChat(initialChatId, "Keep this chat");
+        if (state === "context") store.selectChatContext("projects/analytics", undefined, mocks.workspace.name);
+        if (state === "page") store.ensureCurrentChat({ path: "/landing", title: "Workspace" });
+        if (state === "history") store.addMessage({ chatId: initialChatId, role: "user", content: "Earlier question" });
+        if (state === "text-draft") store.setDraft(initialChatId, { text: "Unsent question" });
+        if (state === "project-draft") store.setDraft(initialChatId, { text: "", project: { name: "projects/analytics", title: "Analytics" } });
+        if (state === "resource-draft") store.setDraft(initialChatId, { text: "", resource: { kind: "project", name: "projects/analytics", project: "projects/analytics", label: "Analytics" } });
+        if (state === "remote-run") useAgentStore.setState({ remoteBusyChatIds: { [initialChatId]: true } });
+        if (state === "interrupted" || state === "diagnostic") useAgentStore.setState({
+          chats: useAgentStore.getState().chats.map((chat) => ({ ...chat,
+            ...(state === "interrupted" ? { interrupted: true } : { capability: { kind: "diagnostic" as const, resource: { kind: "plan" as const, name: "projects/orders/plans/7", project: "projects/orders", label: "Plan" } } }),
+          })),
+        });
+        const original = store.getChat(initialChatId);
+        const messages = store.getMessages(initialChatId);
+        const draft = store.getDraft(initialChatId);
+        const count = useAgentStore.getState().chats.length;
+        const { render, unmount } = renderIntoContainer(<AgentWindow />);
+        try {
+          render();
+          typePrompt("Explain this project");
+          submitPrompt();
+
+          expect(useAgentStore.getState().currentChatId).not.toBe(initialChatId);
+          expect(useAgentStore.getState().chats).toHaveLength(count + 1);
+          expect(store.getChat(initialChatId)).toEqual(original);
+          expect(store.getMessages(initialChatId)).toEqual(messages);
+          expect(store.getDraft(initialChatId)).toEqual(draft);
+          expect(getCurrentQueuedUserMessage()?.text).toBe("Explain this project");
+        } finally {
+          unmount();
+        }
+      }
+    );
 
     test.each([
       { kind: "project", name: "projects/orders", label: "Orders", category: "project" },
