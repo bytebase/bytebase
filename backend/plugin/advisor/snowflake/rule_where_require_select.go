@@ -3,7 +3,6 @@ package snowflake
 
 import (
 	"context"
-	"strings"
 
 	snowflakeast "github.com/bytebase/omni/snowflake/ast"
 	snowflakev1review "github.com/bytebase/omni/snowflake/v1review"
@@ -43,50 +42,15 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 		if !ok {
 			continue
 		}
-		for _, f := range snowflakev1review.StatementWhereRequireSelect([]snowflakeast.Node{node}) {
-			// A WITH ... SELECT finding anchors the end of its last CTE; the
-			// line is that of the next token, the body's SELECT keyword.
-			offset := f.Start
-			if offset > 0 {
-				if next, ok := skipSpaceAndComments(stmt.Text, offset); ok {
-					offset = next
-				}
-			}
+		for _, f := range snowflakev1review.StatementWhereRequireSelect([]snowflakeast.Node{node}, stmt.Text) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.StatementNoWhere.Int32(),
 				Title:         title,
 				Content:       "WHERE clause is required for SELECT statement.",
-				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + statementLineForOffset(stmt.Text, offset)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + statementLineForOffset(stmt.Text, f.Start)),
 			})
 		}
 	}
 	return adviceList, nil
-}
-
-// skipSpaceAndComments advances offset past whitespace and SQL comments
-// (`--` and `//` line comments, `/* */` block comments) and returns the offset
-// of the next token, or false when only trivia remains.
-func skipSpaceAndComments(text string, offset int) (int, bool) {
-	for offset < len(text) {
-		switch c := text[offset]; {
-		case c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f':
-			offset++
-		case strings.HasPrefix(text[offset:], "--") || strings.HasPrefix(text[offset:], "//"):
-			next := strings.IndexByte(text[offset:], '\n')
-			if next < 0 {
-				return 0, false
-			}
-			offset += next + 1
-		case strings.HasPrefix(text[offset:], "/*"):
-			end := strings.Index(text[offset+2:], "*/")
-			if end < 0 {
-				return 0, false
-			}
-			offset += 2 + end + 2
-		default:
-			return offset, true
-		}
-	}
-	return 0, false
 }
