@@ -36,3 +36,13 @@ func TestRedshiftTableDropNamingConventionUsesAST(t *testing.T) {
 	require.Equal(t, code.TableDropNamingConventionMismatch.Int32(), adviceList[0].Code)
 	require.Contains(t, adviceList[0].Content, "`active` mismatches drop table naming convention")
 }
+
+func TestRedshiftRules(t *testing.T) {
+	rules := []*storepb.SQLReviewRule{
+		{Type: storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NamingPayload{NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{Format: "_delete$"}}},
+	}
+
+	for _, rule := range rules {
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_REDSHIFT, false /* record */)
+	}
+}

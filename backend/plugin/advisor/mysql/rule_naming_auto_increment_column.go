@@ -3,15 +3,17 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, &NamingAutoIncrementColumnAdvisor{})
 }
 
-// NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.
+// NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment
+// naming convention. The judgment lives in omni
+// (mysql/v1review.NamingAutoIncrementColumn); this adapter converts the rule's
+// payload into the omni config and renders the findings as advice.
 type NamingAutoIncrementColumnAdvisor struct {
 }
 
@@ -37,92 +42,47 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingAutoIncrementColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingAutoIncrementColumnRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingAutoIncrementColumnRule) Name() string {
-	return "NamingAutoIncrementColumnRule"
-}
-
-func (r *namingAutoIncrementColumnRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		tableName := n.Table.Name
-		for _, col := range n.Columns {
-			if col == nil || !col.AutoIncrement {
-				continue
-			}
-			r.handleAutoIncrementColumn(tableName, col.Name, r.LocToLine(n.Loc))
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		tableName := ""
-		if n.Table != nil {
-			tableName = n.Table.Name
+		findings, err := mysqlv1review.NamingAutoIncrementColumn([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			switch cmd.Type {
-			case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
-				for _, col := range getColumnsFromCmd(cmd) {
-					if col.AutoIncrement {
-						r.handleAutoIncrementColumn(tableName, col.Name, r.LocToLine(n.Loc))
-					}
-				}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", f.Table, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
 			default:
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-	default:
 	}
-}
-
-func (r *namingAutoIncrementColumnRule) handleAutoIncrementColumn(tableName, columnName string, lineNumber int32) {
-	absoluteLine := r.BaseLine + int(lineNumber)
-	if !r.format.MatchString(columnName) {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, r.format),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
-	}
-	if r.maxLength > 0 && len(columnName) > r.maxLength {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
-	}
+	return adviceList, nil
 }

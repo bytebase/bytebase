@@ -22,3 +22,74 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    DROP TABLE foo,
+      bar_delete,
+      baz
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`baz` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE test_delete.foo, test.bar_delete
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    DROP TABLE foo_delete;
+    -- drop another
+    DROP TABLE foo
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: DROP TABLE `foo_delete`, `foo_delete `
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo_delete ` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TEMPORARY TABLE tmp
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`tmp` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW foo
+  changeType: 1

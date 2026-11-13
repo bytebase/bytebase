@@ -387,32 +387,3 @@ func collectRangeVars(node ast.Node) []*ast.RangeVar {
 		return nil
 	}
 }
-
-// dropObjects extracts object names from a DropStmt.
-// Returns list of (schema, name) pairs.
-func dropObjects(drop *ast.DropStmt) [][2]string {
-	if drop.Objects == nil {
-		return nil
-	}
-	var result [][2]string
-	for _, item := range drop.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		switch len(parts) {
-		case 1:
-			result = append(result, [2]string{"public", parts[0]})
-		case 2:
-			result = append(result, [2]string{parts[0], parts[1]})
-		default:
-		}
-	}
-	return result
-}

@@ -28,3 +28,72 @@
         line: 4
         column: 0
       endposition: null
+- statement: |-
+    DROP TABLE foo,
+      bar_delete,
+      baz;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`baz` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE foo_delete.bar, Shop.bar_delete;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE `foo _delete`, `_delete``x`;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`_delete`x` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TEMPORARY TABLE foo;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW foo;
+- statement: TRUNCATE TABLE foo;
+- statement: CREATE PROCEDURE pr() BEGIN DROP TABLE foo; END;
+- statement: |-
+    -- clean up
+    /* both
+       tables */
+    DROP TABLE foo_delete;
+    DROP TABLE foo;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

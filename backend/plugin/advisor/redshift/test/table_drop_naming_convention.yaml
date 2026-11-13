@@ -1,0 +1,105 @@
+- statement: DROP TABLE IF EXISTS foo_delete;
+- statement: DROP TABLE active;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`active` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+- statement: DROP TABLE Foo_DELETE;
+- statement: DROP TABLE "Foo_DELETE";
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`Foo_DELETE` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+- statement: DROP TABLE x_delete.Foo, a.b.c.Qux, bar_delete CASCADE;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`qux` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+- statement: DROP TABLE "Foo""Bar", "数据表";
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`Foo"Bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`数据表` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+- statement: DROP TABLE aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_delete;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_de` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 1
+      endposition: null
+- statement: DROP TABLE "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_delete";
+- statement: |-
+    -- keep
+    DROP TABLE a_delete;
+
+    /* drop the
+       second */
+    DROP TABLE
+      Foo;
+    DROP TABLE bar; DROP TABLE baz;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 2
+        column: 21
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 7
+        column: 7
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`baz` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 8
+        column: 16
+      endposition: null
+- statement: DROP VIEW foo;
+- statement: CREATE OR REPLACE PROCEDURE p() AS $$ BEGIN DROP TABLE foo; END; $$ LANGUAGE plpgsql;

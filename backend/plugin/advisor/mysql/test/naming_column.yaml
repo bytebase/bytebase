@@ -156,3 +156,86 @@
         line: 9
         column: 0
       endposition: null
+- statement: |-
+    -- The table is named without its database.
+    CREATE TABLE shop.book(
+      id int,
+
+      /* judged without its quotes */ `creator id` int,
+      `a``b` int);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creator id` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`a`b` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int);
+    ALTER TABLE book
+      ADD COLUMN contentString varchar(255),
+      RENAME COLUMN id TO bookId,
+      CHANGE COLUMN id creatorId int;
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`bookId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`contentString` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`creatorId` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(`数数数数数数数数数数数数数数数数数数数数数` int, `数数数数数数数数数数数数数数数数数数数数数数` int);
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book MODIFY COLUMN badName int, DROP COLUMN otherBad, RENAME TO BadTable;
+- statement: CREATE PROCEDURE pr() BEGIN CREATE TABLE book(badName int); ALTER TABLE book ADD COLUMN otherBad int; END;

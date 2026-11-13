@@ -2,13 +2,17 @@ package tidb
 
 import (
 	"context"
-	"strings"
+	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -19,92 +23,80 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
 }
 
-// NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
+// NamingFKConventionAdvisor is the advisor checking for foreign key naming
+// convention. The judgment lives in omni (tidb/v1review.NamingForeignKey);
+// this adapter validates the template's tokens, converts the rule's payload
+// into the omni config, and renders the findings as advice.
 type NamingFKConventionAdvisor struct {
 }
 
 // Check checks for foreign key naming convention.
 func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	return runNamingConventionRule(checkCtx, namingRuleConfig{
-		mismatchCode:       code.NamingFKConventionMismatch,
-		typeNoun:           "Foreign key",
-		internalErrorTitle: "Internal error for foreign key naming convention rule",
-	}, func(ostmt Stmt) []*indexMetaData {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			return collectFKCreateTable(ostmt, n)
-		case *ast.AlterTableStmt:
-			return collectFKAlterTable(ostmt, n)
-		}
-		return nil
-	})
-}
+	stmts, err := getTiDBNodes(checkCtx)
+	if err != nil {
+		return nil, err
+	}
 
-func collectFKCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
 	}
-	tableName := n.Table.Name
-	var res []*indexMetaData
-	for _, constraint := range n.Constraints {
-		// Nil-check before evaluating constraint.Loc.Start; otherwise the
-		// line-computation argument would panic ahead of buildFKMetaData's
-		// own nil guard. Mirrors the index/UK CreateTable collectors.
-		if constraint == nil {
-			continue
-		}
-		if metaData := buildFKMetaData(tableName, constraint, ostmt.AbsoluteLine(constraint.Loc.Start)); metaData != nil {
-			res = append(res, metaData)
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for this rule")
+	}
+	templateList, _ := advisor.ParseTemplateTokens(namingPayload.Format)
+	for _, key := range templateList {
+		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
+			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
 		}
 	}
-	return res
-}
 
-func collectFKAlterTable(ostmt Stmt, n *ast.AlterTableStmt) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	maxLength := int(namingPayload.MaxLength)
+	if maxLength == 0 {
+		maxLength = advisor.DefaultNameLengthLimit
 	}
-	tableName := n.Table.Name
-	stmtLine := ostmt.FirstTokenLine()
-	var res []*indexMetaData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		// FOREIGN KEY definitions land on ATAddConstraint only — no
-		// ATAddIndex equivalent (mirroring mysql omni rule).
-		if cmd.Type != ast.ATAddConstraint {
-			continue
-		}
-		if metaData := buildFKMetaData(tableName, cmd.Constraint, stmtLine); metaData != nil {
-			res = append(res, metaData)
-		}
-	}
-	return res
-}
+	cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
 
-func buildFKMetaData(tableName string, constraint *ast.Constraint, line int) *indexMetaData {
-	if constraint == nil || constraint.Type != ast.ConstrForeignKey {
-		return nil
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings, err := tidbv1review.NamingForeignKey([]ast.Node{stmt.Node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.PatternInvalid:
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   "Internal error for foreign key naming convention rule",
+					Content: fmt.Sprintf("%q meet internal error %q", stmt.TrimmedText(), f.Detail),
+				})
+				continue
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
+				continue
+			}
+			// A finding without a range is an ALTER TABLE one, which anchors
+			// the statement's first token.
+			line := stmt.FirstTokenLine()
+			if f.Start != 0 || f.End != 0 {
+				line = stmt.AbsoluteLine(f.Start)
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingFKConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(line),
+			})
+		}
 	}
-	referencingColumnList := constraint.Columns
-	referencedTable := ""
-	// constraint.RefTable can be nil even on FK constraints in pathological
-	// inputs; guard defensively per the mysql omni analog.
-	if constraint.RefTable != nil {
-		referencedTable = constraint.RefTable.Name
-	}
-	referencedColumnList := constraint.RefColumns
-	metaData := map[string]string{
-		advisor.ReferencingTableNameTemplateToken:  tableName,
-		advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-		advisor.ReferencedTableNameTemplateToken:   referencedTable,
-		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
-	}
-	return &indexMetaData{
-		indexName: constraintName(constraint),
-		tableName: tableName,
-		metaData:  metaData,
-		line:      line,
-	}
+	return adviceList, nil
 }
