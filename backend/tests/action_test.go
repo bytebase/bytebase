@@ -1646,6 +1646,7 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 	a.False(seed.RolledBack)
 	a.Equal(int64(5), *seed.AffectedRows)
 	a.Len(seed.Commands, 2)
+	a.Equal(2, seed.CommandCount)
 	a.Contains(seed.Commands[0].Statement, "INSERT INTO account")
 	a.Equal(int64(3), *seed.Commands[0].AffectedRows)
 	a.Contains(seed.Commands[1].Statement, "UPDATE account")

@@ -257,6 +257,7 @@ A comment can still be rendered from the same result. See
                 "path": "migrations/0003_backfill_grade.sql",
                 "status": "DONE",
                 "affectedRows": 1204,
+                "commandCount": 2,
                 "commands": [
                   { "statement": "UPDATE employee SET grade = 'L1' WHERE grade IS NULL", "affectedRows": 1200 },
                   { "statement": "DELETE FROM employee_draft WHERE stale", "affectedRows": 4 }
@@ -277,6 +278,7 @@ A comment can still be rendered from the same result. See
                 "status": "FAILED",
                 "rolledBack": true,
                 "affectedRows": 0,
+                "commandCount": 2,
                 "commands": [
                   { "statement": "UPDATE account SET tier = 'basic' WHERE tier IS NULL", "affectedRows": 40, "rolledBack": true },
                   {
@@ -302,7 +304,10 @@ A comment can still be rendered from the same result. See
 
 - **Keys are camelCase and enum values are the API's**, as `checkResults` already is.
 - **Counts are JSON numbers.** `checkResults` keeps the strings protojson writes for `int64`.
-- **The file is complete.** Only the log and the summary shorten what they show.
+- **The file is bounded.** Per file it keeps the first 100 commands and any that failed, and
+  `commandCount` says how many ran. Counts and totals cover every command. A file of fifty
+  thousand statements on a thousand databases would otherwise make the result, and the memory to
+  build it, unbounded, and fail a job whose deploy succeeded.
 - **Statement text is included.** It comes from the repository, so the file exposes no SQL the
   job could not already read.
 
@@ -387,6 +392,8 @@ bytebase-deploy-to-prod:
   after a failure. It uses a fresh context when the command's is canceled, as `cancelRollout`
   does.
 - **Log calls are bounded in parallel**, and one that fails does not stop the rest.
+- **A log is reduced as it arrives and then dropped.** The action holds the logs being read, not
+  every database's.
 - **Collection is bounded in time.** It has five minutes, or fifteen seconds once the job is
   canceled. When the rollout itself cannot be read again, the result stops at the last state seen
   and no call is made per database.

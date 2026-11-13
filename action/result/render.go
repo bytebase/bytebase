@@ -349,7 +349,7 @@ func (t *Task) detailLines() []string {
 	for _, file := range t.Files {
 		lines = append(lines, strings.TrimRight(file.name()+"  "+file.note(), " "))
 		if file.Status == "DONE" {
-			lines = append(lines, indented(commandLines(file.Commands), "  ")...)
+			lines = append(lines, indented(commandLines(file.Commands, file.CommandCount, file.AffectedRows), "  ")...)
 			continue
 		}
 		failed := failureLines(file.Commands, file.Error)
@@ -360,7 +360,11 @@ func (t *Task) detailLines() []string {
 		errorShown = true
 		lines = append(lines, failed...)
 	} else {
-		lines = append(lines, commandLines(t.Commands)...)
+		var rows *int64
+		if len(t.Files) == 0 {
+			rows = t.AffectedRows
+		}
+		lines = append(lines, commandLines(t.Commands, t.CommandCount, rows)...)
 	}
 	if !errorShown && t.Detail != "" && t.stopped() {
 		detail, cut := shorten(t.Detail)
@@ -397,10 +401,12 @@ func (t *Task) failure() (*File, string, string) {
 	return nil, "", t.Detail
 }
 
+// commandCount is how many commands ran, which can be more than the result
+// holds.
 func (t *Task) commandCount() int {
-	n := len(t.Commands)
+	n := max(t.CommandCount, len(t.Commands))
 	for _, file := range t.Files {
-		n += len(file.Commands)
+		n += max(file.CommandCount, len(file.Commands))
 	}
 	return n
 }
@@ -524,43 +530,46 @@ func (f *File) note() string {
 }
 
 // commandLines lists the first commands that changed rows, counts first so
-// that they line up, and says how many it left out.
-func commandLines(commands []*Command) []string {
+// that they line up, then the rows changed by the commands it did not list.
+// commandCount and total cover every command that ran, which can be more than
+// commands holds.
+func commandLines(commands []*Command, commandCount int, total *int64) []string {
 	type numbered struct {
 		*Command
 		label string
 	}
-	var changing []numbered
+	var shown []numbered
 	for i, command := range commands {
-		if command.AffectedRows != nil && *command.AffectedRows > 0 {
-			changing = append(changing, numbered{Command: command, label: commandLabel(i, command)})
+		if len(shown) == shownCommands {
+			break
 		}
-	}
-	shown := changing
-	if len(shown) > shownCommands {
-		shown = shown[:shownCommands]
+		if command.AffectedRows != nil && *command.AffectedRows > 0 {
+			shown = append(shown, numbered{Command: command, label: commandLabel(i, command)})
+		}
 	}
 	var width int
 	for _, command := range shown {
 		width = max(width, len(rowsText(command.AffectedRows)))
 	}
 	var lines []string
+	var listed int64
 	for _, command := range shown {
 		line := fmt.Sprintf("%*s  %s", width, rowsText(command.AffectedRows), command.label)
 		if command.RolledBack {
 			line += "  (rolled back)"
+		} else {
+			listed += *command.AffectedRows
 		}
 		if command.EarlierAttempt {
 			line += "  (earlier attempt)"
 		}
 		lines = append(lines, line)
 	}
-	if rest := changing[len(shown):]; len(rest) > 0 {
-		var rows int64
-		for _, command := range rest {
-			rows += *command.AffectedRows
+	if total != nil {
+		if rest := *total - listed; rest > 0 {
+			unlisted := max(commandCount, len(commands)) - len(shown)
+			lines = append(lines, fmt.Sprintf("and %s in %s", rowsText(&rest), more(unlisted, "statement")))
 		}
-		lines = append(lines, fmt.Sprintf("and %s, %s", more(len(rest), "statement"), rowsText(&rows)))
 	}
 	return lines
 }

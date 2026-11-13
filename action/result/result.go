@@ -69,8 +69,10 @@ type Task struct {
 	// FilesNotRun counts the release's files a stopped run never reached.
 	FilesNotRun int     `json:"filesNotRun,omitempty"`
 	Files       []*File `json:"files,omitempty"`
-	// Commands holds what ran outside any release file, as a sheet task's does.
-	Commands []*Command `json:"commands,omitempty"`
+	// Commands holds what ran outside any release file, as a sheet task's
+	// does, and CommandCount how many of them ran. See File.
+	Commands     []*Command `json:"commands,omitempty"`
+	CommandCount int        `json:"commandCount,omitempty"`
 	// LogUnavailable means the run's log could not be read, so the fields
 	// above carry no execution detail.
 	LogUnavailable bool `json:"logUnavailable,omitempty"`
@@ -92,8 +94,12 @@ type File struct {
 	// AffectedRows leaves out rolled-back commands.
 	AffectedRows *int64 `json:"affectedRows,omitempty"`
 	// Error is a failure outside any command, such as a commit that failed.
-	Error    string     `json:"error,omitempty"`
-	Commands []*Command `json:"commands,omitempty"`
+	Error string `json:"error,omitempty"`
+	// CommandCount is how many commands ran. Commands holds the first
+	// KeptCommands of them and any that failed, so a file of many statements
+	// cannot make the result unbounded; the counts cover all of them.
+	CommandCount int        `json:"commandCount,omitempty"`
+	Commands     []*Command `json:"commands,omitempty"`
 }
 
 type Command struct {
@@ -108,7 +114,15 @@ type Command struct {
 	// executor then retried. It ran again in the final attempt.
 	EarlierAttempt bool   `json:"earlierAttempt,omitempty"`
 	Error          string `json:"error,omitempty"`
+
+	// byteRange is where the log says the statement is in its source, kept
+	// until the source is read.
+	byteRange *v1pb.Range
 }
+
+// KeptCommands is how many commands of one file the result keeps, besides any
+// that failed.
+const KeptCommands = 100
 
 // DetailStage returns the outcome and the stage the result details: the first
 // stage through the target that failed, was canceled or is unfinished, or the
@@ -185,7 +199,7 @@ type Input struct {
 	TaskRuns []*v1pb.TaskRun
 	// Logs are keyed by task run name. A started run with no entry is
 	// reported as having no log.
-	Logs map[string]*v1pb.TaskRunLog
+	Logs map[string]*LogDigest
 	// Sources hold what the commands ran, keyed by SourceKey for a release
 	// file and by sheet name for a sheet task. The log records a command of
 	// either as a byte range of its source, so a command whose source is
@@ -216,9 +230,9 @@ func (r SourceRef) Key() string {
 	return SourceKey(r.Release, r.Version)
 }
 
-// NeededSources lists each source that a latest run's log cut a command
+// NeededSources lists each source that a kept command of a latest run was cut
 // from, once.
-func NeededSources(stage *v1pb.Stage, taskRuns []*v1pb.TaskRun, logs map[string]*v1pb.TaskRunLog) []SourceRef {
+func NeededSources(stage *v1pb.Stage, taskRuns []*v1pb.TaskRun, logs map[string]*LogDigest) []SourceRef {
 	var refs []SourceRef
 	seen := map[SourceRef]bool{}
 	runsByTask := GroupTaskRuns(taskRuns)
@@ -227,12 +241,12 @@ func NeededSources(stage *v1pb.Stage, taskRuns []*v1pb.TaskRun, logs map[string]
 		if len(runs) == 0 {
 			continue
 		}
-		for _, scope := range splitScopes(logs[runs[len(runs)-1].GetName()].GetEntries()) {
+		for _, scope := range logs[runs[len(runs)-1].GetName()].getScopes() {
 			ref := SourceRef{Sheet: task.GetDatabaseUpdate().GetSheet()}
 			if scope.file != nil {
 				ref = SourceRef{Release: task.GetDatabaseUpdate().GetRelease(), Version: scope.file.GetVersion()}
 			}
-			if ref == (SourceRef{}) || seen[ref] || !cutFromSource(scope.entries) {
+			if ref == (SourceRef{}) || seen[ref] || !scope.cutFromSource() {
 				continue
 			}
 			seen[ref] = true
@@ -240,15 +254,6 @@ func NeededSources(stage *v1pb.Stage, taskRuns []*v1pb.TaskRun, logs map[string]
 		}
 	}
 	return refs
-}
-
-func cutFromSource(entries []*v1pb.TaskRunLogEntry) bool {
-	for _, entry := range entries {
-		if execute := entry.GetCommandExecute(); execute != nil && execute.GetStatement() == "" && execute.GetRange() != nil {
-			return true
-		}
-	}
-	return false
 }
 
 func Build(in Input) *Result {
@@ -326,56 +331,47 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 		return t
 	}
 	runDone := latest.GetStatus() == v1pb.TaskRun_DONE
-	scopes := splitScopes(log.GetEntries())
+	scopes := log.getScopes()
 	// applied turns true once a file may have changed the database.
 	var applied bool
+	var rows []*int64
 	for i, scope := range scopes {
 		source := sources[task.GetDatabaseUpdate().GetSheet()]
 		if scope.file != nil {
 			source = sources[SourceKey(task.GetDatabaseUpdate().GetRelease(), scope.file.GetVersion())]
 		}
-		commands, scopeErr := buildCommands(scope.entries, source.forRanges(scope.entries))
+		scope.readStatements(source)
+		rows = append(rows, scope.rows)
 		if scope.file == nil {
-			t.Commands = append(t.Commands, commands...)
+			t.Commands = append(t.Commands, scope.commands...)
+			t.CommandCount += scope.commandCount
 			continue
 		}
 		// A declarative file computes a diff first, and runs nothing when the
 		// schema already matches.
-		if len(commands) > 0 || !computedDiff(scope.entries) {
+		if scope.commandCount > 0 || !scope.computedDiff {
 			applied = true
 		}
 		file := &File{
 			Version:      scope.file.GetVersion(),
 			Path:         scope.file.GetFilePath(),
 			Status:       v1pb.TaskRun_DONE.String(),
-			Error:        scopeErr,
-			Commands:     commands,
-			AffectedRows: sumRows(commands),
+			RolledBack:   scope.rolledBack,
+			AffectedRows: scope.rows,
+			Error:        scope.err,
+			CommandCount: scope.commandCount,
+			Commands:     scope.commands,
 		}
-		for _, command := range commands {
-			if command.RolledBack {
-				file.RolledBack = true
-			}
-			if command.Error != "" {
-				file.Status = v1pb.TaskRun_FAILED.String()
-			}
-		}
-		if scopeErr != "" {
+		if scope.failed || scope.err != "" {
 			file.Status = v1pb.TaskRun_FAILED.String()
-		} else if file.Status == v1pb.TaskRun_DONE.String() && i == len(scopes)-1 && !runDone {
+		} else if i == len(scopes)-1 && !runDone {
 			// The executor stops at the first file that does not finish, so the
 			// last file a stopped run reached shares the run's status.
 			file.Status = latest.GetStatus().String()
 		}
 		t.Files = append(t.Files, file)
 	}
-
-	var counted []*Command
-	counted = append(counted, t.Commands...)
-	for _, file := range t.Files {
-		counted = append(counted, file.Commands...)
-	}
-	t.AffectedRows = sumRows(counted)
+	t.AffectedRows = addRows(rows)
 
 	release := task.GetDatabaseUpdate().GetRelease()
 	if release != "" && runDone && !applied {
@@ -413,6 +409,86 @@ func filesNotRun(state *v1pb.Task_ReleaseState, release *v1pb.Release, files []*
 	return count
 }
 
+// LogDigest is a task run's log reduced to what the result keeps. A log is
+// reduced as soon as it is read and then dropped, so that the action holds
+// one log's worth of entries per reader, not every database's.
+type LogDigest struct {
+	scopes []*scopeDigest
+}
+
+// DigestLog reduces a task run's log.
+func DigestLog(log *v1pb.TaskRunLog) *LogDigest {
+	digest := &LogDigest{}
+	for _, scope := range splitScopes(log.GetEntries()) {
+		commands, scopeErr := buildCommands(scope.entries)
+		d := &scopeDigest{
+			file:         scope.file,
+			commandCount: len(commands),
+			rows:         sumRows(commands),
+			err:          scopeErr,
+			computedDiff: computedDiff(scope.entries),
+		}
+		for _, command := range commands {
+			d.failed = d.failed || command.Error != ""
+			d.rolledBack = d.rolledBack || command.RolledBack
+			d.maxRangeEnd = max(d.maxRangeEnd, command.byteRange.GetEnd())
+		}
+		d.commands = commands
+		if len(commands) > KeptCommands {
+			// Cloned, so that the commands left out can be freed.
+			d.commands = slices.Clone(commands[:KeptCommands])
+			for _, command := range commands[KeptCommands:] {
+				if command.Error != "" {
+					d.commands = append(d.commands, command)
+				}
+			}
+		}
+		digest.scopes = append(digest.scopes, d)
+	}
+	return digest
+}
+
+func (d *LogDigest) getScopes() []*scopeDigest {
+	if d == nil {
+		return nil
+	}
+	return d.scopes
+}
+
+// scopeDigest is one release file's part of a log, or the part outside any
+// file. Everything but commands covers every command that ran.
+type scopeDigest struct {
+	file         *v1pb.TaskRunLogEntry_ReleaseFileExecute
+	commands     []*Command
+	commandCount int
+	rows         *int64
+	failed       bool
+	rolledBack   bool
+	err          string
+	computedDiff bool
+	// maxRangeEnd is the furthest any command reaches into its source.
+	maxRangeEnd int32
+}
+
+func (d *scopeDigest) cutFromSource() bool {
+	return slices.ContainsFunc(d.commands, func(command *Command) bool {
+		return command.Statement == "" && command.byteRange != nil
+	})
+}
+
+// readStatements cuts each kept command's statement from its source, unless
+// the log carried the statement or the range falls outside the source.
+func (d *scopeDigest) readStatements(source sourceText) {
+	text := source.forRanges(d.maxRangeEnd)
+	for _, command := range d.commands {
+		r := command.byteRange
+		if command.Statement != "" || r == nil || r.GetStart() < 0 || r.GetEnd() < r.GetStart() || int(r.GetEnd()) > len(text) {
+			continue
+		}
+		command.Statement = strings.TrimSpace(text[r.GetStart():r.GetEnd()])
+	}
+}
+
 type scope struct {
 	// file is nil for entries logged outside any release file.
 	file    *v1pb.TaskRunLogEntry_ReleaseFileExecute
@@ -446,7 +522,7 @@ func splitScopes(entries []*v1pb.TaskRunLogEntry) []scope {
 // have committed, as they are when the script runs outside a transaction and
 // the retry starts it again from the top. It also returns the final attempt's
 // first failure logged outside a command.
-func buildCommands(entries []*v1pb.TaskRunLogEntry, source string) ([]*Command, string) {
+func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 	var earlier, commands []*Command
 	var scopeErr string
 	// inTransaction holds the commands since the last BEGIN that no COMMIT has
@@ -466,7 +542,7 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry, source string) ([]*Command, 
 			commands, scopeErr, open, inTransaction = nil, "", false, nil
 		case v1pb.TaskRunLogEntry_COMMAND_EXECUTE:
 			execute := entry.GetCommandExecute()
-			command := &Command{Statement: statementOf(execute, source)}
+			command := &Command{Statement: execute.GetStatement(), byteRange: execute.GetRange()}
 			if response := execute.GetResponse(); response != nil {
 				if response.GetError() != "" {
 					command.Error = response.GetError()
@@ -528,19 +604,14 @@ type sourceText struct {
 	executed string
 }
 
-// forRanges returns the text the scope's logged byte ranges count from: the
+// forRanges returns the text a scope's logged byte ranges count from: the
 // file without its transaction directives for a driver that removes them, and
 // the file as stored for one that does not, such as BigQuery's. Nothing the
 // action may read names the engine, so the ranges decide: one that reaches
 // past the stripped text cannot be an offset into it.
-func (s sourceText) forRanges(entries []*v1pb.TaskRunLogEntry) string {
-	if len(s.executed) == len(s.stored) {
+func (s sourceText) forRanges(maxRangeEnd int32) string {
+	if int(maxRangeEnd) > len(s.executed) {
 		return s.stored
-	}
-	for _, entry := range entries {
-		if r := entry.GetCommandExecute().GetRange(); r != nil && int(r.GetEnd()) > len(s.executed) {
-			return s.stored
-		}
 	}
 	return s.executed
 }
@@ -580,19 +651,6 @@ func executedSource(source string) string {
 	return strings.TrimSpace(strings.Join(kept, "\n"))
 }
 
-// statementOf returns the command's text: logged with it, or cut from its
-// source by the logged byte range.
-func statementOf(execute *v1pb.TaskRunLogEntry_CommandExecute, source string) string {
-	if execute.GetStatement() != "" {
-		return execute.GetStatement()
-	}
-	r := execute.GetRange()
-	if r == nil || r.GetStart() < 0 || r.GetEnd() < r.GetStart() || int(r.GetEnd()) > len(source) {
-		return ""
-	}
-	return strings.TrimSpace(source[r.GetStart():r.GetEnd()])
-}
-
 // sumRows adds the counts of commands that were not rolled back. It returns
 // nil when no command reported a count, which is not the same as zero rows.
 func sumRows(commands []*Command) *int64 {
@@ -605,6 +663,22 @@ func sumRows(commands []*Command) *int64 {
 		reported = true
 		if !command.RolledBack {
 			total += *command.AffectedRows
+		}
+	}
+	if !reported {
+		return nil
+	}
+	return &total
+}
+
+// addRows adds the totals that were reported. It returns nil when none was.
+func addRows(totals []*int64) *int64 {
+	var total int64
+	var reported bool
+	for _, rows := range totals {
+		if rows != nil {
+			reported = true
+			total += *rows
 		}
 	}
 	if !reported {

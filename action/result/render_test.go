@@ -234,11 +234,19 @@ func TestCommandLinesCountsWhatItLeavesOut(t *testing.T) {
 	for i := range 13 {
 		commands = append(commands, &Command{Statement: fmt.Sprintf("UPDATE t SET a = %d", i), AffectedRows: rows(1000)})
 	}
-	lines := commandLines(commands)
+	lines := commandLines(commands, len(commands), rows(13000))
 
 	require.Len(t, lines, shownCommands+1)
 	require.Equal(t, "1,000 rows  UPDATE t SET a = 0", lines[0])
-	require.Equal(t, "and 3 more statements, 3,000 rows", lines[shownCommands])
+	require.Equal(t, "and 3,000 rows in 3 more statements", lines[shownCommands])
+
+	// The file ran more commands than the result kept.
+	lines = commandLines(commands, 50000, rows(50000000))
+	require.Equal(t, "and 49,990,000 rows in 49,990 more statements", lines[shownCommands])
+
+	// Nothing is added when the listed commands account for every row.
+	lines = commandLines(commands[:2], 5, rows(2000))
+	require.Len(t, lines, 2)
 }
 
 func TestShorten(t *testing.T) {
@@ -328,7 +336,7 @@ func TestCommandsWithoutStatementAreNamedByPosition(t *testing.T) {
 		{Error: "duplicate key"},
 	}
 
-	require.Equal(t, []string{"7 rows  statement 2"}, commandLines(commands))
+	require.Equal(t, []string{"7 rows  statement 2"}, commandLines(commands, len(commands), rows(7)))
 	require.Equal(t, []string{"statement 3", "duplicate key"}, failureLines(commands, ""))
 }
 
@@ -338,5 +346,5 @@ func TestCommandLinesMarkAnEarlierAttempt(t *testing.T) {
 		{Statement: "UPDATE t SET a = 1", AffectedRows: rows(0)},
 	}
 
-	require.Equal(t, []string{"1,200 rows  UPDATE t SET a = 1  (earlier attempt)"}, commandLines(commands))
+	require.Equal(t, []string{"1,200 rows  UPDATE t SET a = 1  (earlier attempt)"}, commandLines(commands, len(commands), rows(1200)))
 }

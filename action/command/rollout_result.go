@@ -50,7 +50,7 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 		URL:         strings.TrimSuffix(w.URL, "/"),
 		TargetStage: w.TargetStage,
 		Rollout:     w.Rollout,
-		Logs:        map[string]*v1pb.TaskRunLog{},
+		Logs:        map[string]*result.LogDigest{},
 	}
 	rollout, err := client.getRollout(ctx, w.Rollout.GetName())
 	if err != nil {
@@ -84,13 +84,19 @@ func collectResult(commandCtx context.Context, w *world.World, client *client) *
 		}
 		g.Go(func() error {
 			log, err := client.getTaskRunLog(gctx, latest.GetName())
+			// Only the digest outlives this call, so the log's memory is
+			// bounded by how many are read at once.
+			var digest *result.LogDigest
+			if err == nil {
+				digest = result.DigestLog(log)
+			}
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
 				failed++
 				return nil
 			}
-			in.Logs[latest.GetName()] = log
+			in.Logs[latest.GetName()] = digest
 			return nil
 		})
 	}

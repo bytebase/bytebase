@@ -1,6 +1,7 @@
 package result
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -98,7 +99,7 @@ func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*
 		URL:         "https://bytebase.example.com",
 		TargetStage: "environments/prod",
 		Rollout:     &v1pb.Rollout{Name: testRollout, Stages: []*v1pb.Stage{stage}},
-		Logs:        map[string]*v1pb.TaskRunLog{},
+		Logs:        map[string]*LogDigest{},
 		Sources:     extra.Sources,
 		Releases:    extra.Releases,
 	}
@@ -127,7 +128,7 @@ func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*
 			}
 			in.TaskRuns = append(in.TaskRuns, run)
 			if i == len(f.runs)-1 && f.log != nil {
-				in.Logs[run.Name] = &v1pb.TaskRunLog{Entries: f.log}
+				in.Logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: f.log})
 			}
 		}
 	}
@@ -501,22 +502,28 @@ func rangeEntry(start, end int32, rows int64) *v1pb.TaskRunLogEntry {
 	}
 }
 
-func TestBuildCommandsCutStatementsFromTheSource(t *testing.T) {
+func TestBuildCutsStatementsFromTheSource(t *testing.T) {
 	source := "UPDATE t SET a = 1;\nDELETE FROM t WHERE 你好 = 1;"
-	entries := []*v1pb.TaskRunLogEntry{
-		rangeEntry(0, 19, 3),
-		rangeEntry(19, int32(len(source)), 1),
-		rangeEntry(40, 4000, 1),
-		commandEntry("SELECT 1", 0),
+	fixture := taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true, pending: 1,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("0001", "migrations/0001_backfill.sql"),
+			rangeEntry(0, 19, 3),
+			rangeEntry(19, int32(len(source)), 1),
+			rangeEntry(40, 4000, 1),
+			commandEntry("SELECT 1", 0),
+		},
 	}
 
-	commands, _ := buildCommands(entries, source)
+	sources := map[string][]byte{SourceKey(testReleaseName, "0001"): []byte(source)}
+	commands := buildStageWithSources(t, sources, fixture)[0].Files[0].Commands
 	require.Equal(t, "UPDATE t SET a = 1;", commands[0].Statement)
 	require.Equal(t, "DELETE FROM t WHERE 你好 = 1;", commands[1].Statement, "the range counts bytes, not characters")
 	require.Empty(t, commands[2].Statement, "a range past the source is not guessed at")
 	require.Equal(t, "SELECT 1", commands[3].Statement, "a logged statement needs no source")
 
-	commands, _ = buildCommands(entries, "")
+	commands = buildStage(t, fixture)[0].Files[0].Commands
 	require.Empty(t, commands[0].Statement)
 	require.Equal(t, int64(3), *commands[0].AffectedRows, "the count does not depend on the statement text")
 }
@@ -524,13 +531,13 @@ func TestBuildCommandsCutStatementsFromTheSource(t *testing.T) {
 func TestNeededSources(t *testing.T) {
 	stage := &v1pb.Stage{Name: testStage}
 	var runs []*v1pb.TaskRun
-	logs := map[string]*v1pb.TaskRunLog{}
+	logs := map[string]*LogDigest{}
 	add := func(id string, update *v1pb.Task_DatabaseUpdate, entries ...*v1pb.TaskRunLogEntry) {
 		task := &v1pb.Task{Name: testStage + "/tasks/" + id, Payload: &v1pb.Task_DatabaseUpdate_{DatabaseUpdate: update}}
 		stage.Tasks = append(stage.Tasks, task)
 		run := &v1pb.TaskRun{Name: task.Name + "/taskRuns/a", Status: v1pb.TaskRun_DONE}
 		runs = append(runs, run)
-		logs[run.Name] = &v1pb.TaskRunLog{Entries: entries}
+		logs[run.Name] = DigestLog(&v1pb.TaskRunLog{Entries: entries})
 	}
 	release := &v1pb.Task_DatabaseUpdate{Source: &v1pb.Task_DatabaseUpdate_Release{Release: "projects/example/releases/r1"}}
 	sheet := &v1pb.Task_DatabaseUpdate{Source: &v1pb.Task_DatabaseUpdate_Sheet{Sheet: "projects/example/sheets/s1"}}
@@ -793,4 +800,36 @@ func TestBuildTaskUnchangedDeclarativeRun(t *testing.T) {
 		},
 	})
 	require.False(t, withDiff[0].Unchanged)
+}
+
+// A file of many statements keeps its first KeptCommands and any that failed.
+// Its counts and totals still cover every command.
+func TestBuildKeepsABoundedNumberOfCommands(t *testing.T) {
+	source := strings.Repeat("INSERT INTO t VALUES (1);\n", KeptCommands+150)
+	width := int32(len("INSERT INTO t VALUES (1);\n"))
+	entries := []*v1pb.TaskRunLogEntry{fileEntry("0001", "migrations/0001_seed.sql")}
+	for i := range int32(KeptCommands + 150) {
+		entries = append(entries, rangeEntry(i*width, (i+1)*width, 1))
+	}
+	entries = append(entries, failedCommandEntry("ALTER TABLE t ADD COLUMN b int", "column exists"))
+
+	digest := DigestLog(&v1pb.TaskRunLog{Entries: entries})
+	require.Len(t, digest.scopes[0].commands, KeptCommands+1, "the log's other commands are dropped with the log")
+
+	tasks := buildStageWithSources(t, map[string][]byte{SourceKey(testReleaseName, "0001"): []byte(source)}, taskFixture{
+		id: "hr", status: v1pb.Task_FAILED, release: true, pending: 1,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED},
+		log:  entries,
+	})
+
+	file := tasks[0].Files[0]
+	require.Equal(t, "FAILED", file.Status)
+	require.Equal(t, KeptCommands+151, file.CommandCount)
+	require.Len(t, file.Commands, KeptCommands+1)
+	require.Equal(t, int64(KeptCommands+150), *file.AffectedRows)
+	require.Equal(t, int64(KeptCommands+150), *tasks[0].AffectedRows)
+	require.Equal(t, "INSERT INTO t VALUES (1);", file.Commands[KeptCommands-1].Statement)
+	failed := file.Commands[KeptCommands]
+	require.Equal(t, "column exists", failed.Error, "a failed command is kept wherever it is")
+	require.Equal(t, "ALTER TABLE t ADD COLUMN b int", failed.Statement)
 }

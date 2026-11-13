@@ -136,7 +136,7 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 When `rollout` stops waiting, it reports how the rollout stands. The report is written whether the command passes or fails, and it never changes the exit code.
 
 -   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error. A listed statement is cut to one line of 100 characters; a failed statement and its error are cut to 30 lines of 200 characters.
--   **`--output` file**: the same result under the `result` key, in full.
+-   **`--output` file**: the same result under the `result` key. Per file it keeps the first 100 commands and any that failed; `commandCount` says how many ran, and the counts and totals cover all of them.
 -   **GitHub**: the block as the step summary, and an error annotation for each failed database.
 -   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.
 
@@ -179,6 +179,7 @@ The result details one stage: the target stage, or an earlier stage when the rol
                 "status": "FAILED",
                 "rolledBack": true,
                 "affectedRows": 0,
+                "commandCount": 2,
                 "commands": [
                   { "statement": "UPDATE account SET tier = 'basic' WHERE tier IS NULL", "affectedRows": 40, "rolledBack": true },
                   { "statement": "ALTER TABLE account ADD COLUMN risk_score int", "error": "ERROR: column \"risk_score\" of relation \"account\" already exists (SQLSTATE 42701)" }
