@@ -22,3 +22,107 @@
       endposition: null
 - statement: CREATE TABLE Person(id INT);
   changeType: 1
+- statement: |-
+    CREATE TABLE [Select] (id INT);
+    CREATE TABLE "WHERE" (id INT);
+    CREATE TABLE absolute (id INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [Select] is a reserved keyword and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [WHERE] is a reserved keyword and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [absolute] is a reserved keyword and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE [select].[from].Person (id INT);
+    CREATE TABLE [selects] (id INT);
+    CREATE TABLE [select ] (id INT);
+    CREATE TABLE #select (id INT);
+    CREATE TABLE [nvarchar] (id INT);
+  changeType: 1
+- statement: |-
+    CREATE TABLE [END-EXEC] (id INT);
+    CREATE TABLE [within group] (id INT);
+    CREATE TABLE [ınsert] (id INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [END-EXEC] is a reserved keyword and should be avoided.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [within group] is a reserved keyword and should be avoided.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [ınsert] is a reserved keyword and should be avoided.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    -- The table name is on a later line than its statement starts on.
+    CREATE TABLE Person (id INT);
+
+    /* comment */
+    CREATE TABLE
+      dbo.[User]
+    (
+      id INT
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_TABLE_NO_KEYWORD
+      content: Table name [User] is a reserved keyword and should be avoided.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Person ([select] INT, CONSTRAINT [from] UNIQUE ([select]));
+    CREATE INDEX [where] ON Person([select]);
+  changeType: 1
+- statement: |-
+    CREATE TABLE [select] WITH (DISTRIBUTION = ROUND_ROBIN) AS SELECT 1 AS id;
+    SELECT 1 AS id INTO [from];
+    EXEC sp_rename 'dbo.Person', 'where';
+  changeType: 1
+- statement: |-
+    IF 1 = 1
+    BEGIN
+      CREATE TABLE [select] (id INT);
+    END
+  changeType: 1
+- statement: CREATE PROCEDURE MyProc AS CREATE TABLE [select] (id INT);
+  changeType: 1

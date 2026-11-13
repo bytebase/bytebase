@@ -163,3 +163,255 @@
       endposition: null
 - statement: DROP DIRECTORY "LEVEL"
   changeType: 1
+- statement: |-
+    CREATE TABLE "DATE".t_order (
+      id NUMBER CONSTRAINT "LEVEL" PRIMARY KEY,
+      CONSTRAINT "COUNT" UNIQUE (id)
+    ) PARTITION BY RANGE (id) (
+      PARTITION "SIZE" VALUES LESS THAN (10)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "COUNT" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "SIZE" is a keyword and should be avoided
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t_order (id NUMBER CONSTRAINT "LEVEL" NOT NULL)
+  changeType: 1
+- statement: |-
+    CREATE VIEW v_order ("DATE") AS
+      SELECT 1 AS "LEVEL" FROM dual
+      WITH CHECK OPTION CONSTRAINT "COUNT"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "COUNT" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: WITH "DATE" ("DATE", "LEVEL") AS (SELECT 1, 2 FROM dual) SELECT * FROM "DATE" "COUNT"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "COUNT" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT 1 AS "Date" FROM dual
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "Date" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      RENAME TO "DATE"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME COLUMN id TO "LEVEL"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: RENAME tech_book TO "DATE"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER INDEX idx_tech_book
+      RENAME TO "LEVEL"
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE DATABASE LINK "LEVEL" USING 'remote'
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE OR REPLACE PROCEDURE p_demo ("DATE" IN NUMBER) AS
+      CURSOR "LEVEL" IS SELECT 1 FROM dual;
+      TYPE "COUNT" IS TABLE OF NUMBER;
+    BEGIN
+      FOR "TIMESTAMP" IN 1..2 LOOP
+        INSERT INTO t SELECT 1 AS "SIZE" FROM dual;
+      END LOOP;
+    END;
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "LEVEL" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "COUNT" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "TIMESTAMP" is a keyword and should be avoided
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "SIZE" is a keyword and should be avoided
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: EXPLAIN PLAN FOR SELECT 1 AS "DATE" FROM dual
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE SCHEMA AUTHORIZATION shop CREATE TABLE "DATE" (id NUMBER)
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t1 (id NUMBER);
+    -- the second table
+    CREATE TABLE t2 (
+      id NUMBER,
+      "DATE" DATE
+    );
+  changeType: 1
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "DATE" is a keyword and should be avoided
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

@@ -3,14 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, &NamingIdentifierNoKeywordAdvisor{})
 }
 
-// NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
+// NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier
+// naming convention without keyword. The judgment lives in omni
+// (mysql/v1review.NamingIdentifierNoKeyword); this adapter renders the
+// findings as advice.
 type NamingIdentifierNoKeywordAdvisor struct {
 }
 
@@ -32,121 +36,32 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &namingIdentifierNoKeywordRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingIdentifierNoKeywordRule struct {
-	BaseRule
-}
-
-func (*namingIdentifierNoKeywordRule) Name() string {
-	return "NamingIdentifierNoKeywordRule"
-}
-
-func (r *namingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	case *ast.CreateIndexStmt:
-		r.checkCreateIndex(n)
-	default:
-	}
-}
-
-func (r *namingIdentifierNoKeywordRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table != nil {
-		r.checkIdentifierAtLine(n.Table.Name, r.LocToLine(n.Loc))
-	}
-	for _, col := range n.Columns {
-		if col == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		r.checkIdentifierAtLine(col.Name, r.findColumnLine(col.Name))
-	}
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		r.checkConstraintNames(constraint, r.LocToLine(constraint.Loc))
-	}
-}
-
-func (r *namingIdentifierNoKeywordRule) checkAlterTable(n *ast.AlterTableStmt) {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			for _, col := range getColumnsFromCmd(cmd) {
-				r.checkIdentifierAtLine(col.Name, r.LocToLine(n.Loc))
+		text := &BaseRule{StmtText: stmt.Text}
+		for _, f := range mysqlv1review.NamingIdentifierNoKeyword([]ast.Node{node}) {
+			// A finding with search text is on the line where the statement
+			// first holds that text; any other is on its range's first line.
+			line := findingLine(stmt.Text, f)
+			if f.Search != "" {
+				line = text.FindLineByName(f.Search)
 			}
-		case ast.ATRenameTable:
-			if newTableName := renameTableName(cmd); newTableName != "" {
-				r.checkIdentifierAtLine(newTableName, r.LocToLine(n.Loc))
-			}
-		case ast.ATRenameColumn:
-			if cmd.NewName != "" {
-				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
-			}
-		case ast.ATChangeColumn:
-			if cmd.Column != nil {
-				r.checkIdentifierAtLine(cmd.Column.Name, r.LocToLine(n.Loc))
-			}
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				r.checkConstraintNames(cmd.Constraint, r.LocToLine(n.Loc))
-			}
-		case ast.ATRenameIndex:
-			if cmd.NewName != "" {
-				r.checkIdentifierAtLine(cmd.NewName, r.LocToLine(n.Loc))
-			}
-		default:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NameIsKeywordIdentifier.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(line)),
+			})
 		}
 	}
-}
-
-func (r *namingIdentifierNoKeywordRule) checkCreateIndex(n *ast.CreateIndexStmt) {
-	if n.IndexName != "" {
-		r.checkIdentifierAtLine(n.IndexName, r.LocToLine(n.Loc))
-	}
-}
-
-// checkConstraintNames checks the CONSTRAINT symbol and, for FOREIGN KEY, the
-// name written after FOREIGN KEY.
-func (r *namingIdentifierNoKeywordRule) checkConstraintNames(c *ast.Constraint, lineNumber int32) {
-	for _, name := range []string{c.Name, c.IndexName} {
-		if name != "" {
-			r.checkIdentifierAtLine(name, lineNumber)
-		}
-	}
-}
-
-func (r *namingIdentifierNoKeywordRule) checkIdentifierAtLine(identifier string, lineNumber int32) {
-	// Strip backticks if present.
-	identifier = strings.Trim(identifier, "`")
-	if !isKeyword(identifier) {
-		return
-	}
-	absoluteLine := r.BaseLine + int(lineNumber)
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          code.NameIsKeywordIdentifier.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-		StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-	})
-}
-
-func (r *namingIdentifierNoKeywordRule) findColumnLine(name string) int32 {
-	return r.FindLineByName(name)
+	return adviceList, nil
 }

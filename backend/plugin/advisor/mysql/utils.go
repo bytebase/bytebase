@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
-
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 type columnSet map[string]bool
@@ -67,11 +65,6 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 		return
 	}
 	delete(t[tableName], columnName)
-}
-
-// isKeyword checks if the keyword is a MySQL keyword.
-func isKeyword(suspect string) bool {
-	return mysqlparser.IsKeyword(suspect)
 }
 
 // tableName extracts the table name from a TableRef.
@@ -247,16 +240,6 @@ func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 	default:
 	}
 	return nil
-}
-
-func renameTableName(cmd *ast.AlterTableCmd) string {
-	if cmd == nil || cmd.Type != ast.ATRenameTable {
-		return ""
-	}
-	if cmd.NewTable != nil {
-		return cmd.NewTable.Name
-	}
-	return cmd.NewName
 }
 
 // isPrimaryKey checks if a column has a PRIMARY KEY constraint.

@@ -1,8 +1,6 @@
 package snowflake
 
 import (
-	"strings"
-
 	omniast "github.com/bytebase/omni/snowflake/ast"
 	omniparser "github.com/bytebase/omni/snowflake/parser"
 
@@ -53,15 +51,6 @@ func parseSnowflakeStatements(statement string) ([]base.ParsedStatement, error) 
 	}
 
 	return result, nil
-}
-
-// IsSnowflakeKeyword returns true if the given string is a snowflake keyword.
-// Follows https://docs.snowflake.com/en/sql-reference/reserved-keywords.
-func IsSnowflakeKeyword(s string, caseSensitive bool) bool {
-	if !caseSensitive {
-		s = strings.ToUpper(s)
-	}
-	return snowflakeKeyword[s]
 }
 
 // ---------------------------------------------------------------------------
