@@ -2,7 +2,6 @@
 package oceanbase
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 
@@ -21,17 +20,6 @@ func (t tableState) tableList() []string {
 	}
 	slices.Sort(tableList)
 	return tableList
-}
-
-// getTemplateRegexp formats the template as regex.
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
 }
 
 // tableName --> columnName --> columnType.
