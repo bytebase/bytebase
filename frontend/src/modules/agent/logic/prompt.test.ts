@@ -171,8 +171,10 @@ describe("buildSystemPrompt", () => {
       { path: "/landing", title: "Home", context: "projects/orders" },
       ["exemption"]
     );
-    expect(prompt).toContain("call ask_masking_exemption_scope()");
-    expect(prompt).toContain("The only optional argument is database");
+    expect(prompt).toContain(
+      "call ask_masking_exemption_scope({project?,database?})"
+    );
+    expect(prompt).toContain("pass its canonical name in a workspace chat");
     expect(prompt).toContain("Do not pass a question, options, or a default");
     expect(prompt).toContain("runtime supplies the localized scope question");
     expect(prompt).toContain("All databases in this project");

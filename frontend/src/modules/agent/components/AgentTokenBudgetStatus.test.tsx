@@ -244,7 +244,7 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.queryByRole("spinbutton")).toBeNull();
     expect(onIncreaseLimit).toHaveBeenCalledExactlyOnceWith(2000);
     expect(onResume).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "End run" })).toBeDisabled();
     await act(async () => finish());
   });
@@ -261,14 +261,43 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onResume).toHaveBeenCalledOnce();
   });
 
-  test("requires explicit Resume after the persisted budget becomes eligible", async () => {
-    const { onResume } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed: 1100 } });
+  test.each([1100, 1600, 1999])("offers Retry without another increase at %i tokens after the persisted budget becomes eligible", async (totalTokensUsed) => {
+    const { onResume, onIncreaseLimit } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed } });
     expect(onResume).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Resume" })).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Interrupted");
+    expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
     expect(screen.getAllByRole("button")).toHaveLength(2);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Resume" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry" })));
     expect(onResume).toHaveBeenCalledOnce();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+  });
+
+  test("keeps a failed Retry available without requiring another token increase", async () => {
+    const { onResume, onIncreaseLimit } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed: 1100 } });
+    onResume.mockReturnValueOnce(false);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry" })));
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't update this run. Try again.");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Retry" })));
+    expect(onResume).toHaveBeenCalledTimes(2);
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  test("prevents duplicate Retry and End run while continuation is pending", async () => {
+    const { onResume, onEndRun, onIncreaseLimit } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed: 1100 } });
+    let finish!: (value: boolean) => void;
+    onResume.mockImplementationOnce(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "End run" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onResume).toHaveBeenCalledOnce();
+    expect(onEndRun).not.toHaveBeenCalled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+    await act(async () => finish(true));
   });
 
   test.each([
@@ -289,14 +318,10 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  test.each(["error", "idle"] as const)("offers explicit End run for managed interrupted work in %s state", async (status) => {
-    const { onEndRun, onResume } = setup({ ...chat, runId: "run-1", status, interrupted: true, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } });
-    expect(screen.getByRole("status")).toHaveTextContent("Interrupted");
-    expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
+  test.each(["error", "idle"] as const)("leaves managed interrupted work in %s state to its message-level Retry", (status) => {
+    const { container, onEndRun, onResume } = setup({ ...chat, runId: "run-1", status, interrupted: true, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } });
+    expect(container).toBeEmptyDOMElement();
     expect(onEndRun).not.toHaveBeenCalled();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
-    expect(onEndRun).toHaveBeenCalledOnce();
     expect(onResume).not.toHaveBeenCalled();
   });
 
@@ -314,25 +339,19 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onIncreaseLimit).not.toHaveBeenCalled();
   });
 
-  test.each([
-    { status: "idle" as const, interruptionReason: "unexpected" as const, suspension: "interrupted" as const, remoteBusy: false, title: "Interrupted" },
-    { status: "error" as const, interruptionReason: "user" as const, suspension: "interrupted" as const, remoteBusy: false, title: "Interrupted" },
-    { status: "idle" as const, interruptionReason: "user" as const, suspension: "token-limit" as const, remoteBusy: false, title: "Run paused at its token limit." },
-    { status: "idle" as const, interruptionReason: "user" as const, suspension: "interrupted" as const, remoteBusy: true, title: "This run may be active in another tab." },
-  ])("preserves recovery feedback for $status/$interruptionReason/$suspension with remoteBusy=$remoteBusy", ({ status, interruptionReason, suspension, remoteBusy, title }) => {
+  test("preserves actual token-pause controls despite stale interruption metadata", () => {
     setup({
-      ...chat, runId: "run-1", status, interrupted: true, interruptionReason,
-      runCheckpoint: { ...checkpoint, suspension },
-    }, false, { remoteBusy });
-    expect(screen.getByRole("status")).toHaveTextContent(title);
+      ...chat, runId: "run-1", status: "idle", interrupted: true, interruptionReason: "user",
+      runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 },
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Run paused at its token limit.");
+    expect(screen.getByRole("button", { name: "Increase limit" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
   });
 
-  test("leaves End run available even when managed recovery metadata is missing", () => {
-    setup({ ...chat, runId: "run-1", status: "error", runBudget: undefined }, false, { canResume: false });
-    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
-    expect(screen.queryByText(/tokens$/)).toBeNull();
+  test("does not duplicate interruption recovery when budget metadata is missing", () => {
+    const { container } = setup({ ...chat, runId: "run-1", status: "error", runBudget: undefined }, false, { canResume: false });
+    expect(container).toBeEmptyDOMElement();
   });
 
   test("preserves token-pause controls when configuration recovery changes status", () => {
@@ -343,33 +362,15 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
   });
 
-  test("allows an explicit remote recovery attempt without claiming the owner is gone", async () => {
-    const { onResume, onEndRun } = setup({ ...chat, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted" }, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, false, { remoteBusy: true, canResume: true });
-    expect(screen.getByRole("status")).toHaveTextContent("This run may be active in another tab.");
+  test.each([100, 800, 1100])("does not present remote ownership as a token-limit warning at %i tokens", (totalTokensUsed) => {
+    const { container, onResume, onEndRun, onIncreaseLimit } = setup({
+      ...chat, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted" },
+      runBudget: { ...chat.runBudget!, totalTokensUsed },
+    }, false, { remoteBusy: true, canResume: true });
+    expect(container).toBeEmptyDOMElement();
     expect(onResume).not.toHaveBeenCalled();
     expect(onEndRun).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Resume" })).toBeEnabled();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Resume" })));
-    expect(onResume).toHaveBeenCalledOnce();
-    expect(onEndRun).not.toHaveBeenCalled();
-  });
-
-  test("disables invalid remote continuation but keeps explicit retirement available", () => {
-    setup({ ...chat, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted", startupComplete: false }, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, false, { remoteBusy: true, canResume: false });
-    expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
-  });
-
-  test("does not offer remote Resume without a checkpoint", () => {
-    const { container } = setup({ ...chat, runId: "run-1", runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, false, { remoteBusy: true, canResume: true });
-    expect(container.textContent).toBe("");
-  });
-
-  test("offers a budget increase before recovering an exhausted remote run", () => {
-    setup({ ...chat, status: "idle", interrupted: true, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted" }, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 } }, false, { remoteBusy: true, canResume: true });
-    expect(screen.getByRole("button", { name: "Increase limit" })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
-    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
   });
 
   test.each([800, 1100])("keeps an active increase apply-only at %i tokens", async (totalTokensUsed) => {
@@ -392,13 +393,10 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onResume).not.toHaveBeenCalled();
   });
 
-  test("keeps exhausted remote recovery increases separate from resuming", async () => {
-    const { onIncreaseLimit, onResume } = setup({ ...chat, status: "idle", interrupted: true, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted" }, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 } }, false, { remoteBusy: true, canResume: true });
-    const input = await openIncrease();
-    expect(screen.queryByRole("button", { name: "Increase and resume" })).toBeNull();
-    fireEvent.change(input, { target: { value: "2" } });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Apply" })));
-    expect(onIncreaseLimit).toHaveBeenCalledExactlyOnceWith(2000);
+  test("does not show token actions for a remotely owned token pause", () => {
+    const { container, onIncreaseLimit, onResume } = setup({ ...chat, status: "paused", runId: "run-1", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 } }, false, { remoteBusy: true, canResume: true });
+    expect(container).toBeEmptyDOMElement();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
     expect(onResume).not.toHaveBeenCalled();
   });
 
@@ -432,9 +430,15 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onResume).not.toHaveBeenCalled();
   });
 
-  test("keeps remote recovery disabled during a local operation", () => {
-    setup({ ...chat, runId: "run-1", runCheckpoint: { ...checkpoint, suspension: "interrupted" }, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, true, { remoteBusy: true, canResume: true });
-    expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
+  test("disables Retry for an invalid token checkpoint without hiding End run", () => {
+    setup({ ...chat, status: "paused", runId: "run-1", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, false, { canResume: false });
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
+  });
+
+  test("keeps Retry disabled during a local operation", () => {
+    setup({ ...chat, status: "paused", runId: "run-1", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } }, true);
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "End run" })).toBeDisabled();
   });
 

@@ -64,31 +64,15 @@ function TokenBudgetStatus({
   const budget = projection?.budget;
   const state = projection?.state ?? "normal";
   const hasUnreportedUsage = projection?.hasUnreportedUsage ?? false;
-  const interruptedRun =
-    Boolean(chat.runId) && (chat.interrupted || chat.status === "error");
-  if (!budget && !interruptedRun) return null;
-  const paused = Boolean(
-    budget && chat.runCheckpoint?.suspension === "token-limit"
-  );
-  if (
-    chat.status === "idle" &&
-    chat.interrupted &&
-    chat.interruptionReason === "user" &&
-    !paused &&
-    !remoteBusy
-  )
-    return null;
-  // A remote marker can outlive its owner. Only the caller's explicit lease check authorizes recovery.
-  const remoteRecovery = Boolean(remoteBusy && budget && chat.runCheckpoint);
-  const recoverableRun = paused || remoteRecovery;
-  const showResume = recoverableRun && state !== "exhausted";
-  const showEndRun = recoverableRun || interruptedRun;
+  if (!budget || remoteBusy) return null;
+  const paused = chat.runCheckpoint?.suspension === "token-limit";
+  const showRetry = paused && state !== "exhausted";
   const active = chat.status === "running" || chat.status === "awaiting_user";
-  const showThreshold = active && state !== "normal";
+  const showThreshold = !paused && active && state !== "normal";
   const showPartialUsage =
     hasUnreportedUsage && (active || chat.status === "error");
-  if (!showEndRun && !showThreshold && !showPartialUsage) return null;
-  const minimum = budget ? Math.max(budget.limit, budget.totalTokensUsed) : 0;
+  if (!paused && !showThreshold && !showPartialUsage) return null;
+  const minimum = Math.max(budget.limit, budget.totalTokensUsed);
   const minimumLimit = formatTokenLimit(
     minimum < Number.MAX_SAFE_INTEGER ? minimum + 1 : Number.MAX_SAFE_INTEGER
   );
@@ -100,20 +84,17 @@ function TokenBudgetStatus({
   const parsed = parseTokenLimit(draft);
   const invalid = parsed === null || parsed <= minimum;
   const busy = disabled || pending;
-  const canIncrease =
-    (recoverableRun && state === "exhausted") || showThreshold;
+  const canIncrease = (paused && state === "exhausted") || showThreshold;
   const increaseAndResume = paused && canResume;
   const title = paused
-    ? t("agent.token-budget.paused")
-    : remoteRecovery
-      ? t("agent.token-budget.remote-busy")
-      : interruptedRun
-        ? t("agent.interrupted")
-        : active && state === "exhausted"
-          ? t("agent.token-budget.reached")
-          : active && state === "warning"
-            ? t("agent.token-budget.warning")
-            : t("agent.token-budget.partial");
+    ? showRetry
+      ? t("agent.interrupted")
+      : t("agent.token-budget.paused")
+    : active && state === "exhausted"
+      ? t("agent.token-budget.reached")
+      : active && state === "warning"
+        ? t("agent.token-budget.warning")
+        : t("agent.token-budget.partial");
   const used =
     hasUnreportedUsage && budget
       ? t("agent.token-usage.at-least", {
@@ -143,7 +124,7 @@ function TokenBudgetStatus({
   return (
     <Alert
       appearance="caption"
-      variant={paused || showThreshold ? "warning" : "info"}
+      variant={(paused && !showRetry) || showThreshold ? "warning" : "info"}
       role="region"
       aria-label={t("agent.token-budget.title")}
       data-agent-token-budget
@@ -176,7 +157,7 @@ function TokenBudgetStatus({
                   render={
                     <Button
                       size="sm"
-                      appearance={recoverableRun ? "solid" : "outline"}
+                      appearance={paused ? "solid" : "outline"}
                       disabled={busy}
                     />
                   }
@@ -265,16 +246,16 @@ function TokenBudgetStatus({
                 </AgentPopoverContent>
               </AgentPopover>
             )}
-            {showResume && (
+            {showRetry && (
               <Button
                 size="sm"
                 disabled={busy || !canResume}
                 onClick={() => void perform(onResume)}
               >
-                {t("agent.token-budget.resume")}
+                {t("agent.retry-last-chat-turn")}
               </Button>
             )}
-            {showEndRun && (
+            {paused && (
               <Button
                 size="sm"
                 appearance="secondary"
@@ -286,7 +267,7 @@ function TokenBudgetStatus({
             )}
           </div>
         </div>
-        {hasUnreportedUsage && (showEndRun || showThreshold) && (
+        {hasUnreportedUsage && (paused || showThreshold) && (
           <span>{t("agent.token-budget.partial")}</span>
         )}
         {failed && !open && (

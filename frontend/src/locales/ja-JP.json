@@ -23,6 +23,8 @@
   },
   "agent": {
     "access-grant-draft": {
+      "default-reason": "{{database}} への一時的なクエリアクセスを申請します。",
+      "default-unmask-reason": "{{database}} への一時的なクエリアクセスと、マスキングされていない結果の表示を申請します。",
       "open": "Open access request draft",
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
@@ -197,6 +199,13 @@
         "create": "カスタムマスキングタイプを作成…",
         "create-description": "指定したマスキング設定で新しいセマンティックタイプを準備します。",
         "question": "これらの列に使用するセマンティックタイプを選択してください。"
+      },
+      "unmask-method": {
+        "exemption": "マスキング免除",
+        "exemption-description": "選択したリソースのマスクを解除します。既存のクエリ実行権限が必要です。",
+        "jit": "アクセス付与",
+        "jit-description": "自分用に、マスク解除を有効にした特定の読み取り専用クエリ1つへの一時アクセスを申請します。",
+        "question": "マスクされていないデータにどの方法でアクセスしますか？"
       }
     },
     "masking-exemption-draft": {
@@ -378,8 +387,6 @@
       "paused": "トークン上限に達したため実行を一時停止しました。",
       "reached": "この実行のトークン上限に達しました。",
       "recovery-unavailable": "このブラウザーでは保存された Agent の実行を安全に継続できません。サポート対象の最新ブラウザーをご利用ください。",
-      "remote-busy": "この実行は別のタブで処理中の可能性があります。",
-      "resume": "再開",
       "run-limit": "この実行のトークン上限",
       "title": "実行のトークン予算",
       "usage": "{{used}} / {{limit}} トークン",
@@ -2098,8 +2105,7 @@
       "visit-issues": "イシューを開く",
       "visit-prjects": "プロジェクトを開く",
       "yours": "クイックリンク"
-    },
-    "workspace": "ワークスペース"
+    }
   },
   "masking": {
     "reason": {

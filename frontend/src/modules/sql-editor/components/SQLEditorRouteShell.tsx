@@ -616,6 +616,8 @@ export function SQLEditorRouteShell() {
         targets: draft.targets,
         ...(draft.schema ? { schema: draft.schema } : {}),
         ...(draft.container ? { container: draft.container } : {}),
+        ...(draft.unmask !== undefined ? { unmask: draft.unmask } : {}),
+        ...(draft.reason !== undefined ? { reason: draft.reason } : {}),
       });
     }
     if (opened) {

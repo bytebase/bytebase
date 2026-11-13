@@ -9,8 +9,10 @@ export type AccessGrantDraft = {
   sourceDatabase: string;
   targets: string[];
   statement: string;
+  reason?: string;
   schema?: string;
   container?: string;
+  unmask?: boolean;
 };
 
 export type RequestRoleDraft = {
@@ -63,7 +65,10 @@ const parseStoredDraft = (
         fields.kind !== "accessGrant" &&
         fields.kind !== "requestRole") ||
       (fields.schema !== undefined && typeof fields.schema !== "string") ||
-      (fields.container !== undefined && typeof fields.container !== "string")
+      (fields.reason !== undefined && typeof fields.reason !== "string") ||
+      (fields.container !== undefined &&
+        typeof fields.container !== "string") ||
+      (fields.unmask !== undefined && typeof fields.unmask !== "boolean")
     ) {
       return undefined;
     }

@@ -590,12 +590,6 @@ export function LandingPage(_: Record<string, never> = {}) {
     <>
       <WorkspacePageLayout>
         <div className="flex min-w-0 flex-col gap-y-8">
-          {/* <header className="min-w-0">
-            <h1 className="min-w-0 break-words text-2xl font-bold text-main">
-              {workspace?.title ?? t("landing.workspace")}
-            </h1>
-          </header> */}
-
           {landingAgentEnabled && aiEnabled && workspace?.name && (
             <LandingAgentComposer
               key={workspace.name}
