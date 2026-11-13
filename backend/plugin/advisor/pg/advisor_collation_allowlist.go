@@ -6,10 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -21,6 +24,8 @@ func init() {
 }
 
 // CollationAllowlistAdvisor is the advisor checking for collation allowlist.
+// The judgment lives in omni (pg/v1review.SystemCollationAllowlist); this
+// adapter passes the rule's payload and renders the findings as advice.
 type CollationAllowlistAdvisor struct {
 }
 
@@ -30,103 +35,28 @@ func (*CollationAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if err != nil {
 		return nil, err
 	}
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	allowList := checkCtx.Rule.GetStringArrayPayload().List
 
-	allowlist := make(map[string]bool)
-	for _, collation := range stringArrayPayload.List {
-		allowlist[collation] = true
-	}
-
-	rule := &collationAllowlistRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		allowlist: allowlist,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type collationAllowlistRule struct {
-	BaseRule
-
-	allowlist map[string]bool
-}
-
-func (*collationAllowlistRule) Name() string {
-	return "collation-allowlist"
-}
-
-func (r *collationAllowlistRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *collationAllowlistRule) handleCreateStmt(n *ast.CreateStmt) {
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		r.checkColumnCollation(col)
-	}
-}
-
-func (r *collationAllowlistRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	for _, cmd := range alterTableCmds(n) {
-		switch ast.AlterTableType(cmd.Subtype) {
-		case ast.AT_AddColumn:
-			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
-				r.checkColumnCollation(colDef)
-			}
-		case ast.AT_AlterColumnType:
-			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
-				r.checkColumnCollation(colDef)
-			}
-		default:
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		for _, f := range pgv1review.SystemCollationAllowlist([]ast.Node{node}, allowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DisabledCollation.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", f.Name, strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(line),
+			})
 		}
 	}
-}
-
-func (r *collationAllowlistRule) checkColumnCollation(col *ast.ColumnDef) {
-	if col == nil || col.CollClause == nil {
-		return
-	}
-	collName := r.extractCollationName(col.CollClause)
-	if collName != "" && !r.allowlist[collName] {
-		r.addCollationAdvice(collName)
-	}
-}
-
-func (*collationAllowlistRule) extractCollationName(cc *ast.CollateClause) string {
-	if cc == nil || cc.Collname == nil {
-		return ""
-	}
-	var parts []string
-	for _, item := range cc.Collname.Items {
-		if s, ok := item.(*ast.String); ok {
-			parts = append(parts, s.Str)
-		}
-	}
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
-}
-
-func (r *collationAllowlistRule) addCollationAdvice(collation string) {
-	stmtText := strings.TrimSpace(r.StmtText)
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.DisabledCollation.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("Use disabled collation \"%s\", related statement \"%s\"", collation, stmtText),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

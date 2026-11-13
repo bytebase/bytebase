@@ -132,3 +132,54 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a varchar(255) COLLATE latin1_bin) COLLATE ascii_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: '"CREATE TABLE t(a varchar(255) COLLATE latin1_bin) COLLATE ascii_bin" used disabled collation ''ascii_bin'''
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int,
+      b varchar(255) COLLATE latin1_bin,
+      c varchar(255) COLLATE ascii_bin
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        "CREATE TABLE t(
+          a int,
+          b varchar(255) COLLATE latin1_bin,
+          c varchar(255) COLLATE ascii_bin
+        )" used disabled collation 'latin1_bin'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN (b varchar(255) COLLATE latin1_bin, c varchar(255) COLLATE ascii_bin), COLLATE big5_bin
+  changeType: 1
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: '"ALTER TABLE t ADD COLUMN (b varchar(255) COLLATE latin1_bin, c varchar(255) COLLATE ascii_bin), COLLATE big5_bin" used disabled collation ''big5_bin'''
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE DATABASE d COLLATE utf8mb4_0900_ai_ci COLLATE latin1_bin
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t CONVERT TO CHARACTER SET latin1
+  changeType: 1

@@ -110,45 +110,8 @@ func (s Stmt) FirstTokenLine() int {
 // authors avoid the silent-regression failure mode where mechanically
 // using only the canonical name misses the shorthand form.
 var (
-	optionNamesCharset = []string{"CHARACTER SET", "CHARSET"}
-	optionNamesCollate = []string{"COLLATE"}
 	optionNamesComment = []string{"COMMENT"}
 )
-
-// databaseOption returns the lowercased value of the first option
-// whose Name matches any in `names` (case-insensitive), or "" if none
-// match. For case-insensitive identifiers (charset/collation names);
-// user-content values like COMMENT should use *Present variants.
-func databaseOption(opts []*omniast.DatabaseOption, names []string) string {
-	for _, opt := range opts {
-		if opt == nil {
-			continue
-		}
-		for _, name := range names {
-			if strings.EqualFold(opt.Name, name) {
-				return strings.ToLower(opt.Value)
-			}
-		}
-	}
-	return ""
-}
-
-// tableOption returns the lowercased value of the first option whose
-// Name matches any in `names` (case-insensitive), or "" if none match.
-// Case-insensitive-identifier semantics (see databaseOption).
-func tableOption(opts []*omniast.TableOption, names []string) string {
-	for _, opt := range opts {
-		if opt == nil {
-			continue
-		}
-		for _, name := range names {
-			if strings.EqualFold(opt.Name, name) {
-				return strings.ToLower(opt.Value)
-			}
-		}
-	}
-	return ""
-}
 
 // tableOptionPresent reports whether any option whose Name matches
 // any in `names` is in the slice; returns its raw value (case preserved —
@@ -168,18 +131,6 @@ func tableOptionPresent(opts []*omniast.TableOption, names []string) (string, bo
 	return "", false
 }
 
-// optionNameMatches reports whether `optName` (case-insensitively)
-// matches any name in `names`. Used for single-option checks where the
-// option is already plucked from a slice (e.g. AlterTableCmd.Option).
-func optionNameMatches(optName string, names []string) bool {
-	for _, n := range names {
-		if strings.EqualFold(optName, n) {
-			return true
-		}
-	}
-	return false
-}
-
 // columnCharset returns the column-level CHARACTER SET (lowercased)
 // from ColumnDef.TypeName.Charset. Empty if no clause.
 func columnCharset(col *omniast.ColumnDef) string {
@@ -187,18 +138,6 @@ func columnCharset(col *omniast.ColumnDef) string {
 		return ""
 	}
 	return strings.ToLower(col.TypeName.Charset)
-}
-
-// columnCollate returns the column-level COLLATE (lowercased) from
-// ColumnDef.TypeName.Collate. Empty if no clause. Note: omni stores
-// column-level COLLATE on the DataType, NOT in Constraints[] — the
-// ColConstrCollate enum value exists but isn't populated by the parser
-// for this form.
-func columnCollate(col *omniast.ColumnDef) string {
-	if col == nil || col.TypeName == nil {
-		return ""
-	}
-	return strings.ToLower(col.TypeName.Collate)
 }
 
 // columnHasComment reports whether the column has a COMMENT clause.

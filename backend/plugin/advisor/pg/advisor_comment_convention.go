@@ -7,10 +7,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -21,7 +24,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SYSTEM_COMMENT_LENGTH, &CommentConventionAdvisor{})
 }
 
-// CommentConventionAdvisor is the advisor checking for comment length.
+// CommentConventionAdvisor is the advisor checking for comment length. The
+// judgment lives in omni (pg/v1review.SystemCommentLength); this adapter
+// passes the rule's payload and renders the findings as advice.
 type CommentConventionAdvisor struct {
 }
 
@@ -36,44 +41,28 @@ func (*CommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
+	maxLength := int(numberPayload.Number)
 
-	rule := &commentConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maxLength: int(numberPayload.Number),
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		for range pgv1review.SystemCommentLength([]ast.Node{node}, maxLength) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.CommentTooLong.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The length of comment should be within %d characters", maxLength),
+				StartPosition: base.ConvertANTLRLineToPosition(line),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type commentConventionRule struct {
-	BaseRule
-
-	maxLength int
-}
-
-func (*commentConventionRule) Name() string {
-	return "comment_convention"
-}
-
-func (r *commentConventionRule) OnStatement(node ast.Node) {
-	cs, ok := node.(*ast.CommentStmt)
-	if !ok {
-		return
-	}
-
-	if r.maxLength > 0 && len(cs.Comment) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.CommentTooLong.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The length of comment should be within %d characters", r.maxLength),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }
