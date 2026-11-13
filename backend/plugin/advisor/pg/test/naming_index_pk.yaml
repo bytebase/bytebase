@@ -94,3 +94,111 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE book(id INT CONSTRAINT book_id PRIMARY KEY, name VARCHAR(20))
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN code INT CONSTRAINT tech_book_code PRIMARY KEY
+  changeType: 1
+- statement: CREATE TABLE tech_book(id INT, CONSTRAINT pk_tech_book PRIMARY KEY USING INDEX old_index)
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_$" but found "pk_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY USING INDEX no_such_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_$" but found "pk_tech_book_id_name"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE bbdataarchive.tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY USING INDEX old_index
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_$" but found "pk_tech_book_id_name"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book RENAME CONSTRAINT old_uk TO bad;
+    ALTER TABLE tech_book RENAME CONSTRAINT old_index TO bad;
+    ALTER TABLE bbdataarchive.tech_book RENAME CONSTRAINT old_pk TO bad
+  changeType: 1
+- statement: |-
+    ALTER INDEX old_uk RENAME TO bad;
+    ALTER INDEX old_index RENAME TO bad;
+    ALTER INDEX bbdataarchive.old_pk RENAME TO bad
+  changeType: 1
+- statement: ALTER INDEX orders_pkey RENAME TO pk_orders
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "orders" mismatches the naming convention, expect "^$|^pk_orders_order_id$" but found "pk_orders"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE "a(" ADD CONSTRAINT pk_a_x PRIMARY KEY (x)
+  changeType: 1
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for primary key naming convention rule
+      content: 'Failed to compile regex: error parsing regexp: missing closing ): `^$|^pk_a(_x$`'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id INT,
+      name VARCHAR(20),
+      CONSTRAINT name PRIMARY KEY (id)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_id$" but found "name"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id INT,
+      CONSTRAINT Book_Id PRIMARY KEY (id)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 306
+      title: NAMING_INDEX_PK
+      content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_id$" but found "book_id"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
