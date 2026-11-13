@@ -281,3 +281,23 @@
       msg text
     );
   changeType: 1
+- statement: |-
+    TRUNCATE public.t1,
+      t2 RESTART IDENTITY CASCADE;
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "public.t1" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables. RESTART IDENTITY will reset owned sequences.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "t2" is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly. CASCADE will wipe dependent tables. RESTART IDENTITY will reset owned sequences.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

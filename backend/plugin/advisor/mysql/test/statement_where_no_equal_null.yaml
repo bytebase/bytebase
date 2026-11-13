@@ -13,3 +13,22 @@
         line: 1
         column: 0
       endposition: null
+- statement: SELECT * FROM tech_book WHERE id IN (SELECT id FROM t WHERE a = NULL);
+  want:
+    - status: 2
+      code: 221
+      title: STATEMENT_WHERE_NO_EQUAL_NULL
+      content: 'WHERE clause contains equal null: SELECT * FROM tech_book WHERE id IN (SELECT id FROM t WHERE a = NULL);'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 221
+      title: STATEMENT_WHERE_NO_EQUAL_NULL
+      content: 'WHERE clause contains equal null: SELECT * FROM tech_book WHERE id IN (SELECT id FROM t WHERE a = NULL);'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM tech_book WHERE NULL = id OR id <=> NULL;

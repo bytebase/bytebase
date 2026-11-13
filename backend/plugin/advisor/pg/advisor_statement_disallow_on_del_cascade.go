@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ON_DEL_CASCADE, &StatementDisallowOnDelCascadeAdvisor{})
 }
 
-// StatementDisallowOnDelCascadeAdvisor is the advisor checking for ON DELETE CASCADE.
+// StatementDisallowOnDelCascadeAdvisor is the advisor checking for ON DELETE
+// CASCADE. The judgment lives in omni
+// (pg/v1review.StatementDisallowOnDelCascade); this adapter renders its
+// findings as advice.
 type StatementDisallowOnDelCascadeAdvisor struct {
 }
 
@@ -29,79 +34,25 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 
-	rule := &statementDisallowOnDelCascadeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowOnDelCascadeRule struct {
-	BaseRule
-}
-
-func (*statementDisallowOnDelCascadeRule) Name() string {
-	return "statement.disallow-on-delete-cascade"
-}
-
-func (r *statementDisallowOnDelCascadeRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.checkCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *statementDisallowOnDelCascadeRule) checkCreateStmt(create *ast.CreateStmt) {
-	_, constraints := tableElements(create)
-	for _, c := range constraints {
-		if c.Contype == ast.CONSTR_FOREIGN && c.FkDelaction == 'c' {
-			r.addCascadeAdvice()
-			return
-		}
-	}
-	// Also check column-level FK constraints.
-	cols, _ := tableElements(create)
-	for _, col := range cols {
-		for _, c := range columnConstraints(col) {
-			if c.Contype == ast.CONSTR_FOREIGN && c.FkDelaction == 'c' {
-				r.addCascadeAdvice()
-				return
-			}
-		}
-	}
-}
-
-func (r *statementDisallowOnDelCascadeRule) checkAlterTableStmt(alter *ast.AlterTableStmt) {
-	for _, cmd := range alterTableCmds(alter) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		constraint, ok := cmd.Def.(*ast.Constraint)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		if constraint.Contype == ast.CONSTR_FOREIGN && constraint.FkDelaction == 'c' {
-			r.addCascadeAdvice()
-			return
+		for range pgv1review.StatementDisallowOnDelCascade([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowCascade.Int32(),
+				Title:         title,
+				Content:       "The CASCADE option is not permitted for ON DELETE clauses",
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
 		}
 	}
-}
-
-func (r *statementDisallowOnDelCascadeRule) addCascadeAdvice() {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.StatementDisallowCascade.Int32(),
-		Title:   r.Title,
-		Content: "The CASCADE option is not permitted for ON DELETE clauses",
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

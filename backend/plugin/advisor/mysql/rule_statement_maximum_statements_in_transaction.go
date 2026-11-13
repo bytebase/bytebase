@@ -3,7 +3,6 @@ package mysql
 import (
 	"context"
 
-	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,6 +17,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_MAXIMUM_STATEMENTS_IN_TRANSACTION, &StatementMaximumStatementsInTransactionAdvisor{})
 }
 
+// StatementMaximumStatementsInTransactionAdvisor validates the rule's level
+// and number payload and reports nothing: the MySQL rule has never judged
+// statements.
 type StatementMaximumStatementsInTransactionAdvisor struct {
 }
 
@@ -30,23 +32,5 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(_ context.Context, 
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
-	rule := &maxStmtsInTxnRule{
-		BaseRule: BaseRule{},
-	}
-
-	// This rule was a no-op in ANTLR (OnEnter only stored text, no advice generated).
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type maxStmtsInTxnRule struct {
-	BaseRule
-}
-
-func (*maxStmtsInTxnRule) Name() string {
-	return "StatementMaximumStatementsInTransactionRule"
-}
-
-func (*maxStmtsInTxnRule) OnStatement(_ ast.Node) {
-	// The original ANTLR rule only stored query text but never generated advice.
+	return nil, nil
 }

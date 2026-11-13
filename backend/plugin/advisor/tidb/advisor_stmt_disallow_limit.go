@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,8 @@ func init() {
 }
 
 // StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
+// The judgment lives in omni (tidb/v1review.StatementDisallowLimit); this
+// adapter renders its findings as advice.
 type StatementDisallowLimitAdvisor struct {
 }
 
@@ -36,48 +39,23 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
+	title := checkCtx.Rule.Type.String()
 	var adviceList []*storepb.Advice
+	codes := map[string]advisorcode.Code{
+		"INSERT": advisorcode.InsertUseLimit,
+		"UPDATE": advisorcode.UpdateUseLimit,
+		"DELETE": advisorcode.DeleteUseLimit,
+	}
 	for _, ostmt := range stmts {
-		code := advisorcode.Ok
-		switch n := ostmt.Node.(type) {
-		case *ast.UpdateStmt:
-			if n.Limit != nil {
-				code = advisorcode.UpdateUseLimit
-			}
-		case *ast.DeleteStmt:
-			if n.Limit != nil {
-				code = advisorcode.DeleteUseLimit
-			}
-		case *ast.InsertStmt:
-			if insertUsesLimit(n) {
-				code = advisorcode.InsertUseLimit
-			}
-		default:
-		}
-
-		if code != advisorcode.Ok {
+		for _, f := range tidbv1review.StatementDisallowLimit([]ast.Node{ostmt.Node}) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
-				Code:          code.Int32(),
-				Title:         checkCtx.Rule.Type.String(),
+				Code:          codes[f.Name].Int32(),
+				Title:         title,
 				Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", ostmt.TrimmedText()),
 				StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			})
 		}
 	}
-
 	return adviceList, nil
-}
-
-// insertUsesLimit reports whether an INSERT ... SELECT carries a LIMIT
-// on its inner SELECT. omni unifies the SELECT and UNION/INTERSECT/EXCEPT
-// forms under a single SelectStmt with a SetOp field, so checking
-// SelectStmt.Limit covers both pingcap's *SelectStmt and *SetOprStmt cases.
-//
-// Only the outermost LIMIT is checked. A LIMIT nested inside a
-// parenthesized UNION arm (e.g.
-// "INSERT INTO t (SELECT a FROM x LIMIT 3) UNION SELECT b FROM y") lives
-// on Left.Limit, not on the outer .Limit; this matches pingcap parity.
-func insertUsesLimit(n *ast.InsertStmt) bool {
-	return n.Select != nil && n.Select.Limit != nil
 }

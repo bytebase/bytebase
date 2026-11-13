@@ -38,3 +38,22 @@
         line: 7
         column: 0
       endposition: null
+- statement: |-
+    /* end the batch */
+    COMMIT AND CHAIN;
+  want:
+    - status: 2
+      code: 206
+      title: STATEMENT_DISALLOW_COMMIT
+      content: |-
+        Commit is not allowed, related statement: "/* end the batch */
+        COMMIT AND CHAIN;"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE PROCEDURE p()
+    BEGIN
+      COMMIT;
+    END;

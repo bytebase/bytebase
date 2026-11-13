@@ -3,13 +3,14 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var _ advisor.Advisor = (*StatementDisallowTruncateAdvisor)(nil)
@@ -18,6 +19,9 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE, &StatementDisallowTruncateAdvisor{})
 }
 
+// StatementDisallowTruncateAdvisor is the advisor disallowing TRUNCATE. The
+// judgment lives in omni (mssql/v1review.StatementDisallowTruncate); this
+// adapter renders its findings as advice.
 type StatementDisallowTruncateAdvisor struct{}
 
 func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -25,40 +29,29 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	rule := &statementDisallowTruncateRule{
-		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
 
-type statementDisallowTruncateRule struct{ BaseRule }
-
-func (*statementDisallowTruncateRule) Name() string { return "StatementDisallowTruncateRule" }
-
-func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.TruncateStmt)
-	if !ok || n.Table == nil {
-		return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mssqlv1review.StatementDisallowTruncate([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status: level,
+				Code:   code.StatementDisallowTruncate.Int32(),
+				Title:  title,
+				Content: fmt.Sprintf(
+					`TRUNCATE TABLE %q is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.`,
+					f.Table,
+				),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
+		}
 	}
-	// Carveout: MSSQL temp tables. Local `#t` is session-scoped; global `##t`
-	// is visible across sessions but lives only until the creator disconnects
-	// (and is never persisted). Both are safe targets for TRUNCATE, so skip
-	// any object whose name begins with '#'.
-	if strings.HasPrefix(n.Table.Object, "#") {
-		return
-	}
-	name := n.Table.Object
-	if n.Table.Schema != "" {
-		name = n.Table.Schema + "." + n.Table.Object
-	}
-	r.AddAdvice(&storepb.Advice{
-		Status: r.Level,
-		Code:   code.StatementDisallowTruncate.Int32(),
-		Title:  r.Title,
-		Content: fmt.Sprintf(
-			`TRUNCATE TABLE %q is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.`,
-			name,
-		),
-		StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
-	})
+	return adviceList, nil
 }

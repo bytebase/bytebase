@@ -79,26 +79,6 @@ func getInsertedRows(res []any) (int64, error) {
 	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
 }
 
-// hasDataModifyingCTE reports whether a WITH clause contains INSERT, UPDATE, DELETE, or MERGE.
-// PostgreSQL only allows data-modifying statements in a top-level WITH.
-func hasDataModifyingCTE(with *ast.WithClause) bool {
-	if with == nil || with.Ctes == nil {
-		return false
-	}
-	for _, item := range with.Ctes.Items {
-		cte, ok := item.(*ast.CommonTableExpr)
-		if !ok {
-			continue
-		}
-		switch cte.Ctequery.(type) {
-		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-			return true
-		default:
-		}
-	}
-	return false
-}
-
 // rangeVarTableName extracts the table name from a RangeVar.
 func rangeVarTableName(rv *ast.RangeVar) string {
 	if rv == nil {

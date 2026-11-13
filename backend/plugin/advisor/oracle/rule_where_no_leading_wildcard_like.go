@@ -3,14 +3,15 @@ package oracle
 
 import (
 	"context"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -22,6 +23,8 @@ func init() {
 }
 
 // WhereNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
+// The judgment lives in omni (oracle/v1review.StatementWhereNoLeadingWildcardLike); this adapter
+// renders its findings as advice.
 type WhereNoLeadingWildcardLikeAdvisor struct {
 }
 
@@ -32,51 +35,25 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := NewWhereNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// WhereNoLeadingWildcardLikeRule is the rule implementation for no leading wildcard LIKE.
-type WhereNoLeadingWildcardLikeRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewWhereNoLeadingWildcardLikeRule creates a new WhereNoLeadingWildcardLikeRule.
-func NewWhereNoLeadingWildcardLikeRule(level storepb.Advice_Status, title string, currentDatabase string) *WhereNoLeadingWildcardLikeRule {
-	return &WhereNoLeadingWildcardLikeRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*WhereNoLeadingWildcardLikeRule) Name() string {
-	return "where.no-leading-wildcard-like"
-}
-
-// OnStatement checks LIKE predicates in the omni AST.
-func (r *WhereNoLeadingWildcardLikeRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		like, ok := n.(*ast.LikeExpr)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
 		if !ok {
-			return
+			continue
 		}
-		pattern, ok := like.Pattern.(*ast.StringLiteral)
-		if !ok || !strings.HasPrefix(pattern.Val, "%") {
-			return
+		for _, f := range oraclev1review.StatementWhereNoLeadingWildcardLike([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementLeadingWildcardLike.Int32(),
+				Title:         title,
+				Content:       "Avoid using leading wildcard LIKE.",
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-		r.AddAdvice(
-			r.level,
-			code.StatementLeadingWildcardLike.Int32(),
-			"Avoid using leading wildcard LIKE.",
-			base.ConvertANTLRLineToPosition(r.locLine(like.Loc)),
-		)
-	})
+	}
+	return adviceList, nil
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.
