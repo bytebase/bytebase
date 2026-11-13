@@ -44,6 +44,7 @@ import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
 import {
   parsePreparedAccessGrantDraft,
+  withDefaultAccessGrantReason,
   withPreparedAccessGrantReason,
 } from "../logic/justInTime";
 import {
@@ -2131,23 +2132,25 @@ export function AgentInput({
         const queryCalls = getCurrentTurnQueryCalls(
           useAgentStore.getState().getMessages(chatId)
         );
-        const accessRequestDraft = withPreparedAccessGrantReason(
-          !capability &&
-            outcome.kind === "completed" &&
-            (!outcome.success ||
-              (maskingDraftIds.length === 0 &&
-                exemptionDraftIds.length === 0 &&
-                semanticTypeDraftIds.length === 0))
-            ? outcome.success && preparedAccessRequestDraft
-              ? preparedAccessRequestDraft
-              : queryCalls.length === 1 && queryCalls[0].result !== undefined
-                ? await resolveDeniedQueryAccessDraft(
-                    queryCalls[0].args,
-                    queryCalls[0].result
-                  ).catch(() => undefined)
-                : undefined
-            : undefined,
-          preparedAccessRequestDraft
+        const accessRequestDraft = withDefaultAccessGrantReason(
+          withPreparedAccessGrantReason(
+            !capability &&
+              outcome.kind === "completed" &&
+              (!outcome.success ||
+                (maskingDraftIds.length === 0 &&
+                  exemptionDraftIds.length === 0 &&
+                  semanticTypeDraftIds.length === 0))
+              ? outcome.success && preparedAccessRequestDraft
+                ? preparedAccessRequestDraft
+                : queryCalls.length === 1 && queryCalls[0].result !== undefined
+                  ? await resolveDeniedQueryAccessDraft(
+                      queryCalls[0].args,
+                      queryCalls[0].result
+                    ).catch(() => undefined)
+                  : undefined
+              : undefined,
+            preparedAccessRequestDraft
+          )
         );
         if (
           controller.signal.aborted ||

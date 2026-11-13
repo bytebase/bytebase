@@ -56,6 +56,7 @@ import {
   extractAgentExpressionDraft,
 } from "../logic/expressionDraft";
 import { resolveAgentHandoffRoute } from "../logic/handoff";
+import { withDefaultAccessGrantReason } from "../logic/justInTime";
 import type { LandingStarterId } from "../logic/landingStarters";
 import {
   captureAgentPageHandoffContext,
@@ -555,24 +556,9 @@ function AccessRequestDraftButton({
     setLoading(true);
     try {
       if (draft.kind !== "requestRole") {
-        const reasonContext = {
-          database: draft.targets
-            .map((target) => target.split("/").at(-1))
-            .join(", "),
-        };
         if (
           !(await validateDeniedQueryRequestDraft(draft)) ||
-          !onOpenAccessGrantDraft?.({
-            ...draft,
-            reason: draft.reason?.trim()
-              ? draft.reason
-              : draft.unmask
-                ? t(
-                    "agent.access-grant-draft.default-unmask-reason",
-                    reasonContext
-                  )
-                : t("agent.access-grant-draft.default-reason", reasonContext),
-          })
+          !onOpenAccessGrantDraft?.(withDefaultAccessGrantReason(draft))
         ) {
           useAppStore.getState().notify({
             module: "bytebase",

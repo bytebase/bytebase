@@ -1018,7 +1018,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
           reason: {
             type: "string",
             description:
-              "Optional concise factual reason based on the known request; preserve any member-stated rationale verbatim. Never invent business context from SQL or a permission denial. If absent, runtime prefills an editable factual default based on the selected database and Unmask setting when the member opens the draft; no extra question is required.",
+              "Optional concise factual reason based on the known request; preserve any member-stated rationale verbatim. Never invent business context from SQL or a permission denial. If missing or blank, runtime includes an editable factual default based on the selected database and Unmask setting in the draft, so the request form opens with Reason already filled; no extra question is required.",
           },
           targets: {
             type: "array",
@@ -1528,6 +1528,9 @@ export function createToolExecutor(
     workspaceName: options.workspaceName,
     projectName,
     databaseName: referencedDatabase,
+    ...(options.historicalDatabase
+      ? { historicalDatabase: options.historicalDatabase }
+      : {}),
   });
   let observedMaskingRuleDraft: MaskingRuleEditorSnapshot | undefined;
   let observedMaskingExemptionDraft: MaskingExemptionEditorSnapshot | undefined;
@@ -2122,14 +2125,19 @@ export function createToolExecutor(
         const boundProject = isCanonicalProjectName(projectName)
           ? projectName
           : undefined;
-        const selectedProject =
-          typeof args.project === "string" && args.project.trim()
-            ? args.project
-            : boundProject;
         const candidate =
           typeof args.database === "string" && args.database.trim()
             ? args.database
             : undefined;
+        const historical = options.historicalDatabase;
+        const selectedProject =
+          typeof args.project === "string" && args.project.trim()
+            ? args.project
+            : (boundProject ??
+              databaseChoiceProject ??
+              (!candidate && !referencedDatabase
+                ? historical?.project
+                : undefined));
         if (
           Object.keys(args).some(
             (key) =>
@@ -2165,7 +2173,12 @@ export function createToolExecutor(
             workspaceName: options.workspaceName!,
             userName: options.userName,
             projectName: selectedProject,
-            database: referencedDatabase ?? candidate,
+            database:
+              referencedDatabase ??
+              candidate ??
+              (!historical?.project || historical.project === selectedProject
+                ? historical?.database
+                : undefined),
             queryAccessMissing: args.queryAccessMissing as boolean | undefined,
             forCurrentUser: args.forCurrentUser as boolean | undefined,
           });

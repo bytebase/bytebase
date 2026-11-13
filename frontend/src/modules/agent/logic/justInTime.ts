@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
 import { databaseServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import i18n from "@/lib/i18n";
 import type {
   AccessGrantDraft,
   DeniedQueryRequestDraft,
@@ -22,6 +23,30 @@ const isDatabase = (value: unknown): value is string =>
   ) &&
   !value.split("/").includes("-");
 
+export function withDefaultAccessGrantReason(
+  draft: AccessGrantDraft
+): AccessGrantDraft;
+export function withDefaultAccessGrantReason(
+  draft: DeniedQueryRequestDraft | undefined
+): DeniedQueryRequestDraft | undefined;
+export function withDefaultAccessGrantReason(
+  draft: DeniedQueryRequestDraft | undefined
+): DeniedQueryRequestDraft | undefined {
+  if (!draft || draft.kind === "requestRole" || draft.reason?.trim())
+    return draft;
+  const context = {
+    database: draft.targets
+      .map((target) => target.split("/").at(-1))
+      .join(", "),
+  };
+  return {
+    ...draft,
+    reason: draft.unmask
+      ? i18n.t("agent.access-grant-draft.default-unmask-reason", context)
+      : i18n.t("agent.access-grant-draft.default-reason", context),
+  };
+}
+
 export function withPreparedAccessGrantReason(
   draft: DeniedQueryRequestDraft | undefined,
   prepared: AccessGrantDraft | undefined
@@ -32,6 +57,7 @@ export function withPreparedAccessGrantReason(
     draft.project !== prepared.project ||
     draft.sourceDatabase !== prepared.sourceDatabase ||
     draft.statement !== prepared.statement ||
+    Boolean(draft.unmask) !== Boolean(prepared.unmask) ||
     (draft.schema ?? "") !== (prepared.schema ?? "") ||
     (draft.container ?? "") !== (prepared.container ?? "")
   )
@@ -107,6 +133,7 @@ export function createJustInTimeTools(options: {
   workspaceName?: string;
   projectName?: string;
   databaseName?: string;
+  historicalDatabase?: { database: string; project?: string };
 }) {
   const boundProject = isProject(options.projectName)
     ? options.projectName
@@ -117,7 +144,17 @@ export function createJustInTimeTools(options: {
       if (!options.workspaceName)
         return error("A signed-in workspace is required.");
       let project = args.project || boundProject;
-      const databaseName = args.database || options.databaseName;
+      const historical =
+        !args.database &&
+        !options.databaseName &&
+        (!project ||
+          !options.historicalDatabase?.project ||
+          options.historicalDatabase.project === project)
+          ? options.historicalDatabase
+          : undefined;
+      project ||= historical?.project;
+      const databaseName =
+        args.database || options.databaseName || historical?.database;
       if (
         (project && !isProject(project)) ||
         (boundProject && project !== boundProject)
@@ -197,7 +234,10 @@ export function createJustInTimeTools(options: {
         return error(
           "The JIT request is not currently available for this member and target. Refresh get_just_in_time_overview for current eligibility."
         );
-      return JSON.stringify({ status: "unsaved", draft });
+      return JSON.stringify({
+        status: "unsaved",
+        draft: withDefaultAccessGrantReason(draft),
+      });
     },
   };
 }

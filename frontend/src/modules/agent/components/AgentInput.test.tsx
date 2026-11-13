@@ -4869,12 +4869,137 @@ describe("AgentInput", () => {
       await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the access request draft.")).toBe(true));
     });
     const answer = store.getMessages(chat.id).find((message) => message.content === "Review the access request draft.");
-    expect(answer?.metadata?.accessRequestDraft).toEqual(expected ? draft : undefined);
+    expect(answer?.metadata?.accessRequestDraft).toEqual(expected ? {
+      ...draft,
+      reason: "Request temporary query access to app with unmasked results.",
+    } : undefined);
     expect(answer?.metadata?.actions).toBeUndefined();
     expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
     expect(mocks.executeTool).not.toHaveBeenCalledWith("call_api", expect.anything(), expect.anything());
     expect(mocks.routerPush).not.toHaveBeenCalled();
     view.unmount();
+  });
+
+  test.each(
+    ["prepared", "denied-query"].flatMap((source) =>
+      [false, true].flatMap((unmask) =>
+        [
+          { name: "omitted", reason: undefined },
+          { name: "empty", reason: "" },
+          { name: "whitespace", reason: " \n\t " },
+          { name: "supplied", reason: "  Investigate the reported order issue  " },
+        ].map((reason) => ({ source, unmask, ...reason }))
+      )
+    )
+  )(
+    "persists a nonblank reason for a $source Access Grant with $name reason and Unmask=$unmask",
+    async ({ source, unmask, reason }) => {
+      const draft = {
+        kind: "accessGrant" as const,
+        project: "projects/orders",
+        sourceDatabase: "instances/prod/databases/app",
+        targets: ["instances/prod/databases/app"],
+        statement: "SELECT email FROM public.users WHERE id = 42;",
+        schema: "public",
+        unmask,
+        ...(reason !== undefined ? { reason } : {}),
+      };
+      const queryArgs = {
+        operationId: "SQLService/Query",
+        body: { name: draft.sourceDatabase, statement: draft.statement },
+      };
+      const queryResult = JSON.stringify({
+        status: 200,
+        response: { results: [{
+          error: "Permission denied",
+          permissionDenied: { requiredPermissions: ["bb.sql.select"], resources: draft.targets },
+        }] },
+      });
+      mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: queryResult });
+      mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(draft);
+      mocks.runAgentLoop.mockImplementation(async (_history, _tools, executeTool, callbacks) => {
+        callbacks.onAssistantMessage({ toolCalls: [source === "prepared"
+          ? { id: "jit-reason", name: "prepare_access_grant_draft", arguments: "{}" }
+          : { id: "jit-reason", name: "call_api", arguments: JSON.stringify(queryArgs) },
+        ] });
+        if (source === "prepared") {
+          await callbacks.onToolResult("jit-reason", JSON.stringify({ status: "unsaved", draft }));
+        } else {
+          const execution = await executeTool("call_api", queryArgs, "jit-reason");
+          if (execution.kind === "tool_result") {
+            await callbacks.onToolResult("jit-reason", execution.result);
+          }
+        }
+        callbacks.onText("Review the request with its default reason.");
+        return { kind: "completed", success: true, totalTokensUsed: 0, actions: [] };
+      });
+      const store = useAgentStore.getState();
+      const page = { path: "/projects/orders", title: "Orders" };
+      const chat = store.createChat({ context: "projects/orders", page });
+      store.queueUserMessage({ chatId: chat.id, text: "Request temporary query access.", page });
+      const view = renderIntoContainer(<AgentInput />);
+      view.render();
+      try {
+        await act(async () => {
+          await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the request with its default reason.")).toBe(true));
+        });
+        const answer = store.getMessages(chat.id).find((message) => message.content === "Review the request with its default reason.");
+        expect(answer?.metadata?.accessRequestDraft).toEqual({
+          ...draft,
+          reason: reason?.trim()
+            ? reason
+            : unmask
+              ? "Request temporary query access to app with unmasked results."
+              : "Request temporary query access to app.",
+        });
+        expect(mocks.routerPush).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
+  test("preserves a Request Role draft without adding an Access Grant reason", async () => {
+    const draft = {
+      kind: "requestRole" as const,
+      project: "projects/orders",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      resources: ["instances/prod/databases/app/schemas/public/tables/users"],
+      statement: "SELECT email FROM public.users;",
+      requiredPermissions: ["bb.sql.select"],
+    };
+    const queryArgs = {
+      operationId: "SQLService/Query",
+      body: { name: draft.sourceDatabase, statement: "SELECT email FROM public.users;" },
+    };
+    const result = JSON.stringify({ status: 403, error: "Permission denied" });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
+    mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(draft);
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, executeTool, callbacks) => {
+      callbacks.onAssistantMessage({ toolCalls: [{ id: "role-reason", name: "call_api", arguments: JSON.stringify(queryArgs) }] });
+      const execution = await executeTool("call_api", queryArgs, "role-reason");
+      if (execution.kind === "tool_result") {
+        await callbacks.onToolResult("role-reason", execution.result);
+      }
+      callbacks.onText("Request the required role.");
+      return { kind: "completed", success: false, totalTokensUsed: 0, actions: [] };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Query email.", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => {
+        await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Request the required role.")).toBe(true));
+      });
+      const answer = store.getMessages(chat.id).find((message) => message.content === "Request the required role.");
+      expect(answer?.metadata?.accessRequestDraft).toEqual(draft);
+    } finally {
+      view.unmount();
+    }
   });
 
   test.each(
@@ -4944,7 +5069,10 @@ describe("AgentInput", () => {
           await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the prepared access request first.")).toBe(true));
         });
         const answer = store.getMessages(chat.id).find((message) => message.content === "Review the prepared access request first.");
-        expect(answer?.metadata?.accessRequestDraft).toEqual(draft);
+        expect(answer?.metadata?.accessRequestDraft).toEqual({
+          ...draft,
+          reason: "Request temporary query access to app with unmasked results.",
+        });
         expect(answer?.metadata?.actions).toEqual([followUp]);
         expect(answer?.metadata?.handoff).toBeUndefined();
       } finally {
@@ -4991,7 +5119,10 @@ describe("AgentInput", () => {
       await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the latest request.")).toBe(true));
     });
     const answer = store.getMessages(chat.id).find((message) => message.content === "Review the latest request.");
-    expect(answer?.metadata?.accessRequestDraft).toEqual(expected === "jit" ? newestDraft : undefined);
+    expect(answer?.metadata?.accessRequestDraft).toEqual(expected === "jit" ? {
+      ...newestDraft,
+      reason: "Request temporary query access to app with unmasked results.",
+    } : undefined);
     expect(answer?.metadata?.actions).toEqual(expected === "masking" ? [{ kind: "draft-masking-rule", draftId: "new-mask" }] : undefined);
     view.unmount();
   });
@@ -5126,7 +5257,10 @@ describe("AgentInput", () => {
       const resume = [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.retry-last-chat-turn");
       await act(async () => { resume?.click(); await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
       const answer = store.getMessages(chat.id).find((message) => message.content === "Review the resumed access request.");
-      expect(answer?.metadata?.accessRequestDraft).toEqual(withWrite ? undefined : draft);
+      expect(answer?.metadata?.accessRequestDraft).toEqual(withWrite ? undefined : {
+        ...draft,
+        reason: "Request temporary query access to app with unmasked results.",
+      });
       expect(store.getMessages(chat.id).filter((message) => message.toolCallId === "prepared-jit")).toHaveLength(1);
       expect(mocks.executeTool).toHaveBeenCalledTimes(executionCount);
     } finally {
@@ -5159,6 +5293,66 @@ describe("AgentInput", () => {
     expect(answer?.metadata?.actions).toBeUndefined();
     expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
     view.unmount();
+  });
+
+  test("regenerates the default reason when an unmasked preparation falls back to ordinary query access", async () => {
+    const draft = {
+      kind: "accessGrant" as const,
+      project: "projects/orders",
+      sourceDatabase: "instances/prod/databases/app",
+      targets: ["instances/prod/databases/app"],
+      statement: "SELECT email FROM public.users WHERE id = 42;",
+      schema: "public",
+      unmask: false,
+    };
+    const preparedDraft = {
+      ...draft,
+      unmask: true,
+      reason: "Request temporary query access to app with unmasked results.",
+    };
+    const args = {
+      operationId: "SQLService/Query",
+      body: { name: draft.sourceDatabase, statement: draft.statement },
+    };
+    const result = JSON.stringify({
+      status: 200,
+      response: { results: [{
+        error: "Permission denied",
+        permissionDenied: { requiredPermissions: ["bb.sql.select"], resources: draft.targets },
+      }] },
+    });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
+    mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(draft);
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, executeTool, callbacks) => {
+      callbacks.onAssistantMessage({ toolCalls: [{ id: "fallback-query", name: "call_api", arguments: JSON.stringify(args) }] });
+      const execution = await executeTool("call_api", args, "fallback-query");
+      if (execution.kind === "tool_result") {
+        await callbacks.onToolResult("fallback-query", execution.result);
+      }
+      callbacks.onAssistantMessage({ toolCalls: [{ id: "unmasked-prepare", name: "prepare_access_grant_draft", arguments: "{}" }] });
+      await callbacks.onToolResult("unmasked-prepare", JSON.stringify({ status: "unsaved", draft: preparedDraft }));
+      callbacks.onText("Review the ordinary query access request.");
+      return { kind: "completed", success: false, totalTokensUsed: 0, actions: [] };
+    });
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    store.queueUserMessage({ chatId: chat.id, text: "Query email, then request unmasked access.", page });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => {
+        await vi.waitFor(() => expect(store.getMessages(chat.id).some((message) => message.content === "Review the ordinary query access request.")).toBe(true));
+      });
+      const answer = store.getMessages(chat.id).find((message) => message.content === "Review the ordinary query access request.");
+      expect(answer?.metadata?.accessRequestDraft).toEqual({
+        ...draft,
+        reason: "Request temporary query access to app.",
+      });
+      expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(args, result);
+    } finally {
+      view.unmount();
+    }
   });
 
   test.each([
@@ -5198,7 +5392,7 @@ describe("AgentInput", () => {
     const preparedDraft = {
       ...draft,
       kind: "accessGrant",
-      unmask: true,
+      unmask: false,
       reason: "Investigate the reported order issue",
     };
     mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
@@ -5275,7 +5469,7 @@ describe("AgentInput", () => {
       prepared && success
         ? preparedDraft
         : denied
-          ? { ...draft, ...(prepared ? { reason: preparedDraft.reason } : {}) }
+          ? { ...draft, reason: prepared ? preparedDraft.reason : "Request temporary query access to app." }
           : undefined
     );
     view.unmount();
@@ -5377,7 +5571,7 @@ describe("AgentInput", () => {
         .getMessages(chatId)
         .find((message) => message.content === "The API denied the query.")
         ?.metadata?.accessRequestDraft
-    ).toEqual(draft);
+    ).toEqual({ ...draft, reason: "Request temporary query access to app." });
     expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
       args,
       result

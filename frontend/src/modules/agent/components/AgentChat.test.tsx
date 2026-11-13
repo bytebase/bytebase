@@ -1,6 +1,7 @@
-import { within } from "@testing-library/react";
+import { fireEvent, within } from "@testing-library/react";
+import { createInstance } from "i18next";
 import type { ReactElement } from "react";
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -11,6 +12,8 @@ import {
   PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK,
   SETTING_ROUTE_WORKSPACE_GENERAL,
 } from "@/app/router/handles";
+import enUS from "@/locales/en-US.json";
+import type { AccessGrantDraft } from "@/modules/sql-editor/model/accessGrantDraft";
 import { reactI18nextStub } from "@/test-utils/i18n";
 import type { RequestRoleDraft } from "../logic/deniedQueryAccess";
 import { registerAgentExpressionTarget } from "../logic/expressionDraft";
@@ -161,10 +164,15 @@ vi.mock("@/app/router", async (importOriginal) => {
   };
 });
 
-vi.mock("@/utils", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/utils")>()),
-  hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
-}));
+vi.mock("@/utils", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/utils")>();
+  return {
+    ...original,
+    extractDatabaseResourceName: (resource: string) =>
+      original.extractDatabaseResourceName(resource),
+    hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
+  };
+});
 
 vi.mock("@/lib/clipboard", () => ({
   writeTextToClipboard: mocks.writeTextToClipboard,
@@ -173,6 +181,7 @@ vi.mock("@/lib/clipboard", () => ({
 vi.mock("@/stores/app", () => {
   const state = {
     getSettingByName: mocks.getSettingByName,
+    getWorkspaceProfile: () => ({}),
     currentUser: { name: "users/member@example.com" },
     workspaceResourceName: () => "workspaces/demo",
     get serverInfo() {
@@ -185,6 +194,16 @@ vi.mock("@/stores/app", () => {
   useAppStore.getState = () => state;
   return { useAppStore };
 });
+
+vi.mock("@/components/DatabaseSelect", () => ({
+  DatabaseSelect: ({ value }: { value: string[] }) => (
+    <div>{value.join(", ")}</div>
+  ),
+}));
+
+vi.mock("@/components/monaco/MonacoEditor", () => ({
+  MonacoEditor: ({ content }: { content: string }) => <pre>{content}</pre>,
+}));
 
 vi.mock("../logic/semanticTypeDraft", () => ({
   getSemanticTypeDraft: mocks.getSemanticTypeDraft,
@@ -1195,7 +1214,7 @@ describe("AgentChat", () => {
     expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
     expect(onOpenAccessGrantDraft).toHaveBeenCalledWith({
       ...draft,
-      reason: "agent.access-grant-draft.default-unmask-reason",
+      reason: "Request temporary query access to app with unmasked results.",
     });
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
     expect(mocks.routerPush).not.toHaveBeenCalled();
@@ -1239,7 +1258,9 @@ describe("AgentChat", () => {
             ...draft,
             reason: reason?.trim()
               ? reason
-              : `agent.access-grant-draft.${unmask ? "default-unmask-reason" : "default-reason"} {"database":"app"}`,
+              : unmask
+                ? "Request temporary query access to app with unmasked results."
+                : "Request temporary query access to app.",
           });
           expect(draft.reason).toBe(reason);
           expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
@@ -1247,6 +1268,116 @@ describe("AgentChat", () => {
           expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
         } finally {
           unmount();
+        }
+      }
+    );
+
+    test.each([undefined, "", " \n ", "  Investigate the reported discrepancy.\n"])(
+      "opens the actual request form with an editable English Reason from %j",
+      async (reason) => {
+        const actualI18next = await vi.importActual<typeof import("react-i18next")>(
+          "react-i18next"
+        );
+        const i18n = createInstance();
+        await i18n.init({
+          lng: "en-US",
+          fallbackLng: "en-US",
+          resources: { "en-US": { translation: enUS } },
+          interpolation: { escapeValue: false },
+        });
+        mocks.useTranslation.mockImplementation(() => {
+          const translation = actualI18next.useTranslation();
+          return { t: translation.t, i18n: translation.i18n };
+        });
+        const { AccessGrantRequestDrawer } = await import(
+          "@/modules/access-control/AccessGrantRequestDrawer"
+        );
+        const { accessGrantServiceClientConnect } = await import("@/api");
+        const createGrant = vi.spyOn(
+          accessGrantServiceClientConnect,
+          "createAccessGrant"
+        );
+        const draft: AccessGrantDraft = {
+          project: "projects/sample",
+          sourceDatabase: "projects/sample/instances/prod/databases/app",
+          targets: ["projects/sample/instances/prod/databases/app"],
+          statement: "SELECT id FROM orders",
+          unmask,
+          reason,
+        };
+        const store = useAgentStore.getState();
+        const chat = store.createChat({ context: draft.project });
+        store.addMessage({
+          chatId: chat.id,
+          role: "assistant",
+          content: "Review the access request draft.",
+          metadata: { accessRequestDraft: draft },
+        });
+        function DraftHost() {
+          const [opened, setOpened] = useState<AccessGrantDraft>();
+          return (
+            <>
+              <AgentChat
+                onOpenAccessGrantDraft={(next) => {
+                  setOpened(next);
+                  return true;
+                }}
+              />
+              {opened && (
+                <AccessGrantRequestDrawer
+                  project={opened.project}
+                  targets={opened.targets}
+                  query={opened.statement}
+                  unmask={opened.unmask}
+                  reason={opened.reason}
+                  onClose={() => setOpened(undefined)}
+                />
+              )}
+            </>
+          );
+        }
+        const { container, render, unmount } = renderIntoContainer(
+          <actualI18next.I18nextProvider i18n={i18n}>
+            <DraftHost />
+          </actualI18next.I18nextProvider>
+        );
+        try {
+          render();
+          await act(async () => {
+            container.querySelector<HTMLButtonElement>(
+              "[data-agent-action-request-access]"
+            )?.click();
+          });
+          const dialog = within(document.body).getByRole("dialog");
+          const reasonInput = within(dialog).getByRole<HTMLTextAreaElement>(
+            "textbox"
+          );
+          const submit = within(dialog).getByRole("button", { name: "Submit" });
+          const expectedReason = reason?.trim()
+            ? reason
+            : unmask
+              ? "Request temporary query access to app with unmasked results."
+              : "Request temporary query access to app.";
+          expect(reasonInput).toHaveValue(expectedReason);
+          expect(submit).toBeEnabled();
+          act(() => {
+            fireEvent.change(reasonInput, {
+              target: { value: "Investigate a reported discrepancy." },
+            });
+          });
+          expect(reasonInput).toHaveValue("Investigate a reported discrepancy.");
+          expect(submit).toBeEnabled();
+          act(() => {
+            fireEvent.change(reasonInput, { target: { value: "" } });
+          });
+          expect(reasonInput).toHaveValue("");
+          expect(submit).toBeDisabled();
+          expect(createGrant).not.toHaveBeenCalled();
+          expect(mocks.routerPush).not.toHaveBeenCalled();
+          expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+        } finally {
+          unmount();
+          createGrant.mockRestore();
         }
       }
     );

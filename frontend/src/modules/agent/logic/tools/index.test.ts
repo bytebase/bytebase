@@ -585,6 +585,63 @@ describe("unmask method choices", () => {
     });
   });
 
+  test.each([project, "workspaces/example"])(
+    "retains the previous query database for unmask follow-ups in %s",
+    async (context) => {
+      const execute = executor({
+        context,
+        historicalDatabase: { database, project },
+      });
+      const result = await execute(
+        "ask_unmask_method",
+        { queryAccessMissing: true },
+        "method"
+      );
+      expect(result.kind).toBe("tool_result");
+      if (result.kind !== "tool_result") throw new Error("Expected a method");
+      expect(JSON.parse(result.result)).toMatchObject({
+        method: "just-in-time",
+        project,
+        database,
+        needsScope: false,
+      });
+    }
+  );
+
+  test("does not reuse a historical database from another project", async () => {
+    const result = await executor({
+      historicalDatabase: { database, project: "projects/other" },
+    })("ask_unmask_method", { queryAccessMissing: true }, "method");
+    expect(result.kind).toBe("tool_result");
+    if (result.kind !== "tool_result") throw new Error("Expected a method");
+    expect(JSON.parse(result.result)).not.toHaveProperty("database");
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
+  });
+
+  test("revalidates the historical database before continuing an unmask request", async () => {
+    resourceChoiceApi.validate.mockResolvedValue([]);
+    const result = await executor({
+      historicalDatabase: { database, project },
+    })("ask_unmask_method", { queryAccessMissing: true }, "method");
+    expect(result).toMatchObject({
+      kind: "tool_result",
+      result: expect.stringContaining("unavailable in this project"),
+    });
+  });
+
+  test("uses the current database instead of historical context", async () => {
+    const result = await executor({
+      referencedDatabase: database,
+      historicalDatabase: {
+        database: "instances/prod/databases/previous",
+        project,
+      },
+    })("ask_unmask_method", { queryAccessMissing: true }, "method");
+    expect(result.kind).toBe("tool_result");
+    if (result.kind !== "tool_result") throw new Error("Expected a method");
+    expect(JSON.parse(result.result)).toHaveProperty("database", database);
+  });
+
   test.each([
     { project: "projects/other" },
     { project: "projects/-" },
@@ -660,6 +717,83 @@ describe("unmask method choices", () => {
 });
 
 describe("JIT tools", () => {
+  test.each(["projects/sample", "workspaces/example"])(
+    "keeps a successful query's database through the unmask follow-up in %s",
+    async (context) => {
+      const actual =
+        await vi.importActual<typeof import("../justInTime")>("../justInTime");
+      jitApi.create.mockImplementationOnce(actual.createJustInTimeTools);
+      const database = "instances/main/databases/orders";
+      databaseApi.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: database,
+          project: "projects/sample",
+          state: State.ACTIVE,
+        })
+      );
+      const message = {
+        chatId: "chat",
+        createdTs: 1,
+      };
+      const messages: AgentMessage[] = [
+        {
+          ...message,
+          id: "query-question",
+          role: "user",
+          content: "Query orders",
+          metadata: {
+            resourceReference: {
+              kind: "database",
+              name: database,
+              project: "projects/sample",
+              label: "orders",
+            },
+          },
+        },
+        {
+          ...message,
+          id: "query-call",
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "query",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "SQLService/Query",
+                body: { name: database, statement: "SELECT * FROM people" },
+              }),
+            },
+          ],
+        },
+        {
+          ...message,
+          id: "query-result",
+          role: "tool",
+          toolCallId: "query",
+          content: JSON.stringify({ status: 200, response: { results: [] } }),
+        },
+        {
+          ...message,
+          id: "follow-up",
+          role: "user",
+          content: "How to access unmasked first_name?",
+        },
+      ];
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context,
+        workspaceName: "workspaces/example",
+        historicalDatabase: getHistoricalMaskingDatabase(messages, context),
+      });
+      const result = await execute("get_just_in_time_overview", {}, "overview");
+      expect(result.kind).toBe("tool_result");
+      if (result.kind !== "tool_result") throw new Error("Expected overview");
+      expect(JSON.parse(result.result)).toMatchObject({
+        project: "projects/sample",
+        database,
+      });
+    }
+  );
+
   test("offers typed overview and draft tools in normal chats", () => {
     const definitions = getToolDefinitions();
     expect(definitions.map(({ name }) => name)).toEqual(

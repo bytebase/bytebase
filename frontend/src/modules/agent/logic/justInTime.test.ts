@@ -48,7 +48,6 @@ describe("withPreparedAccessGrantReason", () => {
   const prepared = {
     ...fallback,
     reason: "  Investigate a discrepancy.\n",
-    unmask: true,
   };
 
   test("copies only the exact reason without mutating or broadening the fallback", () => {
@@ -71,6 +70,7 @@ describe("withPreparedAccessGrantReason", () => {
     { targets: ["instances/main/databases/other"] },
     { schema: "public" },
     { container: "other" },
+    { unmask: true },
   ])("does not merge a mismatched proposal %j", (change) => {
     expect(
       withPreparedAccessGrantReason(fallback, { ...prepared, ...change })
@@ -128,6 +128,68 @@ describe("JIT overview", () => {
       }).overview({ database })
     );
     expect(result.project).toBe(project);
+  });
+
+  test.each([project, undefined])(
+    "reuses and freshly verifies the previous query database with bound project %j",
+    async (projectName) => {
+      const result = JSON.parse(
+        await createJustInTimeTools({
+          workspaceName: "workspaces/example",
+          projectName,
+          historicalDatabase: { database, project },
+        }).overview({})
+      );
+      expect(result).toMatchObject({ project, database });
+      expect(api.database).toHaveBeenCalledWith(
+        expect.objectContaining({ name: database }),
+        expect.anything()
+      );
+    }
+  );
+
+  test("does not carry a historical database into a different project", async () => {
+    const result = JSON.parse(
+      await createJustInTimeTools({
+        workspaceName: "workspaces/example",
+        projectName: "projects/other",
+        historicalDatabase: { database, project },
+      }).overview({})
+    );
+    expect(result).not.toHaveProperty("database");
+    expect(api.database).not.toHaveBeenCalled();
+  });
+
+  test("rejects historical database ownership that changed after the query", async () => {
+    api.database.mockResolvedValue(
+      create(DatabaseSchema$, {
+        name: database,
+        project: "projects/other",
+        state: State.ACTIVE,
+      })
+    );
+    const result = JSON.parse(
+      await createJustInTimeTools({
+        workspaceName: "workspaces/example",
+        historicalDatabase: { database, project },
+      }).overview({})
+    );
+    expect(result).toHaveProperty("error");
+    expect(api.setup).not.toHaveBeenCalled();
+  });
+
+  test("allows an explicit database to replace historical context without rebinding the turn", async () => {
+    const result = JSON.parse(
+      await createJustInTimeTools({
+        workspaceName: "workspaces/example",
+        projectName: project,
+        historicalDatabase: {
+          database: "instances/main/databases/previous",
+          project,
+        },
+      }).overview({ database })
+    );
+    expect(result).toMatchObject({ project, database });
   });
 
   test.each([
@@ -194,15 +256,45 @@ describe("JIT draft preparation", () => {
       await tools().prepare({ ...proposal, unmask: false })
     );
     expect(draft).toMatchObject({ targets: [database], unmask: false });
-    expect(draft).not.toHaveProperty("reason");
+    expect(draft?.reason).toBe("Request temporary query access to app.");
   });
 
-  test("preserves an explicitly empty reason for completion in the request form", async () => {
-    expect(
-      parsePreparedAccessGrantDraft(
-        await tools().prepare({ ...proposal, reason: "" })
-      )
-    ).toHaveProperty("reason", "");
+  test.each([false, true])(
+    "persists a default reason for every blank reason with Unmask=%s",
+    async (unmask) => {
+      for (const reason of [undefined, "", " \n "]) {
+        const draft = parsePreparedAccessGrantDraft(
+          await tools().prepare({ ...proposal, unmask, reason })
+        );
+        expect(draft).toEqual({
+          kind: "accessGrant",
+          project,
+          sourceDatabase: database,
+          targets: [database],
+          statement: proposal.statement,
+          unmask,
+          reason: unmask
+            ? "Request temporary query access to app with unmasked results."
+            : "Request temporary query access to app.",
+        });
+      }
+    }
+  );
+
+  test("includes each exact target in the generated reason without changing query scope", async () => {
+    const draft = parsePreparedAccessGrantDraft(
+      await tools().prepare({
+        ...proposal,
+        targets: [database, "instances/main/databases/archive"],
+      })
+    );
+    expect(draft).toMatchObject({
+      targets: [database, "instances/main/databases/archive"],
+      statement: proposal.statement,
+      unmask: true,
+      reason:
+        "Request temporary query access to app, archive with unmasked results.",
+    });
   });
 
   test("rejects a non-string reason in a prepared tool result", () => {
