@@ -11,6 +11,7 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/instance_role_service.proto";
@@ -61,6 +62,44 @@ service InstanceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = WRITE;
+  }
+
+  // Discovers Neon branches without persisting the management API key.
+  // Permissions required: bb.instances.create
+  rpc DiscoverNeonBranches(DiscoverNeonBranchesRequest) returns (DiscoverNeonBranchesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances:discoverNeonBranches"
+      body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*}/instances:discoverNeonBranches"
+        body: "*"
+      }
+    };
+    option (bytebase.v1.permission) = "bb.instances.create";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+  }
+
+  // Registers instances resolved from a vendor's control plane. Synchronous;
+  // entries succeed or fail independently and successes are not rolled back.
+  // Registration does not wait for instance synchronization.
+  // Permissions required: bb.instances.create
+  rpc ImportInstances(ImportInstancesRequest) returns (ImportInstancesResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances:import"
+      body: "*"
+      additional_bindings: {
+        post: "/v1/{parent=projects/*}/instances:import"
+        body: "*"
+      }
+    };
+    option (bytebase.v1.permission) = "bb.instances.create";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Prepares a Sample Project Instance for a project.
@@ -535,6 +574,138 @@ message UpdateDataSourceRequest {
   bool allow_missing = 5;
 }
 
+message DiscoverNeonBranchesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, branches are discovered for the
+  // workspace collection.
+  optional string parent = 1 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+  // Used only during this request and never persisted.
+  string api_key = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+  // Neon project filter. Required for project-scoped Neon keys.
+  string project_id = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Defaults to 50. Values above 100 are capped; negative values are invalid.
+  int32 page_size = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Opaque continuation token containing no credentials. The destination and
+  // project filter must match the original request; page size may change.
+  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message DiscoverNeonBranchesResponse {
+  repeated NeonBranch branches = 1;
+  // Only an empty token indicates completion; a page may contain zero branches.
+  string next_page_token = 2;
+  // Projects that could not be enumerated must not be interpreted as empty.
+  repeated NeonProjectDiscoveryFailure failures = 3;
+}
+
+message NeonBranch {
+  string project_id = 1;
+  string project_title = 2;
+  string branch_id = 3;
+  string branch_title = 4;
+  repeated NeonDatabase databases = 5;
+  repeated string roles = 6;
+  // Absent when inspection succeeded and a direct read-write endpoint exists.
+  // Successful discovery does not establish database access or privileges.
+  google.rpc.Status discovery_error = 7;
+}
+
+message NeonDatabase {
+  string name = 1;
+  string owner = 2;
+}
+
+message NeonProjectDiscoveryFailure {
+  string project_id = 1;
+  google.rpc.Status status = 2;
+}
+
+message ImportInstancesRequest {
+  // The parent, which owns this collection of instances.
+  // Format: projects/{project}. If omitted, every entry is created in the
+  // workspace collection; otherwise, every entry is created in this project
+  // collection.
+  optional string parent = 1 [(google.api.resource_reference) = {child_type: "bytebase.com/Instance"}];
+  // Control-plane credential. Required, used only during this request, and
+  // never persisted.
+  oneof credential {
+    NeonCredential neon_credential = 2;
+  }
+  // Between 1 and 20 entries. Every entry's source must belong to the
+  // credential. Duplicate target IDs or sources are rejected before any
+  // creation. Successful entries are not rolled back.
+  repeated InstanceImport imports = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+message NeonCredential {
+  string api_key = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+}
+
+message InstanceImport {
+  // Bytebase instance resource ID. Uniqueness does not provide idempotency.
+  string instance_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // The instance to register, with the same meaning as in CreateInstance.
+  // The source determines engine, vendor, and data_sources, which must be
+  // unset. The workspace license determines activation, so a supplied value
+  // is ignored.
+  Instance instance = 2 [(google.api.field_behavior) = REQUIRED];
+  // Existing database user for the instance's ADMIN data source. The server
+  // derives the host and port from the source.
+  string username = 3 [(google.api.field_behavior) = REQUIRED];
+  // Initial connection target, independent of instance.sync_databases.
+  string connection_database = 4 [(google.api.field_behavior) = REQUIRED];
+  // Omit to let the vendor supply the password. A supplied empty value is invalid.
+  optional string password = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+  // Required. The vendor resource this instance connects to.
+  oneof source {
+    NeonBranchSource neon_branch = 20;
+  }
+}
+
+message NeonBranchSource {
+  string project_id = 1 [(google.api.field_behavior) = REQUIRED];
+  string branch_id = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ImportInstancesResponse {
+  // Exactly one result per entry, in request order.
+  repeated InstanceImportResult results = 1;
+}
+
+message InstanceImportResult {
+  oneof outcome {
+    // Confirms registration, not synchronization.
+    Instance imported = 1;
+    InstanceImportFailure failure = 2;
+  }
+}
+
+message InstanceImportFailure {
+  enum CreationOutcome {
+    CREATION_OUTCOME_UNSPECIFIED = 0;
+    NOT_CREATED = 1;
+    UNKNOWN = 2;
+  }
+  google.rpc.Status status = 1;
+  // Always populated. Unknown outcomes must be reconciled before retrying.
+  CreationOutcome creation_outcome = 2;
+}
+
+// Database service variant, independent of engine and registration method.
+enum Vendor {
+  VENDOR_UNSPECIFIED = 0;
+  NEON = 1;
+}
+
 message SyncDatabases {
   repeated string databases = 1;
 }
@@ -592,6 +763,9 @@ message Instance {
   // Labels are key-value pairs that can be attached to the instance.
   // For example, { "org_group": "infrastructure", "environment": "production" }
   map<string, string> labels = 16;
+
+  // Database service variant. Unspecified retains generic connection behavior.
+  Vendor vendor = 17 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message DataSourceExternalSecret {
