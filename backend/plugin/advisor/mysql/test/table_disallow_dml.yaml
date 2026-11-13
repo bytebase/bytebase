@@ -1,0 +1,59 @@
+- statement: INSERT INTO t VALUES (1);
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: REPLACE INTO db.u VALUES (1);
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table u.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO x SELECT * FROM t;
+- statement: UPDATE x JOIN t ON x.a = t.a SET x.a = 1;
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE x SET a = 1 WHERE a IN (SELECT a FROM t);
+- statement: DELETE x FROM x JOIN t ON x.a = t.a;
+- statement: |-
+    SELECT 1;
+
+    /* c */
+    DELETE FROM t
+      WHERE a = 1;
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table t.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: SELECT * FROM x INTO OUTFILE 't';
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN DELETE FROM t; END;
