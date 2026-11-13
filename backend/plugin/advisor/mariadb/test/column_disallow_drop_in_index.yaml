@@ -75,3 +75,43 @@
         line: 3
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE orders
+      DROP COLUMN note,
+      DROP COLUMN amount;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`orders`.`amount` cannot drop index column'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a INT, b INT, c INT, KEY (a), UNIQUE KEY (b));
+    ALTER TABLE t DROP COLUMN a, DROP COLUMN b;
+    ALTER TABLE t DROP COLUMN c;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`t`.`a` cannot drop index column'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE orders DROP COLUMN Customer_Name;
+- statement: |-
+    CREATE TABLE t(a INT, INDEX (a));
+    DROP TABLE t;
+    ALTER TABLE t DROP COLUMN a;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`t`.`a` cannot drop index column'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

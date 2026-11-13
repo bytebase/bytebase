@@ -58,3 +58,26 @@
 # false-positive fix is documented conceptually in plan-doc cumulative
 # #21 — not pinned via fixture because tech_book's mock catalog doesn't
 # carry BLOB columns and adding one would have cross-engine impact.
+- statement: |-
+    ALTER TABLE tech_book CHANGE COLUMN id id2 BIGINT;
+    ALTER TABLE tech_book CHANGE COLUMN missing m BIGINT;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE tech_book CHANGE COLUMN id id2 BIGINT;" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book MODIFY id INT(11), MODIFY name VARCHAR(255);
+- statement: ALTER TABLE TECH_BOOK MODIFY ID BIGINT, MODIFY creator TEXT;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE TECH_BOOK MODIFY ID BIGINT, MODIFY creator TEXT;" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
