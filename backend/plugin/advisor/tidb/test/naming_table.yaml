@@ -67,3 +67,77 @@
       endposition: null
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy
   changeType: 1
+- statement: |-
+    CREATE TABLE tech_book_copy(id int);
+
+    CREATE TABLE
+      TechBook(id int);
+    ALTER TABLE tech_book
+      RENAME TO
+      LiteraryBook;
+    RENAME TABLE tech_book_copy TO
+      tech_book_backup,
+      literary_book TO
+      BookCopy
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`BookCopy` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME TO test.tech_book_copy
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`test.tech_book_copy` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE `书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍`(id int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍` mismatches table naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍书籍` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXPLAIN ANALYZE ALTER TABLE tech_book RENAME TO TechBook
+  changeType: 1
+- statement: PLAN REPLAYER DUMP EXPLAIN ANALYZE ALTER TABLE tech_book RENAME TO TechBook
+  changeType: 1
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE TechBook(id int); END
+  changeType: 1

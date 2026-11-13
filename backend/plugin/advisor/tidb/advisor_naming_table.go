@@ -3,9 +3,11 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableConventionAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+// NamingTableConventionAdvisor is the advisor checking for table naming
+// convention. The judgment lives in omni (tidb/v1review.NamingTable); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingTableConventionAdvisor struct {
 }
 
@@ -42,87 +47,54 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("naming_payload is required for naming table rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-	checker := &namingTableConventionChecker{
-		level:     level,
-		title:     checkCtx.Rule.Type.String(),
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type namingTableConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-	maxLength  int
-}
-
-func (c *namingTableConventionChecker) checkStmt(ostmt Stmt) {
-	var tableNames []string
-	var line int
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings, err := tidbv1review.NamingTable([]ast.Node{stmt.Node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		tableNames = append(tableNames, n.Table.Name)
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.AlterTableStmt:
-		for _, cmd := range n.Commands {
-			if cmd == nil {
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
+			default:
 				continue
 			}
-			if cmd.Type == ast.ATRenameTable && cmd.NewName != "" {
-				tableNames = append(tableNames, cmd.NewName)
-			}
-		}
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.RenameTableStmt:
-		for _, pair := range n.Pairs {
-			if pair == nil || pair.New == nil {
-				continue
-			}
-			tableNames = append(tableNames, pair.New.Name)
-		}
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	default:
-		return
-	}
-
-	for _, tableName := range tableNames {
-		if !c.format.MatchString(tableName) {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NamingTableConventionMismatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, c.format),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
-			})
-		}
-		if c.maxLength > 0 && len(tableName) > c.maxLength {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
-				Code:          code.NamingTableConventionMismatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, c.maxLength),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(findingOffset(stmt.Text, f))),
 			})
 		}
 	}
+	return adviceList, nil
+}
+
+// findingOffset is the byte offset within the statement text that anchors a
+// finding: the judged name's start, or the statement's first content byte
+// when the AST kept no range for the name.
+func findingOffset(text string, f v1review.Finding) int {
+	if f.Start == 0 && f.End == 0 {
+		if i := strings.IndexFunc(text, func(c rune) bool {
+			return c != ' ' && c != '\t' && c != '\n' && c != '\r'
+		}); i > 0 {
+			return i
+		}
+	}
+	return f.Start
 }
