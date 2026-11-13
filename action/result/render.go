@@ -13,8 +13,13 @@ const (
 	// shownCommands is how many row-changing commands a file lists in the log
 	// and the summary. The output file lists all of them.
 	shownCommands = 10
-	// shownStatementLines caps a failed statement in the log and the summary.
-	shownStatementLines = 30
+	// shownLines and shownLineWidth cap a failed statement and an error in the
+	// log and the summary, by line count and by line length, so that neither a
+	// long script nor a statement written on one line can crowd out the rest.
+	shownLines     = 30
+	shownLineWidth = 200
+	// shortenedNote follows a statement or an error that was cut.
+	shortenedNote = "(shortened; the full text is in the output file and in Bytebase)"
 	// markdownBudget keeps a GitHub step summary under its 1 MiB limit, past
 	// which GitHub drops the whole summary.
 	markdownBudget = 900 << 10
@@ -123,15 +128,20 @@ func RenderMarkdown(r *Result) string {
 	// Failures are written out first and placed after the table, so that a
 	// large rollout spends the budget on them before anything else.
 	var failures strings.Builder
+	var omitted int
 	for _, task := range tasks {
 		if !task.stopped() {
 			continue
 		}
 		block := task.failureMarkdown()
 		if failures.Len()+len(block) > markdownBudget/2 {
-			break
+			omitted++
+			continue
 		}
 		_, _ = failures.WriteString(block)
+	}
+	if omitted > 0 {
+		_, _ = fmt.Fprintf(&failures, "%s are in the output file and [in Bytebase](%s).\n\n", more(omitted, "failure"), r.URL)
 	}
 	budget := markdownBudget - sb.Len() - failures.Len()
 
@@ -352,8 +362,12 @@ func (t *Task) detailLines() []string {
 	} else {
 		lines = append(lines, commandLines(t.Commands)...)
 	}
-	if !errorShown && t.Detail != "" && (t.Status == "FAILED" || t.Status == "CANCELED") {
-		lines = append(lines, strings.Split(strings.TrimSpace(t.Detail), "\n")...)
+	if !errorShown && t.Detail != "" && t.stopped() {
+		detail, cut := shorten(t.Detail)
+		lines = append(lines, detail...)
+		if cut {
+			lines = append(lines, shortenedNote)
+		}
 	}
 	return lines
 }
@@ -467,11 +481,16 @@ func (t *Task) failureMarkdown() string {
 	if file != nil {
 		_, _ = fmt.Fprintf(&sb, "`%s` %s\n\n", file.name(), file.note())
 	}
-	if statement != "" {
-		_, _ = sb.WriteString(fenced("sql", strings.Join(statementLines(statement), "\n")))
+	statementLines, statementCut := shorten(statement)
+	if len(statementLines) > 0 {
+		_, _ = sb.WriteString(fenced("sql", strings.Join(statementLines, "\n")))
 	}
-	if errText != "" {
-		_, _ = sb.WriteString(fenced("text", strings.TrimSpace(errText)))
+	errorLines, errorCut := shorten(errText)
+	if len(errorLines) > 0 {
+		_, _ = sb.WriteString(fenced("text", strings.Join(errorLines, "\n")))
+	}
+	if statementCut || errorCut {
+		_, _ = sb.WriteString(shortenedNote + "\n\n")
 	}
 	if t.URL != "" {
 		_, _ = fmt.Fprintf(&sb, "[Retry or skip this task in Bytebase](%s)\n\n", t.URL)
@@ -544,22 +563,28 @@ func commandLines(commands []*Command) []string {
 }
 
 // failureLines are the failed statement and its error, or nil when the
-// commands carry no error.
+// commands carry no error. Both are shortened; the error is always kept.
 func failureLines(commands []*Command, scopeErr string) []string {
 	for i, command := range commands {
 		if command.Error == "" {
 			continue
 		}
-		lines := statementLines(command.Statement)
+		lines, statementCut := shorten(command.Statement)
 		if len(lines) == 0 {
 			lines = []string{commandLabel(i, command)}
 		}
-		return append(lines, strings.Split(strings.TrimSpace(command.Error), "\n")...)
+		errorLines, errorCut := shorten(command.Error)
+		lines = append(lines, errorLines...)
+		if statementCut || errorCut {
+			lines = append(lines, shortenedNote)
+		}
+		return lines
 	}
-	if scopeErr != "" {
-		return strings.Split(strings.TrimSpace(scopeErr), "\n")
+	lines, cut := shorten(scopeErr)
+	if cut {
+		lines = append(lines, shortenedNote)
 	}
-	return nil
+	return lines
 }
 
 // commandLabel is the command's statement on one line, or its position when
@@ -571,17 +596,39 @@ func commandLabel(index int, command *Command) string {
 	return oneLine(command.Statement, 100)
 }
 
-func statementLines(statement string) []string {
-	statement = strings.TrimSpace(statement)
-	if statement == "" {
-		return nil
+// shorten returns the text's first lines, each cut to shownLineWidth, and
+// whether anything was left out.
+func shorten(text string) ([]string, bool) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, false
 	}
-	lines := strings.Split(statement, "\n")
-	if len(lines) > shownStatementLines {
-		rest := len(lines) - shownStatementLines
-		lines = append(lines[:shownStatementLines:shownStatementLines], "... "+more(rest, "line"))
+	lines := strings.Split(text, "\n")
+	var cut bool
+	if len(lines) > shownLines {
+		rest := len(lines) - shownLines
+		lines = append(lines[:shownLines:shownLines], "... "+more(rest, "line"))
+		cut = true
 	}
-	return lines
+	for i, line := range lines {
+		if short, ok := cutRunes(line, shownLineWidth); ok {
+			lines[i] = short + "..."
+			cut = true
+		}
+	}
+	return lines, cut
+}
+
+// cutRunes returns the first limit characters of s and whether s was longer.
+func cutRunes(s string, limit int) (string, bool) {
+	var n int
+	for i := range s {
+		if n == limit {
+			return s[:i], true
+		}
+		n++
+	}
+	return s, false
 }
 
 func indented(lines []string, indent string) []string {
@@ -604,10 +651,10 @@ func fenced(language, text string) string {
 // oneLine collapses whitespace and cuts the text to limit characters.
 func oneLine(s string, limit int) string {
 	s = strings.Join(strings.Fields(s), " ")
-	if utf8.RuneCountInString(s) <= limit {
-		return s
+	if short, ok := cutRunes(s, limit); ok {
+		return short + "..."
 	}
-	return string([]rune(s)[:limit]) + "..."
+	return s
 }
 
 func rowsText(rows *int64) string {

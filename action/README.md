@@ -135,7 +135,7 @@ These flags are specific to the `rollout` subcommand (`bytebase-action rollout`)
 
 When `rollout` stops waiting, it reports how the rollout stands. The report is written whether the command passes or fails, and it never changes the exit code.
 
--   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error.
+-   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error. A listed statement is cut to one line of 100 characters; a failed statement and its error are cut to 30 lines of 200 characters.
 -   **`--output` file**: the same result under the `result` key, in full.
 -   **GitHub**: the block as the step summary, and an error annotation for each failed database.
 -   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.

@@ -321,7 +321,10 @@ SKIPPED  instances/prod/databases/legacy  by dba@example.com: decommissioned
 Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
 ```
 
-- **Failed tasks come first and in full**: the file, the failed statement and the error.
+- **Failed tasks come first**: the file, the failed statement and the error.
+- **A failed statement and its error are cut to 30 lines of 200 characters**, with a note that the
+  full text is in the output file. The error is always kept, so a statement written on one long
+  line cannot push it out.
 - **Other tasks show one line per file**, then the first ten commands that changed rows and a
   count of the rest.
 - **The failure line names the cause.** `found failed tasks. view on Bytebase` becomes the first
@@ -337,7 +340,8 @@ Rollout: https://bytebase.example.com/projects/example/plans/101/rollout
   statements in a collapsed section. It replaces the stage table and the Release and Plan links.
 - **The table names the database and the instance** in two columns, not as a resource path.
 - **It stays under 1 MiB.** GitHub drops a larger summary. Failed tasks are written first, then
-  rows until the budget ends, then a count of the rest and the link.
+  rows until the budget ends, then a count of the rest and the link. Failures that do not fit are
+  counted too.
 - **One `::error::` annotation per failed task**, through `github.ErrorCommand`, up to GitHub's
   ten per step.
 

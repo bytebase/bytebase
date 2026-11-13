@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/require"
 )
@@ -240,11 +241,84 @@ func TestCommandLinesCountsWhatItLeavesOut(t *testing.T) {
 	require.Equal(t, "and 3 more statements, 3,000 rows", lines[shownCommands])
 }
 
-func TestStatementLinesCutsLongStatements(t *testing.T) {
-	lines := statementLines(strings.Repeat("SELECT 1\n", 40))
+func TestShorten(t *testing.T) {
+	lines, cut := shorten("  SELECT 1;\n")
+	require.Equal(t, []string{"SELECT 1;"}, lines)
+	require.False(t, cut)
 
-	require.Len(t, lines, shownStatementLines+1)
-	require.Equal(t, "... 10 more lines", lines[shownStatementLines])
+	lines, cut = shorten("")
+	require.Empty(t, lines)
+	require.False(t, cut)
+
+	lines, cut = shorten(strings.Repeat("SELECT 1\n", 40))
+	require.Len(t, lines, shownLines+1)
+	require.Equal(t, "... 10 more lines", lines[shownLines])
+	require.True(t, cut)
+
+	// A statement written on one line is cut by width, on a character boundary.
+	lines, cut = shorten("INSERT INTO t VALUES " + strings.Repeat("('你好'), ", 100000))
+	require.Len(t, lines, 1)
+	require.True(t, strings.HasSuffix(lines[0], "..."))
+	require.Equal(t, shownLineWidth+3, utf8.RuneCountInString(lines[0]))
+	require.True(t, utf8.ValidString(lines[0]))
+	require.True(t, cut)
+}
+
+func TestFailureLinesKeepTheErrorOfAHugeStatement(t *testing.T) {
+	huge := "INSERT INTO t VALUES " + strings.Repeat("(1, 'x'), ", 200000)
+	commands := []*Command{{Statement: huge, Error: "ERROR: duplicate key value violates unique constraint \"t_pkey\""}}
+
+	lines := failureLines(commands, "")
+
+	require.Equal(t, []string{
+		huge[:shownLineWidth] + "...",
+		"ERROR: duplicate key value violates unique constraint \"t_pkey\"",
+		shortenedNote,
+	}, lines)
+}
+
+func TestRenderKeepsAFailureWithAHugeStatement(t *testing.T) {
+	result := sampleResult()
+	failed := result.Stages[1].Tasks[1]
+	failed.Files[0].Commands[1].Statement = "INSERT INTO account VALUES " + strings.Repeat("(1, 'x'), ", 200000)
+
+	markdown := RenderMarkdown(result)
+	require.Less(t, len(markdown), 16<<10)
+	require.Contains(t, markdown, "#### crm on prod failed")
+	require.Contains(t, markdown, `ERROR: column "risk_score" of relation "account" already exists (SQLSTATE 42701)`)
+	require.Contains(t, markdown, "[Retry or skip this task in Bytebase]")
+	require.Contains(t, markdown, shortenedNote)
+
+	text := RenderText(result, nil)
+	require.Less(t, len(text), 16<<10)
+	require.Contains(t, text, `ERROR: column "risk_score" of relation "account" already exists (SQLSTATE 42701)`)
+	require.Contains(t, text, shortenedNote)
+}
+
+func TestRenderMarkdownCountsTheFailuresItLeavesOut(t *testing.T) {
+	result := sampleResult()
+	stage := result.Stages[1]
+	template := stage.Tasks[1]
+	stage.Tasks = nil
+	longError := strings.TrimSpace(strings.Repeat(strings.Repeat("e", shownLineWidth)+"\n", shownLines))
+	for i := range 200 {
+		task := *template
+		task.Target = fmt.Sprintf("instances/prod/databases/tenant_%03d", i)
+		task.Files = []*File{{
+			Version: "0004", Path: "migrations/0004_add_risk_score.sql", Status: "FAILED",
+			Commands: []*Command{{Statement: "ALTER TABLE account ADD COLUMN risk_score int", Error: longError}},
+		}}
+		stage.Tasks = append(stage.Tasks, &task)
+	}
+
+	markdown := RenderMarkdown(result)
+
+	require.Less(t, len(markdown), 1<<20)
+	require.Contains(t, markdown, "#### tenant_000 on prod failed")
+	shown := strings.Count(markdown, " on prod failed\n")
+	require.Positive(t, shown)
+	require.Less(t, shown, 200)
+	require.Contains(t, markdown, fmt.Sprintf("%d more failures are in the output file and [in Bytebase](", 200-shown))
 }
 
 func TestCommandsWithoutStatementAreNamedByPosition(t *testing.T) {
