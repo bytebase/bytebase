@@ -72,6 +72,11 @@ V2's `WALK_THROUGH` rule both run on them.
   `backend/runner/reviewrun` resolves policy and store facts and calls one `Review` per
   (spec, engine).
 
+The two generations stay entirely separate, in omni as in Bytebase. V1 judgment that moves to
+omni goes to its own tree — the `v1review` contract and `<engine>/v1review` packages — which
+neither imports `review` nor shares a type with it, and nothing V1 ports joins the V2 standard
+rule set.
+
 **Query analysis — Bytebase-side for the big engines.** `backend/plugin/parser/base` defines 13
 per-engine capability registries: query span, splitter, changed resources, statement types/ranges,
 query classification, completion, diagnose, explain, result limit, DML→SELECT backup transform,
@@ -134,9 +139,9 @@ and Phase 4 starts their trees at the driver layer.
   gh-ost itself becomes an omni-owned capability is a later question, out of scope here.
 - **Changing product behavior.** Review findings, SDL semantics, editor features keep their
   behavior; this plan relocates implementations.
-- **Deciding the SQL Review V2 product migration.** How 105 V1 rule types map onto V2 policies,
-  and when plancheck/release check cut over, is the review V2 track. This document gives that
-  track its destination (rules live in omni) and its contract; it does not set its product pacing.
+- **SQL Review V2, and any V1→V2 migration.** This plan moves V1's judgment to omni and leaves
+  V2's rule set, policy, and contract as they are. Whether V1 rule types ever map onto V2, and
+  when plancheck and the release check would cut over, is the review V2 track's decision.
 - **Merging the repositories** (see Alternatives).
 - Non-engine plugins (`ai`, `aireview`, `webhook`, `idp`, `mailer`, `sharepoint`, `stripe`) are
   untouched.
@@ -177,8 +182,8 @@ The contract style is the one `omni/review` already states:
 
 | today | end state |
 |---|---|
-| `advisor/<engine>` (~380 rule files) | deleted; rules are omni `<engine>/review` rules behind `omni/review` |
-| `advisor` root (registry, `sql_review.go`) | deleted once V1 callers converge on V2 |
+| `advisor/<engine>` (~380 rule files) | thin adapters; the judgment is omni `<engine>/v1review` functions behind `omni/v1review` |
+| `advisor` root (registry, `sql_review.go`) | stays as V1's product surface; deleted only if the review V2 track retires V1 |
 | `parser/<engine>` capability implementations | omni `<engine>/analysis`; Bytebase package shrinks to the adapter shape `parser/redshift` has today |
 | `parser/base` | stays: registries, dispatch, product types; semantic types it owns today (query span, resources) move to an omni contract package and are re-exported during transition |
 | `schema/<engine>` deparse/differ/migration | omni `<engine>/catalog` (`metadata_load`, `Diff`, `GenerateMigration`, deparse); Bytebase keeps the registry and `storepb` conversion |
@@ -187,17 +192,18 @@ The contract style is the one `omni/review` already states:
 | `db` root, `db/util/aws.go`, `db/util/ssh.go` | stay: dispatch, `storepb.DataSource` → omni config conversion, IAM dialers, tunnels |
 | YAML corpora, golden fixtures for the above | move to omni next to the code, under its gates |
 
-New omni contract surface, mirroring `omni/review`:
+New omni contract surface:
 
 - `omni/analysis` (new): the types one query analysis returns — query span (source columns,
   predicate columns, sensitive-field lineage), statement classification and types, changed
   resources, statement ranges — plus per-engine entry points in `<engine>/analysis`. The existing
   `<engine>/analysis` packages are the draft of this contract; writing `omni/analysis` promotes
   their shared shapes to a stable boundary the way `omni/review` did for rules.
-- `omni/review` config extension: configurable rules (naming patterns, numeric limits, string
-  lists — today's `SQLReviewRule` payloads) need per-rule config in `review.Options`, keyed by
-  rule name with plain typed values. Omni defines the config schema; Bytebase converts proto
-  payloads into it.
+- `omni/v1review` (new, separate from `omni/review`): the V1 contract. A rule is one function per
+  engine, such as `<engine>/v1review.NamingTable(stmts, cfg)`, taking the statement nodes Bytebase
+  already parsed and a plain config built from the rule's `SQLReviewRule` payload, and returning
+  judgment-only findings (a condition code, the judged name, a byte range). The registry, payloads,
+  severity levels, and advice wording stay in Bytebase.
 - Completion keeps the cut the capability guide already fixed: omni emits parser-native
   token/rule/scope/intent signals; Bytebase resolves live metadata into product `Candidate`
   values.
@@ -214,13 +220,17 @@ Ordered by value per unit of risk. Phases overlap; within each, an engine is one
 a fix ported to a fork engine lands in the same PR as its parent
 (`fix(mysql,mariadb): ...`), matching omni's own fork rule.
 
-### Phase 1 — review rules (advisor → omni `<engine>/review`)
+### Phase 1 — V1 review rules (advisor → omni `<engine>/v1review`)
 
 The largest tree (58k lines) and the best-prepared path: rules already walk omni ASTs, so the walk
-logic ports nearly verbatim; what changes is the frame (`storepb.Advice` → `review.Finding` with a
-stable `FindingCode`, rule payloads → contract config).
+logic ports nearly verbatim; what changes is the frame. The walk moves to omni and returns
+judgment-only findings; the advisor keeps its registration, payload handling, level, and advice
+wording, and renders the findings as `storepb.Advice`. V1's callers, policies, and UI do not
+change.
 
-1. Extend `omni/review` with rule config (above) and land the first configurable rule end to end.
+1. Create `omni/v1review` and land the first configurable rule end to end: `NAMING_TABLE`, in
+   every engine with an omni review tree, with each advisor converted to an adapter
+   (omni#825 and its Bytebase pin-bump PR).
 2. Port by rule class across all engines at once — naming, column, statement, index, system — the
    way review feedback is already audited by class, so one semantic decision is made once and
    tested uniformly, instead of engine by engine rediscovering it.
@@ -229,11 +239,15 @@ stable `FindingCode`, rule payloads → contract config).
    `advisor_disallow_offline_ddl`, `advisor_statement_object_owner_check`) split: Bytebase runs
    EXPLAIN / catalog queries and passes results as facts; omni judges. The fact computations
    themselves (dry-run EXPLAIN, affected-row estimation) join omni's driver layer in Phase 4;
-   Bytebase still runs them, because connections never cross the review contract.
-4. V1 YAML fixtures move with each rule and are re-expressed as omni review tests; omni's oracle
-   gates (real engines) back-check the ported judgment.
-5. `backend/plugin/advisor` shrinks to the V1 shell and is deleted when plancheck and release
-   check run on V2 — the review V2 track's call.
+   Bytebase still runs them, because connections never cross the v1review contract.
+4. A port holds strict V1 parity: the same forms, name text, length unit, and anchor, defects
+   included. The gate is an old-vs-new harness that runs the HEAD advisor and the adapter over the
+   engine's YAML fixtures plus an edge corpus and requires zero diff, mutation-checked so it can
+   fail. The behaviors the fixtures did not cover are appended to them. A change to what V1
+   reports, including a V1 bug fix, lands later as its own commit. The judgment's own cases become
+   omni `<engine>/v1review` tests.
+5. `backend/plugin/advisor` shrinks to V1's product shell — registry, payloads, adapters — and
+   stays as long as V1 does.
 
 ### Phase 2 — query analysis (parser/`<engine>` → omni `<engine>/analysis`)
 
@@ -317,8 +331,9 @@ registry it already uses.
 
 ## Testing
 
-- Engine-behavior tests move with the code: advisor YAML corpora become omni review tests;
-  query-span and schema golden files become omni analysis/catalog scenarios, gaining omni's
+- Engine-behavior tests move with the code: each ported V1 rule's judgment gains omni
+  `<engine>/v1review` tests, while the advisor YAML corpora stay in Bytebase as the adapters'
+  parity gate; query-span and schema golden files become omni analysis/catalog scenarios, gaining omni's
   corpus gates and real-engine oracle runs that Bytebase CI never had.
 - Driver behavior gains what Bytebase CI never gave it: an engine × version container matrix in
   omni for sync goldens, result/type-mapping corpora, and driver-dependency bumps — the regression
@@ -340,12 +355,12 @@ registry it already uses.
   name-keyed identifiers and ignore-unknown semantics are load-bearing, and a contract change that
   breaks them needs a two-step rollout.
 - **Pin-bump blast radius grows.** Today a bump mainly changes parsing, simulation, and the
-  eleven V2 rules; after this plan it changes review judgment, masking lineage (query span),
+  eleven V2 rules; after this plan it also changes V1 review judgment, masking lineage (query span),
   generated DDL, and every driver conversation at once. Mitigations: audited
   bumps (above), smaller and more frequent bumps, and omni's own gates running per PR.
-- **The V2 config surface.** 105 rule types with payloads must be expressible in the contract
-  without importing proto; if the config schema is designed rule-by-rule it will sprawl. Phase 1
-  step 1 exists to fix the schema once, early.
+- **The V1 config surface.** 105 rule types with payloads must be expressible in `v1review`
+  without importing proto. The contract shares config types by payload kind (`NamingConfig` for
+  every naming rule) rather than per rule, so the six payload messages bound it.
 - **Omni CI cost.** Moving ~195k lines plus fixtures grows omni's suite, which already runs every
   package on `docs/` changes and holds real-engine containers; package layout and corpus placement
   must keep gates per-engine.
