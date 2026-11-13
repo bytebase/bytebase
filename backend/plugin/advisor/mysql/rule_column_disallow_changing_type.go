@@ -3,15 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -23,6 +23,7 @@ func init() {
 }
 
 // ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type.
+// The judgment lives in omni (mysql/v1review.ColumnDisallowChangeType).
 type ColumnDisallowChangingTypeAdvisor struct {
 }
 
@@ -33,112 +34,41 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingTypeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		originalMetadata: checkCtx.OriginalMetadata,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	if checkCtx.OriginalMetadata == nil && slices.ContainsFunc(nodes, readsColumnType) {
+		// V1 read the snapshot at the first such action and panicked on a
+		// nil one; advisor.Check reports that panic as the rule's error.
+		checkCtx.OriginalMetadata.GetSchemaMetadata("")
 	}
+	schema := v1reviewSchema(checkCtx.OriginalMetadata)
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDisallowChangingTypeRule struct {
-	BaseRule
-	originalMetadata *model.DatabaseMetadata
-}
-
-func (*columnDisallowChangingTypeRule) Name() string {
-	return "ColumnDisallowChangingTypeRule"
-}
-
-func (r *columnDisallowChangingTypeRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok || n.Table == nil {
-		return
-	}
-
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range mysqlv1review.ColumnDisallowChangeType([]ast.Node{nodes[i]}, schema) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.ChangeColumnType.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("\"%s\" changes column type", strings.TrimSpace(stmt.Text)),
+				StartPosition: findingPosition(stmt, f),
+			})
 		}
-
-		var columnName string
-		switch cmd.Type {
-		case ast.ATChangeColumn:
-			// For CHANGE, Name is the old column name.
-			columnName = cmd.Name
-		case ast.ATModifyColumn:
-			// For MODIFY, the column name comes from the column def or Name.
-			if cmd.Column != nil {
-				columnName = cmd.Column.Name
-			} else {
-				columnName = cmd.Name
-			}
-		default:
-			continue
-		}
-
-		if cmd.Column == nil || cmd.Column.TypeName == nil {
-			continue
-		}
-		r.checkColumnType(tableName, columnName, cmd.Column.TypeName, cmd.Loc)
 	}
+	return adviceList, nil
 }
 
-func normalizeColumnType(tp string) string {
-	switch strings.ToLower(tp) {
-	case "tinyint":
-		return "tinyint(4)"
-	case "tinyint unsigned":
-		return "tinyint(4) unsigned"
-	case "smallint":
-		return "smallint(6)"
-	case "smallint unsigned":
-		return "smallint(6) unsigned"
-	case "mediumint":
-		return "mediumint(9)"
-	case "mediumint unsigned":
-		return "mediumint(9) unsigned"
-	case "int":
-		return "int(11)"
-	case "int unsigned":
-		return "int(11) unsigned"
-	case "bigint":
-		return "bigint(20)"
-	case "bigint unsigned":
-		return "bigint(20) unsigned"
-	default:
-		return strings.ToLower(tp)
+// readsColumnType reports whether the statement is an ALTER TABLE naming a
+// table with a CHANGE or MODIFY COLUMN action whose definition has a type,
+// for which the rule looks the column up in the snapshot.
+func readsColumnType(node ast.Node) bool {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok || alter.Table == nil {
+		return false
 	}
-}
-
-func (r *columnDisallowChangingTypeRule) checkColumnType(tableName, columnName string, dt *ast.DataType, loc ast.Loc) {
-	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
-	if column == nil {
-		return
-	}
-
-	// Build the type string from the omni DataType.
-	tp := strings.ToLower(dt.Name)
-	if dt.Length > 0 && dt.Scale > 0 {
-		tp = fmt.Sprintf("%s(%d,%d)", tp, dt.Length, dt.Scale)
-	} else if dt.Length > 0 {
-		tp = fmt.Sprintf("%s(%d)", tp, dt.Length)
-	}
-	if dt.Unsigned {
-		tp += " unsigned"
-	}
-
-	if normalizeColumnType(column.GetProto().Type) != normalizeColumnType(tp) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.ChangeColumnType.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("\"%s\" changes column type", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(loc))),
-		})
-	}
+	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
+		if cmd == nil || cmd.Column == nil || cmd.Column.TypeName == nil {
+			return false
+		}
+		return cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn
+	})
 }
