@@ -53,7 +53,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		} else {
 			line = int32(1 + strings.Count(stmt.Text[:f.Start], "\n"))
 		}
-		table := fmt.Sprintf("%q.%q", f.Value, f.Table)
+		table := fmt.Sprintf("%q.%q", f.Schema, f.Table)
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Code:    code.ColumnCannotNull.Int32(),
