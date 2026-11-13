@@ -3,15 +3,14 @@ package oceanbase
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -23,6 +22,7 @@ func init() {
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for max character length.
+// The judgment lives in omni (oceanbase/v1review.ColumnMaximumCharacterLength).
 type ColumnMaximumCharacterLengthAdvisor struct {
 }
 
@@ -36,100 +36,23 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for column maximum character length rule")
 	}
-
-	rule := &columnMaximumCharacterLengthRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maximum: int(numberPayload.Number),
+	maximum := int(numberPayload.Number)
+	if maximum <= 0 {
+		return nil, nil
 	}
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		node, ok := oceanbaseparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
-	}
-
-	return rule.GetAdviceList(), nil
-}
-
-type columnMaximumCharacterLengthRule struct {
-	BaseRule
-	maximum int
-}
-
-func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnMaximumCharacterLengthRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, col := range n.Columns {
-		charLength := getCharLengthFrom(col.TypeName)
-		if r.maximum > 0 && charLength > r.maximum {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.CharLengthExceedsLimit.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, col.Name, r.maximum),
-				StartPosition: &storepb.Position{
-					Line: r.LocToLine(col.Loc),
-				},
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range oceanbasev1review.ColumnMaximumCharacterLength([]ast.Node{nodes[i]}, maximum) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.CharLengthExceedsLimit.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", f.Table, f.Name, maximum),
+				StartPosition: findingPosition(stmt, f),
 			})
 		}
 	}
-}
-
-func (r *columnMaximumCharacterLengthRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, cmd := range n.Commands {
-		cols := getColumnsFromCmd(cmd)
-		for _, col := range cols {
-			charLength := getCharLengthFrom(col.TypeName)
-			if r.maximum > 0 && charLength > r.maximum {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.Level,
-					Code:    code.CharLengthExceedsLimit.Int32(),
-					Title:   r.Title,
-					Content: fmt.Sprintf("The length of the CHAR column `%s.%s` is bigger than %d, please use VARCHAR instead", tableName, col.Name, r.maximum),
-					StartPosition: &storepb.Position{
-						Line: r.LocToLine(col.Loc),
-					},
-				})
-			}
-		}
-	}
-}
-
-func getCharLengthFrom(dt *ast.DataType) int {
-	if dt == nil {
-		return 0
-	}
-	if !strings.EqualFold(dt.Name, "CHAR") {
-		return 0
-	}
-	// MySQL default: CHAR without length = CHAR(1)
-	if dt.Length == 0 {
-		return 1
-	}
-	return dt.Length
+	return adviceList, nil
 }

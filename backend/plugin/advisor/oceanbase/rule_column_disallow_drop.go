@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -21,6 +21,7 @@ func init() {
 }
 
 // ColumnDisallowDropAdvisor is the advisor checking for disallow DROP COLUMN statement.
+// The judgment lives in omni (oceanbase/v1review.ColumnDisallowDrop).
 type ColumnDisallowDropAdvisor struct {
 }
 
@@ -31,41 +32,18 @@ func (*ColumnDisallowDropAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	rule := &columnDisallowDropRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDisallowDropRule struct {
-	BaseRule
-}
-
-func (*columnDisallowDropRule) Name() string {
-	return "ColumnDisallowDropRule"
-}
-
-func (r *columnDisallowDropRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok || n.Table == nil {
-		return
-	}
-
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil || cmd.Type != ast.ATDropColumn {
-			continue
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range oceanbasev1review.ColumnDisallowDrop([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DropColumn.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", f.Name, f.Table),
+				StartPosition: findingPosition(stmt, f),
+			})
 		}
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DropColumn.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", cmd.Name, tableName),
-			StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
-		})
 	}
+	return adviceList, nil
 }

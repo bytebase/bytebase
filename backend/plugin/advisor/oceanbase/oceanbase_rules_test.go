@@ -11,13 +11,14 @@ import (
 // fixtures in test/, so a rule that stops firing on OceanBase's own AST is caught
 // here rather than letting an OceanBase review pass silently.
 //
-// Three registered rules are not here: COLUMN_DISALLOW_DROP and
-// STATEMENT_ADD_COLUMN_WITHOUT_POSITION have no fixtures anywhere, and
-// STATEMENT_DISALLOW_OFFLINE_DDL is covered by its own test in this package.
+// Two registered rules are not here: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
+// has no fixtures anywhere, and STATEMENT_DISALLOW_OFFLINE_DDL is covered by
+// its own test in this package.
 //
 // The fixtures are advisor/mysql's, which the rules share, but for
 // statement_insert_row_limit: OceanBase has its own advisor, which quotes the
-// statement without trimming the leading newline MySQL's trims.
+// statement without trimming the leading newline MySQL's trims; and
+// column_disallow_drop, a rule only OceanBase registers.
 func TestOceanBaseRules(t *testing.T) {
 	rules := []*storepb.SQLReviewRule{
 		{Type: storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 20}}},
@@ -28,12 +29,15 @@ func TestOceanBaseRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGING_ORDER, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_DROP, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_DROP_IN_INDEX, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_SET_CHARSET, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 20}}},
 		{Type: storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 2560}}},
 		{Type: storepb.SQLReviewRule_COLUMN_NO_NULL, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"}}}},
+		// The same columns listed with duplicates must report the same advice.
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "id", "updated_ts", "creator_id", "updater_id", "updater_id"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"JSON", "BINARY_FLOAT"}}}},

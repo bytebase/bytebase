@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,6 +21,7 @@ func init() {
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.
+// The judgment lives in omni (mariadb/v1review.ColumnRequireDefault).
 type ColumnRequireDefaultAdvisor struct {
 }
 
@@ -30,85 +32,18 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &columnRequireDefaultRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnRequireDefaultRule struct {
-	BaseRule
-}
-
-func (*columnRequireDefaultRule) Name() string {
-	return "ColumnRequireDefaultRule"
-}
-
-func (r *columnRequireDefaultRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnRequireDefaultRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-
-	pkCols := pKColumnNames(n.Columns, n.Constraints)
-
-	for _, col := range n.Columns {
-		if pkCols[col.Name] {
-			continue
-		}
-		r.checkColumn(tableName, col)
-	}
-}
-
-func (r *columnRequireDefaultRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range n.Commands {
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				r.checkColumn(tableName, cmd.Column)
-			}
-			for _, col := range cmd.Columns {
-				r.checkColumn(tableName, col)
-			}
-		case ast.ATModifyColumn, ast.ATChangeColumn:
-			if cmd.Column != nil {
-				r.checkColumn(tableName, cmd.Column)
-			}
-		default:
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range mariadbv1review.ColumnRequireDefault([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NoDefault.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", f.Table, f.Name),
+				StartPosition: findingPosition(stmt, f),
+			})
 		}
 	}
-}
-
-func (r *columnRequireDefaultRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !hasDefault(col) && !isDefaultExemptType(col) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NoDefault.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Column `%s`.`%s` doesn't have DEFAULT.", tableName, col.Name),
-			StartPosition: &storepb.Position{
-				Line:   r.LocToLine(col.Loc),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }
