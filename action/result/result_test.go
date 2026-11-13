@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 const (
@@ -77,6 +78,11 @@ type taskFixture struct {
 // returns its tasks.
 func buildStage(t *testing.T, fixtures ...taskFixture) []*Task {
 	t.Helper()
+	return buildStageWithSources(t, nil, fixtures...)
+}
+
+func buildStageWithSources(t *testing.T, sources map[string][]byte, fixtures ...taskFixture) []*Task {
+	t.Helper()
 	created := time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC)
 	stage := &v1pb.Stage{Name: testStage, Environment: "environments/prod"}
 	in := Input{
@@ -84,6 +90,7 @@ func buildStage(t *testing.T, fixtures ...taskFixture) []*Task {
 		TargetStage: "environments/prod",
 		Rollout:     &v1pb.Rollout{Name: testRollout, Stages: []*v1pb.Stage{stage}},
 		Logs:        map[string]*v1pb.TaskRunLog{},
+		Sources:     sources,
 	}
 	for _, f := range fixtures {
 		task := &v1pb.Task{
@@ -523,4 +530,53 @@ func TestNeededSources(t *testing.T) {
 	}, NeededSources(stage, runs, logs), "one per source, and none for a file logged with its statements")
 	require.Equal(t, "projects/example/releases/r1/files/0001", SourceRef{Release: "projects/example/releases/r1", Version: "0001"}.Key())
 	require.Equal(t, "projects/example/sheets/s1", SourceRef{Sheet: "projects/example/sheets/s1"}.Key())
+}
+
+// The drivers log byte ranges of what base.ParseTransactionConfig returns, so
+// executedSource has to return the same text for every script.
+func TestExecutedSourceMatchesTheDrivers(t *testing.T) {
+	scripts := []string{
+		"",
+		"SELECT 1;",
+		"-- a comment\nSELECT 1;\n",
+		"-- txn-mode = off\nSELECT 1;",
+		"-- TXN-MODE=ON\n\n-- txn-isolation = read committed\nSELECT 1;\n\n",
+		"\n\n  -- txn-isolation = REPEATABLE  READ  \n-- header\nUPDATE t SET a = 1;\nDELETE FROM t;\n",
+		"-- header\n-- txn-mode = off\n-- more\nCREATE INDEX CONCURRENTLY i ON t (a);",
+		"-- txn-mode = off\r\nSELECT 1;\r\n",
+		"SELECT 1;\n-- txn-mode = off\nSELECT 2;",
+		"-- txn-mode = maybe\nSELECT 1;",
+		"-- txn-mode = off",
+		"/* block */\n-- txn-mode = off\nSELECT 1;",
+		"-- gh-ost = {}\n-- txn-mode = on\nALTER TABLE t ADD COLUMN b int;",
+	}
+	for _, script := range scripts {
+		_, want := base.ParseTransactionConfig(script)
+		require.Equal(t, want, string(executedSource([]byte(script))), "script %q", script)
+	}
+}
+
+func TestBuildCutsStatementsFromAFileWithDirectives(t *testing.T) {
+	source := "-- txn-mode = off\n-- backfill\nUPDATE t SET a = 1;\nDELETE FROM t WHERE a = 2;"
+	_, executed := base.ParseTransactionConfig(source)
+	first := int32(len("-- backfill\nUPDATE t SET a = 1;"))
+
+	fixture := taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true, pending: 1,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("0001", "migrations/0001_backfill.sql"),
+			rangeEntry(0, first, 3),
+			rangeEntry(first, int32(len(executed)), 1),
+		},
+	}
+	tasks := buildStage(t, fixture)
+	require.Empty(t, tasks[0].Files[0].Commands[0].Statement, "no source, no statement")
+
+	tasks = buildStageWithSources(t, map[string][]byte{
+		SourceKey("projects/example/releases/r1", "0001"): []byte(source),
+	}, fixture)
+	commands := tasks[0].Files[0].Commands
+	require.Equal(t, "-- backfill\nUPDATE t SET a = 1;", commands[0].Statement)
+	require.Equal(t, "DELETE FROM t WHERE a = 2;", commands[1].Statement)
 }

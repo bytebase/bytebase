@@ -113,6 +113,10 @@ statement. It tries two places, and the count and the error never depend on eith
 2. **The sheet**, with `GetSheet`. It needs `bb.sheets.get`, which the GitOps Service Agent role
    does not hold. The first refusal ends the attempts and logs one warning.
 
+- **The ranges count from the file without its transaction directives.** A driver removes the
+  `-- txn-mode` and `-- txn-isolation` lines at the top before it splits and logs commands
+  (`ParseTransactionConfig` in `backend/plugin/parser/base`). The action removes them the same
+  way before it cuts, and a test holds the two together.
 - **Otherwise the command is named by position**, as `statement 3`.
 - **Generated deploy jobs take the first path.** They check out the repository, and the release
   was created from the same commit.

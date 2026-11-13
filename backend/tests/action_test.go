@@ -1599,6 +1599,10 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 		[]byte("CREATE TABLE account (id INT PRIMARY KEY, tier TEXT);"), 0644))
 	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
 		[]byte("INSERT INTO account VALUES (1, NULL), (2, NULL), (3, 'pro');\nUPDATE account SET tier = 'basic' WHERE tier IS NULL;"), 0644))
+	// The driver strips the directive before it logs byte ranges, so the
+	// statement is only right if the action cuts it from the stripped text.
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00003_promote_account.sql"),
+		[]byte("-- txn-mode = off\nUPDATE account SET tier = 'pro' WHERE id = 1;\n"), 0644))
 	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
 
 	actionResult, err := executeActionCommand(ctx,
@@ -1623,9 +1627,9 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 	a.Equal(1, task.Attempt)
 	a.False(task.Unchanged)
 	a.NotNil(task.AffectedRows)
-	a.Equal(int64(5), *task.AffectedRows)
+	a.Equal(int64(6), *task.AffectedRows)
 
-	a.Len(task.Files, 2)
+	a.Len(task.Files, 3)
 	a.Equal("00001", task.Files[0].Version)
 	a.Equal(int64(0), *task.Files[0].AffectedRows)
 	seed := task.Files[1]
@@ -1637,6 +1641,10 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 	a.Equal(int64(3), *seed.Commands[0].AffectedRows)
 	a.Contains(seed.Commands[1].Statement, "UPDATE account")
 	a.Equal(int64(2), *seed.Commands[1].AffectedRows)
+	promote := task.Files[2]
+	a.Len(promote.Commands, 1)
+	a.Equal("UPDATE account SET tier = 'pro' WHERE id = 1;", promote.Commands[0].Statement)
+	a.Equal(int64(1), *promote.Commands[0].AffectedRows)
 
 	a.Contains(actionResult.Stdout, "Rollout to prod: DONE")
 	a.Contains(actionResult.Stdout, "1 changed")

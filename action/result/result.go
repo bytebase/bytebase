@@ -3,6 +3,7 @@
 package result
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -244,6 +245,12 @@ func cutFromSource(entries []*v1pb.TaskRunLogEntry) bool {
 }
 
 func Build(in Input) *Result {
+	sources := make(map[string][]byte, len(in.Sources))
+	for key, source := range in.Sources {
+		sources[key] = executedSource(source)
+	}
+	in.Sources = sources
+
 	outcome, detail := DetailStage(in.Rollout, in.TargetStage)
 	result := &Result{
 		Outcome:     outcome,
@@ -457,6 +464,41 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry, source []byte) ([]*Command, 
 		}
 	}
 	return commands, scopeErr
+}
+
+var (
+	txnModeDirective      = regexp.MustCompile(`(?i)^\s*--\s*txn-mode\s*=\s*(on|off)\s*$`)
+	txnIsolationDirective = regexp.MustCompile(`(?i)^\s*--\s*txn-isolation\s*=\s*(READ\s+UNCOMMITTED|READ\s+COMMITTED|REPEATABLE\s+READ|SERIALIZABLE)\s*$`)
+)
+
+// executedSource returns the text that logged byte ranges count from. A
+// driver removes the transaction directives at the top of a file before it
+// splits and logs the commands, so the ranges point into what is left. This
+// must match base.ParseTransactionConfig, which the action cannot import
+// without linking the SQL parsers; a test holds the two together.
+func executedSource(source []byte) []byte {
+	lines := strings.Split(string(source), "\n")
+	var kept []string
+	var removed, pastHeader bool
+	for _, line := range lines {
+		if !pastHeader {
+			trimmed := strings.TrimSpace(line)
+			switch {
+			case trimmed == "":
+			case !strings.HasPrefix(trimmed, "--"):
+				pastHeader = true
+			case txnModeDirective.MatchString(line), txnIsolationDirective.MatchString(line):
+				removed = true
+				continue
+			default:
+			}
+		}
+		kept = append(kept, line)
+	}
+	if !removed {
+		return source
+	}
+	return []byte(strings.TrimSpace(strings.Join(kept, "\n")))
 }
 
 // statementOf returns the command's text: logged with it, or cut from its

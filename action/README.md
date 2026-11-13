@@ -201,7 +201,7 @@ Reading the rows:
 -   A task's result is its latest run. `attempt` counts its runs, and `previousRuns` lists the earlier ones.
 -   A task with `unchanged` finished with no file left to apply.
 
-Statement text comes from the migration files, because the server logs each command as a byte range of its file. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. With neither, a command is named by its position, such as `statement 3`, and its count and error are still reported.
+Statement text comes from the migration files, because the server logs each command as a byte range of its file, counted after the `-- txn-mode` and `-- txn-isolation` lines at its top are removed. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. With neither, a command is named by its position, such as `statement 3`, and its count and error are still reported.
 
 To keep the file on GitLab when the job fails:
 
