@@ -93,6 +93,8 @@ What does not change: the avatar stack shows the first three candidates; the ord
 line, and the warning under the step stays; a step with no holders still reads "No reviewers" and
 has nothing to open.
 
+**D7 · Nothing.** Just trying
+
 ## States
 
 | Step's candidates | Trigger | Popover |
