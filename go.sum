@@ -226,8 +226,8 @@ github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735 h1:v8y6mXeHmYVsdM
 github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735/go.mod h1:vTHjcvfn8Pmf65WjnV1ytTCYyC7xNhFjrniv4YWvtA8=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0 h1:bJ8NSf2K+pccl5m/wuu97fiYjDwpJH6IzURAq/3XA2U=
 github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0/go.mod h1:BEWMfiZtqshdmulKJcIsWb45MUaEvDO4CROcgi8dfFg=
-github.com/bytebase/omni v0.0.0-20261113063014-f8dda10e92de h1:IoRp8odsh5xkKitGpn68M4Emo5ei/zE0JKAislLWHaA=
-github.com/bytebase/omni v0.0.0-20261113063014-f8dda10e92de/go.mod h1:/v6gra/bwwzLFkbHwnUbW5nUTidVf9SWD3uJsU+lBbo=
+github.com/bytebase/omni v0.0.0-20261113070818-77d80c4770b0 h1:+riRFy36McnYmWYg8mgixhfmWnqsgpVoAX6JQEJmgqY=
+github.com/bytebase/omni v0.0.0-20261113070818-77d80c4770b0/go.mod h1:/v6gra/bwwzLFkbHwnUbW5nUTidVf9SWD3uJsU+lBbo=
 github.com/caarlos0/env/v11 v11.4.1 h1:fYwH0sWEsBSMPG7t4e/PEfTFzrWrpjyygXyUnWiSwEw=
 github.com/caarlos0/env/v11 v11.4.1/go.mod h1:qupehSf/Y0TUTsxKywqRt/vJjN5nz6vauiYEUUr8P4U=
 github.com/cenkalti/backoff/v3 v3.0.0/go.mod h1:cIeZDE3IrqwwJl6VUwCN6trj1oXrTS4rc0ij+ULvLYs=
