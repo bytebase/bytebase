@@ -30,38 +30,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// TestMySQLVersionFor locks in the engine-version -> omni catalog Version mapping that
-// threads the version into the SDL diff. The boundary is 8.0.0: anything below maps to
-// MySQL57 (utf8mb4_general_ci default), 8.0.0+ to MySQL80 (utf8mb4_0900_ai_ci); an
-// empty/unparseable version falls back to MySQL80 (the historical default).
-func TestMySQLVersionFor(t *testing.T) {
-	cases := []struct {
-		version string
-		want    catalog.Version
-	}{
-		{"5.7.25", catalog.MySQL57},
-		{"5.7", catalog.MySQL57},
-		{"5.6.51", catalog.MySQL57},
-		{"5.7.44-log", catalog.MySQL57},
-		{"8.0.32", catalog.MySQL80},
-		{"8.0", catalog.MySQL80},
-		{"8.0.0", catalog.MySQL80},
-		{"8.4.0", catalog.MySQL80},
-		{"9.0.1", catalog.MySQL80},
-		// OceanBase / unparseable / empty -> default to 8.0 stored form.
-		{"", catalog.MySQL80},
-		{"not-a-version", catalog.MySQL80},
-		// OceanBase reports a MySQL-compat version like "8.0.30" in its version string;
-		// when only a marketing string is present we default to 8.0, which is safe.
-		{"OceanBase 4.2", catalog.MySQL80},
-	}
-	for _, c := range cases {
-		if got := mysqlVersionFor(c.version); got != c.want {
-			t.Errorf("mysqlVersionFor(%q) = %v, want %v", c.version, got, c.want)
-		}
-	}
-}
-
 // metadataFromSDL builds a model.DatabaseMetadata from SDL text using the registered MySQL
 // GetDatabaseMetadata, so drop-advice tests can run fully offline (no live server).
 func metadataFromSDL(t *testing.T, sdl string) *model.DatabaseMetadata {
@@ -360,27 +328,24 @@ func TestDiffSDLMigrationEmptyTargetDropsEverything(t *testing.T) {
 	require.NotContains(t, sql, "bbcatalog")
 }
 
-// TestLoadCatalogFallbackSeedsExplicitDefaultsForTimestamp pins the fix for the LoadSQL
-// fallback not seeding explicit_defaults_for_timestamp. On 5.7, EDFT is OFF, so a bare
-// TIMESTAMP column materializes NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE
-// CURRENT_TIMESTAMP. The source here is plain SDL (loads via LoadSDLWithVersion, EDFT
-// seeded OFF); the target carries a LOCK TABLES statement that LoadSDL rejects, forcing the
-// LoadSQL fallback. Before the fix that fallback kept the New() 8.0 default (EDFT ON), so
-// the SAME bare TIMESTAMP materialized nullable and the diff spuriously emitted a MODIFY
-// COLUMN. With EDFT seeded to the 5.7 box default on both sides, identical schemas diff to
-// empty.
-func TestLoadCatalogFallbackSeedsExplicitDefaultsForTimestamp(t *testing.T) {
+// TestLoadCatalogFallbackBareTimestamp pins that the LoadSQL fallback materializes a bare
+// TIMESTAMP column (whose stored form depends on the session's
+// explicit_defaults_for_timestamp) the same way the LoadSDL path does, so identical
+// schemas diff to empty. The source here is plain SDL (loads via LoadSDL); the target
+// carries a LOCK TABLES statement that LoadSDL rejects, forcing the LoadSQL fallback.
+// Since omni retired the 5.7 stored form, both paths always use the 8.0 session defaults
+// (EDFT ON) and the engine version string selects nothing, so a legacy 5.7 version string
+// must behave identically to an 8.0 one.
+func TestLoadCatalogFallbackBareTimestamp(t *testing.T) {
 	const table = "CREATE TABLE `t` (`ts` timestamp) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n"
 
 	// Target forces the LoadSQL fallback: LOCK TABLES is not a DDL statement LoadSDL accepts.
 	target := "LOCK TABLES `t` WRITE;\n" + table + "UNLOCK TABLES;\n"
 
-	// 5.7 (EDFT OFF): identical schemas must produce no migration.
 	sql57, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, target, "5.7.44")
 	require.NoError(t, err)
-	require.Empty(t, sql57, "5.7 source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql57)
+	require.Empty(t, sql57, "5.7-versioned source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql57)
 
-	// 8.0 (EDFT ON): also identical, and the fallback must not regress the 8.0 default.
 	sql80, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, target, "8.0.32")
 	require.NoError(t, err)
 	require.Empty(t, sql80, "8.0 source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql80)
@@ -1549,7 +1514,7 @@ var mediawikiSchema string
 //	... from ((((`category` left join `film_category` on(...)) left join `film` on(...))
 //	         join `film_actor` on(...)) join `actor` on(...)) group by ...
 //
-// Re-loading that dump through the SDL path (catalog.LoadSDLWithVersion / LoadSQL, called by
+// Re-loading that dump through the SDL path (catalog.LoadSDL / LoadSQL, called by
 // mysqlDiffSDLMigration and schema.SDLMigration) fails with
 //
 //	expected SELECT, TABLE, VALUES, or '('
@@ -7386,8 +7351,8 @@ func TestSDLEnterpriseFuzz(t *testing.T) {
 // dropObjectBlock, dropTrigger, entZabbixSlice, entFuzzSliceTables, entFuzzAux,
 // entNormalizeDelimiters, entDropLineInTable, entReplaceLineInTable, entAppendTableClause,
 // entSetPartitionClause, entFzProtectedTables, entFzProtectedColumns, entFuzzModel,
-// entFzIndexedCols, entFzState, entFzMutation, withDatabaseContext, mysqlVersionFor) come
-// from the sibling files in this package.
+// entFzIndexedCols, entFzState, entFzMutation, withDatabaseContext) come from the sibling
+// files in this package.
 
 const (
 	entSfRounds = 5
@@ -8643,7 +8608,7 @@ func entSfRoundToTarget(ctx context.Context, t *testing.T, srv liveServer, dbNam
 	}
 	// (a) LoadSDL must accept its own output — checked directly (DiffSDLMigration would
 	// mask an SDL rejection behind the LoadSQL fallback).
-	if _, err := catalog.LoadSDLWithVersion(withDatabaseContext(after), mysqlVersionFor(version)); err != nil {
+	if _, err := catalog.LoadSDL(withDatabaseContext(after)); err != nil {
 		return "", "", errors.Wrap(err, "canonical dump does not reload through LoadSDL")
 	}
 	// (c) object counts must match the mutation ledger.
