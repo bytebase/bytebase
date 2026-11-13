@@ -42,7 +42,8 @@ Verified on `main` at `f4937cda3a`:
 ### Non-goals
 
 - **Exit codes and skip policy.** A missing stage that passes is BYT-10426.
-- **A comment on the pull request or merge request.** See [Alternatives](#alternatives).
+- **A comment on the pull request or merge request.** See
+  [Why the job and not the pull request](#why-the-job-and-not-the-pull-request).
 - **Totals by insert, update and delete.** See [Rows](#rows).
 - **Counts of changed tables and columns**, tracked in BYT-8367.
 
@@ -187,6 +188,32 @@ One field says how the run ended. It restates today's behavior and changes none 
   passes on.
 - **Reporting never changes the exit code.** A log that cannot be fetched leaves that task with
   its status only and logs a warning.
+
+### Why the job and not the pull request
+
+A review belongs to a pull request, and a deploy belongs to a commit. Each reports where it
+belongs.
+
+| | Review | Deploy |
+|---|---|---|
+| Runs for | A pull request | A commit on the default branch |
+| Command | `check` | `rollout` |
+| Answers | Is this change safe to merge? | What did this commit do to each database? |
+| Reader | The reviewer, before the merge | Whoever ships it, after the merge |
+| Reports on | The pull request | The job |
+
+- **A commit is not a pull request.** The commit a deploy runs for can come from one pull request,
+  from several merged together, or from none: a direct push, a revert or a re-run.
+- **A deploy is not one event.** One commit deploys to each environment in turn, sometimes days
+  apart, and a failed stage is retried. The job page keeps each run and each attempt. A comment
+  thread would grow a list on a pull request that is already closed.
+- **The job is where a deploy is watched.** The CI already puts the job's status on the commit,
+  notifies on its failure and offers the re-run there.
+- **A comment needs more access.** A generated deploy job holds `id-token: write` and nothing
+  else. A comment needs write access to pull requests.
+
+A comment can still be rendered from the same result. See
+[Not in this change](#not-in-this-change).
 
 ### The file
 
@@ -413,9 +440,9 @@ bytebase-deploy-to-prod:
 **A comment on the pull request or merge request, from the action.**
 
 - **For:** it is where the change was reviewed, and `check` already comments there.
-- **Against:** a deploy job runs on the default branch after the merge, so it must find the merged
-  request and hold a token that can write to it. Atlas, Liquibase and Flyway all leave deploy
-  results on the job. It can be added on the same result.
+- **Against:** a deploy runs for a commit, not for a pull request, so the comment has no natural
+  home. [Why the job and not the pull request](#why-the-job-and-not-the-pull-request) gives the
+  case. Atlas, Liquibase and Flyway all leave deploy results on the job.
 
 **A separate `report` command.**
 
