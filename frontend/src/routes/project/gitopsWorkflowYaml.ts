@@ -62,6 +62,9 @@ export const GITLAB_INCLUDE = `include:
 // BYTEBASE_WORKLOAD_IDENTITY with the job's own ID token. On GitHub it requests
 // the token itself, which needs `id-token: write`. On GitLab the job hands it
 // over as BYTEBASE_ID_TOKEN.
+//
+// A GitHub job that lists any permission gets none of the others, so each one
+// lists `contents: read` for its checkout.
 export function generateWorkflowFiles(p: WorkflowParams): WorkflowFile[] {
   if (p.provider === "gitlab") {
     return [{ path: GITLAB_WORKFLOW_PATH, content: gitlabWorkflow(p) }];
@@ -81,6 +84,21 @@ export function generateWorkflowFiles(p: WorkflowParams): WorkflowFile[] {
 const filePattern = (p: WorkflowParams) => `${p.folder}/*.sql`;
 const targetList = (p: WorkflowParams) => p.targets.join(",");
 
+// Database names are free-form. A target list outside this set is quoted where
+// a shell or GitLab would otherwise split or expand it.
+const SAFE_WORD = /^[A-Za-z0-9_@%+=:,./-]+$/;
+
+// The value as one shell word.
+const shellWord = (value: string) =>
+  SAFE_WORD.test(value) ? value : `'${value.replace(/'/g, "'\\''")}'`;
+
+// The value as a GitLab variable. GitLab expands "$" in a variable's value, and
+// reads "$$" as one "$".
+const gitlabVariable = (value: string) =>
+  SAFE_WORD.test(value)
+    ? value
+    : JSON.stringify(value.replace(/\$/g, () => "$$"));
+
 function githubReviewWorkflow(p: WorkflowParams): string {
   return `name: Bytebase SQL review
 on:
@@ -91,6 +109,7 @@ jobs:
     # Reviews pull requests into the default branch, the branch that deploys.
     if: github.base_ref == github.event.repository.default_branch
     permissions:
+      contents: read
       id-token: write
       pull-requests: write
     runs-on: ubuntu-latest
@@ -108,7 +127,7 @@ jobs:
           bytebase-action check \\
             --url=$BYTEBASE_URL \\
             --project=projects/${p.projectId} \\
-            --targets=${targetList(p)} \\
+            --targets=${shellWord(targetList(p))} \\
             --file-pattern=${filePattern(p)}
 `;
 }
@@ -120,6 +139,7 @@ const githubDeployJob = (
 ) => `  deploy-to-${environment}:
     needs: [${previous.join(", ")}]
     permissions:
+      contents: read
       id-token: write
     runs-on: ubuntu-latest
     environment: ${environment}
@@ -159,6 +179,7 @@ jobs:
     # Deploys what is merged into the default branch.
     if: github.ref_name == github.event.repository.default_branch
     permissions:
+      contents: read
       id-token: write
     runs-on: ubuntu-latest
     container:
@@ -172,7 +193,7 @@ jobs:
           bytebase-action rollout \\
             --url=$BYTEBASE_URL \\
             --project=$BYTEBASE_PROJECT \\
-            --targets=${targetList(p)} \\
+            --targets=${shellWord(targetList(p))} \\
             --file-pattern=${filePattern(p)} \\
             --output=\${{ runner.temp }}/bytebase-metadata.json
       - name: Set output
@@ -225,7 +246,7 @@ variables:
   BYTEBASE_URL: "${p.bytebaseUrl}"
   BYTEBASE_WORKLOAD_IDENTITY: ${p.workloadIdentityEmail}
   BYTEBASE_PROJECT: projects/${p.projectId}
-  BYTEBASE_TARGETS: ${targetList(p)}
+  BYTEBASE_TARGETS: ${gitlabVariable(targetList(p))}
   BYTEBASE_FILE_PATTERN: "${filePattern(p)}"
   BYTEBASE_ACTION_IMAGE: ${p.actionImage}
 
@@ -237,7 +258,7 @@ bytebase-sql-review:
       aud: ${GENERATED_WORKFLOW_AUDIENCE}
 ${gitlabRules(p, '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH')}
   script:
-    - bytebase-action check --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$BYTEBASE_FILE_PATTERN
+    - bytebase-action check --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN
 
 bytebase-create-rollout:
   stage: deploy
@@ -247,7 +268,7 @@ bytebase-create-rollout:
       aud: ${GENERATED_WORKFLOW_AUDIENCE}
 ${gitlabRules(p, "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH")}
   script:
-    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets=$BYTEBASE_TARGETS --file-pattern=$BYTEBASE_FILE_PATTERN --output=bytebase-metadata.json
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN --output=bytebase-metadata.json
   artifacts:
     paths: [bytebase-metadata.json]
 ${deployJobs.join("")}`;
