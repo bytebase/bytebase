@@ -3,7 +3,6 @@ package mariadb
 
 import (
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/mariadb/ast"
@@ -24,16 +23,6 @@ func newColumnSet(columns []string) columnSet {
 }
 
 type tableState map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tableState) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
 
 // getTemplateRegexp formats the template as regex.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
@@ -69,14 +58,6 @@ func (t tableColumnTypes) delete(tableName string, columnName string) {
 		return
 	}
 	delete(t[tableName], columnName)
-}
-
-// tableName extracts the table name from a TableRef.
-func tableName(ref *ast.TableRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Name
 }
 
 // indexColumns extracts column names from an index column list.

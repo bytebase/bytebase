@@ -3,7 +3,6 @@ package mysql
 
 import (
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
@@ -24,16 +23,6 @@ func newColumnSet(columns []string) columnSet {
 }
 
 type tableState map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tableState) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
 
 // getTemplateRegexp formats the template as regex.
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
