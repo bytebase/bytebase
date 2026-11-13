@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	testRollout = "projects/example/plans/101/rollout"
-	testStage   = testRollout + "/stages/prod"
+	testRollout     = "projects/example/plans/101/rollout"
+	testStage       = testRollout + "/stages/prod"
+	testReleaseName = "projects/example/releases/r1"
 )
 
 func fileEntry(version, path string) *v1pb.TaskRunLogEntry {
@@ -68,6 +69,8 @@ type taskFixture struct {
 	status  v1pb.Task_Status
 	release bool
 	pending int32
+	// pendingRanges are half-open ranges of positions in the release's files.
+	pendingRanges [][2]int32
 	// runs are the task's runs, oldest first.
 	runs []v1pb.TaskRun_Status
 	// log is the latest run's log. A nil log is one that could not be read.
@@ -83,6 +86,12 @@ func buildStage(t *testing.T, fixtures ...taskFixture) []*Task {
 
 func buildStageWithSources(t *testing.T, sources map[string][]byte, fixtures ...taskFixture) []*Task {
 	t.Helper()
+	return buildStageWithInput(t, Input{Sources: sources}, fixtures...)
+}
+
+// buildStageWithInput takes the sources and releases from extra.
+func buildStageWithInput(t *testing.T, extra Input, fixtures ...taskFixture) []*Task {
+	t.Helper()
 	created := time.Date(2026, 11, 12, 0, 0, 0, 0, time.UTC)
 	stage := &v1pb.Stage{Name: testStage, Environment: "environments/prod"}
 	in := Input{
@@ -90,7 +99,8 @@ func buildStageWithSources(t *testing.T, sources map[string][]byte, fixtures ...
 		TargetStage: "environments/prod",
 		Rollout:     &v1pb.Rollout{Name: testRollout, Stages: []*v1pb.Stage{stage}},
 		Logs:        map[string]*v1pb.TaskRunLog{},
-		Sources:     sources,
+		Sources:     extra.Sources,
+		Releases:    extra.Releases,
 	}
 	for _, f := range fixtures {
 		task := &v1pb.Task{
@@ -99,9 +109,13 @@ func buildStageWithSources(t *testing.T, sources map[string][]byte, fixtures ...
 			Target: "instances/prod/databases/" + f.id,
 		}
 		if f.release {
+			state := &v1pb.Task_ReleaseState{PendingCount: f.pending}
+			for _, r := range f.pendingRanges {
+				state.PendingRanges = append(state.PendingRanges, &v1pb.Task_ReleaseState_Range{Start: r[0], End: r[1]})
+			}
 			task.Payload = &v1pb.Task_DatabaseUpdate_{DatabaseUpdate: &v1pb.Task_DatabaseUpdate{
-				Source:       &v1pb.Task_DatabaseUpdate_Release{Release: "projects/example/releases/r1"},
-				ReleaseState: &v1pb.Task_ReleaseState{PendingCount: f.pending},
+				Source:       &v1pb.Task_DatabaseUpdate_Release{Release: testReleaseName},
+				ReleaseState: state,
 			}}
 		}
 		stage.Tasks = append(stage.Tasks, task)
@@ -574,7 +588,7 @@ func TestBuildCutsStatementsFromAFileWithDirectives(t *testing.T) {
 	require.Empty(t, tasks[0].Files[0].Commands[0].Statement, "no source, no statement")
 
 	tasks = buildStageWithSources(t, map[string][]byte{
-		SourceKey("projects/example/releases/r1", "0001"): []byte(source),
+		SourceKey(testReleaseName, "0001"): []byte(source),
 	}, fixture)
 	commands := tasks[0].Files[0].Commands
 	require.Equal(t, "-- backfill\nUPDATE t SET a = 1;", commands[0].Statement)
@@ -639,4 +653,89 @@ func TestBuildTaskDropsUnsettledCommandsOfARetriedAttempt(t *testing.T) {
 	require.Len(t, file.Commands, 4)
 	require.True(t, file.Commands[0].EarlierAttempt)
 	require.Equal(t, int64(30), *file.AffectedRows, "10 committed earlier and 20 in the final attempt")
+}
+
+func releaseOf(versions ...string) map[string]*v1pb.Release {
+	release := &v1pb.Release{Name: testReleaseName}
+	for _, version := range versions {
+		release.Files = append(release.Files, &v1pb.Release_File{Version: version})
+	}
+	return map[string]*v1pb.Release{testReleaseName: release}
+}
+
+// The release state is a snapshot from when the rollout was created. A retry
+// skips what an earlier run applied, so its files are fewer than the snapshot
+// says were pending.
+func TestBuildTaskFilesNotRun(t *testing.T) {
+	failsOn := func(versions ...string) []*v1pb.TaskRunLogEntry {
+		var entries []*v1pb.TaskRunLogEntry
+		for i, version := range versions {
+			entries = append(entries, fileEntry(version, "migrations/"+version+".sql"))
+			if i == len(versions)-1 {
+				entries = append(entries, failedCommandEntry("ALTER TABLE t ADD COLUMN c int", "column exists"))
+			} else {
+				entries = append(entries, commandEntry("SELECT 1", 0))
+			}
+		}
+		return entries
+	}
+	failed, done := v1pb.TaskRun_FAILED, v1pb.TaskRun_DONE
+	tests := []struct {
+		name     string
+		releases map[string]*v1pb.Release
+		fixture  taskFixture
+		want     int
+	}{
+		{
+			name:     "a first run that fails on the second of three",
+			releases: releaseOf("0001", "0002", "0003"),
+			fixture:  taskFixture{pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed}, log: failsOn("0001", "0002")},
+			want:     1,
+		},
+		{
+			name:     "a retry that fails on the same file runs only that file",
+			releases: releaseOf("0001", "0002", "0003"),
+			fixture:  taskFixture{pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed, failed}, log: failsOn("0002")},
+			want:     1,
+		},
+		{
+			name:     "files already applied before the rollout are not pending",
+			releases: releaseOf("0001", "0002", "0003", "0004", "0005"),
+			fixture:  taskFixture{pending: 3, pendingRanges: [][2]int32{{1, 2}, {3, 5}}, runs: []v1pb.TaskRun_Status{failed}, log: failsOn("0002")},
+			want:     2,
+		},
+		{
+			name:     "a failure on the last pending file leaves none",
+			releases: releaseOf("0001", "0002", "0003"),
+			fixture:  taskFixture{pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed, failed}, log: failsOn("0003")},
+			want:     0,
+		},
+		{
+			name:    "a first run without the release falls back to the snapshot",
+			fixture: taskFixture{pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed}, log: failsOn("0001", "0002")},
+			want:    1,
+		},
+		{
+			name:    "a retry without the release claims nothing",
+			fixture: taskFixture{pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed, failed}, log: failsOn("0002")},
+			want:    0,
+		},
+		{
+			name:     "a run that finished has none",
+			releases: releaseOf("0001", "0002", "0003"),
+			fixture:  taskFixture{status: v1pb.Task_DONE, pending: 3, pendingRanges: [][2]int32{{0, 3}}, runs: []v1pb.TaskRun_Status{failed, done}, log: []*v1pb.TaskRunLogEntry{fileEntry("0002", "migrations/0002.sql"), commandEntry("SELECT 1", 0)}},
+			want:     0,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := tc.fixture
+			fixture.id, fixture.release = "hr", true
+			if fixture.status == v1pb.Task_STATUS_UNSPECIFIED {
+				fixture.status = v1pb.Task_FAILED
+			}
+			tasks := buildStageWithInput(t, Input{Releases: tc.releases}, fixture)
+			require.Equal(t, tc.want, tasks[0].FilesNotRun)
+		})
+	}
 }

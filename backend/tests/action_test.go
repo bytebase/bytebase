@@ -1663,6 +1663,8 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 		[]byte("CREATE TABLE account (id INT PRIMARY KEY, tier TEXT);"), 0644))
 	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
 		[]byte("INSERT INTO account VALUES (1, 'basic');\nINSERT INTO account VALUES (1, 'pro');"), 0644))
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00003_never_reached.sql"),
+		[]byte("INSERT INTO account VALUES (2, 'basic');"), 0644))
 	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
 
 	actionResult, err := executeActionCommand(ctx,
@@ -1690,6 +1692,7 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 	a.Equal("FAILED", task.Status)
 	a.NotEmpty(task.Detail)
 	a.Equal(int64(0), *task.AffectedRows, "the row inserted before the failure was rolled back")
+	a.Equal(1, task.FilesNotRun, "the file after the failure was never reached")
 
 	a.Len(task.Files, 2)
 	a.Equal("DONE", task.Files[0].Status)

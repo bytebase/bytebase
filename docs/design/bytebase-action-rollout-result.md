@@ -172,7 +172,10 @@ One field says how the run ended. It restates today's behavior and changes none 
   file and task totals leave them out.
 - **Without a logged rollback the result claims nothing** about what a failed file left behind.
   A rollback that itself failed is not a logged rollback.
-- **Files after a failure are counted as not run**, from the task's `release_state`.
+- **Files after a failure are counted as not run**: the pending files after the last one the run
+  reached, in the release's order. The task's `release_state` is a snapshot from when the rollout
+  was created, and a retry skips what an earlier run applied, so its pending count alone is right
+  only for a first run.
 
 ### Where it shows
 

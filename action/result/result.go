@@ -190,6 +190,9 @@ type Input struct {
 	// either as a byte range of its source, so a command whose source is
 	// missing is reported without its statement.
 	Sources map[string][]byte
+	// Releases are keyed by name. They give the order of a release's files,
+	// which says how many a stopped run never reached.
+	Releases map[string]*v1pb.Release
 }
 
 // SourceKey is the Sources key of one file of a release.
@@ -364,16 +367,40 @@ func buildTask(in Input, task *v1pb.Task, runs []*v1pb.TaskRun) *Task {
 	}
 	t.AffectedRows = sumRows(counted)
 
-	release := task.GetDatabaseUpdate().GetRelease() != ""
-	if release && runDone && len(t.Files) == 0 {
+	release := task.GetDatabaseUpdate().GetRelease()
+	if release != "" && runDone && len(t.Files) == 0 {
 		t.Unchanged = true
 	}
-	if release && !runDone {
-		if notRun := int(task.GetDatabaseUpdate().GetReleaseState().GetPendingCount()) - len(t.Files); notRun > 0 {
-			t.FilesNotRun = notRun
-		}
+	if release != "" && !runDone {
+		t.FilesNotRun = filesNotRun(task.GetDatabaseUpdate().GetReleaseState(), in.Releases[release], t.Files, len(runs))
 	}
 	return t
+}
+
+// filesNotRun counts the files a stopped run never reached: the pending ones
+// after the last file it ran, in the release's order. The task's release
+// state is a snapshot from when the rollout was created, and a later run
+// skips what an earlier one applied, so its pending count is only right for a
+// first run. Without the release the count is known for a first run alone.
+func filesNotRun(state *v1pb.Task_ReleaseState, release *v1pb.Release, files []*File, runs int) int {
+	position := -1
+	if len(files) > 0 {
+		last := files[len(files)-1].Version
+		position = slices.IndexFunc(release.GetFiles(), func(file *v1pb.Release_File) bool {
+			return file.GetVersion() == last
+		})
+	}
+	if position < 0 {
+		if runs > 1 {
+			return 0
+		}
+		return max(int(state.GetPendingCount())-len(files), 0)
+	}
+	var count int
+	for _, pending := range state.GetPendingRanges() {
+		count += max(int(pending.GetEnd())-max(int(pending.GetStart()), position+1), 0)
+	}
+	return count
 }
 
 type scope struct {

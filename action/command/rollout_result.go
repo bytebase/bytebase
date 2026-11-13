@@ -84,17 +84,50 @@ func collectResult(w *world.World, client *client) *result.Result {
 	if failed > 0 {
 		w.Logger.Warn("failed to read some task run logs, their tasks are reported by status only", "count", failed)
 	}
-	in.Sources = readSources(ctx, w, client, result.NeededSources(stage, taskRuns, in.Logs))
+	releases := newReleaseReader(w, client)
+	for _, task := range stage.GetTasks() {
+		// The release's file order says what a stopped run never reached.
+		if name := task.GetDatabaseUpdate().GetRelease(); name != "" && task.GetStatus() != v1pb.Task_DONE {
+			releases.get(ctx, name)
+		}
+	}
+	in.Sources = readSources(ctx, w, client, releases, result.NeededSources(stage, taskRuns, in.Logs))
+	in.Releases = releases.read
 	return result.Build(in)
+}
+
+// releaseReader reads each release once. A release that cannot be read is
+// logged once and left out.
+type releaseReader struct {
+	w      *world.World
+	client *client
+	tried  map[string]bool
+	read   map[string]*v1pb.Release
+}
+
+func newReleaseReader(w *world.World, client *client) *releaseReader {
+	return &releaseReader{w: w, client: client, tried: map[string]bool{}, read: map[string]*v1pb.Release{}}
+}
+
+func (r *releaseReader) get(ctx context.Context, name string) *v1pb.Release {
+	if !r.tried[name] {
+		r.tried[name] = true
+		release, err := r.client.getRelease(ctx, name)
+		if err != nil {
+			r.w.Logger.Warn("failed to read the release for the rollout result", "release", name, "error", err)
+		} else {
+			r.read[name] = release
+		}
+	}
+	return r.read[name]
 }
 
 // readSources reads the text that logged byte ranges point into. A release
 // file is read from the job's checkout when its hash matches the release's,
 // which needs no permission beyond reading the release, and from its sheet
 // otherwise.
-func readSources(ctx context.Context, w *world.World, client *client, refs []result.SourceRef) map[string][]byte {
+func readSources(ctx context.Context, w *world.World, client *client, releases *releaseReader, refs []result.SourceRef) map[string][]byte {
 	sources := map[string][]byte{}
-	releases := map[string]*v1pb.Release{}
 	var missing int
 	// Set once a sheet read fails, so that an identity that may not read
 	// sheets is refused once and not once per file.
@@ -102,16 +135,8 @@ func readSources(ctx context.Context, w *world.World, client *client, refs []res
 	for _, ref := range refs {
 		sheet := ref.Sheet
 		if ref.Release != "" {
-			release, ok := releases[ref.Release]
-			if !ok {
-				var err error
-				if release, err = client.getRelease(ctx, ref.Release); err != nil {
-					w.Logger.Warn("failed to read the release for the rollout result", "release", ref.Release, "error", err)
-				}
-				releases[ref.Release] = release
-			}
 			sheet = ""
-			for _, file := range release.GetFiles() {
+			for _, file := range releases.get(ctx, ref.Release).GetFiles() {
 				if file.GetVersion() != ref.Version {
 					continue
 				}

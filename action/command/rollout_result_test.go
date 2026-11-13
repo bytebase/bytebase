@@ -85,7 +85,7 @@ func TestReadSources(t *testing.T) {
 
 	t.Run("a checked-out file needs no sheet read", func(t *testing.T) {
 		s := &sourcesTestServer{release: release(checkedOut), sheets: map[string][]byte{"projects/example/sheets/s2": []byte("SELECT 2;")}}
-		sources := readSources(context.Background(), world.NewWorld(), newSourcesTestClient(t, s), refs)
+		sources := readTestSources(t, s, refs)
 
 		require.Equal(t, content, sources[refs[0].Key()])
 		require.Equal(t, []byte("SELECT 2;"), sources[refs[1].Key()])
@@ -96,7 +96,7 @@ func TestReadSources(t *testing.T) {
 
 	t.Run("an identity that cannot read sheets is refused once", func(t *testing.T) {
 		s := &sourcesTestServer{release: release(absent)}
-		sources := readSources(context.Background(), world.NewWorld(), newSourcesTestClient(t, s), refs)
+		sources := readTestSources(t, s, refs)
 
 		require.Empty(t, sources)
 		require.Len(t, s.sheetRequests, 1)
@@ -105,7 +105,7 @@ func TestReadSources(t *testing.T) {
 	t.Run("a sheet task reads its sheet", func(t *testing.T) {
 		s := &sourcesTestServer{sheets: map[string][]byte{"projects/example/sheets/s9": content}}
 		ref := result.SourceRef{Sheet: "projects/example/sheets/s9"}
-		sources := readSources(context.Background(), world.NewWorld(), newSourcesTestClient(t, s), []result.SourceRef{ref})
+		sources := readTestSources(t, s, []result.SourceRef{ref})
 
 		require.Equal(t, content, sources[ref.Key()])
 	})
@@ -129,4 +129,12 @@ func TestReadCheckedOutFile(t *testing.T) {
 
 	_, ok = readCheckedOutFile(&v1pb.Release_File{Path: path})
 	require.False(t, ok, "a release file with no hash cannot be verified")
+}
+
+func readTestSources(t *testing.T, s *sourcesTestServer, refs []result.SourceRef) map[string][]byte {
+	t.Helper()
+	ctx := context.Background()
+	w := world.NewWorld()
+	c := newSourcesTestClient(t, s)
+	return readSources(ctx, w, c, newReleaseReader(w, c), refs)
 }
