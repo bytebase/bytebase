@@ -29,6 +29,7 @@ const interruptionStatus = (reason: "user" | "unexpected") =>
   `[Agent run status: ${interruptionNote[reason]}]`;
 
 const runtimeMaskingQuestionKeys = new Map([
+  ["ask_unmask_method", "agent.masking.unmask-method.question"],
   ["ask_masking_exemption_scope", "agent.masking.exemption-scope.question"],
   ["ask_masking_rule_scope", "agent.masking.rule-scope.question"],
   ["ask_masking_semantic_type", "agent.masking.semantic-type-choice.question"],

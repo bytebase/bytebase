@@ -53,6 +53,18 @@ const runtimeClarification = (
 describe("runtime-owned masking clarifications", () => {
   test.each([
     [
+      "ask_unmask_method",
+      "just-in-time",
+      "JIT Access Grant",
+      "agent.masking.unmask-method.question",
+    ],
+    [
+      "ask_unmask_method",
+      "masking-exemption",
+      "Masking exemption",
+      "agent.masking.unmask-method.question",
+    ],
+    [
       "ask_masking_rule_scope",
       "workspace",
       "All workspace databases",
@@ -136,33 +148,38 @@ describe("runtime-owned masking clarifications", () => {
     }
   );
 
-  test.each(["ask_masking_rule_scope", "ask_masking_semantic_type"])(
-    "omits abandoned clarifications when %s is canceled",
-    (name) => {
-      const messages = [
-        { ...userMessage(), content: "Mask email" },
-        ...clarification(
-          "prior-column",
-          { kind: "input", prompt: "Which column?" },
-          { kind: "input", answer: "PRIVATE_CANCELLED_COLUMN" }
-        ),
-        ...runtimeClarification(name, "abandoned-choice", {
-          kind: "cancelled",
-          reason: "user",
-        }),
-        {
-          ...userMessage(),
-          id: "next",
-          content: "How to mask email for all users?",
-        },
-      ];
-      expect(
-        JSON.stringify(sanitizeOutboundHistory(messages, "projects/orders"))
-      ).not.toContain("PRIVATE_CANCELLED_COLUMN");
-    }
-  );
+  test.each([
+    "ask_masking_rule_scope",
+    "ask_masking_semantic_type",
+    "ask_unmask_method",
+  ])("omits abandoned clarifications when %s is canceled", (name) => {
+    const messages = [
+      { ...userMessage(), content: "Mask email" },
+      ...clarification(
+        "prior-column",
+        { kind: "input", prompt: "Which column?" },
+        { kind: "input", answer: "PRIVATE_CANCELLED_COLUMN" }
+      ),
+      ...runtimeClarification(name, "abandoned-choice", {
+        kind: "cancelled",
+        reason: "user",
+      }),
+      {
+        ...userMessage(),
+        id: "next",
+        content: "How to mask email for all users?",
+      },
+    ];
+    expect(
+      JSON.stringify(sanitizeOutboundHistory(messages, "projects/orders"))
+    ).not.toContain("PRIVATE_CANCELLED_COLUMN");
+  });
 
-  test.each(["ask_masking_rule_scope", "ask_masking_semantic_type"])(
+  test.each([
+    "ask_masking_rule_scope",
+    "ask_masking_semantic_type",
+    "ask_unmask_method",
+  ])(
     "does not retain a canceled %s turn as the historical database candidate",
     (name) => {
       const databaseReference = (name: string) => ({
