@@ -268,36 +268,6 @@ func typeName(tn *ast.TypeName) string {
 	return ""
 }
 
-// typeNameFull extracts the full type name with modifiers from a TypeName node.
-// For example, "character varying(20)" instead of just "character varying".
-func typeNameFull(tn *ast.TypeName) string {
-	name := typeName(tn)
-	if name == "" {
-		return ""
-	}
-	if tn.Typmods != nil && len(tn.Typmods.Items) > 0 {
-		var mods []string
-		for _, item := range tn.Typmods.Items {
-			switch v := item.(type) {
-			case *ast.Integer:
-				mods = append(mods, fmt.Sprintf("%d", v.Ival))
-			case *ast.A_Const:
-				if iv, ok := v.Val.(*ast.Integer); ok {
-					mods = append(mods, fmt.Sprintf("%d", iv.Ival))
-				}
-			default:
-			}
-		}
-		if len(mods) > 0 {
-			name += "(" + strings.Join(mods, ",") + ")"
-		}
-	}
-	if tn.ArrayBounds != nil && len(tn.ArrayBounds.Items) > 0 {
-		name += "[]"
-	}
-	return name
-}
-
 // listStrings extracts string values from an ast.List.
 func listStrings(list *ast.List) []string {
 	if list == nil {

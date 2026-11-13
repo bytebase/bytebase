@@ -42,31 +42,6 @@ func getTemplateRegexp(template string, templateList []string, tokens map[string
 	return regexp.Compile(template)
 }
 
-// tableName --> columnName --> columnType.
-type tableColumnTypes map[string]map[string]string
-
-func (t tableColumnTypes) set(tableName string, columnName string, columnType string) {
-	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(map[string]string)
-	}
-	t[tableName][columnName] = columnType
-}
-
-func (t tableColumnTypes) get(tableName string, columnName string) (columnType string, ok bool) {
-	if _, ok := t[tableName]; !ok {
-		return "", false
-	}
-	col, ok := t[tableName][columnName]
-	return col, ok
-}
-
-func (t tableColumnTypes) delete(tableName string, columnName string) {
-	if _, ok := t[tableName]; !ok {
-		return
-	}
-	delete(t[tableName], columnName)
-}
-
 // tableName extracts the table name from a TableRef.
 func tableName(ref *ast.TableRef) string {
 	if ref == nil {
@@ -144,15 +119,6 @@ func tableOptionValue(opts []*ast.TableOption, name string) string {
 		}
 	}
 	return ""
-}
-
-// constraintName returns the CONSTRAINT symbol, else the name written after
-// FOREIGN KEY, which omni keeps in IndexName.
-func constraintName(c *ast.Constraint) string {
-	if c.Name != "" {
-		return c.Name
-	}
-	return c.IndexName
 }
 
 // dataTypeNameCompact returns a compact, lowercase type name string.
