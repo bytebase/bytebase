@@ -198,6 +198,7 @@ Reading the rows:
 -   `affectedRows` is the count the database returned. A file's count sums its commands, and a task's sums its files.
 -   A missing `affectedRows` means the database driver reported none. It does not mean zero.
 -   Commands in a transaction that rolled back keep their count, carry `rolledBack`, and are left out of the file and task totals.
+-   A command with `earlierAttempt` committed in an attempt Bytebase then retried, which happens when a file runs outside a transaction. It counts toward the totals, and the same statement appears again from the final attempt.
 -   A task's result is its latest run. `attempt` counts its runs, and `previousRuns` lists the earlier ones.
 -   A task with `unchanged` finished with no file left to apply.
 

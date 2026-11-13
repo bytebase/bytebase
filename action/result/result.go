@@ -103,7 +103,10 @@ type Command struct {
 	// driver counted each.
 	AllAffectedRows []int64 `json:"allAffectedRows,omitempty"`
 	RolledBack      bool    `json:"rolledBack,omitempty"`
-	Error           string  `json:"error,omitempty"`
+	// EarlierAttempt marks a command that committed in an attempt the
+	// executor then retried. It ran again in the final attempt.
+	EarlierAttempt bool   `json:"earlierAttempt,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 // DetailStage returns the outcome and the stage the result details: the first
@@ -400,25 +403,30 @@ func splitScopes(entries []*v1pb.TaskRunLogEntry) []scope {
 	return scopes
 }
 
-// buildCommands reads one scope's final attempt. A RETRY_INFO entry closes an
-// attempt the executor ran again, so everything before the last one is
-// superseded. It also returns the first failure logged outside a command.
+// buildCommands reads one scope. A RETRY_INFO entry closes an attempt the
+// executor ran again: its failure is the reason for the retry, not the
+// result. Such an attempt's commands are dropped unless they are known to
+// have committed, as they are when the script runs outside a transaction and
+// the retry starts it again from the top. It also returns the final attempt's
+// first failure logged outside a command.
 func buildCommands(entries []*v1pb.TaskRunLogEntry, source []byte) ([]*Command, string) {
-	for i := len(entries) - 1; i >= 0; i-- {
-		if entries[i].GetType() == v1pb.TaskRunLogEntry_RETRY_INFO {
-			entries = entries[i+1:]
-			break
-		}
-	}
-
-	var commands []*Command
+	var earlier, commands []*Command
 	var scopeErr string
 	// inTransaction holds the commands since the last BEGIN that no COMMIT has
-	// settled. Commands run outside a transaction are never rolled back.
+	// settled. A command run outside a transaction commits by itself.
 	var open bool
 	var inTransaction []*Command
+	committed := map[*Command]bool{}
 	for _, entry := range entries {
 		switch entry.GetType() {
+		case v1pb.TaskRunLogEntry_RETRY_INFO:
+			for _, command := range commands {
+				if committed[command] {
+					command.EarlierAttempt = true
+					earlier = append(earlier, command)
+				}
+			}
+			commands, scopeErr, open, inTransaction = nil, "", false, nil
 		case v1pb.TaskRunLogEntry_COMMAND_EXECUTE:
 			execute := entry.GetCommandExecute()
 			command := &Command{Statement: statementOf(execute, source)}
@@ -436,6 +444,8 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry, source []byte) ([]*Command, 
 			commands = append(commands, command)
 			if open {
 				inTransaction = append(inTransaction, command)
+			} else if command.AffectedRows != nil {
+				committed[command] = true
 			}
 		case v1pb.TaskRunLogEntry_TRANSACTION_CONTROL:
 			control := entry.GetTransactionControl()
@@ -449,6 +459,9 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry, source []byte) ([]*Command, 
 				// A failed commit is followed by a rollback entry, which
 				// settles these commands.
 				if control.GetError() == "" {
+					for _, command := range inTransaction {
+						committed[command] = command.AffectedRows != nil
+					}
 					open, inTransaction = false, nil
 				}
 			case v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK:
@@ -463,7 +476,7 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry, source []byte) ([]*Command, 
 		default:
 		}
 	}
-	return commands, scopeErr
+	return append(earlier, commands...), scopeErr
 }
 
 var (

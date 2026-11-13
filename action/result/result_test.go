@@ -580,3 +580,63 @@ func TestBuildCutsStatementsFromAFileWithDirectives(t *testing.T) {
 	require.Equal(t, "-- backfill\nUPDATE t SET a = 1;", commands[0].Statement)
 	require.Equal(t, "DELETE FROM t WHERE a = 2;", commands[1].Statement)
 }
+
+// With the script outside a transaction, a retry starts it again from the
+// top, and what the first attempt ran has already committed.
+func TestBuildTaskKeepsCommittedCommandsOfARetriedAttempt(t *testing.T) {
+	tasks := buildStage(t, taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true, pending: 1,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("0001", "migrations/0001_backfill.sql"),
+			commandEntry("UPDATE t SET a = 1 WHERE a IS NULL", 1200),
+			failedCommandEntry("ALTER TABLE t ADD COLUMN b int", "lock timeout"),
+			retryEntry(),
+			commandEntry("UPDATE t SET a = 1 WHERE a IS NULL", 0),
+			commandEntry("ALTER TABLE t ADD COLUMN b int", 0),
+		},
+	})
+
+	file := tasks[0].Files[0]
+	require.Equal(t, "DONE", file.Status, "the retried failure is not the result")
+	require.Equal(t, int64(1200), *file.AffectedRows)
+	require.Equal(t, int64(1200), *tasks[0].AffectedRows)
+	require.Len(t, file.Commands, 3)
+	require.True(t, file.Commands[0].EarlierAttempt)
+	require.Equal(t, int64(1200), *file.Commands[0].AffectedRows)
+	require.False(t, file.Commands[1].EarlierAttempt)
+	require.Empty(t, file.Commands[1].Error)
+	require.False(t, file.Commands[2].EarlierAttempt)
+}
+
+func TestBuildTaskDropsUnsettledCommandsOfARetriedAttempt(t *testing.T) {
+	tasks := buildStage(t, taskFixture{
+		id: "hr", status: v1pb.Task_DONE, release: true, pending: 1,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("0001", "migrations/0001_backfill.sql"),
+			// Committed in its own transaction before the one that timed out.
+			begin,
+			commandEntry("UPDATE t SET a = 1", 10),
+			commit,
+			// Never settled: the rollback itself failed.
+			begin,
+			commandEntry("UPDATE t SET b = 1", 20),
+			failedCommandEntry("ALTER TABLE t ADD COLUMN c int", "lock timeout"),
+			transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK, "connection reset"),
+			retryEntry(),
+			begin,
+			commandEntry("UPDATE t SET a = 1", 0),
+			commandEntry("UPDATE t SET b = 1", 20),
+			commandEntry("ALTER TABLE t ADD COLUMN c int", 0),
+			commit,
+		},
+	})
+
+	file := tasks[0].Files[0]
+	require.Equal(t, "DONE", file.Status)
+	require.Empty(t, file.Error, "a retried attempt's rollback failure is not the result")
+	require.Len(t, file.Commands, 4)
+	require.True(t, file.Commands[0].EarlierAttempt)
+	require.Equal(t, int64(30), *file.AffectedRows, "10 committed earlier and 20 in the final attempt")
+}

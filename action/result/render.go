@@ -550,6 +550,9 @@ func commandLines(commands []*Command) []string {
 		if command.RolledBack {
 			line += "  (rolled back)"
 		}
+		if command.EarlierAttempt {
+			line += "  (earlier attempt)"
+		}
 		lines = append(lines, line)
 	}
 	if rest := changing[len(shown):]; len(rest) > 0 {

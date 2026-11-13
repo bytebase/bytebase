@@ -160,9 +160,13 @@ One field says how the run ended. It restates today's behavior and changes none 
 
 - **The latest task run is the task's result.** Earlier runs are listed with their status, and
   their rows are never added.
-- **Inside one run, only the final attempt counts.** Entries before the last `RETRY_INFO` marker
-  are superseded, the rule the console follows in
-  [task-run-log-previous-attempts.md](task-run-log-previous-attempts.md).
+- **Inside one run, only the final attempt is the result.** An attempt before a `RETRY_INFO`
+  marker was retried, so its failure is the reason for the retry and not the outcome, the rule the
+  console follows in [task-run-log-previous-attempts.md](task-run-log-previous-attempts.md).
+- **What a retried attempt committed still counts.** A script run with `-- txn-mode = off` commits
+  each command, and the retry starts it again from the top. Those commands stay in the result,
+  marked as from an earlier attempt, and add to the totals. Anything rolled back or never settled
+  in a retried attempt is dropped.
 - **Rolled-back commands add nothing to totals.** When the log shows `ROLLBACK` for a
   transaction, its commands keep their counts and are marked rolled back, as is their file. The
   file and task totals leave them out.

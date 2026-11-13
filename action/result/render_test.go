@@ -331,3 +331,12 @@ func TestCommandsWithoutStatementAreNamedByPosition(t *testing.T) {
 	require.Equal(t, []string{"7 rows  statement 2"}, commandLines(commands))
 	require.Equal(t, []string{"statement 3", "duplicate key"}, failureLines(commands, ""))
 }
+
+func TestCommandLinesMarkAnEarlierAttempt(t *testing.T) {
+	commands := []*Command{
+		{Statement: "UPDATE t SET a = 1", AffectedRows: rows(1200), EarlierAttempt: true},
+		{Statement: "UPDATE t SET a = 1", AffectedRows: rows(0)},
+	}
+
+	require.Equal(t, []string{"1,200 rows  UPDATE t SET a = 1  (earlier attempt)"}, commandLines(commands))
+}
