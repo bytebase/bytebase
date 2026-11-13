@@ -1832,8 +1832,7 @@ func filterCreateOptions(createOptions string) string {
 // CREATE OR REPLACE VIEW and is order-tolerant, so no temporary-view scaffolding is
 // needed. dbName is the database being dumped; its own-database qualifier is stripped
 // from the body so the emitted form matches the user's unqualified spelling (see
-// stripViewBodyDatabaseQualifier — required for 5.7 derived-table view idempotence,
-// entry TestSDLStressViewDerivedTable57). The stored one-line body is then
+// stripViewBodyDatabaseQualifier). The stored one-line body is then
 // pretty-printed by formatViewBodySDL — a whitespace-only, deterministic rewrite, so
 // the omni no-op invariant and the dump-cycle byte stability both hold.
 func writeViewSDL(buf *strings.Builder, dbName string, view *metadatapb.ViewMetadata) error {

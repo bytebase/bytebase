@@ -4,15 +4,17 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -24,6 +26,9 @@ func init() {
 }
 
 // NamingTableAdvisor is the advisor checking for table naming convention.
+// The judgment lives in omni (oracle/v1review.NamingTable); this adapter
+// converts the rule's payload into the omni config and renders the findings
+// as advice.
 type NamingTableAdvisor struct {
 }
 
@@ -38,82 +43,56 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := NewNamingTableRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, format, maxLength)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// NamingTableRule is the rule implementation for table naming convention.
-type NamingTableRule struct {
-	BaseRule
-
-	currentDatabase string
-	format          *regexp.Regexp
-	maxLength       int
-}
-
-// NewNamingTableRule creates a new NamingTableRule.
-func NewNamingTableRule(level storepb.Advice_Status, title string, currentDatabase string, format *regexp.Regexp, maxLength int) *NamingTableRule {
-	return &NamingTableRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		format:          format,
-		maxLength:       maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
-}
 
-// Name returns the rule name.
-func (*NamingTableRule) Name() string {
-	return "naming.table"
-}
-
-// OnStatement checks table names in omni DDL statements.
-func (r *NamingTableRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkTableName(lastObjectName(n.Name), n.Loc)
-	case *ast.AlterTableStmt:
-		for _, cmd := range alterTableCmds(n) {
-			if cmd.Action == ast.AT_RENAME && cmd.NewName != "" {
-				r.checkTableName(cmd.NewName, cmd.Loc)
-			}
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	default:
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := oraclev1review.NamingTable([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingTableConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
 
-func (r *NamingTableRule) checkTableName(tableName string, loc ast.Loc) {
-	if tableName == "" {
-		return
+// findingLine is the 1-based line of a finding within the statement text,
+// the statement's first line when the AST kept no range for the name.
+func findingLine(text string, f v1review.Finding) int {
+	if f.Start == 0 && f.End == 0 {
+		return 1
 	}
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			base.ConvertANTLRLineToPosition(r.locLine(loc)),
-		)
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(
-			r.level,
-			code.NamingTableConventionMismatch.Int32(),
-			fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			base.ConvertANTLRLineToPosition(r.locLine(loc)),
-		)
-	}
+	return int(plsqlparser.ByteOffsetToRunePosition(text, f.Start).Line)
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/mysql/catalog"
@@ -75,73 +74,42 @@ func adjustPrologueError(err error) error {
 	return errors.New(msg)
 }
 
-// mysqlVersionFor maps a MySQL engine version string (e.g. "5.7.25", "8.0.32", a bare
-// "5.7") to the omni catalog Version whose stored form the diff/generate canonicalizer
-// must reproduce. The single behavioral split is the utf8mb4 default collation
-// (utf8mb4_general_ci on 5.7 vs utf8mb4_0900_ai_ci on 8.0) and integer display widths;
-// anything < 8.0.0 takes the 5.7 form, otherwise 8.0. An empty or unparseable version
-// falls back to MySQL80 — the historical default — so callers that cannot supply a
-// version keep the existing 8.0 behavior.
-func mysqlVersionFor(engineVersion string) catalog.Version {
-	v := strings.TrimSpace(engineVersion)
-	if v == "" {
-		return catalog.MySQL80
+// unsupportedSDLVersion returns why the declarative path refuses a MySQL server, ""
+// when it does not: a server older than 8.0 is refused. omni's catalog canonicalizes
+// only against the 8.0 stored form, and diffing an older server as 8.0 emits DDL the
+// SDL never asked for: a bare TIMESTAMP column loses its automatic default and update,
+// a charset-only column is given utf8mb4_0900_ai_ci, which 5.7 rejects, and several
+// unchanged definitions are re-emitted on every rollout. A version that names no
+// major number is accepted: callers without an instance pass "".
+func unsupportedSDLVersion(engineVersion string) string {
+	version := strings.TrimSpace(engineVersion)
+	major, _, _ := strings.Cut(version, ".")
+	if n, err := strconv.Atoi(major); err == nil && n < 8 {
+		return fmt.Sprintf("declarative schema change requires MySQL 8.0 or later, but this instance runs MySQL %s", version)
 	}
-	sv, err := semver.ParseTolerant(v)
-	if err != nil {
-		return catalog.MySQL80
-	}
-	if sv.LT(semver.MustParse("8.0.0")) {
-		return catalog.MySQL57
-	}
-	return catalog.MySQL80
+	return ""
 }
 
-// loadCatalog parses a schema text and returns a catalog reflecting it, recording the
-// target MySQL version on the catalog so the later Diff/GenerateMigration canonicalize
-// against the right stored form. LoadSDLWithVersion is the canonical, dependency-aware
-// path. LoadSQL is tried only as a fallback for raw dumps containing non-SDL statements
-// (e.g. SET, SELECT, LOCK TABLES) that LoadSDL legitimately rejects; the fallback catalog's
-// version is set explicitly so it is not left at the New() default. When both fail, the
-// LoadSDL error is returned because it is far more diagnostic than LoadSQL's order-dependent
-// failures.
-func loadCatalog(text string, version catalog.Version) (*catalog.Catalog, error) {
+// loadCatalog parses a schema text and returns a catalog reflecting it. LoadSDL is the
+// canonical, dependency-aware path; every catalog canonicalizes against the one stored
+// form omni keeps (MySQL80). LoadSQL is tried only as a fallback for raw dumps containing non-SDL
+// statements (e.g. SET, SELECT, LOCK TABLES) that LoadSDL legitimately rejects; its
+// session defaults are already the 8.0 ones. When both fail, the LoadSDL error is
+// returned because it is far more diagnostic than LoadSQL's order-dependent failures.
+func loadCatalog(text string) (*catalog.Catalog, error) {
 	wrapped := withDatabaseContext(text)
-	c, sdlErr := catalog.LoadSDLWithVersion(wrapped, version)
+	c, sdlErr := catalog.LoadSDL(wrapped)
 	if sdlErr == nil {
 		return c, nil
 	}
-	// SetVersion alone only sets session.Version; it does NOT seed
-	// session.explicit_defaults_for_timestamp, which LoadSDLWithVersion seeds from the
-	// version normalizer (omni sdl.go) because it governs how a bare TIMESTAMP column
-	// materializes at load time. Omni exposes no setter for it, so we prepend an explicit
-	// SET to the fallback text: omni's exec handler applies it (before any CREATE TABLE)
-	// exactly as it would an in-dump SET, seeding EDFT to this version's server-box default
-	// (OFF on 5.7, ON on 8.0). Without this, a 5.7 target taking the LoadSQL fallback keeps
-	// the 8.0 default and phantom-diffs against a 5.7 source loaded via LoadSDLWithVersion.
-	// A later SET inside the dump still wins (omni processes it afterwards).
-	if c, err := catalog.LoadSQL(explicitDefaultsForTimestampSet(version) + wrapped); err == nil {
-		c.SetVersion(version)
+	if c, err := catalog.LoadSQL(wrapped); err == nil {
 		return c, nil
 	}
 	return nil, adjustPrologueError(sdlErr)
 }
 
-// explicitDefaultsForTimestampSet returns a leading `SET explicit_defaults_for_timestamp`
-// statement that seeds the session variable to version's server-box default, matching what
-// LoadSDLWithVersion seeds via the version normalizer.
-func explicitDefaultsForTimestampSet(version catalog.Version) string {
-	if catalog.NormalizerFor(version).ExplicitDefaultsForTimestamp {
-		return "SET explicit_defaults_for_timestamp = 1;\n"
-	}
-	return "SET explicit_defaults_for_timestamp = 0;\n"
-}
-
 // buildMigrationPlan loads two schema texts into catalogs, diffs them, and returns the
-// migration plan. Returns nil if there are no changes. Both catalogs carry the same
-// target MySQL version, so Diff (which reads the version off the `to` catalog) and
-// GenerateMigration reproduce that version's stored form — a 5.7 schema no longer
-// phantom-diffs on the utf8mb4 default collation and never emits utf8mb4_0900_ai_ci.
+// migration plan. Returns nil if there are no changes.
 //
 // sessionCtx, when non-nil, carries the per-object session context (sql_mode/charset/
 // collation, and event time_zone) of the SOURCE schema. It is stamped onto the source
@@ -149,15 +117,15 @@ func explicitDefaultsForTimestampSet(version catalog.Version) string {
 // the OLD/From objects live, and their original context is what a recreate must restore.
 // The context is deliberately not part of any object's declarative identity, so it never
 // causes a phantom diff; it is consumed only by the generator's recreate framing.
-func buildMigrationPlan(sourceText, targetText string, version catalog.Version, sessionCtx *schema.SDLSessionContextMap) (*catalog.MigrationPlan, error) {
-	from, err := loadCatalog(sourceText, version)
+func buildMigrationPlan(sourceText, targetText string, sessionCtx *schema.SDLSessionContextMap) (*catalog.MigrationPlan, error) {
+	from, err := loadCatalog(sourceText)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load source schema")
 	}
 	if sessionCtx != nil {
 		from.ApplySessionContext(toCatalogSessionContextMap(sessionCtx))
 	}
-	to, err := loadCatalog(targetText, version)
+	to, err := loadCatalog(targetText)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load target schema")
 	}
@@ -197,11 +165,8 @@ func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionC
 }
 
 // mysqlDiffSDLMigrationWithContext is the registered SDL diff entry point: two schema
-// texts plus the target server version in, migration SQL out. engineVersion is the synced
-// database's version string (e.g. "5.7.25"), threaded by the release/DiffSchema paths
-// so the omni catalog selects the version-correct normalizer (a 5.7 database is
-// canonicalized as 5.7 — utf8mb4_general_ci default, integer display widths — instead
-// of the 8.0 stored form); an empty or unparseable value falls back to 8.0.
+// texts plus the target server version in, migration SQL out. A server older than
+// MySQL 8.0 is rejected (see unsupportedSDLVersion).
 //
 // sessionCtx carries the source schema's per-object session context so a routine/trigger/
 // event recreate is re-emitted under its ORIGINAL sql_mode/charset/collation (event
@@ -209,7 +174,10 @@ func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionC
 // synced metadata to source it from; only the live rollout (schema.SDLMigration) supplies
 // it.
 func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string, sessionCtx *schema.SDLSessionContextMap) (string, error) {
-	plan, err := buildMigrationPlan(sourceSDL, targetSDL, mysqlVersionFor(engineVersion), sessionCtx)
+	if reason := unsupportedSDLVersion(engineVersion); reason != "" {
+		return "", errors.New(reason)
+	}
+	plan, err := buildMigrationPlan(sourceSDL, targetSDL, sessionCtx)
 	if err != nil {
 		return "", err
 	}
@@ -326,13 +294,20 @@ func mysqlLineCommentEnd(sql string, i int) int {
 	return i
 }
 
-// mysqlSDLDropAdvices analyzes the version-aware SDL migration plan from the current
-// (dumped) schema to the user SDL and emits a WARNING advice for each destructive or
+// mysqlSDLDropAdvices analyzes the SDL migration plan from the current (dumped)
+// schema to the user SDL and emits a WARNING advice for each destructive or
 // in-place-replace operation, mirroring pg/sdl_migration.go's pgSDLDropAdvices.
-// engineVersion is threaded so the plan is built against the version-correct stored form
-// (a 5.7 schema is not phantom-diffed by the utf8mb4 default-collation gap), keeping the
-// drop set free of false positives.
+// A server older than MySQL 8.0 gets one ERROR advice instead: the release check
+// then reports what the rollout would fail on (see unsupportedSDLVersion).
 func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
+	if reason := unsupportedSDLVersion(engineVersion); reason != "" {
+		return []*storepb.Advice{{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Unsupported.Int32(),
+			Title:   "MySQL version not supported",
+			Content: reason,
+		}}, nil
+	}
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_MYSQL, currentSchema)
 	if err != nil {
 		return nil, err
@@ -341,7 +316,7 @@ func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetada
 	// depends only on the op TYPES (OpDrop*/OpCreate*), which are identical with or
 	// without the recreate framing. Applying context would only add SET wrappers to
 	// op.SQL, changing nothing the advice walker inspects.
-	plan, err := buildMigrationPlan(sourceSDL, userSDLText, mysqlVersionFor(engineVersion), nil)
+	plan, err := buildMigrationPlan(sourceSDL, userSDLText, nil)
 	if err != nil {
 		return nil, err
 	}
