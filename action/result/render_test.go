@@ -331,9 +331,9 @@ func TestRenderMarkdownCountsTheFailuresItLeavesOut(t *testing.T) {
 
 func TestCommandsWithoutStatementAreNamedByPosition(t *testing.T) {
 	commands := []*Command{
-		{AffectedRows: rows(0)},
-		{AffectedRows: rows(7)},
-		{Error: "duplicate key"},
+		{Index: 1, AffectedRows: rows(0)},
+		{Index: 2, AffectedRows: rows(7)},
+		{Index: 3, Error: "duplicate key"},
 	}
 
 	require.Equal(t, []string{"7 rows  statement 2"}, commandLines(commands, len(commands), rows(7)))
@@ -347,4 +347,9 @@ func TestCommandLinesMarkAnEarlierAttempt(t *testing.T) {
 	}
 
 	require.Equal(t, []string{"1,200 rows  UPDATE t SET a = 1  (earlier attempt)"}, commandLines(commands, len(commands), rows(1200)))
+}
+
+func TestCommandLinesMarkAnUnknownCommit(t *testing.T) {
+	commands := []*Command{{Index: 1, AffectedRows: rows(1), CommitUnknown: true}}
+	require.Equal(t, []string{"1 row  statement 1  (commit outcome unknown)"}, commandLines(commands, 1, nil))
 }

@@ -61,7 +61,8 @@ type Task struct {
 	UpdateTime   *time.Time `json:"updateTime,omitempty"`
 	PreviousRuns []*Run     `json:"previousRuns,omitempty"`
 
-	// AffectedRows is nil when no command reported a count.
+	// AffectedRows is nil when no command reported a count or a commit's
+	// outcome is unknown.
 	AffectedRows *int64 `json:"affectedRows,omitempty"`
 	// Unchanged is a release task that finished with nothing to apply: every
 	// version was already applied, or the schema already matched.
@@ -91,7 +92,8 @@ type File struct {
 	Status  string `json:"status"`
 	// RolledBack means a transaction in the file was rolled back.
 	RolledBack bool `json:"rolledBack,omitempty"`
-	// AffectedRows leaves out rolled-back commands.
+	// AffectedRows leaves out rolled-back commands and is nil when a commit's
+	// outcome is unknown.
 	AffectedRows *int64 `json:"affectedRows,omitempty"`
 	// Error is a failure outside any command, such as a commit that failed.
 	Error string `json:"error,omitempty"`
@@ -103,6 +105,8 @@ type File struct {
 }
 
 type Command struct {
+	// Index is the command's one-based position in its file or sheet attempt.
+	Index     int    `json:"index"`
 	Statement string `json:"statement"`
 	// AffectedRows is nil when the command failed or logged no response.
 	AffectedRows *int64 `json:"affectedRows,omitempty"`
@@ -110,8 +114,11 @@ type Command struct {
 	// driver counted each.
 	AllAffectedRows []int64 `json:"allAffectedRows,omitempty"`
 	RolledBack      bool    `json:"rolledBack,omitempty"`
-	// EarlierAttempt marks a command that committed in an attempt the
-	// executor then retried. It ran again in the final attempt.
+	// CommitUnknown means the log does not establish whether the transaction
+	// committed. The command keeps its count, but the file and task have no total.
+	CommitUnknown bool `json:"commitUnknown,omitempty"`
+	// EarlierAttempt marks a command from an attempt the executor retried.
+	// It is kept when it committed or its commit outcome is unknown.
 	EarlierAttempt bool   `json:"earlierAttempt,omitempty"`
 	Error          string `json:"error,omitempty"`
 
@@ -334,6 +341,7 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 	scopes := log.getScopes()
 	// applied turns true once a file may have changed the database.
 	var applied bool
+	var rowsUnknown bool
 	var rows []*int64
 	for i, scope := range scopes {
 		source := sources[task.GetDatabaseUpdate().GetSheet()]
@@ -342,6 +350,7 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 		}
 		scope.readStatements(source)
 		rows = append(rows, scope.rows)
+		rowsUnknown = rowsUnknown || scope.rowsUnknown
 		if scope.file == nil {
 			t.Commands = append(t.Commands, scope.commands...)
 			t.CommandCount += scope.commandCount
@@ -371,7 +380,9 @@ func buildTask(in Input, sources map[string]sourceText, task *v1pb.Task, runs []
 		}
 		t.Files = append(t.Files, file)
 	}
-	t.AffectedRows = addRows(rows)
+	if !rowsUnknown {
+		t.AffectedRows = addRows(rows)
+	}
 
 	release := task.GetDatabaseUpdate().GetRelease()
 	if release != "" && runDone && !applied {
@@ -431,6 +442,7 @@ func DigestLog(log *v1pb.TaskRunLog) *LogDigest {
 		for _, command := range commands {
 			d.failed = d.failed || command.Error != ""
 			d.rolledBack = d.rolledBack || command.RolledBack
+			d.rowsUnknown = d.rowsUnknown || command.CommitUnknown
 			d.maxRangeEnd = max(d.maxRangeEnd, command.byteRange.GetEnd())
 		}
 		d.commands = commands
@@ -462,6 +474,7 @@ type scopeDigest struct {
 	commands     []*Command
 	commandCount int
 	rows         *int64
+	rowsUnknown  bool
 	failed       bool
 	rolledBack   bool
 	err          string
@@ -518,10 +531,9 @@ func splitScopes(entries []*v1pb.TaskRunLogEntry) []scope {
 
 // buildCommands reads one scope. A RETRY_INFO entry closes an attempt the
 // executor ran again: its failure is the reason for the retry, not the
-// result. Such an attempt's commands are dropped unless they are known to
-// have committed, as they are when the script runs outside a transaction and
-// the retry starts it again from the top. It also returns the final attempt's
-// first failure logged outside a command.
+// result. Such an attempt's commands are kept if they committed or their commit
+// outcome is unknown. It also returns the final attempt's first failure logged
+// outside a command.
 func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 	var earlier, commands []*Command
 	var scopeErr string
@@ -534,7 +546,7 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 		switch entry.GetType() {
 		case v1pb.TaskRunLogEntry_RETRY_INFO:
 			for _, command := range commands {
-				if committed[command] {
+				if committed[command] || command.CommitUnknown {
 					command.EarlierAttempt = true
 					earlier = append(earlier, command)
 				}
@@ -542,7 +554,7 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 			commands, scopeErr, open, inTransaction = nil, "", false, nil
 		case v1pb.TaskRunLogEntry_COMMAND_EXECUTE:
 			execute := entry.GetCommandExecute()
-			command := &Command{Statement: execute.GetStatement(), byteRange: execute.GetRange()}
+			command := &Command{Index: len(commands) + 1, Statement: execute.GetStatement(), byteRange: execute.GetRange()}
 			if response := execute.GetResponse(); response != nil {
 				if response.GetError() != "" {
 					command.Error = response.GetError()
@@ -569,18 +581,25 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 			case v1pb.TaskRunLogEntry_TransactionControl_BEGIN:
 				open, inTransaction = control.GetError() == "", nil
 			case v1pb.TaskRunLogEntry_TransactionControl_COMMIT:
-				// A failed commit is followed by a rollback entry, which
-				// settles these commands.
 				if control.GetError() == "" {
 					for _, command := range inTransaction {
 						committed[command] = command.AffectedRows != nil
 					}
 					open, inTransaction = false, nil
+				} else {
+					rejected := control.GetError() == "commit unexpectedly resulted in rollback" || rejectedCommit.MatchString(control.GetError())
+					for _, command := range inTransaction {
+						command.RolledBack = rejected
+						command.CommitUnknown = !rejected
+					}
 				}
 			case v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK:
 				if control.GetError() == "" {
 					for _, command := range inTransaction {
-						command.RolledBack = true
+						// A rollback after a lost COMMIT response may be a no-op.
+						if !command.CommitUnknown {
+							command.RolledBack = true
+						}
 					}
 				}
 				open, inTransaction = false, nil
@@ -595,6 +614,9 @@ func buildCommands(entries []*v1pb.TaskRunLogEntry) ([]*Command, string) {
 var (
 	txnModeDirective      = regexp.MustCompile(`(?i)^\s*--\s*txn-mode\s*=\s*(on|off)\s*$`)
 	txnIsolationDirective = regexp.MustCompile(`(?i)^\s*--\s*txn-isolation\s*=\s*(READ\s+UNCOMMITTED|READ\s+COMMITTED|REPEATABLE\s+READ|SERIALIZABLE)\s*$`)
+	// PostgreSQL constraint and transaction-rollback errors reject COMMIT;
+	// 40003 (statement_completion_unknown) deliberately does not match.
+	rejectedCommit = regexp.MustCompile(`\(SQLSTATE (23[A-Z0-9]{3}|4000[012]|40P01)\)$`)
 )
 
 // sourceText is a file as stored and as a driver that honors transaction
@@ -604,16 +626,13 @@ type sourceText struct {
 	executed string
 }
 
-// forRanges returns the text a scope's logged byte ranges count from: the
-// file without its transaction directives for a driver that removes them, and
-// the file as stored for one that does not, such as BigQuery's. Nothing the
-// action may read names the engine, so the ranges decide: one that reaches
-// past the stripped text cannot be an offset into it.
+// forRanges leaves the text unavailable when the ranges fit both the stored
+// and stripped sources. The API does not identify which one the driver used.
 func (s sourceText) forRanges(maxRangeEnd int32) string {
-	if int(maxRangeEnd) > len(s.executed) {
+	if s.stored == s.executed || int(maxRangeEnd) > len(s.executed) {
 		return s.stored
 	}
-	return s.executed
+	return ""
 }
 
 func computedDiff(entries []*v1pb.TaskRunLogEntry) bool {
@@ -652,11 +671,14 @@ func executedSource(source string) string {
 }
 
 // sumRows adds the counts of commands that were not rolled back. It returns
-// nil when no command reported a count, which is not the same as zero rows.
+// nil when no command reported a count or a commit's outcome is unknown.
 func sumRows(commands []*Command) *int64 {
 	var total int64
 	var reported bool
 	for _, command := range commands {
+		if command.CommitUnknown {
+			return nil
+		}
 		if command.AffectedRows == nil {
 			continue
 		}

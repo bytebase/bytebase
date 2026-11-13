@@ -1608,8 +1608,8 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 		[]byte("CREATE TABLE account (id INT PRIMARY KEY, tier TEXT);"), 0644))
 	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
 		[]byte("INSERT INTO account VALUES (1, NULL), (2, NULL), (3, 'pro');\nUPDATE account SET tier = 'basic' WHERE tier IS NULL;"), 0644))
-	// The driver strips the directive before it logs byte ranges, so the
-	// statement is only right if the action cuts it from the stripped text.
+	// Without the engine in the API, ranges that fit both stored and stripped
+	// text cannot safely identify a statement in a file with directives.
 	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00003_promote_account.sql"),
 		[]byte("-- txn-mode = off\nUPDATE account SET tier = 'pro' WHERE id = 1;\n"), 0644))
 	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
@@ -1653,7 +1653,8 @@ func TestActionRolloutCommand_ReportsAffectedRows(t *testing.T) {
 	a.Equal(int64(2), *seed.Commands[1].AffectedRows)
 	promote := task.Files[2]
 	a.Len(promote.Commands, 1)
-	a.Equal("UPDATE account SET tier = 'pro' WHERE id = 1;", promote.Commands[0].Statement)
+	a.Empty(promote.Commands[0].Statement)
+	a.Equal(1, promote.Commands[0].Index)
 	a.Equal(int64(1), *promote.Commands[0].AffectedRows)
 
 	a.Contains(actionResult.Stdout, "Rollout to prod: DONE")
@@ -1719,6 +1720,54 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 	a.Contains(actionResult.Stdout, "Rollout to prod: FAILED")
 	a.Contains(actionResult.Stdout, "INSERT INTO account VALUES (1, 'pro')")
 	a.Contains(actionResult.Stdout, "duplicate key")
+}
+
+func TestActionRolloutCommand_ReportsRejectedCommit(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startProject(ctx, t)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
+
+	testDataDir := t.TempDir()
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00001_create_account.sql"),
+		[]byte("CREATE TABLE account (id INT, CONSTRAINT account_id_key UNIQUE (id) DEFERRABLE INITIALLY DEFERRED);"), 0644))
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00002_seed_account.sql"),
+		[]byte("INSERT INTO account VALUES (1);\nINSERT INTO account VALUES (1);"), 0644))
+	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
+
+	actionResult, err := executeActionCommand(ctx,
+		"rollout",
+		"--url", ctl.rootURL,
+		"--service-account", "demo@example.com",
+		"--service-account-secret", "1024bytebase",
+		"--project", ctl.project.Name,
+		"--targets", database.Name,
+		"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+		"--target-stage", "environments/prod",
+		"--output", outputFile,
+	)
+	a.Error(err)
+
+	rolloutResult, tasks := readRolloutResult(t, outputFile)
+	a.Equal(result.Failed, rolloutResult.Outcome)
+	a.Len(tasks, 1)
+	task := tasks[0]
+	a.Equal(int64(0), *task.AffectedRows)
+	a.Len(task.Files, 2)
+	failed := task.Files[1]
+	a.Equal("FAILED", failed.Status)
+	a.Contains(failed.Error, "SQLSTATE 23505")
+	a.True(failed.RolledBack)
+	a.Equal(int64(0), *failed.AffectedRows)
+	a.Len(failed.Commands, 2)
+	for _, command := range failed.Commands {
+		a.Empty(command.Error)
+		a.Equal(int64(1), *command.AffectedRows)
+		a.True(command.RolledBack)
+		a.False(command.CommitUnknown)
+	}
+	a.Contains(actionResult.Stdout, "commit: ERROR: duplicate key")
 }
 
 func TestActionErrorScenarios_InvalidServiceAccountSecret(t *testing.T) {

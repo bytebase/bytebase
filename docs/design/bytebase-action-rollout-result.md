@@ -113,10 +113,9 @@ statement. It tries two places, and the count and the error never depend on eith
 2. **The sheet**, with `GetSheet`. It needs `bb.sheets.get`, which the GitOps Service Agent role
    does not hold. The first refusal ends the attempts and logs one warning.
 
-- **The ranges count from the file without its transaction directives.** A driver removes the
-  `-- txn-mode` and `-- txn-isolation` lines at the top before it splits and logs commands
-  (`ParseTransactionConfig` in `backend/plugin/parser/base`). The action removes them the same
-  way before it cuts, and a test holds the two together.
+- **Directive preprocessing depends on the engine.** Some drivers remove the `-- txn-mode` and
+  `-- txn-isolation` lines before logging ranges; others keep them. The API does not identify
+  which text the driver used. When the ranges fit both versions, statement text is unavailable.
 - **Otherwise the command is named by position**, as `statement 3`.
 - **Generated deploy jobs take the first path.** They check out the repository, and the release
   was created from the same commit.
@@ -166,13 +165,17 @@ One field says how the run ended. It restates today's behavior and changes none 
   console follows in [task-run-log-previous-attempts.md](task-run-log-previous-attempts.md).
 - **What a retried attempt committed still counts.** A script run with `-- txn-mode = off` commits
   each command, and the retry starts it again from the top. Those commands stay in the result,
-  marked as from an earlier attempt, and add to the totals. Anything rolled back or never settled
-  in a retried attempt is dropped.
+  marked as from an earlier attempt, and add to the totals. Commands with an unknown commit
+  outcome stay too, keeping totals absent. Other unsettled or rolled-back commands are dropped.
 - **Rolled-back commands add nothing to totals.** When the log shows `ROLLBACK` for a
   transaction, its commands keep their counts and are marked rolled back, as is their file. The
   file and task totals leave them out.
 - **Without a logged rollback the result claims nothing** about what a failed file left behind.
   A rollback that itself failed is not a logged rollback.
+- **A rejected PostgreSQL commit rolls back its commands.** Constraint and transaction-rollback
+  SQLSTATEs establish rejection even when the subsequent rollback says the transaction is closed.
+  Other commit failures mark commands `commitUnknown` and leave file and task totals absent.
+  A subsequent rollback cannot resolve a lost commit response.
 - **Files after a failure are counted as not run**: the pending files after the last one the run
   reached, in the release's order. The task's `release_state` is a snapshot from when the rollout
   was created, and a retry skips what an earlier run applied, so its pending count alone is right
@@ -305,7 +308,8 @@ A comment can still be rendered from the same result. See
 - **Keys are camelCase and enum values are the API's**, as `checkResults` already is.
 - **Counts are JSON numbers.** `checkResults` keeps the strings protojson writes for `int64`.
 - **The file is bounded.** Per file it keeps the first 100 commands and any that failed, and
-  `commandCount` says how many ran. Counts and totals cover every command. A file of fifty
+  `commandCount` says how many ran. Each command keeps its one-based `index` within its attempt.
+  Counts and totals cover every command. A file of fifty
   thousand statements on a thousand databases would otherwise make the result, and the memory to
   build it, unbounded, and fail a job whose deploy succeeded.
 - **Statement text is included.** It comes from the repository, so the file exposes no SQL the

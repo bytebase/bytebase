@@ -10,6 +10,7 @@ import (
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 )
 
 const (
@@ -350,6 +351,9 @@ func TestBuildTaskFailedRollbackClaimsNothing(t *testing.T) {
 	require.Equal(t, "FAILED", file.Status)
 	require.Equal(t, "commit: connection reset", file.Error)
 	require.False(t, file.RolledBack)
+	require.True(t, file.Commands[0].CommitUnknown)
+	require.Nil(t, file.AffectedRows)
+	require.Nil(t, tasks[0].AffectedRows)
 }
 
 func TestBuildTaskCommandOutsideTransactionIsNotRolledBack(t *testing.T) {
@@ -373,6 +377,69 @@ func TestBuildTaskCommandOutsideTransactionIsNotRolledBack(t *testing.T) {
 	require.False(t, file.Commands[1].RolledBack)
 	require.True(t, file.Commands[2].RolledBack)
 	require.Equal(t, int64(12), *file.AffectedRows)
+}
+
+func TestBuildTaskRejectedCommit(t *testing.T) {
+	for _, commitError := range []string{
+		`ERROR: duplicate key value violates unique constraint "t_key" (SQLSTATE 23505)`,
+		`ERROR: insert or update violates foreign key constraint (SQLSTATE 23503)`,
+		`ERROR: could not serialize access (SQLSTATE 40001)`,
+		"commit unexpectedly resulted in rollback",
+	} {
+		t.Run(commitError, func(t *testing.T) {
+			task := buildStage(t, taskFixture{
+				id: "crm", status: v1pb.Task_FAILED, release: true,
+				runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED},
+				log: []*v1pb.TaskRunLogEntry{
+					fileEntry("0001", "0001.sql"), begin,
+					commandEntry("INSERT INTO t VALUES (1)", 1),
+					transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_COMMIT, commitError),
+					transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK, "tx is closed"),
+				},
+			})[0]
+
+			file := task.Files[0]
+			require.Equal(t, "FAILED", file.Status)
+			require.True(t, file.RolledBack)
+			require.True(t, file.Commands[0].RolledBack)
+			require.False(t, file.Commands[0].CommitUnknown)
+			require.Equal(t, int64(1), *file.Commands[0].AffectedRows)
+			require.Equal(t, int64(0), *file.AffectedRows)
+			require.Equal(t, int64(0), *task.AffectedRows)
+		})
+	}
+}
+
+func TestBuildTaskUnknownCommitLeavesTotalsUnknown(t *testing.T) {
+	for _, commitError := range []string{
+		"connection reset",
+		"ERROR: statement completion unknown (SQLSTATE 40003)",
+		"FATAL: terminating connection due to administrator command (SQLSTATE 57P01)",
+	} {
+		for _, rollbackError := range []string{"", "tx is closed"} {
+			t.Run(commitError+"/rollback="+rollbackError, func(t *testing.T) {
+				task := buildStage(t, taskFixture{
+					id: "crm", status: v1pb.Task_FAILED, release: true,
+					runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED},
+					log: []*v1pb.TaskRunLogEntry{
+						fileEntry("0001", "0001.sql"), begin, commandEntry("INSERT INTO t VALUES (1)", 1), commit,
+						fileEntry("0002", "0002.sql"), begin,
+						commandEntry("INSERT INTO t VALUES (2)", 1),
+						transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_COMMIT, commitError),
+						transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_ROLLBACK, rollbackError),
+					},
+				})[0]
+
+				require.Equal(t, int64(1), *task.Files[0].AffectedRows)
+				file := task.Files[1]
+				require.False(t, file.RolledBack)
+				require.True(t, file.Commands[0].CommitUnknown)
+				require.Equal(t, int64(1), *file.Commands[0].AffectedRows)
+				require.Nil(t, file.AffectedRows)
+				require.Nil(t, task.AffectedRows)
+			})
+		}
+	}
 }
 
 func TestBuildTaskSupersededAttemptIsNotCounted(t *testing.T) {
@@ -404,6 +471,30 @@ func TestBuildTaskSupersededAttemptIsNotCounted(t *testing.T) {
 	require.Equal(t, "DONE", retried.Status)
 	require.False(t, retried.RolledBack)
 	require.Len(t, retried.Commands, 2)
+}
+
+func TestBuildTaskRetriedUnknownCommitLeavesTotalsUnknown(t *testing.T) {
+	task := buildStage(t, taskFixture{
+		id: "crm", status: v1pb.Task_DONE, release: true,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+		log: []*v1pb.TaskRunLogEntry{
+			fileEntry("0001", "0001.sql"), begin,
+			commandEntry("UPDATE t SET a = a + 1", 1),
+			transactionEntry(v1pb.TaskRunLogEntry_TransactionControl_COMMIT, "connection reset"),
+			retryEntry(), begin, commandEntry("UPDATE t SET a = a + 1", 1), commit,
+		},
+	})[0]
+
+	file := task.Files[0]
+	require.Equal(t, "DONE", file.Status)
+	require.Empty(t, file.Error)
+	require.Len(t, file.Commands, 2)
+	require.True(t, file.Commands[0].CommitUnknown)
+	require.True(t, file.Commands[0].EarlierAttempt)
+	require.False(t, file.Commands[1].CommitUnknown)
+	require.Equal(t, 1, file.Commands[1].Index)
+	require.Nil(t, file.AffectedRows)
+	require.Nil(t, task.AffectedRows)
 }
 
 func TestBuildTaskLatestRunIsTheResult(t *testing.T) {
@@ -577,7 +668,7 @@ func TestExecutedSourceMatchesTheDrivers(t *testing.T) {
 	}
 }
 
-func TestBuildCutsStatementsFromAFileWithDirectives(t *testing.T) {
+func TestBuildLeavesAmbiguousDirectiveStatementsUnavailable(t *testing.T) {
 	source := "-- txn-mode = off\n-- backfill\nUPDATE t SET a = 1;\nDELETE FROM t WHERE a = 2;"
 	_, executed := base.ParseTransactionConfig(source)
 	first := int32(len("-- backfill\nUPDATE t SET a = 1;"))
@@ -598,8 +689,10 @@ func TestBuildCutsStatementsFromAFileWithDirectives(t *testing.T) {
 		SourceKey(testReleaseName, "0001"): []byte(source),
 	}, fixture)
 	commands := tasks[0].Files[0].Commands
-	require.Equal(t, "-- backfill\nUPDATE t SET a = 1;", commands[0].Statement)
-	require.Equal(t, "DELETE FROM t WHERE a = 2;", commands[1].Statement)
+	require.Empty(t, commands[0].Statement)
+	require.Empty(t, commands[1].Statement)
+	require.Equal(t, int64(4), *tasks[0].AffectedRows)
+	require.Equal(t, []string{"3 rows  statement 1", " 1 row  statement 2"}, commandLines(commands, 2, tasks[0].AffectedRows))
 }
 
 // With the script outside a transaction, a retry starts it again from the
@@ -766,10 +859,48 @@ func TestBuildCutsStatementsFromTheStoredFileWhenTheRangesNeedIt(t *testing.T) {
 	whole := build(rangeEntry(0, int32(len(source)), 3))
 	require.Equal(t, source, whole[0].Statement)
 
-	// A splitting driver that keeps the directive, such as Trino's.
+	// A splitting driver that keeps the directive.
 	split := build(rangeEntry(0, first, 3), rangeEntry(first, int32(len(source)), 1))
 	require.Equal(t, "-- txn-mode = off\nUPDATE t SET a = 1;", split[0].Statement)
 	require.Equal(t, "DELETE FROM t WHERE a = 2;", split[1].Statement)
+}
+
+func TestBuildLeavesEarlyDynamoDBFailureStatementUnavailable(t *testing.T) {
+	source := "-- txn-mode = off\nINSERT INTO missing VALUE {'id': 1};\nINSERT INTO another_table VALUE {'id': 2, 'description': 'long enough to cover the directive'};"
+	statements, err := partiql.SplitSQL(source)
+	require.NoError(t, err)
+	require.Len(t, statements, 2)
+	first := statements[0]
+	entry := failedCommandEntry("", "ResourceNotFoundException")
+	entry.CommandExecute.Range = &v1pb.Range{Start: first.Range.Start, End: first.Range.End}
+	task := buildStageWithSources(t, map[string][]byte{SourceKey(testReleaseName, "0001"): []byte(source)}, taskFixture{
+		id: "crm", status: v1pb.Task_FAILED, release: true,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED},
+		log:  []*v1pb.TaskRunLogEntry{fileEntry("0001", "0001.sql"), entry},
+	})[0]
+
+	command := task.Files[0].Commands[0]
+	require.Empty(t, command.Statement)
+	require.Equal(t, "ResourceNotFoundException", command.Error)
+	require.Equal(t, []string{"statement 1", "ResourceNotFoundException"}, failureLines(task.Files[0].Commands, ""))
+}
+
+func TestBuildRetainedFailureKeepsItsStatementIndex(t *testing.T) {
+	entries := []*v1pb.TaskRunLogEntry{fileEntry("0001", "0001.sql")}
+	for range 149 {
+		entries = append(entries, commandEntry("", 0))
+	}
+	entries = append(entries, failedCommandEntry("", "duplicate key"))
+	task := buildStage(t, taskFixture{
+		id: "crm", status: v1pb.Task_FAILED, release: true,
+		runs: []v1pb.TaskRun_Status{v1pb.TaskRun_FAILED}, log: entries,
+	})[0]
+
+	file := task.Files[0]
+	require.Equal(t, 150, file.CommandCount)
+	require.Len(t, file.Commands, KeptCommands+1)
+	require.Equal(t, 150, file.Commands[KeptCommands].Index)
+	require.Equal(t, []string{"statement 150", "duplicate key"}, failureLines(file.Commands, ""))
 }
 
 func computeDiffEntry() *v1pb.TaskRunLogEntry {

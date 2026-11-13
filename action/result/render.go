@@ -539,12 +539,12 @@ func commandLines(commands []*Command, commandCount int, total *int64) []string 
 		label string
 	}
 	var shown []numbered
-	for i, command := range commands {
+	for _, command := range commands {
 		if len(shown) == shownCommands {
 			break
 		}
 		if command.AffectedRows != nil && *command.AffectedRows > 0 {
-			shown = append(shown, numbered{Command: command, label: commandLabel(i, command)})
+			shown = append(shown, numbered{Command: command, label: commandLabel(command)})
 		}
 	}
 	var width int
@@ -555,7 +555,9 @@ func commandLines(commands []*Command, commandCount int, total *int64) []string 
 	var listed int64
 	for _, command := range shown {
 		line := fmt.Sprintf("%*s  %s", width, rowsText(command.AffectedRows), command.label)
-		if command.RolledBack {
+		if command.CommitUnknown {
+			line += "  (commit outcome unknown)"
+		} else if command.RolledBack {
 			line += "  (rolled back)"
 		} else {
 			listed += *command.AffectedRows
@@ -577,13 +579,13 @@ func commandLines(commands []*Command, commandCount int, total *int64) []string 
 // failureLines are the failed statement and its error, or nil when the
 // commands carry no error. Both are shortened; the error is always kept.
 func failureLines(commands []*Command, scopeErr string) []string {
-	for i, command := range commands {
+	for _, command := range commands {
 		if command.Error == "" {
 			continue
 		}
 		lines, statementCut := shorten(command.Statement)
 		if len(lines) == 0 {
-			lines = []string{commandLabel(i, command)}
+			lines = []string{commandLabel(command)}
 		}
 		errorLines, errorCut := shorten(command.Error)
 		lines = append(lines, errorLines...)
@@ -601,9 +603,9 @@ func failureLines(commands []*Command, scopeErr string) []string {
 
 // commandLabel is the command's statement on one line, or its position when
 // the statement's text could not be read.
-func commandLabel(index int, command *Command) string {
+func commandLabel(command *Command) string {
 	if strings.TrimSpace(command.Statement) == "" {
-		return fmt.Sprintf("statement %d", index+1)
+		return fmt.Sprintf("statement %d", command.Index)
 	}
 	return oneLine(command.Statement, 100)
 }

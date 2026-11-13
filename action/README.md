@@ -197,13 +197,15 @@ The result details one stage: the target stage, or an earlier stage when the rol
 Reading the rows:
 
 -   `affectedRows` is the count the database returned. A file's count sums its commands, and a task's sums its files.
--   A missing `affectedRows` means the database driver reported none. It does not mean zero.
+-   A missing `affectedRows` means the database driver reported none, or a file or task has an unknown commit outcome. It does not mean zero.
 -   Commands in a transaction that rolled back keep their count, carry `rolledBack`, and are left out of the file and task totals.
--   A command with `earlierAttempt` committed in an attempt Bytebase then retried, which happens when a file runs outside a transaction. It counts toward the totals, and the same statement appears again from the final attempt.
+-   A rejected PostgreSQL commit also marks its commands `rolledBack`. An uncertain commit marks them `commitUnknown` and leaves the file and task totals absent.
+-   Each command's `index` is its one-based position within its file or sheet attempt. It keeps that position when other commands are omitted from the output.
+-   A command with `earlierAttempt` comes from an attempt Bytebase then retried. A committed command counts toward totals; one with `commitUnknown` keeps the totals absent. The same statement may appear again from the final attempt.
 -   A task's result is its latest run. `attempt` counts its runs, and `previousRuns` lists the earlier ones.
 -   A task with `unchanged` finished with nothing to apply: every version was already applied, or a declarative release found the schema already matched.
 
-Statement text comes from the migration files, because the server logs each command as a byte range of its file, counted after the `-- txn-mode` and `-- txn-isolation` lines at its top are removed. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. With neither, a command is named by its position, such as `statement 3`, and its count and error are still reported.
+Statement text comes from the migration files, because the server logs each command as a byte range of its file. The action reads a file from the job's checkout when it matches the release, so run `rollout` in a checkout of the repository. Without one it reads the file from Bytebase, which needs the `bb.sheets.get` permission. Some engines remove `-- txn-mode` and `-- txn-isolation` lines before counting byte ranges. When the ranges fit both the stored and stripped text, the action leaves the statement text unavailable. A command with unavailable text is named by its position, such as `statement 3`, and its count and error are still reported.
 
 To keep the file on GitLab when the job fails:
 
