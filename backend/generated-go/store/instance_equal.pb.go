@@ -83,6 +83,9 @@ func (x *Instance) Equal(y *Instance) bool {
 			return false
 		}
 	}
+	if x.Vendor != y.Vendor {
+		return false
+	}
 	return true
 }
 
