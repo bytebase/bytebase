@@ -3,10 +3,9 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -24,6 +23,7 @@ func init() {
 }
 
 // ColumnAutoIncrementInitialValueAdvisor is the advisor checking for auto-increment column initial value.
+// The judgment lives in omni (tidb/v1review.ColumnAutoIncrementInitialValue).
 type ColumnAutoIncrementInitialValueAdvisor struct {
 }
 
@@ -42,62 +42,20 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for column auto increment initial value rule")
 	}
-	checker := &columnAutoIncrementInitialValueChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-		value: int(numberPayload.Number),
-	}
+	value := int(numberPayload.Number)
+	title := checkCtx.Rule.Type.String()
 
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type columnAutoIncrementInitialValueChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	value      int
-}
-
-// checkStmt: only CREATE TABLE is in scope, matching pingcap-typed
-// columnAutoIncrementInitialValueChecker.Enter (which only matched
-// `*ast.CreateTableStmt`). The mysql analog ALSO handles
-// `ALTER TABLE ... AUTO_INCREMENT = N` via the ATTableOption arm —
-// that broader scope is a mysql-side behavior, NOT something the
-// tidb migration should adopt (preserve pingcap behavior per
-// invariant #7's caveat on mysql analog non-authority).
-func (c *columnAutoIncrementInitialValueChecker) checkStmt(ostmt Stmt) {
-	create, ok := ostmt.Node.(*ast.CreateTableStmt)
-	if !ok || create.Table == nil {
-		return
-	}
-	tableName := create.Table.Name
-	stmtLine := ostmt.AbsoluteLine(create.Loc.Start)
-	for _, opt := range create.Options {
-		if opt == nil {
-			continue
-		}
-		if !strings.EqualFold(opt.Name, "AUTO_INCREMENT") {
-			continue
-		}
-		// omni stores the option value as a string; pingcap exposed it
-		// as `option.UintValue` (uint64) and skipped the unparseable
-		// case implicitly. Skip on parse failure here too.
-		value, err := strconv.ParseUint(opt.Value, 10, 0)
-		if err != nil {
-			continue
-		}
-		if value != uint64(c.value) {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.ColumnAutoIncrementInitialValue([]ast.Node{stmt.Node}, value) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %v, which doesn't equal %v", tableName, value, c.value),
-				StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
+				Title:         title,
+				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %s, which doesn't equal %v", f.Table, f.Value, value),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
 	}
+	return adviceList, nil
 }

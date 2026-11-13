@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,19 +22,12 @@ func init() {
 }
 
 // ColumnSetDefaultForNotNullAdvisor checks for set default value for not null columns.
+// The judgment lives in omni (tidb/v1review.ColumnSetDefaultForNotNull).
 type ColumnSetDefaultForNotNullAdvisor struct {
 }
 
-// Check is Recipe A. Same wrapper-safety rationale as the batch-6
-// charset/collation/comment family: EXPLAIN doesn't accept DDL in either
-// pingcap or omni grammar, and CREATE/ALTER TABLE can't nest themselves.
-//
-// Cardinality: per-violating-column (NOT per-statement). Pingcap's
-// pattern was build a list during the visit and append one advice per
-// list entry after the switch — preserved here.
-//
-// Closes BYT-9362 (canNull cleanup) by being the last consumer of the
-// pingcap-typed canNull helper.
+// Check checks for set default value for not null columns. An ALTER TABLE
+// finding is placed on the statement's first line, comments included.
 func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -43,136 +37,24 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 	if err != nil {
 		return nil, err
 	}
-
 	title := checkCtx.Rule.Type.String()
+
 	var adviceList []*storepb.Advice
-
-	for _, ostmt := range stmts {
-		var rows []columnName
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			if n.Table == nil {
-				continue
+	for _, stmt := range stmts {
+		_, isAlter := stmt.Node.(*ast.AlterTableStmt)
+		for _, f := range tidbv1review.ColumnSetDefaultForNotNull([]ast.Node{stmt.Node}) {
+			line := stmt.AbsoluteLine(f.Start)
+			if isAlter {
+				line = stmt.FirstTokenLine()
 			}
-			tableName := n.Table.Name
-			pkCols := createTablePKColumnSet(n)
-			for _, col := range n.Columns {
-				if col == nil {
-					continue
-				}
-				if pkCols[col.Name] {
-					continue
-				}
-				if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
-					continue
-				}
-				rows = append(rows, columnName{
-					tableName:  tableName,
-					columnName: col.Name,
-					line:       ostmt.AbsoluteLine(col.Loc.Start),
-				})
-			}
-		case *ast.AlterTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			tableName := n.Table.Name
-			stmtLine := ostmt.FirstTokenLine()
-			for _, cmd := range n.Commands {
-				if cmd == nil {
-					continue
-				}
-				switch cmd.Type {
-				case ast.ATAddColumn:
-					for _, col := range addColumnTargets(cmd) {
-						if col == nil {
-							continue
-						}
-						if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
-							continue
-						}
-						rows = append(rows, columnName{
-							tableName:  tableName,
-							columnName: col.Name,
-							line:       stmtLine,
-						})
-					}
-				case ast.ATChangeColumn, ast.ATModifyColumn:
-					col := cmd.Column
-					if col == nil {
-						continue
-					}
-					if !columnIsNotNull(col) || columnHasDefault(col) || !needDefault(col) {
-						continue
-					}
-					rows = append(rows, columnName{
-						tableName:  tableName,
-						columnName: col.Name,
-						line:       stmtLine,
-					})
-				default:
-				}
-			}
-		default:
-			continue
-		}
-
-		for _, r := range rows {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.NotNullColumnWithNoDefault.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", r.tableName, r.columnName),
-				StartPosition: base.ConvertANTLRLineToPosition(r.line),
+				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", f.Table, f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(line),
 			})
 		}
 	}
-
 	return adviceList, nil
-}
-
-// createTablePKColumnSet returns the set of column names declared as
-// PRIMARY KEY via table-level constraints in the CREATE TABLE statement
-// (e.g. `CREATE TABLE t (id INT, PRIMARY KEY (id))`). Inline column-level
-// PRIMARY KEY (e.g. `CREATE TABLE t (id INT PRIMARY KEY)`) is detected
-// by needDefault directly, not by this set.
-func createTablePKColumnSet(n *ast.CreateTableStmt) map[string]bool {
-	pkCols := make(map[string]bool)
-	for _, c := range n.Constraints {
-		if c == nil || c.Type != ast.ConstrPrimaryKey {
-			continue
-		}
-		for _, name := range c.Columns {
-			pkCols[name] = true
-		}
-	}
-	return pkCols
-}
-
-// columnIsNotNull reports whether the column's constraint list
-// contains a NOT NULL marker (or a PRIMARY KEY marker, which implies NOT
-// NULL in MySQL/TiDB semantics). Mirror of pingcap-typed canNull's
-// inverse — pingcap returned `true` if the column COULD be null
-// (no NotNull or PrimaryKey option); this returns `true` if it CANNOT.
-func columnIsNotNull(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	for _, c := range col.Constraints {
-		if c == nil {
-			continue
-		}
-		if c.Type == ast.ColConstrNotNull || c.Type == ast.ColConstrPrimaryKey {
-			return true
-		}
-	}
-	return false
-}
-
-// columnHasDefault reports whether the column has a DEFAULT clause.
-// omni stores the default expression in `ColumnDef.DefaultValue` directly
-// (not in Constraints[] like pingcap's column.Options[].Tp ==
-// ColumnOptionDefaultValue). Direct field check — no fallible op.
-func columnHasDefault(col *ast.ColumnDef) bool {
-	return col != nil && col.DefaultValue != nil
 }

@@ -48,3 +48,20 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    -- lead
+    ALTER TABLE t ADD COLUMN a INT,
+      MODIFY b VARCHAR(5) CHARACTER SET latin1;
+  want:
+    - status: 2
+      code: 414
+      title: COLUMN_DISALLOW_SET_CHARSET
+      content: |-
+        Disallow set column charset but "-- lead
+        ALTER TABLE t ADD COLUMN a INT,
+          MODIFY b VARCHAR(5) CHARACTER SET latin1;" does
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a VARCHAR(5) CHARACTER SET binary, b VARCHAR(5) COLLATE utf8mb4_bin);

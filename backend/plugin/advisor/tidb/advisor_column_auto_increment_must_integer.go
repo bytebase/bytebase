@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,7 @@ func init() {
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.
+// The judgment lives in omni (tidb/v1review.ColumnAutoIncrementMustInteger).
 type ColumnAutoIncrementMustIntegerAdvisor struct {
 }
 
@@ -35,58 +37,19 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnAutoIncrementMustIntegerChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
+	title := checkCtx.Rule.Type.String()
+
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.ColumnAutoIncrementMustInteger([]ast.Node{stmt.Node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.AutoIncrementColumnNotInteger.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", f.Table, f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
+			})
+		}
 	}
-
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type columnAutoIncrementMustIntegerChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-// columnData is the {table, column, line} carrier shared with
-// advisor_column_auto_increment_must_unsigned.go and
-// advisor_column_require_default.go — same package, same shape.
-type columnData struct {
-	table  string
-	column string
-	line   int
-}
-
-func (c *columnAutoIncrementMustIntegerChecker) checkStmt(ostmt Stmt) {
-	cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
-		return !autoIncrementColumnIsInteger(col)
-	})
-	for _, col := range cols {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.AutoIncrementColumnNotInteger.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", col.table, col.column),
-			StartPosition: base.ConvertANTLRLineToPosition(col.line),
-		})
-	}
-}
-
-// autoIncrementColumnIsInteger returns true unless the column is
-// AUTO_INCREMENT with a non-integer type. Mirrors pingcap-typed
-// autoIncrementColumnIsInteger semantics: the rule fires only on
-// auto-increment columns; everything else passes through.
-func autoIncrementColumnIsInteger(col *ast.ColumnDef) bool {
-	if col == nil {
-		return true
-	}
-	if !col.AutoIncrement {
-		return true
-	}
-	return isIntegerType(col.TypeName)
+	return adviceList, nil
 }

@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -20,190 +21,64 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_COMMENT, &ColumnCommentConventionAdvisor{})
 }
 
-// ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
+// ColumnCommentConventionAdvisor is the advisor checking for column comment
+// convention. The judgment lives in omni (pg/v1review.ColumnComment); this
+// adapter passes the payload and renders the findings as advice.
 type ColumnCommentConventionAdvisor struct {
 }
 
+// Check checks for column comment convention.
 func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
-	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
+	payload := checkCtx.Rule.GetCommentConventionPayload()
+	required, maxLength := commentLimits(payload)
 
-	rule := &columnCommentConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		payload: commentPayload,
-	}
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.ColumnComment(nodes, required, maxLength) {
+		// V1 read the payload for each column it judged, so a nil payload
+		// panics here as it did there.
+		limit := payload.MaxLength
+		var adviceCode code.Code
+		var content string
+		switch f.Code {
+		case v1review.ColumnCommentMissing:
+			adviceCode = code.CommentEmpty
+			content = fmt.Sprintf("Comment is required for column `%s.%s`", f.Table, f.Name)
+		case v1review.ColumnCommentTooLong:
+			adviceCode = code.CommentTooLong
+			content = fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", f.Table, f.Name, limit)
+		default:
 			continue
 		}
-		node, ok := pgparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
-	}
-
-	return rule.generateAdvice(), nil
-}
-
-type columnInfo struct {
-	schema string
-	table  string
-	column string
-	line   int32
-}
-
-type commentInfo struct {
-	schema  string
-	table   string
-	column  string
-	comment string
-	line    int32
-}
-
-type columnCommentConventionRule struct {
-	BaseRule
-
-	payload *storepb.SQLReviewRule_CommentConventionRulePayload
-
-	columns  []columnInfo
-	comments []commentInfo
-}
-
-func (r *columnCommentConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	case *ast.CommentStmt:
-		r.handleCommentStmt(n)
-	default:
-	}
-}
-
-func (r *columnCommentConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	if n.Relation == nil {
-		return
-	}
-	tableName := n.Relation.Relname
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		r.columns = append(r.columns, columnInfo{
-			schema: "public",
-			table:  tableName,
-			column: col.Colname,
-			line:   r.absoluteLine(),
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Code:    adviceCode.Int32(),
+			Title:   checkCtx.Rule.Type.String(),
+			Content: content,
+			StartPosition: &storepb.Position{
+				Line:   findingLine(stmts[f.Statement], f),
+				Column: 0,
+			},
 		})
 	}
+	return adviceList, nil
 }
 
-func (r *columnCommentConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	if n.Relation == nil {
-		return
+// commentLimits returns ColumnComment's arguments for a payload. A nil
+// payload is judged as required with every comment too long, so each column
+// gives a finding.
+func commentLimits(payload *storepb.SQLReviewRule_CommentConventionRulePayload) (bool, int) {
+	if payload == nil {
+		return true, 0
 	}
-	tableName := n.Relation.Relname
-	for _, cmd := range alterTableCmds(n) {
-		if cmd.Subtype == int(ast.AT_AddColumn) {
-			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
-				r.columns = append(r.columns, columnInfo{
-					schema: "public",
-					table:  tableName,
-					column: colDef.Colname,
-					line:   r.absoluteLine(),
-				})
-			}
-		}
+	if payload.MaxLength <= 0 {
+		return payload.Required, -1
 	}
-}
-
-func (r *columnCommentConventionRule) handleCommentStmt(n *ast.CommentStmt) {
-	if n.Objtype != ast.OBJECT_COLUMN {
-		return
-	}
-
-	list, ok := n.Object.(*ast.List)
-	if !ok || len(list.Items) < 2 {
-		return
-	}
-
-	var tableName, columnName string
-	items := list.Items
-	switch len(items) {
-	case 2:
-		tableName = stringVal(items[0])
-		columnName = stringVal(items[1])
-	case 3:
-		tableName = stringVal(items[1])
-		columnName = stringVal(items[2])
-	default:
-		return
-	}
-
-	r.comments = append(r.comments, commentInfo{
-		schema:  "public",
-		table:   tableName,
-		column:  columnName,
-		comment: n.Comment,
-		line:    r.absoluteLine(),
-	})
-}
-
-// absoluteLine returns the absolute 1-based line number for the current statement.
-func (r *columnCommentConventionRule) absoluteLine() int32 {
-	return r.ContentStartLine() + int32(r.BaseLine)
-}
-
-func (r *columnCommentConventionRule) generateAdvice() []*storepb.Advice {
-	var adviceList []*storepb.Advice
-
-	for _, col := range r.columns {
-		var matchedComment *commentInfo
-		for i := range r.comments {
-			comment := &r.comments[i]
-			if comment.schema == col.schema && comment.table == col.table && comment.column == col.column {
-				matchedComment = comment
-			}
-		}
-
-		if matchedComment == nil || matchedComment.comment == "" {
-			if r.payload.Required {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:  r.Level,
-					Code:    code.CommentEmpty.Int32(),
-					Title:   r.Title,
-					Content: fmt.Sprintf("Comment is required for column `%s.%s`", col.table, col.column),
-					StartPosition: &storepb.Position{
-						Line:   col.line,
-						Column: 0,
-					},
-				})
-			}
-		} else {
-			if r.payload.MaxLength > 0 && int32(len(matchedComment.comment)) > r.payload.MaxLength {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:  r.Level,
-					Code:    code.CommentTooLong.Int32(),
-					Title:   r.Title,
-					Content: fmt.Sprintf("Column `%s.%s` comment is too long. The length of comment should be within %d characters", col.table, col.column, r.payload.MaxLength),
-					StartPosition: &storepb.Position{
-						Line:   matchedComment.line,
-						Column: 0,
-					},
-				})
-			}
-		}
-	}
-
-	return adviceList
+	return payload.Required, int(payload.MaxLength)
 }
 
 // stringVal extracts a string value from a Node.
