@@ -1168,6 +1168,7 @@
       "unspecified": "Không xác định"
     },
     "select": "Chọn cơ sở dữ liệu",
+    "select-no-environment": "Chưa có môi trường",
     "successfully-exported-schema": "Đã xuất schema thành công",
     "successfully-transferred-databases": "Chuyển cơ sở dữ liệu thành công",
     "sync-complete-for-instance": "Đồng bộ hoàn tất cho instance '{{0}}'",
@@ -1344,38 +1345,92 @@
   },
   "gitops": {
     "back-to-releases": "Quay lại Bản phát hành",
-    "checklist": {
-      "database-group-recommendation": "Đối với các cơ sở dữ liệu có cùng schema, nhóm cơ sở dữ liệu cho phép bạn migration tất cả cùng lúc trong một thay đổi. Chỉ cần định nghĩa nhóm một lần và tái sử dụng trong các lần migration mà không cần chọn từng cơ sở dữ liệu mỗi lần.",
-      "external-url": "URL bên ngoài",
-      "target-databases": "Cơ sở dữ liệu đích",
-      "title": "Kiểm tra trước khi bắt đầu",
-      "wif-notice-suffix": "để thiết lập GitOps bằng tài khoản dịch vụ.",
-      "wif-notice-text": "Workload Identity Federation hiện chỉ hỗ trợ GitHub và GitLab. Đối với các VCS khác, vui lòng tham khảo hướng dẫn cho",
-      "workload-identity": "Workload Identity"
-    },
-    "documentation": "Xem tài liệu",
-    "overview": {
-      "description": "Bytebase GitOps cho phép bạn quản lý Database as Code bằng cách tích hợp các thay đổi schema cơ sở dữ liệu vào pipeline CI/CD.",
-      "description-git": "Schema cơ sở dữ liệu của bạn được lưu trữ trong Git cùng với mã nguồn ứng dụng. Pull request sẽ kích hoạt SQL review, và việc merge vào nhánh đích sẽ tự động tạo rollout.",
-      "title": "GitOps là gì"
-    },
-    "test-setup": {
-      "description": "Xác minh workflow hoạt động đầy đủ với một tệp migration mẫu.",
-      "naming-convention": "Các tệp migration được áp dụng theo thứ tự từ điển. Sử dụng tiền tố timestamp hoặc số thứ tự, ví dụ: 20240101000000_create_table.sql. Thêm _ddl hoặc _dml để chỉ loại thay đổi.",
-      "step-create-branch": "Tạo nhánh mới, thêm tệp ở trên và mở pull request nhắm đến {{branch}}.",
-      "step-merge": "Sau khi review thông qua, merge PR. Bytebase sẽ tự động tạo rollout và triển khai đến các môi trường đích.",
-      "step-sql-review": "SQL Review tự động chạy trên pull request và đăng nhận xét review.",
-      "title": "Thử nghiệm migration GitOps đầu tiên"
-    },
-    "workflow": {
-      "description": "Sao chép các tệp workflow vào kho lưu trữ của bạn để tự động hóa SQL review và triển khai cơ sở dữ liệu.",
-      "file-hint": "Lưu dưới dạng {{filePath}} trong kho lưu trữ {{repository}} của bạn",
-      "provider-not-match": "Workload identity đã chọn chỉ hoạt động cho {{provider}}.",
-      "self-hosted-runner": "Runner tự lưu trữ",
-      "title": "Tạo tệp workflow"
-    },
-    "workload-identity": {
-      "select-placeholder": "Chọn một workload identity"
+    "setup": {
+      "continue": "Tiếp tục",
+      "databases": {
+        "create-group": "Tạo nhóm cơ sở dữ liệu",
+        "databases-hint": "Các cơ sở dữ liệu này được ghi vào tệp workflow. Để thêm sau này, hãy sửa các tệp.",
+        "databases-label": "Cơ sở dữ liệu",
+        "databases-placeholder": "Chọn cơ sở dữ liệu",
+        "databases-tab": "Cơ sở dữ liệu",
+        "deploy-order-hint": "Thay đổi được triển khai lần lượt từng môi trường, theo thứ tự này.",
+        "description": "Workflow review và triển khai mọi tệp migration lên các cơ sở dữ liệu này.",
+        "group-hint": "Cơ sở dữ liệu tham gia nhóm này sau này cũng được triển khai mà không cần sửa tệp workflow.",
+        "group-label": "Nhóm cơ sở dữ liệu",
+        "group-matches-none": "Nhóm này chưa khớp với cơ sở dữ liệu nào, nên chưa có gì để triển khai.",
+        "group-placeholder": "Chọn nhóm cơ sở dữ liệu",
+        "group-tab": "Nhóm cơ sở dữ liệu",
+        "no-group-description": "Nên dùng nhóm vì cơ sở dữ liệu tham gia nhóm sau này cũng được triển khai mà không cần sửa tệp workflow.",
+        "no-group-title": "Dự án này chưa có nhóm cơ sở dữ liệu",
+        "none-pickable-description": "Mọi cơ sở dữ liệu trong dự án này đều chưa có môi trường, nên không có vị trí trong thứ tự triển khai. Hãy gán môi trường cho một cơ sở dữ liệu để chọn nó.",
+        "none-pickable-title": "Không có cơ sở dữ liệu nào để chọn",
+        "question": "GitOps nên triển khai lên những cơ sở dữ liệu nào?",
+        "recommended": "Khuyến nghị",
+        "view-databases": "Xem cơ sở dữ liệu",
+        "view-group": "Xem nhóm"
+      },
+      "deploy-order": {
+        "database-count_one": "{{count}} cơ sở dữ liệu",
+        "database-count_other": "{{count}} cơ sở dữ liệu",
+        "environment-count_one": "{{count}} môi trường",
+        "environment-count_other": "{{count}} môi trường",
+        "label": "Thứ tự triển khai",
+        "summary": "{{databases}} trong {{environments}}",
+        "unassigned-description_one": "Cơ sở dữ liệu này chưa có môi trường nên lần triển khai bỏ qua mà không báo lỗi. Hãy gán môi trường để đưa vào.",
+        "unassigned-description_other": "Các cơ sở dữ liệu này chưa có môi trường nên lần triển khai bỏ qua mà không báo lỗi. Hãy gán môi trường để đưa vào.",
+        "unassigned-title_one": "{{count}} cơ sở dữ liệu sẽ không được triển khai",
+        "unassigned-title_other": "{{count}} cơ sở dữ liệu sẽ không được triển khai"
+      },
+      "external-url-description": "Workflow của bạn dùng địa chỉ này để kết nối Bytebase. Bạn có thể làm các bước ngay bây giờ. Các tệp workflow sẽ hoàn chỉnh khi quản trị viên workspace thiết lập địa chỉ này.",
+      "files": {
+        "copy-off": "Không thể sao chép cho đến khi External URL được thiết lập",
+        "description": "Các tệp đã chứa cơ sở dữ liệu và workload identity của bạn. Hãy sao chép nguyên văn.",
+        "developers-github": "Dành cho lập trình viên: thêm một tệp như <code>{{file}}</code> trong pull request. Tên tệp bắt đầu bằng số phiên bản. Workflow bỏ qua tệp không có số này.",
+        "developers-gitlab": "Dành cho lập trình viên: thêm một tệp như <code>{{file}}</code> trong merge request. Tên tệp bắt đầu bằng số phiên bản. Workflow bỏ qua tệp không có số này.",
+        "folder-hint": "Workflow review và triển khai các tệp SQL trong thư mục này.",
+        "folder-invalid": "Nhập đường dẫn thư mục tính từ gốc repository, ví dụ migrations hoặc db/migrations.",
+        "folder-label": "Thư mục migration",
+        "heading": "Thêm các tệp vào repository của bạn",
+        "next-github": "Khi các tệp đã có trên nhánh mặc định, pull request tiếp theo thay đổi thư mục migration sẽ nhận bình luận review của Bytebase. Khi merge, thay đổi được triển khai.",
+        "next-gitlab": "Khi các tệp đã có trên nhánh mặc định, merge request tiếp theo thay đổi thư mục migration sẽ nhận bình luận review của Bytebase. Khi merge, thay đổi được triển khai.",
+        "next-title": "Điều gì xảy ra tiếp theo",
+        "repository": "Repository",
+        "show-all": "Hiện tất cả {{lines}} dòng",
+        "url-missing": "Các tệp hiển thị <code>{{placeholder}}</code> ở vị trí địa chỉ Bytebase. Chức năng sao chép bị tắt cho đến khi External URL được thiết lập, vì workflow không có địa chỉ thì không thể kết nối Bytebase."
+      },
+      "identity": {
+        "create": "Tạo workload identity",
+        "description": "Workflow của bạn đăng nhập Bytebase bằng identity này, nên không có secret nào được lưu trong repository.",
+        "every-repository": "Mọi repository của {{owner}}",
+        "git-provider": "Nhà cung cấp Git",
+        "label": "Workload identity",
+        "no-role-description": "Workflow có thể đăng nhập, nhưng Bytebase sẽ từ chối review và triển khai. Hãy cấp vai trò GitOps Service Agent cho identity này trên trang Thành viên.",
+        "no-role-title": "Identity này không có vai trò cho phép GitOps",
+        "none": "Dự án này chưa có workload identity nào.",
+        "open-members": "Mở Thành viên",
+        "other-provider": "OIDC khác. Phần thiết lập không có tệp workflow cho loại này.",
+        "placeholder": "Chọn workload identity",
+        "question": "Workflow của bạn đăng nhập bằng workload identity nào?",
+        "read-from": "Đọc từ identity này",
+        "repositories": "Repository có thể đăng nhập",
+        "role": "Vai trò trong dự án này"
+      },
+      "no-database": {
+        "description": "GitOps triển khai lên các cơ sở dữ liệu của dự án này. Hãy thêm hoặc chuyển một cơ sở dữ liệu vào dự án này trước.",
+        "title": "Dự án này chưa có cơ sở dữ liệu"
+      },
+      "no-identity": {
+        "description": "Workflow của bạn đăng nhập Bytebase bằng một workload identity của dự án này. Hãy nhờ chủ sở hữu dự án tạo một workload identity.",
+        "title": "Dự án này chưa có workload identity"
+      },
+      "outcome": "Mỗi pull request thay đổi thư mục migration đều được Bytebase review. Khi merge, thay đổi được triển khai.",
+      "scope": "Phần thiết lập tạo tệp workflow cho GitHub Actions và GitLab CI. Với các nền tảng CI/CD khác, hãy xem <docs>tài liệu GitOps</docs>.",
+      "steps": {
+        "databases": "Cơ sở dữ liệu",
+        "workflow-files": "Tệp workflow",
+        "workload-identity": "Workload identity"
+      },
+      "title": "GitOps"
     }
   },
   "identity-provider": {

@@ -10,17 +10,18 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 // Captured props from the mocked Combobox — inspected/driven by each test.
 type ComboProps = {
   multiple?: boolean;
+  options: {
+    value: string;
+    label: string;
+    disabled?: boolean;
+    render?: (keyword: string) => ReactNode;
+  }[];
   value: string | string[];
   onChange: (v: string | string[]) => void;
   onSearch?: (q: string) => void | Promise<void>;
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void | Promise<void>;
-  options: {
-    value: string;
-    label: string;
-    render?: (keyword: string) => ReactNode;
-  }[];
   renderValue?: (opt: { value: string; label: string }) => unknown;
 };
 const combo: { props?: ComboProps } = {};
@@ -501,6 +502,62 @@ describe("DatabaseSelect — single mode (regression guard for Sync Schema)", ()
       "instances/i/databases/deeplink",
       expect.objectContaining({ effectiveEnvironment: "environments/prod" })
     );
+    unmount();
+  });
+});
+
+describe("DatabaseSelect — requireEnvironment", () => {
+  const archive = db("instances/i/databases/archive", "");
+
+  test("lists a database with no environment as pickable by default", async () => {
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [db("instances/i/databases/shop"), archive],
+      nextPageToken: "",
+    });
+    const { unmount } = render(
+      <DatabaseSelect
+        multiple
+        value={[]}
+        onChange={vi.fn()}
+        projectName="projects/p"
+      />
+    );
+    await flush();
+
+    expect(combo.props?.options.map((o) => o.disabled)).toEqual([
+      false,
+      false,
+    ]);
+    unmount();
+  });
+
+  test("disables a database with no environment and says so", async () => {
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [db("instances/i/databases/shop"), archive],
+      nextPageToken: "",
+    });
+    const { unmount } = render(
+      <DatabaseSelect
+        multiple
+        requireEnvironment
+        value={[]}
+        onChange={vi.fn()}
+        projectName="projects/p"
+      />
+    );
+    await flush();
+
+    expect(combo.props?.options.map((o) => [o.value, o.disabled])).toEqual([
+      ["instances/i/databases/shop", false],
+      ["instances/i/databases/archive", true],
+    ]);
+    const option = render(
+      combo.props?.options[1].render?.("") as ReactElement
+    );
+    expect(option.container.textContent).toContain(
+      "database.select-no-environment"
+    );
+    option.unmount();
     unmount();
   });
 });

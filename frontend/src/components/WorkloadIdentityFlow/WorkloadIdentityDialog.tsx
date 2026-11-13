@@ -79,6 +79,14 @@ export interface WorkloadIdentityDialogProps {
   readonly onClose: () => void;
   readonly onCreated: (wi: WorkloadIdentity) => void;
   readonly onUpdated?: (wi: WorkloadIdentity) => void;
+  // Close after Create instead of showing the Done step. For a caller that
+  // shows the new identity itself, such as GitOps setup. A failed role grant
+  // still shows Done, which explains it.
+  readonly closeOnCreate?: boolean;
+  // Offer GitHub Actions and GitLab CI only when creating. For a caller that
+  // can use no other token source, such as GitOps setup. Editing offers every
+  // source, so a stored one is never missing.
+  readonly gitProvidersOnly?: boolean;
 }
 
 export function WorkloadIdentityDialog(props: WorkloadIdentityDialogProps) {
@@ -101,6 +109,8 @@ export function WorkloadIdentityDialog(props: WorkloadIdentityDialogProps) {
           onClose={onClose}
           onCreated={props.onCreated}
           onUpdated={props.onUpdated}
+          closeOnCreate={props.closeOnCreate}
+          gitProvidersOnly={props.gitProvidersOnly}
         />
       </DialogContent>
     </Dialog>
@@ -162,6 +172,8 @@ function WorkloadIdentityFlow({
   onClose,
   onCreated,
   onUpdated,
+  closeOnCreate,
+  gitProvidersOnly,
 }: Omit<WorkloadIdentityDialogProps, "open">) {
   const { t } = useTranslation();
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
@@ -547,14 +559,20 @@ function WorkloadIdentityFlow({
     );
     setSaved(wi);
     onCreated(wi);
+    let roleGranted = true;
     if (canSetRoles && role) {
       try {
         await grantRole(getWorkloadIdentityNameInBinding(wi.email));
       } catch (err) {
+        roleGranted = false;
         setRoleError(
           err instanceof ConnectError ? err.rawMessage : String(err)
         );
       }
+    }
+    if (closeOnCreate && roleGranted) {
+      onClose();
+      return;
     }
     setStep(DONE);
   };
@@ -630,6 +648,7 @@ function WorkloadIdentityFlow({
       <TokenSourceStep
         providerType={providerType}
         providerLocked={providerLocked}
+        gitProvidersOnly={gitProvidersOnly && !isEditMode}
         onProviderChange={handleProviderChange}
         issuerUrl={issuerUrl}
         onIssuerUrlChange={setIssuerUrl}
