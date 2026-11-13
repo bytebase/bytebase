@@ -2,32 +2,24 @@ package pg
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
+// originalSchema returns the pre-change schema the omni v1review rules look
+// names up in. A nil m gives an empty schema, in which every lookup misses.
+func originalSchema(m *model.DatabaseMetadata) v1review.Schema {
+	if m == nil {
+		return v1review.Schema{}
 	}
-
-	return regexp.Compile(template)
-}
-
-// normalizeSchemaName normalizes empty schema names to "public" (PostgreSQL default schema).
-func normalizeSchemaName(schemaName string) string {
-	if schemaName == "" {
-		return "public"
-	}
-	return schemaName
+	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
 }
 
 // getExplainSQL returns the query whose result getExplainPlan reads.
@@ -349,41 +341,4 @@ func dropObjectNames(drop *ast.DropStmt) [][]string {
 		}
 	}
 	return result
-}
-
-// collectFromClauseRangeVars recursively collects RangeVar nodes from a FROM clause list.
-func collectFromClauseRangeVars(fromClause *ast.List) []*ast.RangeVar {
-	if fromClause == nil {
-		return nil
-	}
-	var result []*ast.RangeVar
-	for _, item := range fromClause.Items {
-		result = append(result, collectRangeVars(item)...)
-	}
-	return result
-}
-
-// collectRangeVars recursively collects RangeVar nodes from a node,
-// including those inside subqueries.
-func collectRangeVars(node ast.Node) []*ast.RangeVar {
-	if node == nil {
-		return nil
-	}
-	switch n := node.(type) {
-	case *ast.RangeVar:
-		return []*ast.RangeVar{n}
-	case *ast.JoinExpr:
-		var result []*ast.RangeVar
-		result = append(result, collectRangeVars(n.Larg)...)
-		result = append(result, collectRangeVars(n.Rarg)...)
-		return result
-	case *ast.RangeSubselect:
-		// Recurse into subquery
-		if sel, ok := n.Subquery.(*ast.SelectStmt); ok {
-			return collectFromClauseRangeVars(sel.FromClause)
-		}
-		return nil
-	default:
-		return nil
-	}
 }

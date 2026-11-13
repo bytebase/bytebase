@@ -2,7 +2,6 @@
 package oceanbase
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
@@ -21,17 +20,6 @@ func newColumnSet(columns []string) columnSet {
 		res[col] = true
 	}
 	return res
-}
-
-// getTemplateRegexp formats the template as regex.
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
-	}
-
-	return regexp.Compile(template)
 }
 
 // tableName --> columnName --> columnType.
