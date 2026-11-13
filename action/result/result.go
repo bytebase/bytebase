@@ -251,12 +251,6 @@ func cutFromSource(entries []*v1pb.TaskRunLogEntry) bool {
 }
 
 func Build(in Input) *Result {
-	sources := make(map[string][]byte, len(in.Sources))
-	for key, source := range in.Sources {
-		sources[key] = executedSource(source)
-	}
-	in.Sources = sources
-
 	outcome, detail := DetailStage(in.Rollout, in.TargetStage)
 	result := &Result{
 		Outcome:     outcome,
@@ -329,7 +323,7 @@ func buildTask(in Input, task *v1pb.Task, runs []*v1pb.TaskRun) *Task {
 		if scope.file != nil {
 			source = in.Sources[SourceKey(task.GetDatabaseUpdate().GetRelease(), scope.file.GetVersion())]
 		}
-		commands, scopeErr := buildCommands(scope.entries, source)
+		commands, scopeErr := buildCommands(scope.entries, rangedSource(source, scope.entries))
 		if scope.file == nil {
 			t.Commands = append(t.Commands, commands...)
 			continue
@@ -511,11 +505,25 @@ var (
 	txnIsolationDirective = regexp.MustCompile(`(?i)^\s*--\s*txn-isolation\s*=\s*(READ\s+UNCOMMITTED|READ\s+COMMITTED|REPEATABLE\s+READ|SERIALIZABLE)\s*$`)
 )
 
-// executedSource returns the text that logged byte ranges count from. A
-// driver removes the transaction directives at the top of a file before it
-// splits and logs the commands, so the ranges point into what is left. This
-// must match base.ParseTransactionConfig, which the action cannot import
-// without linking the SQL parsers; a test holds the two together.
+// rangedSource returns the text the scope's logged byte ranges count from:
+// the file without its transaction directives for a driver that removes
+// them, and the file as stored for one that does not, such as BigQuery's.
+// Nothing the action may read names the engine, so the ranges decide: one
+// that reaches past the stripped text cannot be an offset into it.
+func rangedSource(source []byte, entries []*v1pb.TaskRunLogEntry) []byte {
+	executed := executedSource(source)
+	for _, entry := range entries {
+		if r := entry.GetCommandExecute().GetRange(); r != nil && int(r.GetEnd()) > len(executed) {
+			return source
+		}
+	}
+	return executed
+}
+
+// executedSource returns the file as a driver that honors transaction
+// directives executes it: without the directive lines at its top. This must
+// match base.ParseTransactionConfig, which the action cannot import without
+// linking the SQL parsers; a test holds the two together.
 func executedSource(source []byte) []byte {
 	lines := strings.Split(string(source), "\n")
 	var kept []string

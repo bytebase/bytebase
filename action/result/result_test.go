@@ -739,3 +739,28 @@ func TestBuildTaskFilesNotRun(t *testing.T) {
 		})
 	}
 }
+
+// A driver that does not remove directives logs ranges of the file as stored.
+func TestBuildCutsStatementsFromTheStoredFileWhenTheRangesNeedIt(t *testing.T) {
+	source := "-- txn-mode = off\nUPDATE t SET a = 1;\nDELETE FROM t WHERE a = 2;"
+	first := int32(len("-- txn-mode = off\nUPDATE t SET a = 1;"))
+	sources := map[string][]byte{SourceKey(testReleaseName, "0001"): []byte(source)}
+	build := func(entries ...*v1pb.TaskRunLogEntry) []*Command {
+		log := append([]*v1pb.TaskRunLogEntry{fileEntry("0001", "migrations/0001_backfill.sql")}, entries...)
+		tasks := buildStageWithSources(t, sources, taskFixture{
+			id: "hr", status: v1pb.Task_DONE, release: true, pending: 1,
+			runs: []v1pb.TaskRun_Status{v1pb.TaskRun_DONE},
+			log:  log,
+		})
+		return tasks[0].Files[0].Commands
+	}
+
+	// BigQuery submits the whole file as one command.
+	whole := build(rangeEntry(0, int32(len(source)), 3))
+	require.Equal(t, source, whole[0].Statement)
+
+	// A splitting driver that keeps the directive, such as Trino's.
+	split := build(rangeEntry(0, first, 3), rangeEntry(first, int32(len(source)), 1))
+	require.Equal(t, "-- txn-mode = off\nUPDATE t SET a = 1;", split[0].Statement)
+	require.Equal(t, "DELETE FROM t WHERE a = 2;", split[1].Statement)
+}
