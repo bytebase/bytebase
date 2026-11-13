@@ -1175,6 +1175,7 @@
       "unspecified": "不特定"
     },
     "select": "データベースの選択",
+    "select-no-environment": "環境なし",
     "successfully-exported-schema": "スキーマのエクスポートに成功しました",
     "successfully-transferred-databases": "データベースの転送に成功しました",
     "sync-complete-for-instance": "インスタンス '{{0}}' の同期が完了しました",
@@ -1351,38 +1352,92 @@
   },
   "gitops": {
     "back-to-releases": "リリースに戻る",
-    "checklist": {
-      "database-group-recommendation": "同じスキーマを持つデータベースには、データベースグループを使用すると一度の変更でまとめてマイグレーションできます。グループを一度定義すれば、毎回個別にデータベースを選択することなく、マイグレーション全体で再利用できます。",
-      "external-url": "外部URL",
-      "target-databases": "ターゲットデータベース",
-      "title": "開始前の確認",
-      "wif-notice-suffix": "サービスアカウントを使用して GitOps を設定できます。",
-      "wif-notice-text": "Workload Identity Federation は現在 GitHub と GitLab のみサポートしています。他の VCS については、チュートリアルを参照してください：",
-      "workload-identity": "ワークロードアイデンティティ"
-    },
-    "documentation": "ドキュメントを見る",
-    "overview": {
-      "description": "Bytebase GitOps は、データベーススキーマの変更を CI/CD パイプラインに統合し、Database as Code として管理できます。",
-      "description-git": "データベーススキーマはアプリケーションコードと一緒に Git で管理されます。プルリクエストで SQL レビューがトリガーされ、ターゲットブランチへのマージで自動的にロールアウトが作成されます。",
-      "title": "GitOps とは"
-    },
-    "test-setup": {
-      "description": "サンプルマイグレーションファイルでワークフロー全体が正常に動作するか確認します。",
-      "naming-convention": "マイグレーションファイルは辞書順に適用されます。タイムスタンプまたはシーケンス番号のプレフィックスを使用してください（例: 20240101000000_create_table.sql）。変更タイプを示すために _ddl または _dml を末尾に追加してください。",
-      "step-create-branch": "新しいブランチを作成し、上記のファイルを追加して、{{branch}} へのプルリクエストを作成します。",
-      "step-merge": "レビューが通過したら PR をマージします。Bytebase が自動的にロールアウトを作成し、ターゲット環境にデプロイします。",
-      "step-sql-review": "SQL Review がプルリクエストで自動的に実行され、レビューコメントが投稿されます。",
-      "title": "最初の GitOps マイグレーションをテスト"
-    },
-    "workflow": {
-      "description": "ワークフローファイルをリポジトリにコピーして、SQL レビューとデータベースロールアウトを自動化します。",
-      "file-hint": "リポジトリ {{repository}} 内に {{filePath}} として保存",
-      "provider-not-match": "選択された ワークロード アイデンティティ は {{provider}} 専用です。",
-      "self-hosted-runner": "セルフホスト runner",
-      "title": "ワークフローファイル生成"
-    },
-    "workload-identity": {
-      "select-placeholder": "ワークロードアイデンティティを選択"
+    "setup": {
+      "continue": "続行",
+      "databases": {
+        "create-group": "データベースグループを作成",
+        "databases-hint": "これらのデータベースはワークフローファイルに書き込まれます。後で追加するにはファイルを編集してください。",
+        "databases-label": "データベース",
+        "databases-placeholder": "データベースを選択",
+        "databases-tab": "データベース",
+        "deploy-order-hint": "変更はこの順序で、一度に 1 つの環境ずつデプロイされます。",
+        "description": "ワークフローはすべてのマイグレーションファイルをこれらのデータベースに対してレビューし、デプロイします。",
+        "group-hint": "後からこのグループに加わったデータベースにも、ワークフローファイルを変更せずにデプロイされます。",
+        "group-label": "データベースグループ",
+        "group-matches-none": "このグループに一致するデータベースはまだないため、デプロイ対象がありません。",
+        "group-placeholder": "データベースグループを選択",
+        "group-tab": "データベースグループ",
+        "no-group-description": "後からグループに加わったデータベースにも、ワークフローファイルを変更せずにデプロイされるため、グループを推奨します。",
+        "no-group-title": "このプロジェクトにはデータベースグループがありません",
+        "none-pickable-description": "このプロジェクトのどのデータベースにも環境がないため、デプロイ順序に入りません。選択するにはデータベースに環境を割り当ててください。",
+        "none-pickable-title": "選択できるデータベースがありません",
+        "question": "GitOps はどのデータベースにデプロイしますか？",
+        "recommended": "推奨",
+        "view-databases": "データベースを表示",
+        "view-group": "グループを表示"
+      },
+      "deploy-order": {
+        "database-count_one": "{{count}} 個のデータベース",
+        "database-count_other": "{{count}} 個のデータベース",
+        "environment-count_one": "{{count}} 個の環境",
+        "environment-count_other": "{{count}} 個の環境",
+        "label": "デプロイ順序",
+        "summary": "{{environments}}に{{databases}}",
+        "unassigned-description_one": "環境が設定されていないため、デプロイはエラーを出さずにスキップします。含めるには環境を割り当ててください。",
+        "unassigned-description_other": "環境が設定されていないため、デプロイはエラーを出さずにスキップします。含めるには環境を割り当ててください。",
+        "unassigned-title_one": "{{count}} 個のデータベースはデプロイされません",
+        "unassigned-title_other": "{{count}} 個のデータベースはデプロイされません"
+      },
+      "external-url-description": "ワークフローはこのアドレスで Bytebase に接続します。手順は今すぐ進められます。ワークスペース管理者が設定すると、ワークフローファイルが完成します。",
+      "files": {
+        "copy-off": "外部 URL が設定されるまでコピーできません",
+        "description": "ファイルにはデータベースとワークロード ID がすでに含まれています。そのままコピーしてください。",
+        "developers-github": "開発者向け: <code>{{file}}</code> のようなファイルをプルリクエストで追加してください。ファイル名はバージョン番号で始めます。番号のないファイルはスキップされます。",
+        "developers-gitlab": "開発者向け: <code>{{file}}</code> のようなファイルをマージリクエストで追加してください。ファイル名はバージョン番号で始めます。番号のないファイルはスキップされます。",
+        "folder-hint": "ワークフローはこのフォルダー内の SQL ファイルをレビューし、デプロイします。",
+        "folder-invalid": "リポジトリのルートからの相対パスを入力してください（例: migrations、db/migrations）。",
+        "folder-label": "マイグレーションフォルダー",
+        "heading": "ファイルをリポジトリに追加",
+        "next-github": "ファイルがデフォルトブランチに入ると、次にマイグレーションフォルダーを変更するプルリクエストに Bytebase のレビューコメントが付きます。マージするとデプロイされます。",
+        "next-gitlab": "ファイルがデフォルトブランチに入ると、次にマイグレーションフォルダーを変更するマージリクエストに Bytebase のレビューコメントが付きます。マージするとデプロイされます。",
+        "next-title": "次に起こること",
+        "repository": "リポジトリ",
+        "show-all": "全 {{lines}} 行を表示",
+        "url-missing": "ファイルでは Bytebase のアドレスの位置に <code>{{placeholder}}</code> が表示されています。アドレスのないワークフローは Bytebase に接続できないため、外部 URL が設定されるまでコピーはできません。"
+      },
+      "identity": {
+        "create": "ワークロード ID を作成",
+        "description": "ワークフローはこの ID で Bytebase にサインインするため、リポジトリにシークレットを保存しません。",
+        "every-repository": "{{owner}} のすべてのリポジトリ",
+        "git-provider": "Git プロバイダー",
+        "label": "ワークロード ID",
+        "no-role-description": "ワークフローはサインインできますが、Bytebase はレビューとデプロイを拒否します。メンバーページで GitOps Service Agent ロールを付与してください。",
+        "no-role-title": "この ID には GitOps を許可するロールがありません",
+        "none": "このプロジェクトにはまだワークロード ID がありません。",
+        "open-members": "メンバーを開く",
+        "other-provider": "その他の OIDC。セットアップにはこのためのワークフローファイルがありません。",
+        "placeholder": "ワークロード ID を選択",
+        "question": "ワークフローはどのワークロード ID でサインインしますか？",
+        "read-from": "この ID から読み取った情報",
+        "repositories": "サインインできるリポジトリ",
+        "role": "このプロジェクトでのロール"
+      },
+      "no-database": {
+        "description": "GitOps はこのプロジェクトのデータベースにデプロイします。まずデータベースをこのプロジェクトに追加または移動してください。",
+        "title": "このプロジェクトにはデータベースがありません"
+      },
+      "no-identity": {
+        "description": "ワークフローはこのプロジェクトのワークロード ID として Bytebase にサインインします。プロジェクトオーナーに作成を依頼してください。",
+        "title": "このプロジェクトにはワークロード ID がありません"
+      },
+      "outcome": "マイグレーションフォルダーを変更するすべてのプルリクエストが Bytebase のレビューを受けます。マージするとデプロイされます。",
+      "scope": "セットアップは GitHub Actions と GitLab CI 用のワークフローファイルを作成します。その他の CI/CD プラットフォームについては <docs>GitOps ドキュメント</docs>をご覧ください。",
+      "steps": {
+        "databases": "データベース",
+        "workflow-files": "ワークフローファイル",
+        "workload-identity": "ワークロード ID"
+      },
+      "title": "GitOps"
     }
   },
   "identity-provider": {

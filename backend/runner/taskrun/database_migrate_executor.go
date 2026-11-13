@@ -1007,10 +1007,8 @@ func diff(ctx context.Context, s *store.Store, instance *store.InstanceMessage, 
 		return "", errors.Errorf("database schema %q not found", database.DatabaseName)
 	}
 
-	// instance.Metadata.GetVersion() is the synced server version (e.g. "5.7.25"); thread
-	// it so MySQL canonicalizes a 5.7 database's schema as 5.7 rather than the default 8.0
-	// stored form. model.DatabaseMetadata drops the version, so it is sourced here where the
-	// instance message still carries it. Other engines ignore the version.
+	// MySQL rejects a declarative change on a server older than 8.0, so it needs the
+	// synced server version, which model.DatabaseMetadata does not carry.
 	migrationSQL, err := schema.SDLMigration(instance.Metadata.GetEngine(), sheetContent, dbMetadata, instance.Metadata.GetVersion())
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to compute SDL migration")

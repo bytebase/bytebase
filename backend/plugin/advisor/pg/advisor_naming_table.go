@@ -3,15 +3,18 @@ package pg
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -22,7 +25,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableConventionAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+// NamingTableConventionAdvisor is the advisor checking for table naming
+// convention. The judgment lives in omni (pg/v1review.NamingTable); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingTableConventionAdvisor struct {
 }
 
@@ -38,76 +44,51 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("naming_payload is required for naming table rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingTableConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingTableConventionRule struct {
-	BaseRule
-
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingTableConventionRule) Name() string {
-	return string(storepb.SQLReviewRule_NAMING_TABLE)
-}
-
-func (r *namingTableConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		if n.Relation != nil {
-			r.checkTableName(n.Relation.Relname)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.RenameStmt:
-		if n.RenameType == ast.OBJECT_TABLE {
-			r.checkTableName(n.Newname)
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	default:
+		findings, err := pgv1review.NamingTable([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		// V1 anchored every finding on the statement text's first
+		// non-whitespace line, which can be a leading comment above the
+		// statement node the finding's range covers.
+		line := stmt.BaseLine() + int((&BaseRule{StmtText: stmt.Text}).ContentStartLine())
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingTableConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(line),
+			})
+		}
 	}
-}
-
-func (r *namingTableConventionRule) checkTableName(tableName string) {
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingTableConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf(`"%s" mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingTableConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("\"%s\" mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

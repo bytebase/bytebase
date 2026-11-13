@@ -1016,9 +1016,8 @@ func (s *DatabaseService) diffSchemaViaSDL(ctx context.Context, req *v1pb.DiffSc
 		return "", errors.Wrap(err, "failed to generate source SDL")
 	}
 
-	// Resolve the target server version so MySQL canonicalizes against the right stored
-	// form. Best-effort: an empty version falls back to the engine default and other
-	// engines ignore it.
+	// MySQL rejects an SDL diff for a server older than 8.0. Best-effort: with no
+	// version known the diff proceeds.
 	engineVersion := s.diffSchemaEngineVersion(ctx, req)
 
 	targetSDL, err := s.resolveDiffSchemaTargetSDL(ctx, req, engine)

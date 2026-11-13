@@ -15,7 +15,8 @@ CREATE TABLE ord (
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id),
 	KEY idx_ord_cust (customer_id),
-	KEY idx_ord_created (created_at){{ORD_CHECK}}
+	KEY idx_ord_created (created_at),
+	CONSTRAINT chk_total CHECK (total >= 0)
 	,CONSTRAINT fk_ord_cust FOREIGN KEY (customer_id) REFERENCES customer (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

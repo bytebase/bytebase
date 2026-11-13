@@ -71,3 +71,40 @@
     CREATE TABLE literary_book(a int);
     CREATE TABLE book(a int);
     RENAME TABLE book TO tech_book_copy, literary_book TO literary_book_copy;
+- statement: CREATE PROCEDURE create_book() BEGIN CREATE TABLE TechBook (id INT); RENAME TABLE a TO LiteraryBook; END;
+- statement: "\n\nCREATE TABLE tech_book (id INT);\n\nCREATE TABLE\n  TechBook\n  (id INT);\nALTER TABLE tech_book\n  RENAME TO\n  LiteraryBook;"
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 8
+        column: 0
+      endposition: null
+- statement: CREATE TABLE `数数数数数数数数数数数数数数数数数数数数数数` (id INT);
+  want:
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`数数数数数数数数数数数数数数数数数数数数数数` mismatches table naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 301
+      title: NAMING_TABLE
+      content: '`数数数数数数数数数数数数数数数数数数数数数数` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -1175,6 +1175,7 @@
       "unspecified": "Unspecified"
     },
     "select": "Select database",
+    "select-no-environment": "No environment",
     "successfully-exported-schema": "Successfully exported schema",
     "successfully-transferred-databases": "Successfully transferred databases",
     "sync-complete-for-instance": "Sync complete for instance '{{0}}'",
@@ -1351,38 +1352,92 @@
   },
   "gitops": {
     "back-to-releases": "Back to Releases",
-    "checklist": {
-      "database-group-recommendation": "For databases sharing the same schema, a database group lets you migrate them together in one change. Define the group once and reuse it across migrations without picking individual databases every time.",
-      "external-url": "External URL",
-      "target-databases": "Target Databases",
-      "title": "Checks before we start",
-      "wif-notice-suffix": "to set up GitOps using a service account.",
-      "wif-notice-text": "Workload Identity Federation is currently supported for GitHub and GitLab only. For other VCS, refer to the tutorials for",
-      "workload-identity": "Workload Identity"
-    },
-    "documentation": "View Documentation",
-    "overview": {
-      "description": "Bytebase GitOps lets you manage Database as Code by integrating database schema changes into your CI/CD pipeline.",
-      "description-git": "Your database schema lives in Git alongside your application code. Pull requests trigger SQL review, and merging to the target branch automatically creates rollouts.",
-      "title": "What is GitOps"
-    },
-    "test-setup": {
-      "description": "Verify the workflow is working end-to-end with a sample migration file.",
-      "naming-convention": "Migration files are applied in lexicographic order. Use a timestamp or sequence prefix, e.g. 20240101000000_create_table.sql. Append _ddl or _dml to indicate the change type.",
-      "step-create-branch": "Create a new branch, add the file above, and open a pull request targeting {{branch}}.",
-      "step-merge": "Once the review passes, merge the PR. Bytebase will automatically create a rollout and deploy to the target environments.",
-      "step-sql-review": "SQL Review runs automatically on the pull request and posts review comments.",
-      "title": "Test your first GitOps migration"
-    },
-    "workflow": {
-      "description": "Copy the workflow files into your repository to automate SQL review and database rollouts.",
-      "file-hint": "Save as {{filePath}} in your repository {{repository}}",
-      "provider-not-match": "The selected workload identity only works for {{provider}}.",
-      "self-hosted-runner": "Self-hosted runner",
-      "title": "Workflow file generation"
-    },
-    "workload-identity": {
-      "select-placeholder": "Select a workload identity"
+    "setup": {
+      "continue": "Continue",
+      "databases": {
+        "create-group": "Create a database group",
+        "databases-hint": "These databases are written into the workflow files. To add one later, edit the files.",
+        "databases-label": "Databases",
+        "databases-placeholder": "Select databases",
+        "databases-tab": "Databases",
+        "deploy-order-hint": "Changes deploy one environment at a time, in this order.",
+        "description": "The workflow reviews and deploys every migration file against these databases.",
+        "group-hint": "A database that joins this group later is deployed too, with no change to the workflow files.",
+        "group-label": "Database group",
+        "group-matches-none": "This group matches no database yet, so there is nothing to deploy.",
+        "group-placeholder": "Select a database group",
+        "group-tab": "Database group",
+        "no-group-description": "A group is recommended because a database that joins it later is deployed too, with no change to the workflow files.",
+        "no-group-title": "This project has no database group",
+        "none-pickable-description": "Every database in this project has no environment, so none has a place in the deploy order. Assign an environment to a database to pick it.",
+        "none-pickable-title": "No database can be picked",
+        "question": "Which databases should GitOps deploy to?",
+        "recommended": "Recommended",
+        "view-databases": "View databases",
+        "view-group": "View group"
+      },
+      "deploy-order": {
+        "database-count_one": "{{count}} database",
+        "database-count_other": "{{count}} databases",
+        "environment-count_one": "{{count}} environment",
+        "environment-count_other": "{{count}} environments",
+        "label": "Deploy order",
+        "summary": "{{databases}} in {{environments}}",
+        "unassigned-description_one": "It has no environment, so the deploy skips it without an error. Assign an environment to include it.",
+        "unassigned-description_other": "They have no environment, so the deploy skips them without an error. Assign an environment to include them.",
+        "unassigned-title_one": "{{count}} database will not be deployed",
+        "unassigned-title_other": "{{count}} databases will not be deployed"
+      },
+      "external-url-description": "Your workflow uses this address to reach Bytebase. You can go through the steps now. The workflow files are complete once a workspace admin sets it.",
+      "files": {
+        "copy-off": "Copy is off until the External URL is set",
+        "description": "The files already contain your databases and your workload identity. Copy them as they are.",
+        "developers-github": "For developers: add a file such as <code>{{file}}</code> in a pull request. File names start with a version number. The workflow skips a file without one.",
+        "developers-gitlab": "For developers: add a file such as <code>{{file}}</code> in a merge request. File names start with a version number. The workflow skips a file without one.",
+        "folder-hint": "The workflow reviews and deploys the SQL files in this folder.",
+        "folder-invalid": "Enter a folder path relative to the repository root, such as migrations or db/migrations.",
+        "folder-label": "Migration folder",
+        "heading": "Add the files to your repository",
+        "next-github": "Once the files are on the default branch, the next pull request that changes the migration folder gets a Bytebase review comment. Merging it deploys.",
+        "next-gitlab": "Once the files are on the default branch, the next merge request that changes the migration folder gets a Bytebase review comment. Merging it deploys.",
+        "next-title": "What happens next",
+        "repository": "Repository",
+        "show-all": "Show all {{lines}} lines",
+        "url-missing": "The files show <code>{{placeholder}}</code> where the Bytebase address goes. Copy is off until the External URL is set, because a workflow with no address cannot reach Bytebase."
+      },
+      "identity": {
+        "create": "Create workload identity",
+        "description": "Your workflow signs in to Bytebase as this identity, so no secret is stored in the repository.",
+        "every-repository": "Every repository of {{owner}}",
+        "git-provider": "Git provider",
+        "label": "Workload identity",
+        "no-role-description": "Its workflow can sign in, but Bytebase will refuse the review and the deploy. Grant it the GitOps Service Agent role on the Members page.",
+        "no-role-title": "This identity has no role that allows GitOps",
+        "none": "This project has no workload identity yet.",
+        "open-members": "Open Members",
+        "other-provider": "Other OIDC. Setup has no workflow files for it.",
+        "placeholder": "Select a workload identity",
+        "question": "Which workload identity does your workflow sign in as?",
+        "read-from": "Read from this identity",
+        "repositories": "Repositories that can sign in",
+        "role": "Role in this project"
+      },
+      "no-database": {
+        "description": "GitOps deploys to the databases of this project. Add or transfer a database to this project first.",
+        "title": "This project has no database"
+      },
+      "no-identity": {
+        "description": "Your workflow signs in to Bytebase as a workload identity of this project. Ask a project owner to create one.",
+        "title": "This project has no workload identity"
+      },
+      "outcome": "Every pull request that changes the migration folder gets a Bytebase review. Merging it deploys.",
+      "scope": "Setup writes workflow files for GitHub Actions and GitLab CI. For other CI/CD platforms, see the <docs>GitOps docs</docs>.",
+      "steps": {
+        "databases": "Databases",
+        "workflow-files": "Workflow files",
+        "workload-identity": "Workload identity"
+      },
+      "title": "GitOps"
     }
   },
   "identity-provider": {

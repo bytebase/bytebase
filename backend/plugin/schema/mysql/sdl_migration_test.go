@@ -30,38 +30,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// TestMySQLVersionFor locks in the engine-version -> omni catalog Version mapping that
-// threads the version into the SDL diff. The boundary is 8.0.0: anything below maps to
-// MySQL57 (utf8mb4_general_ci default), 8.0.0+ to MySQL80 (utf8mb4_0900_ai_ci); an
-// empty/unparseable version falls back to MySQL80 (the historical default).
-func TestMySQLVersionFor(t *testing.T) {
-	cases := []struct {
-		version string
-		want    catalog.Version
-	}{
-		{"5.7.25", catalog.MySQL57},
-		{"5.7", catalog.MySQL57},
-		{"5.6.51", catalog.MySQL57},
-		{"5.7.44-log", catalog.MySQL57},
-		{"8.0.32", catalog.MySQL80},
-		{"8.0", catalog.MySQL80},
-		{"8.0.0", catalog.MySQL80},
-		{"8.4.0", catalog.MySQL80},
-		{"9.0.1", catalog.MySQL80},
-		// OceanBase / unparseable / empty -> default to 8.0 stored form.
-		{"", catalog.MySQL80},
-		{"not-a-version", catalog.MySQL80},
-		// OceanBase reports a MySQL-compat version like "8.0.30" in its version string;
-		// when only a marketing string is present we default to 8.0, which is safe.
-		{"OceanBase 4.2", catalog.MySQL80},
-	}
-	for _, c := range cases {
-		if got := mysqlVersionFor(c.version); got != c.want {
-			t.Errorf("mysqlVersionFor(%q) = %v, want %v", c.version, got, c.want)
-		}
-	}
-}
-
 // metadataFromSDL builds a model.DatabaseMetadata from SDL text using the registered MySQL
 // GetDatabaseMetadata, so drop-advice tests can run fully offline (no live server).
 func metadataFromSDL(t *testing.T, sdl string) *model.DatabaseMetadata {
@@ -73,8 +41,7 @@ func metadataFromSDL(t *testing.T, sdl string) *model.DatabaseMetadata {
 
 // TestMySQLSDLDropAdvices verifies the registered MySQL drop-advice analyzer emits WARNING
 // advices for destructive operations (DROP TABLE, DROP COLUMN) and stays silent on a no-op.
-// It drives the version-aware path offline by building the "current" schema metadata from
-// SDL.
+// It drives the analyzer offline by building the "current" schema metadata from SDL.
 func TestMySQLSDLDropAdvices(t *testing.T) {
 	current := `
 CREATE TABLE author (
@@ -360,42 +327,65 @@ func TestDiffSDLMigrationEmptyTargetDropsEverything(t *testing.T) {
 	require.NotContains(t, sql, "bbcatalog")
 }
 
-// TestLoadCatalogFallbackSeedsExplicitDefaultsForTimestamp pins the fix for the LoadSQL
-// fallback not seeding explicit_defaults_for_timestamp. On 5.7, EDFT is OFF, so a bare
-// TIMESTAMP column materializes NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE
-// CURRENT_TIMESTAMP. The source here is plain SDL (loads via LoadSDLWithVersion, EDFT
-// seeded OFF); the target carries a LOCK TABLES statement that LoadSDL rejects, forcing the
-// LoadSQL fallback. Before the fix that fallback kept the New() 8.0 default (EDFT ON), so
-// the SAME bare TIMESTAMP materialized nullable and the diff spuriously emitted a MODIFY
-// COLUMN. With EDFT seeded to the 5.7 box default on both sides, identical schemas diff to
-// empty.
-func TestLoadCatalogFallbackSeedsExplicitDefaultsForTimestamp(t *testing.T) {
+// TestLoadCatalogFallbackBareTimestamp pins that the LoadSQL fallback materializes a bare
+// TIMESTAMP column (whose stored form depends on the session's
+// explicit_defaults_for_timestamp) the same way the LoadSDL path does, so identical
+// schemas diff to empty. The source here is plain SDL (loads via LoadSDL); the target
+// carries a LOCK TABLES statement that LoadSDL rejects, forcing the LoadSQL fallback.
+func TestLoadCatalogFallbackBareTimestamp(t *testing.T) {
 	const table = "CREATE TABLE `t` (`ts` timestamp) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n"
 
 	// Target forces the LoadSQL fallback: LOCK TABLES is not a DDL statement LoadSDL accepts.
 	target := "LOCK TABLES `t` WRITE;\n" + table + "UNLOCK TABLES;\n"
 
-	// 5.7 (EDFT OFF): identical schemas must produce no migration.
-	sql57, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, target, "5.7.44")
-	require.NoError(t, err)
-	require.Empty(t, sql57, "5.7 source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql57)
-
-	// 8.0 (EDFT ON): also identical, and the fallback must not regress the 8.0 default.
 	sql80, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, target, "8.0.32")
 	require.NoError(t, err)
 	require.Empty(t, sql80, "8.0 source/target with identical bare TIMESTAMP must not phantom-diff; got %q", sql80)
 }
 
+// TestSDLRejectsServersBelow80 pins that the declarative path refuses a MySQL server
+// older than 8.0 at both registered entry points, before it computes anything, and
+// that a version naming no major number is let through.
+func TestSDLRejectsServersBelow80(t *testing.T) {
+	const table = "CREATE TABLE `t` (`id` int NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n"
+	const changed = "CREATE TABLE `t` (`id` int NOT NULL, `c` int, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n"
+	meta := metadataFromSDL(t, table)
+
+	for _, version := range []string{"5.7.44", "5.7", "5.6.51", "5.7.44-log", " 5.7.25 ", "5.7.mysql_aurora.2.11.2"} {
+		_, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, changed, version)
+		require.ErrorContains(t, err, "requires MySQL 8.0 or later", "diff, version %q", version)
+
+		_, err = schema.SDLMigration(storepb.Engine_MYSQL, changed, meta, version)
+		require.ErrorContains(t, err, "requires MySQL 8.0 or later", "rollout, version %q", version)
+
+		advices, err := schema.SDLDropAdvices(storepb.Engine_MYSQL, changed, meta, version)
+		require.NoError(t, err, "drop advices, version %q", version)
+		require.Len(t, advices, 1, "drop advices, version %q", version)
+		require.Equal(t, storepb.Advice_ERROR, advices[0].Status)
+		require.Equal(t, code.Unsupported.Int32(), advices[0].Code)
+		require.Contains(t, advices[0].Content, "requires MySQL 8.0 or later")
+	}
+
+	for _, version := range []string{"8.0.32", "8.0", "8.4.0", "9.0.1", "8.0.mysql_aurora.3.05.2", "", "not-a-version"} {
+		migration, err := schema.DiffSDLMigration(storepb.Engine_MYSQL, table, changed, version)
+		require.NoError(t, err, "diff, version %q", version)
+		require.Contains(t, migration, "ADD COLUMN", "diff, version %q", version)
+
+		advices, err := schema.SDLDropAdvices(storepb.Engine_MYSQL, changed, meta, version)
+		require.NoError(t, err, "drop advices, version %q", version)
+		require.Empty(t, advices, "drop advices, version %q", version)
+	}
+}
+
 // skipUnlessLiveOracle gates every live-oracle SDL suite in this package. These
-// suites need the developer's local MySQL oracles (5.7 at 127.0.0.1:13307, 8.0 at
-// 127.0.0.1:13306 — see liveServers) and are opt-in via MYSQL_SDL_LIVE_ORACLE=1.
-// CI has no such servers, so an explicit environment gate (mirroring the cosmosdb
-// integration tests) keeps the suites out of CI while leaving them one env var
-// away locally.
+// suites need the developer's local MySQL 8.0 oracle at 127.0.0.1:13306 (see
+// liveServers) and are opt-in via MYSQL_SDL_LIVE_ORACLE=1. CI has no such server,
+// so an explicit environment gate (mirroring the cosmosdb integration tests) keeps
+// the suites out of CI while leaving them one env var away locally.
 func skipUnlessLiveOracle(t *testing.T) {
 	t.Helper()
 	if os.Getenv("MYSQL_SDL_LIVE_ORACLE") == "" {
-		t.Skip("skipping live MySQL SDL oracle test: set MYSQL_SDL_LIVE_ORACLE=1 (needs local MySQL 5.7 at :13307 and 8.0 at :13306)")
+		t.Skip("skipping live MySQL SDL oracle test: set MYSQL_SDL_LIVE_ORACLE=1 (needs local MySQL 8.0 at :13306)")
 	}
 }
 
@@ -407,12 +397,9 @@ type liveServer struct {
 	version string
 }
 
-// liveServers are the two oracle MySQL instances. Idempotence diverges by version
-// (5.7 injects integer display widths and uses the utf8mb4_general_ci default; 8.0
-// drops widths and uses utf8mb4_0900_ai_ci), so both are exercised.
+// liveServers are the oracle MySQL instances the live suites run against.
 var liveServers = []liveServer{
 	{name: "mysql80", host: "127.0.0.1", port: "13306", version: "8.0"},
-	{name: "mysql57", host: "127.0.0.1", port: "13307", version: "5.7"},
 }
 
 const liveOraclePassword = "010424"
@@ -519,16 +506,11 @@ func syncToMetadata(ctx context.Context, t *testing.T, srv liveServer) (*model.D
 }
 
 // TestSDLProductionPathLive exercises the REAL production entry point, schema.SDLMigration
-// (the function database_migrate_executor.go's diff() calls), end to end against live 5.7
-// and 8.0. It proves the version threading wired through schema.SDLMigration ->
-// mysqlDiffSDLMigration -> the MySQL version-aware registry reaches the omni
-// normalizer:
+// (the function database_migrate_executor.go's diff() calls), end to end against the
+// live server:
 //
-//	(1) the 5.7 no-op (synced metadata diffed against its own authoring DDL) is empty —
-//	    a non-empty result is the version-dispatch regression (utf8mb4 default-collation
-//	    phantom) this wiring fixes; and
-//	(2) a 5.7 schema change produces DDL valid on 5.7 — never names utf8mb4_0900_ai_ci
-//	    (errno 1273) — and applies cleanly to the live 5.7 server.
+//	(1) the no-op (synced metadata diffed against its own authoring DDL) is empty; and
+//	(2) a schema change produces minimal DDL that applies cleanly to the live server.
 //
 //nolint:tparallel
 func TestSDLProductionPathLive(t *testing.T) {
@@ -549,12 +531,12 @@ func TestSDLProductionPathLive(t *testing.T) {
 			meta, dbName := syncToMetadata(ctx, t, srv)
 
 			// (1) Production-path no-op idempotence: schema.SDLMigration converts meta to
-			// SDL internally and diffs against the user DDL, threading srv.version.
+			// SDL internally and diffs against the user DDL.
 			noop, err := schema.SDLMigration(storepb.Engine_MYSQL, representativeDDL, meta, srv.version)
 			require.NoError(t, err)
 			require.Empty(t, noop, "[%s] production-path no-op must be empty, got:\n%s", srv.name, noop)
 
-			// (2) Production-path change: minimal, version-valid DDL.
+			// (2) Production-path change: minimal DDL.
 			change, err := schema.SDLMigration(storepb.Engine_MYSQL, addColumnDDL, meta, srv.version)
 			require.NoError(t, err)
 			require.NotEmpty(t, change, "[%s] production-path change must be non-empty", srv.name)
@@ -562,13 +544,8 @@ func TestSDLProductionPathLive(t *testing.T) {
 			require.Contains(t, upper, "ADD COLUMN", "[%s] expected ADD COLUMN, got:\n%s", srv.name, change)
 			require.Contains(t, upper, "ISBN", "[%s] expected the new column, got:\n%s", srv.name, change)
 			require.NotContains(t, upper, "CREATE TABLE", "[%s] change must not rebuild the table:\n%s", srv.name, change)
-			if srv.version == "5.7" {
-				require.NotContains(t, change, "utf8mb4_0900_ai_ci",
-					"[%s] production-path 5.7 change names an 8.0-only collation (errno 1273):\n%s", srv.name, change)
-			}
 
-			// Apply the production-path DDL back to the real server — errno 1273 would
-			// surface here on 5.7 if the version were not threaded through schema.SDLMigration.
+			// Apply the production-path DDL back to the real server.
 			applyDriver, err := createLiveMySQLDriver(ctx, srv, dbName)
 			require.NoError(t, err)
 			defer applyDriver.Close(ctx)
@@ -579,8 +556,8 @@ func TestSDLProductionPathLive(t *testing.T) {
 }
 
 // TestSDLDeclarativePathLive exercises the full wired declarative path against live
-// MySQL 5.7 and 8.0: sync -> MetadataToSDL -> DiffSDLMigration. It asserts the
-// no-op idempotence property, minimal-DDL change generation, and apply-back.
+// MySQL: sync -> MetadataToSDL -> DiffSDLMigration. It asserts the no-op idempotence
+// property.
 //
 //nolint:tparallel
 func TestSDLDeclarativePathLive(t *testing.T) {
@@ -595,18 +572,14 @@ func TestSDLDeclarativePathLive(t *testing.T) {
 
 			t.Logf("[%s] canonical SDL source:\n%s", srv.name, source)
 
-			// source vs source must ALWAYS be empty on both versions (identical inputs;
-			// version-independent). A non-empty result here would be a pure wiring/dump
-			// determinism bug.
+			// source vs source must ALWAYS be empty (identical inputs). A non-empty
+			// result here would be a pure wiring/dump determinism bug.
 			selfDiff, err := mysqlDiffSDLMigration(source, source, srv.version)
 			require.NoError(t, err)
 			require.Empty(t, selfDiff, "[%s] source-vs-source diff must be empty, got:\n%s", srv.name, selfDiff)
 
 			// source vs D is the meaningful case: the stored/dumped canonical form
-			// diffed against the user's original DDL must canonicalize equal. The version
-			// is threaded so a 5.7 schema is canonicalized as 5.7 (a bare CHARSET=utf8mb4
-			// resolves to utf8mb4_general_ci, not the 8.0 default) — the fix for the
-			// version-dispatch gap (omni catalog SessionState.Version + LoadSDLWithVersion).
+			// diffed against the user's original DDL must canonicalize equal.
 			noopDiff, err := mysqlDiffSDLMigration(source, representativeDDL, srv.version)
 			require.NoError(t, err)
 			require.Empty(t, noopDiff, "[%s] no-op idempotence FAILED: source-vs-D diff must be empty, got:\n%s", srv.name, noopDiff)
@@ -666,9 +639,7 @@ func TestSDLMinimalChangeLive(t *testing.T) {
 				require.Contains(t, upper, "ISBN", "[%s] expected the new column, got:\n%s", srv.name, diff)
 				require.NotContains(t, upper, "CREATE TABLE", "[%s] add-column must not rebuild the table:\n%s", srv.name, diff)
 				require.NotContains(t, upper, "DROP TABLE", "[%s] add-column must not drop the table:\n%s", srv.name, diff)
-				// Strict minimality: exactly the ADD COLUMN, nothing else — on BOTH versions,
-				// now that the version is threaded and the 5.7 utf8mb4-default-collation
-				// phantom no longer contaminates the diff.
+				// Strict minimality: exactly the ADD COLUMN, nothing else.
 				require.Equal(t, 1, statementCount(diff),
 					"[%s] add-column must be a single minimal statement, got:\n%s", srv.name, diff)
 			})
@@ -762,21 +733,13 @@ func TestSDLApplyBackLive(t *testing.T) {
 			source, err := schema.MetadataToSDL(storepb.Engine_MYSQL, model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MYSQL, true))
 			require.NoError(t, err)
 
-			// Compute minimal change DDL for D2 (add column), version-aware so the change
-			// DDL is valid on the target server (no utf8mb4_0900_ai_ci on 5.7).
+			// Compute minimal change DDL for D2 (add column).
 			changeDDL, err := mysqlDiffSDLMigration(source, addColumnDDL, srv.version)
 			require.NoError(t, err)
 			require.NotEmpty(t, changeDDL, "[%s] expected non-empty change DDL", srv.name)
 			t.Logf("[%s] apply-back change DDL:\n%s", srv.name, changeDDL)
 
-			// The change DDL must never name a collation the target server lacks.
-			if srv.version == "5.7" {
-				require.NotContains(t, changeDDL, "utf8mb4_0900_ai_ci",
-					"[%s] change DDL names a collation that does not exist on 5.7:\n%s", srv.name, changeDDL)
-			}
-
-			// Apply it back to the real DB — this is where Error 1273 would surface on 5.7
-			// if the version were not threaded.
+			// Apply it back to the real DB.
 			applyDriver, err := createLiveMySQLDriver(ctx, srv, dbName)
 			require.NoError(t, err)
 			defer applyDriver.Close(ctx)
@@ -807,7 +770,6 @@ type breadthCase struct {
 	baseDDL    string
 	targetDDL  string
 	changeWant string // uppercase substring the minimal change DDL must contain
-	skip57     bool   // CHECK constraints are 8.0-only
 }
 
 // newLiveDatabase creates a fresh database on srv and registers cleanup. It returns the
@@ -848,7 +810,7 @@ func applyAndDump(ctx context.Context, t *testing.T, srv liveServer, dbName, ddl
 }
 
 // breadthCases covers the eight MySQL breadth object types the merged omni engine
-// supports: secondary/unique index, foreign key, CHECK (8.0), partition, view, stored
+// supports: secondary/unique index, foreign key, CHECK, partition, view, stored
 // routine (function + procedure), trigger, and event. Each carries a base→target delta
 // that names exactly one object so the generated change is minimal.
 func breadthCases() []breadthCase {
@@ -882,7 +844,6 @@ CREATE TABLE child (id INT PRIMARY KEY, pid INT NOT NULL,
 			targetDDL: `CREATE TABLE t (id INT PRIMARY KEY, age INT NOT NULL,
 	CONSTRAINT chk_age CHECK (age >= 0)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 			changeWant: "CHECK",
-			skip57:     true,
 		},
 		{
 			name:    "partition",
@@ -936,8 +897,7 @@ CREATE EVENT IF NOT EXISTS daily_ev ON SCHEDULE EVERY 1 DAY DO INSERT INTO log (
 
 // TestSDLBreadthLive is the breadth deliverable: every MySQL breadth object type is
 // round-tripped end to end through the wired declarative path (sync → MetadataToSDL →
-// mysqlDiffSDLMigration) on live MySQL 5.7 and 8.0, asserting three properties per
-// type:
+// mysqlDiffSDLMigration) on live MySQL, asserting three properties per type:
 //
 //	(1) no-op idempotence — the target schema synced, dumped, and diffed against its own
 //	    user DDL produces an empty migration (and source-vs-source is empty);
@@ -956,12 +916,9 @@ func TestSDLBreadthLive(t *testing.T) {
 		t.Run(srv.name, func(t *testing.T) {
 			for _, bc := range breadthCases() {
 				bc := bc
-				if srv.version == "5.7" && bc.skip57 {
-					continue
-				}
 				t.Run(bc.name, func(t *testing.T) {
 					// (1) No-op idempotence: build the TARGET, dump, diff against the
-					// target user DDL — must be empty on both versions.
+					// target user DDL — must be empty.
 					noopDB := newLiveDatabase(ctx, t, srv, "sdl_breadth_noop")
 					targetSource := applyAndDump(ctx, t, srv, noopDB, bc.targetDDL)
 					t.Logf("[%s/%s] target dump:\n%s", srv.name, bc.name, targetSource)
@@ -1026,7 +983,7 @@ func countAdviceCode(advices []*storepb.Advice, c int32) int {
 
 // TestSDLDropAdvicesLive exercises schema.SDLDropAdvices (the registered MySQL drop-advice
 // analyzer, reached the same way the release-check gating reaches it) end to end against
-// live 5.7 and 8.0: sync the representative schema, then point the user SDL at a target that
+// live MySQL: sync the representative schema, then point the user SDL at a target that
 // drops a whole table and a column, and assert WARNING advices are produced with the
 // SDLDropOperation code. A no-op target must yield zero advices.
 //
@@ -1092,7 +1049,7 @@ CREATE TABLE author (
 func TestSDLSpatialSRIDPresenceLive(t *testing.T) {
 	skipUnlessLiveOracle(t)
 	ctx := context.Background()
-	srv := liveServers[0] // 8.0 — the SRID column attribute is an 8.0-only surface.
+	srv := liveServers[0]
 
 	const ddl = `
 CREATE TABLE geo (
@@ -1133,8 +1090,8 @@ CREATE TABLE geo (
 	require.Contains(t, change, "MODIFY", "dropping an explicit SRID 4326 must produce a column modification")
 }
 
-// End-to-end proof for BYT-9832 STAGE 2 (bytebase wiring) against the LIVE 5.7 (:13307)
-// and 8.0 (:13306) oracles. It drives the REAL production entry point,
+// End-to-end proof for BYT-9832 STAGE 2 (bytebase wiring) against the live 8.0
+// oracle. It drives the REAL production entry point,
 // schema.SDLMigration (the function database_migrate_executor.go's diff() calls), so the
 // whole path exercised is: seed object under a distinctive session context → sync to
 // metadata (which captures sql_mode/charset/collation, and event time_zone) →
@@ -1157,8 +1114,7 @@ const deploySessionMode = "STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION"
 
 // openLiveDB opens a raw *sql.DB against a live oracle with multi-statement support so a
 // framed migration (SET …; CREATE …; SET …) runs as one script on one session, and returns
-// it with a cleanup. It connects plaintext (no tls param), the equivalent of the mysql
-// CLI's --ssl-mode=DISABLED that 5.7 needs.
+// it with a cleanup. It connects plaintext (no tls param).
 func openLiveDB(t *testing.T, srv liveServer, database string) *sql.DB {
 	t.Helper()
 	cfg := mysqldriver.NewConfig()
@@ -1487,8 +1443,7 @@ func TestSDLSessionContextNoChurnLive(t *testing.T) {
 // Real-world-schema smoke test for the MySQL declarative (SDL) migration path. Unlike the
 // synthetic stress suites (the stress and deep-stress axes above) these cases drive
 // ACTUAL production schemas — Sakila, employees, employees(partitioned), Roundcube, and
-// MediaWiki — through the exact production entry points end to end against live MySQL 5.7 +
-// 8.0:
+// MediaWiki — through the exact production entry points end to end against live MySQL:
 //
 //   - schema.SDLMigration(MYSQL, userSDL, syncedMetadata, engineVersion),
 //   - mysqlDiffSDLMigration(source, target, engineVersion),
@@ -1549,7 +1504,7 @@ var mediawikiSchema string
 //	... from ((((`category` left join `film_category` on(...)) left join `film` on(...))
 //	         join `film_actor` on(...)) join `actor` on(...)) group by ...
 //
-// Re-loading that dump through the SDL path (catalog.LoadSDLWithVersion / LoadSQL, called by
+// Re-loading that dump through the SDL path (catalog.LoadSDL / LoadSQL, called by
 // mysqlDiffSDLMigration and schema.SDLMigration) fails with
 //
 //	expected SELECT, TABLE, VALUES, or '('
@@ -1579,9 +1534,6 @@ type realWorldSchema struct {
 	// a unique-suffixed one. Required for sakila, whose actor_info view body hardcodes the
 	// `sakila.` schema qualifier and therefore only resolves in a database named `sakila`.
 	fixedDBName string
-	// only57Skip marks a fixture that does not load on 5.7 (so the 5.7 leg is skipped with a
-	// classification rather than failing).
-	only57Skip string
 	// viewParsePending, when non-empty, marks a fixture whose canonical dump carries a
 	// multi-table view that the current omni SDL parser cannot re-read (see viewParseBug).
 	// The SDL-path legs (idempotence, original-vs-synced, and every migration scenario on this
@@ -1597,14 +1549,6 @@ func realWorldSchemas() []realWorldSchema {
 			name:        "sakila",
 			ddl:         sakilaSchema,
 			fixedDBName: "sakila",
-			// On 5.7 the SQL SECURITY INVOKER actor_info view, whose body is fully `sakila.`
-			// qualified, fails to CREATE even into a database named sakila because 5.7 resolves
-			// the invoker view's referenced tables more strictly at create time (errno 1146 on
-			// sakila.actor under FOREIGN_KEY_CHECKS=0). 8.0 creates it fine. So the 5.7 leg is
-			// skipped (harness/engine-version classification — see report). All other sakila
-			// objects (16 tables, 6 plain views, 3 functions, 3 procedures, 3 triggers) load on
-			// both versions.
-			only57Skip: "actor_info SQL SECURITY INVOKER view (hardcoded sakila.* refs) fails to CREATE on 5.7",
 			// Multi-table-join views (film_list, customer_list, ...) now round-trip: the omni SDL
 			// parser's parenthesized-JOIN FROM fix is merged + pinned (#356).
 		},
@@ -1720,7 +1664,7 @@ func objectCounts(meta *model.DatabaseMetadata) (tables, views, funcs, procs, tr
 // ============================================================================
 
 // TestSDLRealWorldIdempotence is the baseline that matters most: every loaded production
-// schema must round-trip through the SDL path with NO phantom diff. For each schema × version:
+// schema must round-trip through the SDL path with NO phantom diff. For each schema:
 //
 //	(0) load the fixture live, sync, and log object counts (Phase 0 usability),
 //	(1a) source-vs-source determinism: source = MetadataToSDL(synced);
@@ -1742,10 +1686,6 @@ func TestSDLRealWorldIdempotence(t *testing.T) {
 			for _, rw := range realWorldSchemas() {
 				rw := rw
 				t.Run(rw.name, func(t *testing.T) {
-					if srv.version == "5.7" && rw.only57Skip != "" {
-						t.Skipf("[%s/%s] skipped on 5.7: %s", srv.name, rw.name, rw.only57Skip)
-					}
-
 					meta, dbName := loadRealWorld(ctx, t, srv, rw)
 					tbl, vw, fn, pr, tg := objectCounts(meta)
 					t.Logf("[PHASE0 %s/%s] loaded: tables=%d views=%d functions=%d procedures=%d triggers=%d (db=%s)",
@@ -1866,8 +1806,6 @@ type rwScenario struct {
 	// wantContains are uppercased substrings the generated plan MUST contain (minimality /
 	// correctness anchors). Empty means "just assert non-empty + converges".
 	wantContains []string
-	// skip57 marks scenarios that only run on 8.0 (e.g. sakila-based ones).
-	skip57 string
 }
 
 // mustReplace asserts the replacement actually changed the text (guards against fixture drift
@@ -1884,7 +1822,6 @@ func rwScenarios() []rwScenario {
 		{
 			name:   "sakila_view_alter_select",
 			schema: "sakila",
-			skip57: "sakila view scenarios run on 8.0 (sakila does not fully load on 5.7)",
 			// film_list is a real view joining film/category/film_actor/actor. Append a genuinely
 			// new column (replacement_cost) to its SELECT — a developer broadening a reporting view.
 			// (price/rental_rate is already projected, so we add a column not already present.)
@@ -1896,7 +1833,6 @@ func rwScenarios() []rwScenario {
 		{
 			name:   "sakila_view_add_new_and_view_on_view",
 			schema: "sakila",
-			skip57: "sakila view scenarios run on 8.0",
 			// Add a brand-new view AND a view that depends on it (view-on-view), appended to the
 			// source. The plan must create both, ordered base-before-dependent.
 			mutate: func(_ *testing.T, _ liveServer, source string) string {
@@ -1910,7 +1846,6 @@ CREATE VIEW v_actor_min2 AS SELECT actor_id FROM v_actor_min;
 		{
 			name:   "sakila_view_drop",
 			schema: "sakila",
-			skip57: "sakila view scenarios run on 8.0",
 			// Drop the sales_by_store view (a real aggregate view) by removing it from the source.
 			mutate: func(t *testing.T, _ liveServer, source string) string {
 				return dropObjectBlock(t, source, "VIEW", "sales_by_store")
@@ -1921,7 +1856,6 @@ CREATE VIEW v_actor_min2 AS SELECT actor_id FROM v_actor_min;
 		{
 			name:   "sakila_function_add",
 			schema: "sakila",
-			skip57: "sakila routine scenarios run on 8.0",
 			mutate: func(_ *testing.T, _ liveServer, source string) string {
 				return source + `
 CREATE FUNCTION f_film_count() RETURNS INT READS SQL DATA RETURN (SELECT COUNT(*) FROM film);
@@ -1932,7 +1866,6 @@ CREATE FUNCTION f_film_count() RETURNS INT READS SQL DATA RETURN (SELECT COUNT(*
 		{
 			name:   "sakila_function_drop",
 			schema: "sakila",
-			skip57: "sakila routine scenarios run on 8.0",
 			// Drop inventory_held_by_customer (a real function with a body).
 			mutate: func(t *testing.T, _ liveServer, source string) string {
 				return dropObjectBlock(t, source, "FUNCTION", "inventory_held_by_customer")
@@ -1943,7 +1876,6 @@ CREATE FUNCTION f_film_count() RETURNS INT READS SQL DATA RETURN (SELECT COUNT(*
 		{
 			name:   "sakila_procedure_add",
 			schema: "sakila",
-			skip57: "sakila routine scenarios run on 8.0",
 			mutate: func(_ *testing.T, _ liveServer, source string) string {
 				return source + `
 CREATE PROCEDURE p_touch_film(IN fid INT) BEGIN UPDATE film SET last_update = NOW() WHERE film_id = fid; END;
@@ -1954,7 +1886,6 @@ CREATE PROCEDURE p_touch_film(IN fid INT) BEGIN UPDATE film SET last_update = NO
 		{
 			name:   "sakila_procedure_drop",
 			schema: "sakila",
-			skip57: "sakila routine scenarios run on 8.0",
 			mutate: func(t *testing.T, _ liveServer, source string) string {
 				return dropObjectBlock(t, source, "PROCEDURE", "film_not_in_stock")
 			},
@@ -1964,7 +1895,6 @@ CREATE PROCEDURE p_touch_film(IN fid INT) BEGIN UPDATE film SET last_update = NO
 		{
 			name:   "sakila_trigger_add",
 			schema: "sakila",
-			skip57: "sakila trigger scenarios run on 8.0",
 			mutate: func(_ *testing.T, _ liveServer, source string) string {
 				return source + `
 CREATE TRIGGER trg_payment_bi BEFORE INSERT ON payment FOR EACH ROW SET NEW.last_update = NOW();
@@ -1975,7 +1905,6 @@ CREATE TRIGGER trg_payment_bi BEFORE INSERT ON payment FOR EACH ROW SET NEW.last
 		{
 			name:   "sakila_trigger_drop",
 			schema: "sakila",
-			skip57: "sakila trigger scenarios run on 8.0",
 			// Drop the ins_film trigger (real multi-statement trigger on film).
 			mutate: func(t *testing.T, _ liveServer, source string) string {
 				return dropTrigger(t, source, "ins_film")
@@ -1986,7 +1915,6 @@ CREATE TRIGGER trg_payment_bi BEFORE INSERT ON payment FOR EACH ROW SET NEW.last
 		{
 			name:   "sakila_table_add_column_index",
 			schema: "sakila",
-			skip57: "run on 8.0 alongside the other sakila scenarios",
 			// Add a NOT NULL column with a default + a secondary index to the real `category`
 			// table (widening daily dev: a new flag + an index on it).
 			mutate: func(t *testing.T, _ liveServer, source string) string {
@@ -1998,7 +1926,6 @@ CREATE TRIGGER trg_payment_bi BEFORE INSERT ON payment FOR EACH ROW SET NEW.last
 		{
 			name:   "sakila_widen_varchar",
 			schema: "sakila",
-			skip57: "run on 8.0 alongside the other sakila scenarios",
 			// Widen actor.first_name VARCHAR(45) -> VARCHAR(80): a classic column-type change.
 			mutate: func(t *testing.T, _ liveServer, source string) string {
 				return widenActorFirstName(t, source)
@@ -2009,7 +1936,6 @@ CREATE TRIGGER trg_payment_bi BEFORE INSERT ON payment FOR EACH ROW SET NEW.last
 		{
 			name:   "sakila_combined_feature_release",
 			schema: "sakila",
-			skip57: "run on 8.0 alongside the other sakila scenarios",
 			// One release that, together: adds a column to `staff`, adds a function, adds a
 			// trigger on `staff`, and adds a new view that reads the new column. Exercises correct
 			// cross-object ordering in a single diff.
@@ -2093,14 +2019,8 @@ func TestSDLRealWorldMigrations(t *testing.T) {
 			for _, sc := range rwScenarios() {
 				sc := sc
 				t.Run(sc.name, func(t *testing.T) {
-					if srv.version == "5.7" && sc.skip57 != "" {
-						t.Skipf("[%s/%s] skipped on 5.7: %s", srv.name, sc.name, sc.skip57)
-					}
 					rw, ok := byName[sc.schema]
 					require.True(t, ok, "unknown schema %q", sc.schema)
-					if srv.version == "5.7" && rw.only57Skip != "" {
-						t.Skipf("[%s/%s] schema %s not loadable on 5.7: %s", srv.name, sc.name, rw.name, rw.only57Skip)
-					}
 					if rw.viewParsePending != "" {
 						// The mysqlDiffSDLMigration plan loads the dumped source, which carries a
 						// multi-table view the omni SDL parser cannot re-read. Every scenario on this
@@ -2367,17 +2287,17 @@ func repartitionSalaries(t *testing.T, source string) string {
 }
 
 // Stress smoke test for the MySQL declarative (SDL) migration path, driving the
-// PRODUCTION entry points end to end against live MySQL 5.7 + 8.0:
+// PRODUCTION entry points end to end against live MySQL:
 //
 //   - schema.SDLMigration(MYSQL, userSDL, syncedMetadata, engineVersion) — the exact
 //     call database_migrate_executor.diff() makes,
-//   - mysqlDiffSDLMigration(source, target, engineVersion) — version-aware diff,
+//   - mysqlDiffSDLMigration(source, target, engineVersion) — the diff,
 //   - schema.SDLDropAdvices(MYSQL, userSDL, syncedMetadata, engineVersion) — drop advices.
 //
 // The per-type basics live in the live round-trip axes above. These cases push harder:
 // a large combined schema with many interacting objects, deliberately non-canonical user
 // forms (where idempotence is won or lost), a multi-change release that must order DDL
-// correctly, a drop-heavy release with advices, and explicit 5.7-vs-8.0 divergence guards.
+// correctly, a drop-heavy release with advices, and stored-form guards.
 //
 // Shared helpers (createLiveMySQLDriver, newLiveDatabase, applyAndDump, statementCount,
 // liveServers, liveServer, liveOraclePassword) are declared with the live round-trip axes
@@ -2430,13 +2350,8 @@ func applyDDL(ctx context.Context, t *testing.T, srv liveServer, dbName, ddl str
 // database with many interacting objects. It spans the normalization-sensitive constructs
 // plus PKs, composite/unique/prefix/fulltext indexes, foreign keys (circular, self-ref,
 // composite), CHECK constraints, RANGE + HASH partitions, views (view-on-view, joined),
-// stored functions + procedures, multiple triggers per table, and an event. The
-// CTE/derived-table view (v_project_load) diverges by version (5.7 has no CTE support) and
-// is appended by bigSchemaProjectLoadView.
-//
-// CHECK note: 8.0 honors CHECK; 5.7 parses-and-ignores it (a no-op there). The same body
-// therefore applies on both, and the synced metadata differs only by the absent checks on
-// 5.7 — which is exactly the per-version idempotence each side must satisfy.
+// stored functions + procedures, multiple triggers per table, and an event. The CTE view
+// (v_project_load) is appended from bigSchemaProjectLoadView.
 //
 // FK note: department<->employee is circular, so the FK that closes the cycle
 // (department.manager_id -> employee) is added with a trailing ALTER TABLE after both
@@ -2452,29 +2367,9 @@ const circularFKClose = `
 ALTER TABLE department ADD CONSTRAINT fk_dept_manager FOREIGN KEY (manager_id) REFERENCES employee (id) ON DELETE SET NULL;
 `
 
-// bigSchemaProjectLoadView returns the version-correct v_project_load definition.
-//
-//   - 8.0 uses a CTE (WITH ...) — exercising the CTE construct and confirming the dump
-//     preserves it verbatim. (8.0 also stores derived-table inner refs unqualified, so the
-//     CTE form round-trips cleanly.)
-//   - 5.7 has no CTE support AND mis-handles derived tables in the SDL no-op path (see
-//     TestSDLStressViewDerivedTable57 — 5.7 db-qualifies derived-table inner refs, which the
-//     bbcatalog-wrapped omni diff cannot fold). So 5.7 uses a view-on-view form
-//     (v_active_employees-style, with a real aggregate join) that is known-idempotent and
-//     keeps the large-schema test focused on finding OTHER at-scale bugs.
-func bigSchemaProjectLoadView(version string) string {
-	if version == "5.7" {
-		return `
-CREATE VIEW v_proj_member_count AS
-SELECT project_id, COUNT(*) AS members, SUM(allocation) AS total_alloc
-FROM assignment GROUP BY project_id;
-
-CREATE VIEW v_project_load AS
-SELECT p.code, p.title, pmc.members, pmc.total_alloc
-FROM project p JOIN v_proj_member_count pmc ON p.id = pmc.project_id;
-`
-	}
-	return `
+// bigSchemaProjectLoadView is the v_project_load definition: a CTE (WITH ...) view, which
+// the dump must preserve verbatim.
+const bigSchemaProjectLoadView = `
 CREATE VIEW v_project_load AS
 WITH per_proj AS (
 	SELECT project_id, COUNT(*) AS members, SUM(allocation) AS total_alloc
@@ -2483,28 +2378,24 @@ WITH per_proj AS (
 SELECT p.code, p.title, pp.members, pp.total_alloc
 FROM project p JOIN per_proj pp ON p.id = pp.project_id;
 `
-}
 
 // bigSchemaSetup is the full apply sequence for the live database: the shared core, the
-// version-correct CTE/derived view, then the closing circular FK (added last so both
-// referenced tables exist under foreign_key_checks=ON). CHECK constraints are valid on
-// 8.0; 5.7 silently parses-and-ignores CHECK, so the same body applies on both — the
-// synced metadata differs only by the absent checks on 5.7, which is exactly the
-// per-version idempotence each side must satisfy.
-func bigSchemaSetup(version string) string {
-	return bigSchemaCore + bigSchemaProjectLoadView(version) + circularFKClose
+// CTE view, then the closing circular FK (added last so both referenced tables exist under
+// foreign_key_checks=ON).
+func bigSchemaSetup() string {
+	return bigSchemaCore + bigSchemaProjectLoadView + circularFKClose
 }
 
 // bigSchemaUserSDL is what a user would author: the table bodies (circular FK inlined into
-// department) plus the version-correct project-load view. Declarative SDL has no ordering
-// constraint (the omni loader disables FK checks during load). This is the single-document
-// target D the production path diffs against.
-func bigSchemaUserSDL(version string) string {
-	return bigSchemaUserSDLCore + bigSchemaProjectLoadView(version)
+// department) plus the project-load view. Declarative SDL has no ordering constraint (the
+// omni loader disables FK checks during load). This is the single-document target D the
+// production path diffs against.
+func bigSchemaUserSDL() string {
+	return bigSchemaUserSDLCore + bigSchemaProjectLoadView
 }
 
 // bigSchemaUserSDLCore is the table/routine/trigger body the user authors, sans the
-// version-specific project-load view (appended by bigSchemaUserSDL).
+// project-load view (appended by bigSchemaUserSDL).
 //
 //go:embed testdata/sdl_migration/big_schema_user_sdl_core.sql
 var bigSchemaUserSDLCore string
@@ -2512,9 +2403,9 @@ var bigSchemaUserSDLCore string
 // TestSDLStressLargeSchemaIdempotence is the headline at-scale idempotence proof. One
 // realistic ~13-table schema with views, view-on-view, CTE view, functions, procedures,
 // multiple triggers, an event, RANGE + HASH partitions, circular/self-ref/composite FKs,
-// and CHECK constraints (8.0) is applied to a live database, synced, dumped via
+// and CHECK constraints is applied to a live database, synced, dumped via
 // MetadataToSDL, then diffed against the user-authored SDL through the PRODUCTION
-// version-aware path. The diff MUST be empty on both 5.7 and 8.0.
+// path. The diff MUST be empty.
 //
 //nolint:tparallel
 func TestSDLStressLargeSchemaIdempotence(t *testing.T) {
@@ -2524,11 +2415,11 @@ func TestSDLStressLargeSchemaIdempotence(t *testing.T) {
 	for _, srv := range liveServers {
 		srv := srv
 		t.Run(srv.name, func(t *testing.T) {
-			meta, dbName := syncMetadata(ctx, t, srv, "sdl_stress_big", bigSchemaSetup(srv.version))
-			userSDL := bigSchemaUserSDL(srv.version)
+			meta, dbName := syncMetadata(ctx, t, srv, "sdl_stress_big", bigSchemaSetup())
+			userSDL := bigSchemaUserSDL()
 
 			// (a) Production-path no-op: schema.SDLMigration converts meta -> SDL and diffs
-			// against the user SDL, threading the version. MUST be empty.
+			// against the user SDL. MUST be empty.
 			noop, err := schema.SDLMigration(storepb.Engine_MYSQL, userSDL, meta, srv.version)
 			require.NoError(t, err)
 			if noop != "" {
@@ -2542,7 +2433,7 @@ func TestSDLStressLargeSchemaIdempotence(t *testing.T) {
 			require.NoError(t, err)
 			require.Empty(t, selfDiff, "[%s] large-schema source-vs-source must be empty, got:\n%s", srv.name, selfDiff)
 
-			// (c) source-vs-user-SDL via the version-aware diff (the same property as (a) but
+			// (c) source-vs-user-SDL via mysqlDiffSDLMigration (the same property as (a) but
 			// through the lower-level entry the breadth tests use).
 			noop2, err := mysqlDiffSDLMigration(source, userSDL, srv.version)
 			require.NoError(t, err)
@@ -2551,61 +2442,13 @@ func TestSDLStressLargeSchemaIdempotence(t *testing.T) {
 	}
 }
 
-// TestSDLStressViewDerivedTable57 PINS a real (B) wiring bug found by the stress test:
-// on MySQL 5.7 a view whose body contains a derived table (a subquery in the FROM clause)
-// is NOT idempotent through the SDL no-op path — it emits a spurious CREATE OR REPLACE
-// VIEW.
-//
-// Root cause: MySQL 5.7's view canonicalizer fully-qualifies the table references INSIDE a
-// FROM-clause derived table with the schema name (`<synced_db>`.`assignment`), whereas 8.0
-// stores them unqualified. MetadataToSDL emits that body verbatim. The omni SDL diff loads
-// both inputs under the synthetic database `bbcatalog`, and its canonicalViewBody only
-// folds away the view's OWN-database prefix — which is now `bbcatalog`, not the real synced
-// DB name embedded in the body. So the `from` body keeps `<synced_db>`.`assignment` while
-// the `to` (user) body resolves to `bbcatalog`.`assignment` and is folded to unqualified;
-// the two bodies differ and the diff emits a no-op CREATE OR REPLACE VIEW.
-//
-// Blast radius (mapped live): 5.7 ONLY, and ONLY FROM-clause derived tables. Plain joins,
-// view-on-view, scalar subqueries (SELECT list), and IN-subqueries (WHERE) are all
-// idempotent on 5.7; 8.0 is fully idempotent including derived tables and CTEs.
-//
-// Likely fix locus: bytebase MetadataToSDL / get_database_definition.go should emit view
-// bodies with the synced own-database qualifier stripped (db-neutral) before the omni
-// loader sees them; or the omni SDL wrapping should rewrite the synced DB name to the
-// bbcatalog context. The omni canonicalViewBody itself is correct — it just can't fold a
-// qualifier naming a database other than the view's loaded own-database.
-//
-// This test is SKIPPED so the suite stays green; remove the Skip to reproduce the failure.
-//
-//nolint:tparallel
-func TestSDLStressViewDerivedTable57(t *testing.T) {
-	skipUnlessLiveOracle(t)
-	ctx := context.Background()
-	srv := liveServer{name: "mysql57", host: "127.0.0.1", port: "13307", version: "5.7"}
-
-	ddl := `CREATE TABLE project (id INT PRIMARY KEY, code VARCHAR(20)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-CREATE TABLE assignment (employee_id INT, project_id INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-CREATE VIEW vx AS
-SELECT p.code, d.c
-FROM project p JOIN (SELECT project_id, COUNT(*) c FROM assignment GROUP BY project_id) d
-ON p.id = d.project_id;`
-
-	meta, dbName := syncMetadata(ctx, t, srv, "sdl_stress_dtv", ddl)
-	noop, err := schema.SDLMigration(storepb.Engine_MYSQL, ddl, meta, srv.version)
-	require.NoError(t, err)
-	source := dumpSDL(ctx, t, srv, dbName)
-	t.Logf("dumped source:\n%s", source)
-	require.Empty(t, noop, "5.7 derived-table view no-op must be empty, got:\n%s", noop)
-}
-
 // ============================================================================
 // Scenario 2: Normalization-heavy user forms (the real idempotence challenge).
 // ============================================================================
 
 // normCase authors a table in a deliberately non-canonical form. The schema is applied
-// to a live DB, synced, dumped, and the production version-aware diff of (dumped vs the
-// user form) MUST be empty — the engine must canonicalize the user form to the stored
-// form on each version.
+// to a live DB, synced, dumped, and the production diff of (dumped vs the user form) MUST
+// be empty — the engine must canonicalize the user form to the stored form.
 type normCase struct {
 	name string
 	ddl  string
@@ -2617,7 +2460,7 @@ func normCases() []normCase {
 	return []normCase{
 		{
 			name: "int_widths",
-			// 8.0 drops widths (int/bigint/tinyint); 5.7 keeps int(11)/bigint(20)/tinyint(4).
+			// The server drops integer display widths (int/bigint/tinyint).
 			ddl: `CREATE TABLE t (
 	a INT(11) NOT NULL,
 	b BIGINT(20) NOT NULL DEFAULT 0,
@@ -2640,8 +2483,7 @@ func normCases() []normCase {
 		},
 		{
 			name: "bare_charset_utf8mb4",
-			// No COLLATE: resolves to the version default (utf8mb4_general_ci on 5.7,
-			// utf8mb4_0900_ai_ci on 8.0) — the headline 5.7-vs-8.0 collation case.
+			// No COLLATE: resolves to the server default (utf8mb4_0900_ai_ci).
 			ddl: `CREATE TABLE t (
 	id INT PRIMARY KEY,
 	a VARCHAR(50) CHARSET utf8mb4,
@@ -2650,7 +2492,7 @@ func normCases() []normCase {
 		},
 		{
 			name: "utf8_to_utf8mb3",
-			// utf8 -> utf8mb3 on 8.0; stays utf8 on 5.7.
+			// The server stores utf8 as utf8mb3.
 			ddl: `CREATE TABLE t (
 	id INT PRIMARY KEY,
 	a VARCHAR(50) CHARSET utf8,
@@ -2683,8 +2525,8 @@ CREATE TABLE t (
 		},
 		{
 			name: "restrict_fk_actions",
-			// RESTRICT == no clause. On 5.7 the dump renders ON UPDATE RESTRICT explicitly;
-			// on 8.0 it is omitted. Either way the user RESTRICT form must canonicalize equal.
+			// RESTRICT == no clause, so the dump omits it and the user RESTRICT form must
+			// canonicalize equal.
 			ddl: `CREATE TABLE parent (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE t (
 	id INT PRIMARY KEY,
@@ -2745,9 +2587,9 @@ CREATE TABLE t (
 }
 
 // TestSDLStressNormalization is where idempotence is won or lost. Each non-canonical user
-// form is applied live, synced, dumped, and the PRODUCTION version-aware diff (dumped vs
-// the user form) MUST be empty on both 5.7 and 8.0. Run as the production entry
-// schema.SDLMigration AND the version-aware mysqlDiffSDLMigration.
+// form is applied live, synced, dumped, and the PRODUCTION diff (dumped vs the user form)
+// MUST be empty. Run as the production entry schema.SDLMigration AND the lower-level
+// mysqlDiffSDLMigration.
 //
 //nolint:tparallel
 func TestSDLStressNormalization(t *testing.T) {
@@ -2773,7 +2615,7 @@ func TestSDLStressNormalization(t *testing.T) {
 					}
 					require.Empty(t, noop, "[%s/%s] normalization no-op (SDLMigration) must be empty, got:\n%s", srv.name, nc.name, noop)
 
-					// Version-aware lower-level entry, same property.
+					// Lower-level entry, same property.
 					source := dumpSDL(ctx, t, srv, dbName)
 					noop2, err := mysqlDiffSDLMigration(source, nc.ddl, srv.version)
 					require.NoError(t, err)
@@ -2786,8 +2628,7 @@ func TestSDLStressNormalization(t *testing.T) {
 
 // TestSDLStressTableCreateOptions PINS a second real (B) wiring bug found by the stress
 // test: a table authored with a CREATE_OPTION such as ROW_FORMAT=DYNAMIC is NOT idempotent
-// through the SDL no-op path on EITHER 5.7 or 8.0 — it emits a spurious
-// `ALTER TABLE t ROW_FORMAT=DYNAMIC`.
+// through the SDL no-op path — it emits a spurious `ALTER TABLE t ROW_FORMAT=DYNAMIC`.
 //
 // Root cause is purely in bytebase's SDL renderer, not omni: MySQL stores ROW_FORMAT in
 // CREATE_OPTIONS, and bytebase's MySQL sync DOES capture it into TableMetadata.CreateOptions
@@ -2842,20 +2683,13 @@ var multiChangeBase string
 //   - modify product.price type DECIMAL(10,2) -> DECIMAL(12,4),
 //   - add an index on product(name),
 //   - drop table legacy_audit (an FK CHILD of product — its own FK must drop first),
-//   - add a CHECK on product (8.0),
+//   - add a CHECK on product,
 //   - replace view v_catalog,
 //   - add a trigger on product,
 //   - change daily_stat partitioning (HASH 2 -> HASH 4 partitions).
 //
-// The 8.0 variant includes the CHECK; multiChangeTarget57 omits it.
-//
 //go:embed testdata/sdl_migration/multi_change_target_80.sql
-var multiChangeTarget80 string
-
-// multiChangeTarget57 is multiChangeTarget80 without the CHECK constraint (5.7 ignores CHECK).
-//
-//go:embed testdata/sdl_migration/multi_change_target_57.sql
-var multiChangeTarget57 string
+var multiChangeTarget string
 
 // indexOf returns the byte index of the first occurrence of substr in s, or -1. Used to
 // assert relative ordering between two statements in a generated plan.
@@ -2864,8 +2698,7 @@ func indexOf(s, substr string) int {
 }
 
 // TestSDLStressMultiChange applies many simultaneous changes in ONE diff and asserts the
-// plan is correct, minimal-ish, correctly ordered, and converges when applied back. Both
-// versions.
+// plan is correct, minimal-ish, correctly ordered, and converges when applied back.
 //
 //nolint:tparallel
 func TestSDLStressMultiChange(t *testing.T) {
@@ -2875,10 +2708,7 @@ func TestSDLStressMultiChange(t *testing.T) {
 	for _, srv := range liveServers {
 		srv := srv
 		t.Run(srv.name, func(t *testing.T) {
-			target := multiChangeTarget80
-			if srv.version == "5.7" {
-				target = multiChangeTarget57
-			}
+			target := multiChangeTarget
 
 			meta, dbName := syncMetadata(ctx, t, srv, "sdl_stress_multi", multiChangeBase)
 
@@ -2898,9 +2728,7 @@ func TestSDLStressMultiChange(t *testing.T) {
 			require.Contains(t, upper, "TRG_PROD_INS", "[%s] expected new trigger:\n%s", srv.name, plan)
 			require.Contains(t, upper, "V_CATALOG", "[%s] expected view replace:\n%s", srv.name, plan)
 			require.Contains(t, upper, "PARTITION BY HASH", "[%s] expected daily_stat partition change:\n%s", srv.name, plan)
-			if srv.version == "8.0" {
-				require.Contains(t, upper, "CHK_PRICE", "[%s] expected CHECK add:\n%s", srv.name, plan)
-			}
+			require.Contains(t, upper, "CHK_PRICE", "[%s] expected CHECK add:\n%s", srv.name, plan)
 
 			// --- Ordering correctness ---
 			dropLegacyFK := indexOf(upper, "DROP FOREIGN KEY `FK_LEGACY_AUDIT_PROD`")
@@ -2955,7 +2783,7 @@ var dropHeavyBase string
 var dropHeavyTarget string
 
 // TestSDLStressDropHeavy asserts SDLDropAdvices emits WARNING advices for each destructive
-// op, and that the generated destructive DDL applies and converges. Both versions.
+// op, and that the generated destructive DDL applies and converges.
 //
 //nolint:tparallel
 func TestSDLStressDropHeavy(t *testing.T) {
@@ -3013,7 +2841,7 @@ func TestSDLStressDropHeavy(t *testing.T) {
 // advice at all for any view / function / procedure / trigger / event operation — neither a
 // DROP advice for a standalone drop nor a REPLACE advice for a redefinition. So a
 // declarative release that drops or replaces a view/routine/trigger/event gives the user
-// ZERO destructive-operation warning. Affects both 5.7 and 8.0; the generated migration DDL
+// ZERO destructive-operation warning. The generated migration DDL
 // itself is correct (it does drop/replace) — only the advice walker is wrong.
 //
 // Two compounding faults in the replace-pair detection (sdl_migration.go L205-294):
@@ -3072,75 +2900,49 @@ CREATE FUNCTION f(x INT) RETURNS INT DETERMINISTIC RETURN x*2;`
 }
 
 // ============================================================================
-// Scenario 5: 5.7-vs-8.0 divergence guards.
+// Scenario 5: stored-form guards.
 // ============================================================================
 
-// divergeSchema authors constructs whose stored form diverges by version: bare utf8mb4
-// (collation), utf8 (mb3 on 8.0), int widths, and a CHECK (8.0 only).
-//
-//go:embed testdata/sdl_migration/diverge_schema.sql
-var divergeSchema string
-
-// divergeSchemaWithCheck adds a CHECK (8.0 honors it; 5.7 parses-and-ignores).
+// storedFormSchema authors constructs the server rewrites on store: bare utf8mb4
+// (default collation), utf8 (stored as utf8mb3), int widths, and a CHECK.
 //
 //go:embed testdata/sdl_migration/diverge_schema_with_check.sql
-var divergeSchemaWithCheck string
+var storedFormSchema string
 
-// TestSDLStressVersionDivergence confirms each version is idempotent against its OWN
-// stored form with no cross-version contamination: 5.7 never emits utf8mb4_0900_ai_ci;
-// 8.0 handles utf8mb3; CHECK is present on 8.0, absent on 5.7. It dumps the synced schema
-// and asserts version-specific properties on the canonical SDL, then proves no-op
-// idempotence per version.
+// TestSDLStressStoredForm dumps the synced schema, asserts the server's stored form on
+// the canonical SDL (default collation, utf8mb3, CHECK present), then proves no-op
+// idempotence and a converging change.
 //
 //nolint:tparallel
-func TestSDLStressVersionDivergence(t *testing.T) {
+func TestSDLStressStoredForm(t *testing.T) {
 	skipUnlessLiveOracle(t)
 	ctx := context.Background()
 
 	for _, srv := range liveServers {
 		srv := srv
 		t.Run(srv.name, func(t *testing.T) {
-			userSDL := divergeSchema
-			if srv.version == "8.0" {
-				userSDL = divergeSchemaWithCheck
-			}
+			userSDL := storedFormSchema
 
 			meta, dbName := syncMetadata(ctx, t, srv, "sdl_stress_diverge", userSDL)
 			source := dumpSDL(ctx, t, srv, dbName)
 			t.Logf("[%s] dumped SDL:\n%s", srv.name, source)
 
-			// Version-specific stored-form guards on the canonical dump. Note MetadataToSDL
-			// renders collations from the synced metadata (server-accurate, hence divergent)
-			// but integer display widths in the 8.0-canonical form (widths dropped) on BOTH
-			// versions — the int-width divergence is enforced by the omni diff normalizer, not
-			// the dumper, so it is asserted via the no-op idempotence below rather than the dump
-			// string. CHECK is honored on 8.0 and parsed-and-ignored on 5.7, so it appears in
-			// the 8.0 dump only.
-			if srv.version == "5.7" {
-				require.NotContains(t, source, "utf8mb4_0900_ai_ci",
-					"[%s] 5.7 dump must not contain the 8.0-only collation:\n%s", srv.name, source)
-				require.NotContains(t, source, "utf8mb3",
-					"[%s] 5.7 dump must not normalize utf8 -> utf8mb3:\n%s", srv.name, source)
-				require.Contains(t, source, "utf8mb4_general_ci",
-					"[%s] 5.7 dump must use the 5.7 default collation:\n%s", srv.name, source)
-				require.NotContains(t, source, "chk_amount",
-					"[%s] 5.7 ignores CHECK, so it must be absent from the dump:\n%s", srv.name, source)
-			} else {
-				require.Contains(t, source, "utf8mb4_0900_ai_ci",
-					"[%s] 8.0 dump must use the 8.0 default collation:\n%s", srv.name, source)
-				require.Contains(t, source, "utf8mb3",
-					"[%s] 8.0 dump must normalize utf8 -> utf8mb3:\n%s", srv.name, source)
-				require.Contains(t, source, "chk_amount",
-					"[%s] 8.0 honors CHECK, so it must be present in the dump:\n%s", srv.name, source)
-			}
+			// Stored-form guards on the canonical dump: MetadataToSDL renders collations
+			// from the synced metadata. Integer display widths are absorbed by the omni diff
+			// normalizer, so they are asserted via the no-op idempotence below.
+			require.Contains(t, source, "utf8mb4_0900_ai_ci",
+				"[%s] 8.0 dump must use the 8.0 default collation:\n%s", srv.name, source)
+			require.Contains(t, source, "utf8mb3",
+				"[%s] 8.0 dump must normalize utf8 -> utf8mb3:\n%s", srv.name, source)
+			require.Contains(t, source, "chk_amount",
+				"[%s] 8.0 honors CHECK, so it must be present in the dump:\n%s", srv.name, source)
 
-			// No-op idempotence per version (production path).
+			// No-op idempotence (production path).
 			noop, err := schema.SDLMigration(storepb.Engine_MYSQL, userSDL, meta, srv.version)
 			require.NoError(t, err)
 			require.Empty(t, noop, "[%s] divergence no-op must be empty, got:\n%s", srv.name, noop)
 
-			// A 5.7 CHANGE must never name the 8.0-only collation. Add a column to force a
-			// minimal ALTER and apply it back.
+			// Add a column to force a minimal ALTER and apply it back.
 			changeSDL := strings.Replace(userSDL,
 				"\tPRIMARY KEY (id)",
 				"\textra VARCHAR(30) NULL,\n\tPRIMARY KEY (id)", 1)
@@ -3148,10 +2950,6 @@ func TestSDLStressVersionDivergence(t *testing.T) {
 			change, err := schema.SDLMigration(storepb.Engine_MYSQL, changeSDL, meta, srv.version)
 			require.NoError(t, err)
 			require.NotEmpty(t, change, "[%s] divergence change must be non-empty", srv.name)
-			if srv.version == "5.7" {
-				require.NotContains(t, change, "utf8mb4_0900_ai_ci",
-					"[%s] 5.7 change names an 8.0-only collation (errno 1273):\n%s", srv.name, change)
-			}
 			applyErr := applyDDL(ctx, t, srv, dbName, change)
 			require.NoError(t, applyErr, "[%s] divergence change failed to apply:\n%s", srv.name, change)
 
@@ -3172,7 +2970,7 @@ func TestSDLStressVersionDivergence(t *testing.T) {
 //     schema.SDLMigration. Must fail GRACEFULLY (clean error or defined no-op) — never panic,
 //     never silently emit a wrong/destructive plan.
 //   - Axis 2: exotic types + extreme values. sync -> MetadataToSDL -> diff vs user form must
-//     be empty (idempotent) on both versions; every non-empty no-op is a normalization gap.
+//     be empty (idempotent); every non-empty no-op is a normalization gap.
 //   - Axis 3: sequential release chains S0->S1->...->S4 on a real DB; each step minimal,
 //     applied, re-synced, converged before the next.
 //   - Axis 4: ~80-100 table scale; no-op must be empty + fast; one small change must be one
@@ -3405,7 +3203,7 @@ CREATE TABLE other (id INT PRIMARY KEY, t_id INT NOT NULL) ENGINE=InnoDB DEFAULT
 			for _, ac := range adversarialCases() {
 				ac := ac
 				t.Run(ac.name, func(t *testing.T) {
-					// (1) Lower-level version-aware diff: source(valid) -> target(bad).
+					// (1) Lower-level diff: source(valid) -> target(bad).
 					out := safeDiff(sourceSDL, ac.target, srv.version)
 
 					// UNIVERSAL bar 1: never panic. A panic on ANY input is a (B) bug.
@@ -3460,12 +3258,11 @@ CREATE TABLE other (id INT PRIMARY KEY, t_id INT NOT NULL) ENGINE=InnoDB DEFAULT
 // ============================================================================
 //
 // Each case authors ONE less-common type-surface table. It is applied to a live DB, synced,
-// dumped via MetadataToSDL, and the PRODUCTION version-aware diff of (dumped vs the user
-// form) MUST be empty on each version it runs on. A non-empty no-op is a normalization gap
-// (a (B) bug) and the test logs input + stored/dumped form so the owning omni Canonical* /
-// dumper rule can be located. 8.0-only constructs are gated off 5.7 via only80.
+// dumped via MetadataToSDL, and the PRODUCTION diff of (dumped vs the user form) MUST be
+// empty. A non-empty no-op is a normalization gap (a (B) bug) and the test logs input +
+// stored/dumped form so the owning omni Canonical* / dumper rule can be located.
 
-// exoticCase authors one exotic-type table. only80 gates 8.0-only surface off 5.7.
+// exoticCase authors one exotic-type table.
 //
 // bGap marks a case that this round CONFIRMED is NOT idempotent — a (B) normalization /
 // dumper round-trip bug. Those cases are SKIPPED by the idempotence test (so the suite stays
@@ -3474,7 +3271,6 @@ CREATE TABLE other (id INT PRIMARY KEY, t_id INT NOT NULL) ENGINE=InnoDB DEFAULT
 type exoticCase struct {
 	name       string
 	ddl        string
-	only80     bool
 	bGap       bool
 	bGapReason string
 }
@@ -3495,8 +3291,7 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 		},
 		{
-			name:   "json_default_80",
-			only80: true, // JSON column DEFAULT requires 8.0.13+
+			name: "json_default_80",
 			ddl: `CREATE TABLE t (
 	id INT PRIMARY KEY,
 	doc JSON DEFAULT (JSON_OBJECT()),
@@ -3504,9 +3299,8 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 		},
 		{
-			name:   "json_multivalue_index_80",
-			only80: true,  // multi-valued index (CAST ... AS ... ARRAY) is 8.0.17+
-			bGap:   false, // FIXED (dumper strips the functional-index charset introducer + unescapes quotes; omni #353 accepts AS … ARRAY, re-pinned a362f7a7)
+			name: "json_multivalue_index_80",
+			bGap: false, // FIXED (dumper strips the functional-index charset introducer + unescapes quotes; omni #353 accepts AS … ARRAY, re-pinned a362f7a7)
 			// FIXED (Bug B): the synced functional-index expression
 			// `(cast(json_extract(`tags`,_utf8mb4\'$.ids\') as unsigned array))` carried two things the
 			// omni loader rejects — the `_utf8mb4'…'` charset introducer before the JSON-path literal
@@ -3526,8 +3320,7 @@ func exoticCases() []exoticCase {
 
 		// ---- Spatial ----
 		{
-			name:   "spatial_types",
-			only80: true, // 8.0-only GAP (FIXED): on 5.7 the dumper emits `geometrycollection` and IS idempotent; 8.0 used to break.
+			name: "spatial_types",
 			// FIXED (bug 8): the dumper now normalizes the 8.0 `geomcollection` type synonym to
 			// the canonical `geometrycollection` spelling omni parses (normalizeColumnType in
 			// get_database_definition.go), so the dumped source reloads and the no-op is empty.
@@ -3544,7 +3337,7 @@ func exoticCases() []exoticCase {
 			name: "spatial_notnull_index",
 			// FIXED (bug 7): the dumper no longer emits a key-part prefix length for SPATIAL (and
 			// FULLTEXT) index parts (printIndexKeyPart suppressPrefix), so the spatial key dumps as
-			// `(`pt`)` matching SHOW CREATE and the no-op is empty on both 5.7 and 8.0.
+			// `(`pt`)` matching SHOW CREATE and the no-op is empty.
 			ddl: `CREATE TABLE t (
 	id INT NOT NULL AUTO_INCREMENT,
 	pt POINT NOT NULL,
@@ -3553,8 +3346,7 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 		},
 		{
-			name:   "spatial_srid_80",
-			only80: true, // SRID column attribute is 8.0
+			name: "spatial_srid_80",
 			// FIXED (bug 6 + bug 7): sync now captures the column SRID (information_schema.COLUMNS.SRS_ID
 			// into ColumnMetadata.srid) and the dumper emits `/*!80003 SRID 4326 */` after NOT NULL,
 			// while the spatial-key prefix is suppressed (bug 7). Both halves of the former no-op are
@@ -3661,7 +3453,7 @@ func exoticCases() []exoticCase {
 			// loaded a string default that never matched the user's `b'0'`, re-emitting `MODIFY ... DEFAULT
 			// b'0'` every no-op. renderColumnDefault in get_database_definition.go now recovers the bit
 			// literal and emits it unquoted (`DEFAULT b'0'`, matching SHOW CREATE / mysqldump); omni #352
-			// canonicalizes the bit literal so the no-op is empty on both versions. b64 (no default) is fine.
+			// canonicalizes the bit literal so the no-op is empty. b64 (no default) is fine.
 			bGap:       false,
 			bGapReason: "",
 			ddl: `CREATE TABLE t (
@@ -3692,7 +3484,7 @@ func exoticCases() []exoticCase {
 		{
 			name:       "year_and_set",
 			bGap:       false, // FIXED (re-pinned omni a362f7a7)
-			bGapReason: "YEAR default canonicalization: user `DEFAULT 2000` (numeric) vs stored `'2000'` (string) not recognized equal; the diff re-emits `MODIFY ... y year ... DEFAULT '2000'` every no-op (phantom; both versions). The SET column is idempotent.",
+			bGapReason: "YEAR default canonicalization: user `DEFAULT 2000` (numeric) vs stored `'2000'` (string) not recognized equal; the diff re-emits `MODIFY ... y year ... DEFAULT '2000'` every no-op (phantom). The SET column is idempotent.",
 			ddl: `CREATE TABLE t (
 	id INT PRIMARY KEY,
 	y YEAR NOT NULL DEFAULT 2000,
@@ -3747,10 +3539,9 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB AUTO_INCREMENT=500 DEFAULT CHARSET=utf8mb4;`,
 		},
 
-		// ---- Invisible columns / indexes (8.0) ----
+		// ---- Invisible columns / indexes ----
 		{
-			name:   "invisible_column_80",
-			only80: true,
+			name: "invisible_column_80",
 			// FIXED (bug 4): sync now captures column invisibility (information_schema.COLUMNS.EXTRA
 			// INVISIBLE token into ColumnMetadata.is_invisible) and the dumper emits
 			// `/*!80023 INVISIBLE */`, so the no-op is empty.
@@ -3761,8 +3552,7 @@ func exoticCases() []exoticCase {
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`,
 		},
 		{
-			name:   "invisible_index_80",
-			only80: true,
+			name: "invisible_index_80",
 			// FIXED (bug 5): index visibility was already synced (IndexMetadata.visible from
 			// information_schema.STATISTICS.IS_VISIBLE); the dumper now emits `/*!80000 INVISIBLE */`
 			// in the index clause, so the no-op is empty instead of a DROP+ADD.
@@ -3776,12 +3566,11 @@ func exoticCases() []exoticCase {
 }
 
 // TestSDLDeepExoticIdempotence is Axis 2: every NON-bGap exotic-type case is applied live,
-// synced, dumped, and the production version-aware diff (dumped vs user form) MUST be empty
-// on both versions (8.0-only types skip 5.7). The bGap cases (confirmed normalization/dumper
-// (B) bugs found this round) are skipped here and reproduced/explained by
-// TestSDLDeepExoticKnownGaps so this assertion stays green. Each unexpected non-empty no-op
-// is logged with input + stored form so the gap can be pinned to a Canonical* rule or the
-// dumper.
+// synced, dumped, and the production diff (dumped vs user form) MUST be empty. The bGap
+// cases (confirmed normalization/dumper (B) bugs found this round) are skipped here and
+// reproduced/explained by TestSDLDeepExoticKnownGaps so this assertion stays green. Each
+// unexpected non-empty no-op is logged with input + stored form so the gap can be pinned
+// to a Canonical* rule or the dumper.
 //
 //nolint:tparallel
 func TestSDLDeepExoticIdempotence(t *testing.T) {
@@ -3793,9 +3582,6 @@ func TestSDLDeepExoticIdempotence(t *testing.T) {
 		t.Run(srv.name, func(t *testing.T) {
 			for _, ec := range exoticCases() {
 				ec := ec
-				if srv.version == "5.7" && ec.only80 {
-					continue
-				}
 				if ec.bGap {
 					continue // confirmed (B) gap — pinned by TestSDLDeepExoticKnownGaps
 				}
@@ -3817,7 +3603,7 @@ func TestSDLDeepExoticIdempotence(t *testing.T) {
 					require.True(t, noop.planEmpty,
 						"[%s/%s] (B) exotic-type no-op (SDLMigration) must be empty, got:\n%s", srv.name, ec.name, noop.plan)
 
-					// Version-aware lower-level entry, same property.
+					// Lower-level entry, same property.
 					noop2, err := mysqlDiffSDLMigration(source, ec.ddl, srv.version)
 					require.NoError(t, err)
 					require.Empty(t, noop2,
@@ -3863,9 +3649,6 @@ func TestSDLDeepExoticKnownGaps(t *testing.T) {
 				if !ec.bGap {
 					continue
 				}
-				if srv.version == "5.7" && ec.only80 {
-					continue
-				}
 				t.Run(ec.name, func(t *testing.T) {
 					meta, dbName := syncMetadata(ctx, t, srv, "sdl_deep_exo_gap", ec.ddl)
 
@@ -3902,21 +3685,13 @@ func TestSDLDeepExoticKnownGaps(t *testing.T) {
 // chainStep is one release in the sequence. target is the FULL desired SDL at that step
 // (declarative — the complete schema, not a delta). wantContains are uppercase substrings
 // the generated plan must contain; wantOrder pins a required relative ordering (first must
-// appear before second). only80Extra is appended to target only on 8.0 (CHECK etc.).
+// appear before second).
 type chainStep struct {
 	name        string
-	target80    string
-	target57    string
+	target      string
 	wantContain []string  // uppercase substrings the plan must contain
 	wantAbsent  []string  // uppercase substrings the plan must NOT contain
 	wantOrder   [2]string // [before, after] uppercase substrings; before must precede after (skip if either empty)
-}
-
-func (s chainStep) target(version string) string {
-	if version == "5.7" {
-		return s.target57
-	}
-	return s.target80
 }
 
 // --- The sequence. Each Sn target is the FULL schema at that point. ---
@@ -3950,22 +3725,19 @@ var chainS3Common string
 // first; also drop order_item to keep it consistent? No — keep order_item but remove its FK
 // to product by dropping the product reference). To exercise "drop FK parent, child FK drops
 // first", we drop `product` AND order_item's fk_oi_product + product_id column. Replace the
-// view, and (8.0) add a CHECK on ord.
+// view, and add a CHECK on ord.
 //
 // S4 also changes order_item to remove product linkage, replaces v_cust_orders, adds a
-// trigger on ord, and (8.0) adds a CHECK on ord.total.
+// trigger on ord, and adds a CHECK on ord.total.
 //
 //go:embed testdata/sdl_migration/chain_s4_base.sql
-var chainS4Base string
+var chainS4 string
 
 func chainSteps() []chainStep {
-	s4_80 := strings.Replace(chainS4Base, "{{ORD_CHECK}}", ",\n\tCONSTRAINT chk_total CHECK (total >= 0)", 1)
-	s4_57 := strings.Replace(chainS4Base, "{{ORD_CHECK}}", "", 1)
 	return []chainStep{
 		{
 			name:        "S1_add_table_fk",
-			target80:    chainS1Common,
-			target57:    chainS1Common,
+			target:      chainS1Common,
 			wantContain: []string{"CREATE TABLE `PRODUCT`", "CREATE TABLE `ORDER_ITEM`"},
 			wantAbsent:  []string{"DROP TABLE", "CREATE TABLE `CUSTOMER`", "CREATE TABLE `ORD`"},
 			// The order_item FK to ord/product is deferred to PhasePost: table create precedes the FK add.
@@ -3973,23 +3745,20 @@ func chainSteps() []chainStep {
 		},
 		{
 			name:        "S2_add_column_index_generated",
-			target80:    chainS2Common,
-			target57:    chainS2Common,
+			target:      chainS2Common,
 			wantContain: []string{"ADD COLUMN `LOYALTY_POINTS`", "ADD KEY `IDX_ORD_CREATED`", "PRICE_WITH_TAX"},
 			wantAbsent:  []string{"DROP TABLE", "CREATE TABLE"},
 		},
 		{
-			name:     "S3_modify_type_widen_default",
-			target80: chainS3Common,
-			target57: chainS3Common,
+			name:   "S3_modify_type_widen_default",
+			target: chainS3Common,
 			// total type change, name widen, loyalty default change.
 			wantContain: []string{"DECIMAL(14,4)", "VARCHAR(200)"},
 			wantAbsent:  []string{"DROP TABLE", "CREATE TABLE `CUSTOMER`", "DROP COLUMN"},
 		},
 		{
-			name:     "S4_drop_col_drop_parent_replace_view_trigger",
-			target80: s4_80,
-			target57: s4_57,
+			name:   "S4_drop_col_drop_parent_replace_view_trigger",
+			target: chainS4,
 			// product table dropped; order_item.product_id column + its FK dropped; view replaced; trigger added.
 			wantContain: []string{"DROP TABLE `PRODUCT`", "DROP COLUMN `PRODUCT_ID`", "DROP FOREIGN KEY `FK_OI_PRODUCT`", "TRG_ORD_INS", "V_CUST_ORDERS"},
 			wantAbsent:  []string{"DROP TABLE `CUSTOMER`", "DROP TABLE `ORD`"},
@@ -4002,12 +3771,12 @@ func chainSteps() []chainStep {
 // TestSDLDeepSequentialChain is Axis 3: drive S0 -> S1 -> S2 -> S3 -> S4 on ONE live DB.
 // Each step computes source=MetadataToSDL(sync), diffs the step target, asserts the plan is
 // minimal + correctly ordered, APPLIES it, re-syncs, and asserts the next no-op is empty
-// before advancing. Proves correctness across a migration history. Both versions.
+// before advancing. Proves correctness across a migration history.
 //
 // The steps run inline (NOT as separate subtests) BECAUSE they share one evolving DB: each
 // step's diff is from its predecessor's applied state. Running a single step in isolation
 // (e.g. `-run .../S4`) would compute a diff from S0 and assert wrong things — so the chain is
-// kept atomic per server.
+// kept atomic.
 //
 //nolint:tparallel
 func TestSDLDeepSequentialChain(t *testing.T) {
@@ -4041,7 +3810,7 @@ func TestSDLDeepSequentialChain(t *testing.T) {
 // runChainStep executes one release in the sequential chain against the live dbName.
 func runChainStep(ctx context.Context, t *testing.T, srv liveServer, dbName string, step chainStep) {
 	t.Helper()
-	target := step.target(srv.version)
+	target := step.target
 
 	// 1) Compute the plan from the CURRENT live DB state to the step target.
 	source := dumpSDL(ctx, t, srv, dbName)
@@ -4294,8 +4063,6 @@ type entCorpus struct {
 	ddl  string
 	// gate, when non-empty, skips every leg for this corpus with the given reason.
 	gate string
-	// gate57, when non-empty, skips only the 5.7 legs with the given reason.
-	gate57 string
 	// canonical marks ddl as a canonical SDL dump (alphabetical object order) rather
 	// than upstream creation-ordered DDL. Canonical dumps are loaded by applying the
 	// engine's own empty→schema plan, whose statements are dependency-ordered —
@@ -4309,21 +4076,17 @@ func entCorpora() []entCorpus {
 		{name: "zabbix", ddl: entZabbixSQL},
 		{name: "prestashop", ddl: entPrestashopSQL},
 		{name: "openemr", ddl: entOpenemrSQL},
-		{name: "sys", ddl: entSysSQL, canonical: true,
-			gate57: "sys corpus is the stock MySQL 8.0 sys schema; its views read performance_schema tables that 5.7.25 does not have"},
+		{name: "sys", ddl: entSysSQL, canonical: true},
 	}
 }
 
-// entLoadCorpus loads one corpus into a fresh scratch database, honoring per-version
-// gates. Canonical dumps go through the engine's own dependency-ordered create plan
+// entLoadCorpus loads one corpus into a fresh scratch database, honoring its gate.
+// Canonical dumps go through the engine's own dependency-ordered create plan
 // (dogfooding: every corpus load exercises the empty→schema ordering guarantees).
 func entLoadCorpus(ctx context.Context, t *testing.T, srv liveServer, prefix string, corpus entCorpus) string {
 	t.Helper()
 	if corpus.gate != "" {
 		t.Skipf("[%s/%s] %s", srv.name, corpus.name, corpus.gate)
-	}
-	if corpus.gate57 != "" && srv.name == "mysql57" {
-		t.Skipf("[%s/%s] %s", srv.name, corpus.name, corpus.gate57)
 	}
 	if !corpus.canonical {
 		return entLoadDDL(ctx, t, srv, prefix+corpus.name, corpus.ddl)
@@ -4733,20 +4496,8 @@ func entAppendTableClause(t *testing.T, source, table, clause string) string {
 	return source[:start] + body + "\n" + clause + ";" + source[end:]
 }
 
-// entUintType returns the canonical dump spelling of INT UNSIGNED on srv. The sync
-// driver's columnTypeCanonicalSynonyms map folds the SIGNED default display widths
-// (int(11) -> int) but not the unsigned ones, so a 5.7 dump renders `int(10) unsigned`
-// verbatim while a plain int renders `int` on both versions (an asymmetry the omni
-// canonicalizer absorbs — recorded as an observation in the campaign findings).
-func entUintType(srv liveServer) string {
-	if srv.version == "5.7" {
-		return "int(10) unsigned"
-	}
-	return "int unsigned"
-}
-
 // ----------------------------------------------------------------------------
-// Baseline: every corpus loads on every version, and its canonical dump is a fixed
+// Baseline: every corpus loads, and its canonical dump is a fixed
 // point — self-diff empty AND the production schema.SDLMigration no-op empty.
 // ----------------------------------------------------------------------------
 
@@ -4811,7 +4562,6 @@ type entCRUDPhase struct {
 // entCRUDKind is the create+modify+drop triple for one object kind.
 type entCRUDKind struct {
 	name   string
-	skip57 string
 	phases []entCRUDPhase
 }
 
@@ -5014,8 +4764,7 @@ func entCRUDKinds() []entCRUDKind {
 			},
 		},
 		{
-			name:   "check",
-			skip57: "5.7 parses-and-ignores CHECK constraints (nothing syncs back)",
+			name: "check",
 			phases: []entCRUDPhase{
 				{
 					name: "create",
@@ -5234,9 +4983,6 @@ func TestSDLEnterpriseSingleObjectCRUD(t *testing.T) {
 			for _, kind := range entCRUDKinds() {
 				kind := kind
 				t.Run(kind.name, func(t *testing.T) {
-					if srv.version == "5.7" && kind.skip57 != "" {
-						t.Skipf("[%s/%s] skipped on 5.7: %s", srv.name, kind.name, kind.skip57)
-					}
 					base := entZabbixSlice(t, entSliceCoreTables...) + entA1Aux
 					dbName := entLoadDDL(ctx, t, srv, "entsdl_a1", base)
 
@@ -5463,9 +5209,8 @@ CREATE TABLE ent_circ_b (
 // ----------------------------------------------------------------------------
 
 type entTypeCase struct {
-	name   string
-	base   string
-	skip57 string
+	name string
+	base string
 	// pinned, when non-empty, skips the case with a PINNED-BUG classification (a
 	// confirmed engine bug being fixed upstream; the case re-arms when the skip drops).
 	pinned string
@@ -5578,10 +5323,9 @@ func entTypeCases() []entTypeCase {
 			want: []string{"SET("},
 		},
 		{
-			// utf8mb4_unicode_ci is non-default on BOTH versions (8.0 default 0900_ai_ci,
-			// 5.7 default general_ci), so the dump renders the explicit column COLLATE on
-			// both — a stable anchor. When the collation matches the table default the
-			// dump omits CHARACTER SET/COLLATE entirely.
+			// utf8mb4_unicode_ci is not the server default (0900_ai_ci), so the dump
+			// renders the explicit column COLLATE — a stable anchor. When the collation
+			// matches the table default the dump omits CHARACTER SET/COLLATE entirely.
 			name: "charset_column_collation",
 			base: "CREATE TABLE t3 (id int NOT NULL, label varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
 			mutate: func(t *testing.T, _ liveServer, source string) string {
@@ -5596,7 +5340,7 @@ func entTypeCases() []entTypeCase {
 			name: "charset_table_level",
 			base: "CREATE TABLE t3 (id int NOT NULL, title varchar(60) NOT NULL, body varchar(200) DEFAULT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
 			mutate: func(t *testing.T, _ liveServer, source string) string {
-				// Replace the whole table-options line so the (version-dependent) COLLATE
+				// Replace the whole table-options line so the COLLATE
 				// suffix can never survive as an invalid latin1/utf8mb4 hybrid. The options
 				// line is the segment's last line, so everything from ') ENGINE=InnoDB' to
 				// the segment end is rewritten.
@@ -5654,9 +5398,9 @@ func entTypeCases() []entTypeCase {
 		{
 			name: "unsigned_signed_flip",
 			base: "CREATE TABLE t3 (id int NOT NULL, cnt int unsigned NOT NULL DEFAULT '0', pos int NOT NULL DEFAULT '0', PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
-			mutate: func(t *testing.T, srv liveServer, source string) string {
-				s := entReplaceInTable(t, source, "t3", "`cnt` "+entUintType(srv), "`cnt` int")
-				return entReplaceInTable(t, s, "t3", "`pos` int", "`pos` "+entUintType(srv))
+			mutate: func(t *testing.T, _ liveServer, source string) string {
+				s := entReplaceInTable(t, source, "t3", "`cnt` int unsigned", "`cnt` int")
+				return entReplaceInTable(t, s, "t3", "`pos` int", "`pos` int unsigned")
 			},
 			want: []string{"`CNT`", "`POS`"},
 		},
@@ -5727,9 +5471,6 @@ func TestSDLEnterpriseSpecialTypes(t *testing.T) {
 			for _, tc := range entTypeCases() {
 				tc := tc
 				t.Run(tc.name, func(t *testing.T) {
-					if srv.version == "5.7" && tc.skip57 != "" {
-						t.Skipf("[%s/%s] skipped on 5.7: %s", srv.name, tc.name, tc.skip57)
-					}
 					if tc.pinned != "" {
 						t.Skip(tc.pinned)
 					}
@@ -6007,355 +5748,16 @@ func TestSDLEnterpriseMultiFileRoundTrip(t *testing.T) {
 	}
 }
 
-// A7 of the ENTERPRISE smoke axes: CROSS-VERSION upgrade —
-// the migration-during-upgrade scenario where a schema is authored/dumped on one MySQL
-// version and the target is applied on the other.
-//
-// Legs, per corpus (zabbix / prestashop / openemr; sys stays behind its entCorpora gates):
-//
-//	upgrade_57_dump_targets_80_db  — load the corpus on 5.7, take its canonical dump D57,
-//	    load the SAME original DDL on 8.0, then use D57 as the TARGET against the 8.0
-//	    database (version-aware diff as 8.0.32). The plan must apply cleanly and
-//	    converge; 5.7-isms (integer display widths) must normalize away — asserted by the
-//	    no-width-in-ALTER guard — and nothing may phantom-drop. Genuine semantic
-//	    differences (the server-default charset a version applied at load time) are
-//	    LEGITIMATE plan content: a 5.7-authored dump of a charset-less corpus says
-//	    latin1, and declarative semantics honor it.
-//	minimal_mutation_after_upgrade — (zabbix) one semantic edit (add column + index) on
-//	    top of D57, targeted at the upgraded 8.0 database → exactly the minimal DDL, no
-//	    cross-version noise re-emerging.
-//	fresh_80_from_57_dump          — D57 against an EMPTY 8.0 database (fresh create from
-//	    a 5.7-authored dump) → apply → re-dump → converges to D57 and self-diffs empty.
-//	downgrade_80_dump_targets_57_db — the reverse: D80 as target on the 5.7 database.
-//	    Probed: where an 8.0-ism blocks the 5.7 apply (utf8mb4_0900_ai_ci — 8.0's default
-//	    utf8mb4 collation does not exist on 5.7), the leg skips with the named reason.
-//	aligned_zabbix_utf8mb4_general_ci — the distilled asymmetry probe: both databases
-//	    created with the SAME 5.7-legal default (utf8mb4/utf8mb4_general_ci) before
-//	    loading zabbix, so the only cross-dump differences left are pure version
-//	    renderings (display widths). Both cross-diffs must then be EMPTY — any residual
-//	    is a phantom diff by definition.
-//
-// prestashop note: the corpus itself leads with SET SESSION sql_mode='' (two
-// '0000-00-00 00:00:00' defaults need non-strict mode). Generated plans cannot carry
-// session state, so plan APPLICATION for that corpus is prefixed with the corpus's own
-// preamble — the exact concession the corpus already requires at load time.
-//
-// Shared helpers (liveServers, entLoadDDL, dumpSDL, applyDDL, entPlanStatementCount,
-// entNormalizeDelimiters, newLiveDatabase, createLiveMySQLDriver, addColumnToTable,
-// addIndexToTable, entCorpora + embedded corpora) come from the sibling files.
-
-// Full server versions are threaded into the diff for this axis (the release path passes
-// the synced server version string, e.g. "8.0.32", not a bare major.minor).
-const (
-	entUpg57Version = "5.7.25"
-	entUpg80Version = "8.0.32"
-)
-
-type entUpgCorpus struct {
-	name string
-	ddl  string
-	// preamble is prepended to every generated plan before application (see the
-	// prestashop note above). It mirrors the corpus's own leading session setup.
-	preamble string
-	// gate, when non-empty, skips the corpus with the given reason.
-	gate string
-}
-
-// entUpgCorpora derives the cross-version corpus list from the shared entCorpora().
-// The axis authors the SAME original DDL on BOTH versions, so a corpus gated on either
-// version (sys: gate + gate57) is gated here too.
-//
-// openemr note: the corpus's uuid columns (`uuid` binary(16) NOT NULL DEFAULT ”) once
-// gated it out of this axis — the 8.0 sync stored the information_schema hex NOTATION
-// ('0x…') verbatim and every cross-version leg looped on a phantom
-// `MODIFY COLUMN ... DEFAULT '0x…'` residual. The sync now canonicalizes binary-family
-// defaults (see TestSDLEnterpriseUpgradeBinaryDefaultCanonicalForm), so the corpus runs
-// un-gated.
-func entUpgCorpora() []entUpgCorpus {
-	var out []entUpgCorpus
-	for _, c := range entCorpora() {
-		u := entUpgCorpus{name: c.name, ddl: c.ddl, gate: c.gate}
-		if u.gate == "" && c.gate57 != "" {
-			u.gate = c.gate57
-		}
-		if u.gate == "" && c.canonical {
-			u.gate = "corpus ships as a canonical dump requiring the engine create-plan loader; A7 authors from raw upstream DDL"
-		}
-		if c.name == "prestashop" {
-			u.preamble = "SET SESSION sql_mode='';\n"
-		}
-		out = append(out, u)
-	}
-	return out
-}
-
-func entUpgServers(t *testing.T) (srv57, srv80 liveServer) {
-	t.Helper()
-	found57, found80 := false, false
-	for _, srv := range liveServers {
-		switch srv.version {
-		case "5.7":
-			srv57, found57 = srv, true
-		case "8.0":
-			srv80, found80 = srv, true
-		default:
-		}
-	}
-	require.True(t, found57 && found80, "cross-version axis needs both a 5.7 and an 8.0 live server")
-	return srv57, srv80
-}
-
-// entUpgTrim caps logged plan/residual text so a 250-table plan stays readable.
-func entUpgTrim(s string) string {
-	const limit = 6000
-	if len(s) <= limit {
-		return s
-	}
-	return s[:limit] + fmt.Sprintf("\n... (%d more bytes)", len(s)-limit)
-}
-
-// entUpgReDrop matches destructive operations that can NEVER be legitimate when both
-// databases were loaded from the same original DDL — any hit is a phantom diff.
-var entUpgReDrop = regexp.MustCompile(`(?i)\bDROP\s+(TABLE|COLUMN|TRIGGER|VIEW|FUNCTION|PROCEDURE|INDEX|KEY|CHECK|CONSTRAINT|FOREIGN)`)
-
-func entUpgAssertNoDrops(t *testing.T, label, plan string) {
-	t.Helper()
-	if m := entUpgReDrop.FindString(plan); m != "" {
-		require.Failf(t, "phantom destructive operation in cross-version plan",
-			"[%s] plan contains %q — with identical source DDL on both versions nothing may be dropped:\n%s",
-			label, m, entUpgTrim(plan))
-	}
-}
-
-// entUpgReIntWidth matches integer display widths — the 5.7 stored form 8.0 must
-// normalize away. tinyint(1) is exempt (the BOOLEAN spelling, canonical on BOTH
-// versions).
-var entUpgReIntWidth = regexp.MustCompile(`(?i)\b(?:tiny|small|medium|big)?int\(\d+\)`)
-
-// entUpgAssertNoWidthInAlters proves no ALTER statement carries a 5.7 display width —
-// a width inside an ALTER means the 5.7 rendering leaked through normalization and
-// phantom-modified a column. CREATE TABLE statements are not judged: a pass-through
-// width in a fresh CREATE is cosmetic, converges, and is not a phantom diff.
-func entUpgAssertNoWidthInAlters(t *testing.T, label, plan string) {
-	t.Helper()
-	if strings.TrimSpace(plan) == "" {
-		return
-	}
-	stmts, err := mysqlparser.SplitSQL(plan)
-	require.NoError(t, err, "[%s] split plan for width guard", label)
-	for _, s := range stmts {
-		text := strings.TrimSpace(s.Text)
-		if !strings.HasPrefix(strings.ToUpper(text), "ALTER TABLE") {
-			continue
-		}
-		for _, m := range entUpgReIntWidth.FindAllString(text, -1) {
-			if strings.EqualFold(m, "tinyint(1)") {
-				continue
-			}
-			require.Failf(t, "integer display width leaked into a cross-version ALTER",
-				"[%s] ALTER carries %q (5.7 display width not normalized away):\n%s", label, m, text)
-		}
-	}
-}
-
-// entUpgConverge diffs the live database against target (as version), applies the plan
-// (with the corpus preamble), and proves convergence + idempotence. Returns the plan
-// ("" when the schemas were already equivalent).
-func entUpgConverge(ctx context.Context, t *testing.T, srv liveServer, dbName, target, version, preamble, label string) string {
-	t.Helper()
-	source := dumpSDL(ctx, t, srv, dbName)
-	plan, err := mysqlDiffSDLMigration(source, target, version)
-	require.NoError(t, err, "[%s] diff", label)
-	if strings.TrimSpace(plan) == "" {
-		t.Logf("[%s] empty plan — schemas already equivalent", label)
-	} else {
-		t.Logf("[%s] plan: %d statements, %d bytes:\n%s", label, entPlanStatementCount(t, plan), len(plan), entUpgTrim(plan))
-		require.NoError(t, applyDDL(ctx, t, srv, dbName, preamble+plan),
-			"[%s] generated plan failed to apply:\n%s", label, entUpgTrim(plan))
-	}
-	after := dumpSDL(ctx, t, srv, dbName)
-	converge, err := mysqlDiffSDLMigration(after, target, version)
-	require.NoError(t, err, "[%s] converge diff", label)
-	require.Empty(t, converge, "[%s] did not converge; residual:\n%s", label, entUpgTrim(converge))
-	self, err := mysqlDiffSDLMigration(after, after, version)
-	require.NoError(t, err, "[%s] idempotence diff", label)
-	require.Empty(t, self, "[%s] post-apply dump not idempotent:\n%s", label, entUpgTrim(self))
-	return plan
-}
-
-// entUpgLoadAligned creates a database whose DEFAULT charset/collation is pinned to the
-// 5.7-legal utf8mb4/utf8mb4_general_ci on either server, then loads ddl — removing the
-// server-default charset divergence so cross-dumps differ only by version renderings.
-func entUpgLoadAligned(ctx context.Context, t *testing.T, srv liveServer, prefix, ddl string) string {
-	t.Helper()
-	dbName := newLiveDatabase(ctx, t, srv, prefix)
-	driver, err := createLiveMySQLDriver(ctx, srv, dbName)
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-	_, err = driver.Execute(ctx, "ALTER DATABASE `"+dbName+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci", db.ExecuteOptions{})
-	require.NoError(t, err, "[%s] align database default collation", srv.name)
-	_, err = driver.Execute(ctx, entNormalizeDelimiters(ddl), db.ExecuteOptions{})
-	require.NoError(t, err, "[%s] apply aligned base DDL", srv.name)
-	return dbName
-}
-
-//nolint:tparallel
-func TestSDLEnterpriseCrossVersionUpgrade(t *testing.T) {
-	skipUnlessLiveOracle(t)
-	ctx := context.Background()
-	srv57, srv80 := entUpgServers(t)
-
-	for _, corpus := range entUpgCorpora() {
-		corpus := corpus
-		t.Run(corpus.name, func(t *testing.T) {
-			if corpus.gate != "" {
-				t.Skipf("[A7/%s] %s", corpus.name, corpus.gate)
-			}
-
-			// Author on 5.7 and on 8.0 from the SAME original DDL; capture both
-			// canonical dumps up front so later legs judge fixed texts.
-			db57 := entLoadDDL(ctx, t, srv57, "entsdl_up57_"+corpus.name, corpus.ddl)
-			d57 := dumpSDL(ctx, t, srv57, db57)
-			db80 := entLoadDDL(ctx, t, srv80, "entsdl_up80_"+corpus.name, corpus.ddl)
-			d80 := dumpSDL(ctx, t, srv80, db80)
-			t.Logf("[A7/%s] D57 %d bytes, D80 %d bytes", corpus.name, len(d57), len(d80))
-
-			t.Run("upgrade_57_dump_targets_80_db", func(t *testing.T) {
-				label := "A7/" + corpus.name + "/upgrade_57_to_80"
-				plan := entUpgConverge(ctx, t, srv80, db80, d57, entUpg80Version, corpus.preamble, label)
-				entUpgAssertNoDrops(t, label, plan)
-				entUpgAssertNoWidthInAlters(t, label, plan)
-			})
-
-			if corpus.name == "zabbix" {
-				t.Run("minimal_mutation_after_upgrade", func(t *testing.T) {
-					label := "A7/" + corpus.name + "/minimal_mutation_after_upgrade"
-					// Self-sufficient: land the database on D57 first (a no-op when the
-					// upgrade leg just ran).
-					entUpgConverge(ctx, t, srv80, db80, d57, entUpg80Version, corpus.preamble, label+"/pre")
-
-					// One semantic edit on top of the 5.7-authored dump.
-					target := addColumnToTable(t, d57, "users", "`ent_up_col` varchar(50) DEFAULT NULL")
-					target = addIndexToTable(t, target, "users", "KEY `ent_up_idx` (`ent_up_col`)")
-
-					source := dumpSDL(ctx, t, srv80, db80)
-					plan, err := mysqlDiffSDLMigration(source, target, entUpg80Version)
-					require.NoError(t, err, "[%s] diff", label)
-					require.NotEmpty(t, plan, "[%s] the semantic edit must produce a plan", label)
-					t.Logf("[%s] plan:\n%s", label, plan)
-
-					n := entPlanStatementCount(t, plan)
-					require.LessOrEqual(t, n, 2, "[%s] plan must be the minimal DDL (add column + add index), got %d statements:\n%s", label, n, plan)
-					stmts, err := mysqlparser.SplitSQL(plan)
-					require.NoError(t, err)
-					for _, s := range stmts {
-						text := strings.TrimSpace(s.Text)
-						if text == "" || text == ";" {
-							continue
-						}
-						require.True(t, strings.HasPrefix(strings.ToUpper(text), "ALTER TABLE `USERS`"),
-							"[%s] plan statement strays off the edited table (cross-version noise re-emerged):\n%s", label, text)
-					}
-					upper := strings.ToUpper(plan)
-					require.Contains(t, upper, "ENT_UP_COL", "[%s] plan missing the added column:\n%s", label, plan)
-					require.Contains(t, upper, "ENT_UP_IDX", "[%s] plan missing the added index:\n%s", label, plan)
-
-					require.NoError(t, applyDDL(ctx, t, srv80, db80, plan), "[%s] minimal plan failed to apply:\n%s", label, plan)
-					after := dumpSDL(ctx, t, srv80, db80)
-					converge, err := mysqlDiffSDLMigration(after, target, entUpg80Version)
-					require.NoError(t, err)
-					require.Empty(t, converge, "[%s] minimal mutation did not converge:\n%s", label, converge)
-				})
-			}
-
-			t.Run("fresh_80_from_57_dump", func(t *testing.T) {
-				label := "A7/" + corpus.name + "/fresh_80_from_57_dump"
-				dbEmpty := newLiveDatabase(ctx, t, srv80, "entsdl_upe80_"+corpus.name)
-				plan := entUpgConverge(ctx, t, srv80, dbEmpty, d57, entUpg80Version, corpus.preamble, label)
-				require.NotEmpty(t, plan, "[%s] creating from a 5.7-authored dump on an empty database must emit DDL", label)
-				entUpgAssertNoWidthInAlters(t, label, plan)
-			})
-
-			t.Run("downgrade_80_dump_targets_57_db", func(t *testing.T) {
-				label := "A7/" + corpus.name + "/downgrade_80_to_57"
-				source := dumpSDL(ctx, t, srv57, db57)
-				plan, err := mysqlDiffSDLMigration(source, d80, entUpg57Version)
-				require.NoError(t, err, "[%s] diff", label)
-				if strings.TrimSpace(plan) != "" {
-					t.Logf("[%s] plan: %d statements, %d bytes:\n%s", label, entPlanStatementCount(t, plan), len(plan), entUpgTrim(plan))
-					if applyErr := applyDDL(ctx, t, srv57, db57, corpus.preamble+plan); applyErr != nil {
-						// Probe outcome: an 8.0-authored dump can carry 8.0-isms no 5.7
-						// server accepts. The only one these corpora produce is 8.0's
-						// utf8mb4 default collation.
-						if strings.Contains(plan, "utf8mb4_0900_ai_ci") {
-							t.Skipf("[%s] 8.0-authored dump is not 5.7-legal: plan carries utf8mb4_0900_ai_ci "+
-								"(8.0's utf8mb4 default collation, unknown to 5.7); apply failed as expected: %v", label, applyErr)
-						}
-						require.NoErrorf(t, applyErr, "[%s] downgrade plan failed to apply and no known 8.0-ism explains it:\n%s",
-							label, entUpgTrim(plan))
-					}
-				}
-				after := dumpSDL(ctx, t, srv57, db57)
-				converge, err := mysqlDiffSDLMigration(after, d80, entUpg57Version)
-				require.NoError(t, err, "[%s] converge diff", label)
-				require.Empty(t, converge, "[%s] did not converge; residual:\n%s", label, entUpgTrim(converge))
-				self, err := mysqlDiffSDLMigration(after, after, entUpg57Version)
-				require.NoError(t, err)
-				require.Empty(t, self, "[%s] post-apply dump not idempotent:\n%s", label, entUpgTrim(self))
-			})
-		})
-	}
-
-	// The distilled asymmetry probe: with the server-default charset divergence removed,
-	// BOTH cross-diffs must be empty — the remaining differences are exactly the
-	// version renderings (5.7 display widths) the normalizer must absorb.
-	t.Run("aligned_zabbix_utf8mb4_general_ci", func(t *testing.T) {
-		db57 := entUpgLoadAligned(ctx, t, srv57, "entsdl_upal57", entZabbixSQL)
-		db80 := entUpgLoadAligned(ctx, t, srv80, "entsdl_upal80", entZabbixSQL)
-		d57 := dumpSDL(ctx, t, srv57, db57)
-		d80 := dumpSDL(ctx, t, srv80, db80)
-
-		t.Run("57_dump_targets_80_db", func(t *testing.T) {
-			cur := dumpSDL(ctx, t, srv80, db80)
-			plan, err := mysqlDiffSDLMigration(cur, d57, entUpg80Version)
-			require.NoError(t, err, "aligned 57->80 diff")
-			require.Empty(t, plan,
-				"collation-aligned 5.7 dump phantom-diffs an equivalent 8.0 database (widths/collation defaults did not normalize away):\n%s",
-				entUpgTrim(plan))
-		})
-		t.Run("80_dump_targets_57_db", func(t *testing.T) {
-			cur := dumpSDL(ctx, t, srv57, db57)
-			plan, err := mysqlDiffSDLMigration(cur, d80, entUpg57Version)
-			require.NoError(t, err, "aligned 80->57 diff")
-			require.Empty(t, plan,
-				"collation-aligned 8.0 dump phantom-diffs an equivalent 5.7 database (widths/collation defaults did not normalize away):\n%s",
-				entUpgTrim(plan))
-		})
-	})
-}
-
 // ----------------------------------------------------------------------------
-// REGRESSION (formerly the pinned bug this axis found, openemr corpus): binary-family
-// column defaults.
+// REGRESSION (openemr corpus): binary-family column defaults.
 //
-// MySQL reports binary/varbinary literal defaults in information_schema.COLUMNS in
-// version-specific encodings: 8.0 as hex NOTATION text built from the value truncated
-// at its first NUL byte ("0x" for DEFAULT '', "0x6162" for DEFAULT 'ab'), 5.7 as the
-// RAW BYTES, NUL-padded to the declared width for binary(N). The sync used to store
-// the 8.0 notation verbatim and the dumper re-quoted it as a STRING literal
-// (DEFAULT '0x6162') — value-unfaithful dumps, cross-version phantom MODIFY loops (the
-// openemr uuid columns that once gated that corpus out of the A7 legs), and round-trip
-// double-encoding ('0x6162' -> '0x307836313632').
-//
-// The sync now decodes both encodings into one canonical form — '' when the value is
-// empty (binary(N) padding stripped), a plain quoted string for clean text, an
-// unquoted hex literal otherwise; see canonicalBinaryDefault in
-// backend/plugin/db/mysql/sync.go. This test pins the fixed behavior: value-faithful
-// dumps on both versions, EMPTY cross-version diffs (the DDL pins the table charset so
-// the dumps may differ by nothing at all), and a clean round-trip through a fresh 8.0
-// database. The per-version legs then cover the hex-literal fallback for values no
-// quoted SDL string can carry — probed on the version whose information_schema reports
-// them faithfully (0xFF61 on 8.0; a significant trailing NUL, 0x6100, on 5.7).
+// MySQL 8.0 reports binary/varbinary literal defaults in information_schema.COLUMNS as
+// hex NOTATION text built from the value truncated at its first NUL byte ("0x" for
+// DEFAULT '', "0x6162" for DEFAULT 'ab'). The sync decodes that into one canonical form
+// — '' when the value is empty, a plain quoted string for clean text, an unquoted hex
+// literal otherwise; see canonicalBinaryDefault in backend/plugin/db/mysql/sync.go. This
+// test pins value-faithful dumps, a clean round-trip through a fresh database, and the
+// hex-literal fallback for values no quoted SDL string can carry.
 // ----------------------------------------------------------------------------
 
 //go:embed testdata/sdl_migration/ent_upg_binary_default_ddl.sql
@@ -6365,81 +5767,48 @@ var entUpgBinaryDefaultDDL string
 func TestSDLEnterpriseUpgradeBinaryDefaultCanonicalForm(t *testing.T) {
 	skipUnlessLiveOracle(t)
 	ctx := context.Background()
-	srv57, srv80 := entUpgServers(t)
+	srv80 := liveServers[0]
 
-	// Both versions dump the same value-faithful canonical form.
 	db80 := entLoadDDL(ctx, t, srv80, "entsdl_upbin80", entUpgBinaryDefaultDDL)
 	d80 := dumpSDL(ctx, t, srv80, db80)
-	db57 := entLoadDDL(ctx, t, srv57, "entsdl_upbin57", entUpgBinaryDefaultDDL)
-	d57 := dumpSDL(ctx, t, srv57, db57)
-	for _, d := range []struct{ version, dump string }{{"8.0", d80}, {"5.7", d57}} {
-		require.Contains(t, d.dump, "`u` binary(16) NOT NULL DEFAULT ''",
-			"%s dump must render the empty binary(16) default as '' (not the I_S encoding):\n%s", d.version, d.dump)
-		require.Contains(t, d.dump, "`v` varbinary(24) NOT NULL DEFAULT 'ab'",
-			"%s dump must render the varbinary default value-faithfully:\n%s", d.version, d.dump)
-		require.NotContains(t, d.dump, "0x",
-			"%s dump leaked an information_schema hex encoding for a clean-text default:\n%s", d.version, d.dump)
-	}
-
-	// Cross-version: with the table charset pinned, the dumps describe the same schema
-	// and BOTH cross-diffs must be empty — the shape that once looped on
-	// MODIFY COLUMN ... DEFAULT '0x…'.
-	cross80, err := mysqlDiffSDLMigration(d80, d57, entUpg80Version)
-	require.NoError(t, err)
-	require.Empty(t, cross80, "5.7 dump phantom-diffs the equivalent 8.0 database:\n%s", cross80)
-	cross57, err := mysqlDiffSDLMigration(d57, d80, entUpg57Version)
-	require.NoError(t, err)
-	require.Empty(t, cross57, "8.0 dump phantom-diffs the equivalent 5.7 database:\n%s", cross57)
+	require.Contains(t, d80, "`u` binary(16) NOT NULL DEFAULT ''",
+		"dump must render the empty binary(16) default as '' (not the I_S encoding):\n%s", d80)
+	require.Contains(t, d80, "`v` varbinary(24) NOT NULL DEFAULT 'ab'",
+		"dump must render the varbinary default value-faithfully:\n%s", d80)
+	require.NotContains(t, d80, "0x",
+		"dump leaked an information_schema hex encoding for a clean-text default:\n%s", d80)
 
 	// Round-trip the 8.0 dump through a FRESH database: the create plan must apply, the
 	// re-dump must converge to the dump (no double-encoding), and self-diff empty.
 	dbFresh := newLiveDatabase(ctx, t, srv80, "entsdl_upbinfresh")
 	empty := dumpSDL(ctx, t, srv80, dbFresh)
-	plan, err := mysqlDiffSDLMigration(empty, d80, entUpg80Version)
+	plan, err := mysqlDiffSDLMigration(empty, d80, srv80.version)
 	require.NoError(t, err)
 	require.NotEmpty(t, plan)
 	require.NoError(t, applyDDL(ctx, t, srv80, dbFresh, plan), "create plan from the 8.0 dump failed to apply:\n%s", plan)
 	redump := dumpSDL(ctx, t, srv80, dbFresh)
 	require.NotContains(t, redump, "0x3078",
 		"the 8.0 dump round-trip double-encodes the default again ('0x6162' -> '0x307836313632'):\n%s", redump)
-	converge, err := mysqlDiffSDLMigration(redump, d80, entUpg80Version)
+	converge, err := mysqlDiffSDLMigration(redump, d80, srv80.version)
 	require.NoError(t, err)
 	require.Empty(t, converge, "8.0 dump did not converge through a fresh database; residual:\n%s", converge)
 
-	// Values no quoted SDL string can carry fall back to an unquoted hex literal, each
-	// probed on the version whose information_schema reports the value faithfully (8.0
-	// truncates at NUL bytes; 5.7 truncates at non-UTF8 bytes).
+	// A value no quoted SDL string can carry falls back to an unquoted hex literal.
 	t.Run("hex_literal_fallback_nonutf8_80", func(t *testing.T) {
 		ddl := "CREATE TABLE ent_up_binhex (id int NOT NULL, w varbinary(8) NOT NULL DEFAULT 0xFF61, PRIMARY KEY (id)) ENGINE=InnoDB;"
 		dbName := entLoadDDL(ctx, t, srv80, "entsdl_upbinhex80", ddl)
 		dump := dumpSDL(ctx, t, srv80, dbName)
 		require.Contains(t, dump, "`w` varbinary(8) NOT NULL DEFAULT 0xff61",
 			"8.0 dump must keep the non-UTF8 default as an unquoted hex literal:\n%s", dump)
-		self, err := mysqlDiffSDLMigration(dump, dump, entUpg80Version)
+		self, err := mysqlDiffSDLMigration(dump, dump, srv80.version)
 		require.NoError(t, err)
 		require.Empty(t, self, "hex-literal dump not idempotent:\n%s", self)
 
 		fresh := newLiveDatabase(ctx, t, srv80, "entsdl_upbinhexf80")
-		plan, err := mysqlDiffSDLMigration(dumpSDL(ctx, t, srv80, fresh), dump, entUpg80Version)
+		plan, err := mysqlDiffSDLMigration(dumpSDL(ctx, t, srv80, fresh), dump, srv80.version)
 		require.NoError(t, err)
 		require.NoError(t, applyDDL(ctx, t, srv80, fresh, plan), "hex-literal create plan failed to apply:\n%s", plan)
 		require.Equal(t, dump, dumpSDL(ctx, t, srv80, fresh), "hex-literal default did not round-trip byte-identically")
-	})
-	t.Run("hex_literal_fallback_trailnul_57", func(t *testing.T) {
-		ddl := "CREATE TABLE ent_up_binnul (id int NOT NULL, w varbinary(8) NOT NULL DEFAULT 0x6100, PRIMARY KEY (id)) ENGINE=InnoDB;"
-		dbName := entLoadDDL(ctx, t, srv57, "entsdl_upbinnul57", ddl)
-		dump := dumpSDL(ctx, t, srv57, dbName)
-		require.Contains(t, dump, "`w` varbinary(8) NOT NULL DEFAULT 0x6100",
-			"5.7 dump must keep the trailing-NUL default as an unquoted hex literal (the NUL is significant on varbinary):\n%s", dump)
-		self, err := mysqlDiffSDLMigration(dump, dump, entUpg57Version)
-		require.NoError(t, err)
-		require.Empty(t, self, "hex-literal dump not idempotent:\n%s", self)
-
-		fresh := newLiveDatabase(ctx, t, srv57, "entsdl_upbinnulf57")
-		plan, err := mysqlDiffSDLMigration(dumpSDL(ctx, t, srv57, fresh), dump, entUpg57Version)
-		require.NoError(t, err)
-		require.NoError(t, applyDDL(ctx, t, srv57, fresh, plan), "hex-literal create plan failed to apply:\n%s", plan)
-		require.Equal(t, dump, dumpSDL(ctx, t, srv57, fresh), "hex-literal default did not round-trip byte-identically")
 	})
 }
 
@@ -6455,8 +5824,7 @@ func TestSDLEnterpriseUpgradeBinaryDefaultCanonicalForm(t *testing.T) {
 // exactly. Every failure prints the seed and a ddmin-minimized mutation list, each
 // minimization trial re-running the full oracle on a fresh scratch database.
 //
-// ≥20 seeds run on 8.0 and ≥10 on 5.7 (the menu is 5.7-legal, so both use the same
-// generator). Scratch databases are entsdl_-prefixed and dropped eagerly per trial.
+// 20 seeds run. Scratch databases are entsdl_-prefixed and dropped eagerly per trial.
 
 // entFuzzSliceTables is the ~30-table fuzz base: the core slice plus the httptest family
 // (6 more triggered tables, FK-chained through httptest/httpstep into hosts and items)
@@ -7290,8 +6658,7 @@ func entFzDescs(muts []entFzMutation) []string {
 }
 
 // ----------------------------------------------------------------------------
-// The fuzz test: ≥20 seeds on 8.0, ≥10 on 5.7 (deterministic; the seed is in the
-// subtest name).
+// The fuzz test: 20 seeds (deterministic; the seed is in the subtest name).
 // ----------------------------------------------------------------------------
 
 //nolint:tparallel
@@ -7301,10 +6668,7 @@ func TestSDLEnterpriseFuzz(t *testing.T) {
 
 	for _, srv := range liveServers {
 		srv := srv
-		seedCount := 20
-		if srv.version == "5.7" {
-			seedCount = 10
-		}
+		const seedCount = 20
 		t.Run(srv.name, func(t *testing.T) {
 			baseDDL := entZabbixSlice(t, entFuzzSliceTables...) + entFuzzAux
 
@@ -7366,11 +6730,9 @@ func TestSDLEnterpriseFuzz(t *testing.T) {
 //	      (c) object counts (tables/views/routines/triggers/columns/indexes/FKs/checks)
 //	          match the mutation ledger exactly.
 //
-// The menu is the A4 menu PLUS (8.0-only where marked): add/drop CHECK constraint (8.0),
-// add/drop FULLTEXT index, add/drop SPATIAL column+index with SRID (8.0 — the SRID
-// attribute is 8.0-only), add/modify/drop STORED and VIRTUAL generated columns, toggle
-// column/index INVISIBLE (8.0), and ENUM member append. 5.7-illegal mutations are gated
-// off the 5.7 menu.
+// The menu is the A4 menu PLUS: add/drop CHECK constraint, add/drop FULLTEXT index,
+// add/drop SPATIAL column+index with SRID, add/modify/drop STORED and VIRTUAL generated
+// columns, toggle column/index INVISIBLE, and ENUM member append.
 //
 // Determinism: the mutation stream is a pure function of the seed (the seed is in the
 // subtest name); the schema model is parsed from the previous round's dump in statement
@@ -7379,15 +6741,15 @@ func TestSDLEnterpriseFuzz(t *testing.T) {
 // reported with seed + round + minimized ledger. Scratch databases are entsdl_-prefixed
 // and dropped eagerly.
 //
-// ≥12 seeds run on 8.0 and ≥6 on 5.7.
+// 12 seeds run.
 //
 // Shared helpers (liveServers, createLiveMySQLDriver, newLiveDatabase, dumpSDL, applyDDL,
 // syncMetaForDB, objectCounts, addColumnToTable, addIndexToTable, addColumnToView,
 // dropObjectBlock, dropTrigger, entZabbixSlice, entFuzzSliceTables, entFuzzAux,
 // entNormalizeDelimiters, entDropLineInTable, entReplaceLineInTable, entAppendTableClause,
 // entSetPartitionClause, entFzProtectedTables, entFzProtectedColumns, entFuzzModel,
-// entFzIndexedCols, entFzState, entFzMutation, withDatabaseContext, mysqlVersionFor) come
-// from the sibling files in this package.
+// entFzIndexedCols, entFzState, entFzMutation, withDatabaseContext) come from the sibling
+// files in this package.
 
 const (
 	entSfRounds = 5
@@ -7399,8 +6761,7 @@ const (
 
 // ----------------------------------------------------------------------------
 // Stateful-fuzz aux schema: seeds the droppable/modifiable object pool for the NEW menu
-// kinds. entSfAuxCommon is 5.7-legal; entSfAux80 seeds the 8.0-only kinds (SRID spatial,
-// INVISIBLE, CHECK) and is appended on 8.0 only.
+// kinds. entSfAux80 seeds the SRID spatial, INVISIBLE, and CHECK kinds.
 // ----------------------------------------------------------------------------
 
 //go:embed testdata/sdl_migration/ent_sf_aux_common.sql
@@ -7409,13 +6770,9 @@ var entSfAuxCommon string
 //go:embed testdata/sdl_migration/ent_sf_aux_80.sql
 var entSfAux80 string
 
-func entSfBaseDDL(t *testing.T, srv liveServer) string {
+func entSfBaseDDL(t *testing.T) string {
 	t.Helper()
-	base := entZabbixSlice(t, entFuzzSliceTables...) + entFuzzAux + entSfAuxCommon
-	if srv.version != "5.7" {
-		base += entSfAux80
-	}
-	return base
+	return entZabbixSlice(t, entFuzzSliceTables...) + entFuzzAux + entSfAuxCommon + entSfAux80
 }
 
 // ----------------------------------------------------------------------------
@@ -7649,48 +7006,30 @@ func (m *entSfSchema) colDef(table, col string) string {
 // Mutation generation.
 // ----------------------------------------------------------------------------
 
-func entSfMenu(version string) []string {
-	menu := []string{
-		"add_column", "drop_column", "modify_column",
-		"add_index", "drop_index",
-		"add_fk", "drop_fk",
-		"add_view", "drop_view", "modify_view",
-		"add_trigger", "drop_trigger",
-		"add_routine", "drop_routine",
-		"partition", "departition",
-		"add_fulltext", "drop_fulltext",
-		"add_gen_stored", "add_gen_virtual", "modify_gen", "drop_gen",
-		"enum_append",
-	}
-	if version != "5.7" {
-		// 5.7-illegal kinds: CHECK is parsed-and-ignored on 5.7 (nothing syncs back, so
-		// convergence is impossible); the SRID column attribute and column/index
-		// INVISIBLE are 8.0-only syntax.
-		menu = append(menu,
-			"add_check", "drop_check",
-			"add_spatial", "drop_spatial",
-			"toggle_col_invisible", "toggle_idx_invisible",
-		)
-	}
-	return menu
+var entSfMenu = []string{
+	"add_column", "drop_column", "modify_column",
+	"add_index", "drop_index",
+	"add_fk", "drop_fk",
+	"add_view", "drop_view", "modify_view",
+	"add_trigger", "drop_trigger",
+	"add_routine", "drop_routine",
+	"partition", "departition",
+	"add_fulltext", "drop_fulltext",
+	"add_gen_stored", "add_gen_virtual", "modify_gen", "drop_gen",
+	"enum_append",
+	"add_check", "drop_check",
+	"add_spatial", "drop_spatial",
+	"toggle_col_invisible", "toggle_idx_invisible",
 }
 
 // entSfMutations derives k independent mutations for round r, deterministically in
 // (model order, rng stream).
-func entSfMutations(t *testing.T, m *entSfSchema, rng *rand.Rand, srv liveServer, ledger *entSfLedger, r, k int) []entSfMutation {
-	t.Helper()
-	return entSfMutationsFromMenu(t, m, rng, entSfMenu(srv.version), ledger, r, k)
-}
-
-// entSfMutationsFromMenu is entSfMutations with an explicit menu. The cross-version
-// stateful fuzzer (A8) passes the 5.7-legal menu
-// regardless of the authoring side — its targets apply to BOTH versions.
-func entSfMutationsFromMenu(t *testing.T, m *entSfSchema, rng *rand.Rand, menu []string, ledger *entSfLedger, r, k int) []entSfMutation {
+func entSfMutations(t *testing.T, m *entSfSchema, rng *rand.Rand, ledger *entSfLedger, r, k int) []entSfMutation {
 	t.Helper()
 	state := entFzNewState()
 	var muts []entSfMutation
 	for attempt := 0; attempt < 500 && len(muts) < k; attempt++ {
-		kind := menu[rng.Intn(len(menu))]
+		kind := entSfMenu[rng.Intn(len(entSfMenu))]
 		if mut, ok := entSfGenerate(t, kind, m, rng, state, ledger, r, len(muts)); ok {
 			muts = append(muts, mut)
 		}
@@ -7715,7 +7054,7 @@ func entSfMutableTables(m *entSfSchema, state *entFzState) []*entFzTable {
 // accept, excluding protected/used/locked/generated columns.
 // entSfIsFKMemberCol reports whether table.col participates in any child-side
 // foreign key of the base model. Used to keep STORED generated columns off FK
-// member bases (A8 finding: both servers refuse that shape; 5.7 opaquely).
+// member bases (the server refuses that shape).
 func entSfIsFKMemberCol(m *entSfSchema, table, col string) bool {
 	tbl := m.base.byName[table]
 	if tbl == nil {
@@ -8384,9 +7723,8 @@ func entSfGenerate(t *testing.T, kind string, m *entSfSchema, rng *rand.Rand, st
 		}
 		cands := entSfColCandidates(m, state, entSfIsIntRest)
 		if mode == "STORED" {
-			// A8 finding: BOTH servers refuse a STORED generated column whose base
-			// column is a child-side FK member (8.0 clean 1215; 5.7 opaque errno
-			// 150 at ALGORITHM=COPY rename). VIRTUAL stays eligible.
+			// The server refuses a STORED generated column whose base column is a
+			// child-side FK member (errno 1215). VIRTUAL stays eligible.
 			kept := cands[:0]
 			for _, c := range cands {
 				if !entSfIsFKMemberCol(m, c.table, c.col) {
@@ -8605,53 +7943,42 @@ func entSfRound(ctx context.Context, t *testing.T, srv liveServer, dbName, sourc
 	for _, m := range muts {
 		target = m.apply(t, target)
 	}
-	after, _, err := entSfRoundToTarget(ctx, t, srv, dbName, source, target, srv.version, want)
-	return after, err
-}
-
-// entSfRoundToTarget is the target-explicit core of entSfRound: the caller supplies the
-// mutated target text and the version threaded into every diff. The cross-version
-// stateful fuzzer (A8) authors ONE target from one side's dump and drives BOTH sides'
-// databases through it, so the target cannot be derived from this side's source. Returns
-// the fresh canonical dump and the generated plan.
-func entSfRoundToTarget(ctx context.Context, t *testing.T, srv liveServer, dbName, source, target, version string, want entSfCounts) (string, string, error) {
-	t.Helper()
-	plan, err := mysqlDiffSDLMigration(source, target, version)
+	plan, err := mysqlDiffSDLMigration(source, target, srv.version)
 	if err != nil {
-		return "", "", errors.Wrap(err, "diff failed")
+		return "", errors.Wrap(err, "diff failed")
 	}
 	if strings.TrimSpace(plan) == "" {
-		return "", "", errors.New("empty plan for a non-empty mutation set")
+		return "", errors.New("empty plan for a non-empty mutation set")
 	}
 	if err := applyDDL(ctx, t, srv, dbName, plan); err != nil {
-		return "", "", errors.Wrapf(err, "plan failed to apply; plan was:\n%s", plan)
+		return "", errors.Wrapf(err, "plan failed to apply; plan was:\n%s", plan)
 	}
 	after := dumpSDL(ctx, t, srv, dbName)
-	converge, err := mysqlDiffSDLMigration(after, target, version)
+	converge, err := mysqlDiffSDLMigration(after, target, srv.version)
 	if err != nil {
-		return "", "", errors.Wrap(err, "converge diff failed")
+		return "", errors.Wrap(err, "converge diff failed")
 	}
 	if converge != "" {
-		return "", "", errors.Errorf("did not converge; residual:\n%s\nplan was:\n%s", converge, plan)
+		return "", errors.Errorf("did not converge; residual:\n%s\nplan was:\n%s", converge, plan)
 	}
-	self, err := mysqlDiffSDLMigration(after, after, version)
+	self, err := mysqlDiffSDLMigration(after, after, srv.version)
 	if err != nil {
-		return "", "", errors.Wrap(err, "idempotence diff failed")
+		return "", errors.Wrap(err, "idempotence diff failed")
 	}
 	if self != "" {
-		return "", "", errors.Errorf("post-apply dump not idempotent:\n%s", self)
+		return "", errors.Errorf("post-apply dump not idempotent:\n%s", self)
 	}
 	// (a) LoadSDL must accept its own output — checked directly (DiffSDLMigration would
 	// mask an SDL rejection behind the LoadSQL fallback).
-	if _, err := catalog.LoadSDLWithVersion(withDatabaseContext(after), mysqlVersionFor(version)); err != nil {
-		return "", "", errors.Wrap(err, "canonical dump does not reload through LoadSDL")
+	if _, err := catalog.LoadSDL(withDatabaseContext(after)); err != nil {
+		return "", errors.Wrap(err, "canonical dump does not reload through LoadSDL")
 	}
 	// (c) object counts must match the mutation ledger.
 	got := entSfCountObjects(syncMetaForDB(ctx, t, srv, dbName))
 	if got != want {
-		return "", "", errors.Errorf("object counts diverge from the mutation ledger:\n want %+v\n got  %+v\nplan was:\n%s", want, got, plan)
+		return "", errors.Errorf("object counts diverge from the mutation ledger:\n want %+v\n got  %+v\nplan was:\n%s", want, got, plan)
 	}
-	return after, plan, nil
+	return after, nil
 }
 
 // entSfTrial reproduces one round from scratch: load baseSDL (a canonical dump) into a
@@ -8664,8 +7991,7 @@ func entSfTrial(ctx context.Context, t *testing.T, srv liveServer, baseSDL strin
 	driver, err := createLiveMySQLDriver(ctx, srv, dbName)
 	require.NoError(t, err)
 	// FOREIGN_KEY_CHECKS off for the session: baseSDL here is a CANONICAL dump
-	// (alphabetical table order), so inline foreign keys may forward-reference —
-	// same handling as entA8ScratchFromDump.
+	// (alphabetical table order), so inline foreign keys may forward-reference.
 	_, err = driver.Execute(ctx, "SET FOREIGN_KEY_CHECKS=0;\n"+entNormalizeDelimiters(baseSDL), db.ExecuteOptions{})
 	driver.Close(ctx)
 	require.NoError(t, err, "[%s] stateful-fuzz trial base failed to load", srv.name)
@@ -8683,21 +8009,13 @@ func entSfTrial(ctx context.Context, t *testing.T, srv liveServer, baseSDL strin
 // entFuzzMinimize but over the stateful trial).
 func entSfMinimize(ctx context.Context, t *testing.T, srv liveServer, baseSDL string, muts []entSfMutation, firstErr error) ([]entSfMutation, error) {
 	t.Helper()
-	return entSfMinimizeWith(muts, firstErr, func(trial []entSfMutation) error {
-		return entSfTrial(ctx, t, srv, baseSDL, trial)
-	})
-}
-
-// entSfMinimizeWith is the trial-generic ddmin-lite core, shared by the same-version
-// (A6) and cross-version (A8) stateful fuzzers.
-func entSfMinimizeWith(muts []entSfMutation, firstErr error, trial func([]entSfMutation) error) ([]entSfMutation, error) {
 	minimized := muts
 	lastErr := firstErr
 	for i := 0; i < len(minimized) && len(minimized) > 1; {
 		candidate := make([]entSfMutation, 0, len(minimized)-1)
 		candidate = append(candidate, minimized[:i]...)
 		candidate = append(candidate, minimized[i+1:]...)
-		if err := trial(candidate); err != nil {
+		if err := entSfTrial(ctx, t, srv, baseSDL, candidate); err != nil {
 			minimized = candidate
 			lastErr = err
 			continue
@@ -8776,7 +8094,7 @@ func entSfAssertUntouchedStable(t *testing.T, srv liveServer, seed int64, r int,
 }
 
 // ----------------------------------------------------------------------------
-// The stateful fuzz test: >=12 seeds on 8.0, >=6 on 5.7, 5 rounds each.
+// The stateful fuzz test: 12 seeds, 5 rounds each.
 // ----------------------------------------------------------------------------
 
 func entSfRunSeed(ctx context.Context, t *testing.T, srv liveServer, baseDDL string, seed int64) {
@@ -8803,7 +8121,7 @@ func entSfRunSeed(ctx context.Context, t *testing.T, srv liveServer, baseDDL str
 	for r := 1; r <= entSfRounds; r++ {
 		m := entSfParse(t, prev)
 		k := 2 + rng.Intn(4) // K ∈ [2,5]
-		muts := entSfMutations(t, m, rng, srv, ledger, r, k)
+		muts := entSfMutations(t, m, rng, ledger, r, k)
 		for _, mut := range muts {
 			history = append(history, fmt.Sprintf("r%d: %s", r, mut.desc))
 		}
@@ -8846,12 +8164,9 @@ func TestSDLEnterpriseStatefulFuzz(t *testing.T) {
 
 	for _, srv := range liveServers {
 		srv := srv
-		seedCount := 12
-		if srv.version == "5.7" {
-			seedCount = 6
-		}
+		const seedCount = 12
 		t.Run(srv.name, func(t *testing.T) {
-			baseDDL := entSfBaseDDL(t, srv)
+			baseDDL := entSfBaseDDL(t)
 			for seed := int64(1); seed <= int64(seedCount); seed++ {
 				seed := seed
 				t.Run(fmt.Sprintf("seed_%d", seed), func(t *testing.T) {
@@ -8860,312 +8175,4 @@ func TestSDLEnterpriseStatefulFuzz(t *testing.T) {
 			}
 		})
 	}
-}
-
-// A8 of the ENTERPRISE smoke axes: CROSS-VERSION STATEFUL
-// FUZZ — the composition of A6 (same-version multi-round stateful fuzz) and A7
-// (single-shot cross-version upgrade). Real teams run MIXED fleets: a schema authored
-// and dumped on 5.7 drives targets applied to 8.0 (and vice versa during migrations),
-// repeatedly, while the schema keeps evolving. A6 and A7 both pass in isolation; this
-// axis hunts what only their composition shows — version-normalization drift
-// COMPOUNDING across rounds (a residual one round becomes the authored text of the
-// next, so a per-round phantom that a single-shot test shrugs off snowballs here).
-//
-// Protocol per seed, on the 5.7-legal A6 base (30-table Zabbix slice + fuzz aux +
-// stateful aux; the 8.0-only aux tables are excluded — the SAME logical schema must
-// load on BOTH versions), both databases collation-aligned (utf8mb4/utf8mb4_general_ci,
-// the A7 aligned-probe posture) so the fleets start logically identical:
-//
-//	round 0: the two fresh dumps must already cross-diff EMPTY (all four
-//	         direction x version-normalization combos).
-//	for round r in 1..4:
-//	    T_r = mutate(authored side's dump_{r-1}, K ∈ [2,4] from the 5.7-LEGAL menu)
-//	    each side s ∈ {5.7, 8.0}: plan_s = Diff(dump_s, T_r, full server version) must
-//	        be non-empty, apply cleanly, converge (re-dump diffs empty against T_r
-//	        under s's version), self-diff empty, reload through STRICT LoadSDL, and
-//	        match the mutation ledger's object counts (per-side ledgers: baselines may
-//	        differ, deltas are shared);
-//	    plan_80 must carry no 5.7 integer display width in any ALTER (entUpgAssert-
-//	        NoWidthInAlters — a leaked width is a phantom column MODIFY);
-//	    CROSS-CHECK: the two fresh dumps must cross-diff EMPTY in all four combos —
-//	        the fleets stay logically identical despite version-different stored forms;
-//	    ACCRETION (A6's guards, on BOTH sides): each side's dump stays under its own
-//	        dump_0 length + the cumulative added-object budget, and every statement not
-//	        named by this round's mutations is byte-identical to its round-start form.
-//
-// forward_57_authored seeds mutate the 5.7 dump; reverse_80_authored seeds mutate the
-// 8.0 dump (the authored text then carries NO display widths while the 5.7 side's
-// stored form does — the opposite normalization direction). Both directions use the
-// 5.7-legal menu: every target applies to both fleets, so 5.7-illegal mutations (CHECK,
-// SRID spatial, INVISIBLE) are structurally excluded. Additionally, child-side FK
-// member columns are protected from the generated-column kinds — both servers refuse
-// a STORED generated column based on a cascading-FK member (see
-// entA8ProtectFKMemberColumns for the empirical matrix this axis established).
-//
-// Determinism: the mutation stream is a pure function of the seed (in the subtest
-// name). Failures ddmin-minimize over a cross-version trial (both round-start dumps
-// reloaded into fresh aligned scratch databases) and report seed + round + the failing
-// check (apply/converge/idempotence/reload/counts per side, or the cross combo) + the
-// minimized ledger. Accretion-guard failures are terminal requires with the same
-// seed/round/check labeling. Scratch databases are entsdl_-prefixed and dropped.
-//
-// ≥8 forward seeds + ≥4 reverse seeds.
-//
-// Shared machinery: entSfBaseDDL, entSfParse, entSfMenu, entSfMutationsFromMenu,
-// entSfRoundToTarget, entSfMinimizeWith, entSfScratchDB, entSfCountObjects,
-// entSfAssertUntouchedStable, entSfDescs, entSfLedger, entSfRoundSlack (A6);
-// entUpgServers, entUpgLoadAligned, entUpgAssertNoWidthInAlters, entUpgTrim,
-// entUpg57Version, entUpg80Version (A7); liveServers, dumpSDL, syncMetaForDB,
-// newLiveDatabase, createLiveMySQLDriver, entNormalizeDelimiters (siblings).
-
-const (
-	entA8Rounds       = 4
-	entA8ForwardSeeds = 8
-	entA8ReverseSeeds = 4
-)
-
-// entA8Fleet is one side of the mixed-version fleet.
-type entA8Fleet struct {
-	srv liveServer
-	// version is the FULL server version threaded into every diff for this side (the
-	// release path passes the synced version string, not a bare major.minor).
-	version string
-	dbName  string
-	prev    string // canonical dump at the current round boundary
-	dump0   int    // round-0 dump length (text-accretion baseline)
-	budget  int    // cumulative added-object text budget
-	expect  entSfCounts
-}
-
-// entA8CrossCheck proves the two fleets are logically identical: all four
-// (direction x version-normalization) cross-diffs of the two canonical dumps must be
-// empty. The two "apply" pairings mirror A7's aligned probe — the plan a fleet would
-// receive to be driven to the OTHER fleet's schema; the remaining two probe the
-// canonicalizer's version symmetry (the same pair re-judged under the other version's
-// stored form).
-func entA8CrossCheck(d57, d80 string) error {
-	for _, c := range []struct{ label, source, target, version string }{
-		{"80db<=57dump(as 8.0.32)", d80, d57, entUpg80Version},
-		{"57db<=80dump(as 5.7.25)", d57, d80, entUpg57Version},
-		{"57src->80tgt(as 8.0.32)", d57, d80, entUpg80Version},
-		{"80src->57tgt(as 5.7.25)", d80, d57, entUpg57Version},
-	} {
-		plan, err := mysqlDiffSDLMigration(c.source, c.target, c.version)
-		if err != nil {
-			return errors.Wrapf(err, "check=cross %s: diff failed", c.label)
-		}
-		if strings.TrimSpace(plan) != "" {
-			return errors.Errorf("check=cross %s: fleets drifted apart; residual plan:\n%s", c.label, entUpgTrim(plan))
-		}
-	}
-	return nil
-}
-
-// entA8ProtectFKMemberColumns marks child-side foreign-key member columns as protected
-// in the mutation-planning model, keeping the A8 menu off a server-refused shape this
-// axis found empirically: BOTH oracle servers reject a STORED generated column whose
-// base column participates in a foreign key with a cascading referential action —
-// 8.0.32 with a clean 1215 "Cannot add foreign key constraint" at DDL time, 5.7.25
-// with an opaque errno-150 failure at ALGORITHM=COPY rename (the shape seed 18 of a
-// widened sweep minimized to: ADD COLUMN ... GENERATED ALWAYS AS ((groupid + 7)) STORED
-// on hosts_groups, whose groupid carries zabbix's usual ON DELETE CASCADE FK).
-// Parent-side referenced columns, VIRTUAL generated columns, and RESTRICT/NO ACTION
-// FKs are all accepted by both servers and stay eligible. The guard is
-// action-agnostic (membership, not action): zabbix FKs are almost all
-// ON DELETE CASCADE and the add_fk mutation plants ON DELETE SET NULL, so an
-// action-aware refinement would buy nothing here.
-func entA8ProtectFKMemberColumns(m *entSfSchema) {
-	for _, tbl := range m.base.tables {
-		for _, fk := range tbl.fks {
-			for _, c := range fk.cols {
-				m.protected[tbl.name+"."+c] = true
-			}
-		}
-	}
-}
-
-// entA8Round drives one shared target through both fleets and cross-checks the
-// results: each side runs the full A6 round oracle (diff -> apply -> converge ->
-// idempotence -> strict LoadSDL reload -> ledger counts) under its own version, then
-// the two fresh dumps must cross-diff empty. Protocol violations return stage-tagged
-// errors (for ddmin); infrastructure failures fail t hard. On success both fleets'
-// prev/expect/budget are advanced and the 8.0-side plan is returned for the width
-// guard (the 5.7-side plan may carry display widths legitimately — they ARE its
-// stored form — so nothing judges it beyond the round oracle).
-func entA8Round(ctx context.Context, t *testing.T, f57, f80 *entA8Fleet, target string, muts []entSfMutation) (string, error) {
-	t.Helper()
-	want57, want80 := f57.expect, f80.expect
-	for _, m := range muts {
-		want57 = want57.plus(m.delta)
-		want80 = want80.plus(m.delta)
-	}
-	after57, _, err := entSfRoundToTarget(ctx, t, f57.srv, f57.dbName, f57.prev, target, f57.version, want57)
-	if err != nil {
-		return "", errors.Wrapf(err, "check=side %s", f57.srv.name)
-	}
-	after80, plan80, err := entSfRoundToTarget(ctx, t, f80.srv, f80.dbName, f80.prev, target, f80.version, want80)
-	if err != nil {
-		return "", errors.Wrapf(err, "check=side %s", f80.srv.name)
-	}
-	if err := entA8CrossCheck(after57, after80); err != nil {
-		return "", err
-	}
-	for _, m := range muts {
-		f57.budget += m.budget
-		f80.budget += m.budget
-	}
-	f57.prev, f57.expect = after57, want57
-	f80.prev, f80.expect = after80, want80
-	return plan80, nil
-}
-
-// entA8ScratchFromDump reloads a canonical dump into a fresh, eagerly-droppable,
-// collation-aligned scratch database. The dump text executes with FOREIGN_KEY_CHECKS
-// off for the session (canonical dumps order tables alphabetically, so inline foreign
-// keys may forward-reference; the driver runs the whole batch on one connection, so
-// the session setting holds).
-func entA8ScratchFromDump(ctx context.Context, t *testing.T, srv liveServer, dump string) (string, func()) {
-	t.Helper()
-	dbName, drop := entSfScratchDB(ctx, t, srv, "entsdl_a8t")
-	driver, err := createLiveMySQLDriver(ctx, srv, dbName)
-	require.NoError(t, err)
-	defer driver.Close(ctx)
-	_, err = driver.Execute(ctx, "ALTER DATABASE `"+dbName+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci", db.ExecuteOptions{})
-	require.NoError(t, err, "[%s] align trial database collation", srv.name)
-	_, err = driver.Execute(ctx, "SET FOREIGN_KEY_CHECKS=0;\n"+entNormalizeDelimiters(dump), db.ExecuteOptions{})
-	require.NoError(t, err, "[%s] reload round-start dump into trial database", srv.name)
-	return dbName, drop
-}
-
-// entA8Trial reproduces one cross-version round from scratch for ddmin: both
-// round-start dumps reload into fresh aligned scratch databases, the mutation subset
-// re-authors the target from the authored side's dump, and the full round runs.
-func entA8Trial(ctx context.Context, t *testing.T, srv57, srv80 liveServer, prev57, prev80 string, authored80 bool, muts []entSfMutation) error {
-	t.Helper()
-	db57, drop57 := entA8ScratchFromDump(ctx, t, srv57, prev57)
-	defer drop57()
-	db80, drop80 := entA8ScratchFromDump(ctx, t, srv80, prev80)
-	defer drop80()
-
-	f57 := &entA8Fleet{srv: srv57, version: entUpg57Version, dbName: db57}
-	f80 := &entA8Fleet{srv: srv80, version: entUpg80Version, dbName: db80}
-	for _, f := range []*entA8Fleet{f57, f80} {
-		f.prev = dumpSDL(ctx, t, f.srv, f.dbName)
-		f.expect = entSfCountObjects(syncMetaForDB(ctx, t, f.srv, f.dbName))
-	}
-	authored := f57.prev
-	if authored80 {
-		authored = f80.prev
-	}
-	target := authored
-	for _, m := range muts {
-		target = m.apply(t, target)
-	}
-	_, err := entA8Round(ctx, t, f57, f80, target, muts)
-	return err
-}
-
-// entA8RunSeed runs one full cross-version stateful seed: 4 rounds of
-// mutate-on-the-authored-side -> apply-to-both-fleets -> cross-check -> accretion
-// guards on both sides.
-func entA8RunSeed(ctx context.Context, t *testing.T, srv57, srv80 liveServer, baseDDL string, seed int64, authored80 bool) {
-	t.Helper()
-	rng := rand.New(rand.NewSource(seed)) //nolint:gosec // deterministic fuzz, not crypto
-
-	f57 := &entA8Fleet{srv: srv57, version: entUpg57Version}
-	f80 := &entA8Fleet{srv: srv80, version: entUpg80Version}
-	f57.dbName = entUpgLoadAligned(ctx, t, srv57, "entsdl_a8m57", baseDDL)
-	f80.dbName = entUpgLoadAligned(ctx, t, srv80, "entsdl_a8m80", baseDDL)
-	for _, f := range []*entA8Fleet{f57, f80} {
-		f.prev = dumpSDL(ctx, t, f.srv, f.dbName)
-		f.dump0 = len(f.prev)
-		f.expect = entSfCountObjects(syncMetaForDB(ctx, t, f.srv, f.dbName))
-	}
-	dir, author := "fwd57", f57
-	if authored80 {
-		dir, author = "rev80", f80
-	}
-
-	// Round 0: freshly loaded from the same DDL under aligned defaults, the fleets must
-	// already be logically identical — a failure here is a base cross-version phantom,
-	// not mutation drift.
-	require.NoError(t, entA8CrossCheck(f57.prev, f80.prev),
-		"[A8 %s seed=%d round=0] fleets diverge before any mutation (base cross-check)", dir, seed)
-
-	ledger := &entSfLedger{viewModified: map[string]bool{}}
-	var history []string
-	for r := 1; r <= entA8Rounds; r++ {
-		m := entSfParse(t, author.prev)
-		entA8ProtectFKMemberColumns(m)
-		k := 2 + rng.Intn(3) // K ∈ [2,4]
-		muts := entSfMutationsFromMenu(t, m, rng, entSfMenu("5.7"), ledger, r, k)
-		for _, mut := range muts {
-			history = append(history, fmt.Sprintf("r%d: %s", r, mut.desc))
-		}
-		t.Logf("[A8 %s seed=%d round=%d] K=%d mutations:\n  %s",
-			dir, seed, r, k, strings.Join(entSfDescs(muts), "\n  "))
-
-		target := author.prev
-		for _, mut := range muts {
-			target = mut.apply(t, target)
-		}
-		prev57, prev80 := f57.prev, f80.prev
-		plan80, err := entA8Round(ctx, t, f57, f80, target, muts)
-		if err != nil {
-			minimized, minErr := entSfMinimizeWith(muts, err, func(trial []entSfMutation) error {
-				return entA8Trial(ctx, t, srv57, srv80, prev57, prev80, authored80, trial)
-			})
-			t.Fatalf("[A8 %s seed=%d round=%d] FAILED\nminimized mutations (%d of %d):\n  %s\nerror:\n%v\nseed history:\n  %s",
-				dir, seed, r, len(minimized), len(muts), strings.Join(entSfDescs(minimized), "\n  "),
-				minErr, strings.Join(history, "\n  "))
-		}
-
-		// A leaked 5.7 display width inside an 8.0-side ALTER is a phantom column MODIFY
-		// (the 5.7-side plan may carry widths legitimately — they ARE its stored form).
-		entUpgAssertNoWidthInAlters(t, fmt.Sprintf("A8 %s seed=%d round=%d plan80", dir, seed, r), plan80)
-
-		// Accretion guards on BOTH sides' dumps (each against its own round-0 baseline).
-		for _, s := range []struct {
-			f    *entA8Fleet
-			prev string
-		}{{f57, prev57}, {f80, prev80}} {
-			require.Less(t, len(s.f.prev), s.f.dump0+s.f.budget+entSfRoundSlack*r,
-				"[A8 %s seed=%d round=%d side=%s] check=accretion: dump grew past the added-object budget: len(dump_%d)=%d, len(dump_0)=%d, budget=%d — text accretion suspected.\nseed history:\n  %s",
-				dir, seed, r, s.f.srv.name, r, len(s.f.prev), s.f.dump0, s.f.budget+entSfRoundSlack*r, strings.Join(history, "\n  "))
-			entSfAssertUntouchedStable(t, s.f.srv, seed, r, s.prev, s.f.prev, muts)
-		}
-
-		t.Logf("[A8 %s seed=%d round=%d] ok: 57 %d -> %d bytes, 80 %d -> %d bytes (budget 57=%d 80=%d), counts 57=%+v 80=%+v",
-			dir, seed, r, len(prev57), len(f57.prev), len(prev80), len(f80.prev),
-			f57.dump0+f57.budget+entSfRoundSlack*r, f80.dump0+f80.budget+entSfRoundSlack*r, f57.expect, f80.expect)
-	}
-}
-
-//nolint:tparallel
-func TestSDLEnterpriseCrossVersionStatefulFuzz(t *testing.T) {
-	skipUnlessLiveOracle(t)
-	ctx := context.Background()
-	srv57, srv80 := entUpgServers(t)
-	// The fleet schema must load on BOTH versions, so the base is the 5.7 shape of the
-	// A6 stateful-fuzz base (entSfAux80's SRID/INVISIBLE/CHECK tables are 8.0-only).
-	baseDDL := entSfBaseDDL(t, srv57)
-
-	t.Run("forward_57_authored", func(t *testing.T) {
-		for seed := int64(1); seed <= entA8ForwardSeeds; seed++ {
-			seed := seed
-			t.Run(fmt.Sprintf("seed_%d", seed), func(t *testing.T) {
-				entA8RunSeed(ctx, t, srv57, srv80, baseDDL, seed, false)
-			})
-		}
-	})
-	// Reverse-authored seeds use a disjoint seed range: the two dumps' candidate models
-	// are logically identical, so reusing 1..N would largely replay the forward streams.
-	t.Run("reverse_80_authored", func(t *testing.T) {
-		for seed := int64(101); seed < 101+entA8ReverseSeeds; seed++ {
-			seed := seed
-			t.Run(fmt.Sprintf("seed_%d", seed), func(t *testing.T) {
-				entA8RunSeed(ctx, t, srv57, srv80, baseDDL, seed, true)
-			})
-		}
-	})
 }

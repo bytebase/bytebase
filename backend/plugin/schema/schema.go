@@ -48,11 +48,9 @@ type generateMigration func(*MetadataDiff) (string, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
 
 // diffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
-// target server's version string (e.g. "5.7.25"); engines that canonicalize
-// differently per version (MySQL: utf8mb4 default collation, integer display widths)
-// use it to select the correct normalizer, and engines that do not (PostgreSQL) take
-// `_ string`. An empty/unparseable version must fall back to the engine's default
-// stored form.
+// target server's version string (e.g. "8.0.32"); an engine may reject a version it
+// does not support (MySQL below 8.0), and engines that do not look at it (PostgreSQL)
+// take `_ string`. An empty or unparseable version is accepted.
 //
 // sessionCtx is the per-object session context (sql_mode / charset / collation, and
 // time_zone for events) captured on the SOURCE (current) schema. The declarative SDL
@@ -356,9 +354,8 @@ func buildSDLSessionContextMap(currentSchema *model.DatabaseMetadata) *SDLSessio
 // SDLMigration computes the migration SQL from a user-provided SDL text and the
 // current database schema. It converts the current metadata to SDL, then diffs
 // against the user SDL. engineVersion is the target server's version string (e.g.
-// "5.7.25"); for engines that canonicalize per version (MySQL) it selects the
-// version-correct normalizer. An empty/unparseable version falls back to the
-// engine default, and engines without a version-aware path ignore it entirely.
+// "8.0.32"); MySQL returns an error for a server older than 8.0, and other engines
+// ignore it.
 //
 // The per-object session context (sql_mode/charset/collation, and event time_zone) is
 // extracted from currentSchema and threaded to the diff so MySQL re-creates a routine/
@@ -382,9 +379,8 @@ func RegisterSDLDropAdvices(engine storepb.Engine, f sdlDropAdvices) {
 }
 
 // SDLDropAdvices analyzes the SDL migration for destructive operations and returns warnings.
-// engineVersion is the target server's version string; engines that canonicalize per
-// version (MySQL) use it so the destructive-op detection runs against the version-correct
-// plan, while engines like PostgreSQL ignore it.
+// engineVersion is the target server's version string; MySQL reports a server older
+// than 8.0 as an error advice, and other engines ignore it.
 func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
 	f, ok := sdlDropAdvicesFns[engine]
 	if !ok {
@@ -456,9 +452,8 @@ func RegisterDiffSDLMigration(engine storepb.Engine, f diffSDLMigration) {
 }
 
 // DiffSDLMigration computes migration SQL between two SDL texts. engineVersion is the
-// target server's version string, threaded to engines that canonicalize per version
-// (MySQL) and ignored by the rest (PostgreSQL); pass "" when no version is known to get
-// the engine's default stored form.
+// target server's version string: MySQL returns an error for a server older than 8.0,
+// and other engines ignore it. Pass "" when no version is known.
 //
 // This SDL↔SDL entry point carries no per-object session context (there is no synced
 // metadata to source it from), so a MySQL recreate through this path is bare. The

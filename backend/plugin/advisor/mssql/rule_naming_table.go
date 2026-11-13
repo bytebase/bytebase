@@ -3,15 +3,17 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -22,11 +24,14 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableAdvisor{})
 }
 
-// NamingTableAdvisor is the advisor checking for table naming convention..
+// NamingTableAdvisor is the advisor checking for table naming convention.
+// The judgment lives in omni (mssql/v1review.NamingTable); this adapter
+// converts the rule's payload into the omni config and renders the findings
+// as advice.
 type NamingTableAdvisor struct {
 }
 
-// Check checks for table naming convention..
+// Check checks for table naming convention.
 func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
@@ -37,100 +42,62 @@ func (*NamingTableAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingTableRule{
-		BaseRule:  BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
 
-type namingTableRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingTableRule) Name() string {
-	return "NamingTableRule"
-}
-
-func (r *namingTableRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Name == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		r.checkTableName(n.Name.Object, n.Loc)
-	case *ast.ExecStmt:
-		r.checkSpRename(n)
-	default:
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := mssqlv1review.NamingTable([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, f.Name, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingTableConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
+		}
 	}
+	return adviceList, nil
 }
 
-func (r *namingTableRule) checkTableName(tableName string, loc ast.Loc) {
-	if tableName == "" {
-		return
+// findingLine is the 1-based line of a finding within the statement text: the
+// line its range starts on, or the statement's first content line when the
+// AST kept no range.
+func findingLine(text string, f v1review.Finding) int32 {
+	offset := f.Start
+	if f.Start == 0 && f.End == 0 {
+		if i := strings.IndexFunc(text, func(c rune) bool {
+			return c != ' ' && c != '\t' && c != '\n' && c != '\r'
+		}); i > 0 {
+			offset = i
+		}
 	}
-	if !r.format.MatchString(tableName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf(`%s mismatches table naming convention, naming format should be %q`, tableName, r.format),
-			StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
-		})
-	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf(`%s mismatches table naming convention, its length should be within %d characters`, tableName, r.maxLength),
-			StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
-		})
-	}
-}
-
-func (r *namingTableRule) checkSpRename(execStmt *ast.ExecStmt) {
-	if execStmt.Name == nil {
-		return
-	}
-	// Check if the procedure is sp_rename.
-	if execStmt.Name.Schema != "" {
-		return
-	}
-	if !strings.EqualFold(execStmt.Name.Object, "sp_rename") {
-		return
-	}
-
-	if execStmt.Args == nil || execStmt.Args.Len() < 2 {
-		return
-	}
-
-	// Get the second argument (new name).
-	arg1, ok := execStmt.Args.Items[1].(*ast.ExecArg)
-	if !ok || arg1 == nil {
-		return
-	}
-	lit, ok := arg1.Value.(*ast.Literal)
-	if !ok || lit == nil {
-		return
-	}
-	newTableName := lit.Str
-	if strings.HasPrefix(newTableName, "'") && strings.HasSuffix(newTableName, "'") {
-		newTableName = newTableName[1 : len(newTableName)-1]
-	}
-
-	r.checkTableName(newTableName, execStmt.Loc)
+	return tsqlparser.ByteOffsetToRunePosition(text, offset).Line
 }

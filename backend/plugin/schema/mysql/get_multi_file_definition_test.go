@@ -135,10 +135,8 @@ func concatMultiFile(result *schema.MultiFileSchemaResult) string {
 	return b.String()
 }
 
-// TestMultiFileSDLExportRoundTrip is the headline proof across the real-world corpus and
-// both live versions. sakila is the priority (rich views/functions/procedures/triggers) on
-// 8.0; roundcube / employees / employees_part / mediawiki carry the 5.7 leg (sakila's
-// actor_info INVOKER view does not CREATE on 5.7). For each loadable fixture × version:
+// TestMultiFileSDLExportRoundTrip is the headline proof across the real-world corpus.
+// sakila is the priority (rich views/functions/procedures/triggers). For each fixture:
 // generate the multi-file export, assert one valid non-empty file per synced object in the
 // correct flat dir, then prove the declarative round-trip — concat(files) ≡ single-file
 // dump AND concat(files) is idempotent.
@@ -154,9 +152,6 @@ func TestMultiFileSDLExportRoundTrip(t *testing.T) {
 			for _, rw := range realWorldSchemas() {
 				rw := rw
 				t.Run(rw.name, func(t *testing.T) {
-					if srv.version == "5.7" && rw.only57Skip != "" {
-						t.Skipf("[%s/%s] skipped on 5.7: %s", srv.name, rw.name, rw.only57Skip)
-					}
 					if rw.viewParsePending != "" {
 						t.Skipf("[%s/%s] SDL re-import pending: %s", srv.name, rw.name, rw.viewParsePending)
 					}
@@ -249,7 +244,7 @@ func TestMultiFileSDLExportRoundTrip(t *testing.T) {
 
 // TestMultiFileSDLExportZip proves the API ZIP path: the MultiFileSchemaResult produces a
 // valid ZIP with exactly one entry per file whose bytes match the file content — mirroring
-// backend/api/v1/database_service.go getMultiFileSDL. Exercised on 8.0 (sakila's load target).
+// backend/api/v1/database_service.go getMultiFileSDL.
 //
 //nolint:tparallel
 func TestMultiFileSDLExportZip(t *testing.T) {
@@ -263,8 +258,7 @@ func TestMultiFileSDLExportZip(t *testing.T) {
 		}
 	}
 
-	srv := liveServers[0] // mysql80
-	require.Equal(t, "8.0", srv.version)
+	srv := liveServers[0]
 
 	meta, _ := loadRealWorld(ctx, t, srv, sakila)
 	metaProto := meta.GetProto()
@@ -329,8 +323,7 @@ func TestMultiFileSDLExportZip(t *testing.T) {
 func TestMultiFileSDLEventOrderingLive(t *testing.T) {
 	skipUnlessLiveOracle(t)
 	ctx := context.Background()
-	srv := liveServers[0] // 8.0 — events are the relevant surface and the scheduler is on.
-	require.Equal(t, "8.0", srv.version)
+	srv := liveServers[0]
 
 	// A table plus an event whose body references it. In the flat multi-file layout the
 	// event lands in events/purge_audit.sql and the table in tables/audit_log.sql, so the

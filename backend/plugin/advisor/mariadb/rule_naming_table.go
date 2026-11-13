@@ -3,15 +3,17 @@ package mariadb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_NAMING_TABLE, &NamingTableConventionAdvisor{})
 }
 
-// NamingTableConventionAdvisor is the advisor checking for table naming convention.
+// NamingTableConventionAdvisor is the advisor checking for table naming
+// convention. The judgment lives in omni (mariadb/v1review.NamingTable); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingTableConventionAdvisor struct {
 }
 
@@ -38,78 +43,58 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, errors.New("naming_payload is required for naming table rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingTableRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingTableRule struct {
-	BaseRule
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingTableRule) Name() string {
-	return "NamingTableRule"
-}
-
-func (r *namingTableRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table != nil {
-			r.handleTableName(n.Table.Name, r.LocToLine(n.Loc))
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		for _, cmd := range n.Commands {
-			if newTableName := renameTableName(cmd); newTableName != "" {
-				r.handleTableName(newTableName, r.LocToLine(n.Loc))
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := mariadbv1review.NamingTable([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", f.Name, maxLength)
+			default:
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingTableConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-	case *ast.RenameTableStmt:
-		for _, pair := range n.Pairs {
-			if pair.New != nil {
-				r.handleTableName(pair.New.Name, r.LocToLine(n.Loc))
-			}
-		}
-	default:
 	}
+	return adviceList, nil
 }
 
-func (r *namingTableRule) handleTableName(tableName string, lineNumber int32) {
-	absoluteLine := r.BaseLine + int(lineNumber)
-	if !r.format.MatchString(tableName) {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s` mismatches table naming convention, naming format should be %q", tableName, r.format),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
+// findingLine is the 1-based line of a finding within the statement text: the
+// judged name's line, or the statement's first content line when the AST kept
+// no range for the name.
+func findingLine(text string, f v1review.Finding) int32 {
+	offset := f.Start
+	if f.Start == 0 && f.End == 0 {
+		offset = contentStartIndex(text)
 	}
-	if r.maxLength > 0 && len(tableName) > r.maxLength {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NamingTableConventionMismatch.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s` mismatches table naming convention, its length should be within %d characters", tableName, r.maxLength),
-			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
-		})
-	}
+	return mariadbparser.ByteOffsetToRunePosition(text, offset).Line
 }
