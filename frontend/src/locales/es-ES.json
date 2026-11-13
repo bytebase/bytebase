@@ -23,6 +23,8 @@
   },
   "agent": {
     "access-grant-draft": {
+      "default-reason": "Solicitar acceso temporal de consulta a {{database}}.",
+      "default-unmask-reason": "Solicitar acceso temporal de consulta a {{database}} con resultados sin enmascarar.",
       "open": "Open access request draft",
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
@@ -197,6 +199,13 @@
         "create": "Crear un tipo de enmascaramiento personalizado…",
         "create-description": "Preparar un nuevo tipo semántico con su configuración de enmascaramiento.",
         "question": "¿Qué tipo semántico debe enmascarar estas columnas?"
+      },
+      "unmask-method": {
+        "exemption": "Exención de enmascaramiento",
+        "exemption-description": "Desenmascarar los recursos seleccionados. Se requiere acceso de consulta existente.",
+        "jit": "Concesión de acceso",
+        "jit-description": "Solicita acceso temporal para ti a una consulta exacta de solo lectura con el desenmascaramiento habilitado.",
+        "question": "¿Cómo deseas acceder a los datos sin enmascarar?"
       }
     },
     "masking-exemption-draft": {
@@ -378,8 +387,6 @@
       "paused": "Ejecución pausada al alcanzar su límite de tokens.",
       "reached": "Se alcanzó el límite de tokens de esta ejecución.",
       "recovery-unavailable": "Este navegador no puede continuar de forma segura las ejecuciones guardadas de Agent. Use un navegador compatible y actualizado.",
-      "remote-busy": "Esta ejecución podría estar activa en otra pestaña.",
-      "resume": "Reanudar",
       "run-limit": "Límite de tokens de esta ejecución",
       "title": "Presupuesto de tokens de la ejecución",
       "usage": "{{used}} / {{limit}} tokens",

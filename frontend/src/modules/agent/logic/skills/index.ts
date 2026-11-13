@@ -1,6 +1,7 @@
 import { skill as databaseChangeSkill } from "./databaseChange";
 import { maskingSections, skill as dataMaskingSkill } from "./dataMasking";
 import { skill as grantPermissionSkill } from "./grantPermission";
+import { skill as justInTimeSkill } from "./justInTime";
 import { skill as querySkill } from "./query";
 
 interface Skill {
@@ -13,6 +14,7 @@ const skills: Skill[] = [
   querySkill,
   databaseChangeSkill,
   grantPermissionSkill,
+  justInTimeSkill,
   dataMaskingSkill,
 ];
 

@@ -18,7 +18,13 @@ ${sqlEditorPersistenceInstruction}
 ## Prerequisites
 
 - Know the instance and database name
-- Have \`bb.sql.query\` permission
+- Have \`bb.databases.get\` for the database; data access is checked separately for the statement (for example, \`bb.sql.select\` or \`bb.sql.info\`).
+
+## Missing query access
+
+When the member wants to query data but says they lack query access, load get_skill(name="just-in-time") and check get_just_in_time_overview. Do not require them to execute a failing query first. If eligible, reuse the exact database and statement already confirmed, or ask only for the missing inputs, then prepare_access_grant_draft with unmask:false unless unmasked results were requested. The member reviews and submits the existing Access Grant form; never create or approve a grant or retry the query automatically.
+
+If an attempted Query returns structured permissionDenied with bb.sql.select or bb.sql.info, treat it as unsuccessful and continue with the same JIT workflow when enabled and permitted. The runtime can also attach a request draft from that verified denial. A generic error, rejected execution confirmation, or missing bb.databases.get is not evidence that an Access Grant can fix access. If JIT is unavailable, explain the actual blocker; use the existing Request Role alternative only when the project enables it. Never grant a role through an API as a substitute.
 
 ## Execution workflow (only when requested)
 
@@ -69,6 +75,6 @@ ${sqlEditorPersistenceInstruction}
 | Error | Cause | Fix |
 |-------|-------|-----|
 | database not found | Wrong instance/database name | List databases first |
-| permission denied | Missing bb.sql.query | Check user permissions |
+| permission denied | Missing the reported API or data permission | For select/info, check the Access Grant workflow; metadata permission denials need the reported permission |
 | syntax error | Invalid SQL | Check SQL syntax for the database engine |`,
 } as const;

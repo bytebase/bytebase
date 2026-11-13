@@ -23,6 +23,8 @@
   },
   "agent": {
     "access-grant-draft": {
+      "default-reason": "Request temporary query access to {{database}}.",
+      "default-unmask-reason": "Request temporary query access to {{database}} with unmasked results.",
       "open": "Open access request draft",
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
@@ -197,6 +199,13 @@
         "create": "Create a custom masking type…",
         "create-description": "Prepare a new semantic type with your masking settings.",
         "question": "Which semantic type should mask these columns?"
+      },
+      "unmask-method": {
+        "exemption": "Masking exemption",
+        "exemption-description": "Unmask selected resources. Existing query access is required.",
+        "jit": "Access Grant",
+        "jit-description": "Request temporary access to one exact read-only query with Unmask enabled, for yourself.",
+        "question": "How would you like to access unmasked data?"
       }
     },
     "masking-exemption-draft": {
@@ -378,8 +387,6 @@
       "paused": "Run paused at its token limit.",
       "reached": "This run's token limit has been reached.",
       "recovery-unavailable": "This browser can't safely continue stored Agent runs. Use a supported, up-to-date browser.",
-      "remote-busy": "This run may be active in another tab.",
-      "resume": "Resume",
       "run-limit": "This run's token limit",
       "title": "Run token budget",
       "usage": "{{used}} / {{limit}} tokens",

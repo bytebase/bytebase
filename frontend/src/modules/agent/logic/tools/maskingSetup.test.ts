@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
 import i18n from "@/lib/i18n";
@@ -9,15 +10,20 @@ import type { Permission } from "@/types/iam/permission";
 import { hasFeature } from "@/types/plan";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";
 import { ActuatorInfoSchema } from "@/types/proto-es/v1/actuator_service_pb";
+import { State } from "@/types/proto-es/v1/common_pb";
 import {
   type Database,
   DatabaseSchema$,
 } from "@/types/proto-es/v1/database_service_pb";
-import { IamPolicySchema } from "@/types/proto-es/v1/iam_policy_pb";
+import {
+  BindingSchema,
+  IamPolicySchema,
+} from "@/types/proto-es/v1/iam_policy_pb";
 import { InstanceResourceSchema } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { RoleSchema } from "@/types/proto-es/v1/role_service_pb";
 import {
+  PlanFeature,
   PlanType,
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
@@ -42,11 +48,13 @@ const permissions: Permission[] = [
   "bb.policies.getMaskingExemptionPolicy",
   "bb.policies.createMaskingExemptionPolicy",
   "bb.policies.updateMaskingExemptionPolicy",
+  "bb.accessGrants.create",
 ];
 
 const mocks = vi.hoisted(() => ({
   state: undefined as unknown as AppStoreState,
   database: undefined as unknown as Database,
+  getProject: vi.fn(),
   getIamPolicy: vi.fn(),
   fetchCurrentUser: vi.fn(),
   loadWorkspacePermissionState: vi.fn(),
@@ -58,7 +66,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/api", () => ({
-  projectServiceClientConnect: { getIamPolicy: mocks.getIamPolicy },
+  projectServiceClientConnect: {
+    getProject: mocks.getProject,
+    getIamPolicy: mocks.getIamPolicy,
+  },
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -81,7 +92,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.deniedWorkspace.clear();
   mocks.deniedProject.clear();
-  const project = create(ProjectSchema, { name: projectName });
+  const project = create(ProjectSchema, {
+    name: projectName,
+    state: State.ACTIVE,
+    allowJustInTimeAccess: true,
+  });
   mocks.database = create(DatabaseSchema$, {
     name: databaseName,
     project: projectName,
@@ -133,6 +148,7 @@ beforeEach(() => {
     async () => mocks.state.currentUser
   );
   mocks.getOrFetchProjectByName.mockResolvedValue(project);
+  mocks.getProject.mockResolvedValue(project);
   mocks.getIamPolicy.mockResolvedValue(create(IamPolicySchema));
   mocks.loadSubscription.mockResolvedValue(undefined);
   mocks.refreshSubscription.mockImplementation(
@@ -141,6 +157,172 @@ beforeEach(() => {
 });
 
 describe("getMaskingSetup", () => {
+  test.each([
+    { cached: false, fresh: true, state: State.ACTIVE, eligible: true },
+    { cached: true, fresh: false, state: State.ACTIVE, eligible: false },
+    { cached: true, fresh: true, state: State.DELETED, eligible: false },
+  ])(
+    "uses fresh project state $state and JIT flag $fresh instead of cached flag $cached",
+    async ({ cached, fresh, state, eligible }) => {
+      const cachedProject = create(ProjectSchema, {
+        name: projectName,
+        state: State.ACTIVE,
+        allowJustInTimeAccess: cached,
+      });
+      mocks.state.projectsByName = { [projectName]: cachedProject };
+      mocks.getOrFetchProjectByName.mockResolvedValue(cachedProject);
+      mocks.getProject.mockResolvedValue(
+        create(ProjectSchema, {
+          name: projectName,
+          state,
+          allowJustInTimeAccess: fresh,
+        })
+      );
+
+      const result = await getMaskingSetup({ workspaceName, projectName });
+
+      expect(result.justInTime.enabled).toBe(state === State.ACTIVE && fresh);
+      expect(result.project).toEqual({ name: projectName, state });
+      expect(result.justInTime.eligible).toBe(eligible);
+      expect(mocks.getProject).toHaveBeenCalledWith(
+        expect.objectContaining({ name: projectName }),
+        expect.objectContaining({ contextValues: expect.anything() })
+      );
+      expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+    }
+  );
+
+  test("keeps a permitted exemption preferred over an eligible Access Grant", async () => {
+    const result = await getMaskingSetup({ workspaceName, projectName });
+
+    expect(result.justInTime).toMatchObject({
+      enabled: true,
+      feature: "available",
+      create: {
+        status: "allowed",
+        scope: projectName,
+        requiredPermissions: ["bb.accessGrants.create"],
+        missingPermissions: [],
+      },
+      eligible: true,
+      exemptionFallback: false,
+    });
+    expect(result.justInTime.featureRequirement.feature).toBe("FEATURE_JIT");
+    expect(mocks.getProject).toHaveBeenCalledWith(
+      expect.objectContaining({ name: projectName }),
+      expect.objectContaining({ contextValues: expect.anything() })
+    );
+    expect(
+      mocks.getProject.mock.calls[0][1].contextValues.get(silentContextKey)
+    ).toBe(true);
+  });
+
+  test("offers an Access Grant fallback when exemption configuration is denied", async () => {
+    mocks.deniedProject.add("bb.policies.updateMaskingExemptionPolicy");
+
+    const result = await getMaskingSetup({ workspaceName, projectName });
+
+    expect(step(result, "masking-exemptions").configure.status).toBe("denied");
+    expect(result.justInTime).toMatchObject({
+      eligible: true,
+      exemptionFallback: true,
+    });
+  });
+
+  test("does not turn unverified exemption permission into a denied fallback", async () => {
+    const refresh = mocks.loadWorkspacePermissionState.getMockImplementation()!;
+    mocks.loadWorkspacePermissionState.mockImplementation(async () => {
+      await refresh();
+      mocks.state.workspacePolicy!.bindings[0].condition = create(ExprSchema, {
+        expression: "false",
+      });
+      mocks.state.roles.push(
+        create(RoleSchema, {
+          name: "roles/access-grant-requester",
+          permissions: ["bb.accessGrants.create"],
+        })
+      );
+      mocks.state.workspacePolicy!.bindings.push(
+        create(BindingSchema, {
+          role: "roles/access-grant-requester",
+          members: ["user:member@example.com"],
+        })
+      );
+    });
+
+    const result = await getMaskingSetup({ workspaceName, projectName });
+
+    expect(step(result, "masking-exemptions").configure.status).toBe("unknown");
+    expect(result.justInTime).toMatchObject({
+      eligible: true,
+      exemptionFallback: false,
+    });
+  });
+
+  test("evaluates Access Grants independently of masking and instance licensing", async () => {
+    mocks.state.hasFeature = (feature) => feature === PlanFeature.FEATURE_JIT;
+
+    const result = await getMaskingSetup({ workspaceName, projectName });
+
+    expect(result.features.masking).toBe("unavailable");
+    expect(result.justInTime).toMatchObject({
+      feature: "available",
+      eligible: true,
+    });
+  });
+
+  test.each([
+    "disabled",
+    "inactive",
+    "create-denied",
+    "feature-unavailable",
+    "subscription-expired",
+    "subscription-unknown",
+    "permission-unknown",
+    "project-unknown",
+  ])("does not offer an Access Grant when %s", async (failure) => {
+    if (failure === "disabled" || failure === "inactive") {
+      mocks.getProject.mockResolvedValue(
+        create(ProjectSchema, {
+          name: projectName,
+          state: failure === "inactive" ? State.DELETED : State.ACTIVE,
+          allowJustInTimeAccess: failure !== "disabled",
+        })
+      );
+    } else if (failure === "create-denied") {
+      mocks.deniedProject.add("bb.accessGrants.create");
+    } else if (failure === "feature-unavailable") {
+      mocks.state.hasFeature = (feature) => feature !== PlanFeature.FEATURE_JIT;
+    } else if (failure === "subscription-expired") {
+      mocks.state.subscription!.expiresTime = create(TimestampSchema, {
+        seconds: BigInt(Math.floor(Date.now() / 1000) - 60),
+      });
+    } else if (failure === "subscription-unknown") {
+      mocks.refreshSubscription.mockResolvedValue(undefined);
+    } else if (failure === "permission-unknown") {
+      mocks.fetchCurrentUser.mockResolvedValue(undefined);
+    } else {
+      mocks.getIamPolicy.mockRejectedValue(new Error("Unavailable"));
+    }
+    mocks.deniedProject.add("bb.policies.updateMaskingExemptionPolicy");
+
+    const result = await getMaskingSetup({ workspaceName, projectName });
+
+    expect(result.justInTime.eligible).toBe(false);
+    expect(result.justInTime.exemptionFallback).toBe(false);
+  });
+
+  test("requires project scope before offering an Access Grant", async () => {
+    const result = await getMaskingSetup({ workspaceName });
+
+    expect(result.justInTime).toMatchObject({
+      create: { status: "needs-scope" },
+      eligible: false,
+      exemptionFallback: false,
+    });
+    expect(result.justInTime.enabled).toBeUndefined();
+  });
+
   test.each([
     [PlanType.FREE, "Community"],
     [PlanType.TEAM, "Pro"],

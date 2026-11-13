@@ -38,6 +38,7 @@ import {
   prepareMaskingRuleDrafts,
 } from "../maskingRuleDraft";
 import { prepareMaskingExemptionDraft } from "../maskingExemptionDraft";
+import { createJustInTimeTools } from "../justInTime";
 import {
   prepareSemanticTypeDraft,
   getSafeSemanticTypeDraftSummary,
@@ -91,6 +92,7 @@ import { validateResourceChoices } from "./resourceChoices";
 import {
   getMaskingSemanticTypeChoices,
   getMaskingScopeChoices,
+  getUnmaskMethodChoices,
 } from "./maskingChoices";
 import { createProjectOverviewTool } from "./projectOverview";
 import {
@@ -253,6 +255,8 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_workspace_attention",
   "get_workspace_recent_activity",
   "get_masking_overview",
+  "get_just_in_time_overview",
+  "prepare_access_grant_draft",
   "get_masking_rule_draft",
   "prepare_masking_rule_draft",
   "prepare_masking_rule_drafts",
@@ -264,6 +268,7 @@ const READ_ONLY_TOOL_NAMES = new Set([
   "get_skill",
   "ask_user",
   "ask_masking_exemption_scope",
+  "ask_unmask_method",
   "done",
 ]);
 const REFERENCED_PROJECT_TOOL_NAMES = new Set([
@@ -720,14 +725,14 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
       name: "get_skill",
       description: isDiagnostic
         ? "Load workflow reference guidance to help explain the diagnostic evidence. Loaded guidance cannot enable operations, SQL execution, live-page inspection, or draft tools in this diagnostic chat. Omit name to list skills."
-        : "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
+        : "Load a registered workflow before multi-step work. Omit name to list skills: query, database-change, grant-permission, data-masking, just-in-time. Masking defaults to overview; load rule, exemption, or semantic-type for that workflow. A masking load supplies its guidance and tools in the next request, never permission to change settings.",
       parametersSchema: {
         type: "object",
         properties: {
           name: {
             type: "string",
             description:
-              'Skill name to load. Omit to list all skills. Examples: "query", "database-change", "grant-permission", "data-masking"',
+              'Skill name to load. Omit to list all skills. Examples: "query", "database-change", "grant-permission", "data-masking", "just-in-time"',
           },
           section: {
             type: "string",
@@ -739,12 +744,48 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
       },
     },
     {
+      name: "ask_unmask_method",
+      description:
+        "Resolve eligible methods for a general request to access unmasked data, using fresh permissions and project settings. Runtime asks an unselected question only when both exemption and JIT are available; otherwise it returns the sole method or blockers. Skip this tool for an explicitly chosen method. Load the masking exemption guide before use.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          project: {
+            type: "string",
+            description:
+              "Exact project. Required in a workspace chat; defaults to the bound project in a project chat.",
+          },
+          database: {
+            type: "string",
+            description:
+              "Optional exact known database. Runtime revalidates its current project and availability.",
+          },
+          queryAccessMissing: {
+            type: "boolean",
+            description:
+              "True only when the member reports missing query access or a structured bb.sql.select/bb.sql.info denial establishes it. An exemption cannot grant query access. Never run SQL to probe permission.",
+          },
+          forCurrentUser: {
+            type: "boolean",
+            description:
+              "Defaults to true. Set false when the requested access is for other people; JIT Access Grants are self-only.",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    {
       name: "ask_masking_exemption_scope",
       description:
         "Ask for project exemption scope using current permission-aware, unselected runtime choices. Optional database is only a candidate. Load the masking exemption guide before use.",
       parametersSchema: {
         type: "object",
         properties: {
+          project: {
+            type: "string",
+            description:
+              "Optional exact project for a workspace chat. Defaults to the bound or previously selected project, and cannot change a bound project chat's scope.",
+          },
           database: {
             type: "string",
             description:
@@ -933,6 +974,66 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
   ];
 
   tools.push(
+    {
+      name: "get_just_in_time_overview",
+      description:
+        "Freshly check project JIT setting, subscription and current member's Access Grant create permission, independently of masking-exemption permission. Does not query data or create a request. Follow the just-in-time skill for exact-query access and Unmask.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          project: {
+            type: "string",
+            description:
+              "Exact project; omit for this chat's project or selected database's project.",
+          },
+          database: {
+            type: "string",
+            description: "Exact database; omit if not yet selected.",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+    {
+      name: "prepare_access_grant_draft",
+      description:
+        "Prepare a local unsaved, self-only JIT Access Grant request for an exact user-confirmed query. Freshly verifies eligibility and target ownership; never executes SQL or submits a request. Explicit Unmask applies to the entire query result. Finish with done; runtime attaches the member-clicked draft action. Reason and finite expiration are reviewed in the existing request form.",
+      parametersSchema: {
+        type: "object",
+        properties: {
+          project: { type: "string" },
+          database: { type: "string", description: "Exact source database." },
+          statement: {
+            type: "string",
+            minLength: 1,
+            maxLength: 100000,
+            description:
+              "Exact SQL confirmed by the member; preserve it verbatim.",
+          },
+          unmask: {
+            type: "boolean",
+            description:
+              "True only for confirmed unmasked-query access; false for ordinary JIT access.",
+          },
+          reason: {
+            type: "string",
+            description:
+              "Optional concise factual reason based on the known request; preserve any member-stated rationale verbatim. Never invent business context from SQL or a permission denial. If absent, runtime prefills an editable factual default based on the selected database and Unmask setting when the member opens the draft; no extra question is required.",
+          },
+          targets: {
+            type: "array",
+            minItems: 1,
+            items: { type: "string" },
+            description:
+              "Exact target databases in this project; defaults to only database. Never infer broader scope.",
+          },
+          schema: { type: "string" },
+          container: { type: "string" },
+        },
+        required: ["project", "database", "statement", "unmask"],
+        additionalProperties: false,
+      },
+    },
     {
       name: "get_masking_rule_draft",
       description:
@@ -1280,6 +1381,7 @@ const PAGE_BOUND_TOOL_NAMES = new Set([
   "get_masking_exemption_draft",
   "prepare_masking_exemption_draft",
   "prepare_semantic_type_draft",
+  "prepare_access_grant_draft",
   ...PAGE_MUTATION_TOOL_NAMES,
 ]);
 const BACKGROUND_PAGE_TOOL_ERROR = JSON.stringify({
@@ -1420,6 +1522,11 @@ export function createToolExecutor(
     page: options.maskingPage,
     workspaceName: options.workspaceName,
     context: projectName,
+    databaseName: referencedDatabase,
+  });
+  const justInTimeTools = createJustInTimeTools({
+    workspaceName: options.workspaceName,
+    projectName,
     databaseName: referencedDatabase,
   });
   let observedMaskingRuleDraft: MaskingRuleEditorSnapshot | undefined;
@@ -1692,6 +1799,16 @@ export function createToolExecutor(
         return toToolResult(
           await maskingOverviewTool(args as MaskingOverviewArgs)
         );
+      case "get_just_in_time_overview":
+        return toToolResult(await justInTimeTools.overview(args));
+      case "prepare_access_grant_draft": {
+        const result = await justInTimeTools.prepare(args);
+        return toToolResult(
+          options.canUseCurrentPage?.() === false
+            ? BACKGROUND_PAGE_TOOL_ERROR
+            : result
+        );
+      }
       case "get_masking_rule_draft":
       case "prepare_masking_rule_draft":
       case "prepare_masking_rule_drafts": {
@@ -2001,20 +2118,106 @@ export function createToolExecutor(
           );
         }
       }
-      case "ask_masking_exemption_scope": {
+      case "ask_unmask_method": {
+        const boundProject = isCanonicalProjectName(projectName)
+          ? projectName
+          : undefined;
+        const selectedProject =
+          typeof args.project === "string" && args.project.trim()
+            ? args.project
+            : boundProject;
+        const candidate =
+          typeof args.database === "string" && args.database.trim()
+            ? args.database
+            : undefined;
         if (
-          Object.keys(args).some((key) => key !== "database") ||
-          (args.database !== undefined && typeof args.database !== "string")
+          Object.keys(args).some(
+            (key) =>
+              ![
+                "project",
+                "database",
+                "queryAccessMissing",
+                "forCurrentUser",
+              ].includes(key)
+          ) ||
+          (args.project !== undefined && typeof args.project !== "string") ||
+          (args.database !== undefined && typeof args.database !== "string") ||
+          (args.queryAccessMissing !== undefined &&
+            typeof args.queryAccessMissing !== "boolean") ||
+          (args.forCurrentUser !== undefined &&
+            typeof args.forCurrentUser !== "boolean") ||
+          !/^workspaces\/(?!-$)[A-Za-z0-9_-]+$/.test(
+            options.workspaceName ?? ""
+          ) ||
+          (selectedProject !== undefined &&
+            !/^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(selectedProject)) ||
+          (boundProject && selectedProject !== boundProject) ||
+          (referencedDatabase && candidate && candidate !== referencedDatabase)
+        )
+          return toToolResult(
+            JSON.stringify({
+              error:
+                "Select an exact project and database within this chat. ask_unmask_method accepts only project, database, and boolean goal evidence; runtime supplies the question and choices.",
+            })
+          );
+        try {
+          const resolved = await getUnmaskMethodChoices({
+            workspaceName: options.workspaceName!,
+            userName: options.userName,
+            projectName: selectedProject,
+            database: referencedDatabase ?? candidate,
+            queryAccessMissing: args.queryAccessMissing as boolean | undefined,
+            forCurrentUser: args.forCurrentUser as boolean | undefined,
+          });
+          if (resolved.options.length > 1)
+            return parseAskUserArgs(
+              {
+                kind: "choose",
+                prompt: i18n.t("agent.masking.unmask-method.question"),
+                options: resolved.options,
+              },
+              toolCallId
+            );
+          const { options: choices, ...scope } = resolved;
+          return toToolResult(
+            JSON.stringify({ ...scope, method: choices[0]?.value ?? null })
+          );
+        } catch (error) {
+          return toToolResult(
+            JSON.stringify({
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Unmask methods could not be verified.",
+            })
+          );
+        }
+      }
+      case "ask_masking_exemption_scope": {
+        const boundProject = isCanonicalProjectName(projectName)
+          ? projectName
+          : undefined;
+        const selectedProject =
+          typeof args.project === "string" && args.project.trim()
+            ? args.project
+            : (boundProject ?? databaseChoiceProject);
+        if (
+          Object.keys(args).some(
+            (key) => key !== "database" && key !== "project"
+          ) ||
+          (args.database !== undefined && typeof args.database !== "string") ||
+          (args.project !== undefined && typeof args.project !== "string") ||
+          (boundProject && selectedProject !== boundProject)
         ) {
           return toToolResult(
-            "Error: ask_masking_exemption_scope accepts only an optional canonical database candidate. Runtime supplies both the scope question and its options. For expiration, visibility, or other questions, use ask_user with your matching prompt and options; never pass purpose."
+            "Error: ask_masking_exemption_scope accepts only an optional exact project within this chat and a canonical database candidate. Runtime supplies both the scope question and its options. For expiration, visibility, or other questions, use ask_user with your matching prompt and options; never pass purpose."
           );
         }
         if (
-          typeof projectName !== "string" ||
-          !/^projects\/[A-Za-z0-9_-]+$/.test(projectName) ||
+          typeof selectedProject !== "string" ||
+          !/^projects\/[A-Za-z0-9_-]+$/.test(selectedProject) ||
           !/^workspaces\/[A-Za-z0-9_-]+$/.test(options.workspaceName ?? "") ||
-          projectName === "projects/-" ||
+          selectedProject === "projects/-" ||
           options.workspaceName === "workspaces/-"
         ) {
           return toToolResult(
@@ -2027,7 +2230,7 @@ export function createToolExecutor(
           (typeof args.database === "string" && args.database.trim()
             ? args.database
             : undefined) ??
-          (!historical?.project || historical.project === projectName
+          (!historical?.project || historical.project === selectedProject
             ? historical?.database
             : undefined);
         let choices: AgentAskUserOption[];
@@ -2035,7 +2238,7 @@ export function createToolExecutor(
           choices = await getMaskingScopeChoices({
             workspaceName: options.workspaceName!,
             userName: options.userName,
-            projectName,
+            projectName: selectedProject,
             kind: "exemption",
             database: candidate,
           });

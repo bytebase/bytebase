@@ -44,9 +44,11 @@ import {
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
 import {
+  type AccessGrantDraft,
   type DeniedQueryRequestDraft,
   DeniedQueryRequestDraftStorageError,
   prepareAgentDeniedQueryRequestRoute,
+  validateDeniedQueryRequestDraft,
 } from "../logic/deniedQueryAccess";
 import { getAgentErrorSummary } from "../logic/errorDisplay";
 import {
@@ -104,6 +106,7 @@ import { ToolCallCard } from "./ToolCallCard";
 import { AgentTooltip } from "./ui/AgentTooltip";
 
 interface AgentChatProps {
+  onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
   className?: string;
   contextLabel?: string;
   onRetry?: () => void;
@@ -539,8 +542,10 @@ function PlanDraftButton({
 
 function AccessRequestDraftButton({
   draft,
+  onOpenAccessGrantDraft,
 }: {
   draft: DeniedQueryRequestDraft;
+  onOpenAccessGrantDraft?: AgentChatProps["onOpenAccessGrantDraft"];
 }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -549,6 +554,36 @@ function AccessRequestDraftButton({
     const handoffContext = captureAgentPageHandoffContext();
     setLoading(true);
     try {
+      if (draft.kind !== "requestRole") {
+        const reasonContext = {
+          database: draft.targets
+            .map((target) => target.split("/").at(-1))
+            .join(", "),
+        };
+        if (
+          !(await validateDeniedQueryRequestDraft(draft)) ||
+          !onOpenAccessGrantDraft?.({
+            ...draft,
+            reason: draft.reason?.trim()
+              ? draft.reason
+              : draft.unmask
+                ? t(
+                    "agent.access-grant-draft.default-unmask-reason",
+                    reasonContext
+                  )
+                : t("agent.access-grant-draft.default-reason", reasonContext),
+          })
+        ) {
+          useAppStore.getState().notify({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("agent.access-grant-draft.unavailable"),
+          });
+          return;
+        }
+        minimizeAgentAfterPageHandoff(handoffContext);
+        return;
+      }
       const route = await prepareAgentDeniedQueryRequestRoute(draft);
       const targetPath = router.resolve(route).fullPath;
       await router.push(route);
@@ -823,6 +858,7 @@ function renderBoundMentions(
 }
 
 export function AgentChat({
+  onOpenAccessGrantDraft,
   className,
   contextLabel,
   onRetry,
@@ -984,6 +1020,34 @@ export function AgentChat({
       }
     }
     return duplicateIndex;
+  }
+
+  function hasAccessGrantDraftAfter(toolCallMessage: AgentMessage): boolean {
+    const fullIndex = allMessages.findIndex(
+      (message) => message.id === toolCallMessage.id
+    );
+    if (fullIndex < 0) return false;
+
+    for (let index = fullIndex + 1; index < allMessages.length; index++) {
+      const message = allMessages[index];
+      if (message.role === "user") return false;
+      if (
+        message.role === "assistant" &&
+        message.content &&
+        !message.toolCalls?.length
+      ) {
+        const metadata = message.metadata;
+        const draft = metadata?.accessRequestDraft;
+        return Boolean(
+          draft &&
+            draft.kind !== "requestRole" &&
+            !metadata?.pending &&
+            !metadata?.error &&
+            metadata?.runId === toolCallMessage.metadata?.runId
+        );
+      }
+    }
+    return false;
   }
 
   function dismiss() {
@@ -1346,6 +1410,7 @@ export function AgentChat({
                             ) : msg.metadata?.accessRequestDraft ? (
                               <AccessRequestDraftButton
                                 draft={msg.metadata.accessRequestDraft}
+                                onOpenAccessGrantDraft={onOpenAccessGrantDraft}
                               />
                             ) : (
                               <HandoffLink handoff={handoff} />
@@ -1369,6 +1434,10 @@ export function AgentChat({
                         toolCall.id,
                         getToolCallDuplicateIndex(toolCalls, index)
                       )}
+                      hasRecoveryDraft={
+                        toolCall.name === "done" &&
+                        hasAccessGrantDraftAfter(msg)
+                      }
                     />
                   ))}
                 </div>

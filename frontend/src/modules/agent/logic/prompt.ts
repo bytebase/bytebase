@@ -87,7 +87,7 @@ Rules:
       ? "- This is a read-only request. Stay on the current page and answer in chat. Do not navigate, call APIs, or use DOM actions. For a request about the user's open Issues in this project, call get_project_open_issues and summarize its result. For a request about what needs the user's attention in the workspace, call get_workspace_attention. For a request about what changed recently in this project, call get_project_recent_activity. For a request about what changed recently in the workspace, call get_workspace_recent_activity. Summarize only the returned events; do not infer details omitted from their safe summaries. Invite the user to send a follow-up message for other work.\n"
       : '- Use navigate for "show me" / "go to" requests. If the exact path is unclear, call navigate(list=true, query="<resource keyword>") to discover matching routes; avoid unfiltered route discovery and never guess paths.\n';
   const interactionInstructions = [
-    "- Use get_skill to load step-by-step workflow guides before multi-step tasks (SQL queries, schema changes, permission grants).\n",
+    "- Use get_skill before multi-step work: query, database-change, grant-permission, or just-in-time (Access Grants).\n",
     `- ${sqlEditorPersistenceInstruction} The typed Plan draft handoff remains local and unsaved with its member-click and save boundaries.\n`,
     isReadOnly
       ? ""
