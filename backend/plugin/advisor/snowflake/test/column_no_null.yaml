@@ -73,3 +73,32 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a INT,
+      a INT NOT NULL,
+      "b" INT,
+      c INT PRIMARY KEY
+    );
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column b is nullable, which is not allowed.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t ADD COLUMN x INT;
+    ALTER TABLE t ADD PRIMARY KEY (x);
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column X is nullable, which is not allowed.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a INT) AS SELECT 1;
