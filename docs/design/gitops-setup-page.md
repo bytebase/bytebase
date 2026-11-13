@@ -1,6 +1,6 @@
 # GitOps setup page
 
-Status: implemented in this PR · 2026-11-12 · [BYT-10423](https://linear.app/bytebase/issue/BYT-10423) · builds on the workload identity dialog, [#21942], and on sign-in inside the action, [#21974]
+Status: implemented in this PR · 2026-11-13 · [BYT-10423](https://linear.app/bytebase/issue/BYT-10423) · builds on the workload identity dialog, [#21942], and on sign-in inside the action, [#21974]
 
 The project's GitOps page sets up database changes by pull request: a workflow in the team's
 repository asks Bytebase to review each pull request and to deploy on merge.
