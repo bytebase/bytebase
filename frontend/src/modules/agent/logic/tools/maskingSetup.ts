@@ -11,9 +11,13 @@ import {
   getMinimumRequiredPlan,
   hasFeature as planHasFeature,
 } from "@/types/plan";
+import { State } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { GetIamPolicyRequestSchema } from "@/types/proto-es/v1/iam_policy_pb";
-import type { Project } from "@/types/proto-es/v1/project_service_pb";
+import {
+  GetProjectRequestSchema,
+  type Project,
+} from "@/types/proto-es/v1/project_service_pb";
 import {
   PlanFeature,
   PlanType,
@@ -104,6 +108,7 @@ export async function getMaskingSetup({
   database?: Database;
 }): Promise<{
   source: "frontend-permission-check";
+  project?: { name: string; state: State };
   features: {
     masking: FeatureStatus;
     classification: FeatureStatus;
@@ -116,6 +121,14 @@ export async function getMaskingSetup({
     "masking" | "classification" | "catalogMasking",
     FeatureRequirement
   >;
+  justInTime: {
+    enabled?: boolean;
+    feature: FeatureStatus;
+    featureRequirement: FeatureRequirement;
+    create: PermissionEvidence;
+    eligible: boolean;
+    exemptionFallback: boolean;
+  };
   steps: SetupStep[];
   scopeAccess?: {
     project: PermissionEvidence;
@@ -149,7 +162,8 @@ export async function getMaskingSetup({
     return Boolean(
       userName &&
         state.currentUser?.name === userName &&
-        state.serverInfo?.workspace === workspaceName
+        (state.serverInfo?.workspace ?? state.currentUser?.workspace) ===
+          workspaceName
     );
   };
   workspaceReady &&= sameContext();
@@ -171,9 +185,10 @@ export async function getMaskingSetup({
     workspaceReady
   ) {
     try {
-      const loaded = await useAppStore
-        .getState()
-        .getOrFetchProjectByName(projectName, true);
+      const loaded = await projectServiceClientConnect.getProject(
+        create(GetProjectRequestSchema, { name: projectName }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      );
       if (loaded.name === projectName) {
         project = loaded;
         const policy = await projectServiceClientConnect.getIamPolicy(
@@ -329,9 +344,35 @@ export async function getMaskingSetup({
       ...(reason ? { reason } : {}),
     };
   };
+  const exemptionConfigure = projectPermission([
+    "bb.policies.createMaskingExemptionPolicy",
+    "bb.policies.updateMaskingExemptionPolicy",
+    "bb.policies.getMaskingExemptionPolicy",
+    "bb.databases.list",
+    "bb.databaseCatalogs.get",
+  ]);
+  const jitFeature = feature(PlanFeature.FEATURE_JIT);
+  const jitCreate = projectPermission(["bb.accessGrants.create"]);
+  const jitEnabled = projectReady
+    ? project?.state === State.ACTIVE && project.allowJustInTimeAccess
+    : undefined;
+  const jitEligible = Boolean(
+    jitEnabled && jitFeature === "available" && jitCreate.status === "allowed"
+  );
 
   return {
     source: "frontend-permission-check",
+    ...(projectReady && project
+      ? { project: { name: project.name, state: project.state } }
+      : {}),
+    justInTime: {
+      ...(jitEnabled !== undefined ? { enabled: jitEnabled } : {}),
+      feature: jitFeature,
+      featureRequirement: requirement(PlanFeature.FEATURE_JIT, jitFeature),
+      create: jitCreate,
+      eligible: jitEligible,
+      exemptionFallback: exemptionConfigure.status === "denied" && jitEligible,
+    },
     subscription:
       subscriptionKnown && currentPlan !== undefined
         ? {
@@ -419,13 +460,7 @@ export async function getMaskingSetup({
           "bb.databases.get",
           "bb.policies.getMaskingExemptionPolicy",
         ]),
-        configure: projectPermission([
-          "bb.policies.createMaskingExemptionPolicy",
-          "bb.policies.updateMaskingExemptionPolicy",
-          "bb.policies.getMaskingExemptionPolicy",
-          "bb.databases.list",
-          "bb.databaseCatalogs.get",
-        ]),
+        configure: exemptionConfigure,
       },
     ],
   };

@@ -9,6 +9,7 @@ package v1
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
@@ -26,6 +27,53 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// Database service variant, independent of engine and registration method.
+type Vendor int32
+
+const (
+	Vendor_VENDOR_UNSPECIFIED Vendor = 0
+	Vendor_NEON               Vendor = 1
+)
+
+// Enum value maps for Vendor.
+var (
+	Vendor_name = map[int32]string{
+		0: "VENDOR_UNSPECIFIED",
+		1: "NEON",
+	}
+	Vendor_value = map[string]int32{
+		"VENDOR_UNSPECIFIED": 0,
+		"NEON":               1,
+	}
+)
+
+func (x Vendor) Enum() *Vendor {
+	p := new(Vendor)
+	*p = x
+	return p
+}
+
+func (x Vendor) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Vendor) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_instance_service_proto_enumTypes[0].Descriptor()
+}
+
+func (Vendor) Type() protoreflect.EnumType {
+	return &file_v1_instance_service_proto_enumTypes[0]
+}
+
+func (x Vendor) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Vendor.Descriptor instead.
+func (Vendor) EnumDescriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{0}
+}
 
 type DataSourceType int32
 
@@ -63,11 +111,11 @@ func (x DataSourceType) String() string {
 }
 
 func (DataSourceType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[0].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[1].Descriptor()
 }
 
 func (DataSourceType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[0]
+	return &file_v1_instance_service_proto_enumTypes[1]
 }
 
 func (x DataSourceType) Number() protoreflect.EnumNumber {
@@ -76,7 +124,56 @@ func (x DataSourceType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceType.Descriptor instead.
 func (DataSourceType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{1}
+}
+
+type InstanceImportFailure_CreationOutcome int32
+
+const (
+	InstanceImportFailure_CREATION_OUTCOME_UNSPECIFIED InstanceImportFailure_CreationOutcome = 0
+	InstanceImportFailure_NOT_CREATED                  InstanceImportFailure_CreationOutcome = 1
+	InstanceImportFailure_UNKNOWN                      InstanceImportFailure_CreationOutcome = 2
+)
+
+// Enum value maps for InstanceImportFailure_CreationOutcome.
+var (
+	InstanceImportFailure_CreationOutcome_name = map[int32]string{
+		0: "CREATION_OUTCOME_UNSPECIFIED",
+		1: "NOT_CREATED",
+		2: "UNKNOWN",
+	}
+	InstanceImportFailure_CreationOutcome_value = map[string]int32{
+		"CREATION_OUTCOME_UNSPECIFIED": 0,
+		"NOT_CREATED":                  1,
+		"UNKNOWN":                      2,
+	}
+)
+
+func (x InstanceImportFailure_CreationOutcome) Enum() *InstanceImportFailure_CreationOutcome {
+	p := new(InstanceImportFailure_CreationOutcome)
+	*p = x
+	return p
+}
+
+func (x InstanceImportFailure_CreationOutcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (InstanceImportFailure_CreationOutcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_instance_service_proto_enumTypes[2].Descriptor()
+}
+
+func (InstanceImportFailure_CreationOutcome) Type() protoreflect.EnumType {
+	return &file_v1_instance_service_proto_enumTypes[2]
+}
+
+func (x InstanceImportFailure_CreationOutcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use InstanceImportFailure_CreationOutcome.Descriptor instead.
+func (InstanceImportFailure_CreationOutcome) EnumDescriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{30, 0}
 }
 
 type DataSourceExternalSecret_SecretType int32
@@ -123,11 +220,11 @@ func (x DataSourceExternalSecret_SecretType) String() string {
 }
 
 func (DataSourceExternalSecret_SecretType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[1].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[3].Descriptor()
 }
 
 func (DataSourceExternalSecret_SecretType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[1]
+	return &file_v1_instance_service_proto_enumTypes[3]
 }
 
 func (x DataSourceExternalSecret_SecretType) Number() protoreflect.EnumNumber {
@@ -136,7 +233,7 @@ func (x DataSourceExternalSecret_SecretType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_SecretType.Descriptor instead.
 func (DataSourceExternalSecret_SecretType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33, 0}
 }
 
 type DataSourceExternalSecret_AuthType int32
@@ -175,11 +272,11 @@ func (x DataSourceExternalSecret_AuthType) String() string {
 }
 
 func (DataSourceExternalSecret_AuthType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[2].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[4].Descriptor()
 }
 
 func (DataSourceExternalSecret_AuthType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[2]
+	return &file_v1_instance_service_proto_enumTypes[4]
 }
 
 func (x DataSourceExternalSecret_AuthType) Number() protoreflect.EnumNumber {
@@ -188,7 +285,7 @@ func (x DataSourceExternalSecret_AuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_AuthType.Descriptor instead.
 func (DataSourceExternalSecret_AuthType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33, 1}
 }
 
 type DataSourceExternalSecret_TokenType int32
@@ -233,11 +330,11 @@ func (x DataSourceExternalSecret_TokenType) String() string {
 }
 
 func (DataSourceExternalSecret_TokenType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[3].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[5].Descriptor()
 }
 
 func (DataSourceExternalSecret_TokenType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[3]
+	return &file_v1_instance_service_proto_enumTypes[5]
 }
 
 func (x DataSourceExternalSecret_TokenType) Number() protoreflect.EnumNumber {
@@ -246,7 +343,7 @@ func (x DataSourceExternalSecret_TokenType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_TokenType.Descriptor instead.
 func (DataSourceExternalSecret_TokenType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33, 2}
 }
 
 type DataSourceExternalSecret_AppRoleAuthOption_SecretType int32
@@ -285,11 +382,11 @@ func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) String() string {
 }
 
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[4].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[6].Descriptor()
 }
 
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[4]
+	return &file_v1_instance_service_proto_enumTypes[6]
 }
 
 func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Number() protoreflect.EnumNumber {
@@ -298,7 +395,7 @@ func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Number() protoref
 
 // Deprecated: Use DataSourceExternalSecret_AppRoleAuthOption_SecretType.Descriptor instead.
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33, 0, 0}
 }
 
 type DataSource_AuthenticationType int32
@@ -340,11 +437,11 @@ func (x DataSource_AuthenticationType) String() string {
 }
 
 func (DataSource_AuthenticationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[5].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[7].Descriptor()
 }
 
 func (DataSource_AuthenticationType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[5]
+	return &file_v1_instance_service_proto_enumTypes[7]
 }
 
 func (x DataSource_AuthenticationType) Number() protoreflect.EnumNumber {
@@ -353,7 +450,7 @@ func (x DataSource_AuthenticationType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_AuthenticationType.Descriptor instead.
 func (DataSource_AuthenticationType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 0}
 }
 
 // CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
@@ -393,11 +490,11 @@ func (x DataSource_CloudSQLIPType) String() string {
 }
 
 func (DataSource_CloudSQLIPType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[6].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[8].Descriptor()
 }
 
 func (DataSource_CloudSQLIPType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[6]
+	return &file_v1_instance_service_proto_enumTypes[8]
 }
 
 func (x DataSource_CloudSQLIPType) Number() protoreflect.EnumNumber {
@@ -406,7 +503,7 @@ func (x DataSource_CloudSQLIPType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_CloudSQLIPType.Descriptor instead.
 func (DataSource_CloudSQLIPType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 1}
 }
 
 type DataSource_RedisType int32
@@ -445,11 +542,11 @@ func (x DataSource_RedisType) String() string {
 }
 
 func (DataSource_RedisType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_instance_service_proto_enumTypes[7].Descriptor()
+	return file_v1_instance_service_proto_enumTypes[9].Descriptor()
 }
 
 func (DataSource_RedisType) Type() protoreflect.EnumType {
-	return &file_v1_instance_service_proto_enumTypes[7]
+	return &file_v1_instance_service_proto_enumTypes[9]
 }
 
 func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
@@ -458,7 +555,7 @@ func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_RedisType.Descriptor instead.
 func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 2}
 }
 
 type GetInstanceRequest struct {
@@ -1607,6 +1704,836 @@ func (x *UpdateDataSourceRequest) GetAllowMissing() bool {
 	return false
 }
 
+type DiscoverNeonBranchesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, branches are discovered for the
+	// workspace collection.
+	Parent *string `protobuf:"bytes,1,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
+	// Used only during this request and never persisted.
+	ApiKey string `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	// Neon project filter. Required for project-scoped Neon keys.
+	ProjectId string `protobuf:"bytes,3,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// Defaults to 50. Values above 100 are capped; negative values are invalid.
+	PageSize int32 `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Opaque continuation token containing no credentials. The destination and
+	// project filter must match the original request; page size may change.
+	PageToken     string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiscoverNeonBranchesRequest) Reset() {
+	*x = DiscoverNeonBranchesRequest{}
+	mi := &file_v1_instance_service_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiscoverNeonBranchesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiscoverNeonBranchesRequest) ProtoMessage() {}
+
+func (x *DiscoverNeonBranchesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiscoverNeonBranchesRequest.ProtoReflect.Descriptor instead.
+func (*DiscoverNeonBranchesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *DiscoverNeonBranchesRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
+}
+
+func (x *DiscoverNeonBranchesRequest) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+func (x *DiscoverNeonBranchesRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *DiscoverNeonBranchesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *DiscoverNeonBranchesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type DiscoverNeonBranchesResponse struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Branches []*NeonBranch          `protobuf:"bytes,1,rep,name=branches,proto3" json:"branches,omitempty"`
+	// Only an empty token indicates completion; a page may contain zero branches.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	// Projects that could not be enumerated must not be interpreted as empty.
+	Failures      []*NeonProjectDiscoveryFailure `protobuf:"bytes,3,rep,name=failures,proto3" json:"failures,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiscoverNeonBranchesResponse) Reset() {
+	*x = DiscoverNeonBranchesResponse{}
+	mi := &file_v1_instance_service_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiscoverNeonBranchesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiscoverNeonBranchesResponse) ProtoMessage() {}
+
+func (x *DiscoverNeonBranchesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiscoverNeonBranchesResponse.ProtoReflect.Descriptor instead.
+func (*DiscoverNeonBranchesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *DiscoverNeonBranchesResponse) GetBranches() []*NeonBranch {
+	if x != nil {
+		return x.Branches
+	}
+	return nil
+}
+
+func (x *DiscoverNeonBranchesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+func (x *DiscoverNeonBranchesResponse) GetFailures() []*NeonProjectDiscoveryFailure {
+	if x != nil {
+		return x.Failures
+	}
+	return nil
+}
+
+type NeonBranch struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId    string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	ProjectTitle string                 `protobuf:"bytes,2,opt,name=project_title,json=projectTitle,proto3" json:"project_title,omitempty"`
+	BranchId     string                 `protobuf:"bytes,3,opt,name=branch_id,json=branchId,proto3" json:"branch_id,omitempty"`
+	BranchTitle  string                 `protobuf:"bytes,4,opt,name=branch_title,json=branchTitle,proto3" json:"branch_title,omitempty"`
+	Databases    []*NeonDatabase        `protobuf:"bytes,5,rep,name=databases,proto3" json:"databases,omitempty"`
+	Roles        []string               `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	// Absent when inspection succeeded and a direct read-write endpoint exists.
+	// Successful discovery does not establish database access or privileges.
+	DiscoveryError *status.Status `protobuf:"bytes,7,opt,name=discovery_error,json=discoveryError,proto3" json:"discovery_error,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *NeonBranch) Reset() {
+	*x = NeonBranch{}
+	mi := &file_v1_instance_service_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NeonBranch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NeonBranch) ProtoMessage() {}
+
+func (x *NeonBranch) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NeonBranch.ProtoReflect.Descriptor instead.
+func (*NeonBranch) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *NeonBranch) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *NeonBranch) GetProjectTitle() string {
+	if x != nil {
+		return x.ProjectTitle
+	}
+	return ""
+}
+
+func (x *NeonBranch) GetBranchId() string {
+	if x != nil {
+		return x.BranchId
+	}
+	return ""
+}
+
+func (x *NeonBranch) GetBranchTitle() string {
+	if x != nil {
+		return x.BranchTitle
+	}
+	return ""
+}
+
+func (x *NeonBranch) GetDatabases() []*NeonDatabase {
+	if x != nil {
+		return x.Databases
+	}
+	return nil
+}
+
+func (x *NeonBranch) GetRoles() []string {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+func (x *NeonBranch) GetDiscoveryError() *status.Status {
+	if x != nil {
+		return x.DiscoveryError
+	}
+	return nil
+}
+
+type NeonDatabase struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Owner         string                 `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NeonDatabase) Reset() {
+	*x = NeonDatabase{}
+	mi := &file_v1_instance_service_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NeonDatabase) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NeonDatabase) ProtoMessage() {}
+
+func (x *NeonDatabase) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NeonDatabase.ProtoReflect.Descriptor instead.
+func (*NeonDatabase) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *NeonDatabase) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *NeonDatabase) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+type NeonProjectDiscoveryFailure struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Status        *status.Status         `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NeonProjectDiscoveryFailure) Reset() {
+	*x = NeonProjectDiscoveryFailure{}
+	mi := &file_v1_instance_service_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NeonProjectDiscoveryFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NeonProjectDiscoveryFailure) ProtoMessage() {}
+
+func (x *NeonProjectDiscoveryFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NeonProjectDiscoveryFailure.ProtoReflect.Descriptor instead.
+func (*NeonProjectDiscoveryFailure) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *NeonProjectDiscoveryFailure) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *NeonProjectDiscoveryFailure) GetStatus() *status.Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+type ImportInstancesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The parent, which owns this collection of instances.
+	// Format: projects/{project}. If omitted, every entry is created in the
+	// workspace collection; otherwise, every entry is created in this project
+	// collection.
+	Parent *string `protobuf:"bytes,1,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
+	// Control-plane credential. Required, used only during this request, and
+	// never persisted.
+	//
+	// Types that are valid to be assigned to Credential:
+	//
+	//	*ImportInstancesRequest_NeonCredential
+	Credential isImportInstancesRequest_Credential `protobuf_oneof:"credential"`
+	// Between 1 and 20 entries. Every entry's source must belong to the
+	// credential. Duplicate target IDs or sources are rejected before any
+	// creation. Successful entries are not rolled back.
+	Imports       []*InstanceImport `protobuf:"bytes,3,rep,name=imports,proto3" json:"imports,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportInstancesRequest) Reset() {
+	*x = ImportInstancesRequest{}
+	mi := &file_v1_instance_service_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportInstancesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportInstancesRequest) ProtoMessage() {}
+
+func (x *ImportInstancesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportInstancesRequest.ProtoReflect.Descriptor instead.
+func (*ImportInstancesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ImportInstancesRequest) GetParent() string {
+	if x != nil && x.Parent != nil {
+		return *x.Parent
+	}
+	return ""
+}
+
+func (x *ImportInstancesRequest) GetCredential() isImportInstancesRequest_Credential {
+	if x != nil {
+		return x.Credential
+	}
+	return nil
+}
+
+func (x *ImportInstancesRequest) GetNeonCredential() *NeonCredential {
+	if x != nil {
+		if x, ok := x.Credential.(*ImportInstancesRequest_NeonCredential); ok {
+			return x.NeonCredential
+		}
+	}
+	return nil
+}
+
+func (x *ImportInstancesRequest) GetImports() []*InstanceImport {
+	if x != nil {
+		return x.Imports
+	}
+	return nil
+}
+
+type isImportInstancesRequest_Credential interface {
+	isImportInstancesRequest_Credential()
+}
+
+type ImportInstancesRequest_NeonCredential struct {
+	NeonCredential *NeonCredential `protobuf:"bytes,2,opt,name=neon_credential,json=neonCredential,proto3,oneof"`
+}
+
+func (*ImportInstancesRequest_NeonCredential) isImportInstancesRequest_Credential() {}
+
+type NeonCredential struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ApiKey        string                 `protobuf:"bytes,1,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NeonCredential) Reset() {
+	*x = NeonCredential{}
+	mi := &file_v1_instance_service_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NeonCredential) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NeonCredential) ProtoMessage() {}
+
+func (x *NeonCredential) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NeonCredential.ProtoReflect.Descriptor instead.
+func (*NeonCredential) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *NeonCredential) GetApiKey() string {
+	if x != nil {
+		return x.ApiKey
+	}
+	return ""
+}
+
+type InstanceImport struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Bytebase instance resource ID. Uniqueness does not provide idempotency.
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	// The instance to register, with the same meaning as in CreateInstance.
+	// The source determines engine, vendor, and data_sources, which must be
+	// unset. The workspace license determines activation, so a supplied value
+	// is ignored.
+	Instance *Instance `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
+	// Existing database user for the instance's ADMIN data source. The server
+	// derives the host and port from the source.
+	Username string `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	// Initial connection target, independent of instance.sync_databases.
+	ConnectionDatabase string `protobuf:"bytes,4,opt,name=connection_database,json=connectionDatabase,proto3" json:"connection_database,omitempty"`
+	// Omit to let the vendor supply the password. A supplied empty value is invalid.
+	Password *string `protobuf:"bytes,5,opt,name=password,proto3,oneof" json:"password,omitempty"`
+	// Required. The vendor resource this instance connects to.
+	//
+	// Types that are valid to be assigned to Source:
+	//
+	//	*InstanceImport_NeonBranch
+	Source        isInstanceImport_Source `protobuf_oneof:"source"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstanceImport) Reset() {
+	*x = InstanceImport{}
+	mi := &file_v1_instance_service_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstanceImport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceImport) ProtoMessage() {}
+
+func (x *InstanceImport) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceImport.ProtoReflect.Descriptor instead.
+func (*InstanceImport) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *InstanceImport) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *InstanceImport) GetInstance() *Instance {
+	if x != nil {
+		return x.Instance
+	}
+	return nil
+}
+
+func (x *InstanceImport) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *InstanceImport) GetConnectionDatabase() string {
+	if x != nil {
+		return x.ConnectionDatabase
+	}
+	return ""
+}
+
+func (x *InstanceImport) GetPassword() string {
+	if x != nil && x.Password != nil {
+		return *x.Password
+	}
+	return ""
+}
+
+func (x *InstanceImport) GetSource() isInstanceImport_Source {
+	if x != nil {
+		return x.Source
+	}
+	return nil
+}
+
+func (x *InstanceImport) GetNeonBranch() *NeonBranchSource {
+	if x != nil {
+		if x, ok := x.Source.(*InstanceImport_NeonBranch); ok {
+			return x.NeonBranch
+		}
+	}
+	return nil
+}
+
+type isInstanceImport_Source interface {
+	isInstanceImport_Source()
+}
+
+type InstanceImport_NeonBranch struct {
+	NeonBranch *NeonBranchSource `protobuf:"bytes,20,opt,name=neon_branch,json=neonBranch,proto3,oneof"`
+}
+
+func (*InstanceImport_NeonBranch) isInstanceImport_Source() {}
+
+type NeonBranchSource struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	BranchId      string                 `protobuf:"bytes,2,opt,name=branch_id,json=branchId,proto3" json:"branch_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NeonBranchSource) Reset() {
+	*x = NeonBranchSource{}
+	mi := &file_v1_instance_service_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NeonBranchSource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NeonBranchSource) ProtoMessage() {}
+
+func (x *NeonBranchSource) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NeonBranchSource.ProtoReflect.Descriptor instead.
+func (*NeonBranchSource) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *NeonBranchSource) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *NeonBranchSource) GetBranchId() string {
+	if x != nil {
+		return x.BranchId
+	}
+	return ""
+}
+
+type ImportInstancesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Exactly one result per entry, in request order.
+	Results       []*InstanceImportResult `protobuf:"bytes,1,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ImportInstancesResponse) Reset() {
+	*x = ImportInstancesResponse{}
+	mi := &file_v1_instance_service_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ImportInstancesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportInstancesResponse) ProtoMessage() {}
+
+func (x *ImportInstancesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportInstancesResponse.ProtoReflect.Descriptor instead.
+func (*ImportInstancesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ImportInstancesResponse) GetResults() []*InstanceImportResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type InstanceImportResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Outcome:
+	//
+	//	*InstanceImportResult_Imported
+	//	*InstanceImportResult_Failure
+	Outcome       isInstanceImportResult_Outcome `protobuf_oneof:"outcome"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstanceImportResult) Reset() {
+	*x = InstanceImportResult{}
+	mi := &file_v1_instance_service_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstanceImportResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceImportResult) ProtoMessage() {}
+
+func (x *InstanceImportResult) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceImportResult.ProtoReflect.Descriptor instead.
+func (*InstanceImportResult) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *InstanceImportResult) GetOutcome() isInstanceImportResult_Outcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return nil
+}
+
+func (x *InstanceImportResult) GetImported() *Instance {
+	if x != nil {
+		if x, ok := x.Outcome.(*InstanceImportResult_Imported); ok {
+			return x.Imported
+		}
+	}
+	return nil
+}
+
+func (x *InstanceImportResult) GetFailure() *InstanceImportFailure {
+	if x != nil {
+		if x, ok := x.Outcome.(*InstanceImportResult_Failure); ok {
+			return x.Failure
+		}
+	}
+	return nil
+}
+
+type isInstanceImportResult_Outcome interface {
+	isInstanceImportResult_Outcome()
+}
+
+type InstanceImportResult_Imported struct {
+	// Confirms registration, not synchronization.
+	Imported *Instance `protobuf:"bytes,1,opt,name=imported,proto3,oneof"`
+}
+
+type InstanceImportResult_Failure struct {
+	Failure *InstanceImportFailure `protobuf:"bytes,2,opt,name=failure,proto3,oneof"`
+}
+
+func (*InstanceImportResult_Imported) isInstanceImportResult_Outcome() {}
+
+func (*InstanceImportResult_Failure) isInstanceImportResult_Outcome() {}
+
+type InstanceImportFailure struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Status *status.Status         `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// Always populated. Unknown outcomes must be reconciled before retrying.
+	CreationOutcome InstanceImportFailure_CreationOutcome `protobuf:"varint,2,opt,name=creation_outcome,json=creationOutcome,proto3,enum=bytebase.v1.InstanceImportFailure_CreationOutcome" json:"creation_outcome,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *InstanceImportFailure) Reset() {
+	*x = InstanceImportFailure{}
+	mi := &file_v1_instance_service_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstanceImportFailure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceImportFailure) ProtoMessage() {}
+
+func (x *InstanceImportFailure) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceImportFailure.ProtoReflect.Descriptor instead.
+func (*InstanceImportFailure) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *InstanceImportFailure) GetStatus() *status.Status {
+	if x != nil {
+		return x.Status
+	}
+	return nil
+}
+
+func (x *InstanceImportFailure) GetCreationOutcome() InstanceImportFailure_CreationOutcome {
+	if x != nil {
+		return x.CreationOutcome
+	}
+	return InstanceImportFailure_CREATION_OUTCOME_UNSPECIFIED
+}
+
 type SyncDatabases struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Databases     []string               `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
@@ -1616,7 +2543,7 @@ type SyncDatabases struct {
 
 func (x *SyncDatabases) Reset() {
 	*x = SyncDatabases{}
-	mi := &file_v1_instance_service_proto_msgTypes[19]
+	mi := &file_v1_instance_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1628,7 +2555,7 @@ func (x *SyncDatabases) String() string {
 func (*SyncDatabases) ProtoMessage() {}
 
 func (x *SyncDatabases) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[19]
+	mi := &file_v1_instance_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +2568,7 @@ func (x *SyncDatabases) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabases.ProtoReflect.Descriptor instead.
 func (*SyncDatabases) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *SyncDatabases) GetDatabases() []string {
@@ -1684,14 +2611,16 @@ type Instance struct {
 	LastSyncTime *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=last_sync_time,json=lastSyncTime,proto3" json:"last_sync_time,omitempty"`
 	// Labels are key-value pairs that can be attached to the instance.
 	// For example, { "org_group": "infrastructure", "environment": "production" }
-	Labels        map[string]string `protobuf:"bytes,16,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Labels map[string]string `protobuf:"bytes,16,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Database service variant. Unspecified retains generic connection behavior.
+	Vendor        Vendor `protobuf:"varint,17,opt,name=vendor,proto3,enum=bytebase.v1.Vendor" json:"vendor,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Instance) Reset() {
 	*x = Instance{}
-	mi := &file_v1_instance_service_proto_msgTypes[20]
+	mi := &file_v1_instance_service_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1703,7 +2632,7 @@ func (x *Instance) String() string {
 func (*Instance) ProtoMessage() {}
 
 func (x *Instance) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[20]
+	mi := &file_v1_instance_service_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1716,7 +2645,7 @@ func (x *Instance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instance.ProtoReflect.Descriptor instead.
 func (*Instance) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *Instance) GetName() string {
@@ -1817,6 +2746,13 @@ func (x *Instance) GetLabels() map[string]string {
 	return nil
 }
 
+func (x *Instance) GetVendor() Vendor {
+	if x != nil {
+		return x.Vendor
+	}
+	return Vendor_VENDOR_UNSPECIFIED
+}
+
 type DataSourceExternalSecret struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The type of external secret store.
@@ -1856,7 +2792,7 @@ type DataSourceExternalSecret struct {
 
 func (x *DataSourceExternalSecret) Reset() {
 	*x = DataSourceExternalSecret{}
-	mi := &file_v1_instance_service_proto_msgTypes[21]
+	mi := &file_v1_instance_service_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1868,7 +2804,7 @@ func (x *DataSourceExternalSecret) String() string {
 func (*DataSourceExternalSecret) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[21]
+	mi := &file_v1_instance_service_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1881,7 +2817,7 @@ func (x *DataSourceExternalSecret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceExternalSecret.ProtoReflect.Descriptor instead.
 func (*DataSourceExternalSecret) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *DataSourceExternalSecret) GetSecretType() DataSourceExternalSecret_SecretType {
@@ -2125,7 +3061,7 @@ type DataSource struct {
 
 func (x *DataSource) Reset() {
 	*x = DataSource{}
-	mi := &file_v1_instance_service_proto_msgTypes[22]
+	mi := &file_v1_instance_service_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2137,7 +3073,7 @@ func (x *DataSource) String() string {
 func (*DataSource) ProtoMessage() {}
 
 func (x *DataSource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[22]
+	mi := &file_v1_instance_service_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2150,7 +3086,7 @@ func (x *DataSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource.ProtoReflect.Descriptor instead.
 func (*DataSource) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *DataSource) GetId() string {
@@ -2569,7 +3505,7 @@ type InstanceResource struct {
 
 func (x *InstanceResource) Reset() {
 	*x = InstanceResource{}
-	mi := &file_v1_instance_service_proto_msgTypes[23]
+	mi := &file_v1_instance_service_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2581,7 +3517,7 @@ func (x *InstanceResource) String() string {
 func (*InstanceResource) ProtoMessage() {}
 
 func (x *InstanceResource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[23]
+	mi := &file_v1_instance_service_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2594,7 +3530,7 @@ func (x *InstanceResource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceResource.ProtoReflect.Descriptor instead.
 func (*InstanceResource) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *InstanceResource) GetTitle() string {
@@ -2658,7 +3594,7 @@ type SASLConfig struct {
 
 func (x *SASLConfig) Reset() {
 	*x = SASLConfig{}
-	mi := &file_v1_instance_service_proto_msgTypes[24]
+	mi := &file_v1_instance_service_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2670,7 +3606,7 @@ func (x *SASLConfig) String() string {
 func (*SASLConfig) ProtoMessage() {}
 
 func (x *SASLConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[24]
+	mi := &file_v1_instance_service_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2683,7 +3619,7 @@ func (x *SASLConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SASLConfig.ProtoReflect.Descriptor instead.
 func (*SASLConfig) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *SASLConfig) GetMechanism() isSASLConfig_Mechanism {
@@ -2735,7 +3671,7 @@ type KerberosConfig struct {
 
 func (x *KerberosConfig) Reset() {
 	*x = KerberosConfig{}
-	mi := &file_v1_instance_service_proto_msgTypes[25]
+	mi := &file_v1_instance_service_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2747,7 +3683,7 @@ func (x *KerberosConfig) String() string {
 func (*KerberosConfig) ProtoMessage() {}
 
 func (x *KerberosConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[25]
+	mi := &file_v1_instance_service_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2760,7 +3696,7 @@ func (x *KerberosConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KerberosConfig.ProtoReflect.Descriptor instead.
 func (*KerberosConfig) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{25}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *KerberosConfig) GetPrimary() string {
@@ -2828,7 +3764,7 @@ type DataSourceExternalSecret_AppRoleAuthOption struct {
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) Reset() {
 	*x = DataSourceExternalSecret_AppRoleAuthOption{}
-	mi := &file_v1_instance_service_proto_msgTypes[27]
+	mi := &file_v1_instance_service_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2840,7 +3776,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) String() string {
 func (*DataSourceExternalSecret_AppRoleAuthOption) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[27]
+	mi := &file_v1_instance_service_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2853,7 +3789,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect
 
 // Deprecated: Use DataSourceExternalSecret_AppRoleAuthOption.ProtoReflect.Descriptor instead.
 func (*DataSourceExternalSecret_AppRoleAuthOption) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{33, 0}
 }
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) GetRoleId() string {
@@ -2895,7 +3831,7 @@ type DataSource_AzureCredential struct {
 
 func (x *DataSource_AzureCredential) Reset() {
 	*x = DataSource_AzureCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[28]
+	mi := &file_v1_instance_service_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2907,7 +3843,7 @@ func (x *DataSource_AzureCredential) String() string {
 func (*DataSource_AzureCredential) ProtoMessage() {}
 
 func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[28]
+	mi := &file_v1_instance_service_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2920,7 +3856,7 @@ func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_AzureCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_AzureCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 0}
 }
 
 func (x *DataSource_AzureCredential) GetTenantId() string {
@@ -2961,7 +3897,7 @@ type DataSource_AWSCredential struct {
 
 func (x *DataSource_AWSCredential) Reset() {
 	*x = DataSource_AWSCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[29]
+	mi := &file_v1_instance_service_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2973,7 +3909,7 @@ func (x *DataSource_AWSCredential) String() string {
 func (*DataSource_AWSCredential) ProtoMessage() {}
 
 func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[29]
+	mi := &file_v1_instance_service_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2986,7 +3922,7 @@ func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_AWSCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_AWSCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 1}
 }
 
 func (x *DataSource_AWSCredential) GetAccessKeyId() string {
@@ -3033,7 +3969,7 @@ type DataSource_GCPCredential struct {
 
 func (x *DataSource_GCPCredential) Reset() {
 	*x = DataSource_GCPCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[30]
+	mi := &file_v1_instance_service_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3045,7 +3981,7 @@ func (x *DataSource_GCPCredential) String() string {
 func (*DataSource_GCPCredential) ProtoMessage() {}
 
 func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[30]
+	mi := &file_v1_instance_service_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3058,7 +3994,7 @@ func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_GCPCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_GCPCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 2}
 }
 
 func (x *DataSource_GCPCredential) GetContent() string {
@@ -3078,7 +4014,7 @@ type DataSource_Address struct {
 
 func (x *DataSource_Address) Reset() {
 	*x = DataSource_Address{}
-	mi := &file_v1_instance_service_proto_msgTypes[31]
+	mi := &file_v1_instance_service_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3090,7 +4026,7 @@ func (x *DataSource_Address) String() string {
 func (*DataSource_Address) ProtoMessage() {}
 
 func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[31]
+	mi := &file_v1_instance_service_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3103,7 +4039,7 @@ func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_Address.ProtoReflect.Descriptor instead.
 func (*DataSource_Address) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 3}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{34, 3}
 }
 
 func (x *DataSource_Address) GetHost() string {
@@ -3124,7 +4060,7 @@ var File_v1_instance_service_proto protoreflect.FileDescriptor
 
 const file_v1_instance_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"H\n" +
+	"\x19v1/instance_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\x1a\x1ev1/instance_role_service.proto\"H\n" +
 	"\x12GetInstanceRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe2A\x01\x02\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\x04name\"\xec\x01\n" +
@@ -3206,9 +4142,76 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\x12#\n" +
 	"\rvalidate_only\x18\x04 \x01(\bR\fvalidateOnly\x12#\n" +
-	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"-\n" +
+	"\rallow_missing\x18\x05 \x01(\bR\fallowMissing\"\xf1\x01\n" +
+	"\x1bDiscoverNeonBranchesRequest\x127\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x00R\x06parent\x88\x01\x01\x12!\n" +
+	"\aapi_key\x18\x02 \x01(\tB\b\xe2A\x01\x02\xd0\xea0\x01R\x06apiKey\x12#\n" +
+	"\n" +
+	"project_id\x18\x03 \x01(\tB\x04\xe2A\x01\x01R\tprojectId\x12!\n" +
+	"\tpage_size\x18\x04 \x01(\x05B\x04\xe2A\x01\x01R\bpageSize\x12#\n" +
+	"\n" +
+	"page_token\x18\x05 \x01(\tB\x04\xe2A\x01\x01R\tpageTokenB\t\n" +
+	"\a_parent\"\xc1\x01\n" +
+	"\x1cDiscoverNeonBranchesResponse\x123\n" +
+	"\bbranches\x18\x01 \x03(\v2\x17.bytebase.v1.NeonBranchR\bbranches\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12D\n" +
+	"\bfailures\x18\x03 \x03(\v2(.bytebase.v1.NeonProjectDiscoveryFailureR\bfailures\"\x9c\x02\n" +
+	"\n" +
+	"NeonBranch\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12#\n" +
+	"\rproject_title\x18\x02 \x01(\tR\fprojectTitle\x12\x1b\n" +
+	"\tbranch_id\x18\x03 \x01(\tR\bbranchId\x12!\n" +
+	"\fbranch_title\x18\x04 \x01(\tR\vbranchTitle\x127\n" +
+	"\tdatabases\x18\x05 \x03(\v2\x19.bytebase.v1.NeonDatabaseR\tdatabases\x12\x14\n" +
+	"\x05roles\x18\x06 \x03(\tR\x05roles\x12;\n" +
+	"\x0fdiscovery_error\x18\a \x01(\v2\x12.google.rpc.StatusR\x0ediscoveryError\"8\n" +
+	"\fNeonDatabase\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05owner\x18\x02 \x01(\tR\x05owner\"h\n" +
+	"\x1bNeonProjectDiscoveryFailure\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12*\n" +
+	"\x06status\x18\x02 \x01(\v2\x12.google.rpc.StatusR\x06status\"\xef\x01\n" +
+	"\x16ImportInstancesRequest\x127\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1a\xfaA\x17\x12\x15bytebase.com/InstanceH\x01R\x06parent\x88\x01\x01\x12F\n" +
+	"\x0fneon_credential\x18\x02 \x01(\v2\x1b.bytebase.v1.NeonCredentialH\x00R\x0eneonCredential\x12;\n" +
+	"\aimports\x18\x03 \x03(\v2\x1b.bytebase.v1.InstanceImportB\x04\xe2A\x01\x02R\aimportsB\f\n" +
+	"\n" +
+	"credentialB\t\n" +
+	"\a_parent\"3\n" +
+	"\x0eNeonCredential\x12!\n" +
+	"\aapi_key\x18\x01 \x01(\tB\b\xe2A\x01\x02\xd0\xea0\x01R\x06apiKey\"\xcd\x02\n" +
+	"\x0eInstanceImport\x12%\n" +
+	"\vinstance_id\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\n" +
+	"instanceId\x127\n" +
+	"\binstance\x18\x02 \x01(\v2\x15.bytebase.v1.InstanceB\x04\xe2A\x01\x02R\binstance\x12 \n" +
+	"\busername\x18\x03 \x01(\tB\x04\xe2A\x01\x02R\busername\x125\n" +
+	"\x13connection_database\x18\x04 \x01(\tB\x04\xe2A\x01\x02R\x12connectionDatabase\x12)\n" +
+	"\bpassword\x18\x05 \x01(\tB\b\xe2A\x01\x01\xd0\xea0\x01H\x01R\bpassword\x88\x01\x01\x12@\n" +
+	"\vneon_branch\x18\x14 \x01(\v2\x1d.bytebase.v1.NeonBranchSourceH\x00R\n" +
+	"neonBranchB\b\n" +
+	"\x06sourceB\v\n" +
+	"\t_password\"Z\n" +
+	"\x10NeonBranchSource\x12#\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tB\x04\xe2A\x01\x02R\tprojectId\x12!\n" +
+	"\tbranch_id\x18\x02 \x01(\tB\x04\xe2A\x01\x02R\bbranchId\"V\n" +
+	"\x17ImportInstancesResponse\x12;\n" +
+	"\aresults\x18\x01 \x03(\v2!.bytebase.v1.InstanceImportResultR\aresults\"\x96\x01\n" +
+	"\x14InstanceImportResult\x123\n" +
+	"\bimported\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceH\x00R\bimported\x12>\n" +
+	"\afailure\x18\x02 \x01(\v2\".bytebase.v1.InstanceImportFailureH\x00R\afailureB\t\n" +
+	"\aoutcome\"\xf5\x01\n" +
+	"\x15InstanceImportFailure\x12*\n" +
+	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\x12]\n" +
+	"\x10creation_outcome\x18\x02 \x01(\x0e22.bytebase.v1.InstanceImportFailure.CreationOutcomeR\x0fcreationOutcome\"Q\n" +
+	"\x0fCreationOutcome\x12 \n" +
+	"\x1cCREATION_OUTCOME_UNSPECIFIED\x10\x00\x12\x0f\n" +
+	"\vNOT_CREATED\x10\x01\x12\v\n" +
+	"\aUNKNOWN\x10\x02\"-\n" +
 	"\rSyncDatabases\x12\x1c\n" +
-	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\xdf\x06\n" +
+	"\tdatabases\x18\x01 \x03(\tR\tdatabases\"\x92\a\n" +
 	"\bInstance\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x03 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -3226,7 +4229,8 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\rsync_interval\x18\f \x01(\v2\x19.google.protobuf.DurationR\fsyncInterval\x12A\n" +
 	"\x0esync_databases\x18\x0e \x01(\v2\x1a.bytebase.v1.SyncDatabasesR\rsyncDatabases\x12F\n" +
 	"\x0elast_sync_time\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\x04\xe2A\x01\x03R\flastSyncTime\x129\n" +
-	"\x06labels\x18\x10 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x1a9\n" +
+	"\x06labels\x18\x10 \x03(\v2!.bytebase.v1.Instance.LabelsEntryR\x06labels\x121\n" +
+	"\x06vendor\x18\x11 \x01(\x0e2\x13.bytebase.v1.VendorB\x04\xe2A\x01\x01R\x06vendor\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Y\xeaAV\n" +
@@ -3405,15 +4409,20 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x06keytab\x18\x04 \x01(\fB\b\xe2A\x01\x04\xd0\xea0\x01R\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
-	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol*G\n" +
+	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol**\n" +
+	"\x06Vendor\x12\x16\n" +
+	"\x12VENDOR_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04NEON\x10\x01*G\n" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\x90\x18\n" +
+	"\tREAD_ONLY\x10\x022\xe8\x1b\n" +
 	"\x0fInstanceService\x12\xad\x01\n" +
 	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"f\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xb2\x01\n" +
 	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"Z\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xc9\x01\n" +
-	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"|\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xe2\x01\n" +
+	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"|\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xff\x01\n" +
+	"\x14DiscoverNeonBranches\x12(.bytebase.v1.DiscoverNeonBranchesRequest\x1a).bytebase.v1.DiscoverNeonBranchesResponse\"\x91\x01\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02d:\x01*Z;:\x01*\"6/v1/{parent=projects/*}/instances:discoverNeonBranches\"\"/v1/instances:discoverNeonBranches\x12\xd3\x01\n" +
+	"\x0fImportInstances\x12#.bytebase.v1.ImportInstancesRequest\x1a$.bytebase.v1.ImportInstancesResponse\"u\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z-:\x01*\"(/v1/{parent=projects/*}/instances:import\"\x14/v1/instances:import\x12\xe2\x01\n" +
 	"\x1cPrepareSampleProjectInstance\x120.bytebase.v1.PrepareSampleProjectInstanceRequest\x1a\x15.bytebase.v1.Instance\"y\xdaA\x06parent\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02C:\x01*\">/v1/{parent=projects/*}/instances:prepareSampleProjectInstance\x12\xf5\x01\n" +
 	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\xa7\x01\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02c:\binstanceZ6:\binstance2*/v1/{instance.name=projects/*/instances/*}2\x1f/v1/{instance.name=instances/*}\x12\xbf\x01\n" +
 	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"q\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02=Z#*!/v1/{name=projects/*/instances/*}*\x16/v1/{name=instances/*}\x12\xd6\x01\n" +
@@ -3439,131 +4448,165 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 	return file_v1_instance_service_proto_rawDescData
 }
 
-var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
+var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
 var file_v1_instance_service_proto_goTypes = []any{
-	(DataSourceType)(0),                                        // 0: bytebase.v1.DataSourceType
-	(DataSourceExternalSecret_SecretType)(0),                   // 1: bytebase.v1.DataSourceExternalSecret.SecretType
-	(DataSourceExternalSecret_AuthType)(0),                     // 2: bytebase.v1.DataSourceExternalSecret.AuthType
-	(DataSourceExternalSecret_TokenType)(0),                    // 3: bytebase.v1.DataSourceExternalSecret.TokenType
-	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 4: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	(DataSource_AuthenticationType)(0),                         // 5: bytebase.v1.DataSource.AuthenticationType
-	(DataSource_CloudSQLIPType)(0),                             // 6: bytebase.v1.DataSource.CloudSQLIPType
-	(DataSource_RedisType)(0),                                  // 7: bytebase.v1.DataSource.RedisType
-	(*GetInstanceRequest)(nil),                                 // 8: bytebase.v1.GetInstanceRequest
-	(*ListInstancesRequest)(nil),                               // 9: bytebase.v1.ListInstancesRequest
-	(*ListInstancesResponse)(nil),                              // 10: bytebase.v1.ListInstancesResponse
-	(*CreateInstanceRequest)(nil),                              // 11: bytebase.v1.CreateInstanceRequest
-	(*PrepareSampleProjectInstanceRequest)(nil),                // 12: bytebase.v1.PrepareSampleProjectInstanceRequest
-	(*UpdateInstanceRequest)(nil),                              // 13: bytebase.v1.UpdateInstanceRequest
-	(*DeleteInstanceRequest)(nil),                              // 14: bytebase.v1.DeleteInstanceRequest
-	(*UndeleteInstanceRequest)(nil),                            // 15: bytebase.v1.UndeleteInstanceRequest
-	(*SyncInstanceRequest)(nil),                                // 16: bytebase.v1.SyncInstanceRequest
-	(*ListInstanceDatabaseRequest)(nil),                        // 17: bytebase.v1.ListInstanceDatabaseRequest
-	(*ListInstanceDatabaseResponse)(nil),                       // 18: bytebase.v1.ListInstanceDatabaseResponse
-	(*SyncInstanceResponse)(nil),                               // 19: bytebase.v1.SyncInstanceResponse
-	(*BatchSyncInstancesRequest)(nil),                          // 20: bytebase.v1.BatchSyncInstancesRequest
-	(*BatchSyncInstancesResponse)(nil),                         // 21: bytebase.v1.BatchSyncInstancesResponse
-	(*BatchUpdateInstancesRequest)(nil),                        // 22: bytebase.v1.BatchUpdateInstancesRequest
-	(*BatchUpdateInstancesResponse)(nil),                       // 23: bytebase.v1.BatchUpdateInstancesResponse
-	(*AddDataSourceRequest)(nil),                               // 24: bytebase.v1.AddDataSourceRequest
-	(*RemoveDataSourceRequest)(nil),                            // 25: bytebase.v1.RemoveDataSourceRequest
-	(*UpdateDataSourceRequest)(nil),                            // 26: bytebase.v1.UpdateDataSourceRequest
-	(*SyncDatabases)(nil),                                      // 27: bytebase.v1.SyncDatabases
-	(*Instance)(nil),                                           // 28: bytebase.v1.Instance
-	(*DataSourceExternalSecret)(nil),                           // 29: bytebase.v1.DataSourceExternalSecret
-	(*DataSource)(nil),                                         // 30: bytebase.v1.DataSource
-	(*InstanceResource)(nil),                                   // 31: bytebase.v1.InstanceResource
-	(*SASLConfig)(nil),                                         // 32: bytebase.v1.SASLConfig
-	(*KerberosConfig)(nil),                                     // 33: bytebase.v1.KerberosConfig
-	nil,                                                        // 34: bytebase.v1.Instance.LabelsEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 35: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	(*DataSource_AzureCredential)(nil),                         // 36: bytebase.v1.DataSource.AzureCredential
-	(*DataSource_AWSCredential)(nil),                           // 37: bytebase.v1.DataSource.AWSCredential
-	(*DataSource_GCPCredential)(nil),                           // 38: bytebase.v1.DataSource.GCPCredential
-	(*DataSource_Address)(nil),                                 // 39: bytebase.v1.DataSource.Address
-	nil,                                                        // 40: bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	(*fieldmaskpb.FieldMask)(nil),                              // 41: google.protobuf.FieldMask
-	(State)(0),                                                 // 42: bytebase.v1.State
-	(Engine)(0),                                                // 43: bytebase.v1.Engine
-	(*InstanceRole)(nil),                                       // 44: bytebase.v1.InstanceRole
-	(*durationpb.Duration)(nil),                                // 45: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 46: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                                      // 47: google.protobuf.Empty
+	(Vendor)(0),         // 0: bytebase.v1.Vendor
+	(DataSourceType)(0), // 1: bytebase.v1.DataSourceType
+	(InstanceImportFailure_CreationOutcome)(0),                 // 2: bytebase.v1.InstanceImportFailure.CreationOutcome
+	(DataSourceExternalSecret_SecretType)(0),                   // 3: bytebase.v1.DataSourceExternalSecret.SecretType
+	(DataSourceExternalSecret_AuthType)(0),                     // 4: bytebase.v1.DataSourceExternalSecret.AuthType
+	(DataSourceExternalSecret_TokenType)(0),                    // 5: bytebase.v1.DataSourceExternalSecret.TokenType
+	(DataSourceExternalSecret_AppRoleAuthOption_SecretType)(0), // 6: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	(DataSource_AuthenticationType)(0),                         // 7: bytebase.v1.DataSource.AuthenticationType
+	(DataSource_CloudSQLIPType)(0),                             // 8: bytebase.v1.DataSource.CloudSQLIPType
+	(DataSource_RedisType)(0),                                  // 9: bytebase.v1.DataSource.RedisType
+	(*GetInstanceRequest)(nil),                                 // 10: bytebase.v1.GetInstanceRequest
+	(*ListInstancesRequest)(nil),                               // 11: bytebase.v1.ListInstancesRequest
+	(*ListInstancesResponse)(nil),                              // 12: bytebase.v1.ListInstancesResponse
+	(*CreateInstanceRequest)(nil),                              // 13: bytebase.v1.CreateInstanceRequest
+	(*PrepareSampleProjectInstanceRequest)(nil),                // 14: bytebase.v1.PrepareSampleProjectInstanceRequest
+	(*UpdateInstanceRequest)(nil),                              // 15: bytebase.v1.UpdateInstanceRequest
+	(*DeleteInstanceRequest)(nil),                              // 16: bytebase.v1.DeleteInstanceRequest
+	(*UndeleteInstanceRequest)(nil),                            // 17: bytebase.v1.UndeleteInstanceRequest
+	(*SyncInstanceRequest)(nil),                                // 18: bytebase.v1.SyncInstanceRequest
+	(*ListInstanceDatabaseRequest)(nil),                        // 19: bytebase.v1.ListInstanceDatabaseRequest
+	(*ListInstanceDatabaseResponse)(nil),                       // 20: bytebase.v1.ListInstanceDatabaseResponse
+	(*SyncInstanceResponse)(nil),                               // 21: bytebase.v1.SyncInstanceResponse
+	(*BatchSyncInstancesRequest)(nil),                          // 22: bytebase.v1.BatchSyncInstancesRequest
+	(*BatchSyncInstancesResponse)(nil),                         // 23: bytebase.v1.BatchSyncInstancesResponse
+	(*BatchUpdateInstancesRequest)(nil),                        // 24: bytebase.v1.BatchUpdateInstancesRequest
+	(*BatchUpdateInstancesResponse)(nil),                       // 25: bytebase.v1.BatchUpdateInstancesResponse
+	(*AddDataSourceRequest)(nil),                               // 26: bytebase.v1.AddDataSourceRequest
+	(*RemoveDataSourceRequest)(nil),                            // 27: bytebase.v1.RemoveDataSourceRequest
+	(*UpdateDataSourceRequest)(nil),                            // 28: bytebase.v1.UpdateDataSourceRequest
+	(*DiscoverNeonBranchesRequest)(nil),                        // 29: bytebase.v1.DiscoverNeonBranchesRequest
+	(*DiscoverNeonBranchesResponse)(nil),                       // 30: bytebase.v1.DiscoverNeonBranchesResponse
+	(*NeonBranch)(nil),                                         // 31: bytebase.v1.NeonBranch
+	(*NeonDatabase)(nil),                                       // 32: bytebase.v1.NeonDatabase
+	(*NeonProjectDiscoveryFailure)(nil),                        // 33: bytebase.v1.NeonProjectDiscoveryFailure
+	(*ImportInstancesRequest)(nil),                             // 34: bytebase.v1.ImportInstancesRequest
+	(*NeonCredential)(nil),                                     // 35: bytebase.v1.NeonCredential
+	(*InstanceImport)(nil),                                     // 36: bytebase.v1.InstanceImport
+	(*NeonBranchSource)(nil),                                   // 37: bytebase.v1.NeonBranchSource
+	(*ImportInstancesResponse)(nil),                            // 38: bytebase.v1.ImportInstancesResponse
+	(*InstanceImportResult)(nil),                               // 39: bytebase.v1.InstanceImportResult
+	(*InstanceImportFailure)(nil),                              // 40: bytebase.v1.InstanceImportFailure
+	(*SyncDatabases)(nil),                                      // 41: bytebase.v1.SyncDatabases
+	(*Instance)(nil),                                           // 42: bytebase.v1.Instance
+	(*DataSourceExternalSecret)(nil),                           // 43: bytebase.v1.DataSourceExternalSecret
+	(*DataSource)(nil),                                         // 44: bytebase.v1.DataSource
+	(*InstanceResource)(nil),                                   // 45: bytebase.v1.InstanceResource
+	(*SASLConfig)(nil),                                         // 46: bytebase.v1.SASLConfig
+	(*KerberosConfig)(nil),                                     // 47: bytebase.v1.KerberosConfig
+	nil,                                                        // 48: bytebase.v1.Instance.LabelsEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 49: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	(*DataSource_AzureCredential)(nil),                         // 50: bytebase.v1.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 51: bytebase.v1.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 52: bytebase.v1.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 53: bytebase.v1.DataSource.Address
+	nil,                                                        // 54: bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	(*fieldmaskpb.FieldMask)(nil),                              // 55: google.protobuf.FieldMask
+	(*status.Status)(nil),                                      // 56: google.rpc.Status
+	(State)(0),                                                 // 57: bytebase.v1.State
+	(Engine)(0),                                                // 58: bytebase.v1.Engine
+	(*InstanceRole)(nil),                                       // 59: bytebase.v1.InstanceRole
+	(*durationpb.Duration)(nil),                                // 60: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 61: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                                      // 62: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
-	28, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	28, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	28, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	41, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	28, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
-	16, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
-	13, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
-	28, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	30, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	30, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	30, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	41, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	42, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	43, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	30, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	44, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
-	45, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
-	27, // 17: bytebase.v1.Instance.sync_databases:type_name -> bytebase.v1.SyncDatabases
-	46, // 18: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
-	34, // 19: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
-	1,  // 20: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
-	2,  // 21: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
-	35, // 22: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	3,  // 23: bytebase.v1.DataSourceExternalSecret.token_type:type_name -> bytebase.v1.DataSourceExternalSecret.TokenType
-	0,  // 24: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	29, // 25: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
-	5,  // 26: bytebase.v1.DataSource.authentication_type:type_name -> bytebase.v1.DataSource.AuthenticationType
-	6,  // 27: bytebase.v1.DataSource.cloud_sql_ip_type:type_name -> bytebase.v1.DataSource.CloudSQLIPType
-	36, // 28: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
-	37, // 29: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
-	38, // 30: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
-	32, // 31: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
-	39, // 32: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
-	7,  // 33: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
-	40, // 34: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	43, // 35: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
-	30, // 36: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
-	33, // 37: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
-	4,  // 38: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
-	8,  // 39: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	9,  // 40: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	11, // 41: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	12, // 42: bytebase.v1.InstanceService.PrepareSampleProjectInstance:input_type -> bytebase.v1.PrepareSampleProjectInstanceRequest
-	13, // 43: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	14, // 44: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	15, // 45: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	16, // 46: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	17, // 47: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
-	20, // 48: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
-	22, // 49: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
-	24, // 50: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	25, // 51: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	26, // 52: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	28, // 53: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	10, // 54: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	28, // 55: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	28, // 56: bytebase.v1.InstanceService.PrepareSampleProjectInstance:output_type -> bytebase.v1.Instance
-	28, // 57: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	47, // 58: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	28, // 59: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	19, // 60: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	18, // 61: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
-	21, // 62: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
-	23, // 63: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
-	28, // 64: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	28, // 65: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	28, // 66: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	53, // [53:67] is the sub-list for method output_type
-	39, // [39:53] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	42, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	42, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	42, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	55, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	42, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
+	18, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
+	15, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
+	42, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	44, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	44, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	44, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	55, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	31, // 12: bytebase.v1.DiscoverNeonBranchesResponse.branches:type_name -> bytebase.v1.NeonBranch
+	33, // 13: bytebase.v1.DiscoverNeonBranchesResponse.failures:type_name -> bytebase.v1.NeonProjectDiscoveryFailure
+	32, // 14: bytebase.v1.NeonBranch.databases:type_name -> bytebase.v1.NeonDatabase
+	56, // 15: bytebase.v1.NeonBranch.discovery_error:type_name -> google.rpc.Status
+	56, // 16: bytebase.v1.NeonProjectDiscoveryFailure.status:type_name -> google.rpc.Status
+	35, // 17: bytebase.v1.ImportInstancesRequest.neon_credential:type_name -> bytebase.v1.NeonCredential
+	36, // 18: bytebase.v1.ImportInstancesRequest.imports:type_name -> bytebase.v1.InstanceImport
+	42, // 19: bytebase.v1.InstanceImport.instance:type_name -> bytebase.v1.Instance
+	37, // 20: bytebase.v1.InstanceImport.neon_branch:type_name -> bytebase.v1.NeonBranchSource
+	39, // 21: bytebase.v1.ImportInstancesResponse.results:type_name -> bytebase.v1.InstanceImportResult
+	42, // 22: bytebase.v1.InstanceImportResult.imported:type_name -> bytebase.v1.Instance
+	40, // 23: bytebase.v1.InstanceImportResult.failure:type_name -> bytebase.v1.InstanceImportFailure
+	56, // 24: bytebase.v1.InstanceImportFailure.status:type_name -> google.rpc.Status
+	2,  // 25: bytebase.v1.InstanceImportFailure.creation_outcome:type_name -> bytebase.v1.InstanceImportFailure.CreationOutcome
+	57, // 26: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	58, // 27: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	44, // 28: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	59, // 29: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
+	60, // 30: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
+	41, // 31: bytebase.v1.Instance.sync_databases:type_name -> bytebase.v1.SyncDatabases
+	61, // 32: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	48, // 33: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
+	0,  // 34: bytebase.v1.Instance.vendor:type_name -> bytebase.v1.Vendor
+	3,  // 35: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
+	4,  // 36: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
+	49, // 37: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	5,  // 38: bytebase.v1.DataSourceExternalSecret.token_type:type_name -> bytebase.v1.DataSourceExternalSecret.TokenType
+	1,  // 39: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
+	43, // 40: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
+	7,  // 41: bytebase.v1.DataSource.authentication_type:type_name -> bytebase.v1.DataSource.AuthenticationType
+	8,  // 42: bytebase.v1.DataSource.cloud_sql_ip_type:type_name -> bytebase.v1.DataSource.CloudSQLIPType
+	50, // 43: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
+	51, // 44: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
+	52, // 45: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
+	46, // 46: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
+	53, // 47: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
+	9,  // 48: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
+	54, // 49: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	58, // 50: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	44, // 51: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	47, // 52: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
+	6,  // 53: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
+	10, // 54: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	11, // 55: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	13, // 56: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	29, // 57: bytebase.v1.InstanceService.DiscoverNeonBranches:input_type -> bytebase.v1.DiscoverNeonBranchesRequest
+	34, // 58: bytebase.v1.InstanceService.ImportInstances:input_type -> bytebase.v1.ImportInstancesRequest
+	14, // 59: bytebase.v1.InstanceService.PrepareSampleProjectInstance:input_type -> bytebase.v1.PrepareSampleProjectInstanceRequest
+	15, // 60: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	16, // 61: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	17, // 62: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	18, // 63: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	19, // 64: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
+	22, // 65: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
+	24, // 66: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
+	26, // 67: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	27, // 68: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	28, // 69: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	42, // 70: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	12, // 71: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	42, // 72: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	30, // 73: bytebase.v1.InstanceService.DiscoverNeonBranches:output_type -> bytebase.v1.DiscoverNeonBranchesResponse
+	38, // 74: bytebase.v1.InstanceService.ImportInstances:output_type -> bytebase.v1.ImportInstancesResponse
+	42, // 75: bytebase.v1.InstanceService.PrepareSampleProjectInstance:output_type -> bytebase.v1.Instance
+	42, // 76: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	62, // 77: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	42, // 78: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	21, // 79: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	20, // 80: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
+	23, // 81: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
+	25, // 82: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
+	42, // 83: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	42, // 84: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	42, // 85: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	70, // [70:86] is the sub-list for method output_type
+	54, // [54:70] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -3579,18 +4622,29 @@ func file_v1_instance_service_proto_init() {
 	file_v1_instance_service_proto_msgTypes[9].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[12].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[14].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[20].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[21].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[19].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[24].OneofWrappers = []any{
+		(*ImportInstancesRequest_NeonCredential)(nil),
+	}
+	file_v1_instance_service_proto_msgTypes[26].OneofWrappers = []any{
+		(*InstanceImport_NeonBranch)(nil),
+	}
+	file_v1_instance_service_proto_msgTypes[29].OneofWrappers = []any{
+		(*InstanceImportResult_Imported)(nil),
+		(*InstanceImportResult_Failure)(nil),
+	}
+	file_v1_instance_service_proto_msgTypes[32].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[33].OneofWrappers = []any{
 		(*DataSourceExternalSecret_AppRole)(nil),
 		(*DataSourceExternalSecret_Token)(nil),
 	}
-	file_v1_instance_service_proto_msgTypes[22].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[34].OneofWrappers = []any{
 		(*DataSource_AzureCredential_)(nil),
 		(*DataSource_AwsCredential)(nil),
 		(*DataSource_GcpCredential)(nil),
 	}
-	file_v1_instance_service_proto_msgTypes[23].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[24].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[35].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[36].OneofWrappers = []any{
 		(*SASLConfig_KrbConfig)(nil),
 	}
 	type x struct{}
@@ -3598,8 +4652,8 @@ func file_v1_instance_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_instance_service_proto_rawDesc), len(file_v1_instance_service_proto_rawDesc)),
-			NumEnums:      8,
-			NumMessages:   33,
+			NumEnums:      10,
+			NumMessages:   45,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

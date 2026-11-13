@@ -16,6 +16,7 @@ const TOOL_SECTIONS: Record<string, readonly MaskingSkillSection[]> = {
   get_masking_exemption_draft: ["exemption"],
   prepare_masking_exemption_draft: ["exemption"],
   ask_masking_exemption_scope: ["exemption"],
+  ask_unmask_method: ["exemption"],
   prepare_semantic_type_draft: ["semantic-type"],
   ask_masking_semantic_type: ["rule", "exemption", "semantic-type"],
 };

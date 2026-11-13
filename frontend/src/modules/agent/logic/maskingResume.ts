@@ -36,13 +36,15 @@ export function getMaskingResumeArgs(
   const isExemptionScope = questionCall?.name === "ask_masking_exemption_scope";
   const isRuleScope = questionCall?.name === "ask_masking_rule_scope";
   const isSemanticType = questionCall?.name === "ask_masking_semantic_type";
+  const isUnmaskMethod = questionCall?.name === "ask_unmask_method";
   if (
     last?.role !== "tool" ||
     !last.toolCallId ||
     (questionCall?.name !== "ask_user" &&
       !isExemptionScope &&
       !isRuleScope &&
-      !isSemanticType) ||
+      !isSemanticType &&
+      !isUnmaskMethod) ||
     [...calls.values()].some((call) => call.name === "done")
   )
     return undefined;
@@ -55,6 +57,58 @@ export function getMaskingResumeArgs(
       answer.kind !== "confirm")
   ) {
     return undefined;
+  }
+
+  const question = parseObject(questionCall?.arguments);
+  if (isUnmaskMethod) {
+    const project =
+      typeof question?.project === "string" && !question.project.trim()
+        ? undefined
+        : question?.project;
+    const databaseArg =
+      typeof question?.database === "string" && !question.database.trim()
+        ? undefined
+        : question?.database;
+    if (
+      answer.kind !== "choose" ||
+      (answer.value !== "masking-exemption" &&
+        answer.value !== "just-in-time") ||
+      !question ||
+      Object.keys(question).some(
+        (key) =>
+          key !== "project" &&
+          key !== "database" &&
+          key !== "queryAccessMissing" &&
+          key !== "forCurrentUser"
+      ) ||
+      (project !== undefined &&
+        (typeof project !== "string" ||
+          !/^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(project))) ||
+      (databaseArg !== undefined && typeof databaseArg !== "string") ||
+      (question.queryAccessMissing !== undefined &&
+        typeof question.queryAccessMissing !== "boolean") ||
+      (question.forCurrentUser !== undefined &&
+        typeof question.forCurrentUser !== "boolean")
+    )
+      return undefined;
+    const database = typeof databaseArg === "string" ? databaseArg : undefined;
+    const selectedDatabase = database
+      ? /^(?:(projects\/(?!-\/)[A-Za-z0-9_-]+)\/)?instances\/(?!-\/)[A-Za-z0-9_-]+\/databases\/(?!-$)[^/*]+$/.exec(
+          database
+        )
+      : undefined;
+    if (
+      database !== undefined &&
+      (!selectedDatabase ||
+        (project !== undefined &&
+          selectedDatabase[1] &&
+          selectedDatabase[1] !== project))
+    )
+      return undefined;
+    return {
+      ...(typeof project === "string" ? { project } : {}),
+      ...(database !== undefined ? { database } : {}),
+    };
   }
 
   const overview = turn.findLast(
@@ -85,7 +139,6 @@ export function getMaskingResumeArgs(
       : typeof result?.project === "string"
         ? result.project
         : undefined;
-  const question = parseObject(questionCall?.arguments);
   if (isRuleScope) {
     if (answer.kind !== "choose" || typeof answer.value !== "string")
       return undefined;
@@ -121,29 +174,40 @@ export function getMaskingResumeArgs(
   )
     return undefined;
   if (isExemptionScope || question?.purpose === "masking-exemption-scope") {
+    const questionProject =
+      typeof question?.project === "string" && !question.project.trim()
+        ? undefined
+        : question?.project;
+    const selectedProject =
+      isExemptionScope && questionProject !== undefined
+        ? questionProject
+        : project;
     if (
       (!isExemptionScope && question?.kind !== "choose") ||
       answer.kind !== "choose" ||
       typeof answer.value !== "string" ||
-      !project ||
-      !/^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(project)
+      typeof selectedProject !== "string" ||
+      !/^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(selectedProject)
     ) {
       return undefined;
     }
-    if (answer.value === project || answer.value === "another-database") {
-      return { project };
+    if (
+      answer.value === selectedProject ||
+      answer.value === "another-database"
+    ) {
+      return { project: selectedProject };
     }
     const selectedDatabase =
-      /^(?:(projects\/[A-Za-z0-9_-]+)\/)?instances\/(?!-\/)[A-Za-z0-9_-]+\/databases\/(?!-$)[^/]+$/.exec(
+      /^(?:(projects\/[A-Za-z0-9_-]+)\/)?instances\/(?!-\/)[A-Za-z0-9_-]+\/databases\/(?!-$)[^/*]+$/.exec(
         answer.value
       );
     if (
       !selectedDatabase ||
-      (selectedDatabase[1] && selectedDatabase[1] !== project)
+      (selectedDatabase[1] && selectedDatabase[1] !== selectedProject)
     ) {
       return undefined;
     }
-    return { project, database: answer.value };
+    return { project: selectedProject, database: answer.value };
   }
   const catalog = result?.catalog;
   const database =
