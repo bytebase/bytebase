@@ -648,7 +648,7 @@ func (s *ReleaseService) checkReleaseDeclarative(ctx context.Context, files []*v
 				DatabaseName: database.DatabaseName,
 			})
 			if err == nil && dbMetadata != nil {
-				// Thread the synced server version so MySQL builds the version-correct plan.
+				// MySQL reports a server older than 8.0 as an error advice.
 				advices, err := schema.SDLDropAdvices(engine, combinedTargetSDL, dbMetadata, instance.Metadata.GetVersion())
 				if err == nil {
 					sdlDropAdvices = advices

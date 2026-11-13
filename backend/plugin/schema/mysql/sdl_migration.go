@@ -74,10 +74,25 @@ func adjustPrologueError(err error) error {
 	return errors.New(msg)
 }
 
+// unsupportedSDLVersion returns why the declarative path refuses a MySQL server, ""
+// when it does not: a server older than 8.0 is refused. omni's catalog canonicalizes
+// only against the 8.0 stored form, and diffing an older server as 8.0 emits DDL the
+// SDL never asked for: a bare TIMESTAMP column loses its automatic default and update,
+// a charset-only column is given utf8mb4_0900_ai_ci, which 5.7 rejects, and several
+// unchanged definitions are re-emitted on every rollout. A version that names no
+// major number is accepted: callers without an instance pass "".
+func unsupportedSDLVersion(engineVersion string) string {
+	version := strings.TrimSpace(engineVersion)
+	major, _, _ := strings.Cut(version, ".")
+	if n, err := strconv.Atoi(major); err == nil && n < 8 {
+		return fmt.Sprintf("declarative schema change requires MySQL 8.0 or later, but this instance runs MySQL %s", version)
+	}
+	return ""
+}
+
 // loadCatalog parses a schema text and returns a catalog reflecting it. LoadSDL is the
-// canonical, dependency-aware path; since omni retired the MySQL 5.7 normalizer, every
-// catalog canonicalizes against the one remaining stored form (MySQL80), so no version
-// is selected. LoadSQL is tried only as a fallback for raw dumps containing non-SDL
+// canonical, dependency-aware path; every catalog canonicalizes against the one stored
+// form omni keeps (MySQL80). LoadSQL is tried only as a fallback for raw dumps containing non-SDL
 // statements (e.g. SET, SELECT, LOCK TABLES) that LoadSDL legitimately rejects; its
 // session defaults are already the 8.0 ones. When both fail, the LoadSDL error is
 // returned because it is far more diagnostic than LoadSQL's order-dependent failures.
@@ -150,16 +165,18 @@ func toCatalogSessionContextMap(m *schema.SDLSessionContextMap) catalog.SessionC
 }
 
 // mysqlDiffSDLMigrationWithContext is the registered SDL diff entry point: two schema
-// texts plus the target server version in, migration SQL out. The engine version is
-// part of the registered signature but no longer selects anything: omni retired the
-// 5.7 normalizer, so every schema canonicalizes against the 8.0 stored form.
+// texts plus the target server version in, migration SQL out. A server older than
+// MySQL 8.0 is rejected (see unsupportedSDLVersion).
 //
 // sessionCtx carries the source schema's per-object session context so a routine/trigger/
 // event recreate is re-emitted under its ORIGINAL sql_mode/charset/collation (event
 // time_zone too). It is nil for the SDL↔SDL and metadata↔metadata callers that have no
 // synced metadata to source it from; only the live rollout (schema.SDLMigration) supplies
 // it.
-func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, _ string, sessionCtx *schema.SDLSessionContextMap) (string, error) {
+func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string, sessionCtx *schema.SDLSessionContextMap) (string, error) {
+	if reason := unsupportedSDLVersion(engineVersion); reason != "" {
+		return "", errors.New(reason)
+	}
 	plan, err := buildMigrationPlan(sourceSDL, targetSDL, sessionCtx)
 	if err != nil {
 		return "", err
@@ -280,9 +297,17 @@ func mysqlLineCommentEnd(sql string, i int) int {
 // mysqlSDLDropAdvices analyzes the SDL migration plan from the current (dumped)
 // schema to the user SDL and emits a WARNING advice for each destructive or
 // in-place-replace operation, mirroring pg/sdl_migration.go's pgSDLDropAdvices.
-// The engine version is part of the registered signature but selects nothing
-// since omni retired the 5.7 stored form.
-func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata, _ string) ([]*storepb.Advice, error) {
+// A server older than MySQL 8.0 gets one ERROR advice instead: the release check
+// then reports what the rollout would fail on (see unsupportedSDLVersion).
+func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error) {
+	if reason := unsupportedSDLVersion(engineVersion); reason != "" {
+		return []*storepb.Advice{{
+			Status:  storepb.Advice_ERROR,
+			Code:    code.Unsupported.Int32(),
+			Title:   "MySQL version not supported",
+			Content: reason,
+		}}, nil
+	}
 	sourceSDL, err := schema.MetadataToSDL(storepb.Engine_MYSQL, currentSchema)
 	if err != nil {
 		return nil, err
