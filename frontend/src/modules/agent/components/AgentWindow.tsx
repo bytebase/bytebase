@@ -20,8 +20,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  lazy,
   type ReactNode,
   type RefObject,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -76,6 +78,7 @@ import {
   isAgentPageHelpRequestCurrent,
   subscribeAgentPageHelp,
 } from "../logic/contextualHelp";
+import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 import {
   getLandingStarterIdForText,
   type LandingStarterId,
@@ -146,6 +149,13 @@ import {
 } from "./window-resize";
 
 type AnchoredResizeDirection = Extract<ResizeDirection, "n" | "w" | "nw">;
+
+// Keep SQL Editor stores out of the app shell's initialization path.
+const AgentAccessGrantRequestDrawer = lazy(() =>
+  import("./AgentAccessGrantRequestDrawer").then((module) => ({
+    default: module.AgentAccessGrantRequestDrawer,
+  }))
+);
 
 const resizeZoneClasses: Record<AnchoredResizeDirection, string> = {
   n: "left-[12px] top-[-6px] h-[6px] w-[calc(100%-24px)] cursor-n-resize",
@@ -233,6 +243,44 @@ export function AgentWindow() {
     currentUser && workspace && currentUser.workspace === workspace.name
       ? currentUser.email
       : "";
+  const accessGrantDraftSequence = useRef(0);
+  const [accessGrantDraft, setAccessGrantDraft] = useState<{
+    id: number;
+    draft: AccessGrantDraft;
+    workspace: string;
+    userEmail: string;
+  }>();
+  useLayoutEffect(() => {
+    if (
+      !visible ||
+      accessGrantDraft?.workspace !== workspace?.name ||
+      accessGrantDraft?.userEmail !== userEmail
+    ) {
+      setAccessGrantDraft(undefined);
+    }
+  }, [visible, workspace?.name, userEmail, accessGrantDraft]);
+  const openAccessGrantDraft = useCallback(
+    (draft: AccessGrantDraft) => {
+      const owner = useAppStore.getState();
+      if (
+        !useAgentStore.getState().visible ||
+        !owner.workspace?.name ||
+        !owner.currentUser?.email ||
+        owner.currentUser.workspace !== owner.workspace.name ||
+        owner.workspace.name !== workspace?.name ||
+        owner.currentUser.email !== userEmail
+      )
+        return false;
+      setAccessGrantDraft({
+        id: ++accessGrantDraftSequence.current,
+        draft,
+        workspace: owner.workspace.name,
+        userEmail,
+      });
+      return true;
+    },
+    [workspace?.name, userEmail]
+  );
 
   useLayoutEffect(() => {
     useAgentStore.getState().setWorkspaceName(workspace?.name, userEmail);
@@ -1376,11 +1424,32 @@ export function AgentWindow() {
       if (!chatContext) return;
       const store = useAgentStore.getState();
       const page = getCurrentPageSnapshot();
-      const chat = store.createChat({
-        page,
-        context: chatContext,
-        workspaceName: workspace?.name,
-      });
+      const current = store.getChat(store.currentChatId);
+      const canReusePlaceholder =
+        current &&
+        !current.context &&
+        !current.workspaceName &&
+        !current.page &&
+        !current.title &&
+        !current.capability &&
+        !current.archived &&
+        !current.interrupted &&
+        !current.runId &&
+        !current.runCheckpoint &&
+        !current.runBudget &&
+        current.status === "idle" &&
+        !store.isChatRunning(current.id) &&
+        store.getMessages(current.id).length === 0 &&
+        !store.getPendingAsk(current.id) &&
+        !store.draftsByChatId[current.id] &&
+        !store.queuedUserMessagesByChatId[current.id];
+      const chat = canReusePlaceholder
+        ? store.ensureCurrentChat(page, chatContext, workspace?.name)
+        : store.createChat({
+            page,
+            context: chatContext,
+            workspaceName: workspace?.name,
+          });
       if (useAgentStore.getState().currentChatId !== chat.id) return;
       const hasBoundMention =
         runMode === "default" &&
@@ -1923,6 +1992,7 @@ export function AgentWindow() {
     ) : (
       <>
         <AgentChat
+          onOpenAccessGrantDraft={openAccessGrantDraft}
           className="min-h-0 flex-1"
           contextLabel={
             currentChat?.context
@@ -2047,20 +2117,46 @@ export function AgentWindow() {
     return null;
   }
 
+  const accessGrantDrawer = accessGrantDraft &&
+    accessGrantDraft.workspace === workspace?.name &&
+    accessGrantDraft.userEmail === userEmail && (
+      <Suspense fallback={null}>
+        <AgentAccessGrantRequestDrawer
+          key={accessGrantDraft.id}
+          project={accessGrantDraft.draft.project}
+          targets={accessGrantDraft.draft.targets}
+          query={accessGrantDraft.draft.statement}
+          schema={accessGrantDraft.draft.schema}
+          container={accessGrantDraft.draft.container}
+          unmask={accessGrantDraft.draft.unmask}
+          reason={accessGrantDraft.draft.reason}
+          onClose={() =>
+            setAccessGrantDraft((current) =>
+              current?.id === accessGrantDraft.id ? undefined : current
+            )
+          }
+        />
+      </Suspense>
+    );
   if (minimized) {
-    return createPortal(
-      <AgentMinimizedLauncher
-        initialPosition={launcherPositionRef.current}
-        onPositionChange={(position) => {
-          launcherPositionRef.current = position;
-        }}
-        onOpen={() => useAgentStore.getState().open()}
-      />,
-      getLayerRoot("agent")
+    return (
+      <>
+        {accessGrantDrawer}
+        {createPortal(
+          <AgentMinimizedLauncher
+            initialPosition={launcherPositionRef.current}
+            onPositionChange={(position) => {
+              launcherPositionRef.current = position;
+            }}
+            onOpen={() => useAgentStore.getState().open()}
+          />,
+          getLayerRoot("agent")
+        )}
+      </>
     );
   }
 
-  return createPortal(
+  const agentWindow = createPortal(
     <div
       ref={windowRef}
       data-agent-window
@@ -2722,6 +2818,12 @@ export function AgentWindow() {
         )}
     </div>,
     getLayerRoot("agent")
+  );
+  return (
+    <>
+      {accessGrantDrawer}
+      {agentWindow}
+    </>
   );
 }
 

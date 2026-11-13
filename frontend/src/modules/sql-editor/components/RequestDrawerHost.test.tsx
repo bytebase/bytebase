@@ -16,11 +16,13 @@ vi.mock("./AccessGrantRequestDrawer", () => ({
     query,
     targets,
     schema,
+    reason,
     onClose,
   }: {
     query?: string;
     targets: string[];
     schema?: string;
+    reason?: string;
     onClose: () => void;
   }) => (
     <div
@@ -28,6 +30,7 @@ vi.mock("./AccessGrantRequestDrawer", () => ({
       data-query={query}
       data-targets={targets.join(",")}
       data-schema={schema}
+      data-reason={reason}
     >
       <button type="button" onClick={onClose}>
         Close draft
@@ -52,6 +55,7 @@ function Controls({ onAttempt }: { onAttempt: (opened: boolean) => void }) {
               query: "SELECT id FROM users",
               targets: ["instances/prod/databases/app"],
               schema: "public",
+              reason: "Investigate orders",
             }) ?? false
           )
         }
@@ -105,6 +109,7 @@ describe("RequestDrawerHost", () => {
     expect(drawer?.dataset.query).toBe("SELECT id FROM users");
     expect(drawer?.dataset.targets).toBe("instances/prod/databases/app");
     expect(drawer?.dataset.schema).toBe("public");
+    expect(drawer?.dataset.reason).toBe("Investigate orders");
 
     act(() =>
       container.querySelectorAll<HTMLButtonElement>("button")[1]?.click()

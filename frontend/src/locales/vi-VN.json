@@ -23,6 +23,8 @@
   },
   "agent": {
     "access-grant-draft": {
+      "default-reason": "Yêu cầu quyền truy vấn tạm thời đối với {{database}}.",
+      "default-unmask-reason": "Yêu cầu quyền truy vấn tạm thời đối với {{database}} với kết quả không bị che.",
       "open": "Open access request draft",
       "storage-failed": "Couldn't prepare the access request. Try again.",
       "unavailable": "Couldn't open the access request. The database or access settings may have changed."
@@ -197,6 +199,13 @@
         "create": "Tạo kiểu che dữ liệu tùy chỉnh…",
         "create-description": "Chuẩn bị kiểu ngữ nghĩa mới với cấu hình che dữ liệu của bạn.",
         "question": "Kiểu ngữ nghĩa nào sẽ che dữ liệu cho các cột này?"
+      },
+      "unmask-method": {
+        "exemption": "Miễn trừ che dữ liệu",
+        "exemption-description": "Bỏ che dữ liệu cho các tài nguyên đã chọn. Cần có sẵn quyền truy vấn.",
+        "jit": "Cấp quyền truy cập",
+        "jit-description": "Yêu cầu quyền truy cập tạm thời cho chính bạn vào một truy vấn chỉ đọc cụ thể, với tính năng bỏ che dữ liệu được bật.",
+        "question": "Bạn muốn truy cập dữ liệu chưa che bằng cách nào?"
       }
     },
     "masking-exemption-draft": {
@@ -378,8 +387,6 @@
       "paused": "Lượt chạy đã tạm dừng khi đạt giới hạn token.",
       "reached": "Lượt chạy này đã đạt giới hạn token.",
       "recovery-unavailable": "Trình duyệt này không thể tiếp tục an toàn các lượt chạy Agent đã lưu. Hãy sử dụng trình duyệt được hỗ trợ và đã cập nhật.",
-      "remote-busy": "Lượt chạy này có thể đang hoạt động trong thẻ khác.",
-      "resume": "Tiếp tục",
       "run-limit": "Giới hạn token của lượt chạy này",
       "title": "Ngân sách token của lượt chạy",
       "usage": "{{used}} / {{limit}} token",
@@ -2098,8 +2105,7 @@
       "visit-issues": "Truy cập Vấn đề",
       "visit-prjects": "Truy cập Dự án",
       "yours": "Liên kết nhanh của bạn"
-    },
-    "workspace": "Không gian làm việc"
+    }
   },
   "masking": {
     "reason": {

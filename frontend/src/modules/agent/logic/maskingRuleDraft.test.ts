@@ -112,6 +112,18 @@ function allowedSetup(): Awaited<ReturnType<typeof getMaskingSetup>> {
   };
   return {
     source: "frontend-permission-check",
+    justInTime: {
+      enabled: false,
+      feature: "unavailable",
+      featureRequirement: {
+        ...maskingRequirement,
+        feature: "FEATURE_JIT",
+        featureTitle: "Just-in-Time Access",
+      },
+      create: evidence,
+      eligible: false,
+      exemptionFallback: false,
+    },
     subscription: {
       status: "available",
       plan: "ENTERPRISE",

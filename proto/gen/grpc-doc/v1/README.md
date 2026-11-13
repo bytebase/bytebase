@@ -479,15 +479,27 @@
     - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
+    - [DiscoverNeonBranchesRequest](#bytebase-v1-DiscoverNeonBranchesRequest)
+    - [DiscoverNeonBranchesResponse](#bytebase-v1-DiscoverNeonBranchesResponse)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
+    - [ImportInstancesRequest](#bytebase-v1-ImportInstancesRequest)
+    - [ImportInstancesResponse](#bytebase-v1-ImportInstancesResponse)
     - [Instance](#bytebase-v1-Instance)
     - [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry)
+    - [InstanceImport](#bytebase-v1-InstanceImport)
+    - [InstanceImportFailure](#bytebase-v1-InstanceImportFailure)
+    - [InstanceImportResult](#bytebase-v1-InstanceImportResult)
     - [InstanceResource](#bytebase-v1-InstanceResource)
     - [KerberosConfig](#bytebase-v1-KerberosConfig)
     - [ListInstanceDatabaseRequest](#bytebase-v1-ListInstanceDatabaseRequest)
     - [ListInstanceDatabaseResponse](#bytebase-v1-ListInstanceDatabaseResponse)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [NeonBranch](#bytebase-v1-NeonBranch)
+    - [NeonBranchSource](#bytebase-v1-NeonBranchSource)
+    - [NeonCredential](#bytebase-v1-NeonCredential)
+    - [NeonDatabase](#bytebase-v1-NeonDatabase)
+    - [NeonProjectDiscoveryFailure](#bytebase-v1-NeonProjectDiscoveryFailure)
     - [PrepareSampleProjectInstanceRequest](#bytebase-v1-PrepareSampleProjectInstanceRequest)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
@@ -506,6 +518,8 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceExternalSecret.TokenType](#bytebase-v1-DataSourceExternalSecret-TokenType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
+    - [InstanceImportFailure.CreationOutcome](#bytebase-v1-InstanceImportFailure-CreationOutcome)
+    - [Vendor](#bytebase-v1-Vendor)
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
@@ -8012,6 +8026,42 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
+<a name="bytebase-v1-DiscoverNeonBranchesRequest"></a>
+
+### DiscoverNeonBranchesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, branches are discovered for the workspace collection. |
+| api_key | [string](#string) |  | Used only during this request and never persisted. |
+| project_id | [string](#string) |  | Neon project filter. Required for project-scoped Neon keys. |
+| page_size | [int32](#int32) |  | Defaults to 50. Values above 100 are capped; negative values are invalid. |
+| page_token | [string](#string) |  | Opaque continuation token containing no credentials. The destination and project filter must match the original request; page size may change. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiscoverNeonBranchesResponse"></a>
+
+### DiscoverNeonBranchesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branches | [NeonBranch](#bytebase-v1-NeonBranch) | repeated |  |
+| next_page_token | [string](#string) |  | Only an empty token indicates completion; a page may contain zero branches. |
+| failures | [NeonProjectDiscoveryFailure](#bytebase-v1-NeonProjectDiscoveryFailure) | repeated | Projects that could not be enumerated must not be interpreted as empty. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetInstanceRequest"></a>
 
 ### GetInstanceRequest
@@ -8021,6 +8071,38 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} or projects/{project}/instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-ImportInstancesRequest"></a>
+
+### ImportInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) | optional | The parent, which owns this collection of instances. Format: projects/{project}. If omitted, every entry is created in the workspace collection; otherwise, every entry is created in this project collection. |
+| neon_credential | [NeonCredential](#bytebase-v1-NeonCredential) |  |  |
+| imports | [InstanceImport](#bytebase-v1-InstanceImport) | repeated | Between 1 and 20 entries. Every entry&#39;s source must belong to the credential. Duplicate target IDs or sources are rejected before any creation. Successful entries are not rolled back. |
+
+
+
+
+
+
+<a name="bytebase-v1-ImportInstancesResponse"></a>
+
+### ImportInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| results | [InstanceImportResult](#bytebase-v1-InstanceImportResult) | repeated | Exactly one result per entry, in request order. |
 
 
 
@@ -8049,6 +8131,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | sync_databases | [SyncDatabases](#bytebase-v1-SyncDatabases) |  | Enable sync for following databases. Not set means sync all schemas &amp; databases. |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last time the instance was synced. |
 | labels | [Instance.LabelsEntry](#bytebase-v1-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+| vendor | [Vendor](#bytebase-v1-Vendor) |  | Database service variant. Unspecified retains generic connection behavior. |
 
 
 
@@ -8065,6 +8148,58 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceImport"></a>
+
+### InstanceImport
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_id | [string](#string) |  | Bytebase instance resource ID. Uniqueness does not provide idempotency. |
+| instance | [Instance](#bytebase-v1-Instance) |  | The instance to register, with the same meaning as in CreateInstance. The source determines engine, vendor, and data_sources, which must be unset. The workspace license determines activation, so a supplied value is ignored. |
+| username | [string](#string) |  | Existing database user for the instance&#39;s ADMIN data source. The server derives the host and port from the source. |
+| connection_database | [string](#string) |  | Initial connection target, independent of instance.sync_databases. |
+| password | [string](#string) | optional | Omit to let the vendor supply the password. A supplied empty value is invalid. |
+| neon_branch | [NeonBranchSource](#bytebase-v1-NeonBranchSource) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceImportFailure"></a>
+
+### InstanceImportFailure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [google.rpc.Status](#google-rpc-Status) |  |  |
+| creation_outcome | [InstanceImportFailure.CreationOutcome](#bytebase-v1-InstanceImportFailure-CreationOutcome) |  | Always populated. Unknown outcomes must be reconciled before retrying. |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceImportResult"></a>
+
+### InstanceImportResult
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| imported | [Instance](#bytebase-v1-Instance) |  | Confirms registration, not synchronization. |
+| failure | [InstanceImportFailure](#bytebase-v1-InstanceImportFailure) |  |  |
 
 
 
@@ -8180,6 +8315,90 @@ For example: name == &#34;sample instance&#34; name.contains(&#34;sample&#34;) r
 | ----- | ---- | ----- | ----------- |
 | instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-NeonBranch"></a>
+
+### NeonBranch
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_id | [string](#string) |  |  |
+| project_title | [string](#string) |  |  |
+| branch_id | [string](#string) |  |  |
+| branch_title | [string](#string) |  |  |
+| databases | [NeonDatabase](#bytebase-v1-NeonDatabase) | repeated |  |
+| roles | [string](#string) | repeated |  |
+| discovery_error | [google.rpc.Status](#google-rpc-Status) |  | Absent when inspection succeeded and a direct read-write endpoint exists. Successful discovery does not establish database access or privileges. |
+
+
+
+
+
+
+<a name="bytebase-v1-NeonBranchSource"></a>
+
+### NeonBranchSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_id | [string](#string) |  |  |
+| branch_id | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-NeonCredential"></a>
+
+### NeonCredential
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| api_key | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-NeonDatabase"></a>
+
+### NeonDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| owner | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-NeonProjectDiscoveryFailure"></a>
+
+### NeonProjectDiscoveryFailure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_id | [string](#string) |  |  |
+| status | [google.rpc.Status](#google-rpc-Status) |  |  |
 
 
 
@@ -8443,6 +8662,31 @@ CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM conne
 | READ_ONLY | 2 | Read-only data source for query operations. |
 
 
+
+<a name="bytebase-v1-InstanceImportFailure-CreationOutcome"></a>
+
+### InstanceImportFailure.CreationOutcome
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CREATION_OUTCOME_UNSPECIFIED | 0 |  |
+| NOT_CREATED | 1 |  |
+| UNKNOWN | 2 |  |
+
+
+
+<a name="bytebase-v1-Vendor"></a>
+
+### Vendor
+Database service variant, independent of engine and registration method.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VENDOR_UNSPECIFIED | 0 |  |
+| NEON | 1 |  |
+
+
  
 
  
@@ -8458,6 +8702,8 @@ InstanceService manages database instances and their connections.
 | GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) | Gets a database instance by name. Permissions required: bb.instances.get |
 | ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) | Lists database instances, optionally within a project. Permissions required: bb.instances.list |
 | CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Creates a new database instance. Permissions required: bb.instances.create |
+| DiscoverNeonBranches | [DiscoverNeonBranchesRequest](#bytebase-v1-DiscoverNeonBranchesRequest) | [DiscoverNeonBranchesResponse](#bytebase-v1-DiscoverNeonBranchesResponse) | Discovers Neon branches without persisting the management API key. Permissions required: bb.instances.create |
+| ImportInstances | [ImportInstancesRequest](#bytebase-v1-ImportInstancesRequest) | [ImportInstancesResponse](#bytebase-v1-ImportInstancesResponse) | Registers instances resolved from a vendor&#39;s control plane. Synchronous; entries succeed or fail independently and successes are not rolled back. Registration does not wait for instance synchronization. Permissions required: bb.instances.create |
 | PrepareSampleProjectInstance | [PrepareSampleProjectInstanceRequest](#bytebase-v1-PrepareSampleProjectInstanceRequest) | [Instance](#bytebase-v1-Instance) | Prepares a Sample Project Instance for a project. Permissions required: bb.instances.create |
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) | Updates a database instance. Permissions required: bb.instances.update |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes or soft-deletes a database instance. Soft-delete requests fail with FAILED_PRECONDITION while any task run targeting the instance is pending, available, or running. Permissions required: bb.instances.delete |

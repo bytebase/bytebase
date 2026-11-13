@@ -593,6 +593,10 @@
                   <a href="#bytebase.store.DataSourceType"><span class="badge">E</span>DataSourceType</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.Vendor"><span class="badge">E</span>Vendor</a>
+                </li>
+              
               
               
             </ul>
@@ -5324,6 +5328,13 @@ It is used to determine whether the table names and database names are case sens
 For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } </p></td>
                 </tr>
               
+                <tr>
+                  <td>vendor</td>
+                  <td><a href="#bytebase.store.Vendor">Vendor</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -5795,6 +5806,29 @@ holds the token value.</p></td>
               <tr>
                 <td>READ_ONLY</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.Vendor">Vendor</h3>
+        <p>Database service variant, independent of engine and registration method.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VENDOR_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>NEON</td>
+                <td>1</td>
                 <td><p></p></td>
               </tr>
             

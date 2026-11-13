@@ -43,6 +43,12 @@ const (
 	// InstanceServiceCreateInstanceProcedure is the fully-qualified name of the InstanceService's
 	// CreateInstance RPC.
 	InstanceServiceCreateInstanceProcedure = "/bytebase.v1.InstanceService/CreateInstance"
+	// InstanceServiceDiscoverNeonBranchesProcedure is the fully-qualified name of the InstanceService's
+	// DiscoverNeonBranches RPC.
+	InstanceServiceDiscoverNeonBranchesProcedure = "/bytebase.v1.InstanceService/DiscoverNeonBranches"
+	// InstanceServiceImportInstancesProcedure is the fully-qualified name of the InstanceService's
+	// ImportInstances RPC.
+	InstanceServiceImportInstancesProcedure = "/bytebase.v1.InstanceService/ImportInstances"
 	// InstanceServicePrepareSampleProjectInstanceProcedure is the fully-qualified name of the
 	// InstanceService's PrepareSampleProjectInstance RPC.
 	InstanceServicePrepareSampleProjectInstanceProcedure = "/bytebase.v1.InstanceService/PrepareSampleProjectInstance"
@@ -89,6 +95,14 @@ type InstanceServiceClient interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Discovers Neon branches without persisting the management API key.
+	// Permissions required: bb.instances.create
+	DiscoverNeonBranches(context.Context, *connect.Request[v1.DiscoverNeonBranchesRequest]) (*connect.Response[v1.DiscoverNeonBranchesResponse], error)
+	// Registers instances resolved from a vendor's control plane. Synchronous;
+	// entries succeed or fail independently and successes are not rolled back.
+	// Registration does not wait for instance synchronization.
+	// Permissions required: bb.instances.create
+	ImportInstances(context.Context, *connect.Request[v1.ImportInstancesRequest]) (*connect.Response[v1.ImportInstancesResponse], error)
 	// Prepares a Sample Project Instance for a project.
 	// Permissions required: bb.instances.create
 	PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error)
@@ -155,6 +169,18 @@ func NewInstanceServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			httpClient,
 			baseURL+InstanceServiceCreateInstanceProcedure,
 			connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+			connect.WithClientOptions(opts...),
+		),
+		discoverNeonBranches: connect.NewClient[v1.DiscoverNeonBranchesRequest, v1.DiscoverNeonBranchesResponse](
+			httpClient,
+			baseURL+InstanceServiceDiscoverNeonBranchesProcedure,
+			connect.WithSchema(instanceServiceMethods.ByName("DiscoverNeonBranches")),
+			connect.WithClientOptions(opts...),
+		),
+		importInstances: connect.NewClient[v1.ImportInstancesRequest, v1.ImportInstancesResponse](
+			httpClient,
+			baseURL+InstanceServiceImportInstancesProcedure,
+			connect.WithSchema(instanceServiceMethods.ByName("ImportInstances")),
 			connect.WithClientOptions(opts...),
 		),
 		prepareSampleProjectInstance: connect.NewClient[v1.PrepareSampleProjectInstanceRequest, v1.Instance](
@@ -231,6 +257,8 @@ type instanceServiceClient struct {
 	getInstance                  *connect.Client[v1.GetInstanceRequest, v1.Instance]
 	listInstances                *connect.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
 	createInstance               *connect.Client[v1.CreateInstanceRequest, v1.Instance]
+	discoverNeonBranches         *connect.Client[v1.DiscoverNeonBranchesRequest, v1.DiscoverNeonBranchesResponse]
+	importInstances              *connect.Client[v1.ImportInstancesRequest, v1.ImportInstancesResponse]
 	prepareSampleProjectInstance *connect.Client[v1.PrepareSampleProjectInstanceRequest, v1.Instance]
 	updateInstance               *connect.Client[v1.UpdateInstanceRequest, v1.Instance]
 	deleteInstance               *connect.Client[v1.DeleteInstanceRequest, emptypb.Empty]
@@ -257,6 +285,16 @@ func (c *instanceServiceClient) ListInstances(ctx context.Context, req *connect.
 // CreateInstance calls bytebase.v1.InstanceService.CreateInstance.
 func (c *instanceServiceClient) CreateInstance(ctx context.Context, req *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return c.createInstance.CallUnary(ctx, req)
+}
+
+// DiscoverNeonBranches calls bytebase.v1.InstanceService.DiscoverNeonBranches.
+func (c *instanceServiceClient) DiscoverNeonBranches(ctx context.Context, req *connect.Request[v1.DiscoverNeonBranchesRequest]) (*connect.Response[v1.DiscoverNeonBranchesResponse], error) {
+	return c.discoverNeonBranches.CallUnary(ctx, req)
+}
+
+// ImportInstances calls bytebase.v1.InstanceService.ImportInstances.
+func (c *instanceServiceClient) ImportInstances(ctx context.Context, req *connect.Request[v1.ImportInstancesRequest]) (*connect.Response[v1.ImportInstancesResponse], error) {
+	return c.importInstances.CallUnary(ctx, req)
 }
 
 // PrepareSampleProjectInstance calls bytebase.v1.InstanceService.PrepareSampleProjectInstance.
@@ -325,6 +363,14 @@ type InstanceServiceHandler interface {
 	// Creates a new database instance.
 	// Permissions required: bb.instances.create
 	CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error)
+	// Discovers Neon branches without persisting the management API key.
+	// Permissions required: bb.instances.create
+	DiscoverNeonBranches(context.Context, *connect.Request[v1.DiscoverNeonBranchesRequest]) (*connect.Response[v1.DiscoverNeonBranchesResponse], error)
+	// Registers instances resolved from a vendor's control plane. Synchronous;
+	// entries succeed or fail independently and successes are not rolled back.
+	// Registration does not wait for instance synchronization.
+	// Permissions required: bb.instances.create
+	ImportInstances(context.Context, *connect.Request[v1.ImportInstancesRequest]) (*connect.Response[v1.ImportInstancesResponse], error)
 	// Prepares a Sample Project Instance for a project.
 	// Permissions required: bb.instances.create
 	PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error)
@@ -387,6 +433,18 @@ func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect.Handl
 		InstanceServiceCreateInstanceProcedure,
 		svc.CreateInstance,
 		connect.WithSchema(instanceServiceMethods.ByName("CreateInstance")),
+		connect.WithHandlerOptions(opts...),
+	)
+	instanceServiceDiscoverNeonBranchesHandler := connect.NewUnaryHandler(
+		InstanceServiceDiscoverNeonBranchesProcedure,
+		svc.DiscoverNeonBranches,
+		connect.WithSchema(instanceServiceMethods.ByName("DiscoverNeonBranches")),
+		connect.WithHandlerOptions(opts...),
+	)
+	instanceServiceImportInstancesHandler := connect.NewUnaryHandler(
+		InstanceServiceImportInstancesProcedure,
+		svc.ImportInstances,
+		connect.WithSchema(instanceServiceMethods.ByName("ImportInstances")),
 		connect.WithHandlerOptions(opts...),
 	)
 	instanceServicePrepareSampleProjectInstanceHandler := connect.NewUnaryHandler(
@@ -463,6 +521,10 @@ func NewInstanceServiceHandler(svc InstanceServiceHandler, opts ...connect.Handl
 			instanceServiceListInstancesHandler.ServeHTTP(w, r)
 		case InstanceServiceCreateInstanceProcedure:
 			instanceServiceCreateInstanceHandler.ServeHTTP(w, r)
+		case InstanceServiceDiscoverNeonBranchesProcedure:
+			instanceServiceDiscoverNeonBranchesHandler.ServeHTTP(w, r)
+		case InstanceServiceImportInstancesProcedure:
+			instanceServiceImportInstancesHandler.ServeHTTP(w, r)
 		case InstanceServicePrepareSampleProjectInstanceProcedure:
 			instanceServicePrepareSampleProjectInstanceHandler.ServeHTTP(w, r)
 		case InstanceServiceUpdateInstanceProcedure:
@@ -504,6 +566,14 @@ func (UnimplementedInstanceServiceHandler) ListInstances(context.Context, *conne
 
 func (UnimplementedInstanceServiceHandler) CreateInstance(context.Context, *connect.Request[v1.CreateInstanceRequest]) (*connect.Response[v1.Instance], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.CreateInstance is not implemented"))
+}
+
+func (UnimplementedInstanceServiceHandler) DiscoverNeonBranches(context.Context, *connect.Request[v1.DiscoverNeonBranchesRequest]) (*connect.Response[v1.DiscoverNeonBranchesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.DiscoverNeonBranches is not implemented"))
+}
+
+func (UnimplementedInstanceServiceHandler) ImportInstances(context.Context, *connect.Request[v1.ImportInstancesRequest]) (*connect.Response[v1.ImportInstancesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.InstanceService.ImportInstances is not implemented"))
 }
 
 func (UnimplementedInstanceServiceHandler) PrepareSampleProjectInstance(context.Context, *connect.Request[v1.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1.Instance], error) {
