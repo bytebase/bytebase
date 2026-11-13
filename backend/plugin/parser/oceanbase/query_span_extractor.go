@@ -1380,6 +1380,10 @@ func classifyQueryType(node ast.Node, allSystems bool, source string) base.Query
 		if isDescribeStatement(source, n.Loc) {
 			return base.SelectInfoSchema
 		}
+		// EXPLAIN INTO stores the plan in the table it names.
+		if n.Into != "" {
+			return base.DML
+		}
 		if n.Analyze {
 			switch n.Stmt.(type) {
 			case *ast.SelectStmt, *ast.TableStmt, *ast.ValuesStmt:

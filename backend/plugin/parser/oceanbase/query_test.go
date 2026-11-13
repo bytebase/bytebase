@@ -162,6 +162,34 @@ func TestValidateQueryExplainAnalyze(t *testing.T) {
 // An export under EXPLAIN is still an export request: the editor must not label
 // as a read what it refuses when asked directly. The reads beneath keep the
 // gate from being satisfied by refusing every EXPLAIN.
+// EXPLAIN INTO writes the plan into the table it names, so it is not a read,
+// whatever statement it plans. Naming the statement id alone writes nothing.
+func TestValidateQueryExplainInto(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		wantValid bool
+	}{
+		{"EXPLAIN INTO plan_tab SELECT * FROM t", false},
+		{"EXPLAIN INTO plan_tab SET STATEMENT_ID = 'x' SELECT * FROM t", false},
+		{"EXPLAIN SET STATEMENT_ID = 'x' SELECT * FROM t", true},
+		{"EXPLAIN SELECT * FROM t", true},
+	} {
+		t.Run(tc.statement, func(t *testing.T) {
+			gotValid, _, err := validateQuery(tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantValid, gotValid)
+
+			node, err := singleStatement(tc.statement)
+			require.NoError(t, err)
+			wantType := base.Explain
+			if !tc.wantValid {
+				wantType = base.DML
+			}
+			require.Equal(t, wantType, classifyQueryType(node, false, tc.statement))
+		})
+	}
+}
+
 func TestValidateQueryExportGate(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
