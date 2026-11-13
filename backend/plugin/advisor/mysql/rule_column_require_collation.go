@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -21,95 +21,29 @@ func init() {
 }
 
 // ColumnRequireCollationAdvisor is the advisor checking for require collation.
+// The judgment lives in omni (mysql/v1review.ColumnRequireCollation).
 type ColumnRequireCollationAdvisor struct {
 }
 
+// Check checks for require collation.
 func (*ColumnRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	rule := &columnRequireCollationRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnRequireCollationRule struct {
-	BaseRule
-}
-
-func (*columnRequireCollationRule) Name() string {
-	return "ColumnRequireCollationRule"
-}
-
-func (r *columnRequireCollationRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnRequireCollationRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	for _, col := range n.Columns {
-		if col == nil || col.TypeName == nil {
-			continue
-		}
-		if isCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range mysqlv1review.ColumnRequireCollation([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NoCollation.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Column %s does not have a collation specified", col.Name),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("Column %s does not have a collation specified", f.Name),
+				StartPosition: findingPosition(stmt, f),
 			})
 		}
 	}
-}
-
-func (r *columnRequireCollationRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	for _, cmd := range n.Commands {
-		if cmd == nil || cmd.Type != ast.ATAddColumn {
-			continue
-		}
-		if cmd.Column != nil && cmd.Column.TypeName != nil {
-			if isCharsetDataType(cmd.Column.TypeName) && cmd.Column.TypeName.Collate == "" {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.NoCollation.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("Column %s does not have a collation specified", cmd.Column.Name),
-					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
-				})
-			}
-		}
-		for _, col := range cmd.Columns {
-			if col == nil || col.TypeName == nil {
-				continue
-			}
-			if isCharsetDataType(col.TypeName) && col.TypeName.Collate == "" {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.NoCollation.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("Column %s does not have a collation specified", col.Name),
-					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
-				})
-			}
-		}
-	}
+	return adviceList, nil
 }
