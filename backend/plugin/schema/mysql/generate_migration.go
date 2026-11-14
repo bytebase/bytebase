@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // tableDrop holds drop operations for deduplication
@@ -23,8 +24,22 @@ type tableDrop struct {
 	columns          map[string]string
 }
 
+// MariaDB and OceanBase parse as MySQL, and their metadata diffs keep the MySQL
+// generator Bytebase used before MySQL's moved to omni's catalog, until omni's
+// catalogs for them can diff (mariadb/catalog has no Diff or GenerateMigration).
 func init() {
-	schema.RegisterGenerateMigration(storepb.Engine_MYSQL, generateMigration)
+	schema.RegisterDiffMetadataMigration(storepb.Engine_MARIADB, mariaDBOceanBaseDiffMetadataMigration)
+	schema.RegisterDiffMetadataMigration(storepb.Engine_OCEANBASE, mariaDBOceanBaseDiffMetadataMigration)
+}
+
+// mariaDBOceanBaseDiffMetadataMigration diffs two snapshots with Bytebase's
+// metadata differ, comparing them as MySQL, and renders the MySQL migration.
+func mariaDBOceanBaseDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL, oldSchema, newSchema)
+	if err != nil {
+		return "", err
+	}
+	return generateMigration(diff)
 }
 
 func generateMigration(diff *schema.MetadataDiff) (string, error) {

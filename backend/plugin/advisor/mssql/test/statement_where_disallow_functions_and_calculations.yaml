@@ -577,11 +577,11 @@
 - statement: SELECT * FROM pokes p WHERE EXISTS (SELECT 1 FROM (SELECT foo AS c1 FROM pokes2) d WHERE ABS(c1) > 0);
   changeType: 1
 
-# Test (design gap): CREATE MATERIALIZED VIEW with function on indexed column — should flag.
+# Test (design gap): a view's SELECT with function on indexed column — should flag.
 - statement: |-
-    CREATE MATERIALIZED VIEW v
-    WITH (DISTRIBUTION = ROUND_ROBIN)
-    AS SELECT c1 FROM pokes WHERE ABS(c1) > 0;
+    CREATE VIEW v
+    WITH SCHEMABINDING
+    AS SELECT c1 FROM dbo.pokes WHERE ABS(c1) > 0;
   changeType: 1
   want:
     - status: 2

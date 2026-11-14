@@ -865,9 +865,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 		return connect.NewResponse(&v1pb.DiffSchemaResponse{Diff: migrationSQL}), nil
 	}
 
-	// Metadata-backed diff path. PostgreSQL/CockroachDB changelog targets use
-	// their registered metadata migration here, while other engines keep the
-	// existing metadata parser/generator behavior.
+	// Metadata-backed diff path.
 	sourceDBSchema, err := s.getSourceDBMetadata(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get source schema"))
@@ -876,7 +874,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get target schema"))
 	}
-	migrationSQL, err := schema.DiffMigration(engine, sourceDBSchema, targetDBSchema)
+	migrationSQL, err := schema.DiffMigration(metadataDiffEngine(rawEngine, engine), sourceDBSchema, targetDBSchema)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to compute schema diff"))
 	}
@@ -989,6 +987,16 @@ func (s *DatabaseService) getDiffSchemaDatabase(ctx context.Context, name string
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %q", name))
 	}
 	return database, nil
+}
+
+// metadataDiffEngine is the engine a metadata diff registers under. MariaDB and
+// OceanBase parse as MySQL but keep Bytebase's MySQL generator, registered under
+// their own engines; MySQL's diff runs on omni's catalog.
+func metadataDiffEngine(rawEngine, parserEngine storepb.Engine) storepb.Engine {
+	if rawEngine == storepb.Engine_MARIADB || rawEngine == storepb.Engine_OCEANBASE {
+		return rawEngine
+	}
+	return parserEngine
 }
 
 // shouldDiffSchemaViaSDL reports whether a raw-schema-text DiffSchema target should take the

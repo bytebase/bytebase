@@ -22,13 +22,10 @@ func init() {
 	// route OB declarative releases through untested diff/drop-advice paths.
 	schema.RegisterDiffSDLMigration(storepb.Engine_MYSQL, mysqlDiffSDLMigrationWithContext)
 	schema.RegisterSDLDropAdvices(storepb.Engine_MYSQL, mysqlSDLDropAdvices)
-	// Metadata-to-metadata diffs (SQLService.DiffMetadata, changelog-target DiffSchema)
-	// keep the pre-SDL legacy differ/generator path (mirroring pg's
-	// RegisterDiffMetadataMigration split): without this registration,
-	// schema.DiffMigration would round-trip synced metadata through SDL text, changing
-	// the established output semantics and failing the whole diff whenever any synced
-	// object body does not parse.
-	schema.RegisterDiffMetadataMigration(storepb.Engine_MYSQL, mysqlDiffMetadataMigration)
+	// Metadata-to-metadata diffs (DatabaseService.DiffMetadata, changelog-target
+	// DiffSchema) load the snapshots into omni's catalog rather than round-tripping
+	// them through SDL text, so one object omni cannot parse does not fail the diff.
+	schema.RegisterDiffMetadataMigration(storepb.Engine_MYSQL, omniDiffMetadataMigration)
 }
 
 // sdlDatabaseContext is the synthetic database both SDL inputs are loaded under.
@@ -193,22 +190,6 @@ func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string
 // behavior. Production callers reach the context-aware form via schema.SDLMigration.
 func mysqlDiffSDLMigration(sourceSDL, targetSDL, engineVersion string) (string, error) {
 	return mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion, nil)
-}
-
-// mysqlDiffMetadataMigration computes migration SQL between two metadata states via the
-// LEGACY differ/generator (schema.GetDatabaseSchemaDiff + schema.GenerateMigration) —
-// exactly the pre-SDL behavior of schema.DiffMigration for MySQL. Metadata-based
-// callers (SQLService.DiffMetadata, changelog-target DiffSchema) must not round-trip
-// synced metadata through SDL text: the SDL path changes the established output shape
-// and fails the whole database diff whenever any synced object body does not parse
-// (e.g. a stored view definition the omni loader rejects), which the legacy path
-// diffs textually without parsing.
-func mysqlDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL, oldSchema, newSchema)
-	if err != nil {
-		return "", err
-	}
-	return schema.GenerateMigration(storepb.Engine_MYSQL, diff)
 }
 
 // stripDatabaseContext removes the synthetic database qualifier from generated DDL.
