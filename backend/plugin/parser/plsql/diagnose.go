@@ -2,9 +2,9 @@ package plsql
 
 import (
 	"context"
-	"errors"
-	"strings"
-	"unicode"
+
+	"github.com/bytebase/omni/oracle/analysis"
+	oracleparser "github.com/bytebase/omni/oracle/parser"
 
 	"github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -14,33 +14,26 @@ func init() {
 	base.RegisterDiagnoseFunc(store.Engine_ORACLE, Diagnose)
 }
 
+// Diagnose returns the script's first syntax error as a diagnostic.
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parsePLSQLStatement(statement)
-	if syntaxError != nil {
+	if syntaxError := toSyntaxError(analysis.Diagnose(statement)); syntaxError != nil {
 		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError, statement))
 	}
-
 	return diagnostics, nil
 }
 
-func parsePLSQLStatement(statement string) *base.SyntaxError {
-	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
-	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
-		// Add a semicolon to the end of the statement to allow users to omit the semicolon
-		// for the last statement in the script.
-		statement += ";"
+// toSyntaxError places omni's error in the text omni parsed. An error without
+// a position goes at the start.
+func toSyntaxError(e *analysis.SyntaxError) *base.SyntaxError {
+	if e == nil {
+		return nil
 	}
-
-	if _, err := ParsePLSQL(statement); err != nil {
-		var syntaxErr *base.SyntaxError
-		if errors.As(convertError(err, base.Statement{Text: statement}), &syntaxErr) {
-			return syntaxErr
-		}
+	if e.Offset < 0 {
 		return &base.SyntaxError{
 			Position: &store.Position{Line: 1, Column: 1},
-			Message:  err.Error(),
+			Message:  e.Message,
 		}
 	}
-	return nil
+	return convertParseError(&oracleparser.ParseError{Position: e.Offset, Message: e.Message}, base.Statement{Text: e.Text})
 }
