@@ -112,7 +112,7 @@ func runOracleGoldenCase(
 		GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
 	}
 
-	omni, err := newQuerySpanExtractor(defaultDatabase, gCtx).getQuerySpan(ctx, statement)
+	omni, err := resolveQuerySpan(ctx, gCtx, statement, defaultDatabase)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func TestOracleLongTailTableSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Len(t, span.Results, 1)
@@ -171,9 +171,11 @@ func TestOracleLongTailTableSources(t *testing.T) {
 }
 
 func TestOracleAnalyticCountStarSources(t *testing.T) {
-	span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(
+	span, err := resolveQuerySpan(
 		context.Background(),
+		oracleLongTailTestContext(t),
 		"SELECT COUNT(*) OVER (PARTITION BY B ORDER BY A) AS C FROM T",
+		"PUBLIC",
 	)
 	require.NoError(t, err)
 	require.NotNil(t, span)
@@ -248,7 +250,7 @@ func TestOracleUnqualifiedStarExpandsAllCommaSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Len(t, span.Results, len(test.want))
@@ -332,7 +334,7 @@ func TestOracleCTEScopeAndSetOperations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Results)
@@ -342,8 +344,9 @@ func TestOracleCTEScopeAndSetOperations(t *testing.T) {
 
 func TestOracleExpressionAndAccessTableCoverage(t *testing.T) {
 	t.Run("expression nodes keep source columns", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			oracleLongTailTestContext(t),
 			`SELECT
   CASE WHEN A > 0 THEN B ELSE C END AS CASE_VALUE,
   DECODE(A, 1, B, C) AS DECODE_VALUE,
@@ -351,6 +354,7 @@ func TestOracleExpressionAndAccessTableCoverage(t *testing.T) {
   B BETWEEN A AND C AS BETWEEN_VALUE,
   X LIKE J AS LIKE_VALUE
 FROM T`,
+			"PUBLIC",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, span)
@@ -386,7 +390,7 @@ FROM T`,
 			"SELECT COALESCE((SELECT C FROM T2), A) FROM T",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), statement, "PUBLIC")
 			require.NoError(t, err, statement)
 			require.NotNil(t, span, statement)
 			require.Equal(t, sourceColumnSetFromList([]base.ColumnResource{
@@ -397,9 +401,11 @@ FROM T`,
 	})
 
 	t.Run("cursor expression uses subquery scope", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			oracleLongTailTestContext(t),
 			"SELECT CURSOR(SELECT C FROM T2) AS CUR FROM T",
+			"PUBLIC",
 		)
 		require.NoError(t, err)
 		require.NotNil(t, span)
@@ -434,7 +440,7 @@ func TestOracleResourceNotFoundPropagation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Empty(t, span.Results)
@@ -692,7 +698,7 @@ func TestOracleTypedLongTailTableSources(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("PUBLIC", oracleLongTailTestContext(t)).getQuerySpan(context.Background(), test.statement)
+			span, err := resolveQuerySpan(context.Background(), oracleLongTailTestContext(t), test.statement, "PUBLIC")
 			require.NoError(t, err)
 			require.NotNil(t, span)
 			require.Equal(t, test.want, span.Results)
