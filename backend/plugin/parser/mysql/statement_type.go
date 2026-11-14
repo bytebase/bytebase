@@ -1,9 +1,9 @@
 package mysql
 
 import (
-	"github.com/bytebase/omni/mysql/analysis"
 	"strings"
 
+	"github.com/bytebase/omni/mysql/analysis"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
