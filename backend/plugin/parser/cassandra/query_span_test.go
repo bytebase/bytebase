@@ -298,6 +298,12 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 			statement: "SELECT , , FROM users",
 			wantErr:   true,
 		},
+		{
+			// A relation names a column; CQL cannot filter on a UDT field.
+			name:      "WHERE on a UDT field",
+			statement: "SELECT * FROM users WHERE addr.city = 'x'",
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
