@@ -155,7 +155,10 @@ func convertError(err error, stmt base.Statement) error {
 	if !errors.As(err, &parseErr) {
 		return err
 	}
+	return convertParseError(parseErr, stmt)
+}
 
+func convertParseError(parseErr *oracleparser.ParseError, stmt base.Statement) *base.SyntaxError {
 	pos := ByteOffsetToRunePosition(stmt.Text, parseErr.Position)
 	if stmt.Start != nil {
 		if pos.Line == 1 {
