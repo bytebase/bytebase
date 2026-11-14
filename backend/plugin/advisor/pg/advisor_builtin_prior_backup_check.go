@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -131,7 +132,7 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(_ context.Context, checkCtx advisor
 // The backup task rejects such an UPDATE or DELETE; any other statement runs,
 // but nothing backs up the rows its CTE changes.
 func dataModifyingCTEAdvice(node ast.Node) string {
-	names := pgparser.DataModifyingCTENames(node)
+	names := pganalysis.DataModifyingCTENames(node)
 	if len(names) == 0 {
 		return ""
 	}
