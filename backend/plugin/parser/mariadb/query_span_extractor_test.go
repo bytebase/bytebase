@@ -88,7 +88,7 @@ func TestQuerySpanScaffold_QueryTypesAndAccessTables(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), newTestQuerySpanContext(), tc.statement, "db", false)
 			require.NoError(t, err)
 			require.Equal(t, tc.wantType, span.Type)
 			require.Equal(t, sourceColumnSetFromResources(tc.wantResources), span.SourceColumns)
@@ -169,7 +169,7 @@ func TestQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 			require.NoError(t, err)
 			require.Equal(t, base.Select, span.Type)
 			require.Equal(t, tc.want, span.Results)
@@ -178,9 +178,12 @@ func TestQuerySpanPhase1_SimpleSelectResultColumns(t *testing.T) {
 }
 
 func TestQuerySpanPhase2_ExpressionSourceMerging(t *testing.T) {
-	span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(
+	span, err := resolveQuerySpan(
 		context.Background(),
+		newTestQuerySpanContext(),
 		"SELECT max(a), a-b AS c1, a=b AS c2, a>b, b in (a, c) FROM t",
+		"db",
+		false,
 	)
 	require.NoError(t, err)
 	require.Equal(t, []base.QuerySpanResult{
@@ -239,7 +242,7 @@ func TestQuerySpanTemporalUnitSelector(t *testing.T) {
 		{"SELECT TIMESTAMPADD(MINUTE, 5, a) AS d2 FROM t", "d2"},
 		{"SELECT GET_FORMAT(DATE, 'ISO') AS d3 FROM t", "d3"},
 	} {
-		span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(context.Background(), tc.statement)
+		span, err := resolveQuerySpan(context.Background(), newTestQuerySpanContext(), tc.statement, "db", false)
 		require.NoError(t, err, tc.statement)
 		require.Nil(t, span.NotFoundError, tc.statement)
 		require.Len(t, span.Results, 1, tc.statement)
@@ -251,7 +254,7 @@ func TestQuerySpanTemporalUnitSelector(t *testing.T) {
 		"SELECT EXTRACT(YEAR FROM a) AS y FROM t",
 		"SELECT a + INTERVAL 1 DAY AS i FROM t",
 	} {
-		span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(context.Background(), statement)
+		span, err := resolveQuerySpan(context.Background(), newTestQuerySpanContext(), statement, "db", false)
 		require.NoError(t, err, statement)
 		require.Len(t, span.Results, 1, statement)
 		require.Nil(t, span.NotFoundError, statement)
@@ -298,7 +301,7 @@ func TestQuerySpanPhase3_FromJoinAliasAndScope(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 			require.NoError(t, err)
 			require.Equal(t, tc.want, span.Results)
 		})
@@ -309,9 +312,12 @@ func TestQuerySpanPhase4_SubqueryExpressions(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 
 	t.Run("scalar_subquery_results", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT 1 AS col_1, (SELECT(2)) AS col_2, (SELECT AVG(a + b * c) FROM t) AS avg_a_b_c FROM t",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -331,9 +337,12 @@ func TestQuerySpanPhase4_SubqueryExpressions(t *testing.T) {
 	})
 
 	t.Run("correlated_subquery_access_tables", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -390,7 +399,7 @@ func TestQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 			require.NoError(t, err)
 			require.Equal(t, tc.want, span.Results)
 		})
@@ -398,14 +407,17 @@ func TestQuerySpanPhase5And6_CTEAndSetOperations(t *testing.T) {
 }
 
 func TestQuerySpanPhase7_JSONTable(t *testing.T) {
-	span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(
+	span, err := resolveQuerySpan(
 		context.Background(),
+		newTestQuerySpanContext(),
 		`SELECT *
 FROM products,
 JSON_TABLE(product_info, '$' COLUMNS (
   product_id INT PATH '$.id',
   product_name VARCHAR(50) PATH '$.name'
 )) AS jt`,
+		"db",
+		false,
 	)
 	require.NoError(t, err)
 	require.Equal(t, []base.QuerySpanResult{
@@ -418,11 +430,11 @@ JSON_TABLE(product_info, '$' COLUMNS (
 func TestQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
 	metadata := &metadatapb.DatabaseSchemaMetadata{Name: "db"}
 	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
-	span, err := newQuerySpanExtractor("db", base.GetQuerySpanContext{
+	span, err := resolveQuerySpan(context.Background(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,
 		Engine:                  storepb.Engine_MARIADB,
-	}, false).getQuerySpan(context.Background(), "SELECT * FROM t WHERE a > 0")
+	}, "SELECT * FROM t WHERE a > 0", "db", false)
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span.Type)
 	require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t"}}), span.SourceColumns)
@@ -434,9 +446,12 @@ func TestQuerySpanSystematicMigrationRegressions(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 
 	t.Run("derived_table_column_aliases_are_applied", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT x.c1 FROM (SELECT a, b FROM t) AS x(c1, c2)",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -445,9 +460,12 @@ func TestQuerySpanSystematicMigrationRegressions(t *testing.T) {
 	})
 
 	t.Run("in_subquery_sources_are_part_of_result_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT a IN (SELECT t2.c FROM t2) AS matched FROM t1",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -463,8 +481,9 @@ func TestQuerySpanSystematicMigrationRegressions(t *testing.T) {
 	})
 
 	t.Run("explicit_expression_nodes_do_not_drop_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			`SELECT
   EXISTS (SELECT t2.a FROM t2 WHERE t2.a = t.a) AS exists_field,
   CONVERT(a USING utf8mb4) AS converted,
@@ -473,6 +492,8 @@ func TestQuerySpanSystematicMigrationRegressions(t *testing.T) {
   ROW(a, b) AS row_field,
   a + INTERVAL b DAY AS interval_field
 FROM t`,
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -500,7 +521,7 @@ FROM t`,
 			"HANDLER t CLOSE",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, base.DML, span.Type, statement)
 			require.Empty(t, span.Results, statement)
@@ -509,7 +530,7 @@ FROM t`,
 
 	// MariaDB has no TABLE statement, and spells MySQL's VALUES ROW(...) bare.
 	t.Run("values_root_returns_select_results", func(t *testing.T) {
-		valuesSpan, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "VALUES (1, 2 + 3)")
+		valuesSpan, err := resolveQuerySpan(context.Background(), gCtx, "VALUES (1, 2 + 3)", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, base.Select, valuesSpan.Type)
 		require.Equal(t, []base.QuerySpanResult{
@@ -541,7 +562,7 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 				require.NoError(t, err)
 				require.Equal(t, tc.wantType, span.Type)
 				require.Equal(t, tc.wantResults, span.Results)
@@ -551,7 +572,7 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 	})
 
 	t.Run("multiple_statements_are_rejected", func(t *testing.T) {
-		_, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT 1; SELECT 2;")
+		_, err := resolveQuerySpan(context.Background(), gCtx, "SELECT 1; SELECT 2;", "db", false)
 		require.ErrorContains(t, err, "expected exactly 1 statement")
 	})
 
@@ -565,7 +586,7 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 			"TRUNCATE TABLE t",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, base.DDL, span.Type, statement)
 			require.Empty(t, span.Results, statement)
@@ -587,7 +608,7 @@ func TestQuerySpanScenarioBatch1_RootAndQueryTypeCoverage(t *testing.T) {
 			"DEALLOCATE PREPARE stmt",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, base.DML, span.Type, statement)
 			require.Empty(t, span.Results, statement)
@@ -623,7 +644,7 @@ func TestQuerySpanScenarioBatch4_QueryTypeEdges(t *testing.T) {
 			{statement: "HELP 'contents'", want: base.QueryTypeUnknown},
 		}
 		for _, tc := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 			require.NoError(t, err, tc.statement)
 			require.Equal(t, tc.want, span.Type, tc.statement)
 			require.Empty(t, span.Results, tc.statement)
@@ -635,9 +656,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 
 	t.Run("quoted_identifier_names", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT `select`, `Camel` AS `ExactCase` FROM keyword_table",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -647,9 +671,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 
 	t.Run("variable_refs_have_empty_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT @x AS user_var, @@version AS system_var",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -659,9 +686,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 
 	t.Run("json_extract_operator_uses_object_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT product_info->'$.id' AS id FROM products",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -670,9 +700,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 
 	t.Run("group_concat_separator_contributes_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT GROUP_CONCAT(a SEPARATOR b) AS gc FROM t",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -681,9 +714,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 
 	t.Run("group_concat_order_by_contributes_lineage", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT GROUP_CONCAT(a ORDER BY b) AS gc FROM t",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -692,9 +728,12 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 	})
 
 	t.Run("duplicate_output_names_are_preserved", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT a AS x, b AS x FROM t",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -749,7 +788,7 @@ func TestQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 		}
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 				require.NoError(t, err)
 				require.Equal(t, tc.want, span.Results)
 				require.Equal(t, sourceColumnSetFromResources(tc.wantSrc), span.SourceColumns)
@@ -782,7 +821,7 @@ func TestQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 			base.QuerySpanResult{Name: "c", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t2", Column: "c"}}), IsPlainField: true},
 		)
 		for i, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			if i < 3 {
 				require.Equal(t, wantNonNatural, span.Results, statement)
@@ -794,15 +833,21 @@ func TestQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 	})
 
 	t.Run("derived_table_edges", func(t *testing.T) {
-		_, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		_, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT * FROM (SELECT a, b FROM t) AS x(c1)",
+			"db",
+			false,
 		)
 		require.ErrorContains(t, err, "derived table column list length")
 
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT y.c1 FROM (SELECT x.c1 FROM (SELECT a FROM t) AS x(c1)) AS y",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -865,7 +910,7 @@ func TestQuerySpanScenarioBatch2_FromJoinAndScopeCoverage(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 				require.NoError(t, err)
 				require.Equal(t, tc.want, span.Results)
 				require.Equal(t, sourceColumnSetFromResources(tc.wantSrc), span.SourceColumns)
@@ -884,34 +929,46 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 			"SELECT a FROM t ORDER BY (SELECT t2.a FROM t2)",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t"}, {Database: "db", Table: "t2"}}), span.SourceColumns, statement)
 		}
 	})
 
 	t.Run("cte_and_set_error_edges", func(t *testing.T) {
-		_, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		_, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"WITH c(x) AS (SELECT a, b FROM t) SELECT * FROM c",
+			"db",
+			false,
 		)
 		require.ErrorContains(t, err, "CTE column list")
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		_, err = resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"WITH RECURSIVE c(x) AS (SELECT a, b FROM t UNION SELECT a, b FROM t2) SELECT * FROM c",
+			"db",
+			false,
 		)
 		require.ErrorContains(t, err, "different column counts")
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		_, err = resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"SELECT a FROM t UNION SELECT a, b FROM t2",
+			"db",
+			false,
 		)
 		require.ErrorContains(t, err, "UNION operator left has 1 fields, right has 2 fields")
 
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"WITH c1 AS (SELECT a FROM c2), c2 AS (SELECT a FROM t) SELECT * FROM c1",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Empty(t, span.Results)
@@ -924,7 +981,7 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 			"WITH c AS (SELECT a FROM t UNION SELECT a FROM t2) SELECT a FROM c",
 		}
 		for _, statement := range tests {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, []base.QuerySpanResult{
 				{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
@@ -963,7 +1020,7 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 				require.NoError(t, err)
 				require.Equal(t, tc.want, span.Results)
 			})
@@ -1015,7 +1072,7 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 				require.NoError(t, err)
 				require.Equal(t, tc.want, span.Results)
 			})
@@ -1023,9 +1080,12 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 	})
 
 	t.Run("recursive_cte_reaches_stable_source_closure", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"WITH RECURSIVE c(x) AS (SELECT a FROM t UNION SELECT t2.b FROM t2 JOIN c ON c.x = t2.a) SELECT * FROM c",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -1034,9 +1094,12 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 	})
 
 	t.Run("recursive_cte_left_deep_set_op_registers_before_recursive_left_branch", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(
+		span, err := resolveQuerySpan(
 			context.Background(),
+			gCtx,
 			"WITH RECURSIVE c(x) AS (SELECT a FROM t UNION SELECT t2.b FROM t2 JOIN c ON c.x = t2.a UNION SELECT t2.c FROM t2 JOIN c ON c.x = t2.b) SELECT * FROM c",
+			"db",
+			false,
 		)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
@@ -1046,8 +1109,9 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 }
 
 func TestQuerySpanScenarioBatch4_JSONTableCoverage(t *testing.T) {
-	span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(
+	span, err := resolveQuerySpan(
 		context.Background(),
+		newTestQuerySpanContext(),
 		`SELECT *
 FROM products,
 JSON_TABLE(product_info, '$' COLUMNS (
@@ -1057,6 +1121,8 @@ JSON_TABLE(product_info, '$' COLUMNS (
     variant_name VARCHAR(50) PATH '$.name'
   )
 )) AS jt`,
+		"db",
+		false,
 	)
 	require.NoError(t, err)
 	require.Equal(t, []base.QuerySpanResult{
@@ -1066,13 +1132,16 @@ JSON_TABLE(product_info, '$' COLUMNS (
 		{Name: "variant_name", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "products", Column: "product_info"}}), IsPlainField: true},
 	}, span.Results)
 
-	_, err = newQuerySpanExtractor("db", newTestQuerySpanContext(), false).getQuerySpan(
+	_, err = resolveQuerySpan(
 		context.Background(),
+		newTestQuerySpanContext(),
 		`SELECT *
 FROM products,
 JSON_TABLE(product_info, '$' COLUMNS (
   product_id INT PATH '$.id'
 ))`,
+		"db",
+		false,
 	)
 	require.Error(t, err)
 }
@@ -1125,7 +1194,7 @@ func TestQuerySpanScenarioBatch4_AccessTableExpressions(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), tc.statement)
+			span, err := resolveQuerySpan(context.Background(), gCtx, tc.statement, "db", false)
 			require.NoError(t, err)
 			require.Equal(t, sourceColumnSetFromResources(tc.want), span.SourceColumns)
 		})
@@ -1136,13 +1205,13 @@ func TestQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 	t.Run("error_semantics", func(t *testing.T) {
 		gCtx := newTestQuerySpanContext()
 
-		_, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT a INTO @x FROM t")
+		_, err := resolveQuerySpan(context.Background(), gCtx, "SELECT a INTO @x FROM t", "db", false)
 		require.ErrorContains(t, err, "unsupported select statement with into")
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT FROM")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "SELECT FROM", "db", false)
 		require.Error(t, err)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT * FORM invalid_table;")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "SELECT * FORM invalid_table;", "db", false)
 		require.Error(t, err)
 
 		_, err = GetQuerySpan(context.Background(), gCtx, base.Statement{
@@ -1153,54 +1222,54 @@ func TestQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 		require.ErrorAs(t, err, &syntaxErr)
 		require.Equal(t, int32(3), syntaxErr.Position.Line)
 
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, base.Select, span.Type)
 		require.Empty(t, span.Results)
 		require.Empty(t, span.SourceColumns)
 
-		span, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "EXPLAIN SELECT * FROM missing")
+		span, err = resolveQuerySpan(context.Background(), gCtx, "EXPLAIN SELECT * FROM missing", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, base.Explain, span.Type)
 		require.Empty(t, span.Results)
 		require.Nil(t, span.NotFoundError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "INSERT INTO t SELECT * FROM mysql.user")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "INSERT INTO t SELECT * FROM mysql.user", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "CREATE TABLE new_t AS SELECT * FROM mysql.user")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "CREATE TABLE new_t AS SELECT * FROM mysql.user", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "EXPLAIN SELECT * FROM t, mysql.user")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "EXPLAIN SELECT * FROM t, mysql.user", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "CALL p((SELECT a FROM t), (SELECT user FROM mysql.user))")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "CALL p((SELECT a FROM t), (SELECT user FROM mysql.user))", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SET @x = (SELECT a FROM t), @y = (SELECT user FROM mysql.user)")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "SET @x = (SELECT a FROM t), @y = (SELECT user FROM mysql.user)", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "LOCK TABLES t READ, mysql.user READ")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "LOCK TABLES t READ, mysql.user READ", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "DROP TABLE t, mysql.user")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "DROP TABLE t, mysql.user", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 
-		_, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "RENAME TABLE t TO t_new, mysql.user TO mysql.user_new")
+		_, err = resolveQuerySpan(context.Background(), gCtx, "RENAME TABLE t TO t_new, mysql.user TO mysql.user_new", "db", false)
 		require.ErrorIs(t, err, base.MixUserSystemTablesError)
 	})
 
 	t.Run("view_lineage", func(t *testing.T) {
 		gCtx := newViewTestQuerySpanContext()
 
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT * FROM v")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "SELECT * FROM v", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "va", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
 			{Name: "b", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "b"}}), IsPlainField: true},
 		}, span.Results)
 
-		span, err = newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT * FROM v2")
+		span, err = resolveQuerySpan(context.Background(), gCtx, "SELECT * FROM v2", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "va", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
@@ -1209,7 +1278,7 @@ func TestQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 
 	t.Run("missing_view_dependency_fails_open", func(t *testing.T) {
 		gCtx := newViewTestQuerySpanContext()
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT * FROM broken_v")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "SELECT * FROM broken_v", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, base.Select, span.Type)
 		require.Empty(t, span.Results)
@@ -1270,7 +1339,7 @@ func TestQuerySpanScenarioBatch3_ErrorAndMetadataCoverage(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
-				span, err := newQuerySpanExtractor("db", newTestQuerySpanContext(), tc.ignoreCaseSensitive).getQuerySpan(context.Background(), tc.statement)
+				span, err := resolveQuerySpan(context.Background(), newTestQuerySpanContext(), tc.statement, "db", tc.ignoreCaseSensitive)
 				require.NoError(t, err)
 				require.Equal(t, tc.wantType, span.Type)
 				require.Equal(t, sourceColumnSetFromResources(tc.wantSource), span.SourceColumns)
@@ -1288,12 +1357,12 @@ func TestQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	gCtx := newTestQuerySpanContext()
 
 	t.Run("table_alias_case_sensitivity", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT X.a FROM t AS x")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "SELECT X.a FROM t AS x", "db", false)
 		require.NoError(t, err)
 		require.Empty(t, span.Results)
 		require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
 
-		span, err = newQuerySpanExtractor("db", gCtx, true).getQuerySpan(context.Background(), "SELECT X.a FROM t AS x")
+		span, err = resolveQuerySpan(context.Background(), gCtx, "SELECT X.a FROM t AS x", "db", true)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
@@ -1301,12 +1370,12 @@ func TestQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 
 	t.Run("derived_table_alias_case_sensitivity", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT X.a FROM (SELECT a FROM t) AS x")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "SELECT X.a FROM (SELECT a FROM t) AS x", "db", false)
 		require.NoError(t, err)
 		require.Empty(t, span.Results)
 		require.ErrorAs(t, span.NotFoundError, new(*base.ResourceNotFoundError))
 
-		span, err = newQuerySpanExtractor("db", gCtx, true).getQuerySpan(context.Background(), "SELECT X.a FROM (SELECT a FROM t) AS x")
+		span, err = resolveQuerySpan(context.Background(), gCtx, "SELECT X.a FROM (SELECT a FROM t) AS x", "db", true)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
@@ -1314,7 +1383,7 @@ func TestQuerySpanScenarioBatch4_CaseSensitivityCoverage(t *testing.T) {
 	})
 
 	t.Run("cte_name_case_sensitivity", func(t *testing.T) {
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "WITH c AS (SELECT a FROM t) SELECT C.a FROM c AS C")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "WITH c AS (SELECT a FROM t) SELECT C.a FROM c AS C", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
@@ -1326,14 +1395,14 @@ func TestQuerySpanScenarioBatch5_MetadataCoverage(t *testing.T) {
 	t.Run("duplicate_database_case_uses_ignore_case_setting", func(t *testing.T) {
 		gCtx := newCaseCollisionTestQuerySpanContext()
 
-		span, err := newQuerySpanExtractor("db", gCtx, false).getQuerySpan(context.Background(), "SELECT DB.t.a FROM DB.t")
+		span, err := resolveQuerySpan(context.Background(), gCtx, "SELECT DB.t.a FROM DB.t", "db", false)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "DB", Table: "t", Column: "a"}}), IsPlainField: true},
 		}, span.Results)
 		require.Equal(t, sourceColumnSetFromResources([]base.ColumnResource{{Database: "DB", Table: "t"}}), span.SourceColumns)
 
-		span, err = newQuerySpanExtractor("db", gCtx, true).getQuerySpan(context.Background(), "SELECT DB.t.a FROM DB.t")
+		span, err = resolveQuerySpan(context.Background(), gCtx, "SELECT DB.t.a FROM DB.t", "db", true)
 		require.NoError(t, err)
 		require.Equal(t, []base.QuerySpanResult{
 			{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}}), IsPlainField: true},
