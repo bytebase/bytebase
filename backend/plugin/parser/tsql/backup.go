@@ -662,3 +662,90 @@ func dmlNodeLoc(node ast.Node) ast.Loc {
 		return ast.NoLoc()
 	}
 }
+
+// nodeLoc extracts the Loc field from an ast.Node via type switching.
+// Not every node has a Loc (the Node interface doesn't expose it), so we
+// enumerate the types we care about. Returns zero Loc otherwise.
+func nodeLoc(n ast.Node) ast.Loc {
+	if n == nil {
+		return ast.NoLoc()
+	}
+	if loc, ok := expressionNodeLoc(n); ok {
+		return loc
+	}
+	switch v := n.(type) {
+	case *ast.SelectStmt:
+		return v.Loc
+	case *ast.TableRef:
+		return v.Loc
+	case *ast.ResTarget:
+		return v.Loc
+	case *ast.SelectAssign:
+		return v.Loc
+	default:
+		return ast.NoLoc()
+	}
+}
+
+func expressionNodeLoc(n ast.Node) (ast.Loc, bool) {
+	switch v := n.(type) {
+	case *ast.ColumnRef:
+		return v.Loc, true
+	case *ast.Literal:
+		return v.Loc, true
+	case *ast.VariableRef:
+		return v.Loc, true
+	case *ast.StarExpr:
+		return v.Loc, true
+	case *ast.BinaryExpr:
+		return v.Loc, true
+	case *ast.UnaryExpr:
+		return v.Loc, true
+	case *ast.BetweenExpr:
+		return v.Loc, true
+	case *ast.LikeExpr:
+		return v.Loc, true
+	case *ast.IsExpr:
+		return v.Loc, true
+	case *ast.InExpr:
+		return v.Loc, true
+	case *ast.CaseExpr:
+		return v.Loc, true
+	case *ast.CaseWhen:
+		return v.Loc, true
+	case *ast.IifExpr:
+		return v.Loc, true
+	case *ast.CoalesceExpr:
+		return v.Loc, true
+	case *ast.NullifExpr:
+		return v.Loc, true
+	case *ast.FuncCallExpr:
+		return v.Loc, true
+	case *ast.MethodCallExpr:
+		return v.Loc, true
+	case *ast.CastExpr:
+		return v.Loc, true
+	case *ast.ConvertExpr:
+		return v.Loc, true
+	case *ast.TryCastExpr:
+		return v.Loc, true
+	case *ast.TryConvertExpr:
+		return v.Loc, true
+	case *ast.SubqueryExpr:
+		return v.Loc, true
+	case *ast.SubqueryComparisonExpr:
+		return v.Loc, true
+	case *ast.ExistsExpr:
+		return v.Loc, true
+	case *ast.FullTextPredicate:
+		return v.Loc, true
+	case *ast.ParenExpr:
+		return v.Loc, true
+	case *ast.CollateExpr:
+		return v.Loc, true
+	case *ast.AtTimeZoneExpr:
+		return v.Loc, true
+	default:
+		return ast.NoLoc(), false
+	}
+}
