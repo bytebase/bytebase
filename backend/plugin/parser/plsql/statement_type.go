@@ -1,13 +1,10 @@
 package plsql
 
 import (
-	"strings"
-
-	oracleast "github.com/bytebase/omni/oracle/ast"
+	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -16,7 +13,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	for _, ast := range asts {
 		node, ok := GetNode(ast)
 		if ok {
-			sqlTypeSet[classifyStatementType(node)] = true
+			sqlTypeSet[convertStatementType(analysis.StatementTypeOf(node))] = true
 			continue
 		}
 
@@ -29,97 +26,72 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return sqlTypes, nil
 }
 
-func classifyStatementType(node oracleast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	case *oracleast.CreateTableStmt:
-		return storepb.StatementType_CREATE_TABLE
-	case *oracleast.CreateIndexStmt:
-		return storepb.StatementType_CREATE_INDEX
-	case *oracleast.CreateViewStmt:
-		return storepb.StatementType_CREATE_VIEW
-	case *oracleast.CreateSequenceStmt:
-		return storepb.StatementType_CREATE_SEQUENCE
-	case *oracleast.CreateSchemaStmt:
-		return storepb.StatementType_CREATE_SCHEMA
-	case *oracleast.CreateFunctionStmt:
-		return storepb.StatementType_CREATE_FUNCTION
-	case *oracleast.CreateTriggerStmt:
-		return storepb.StatementType_CREATE_TRIGGER
-	case *oracleast.CreateProcedureStmt:
-		return storepb.StatementType_CREATE_PROCEDURE
-	case *oracleast.CreateTypeStmt:
-		return storepb.StatementType_CREATE_TYPE
-	case *oracleast.DropStmt:
-		return classifyDropStatementType(n.ObjectType)
-	case *oracleast.AdminDDLStmt:
-		return classifyAdminDDLStatementType(n.Action, n.ObjectType)
-	case *oracleast.AlterTableStmt:
-		return storepb.StatementType_ALTER_TABLE
-	case *oracleast.AlterIndexStmt:
-		return storepb.StatementType_ALTER_INDEX
-	case *oracleast.AlterViewStmt:
-		return storepb.StatementType_ALTER_VIEW
-	case *oracleast.AlterSequenceStmt:
-		return storepb.StatementType_ALTER_SEQUENCE
-	case *oracleast.AlterTypeStmt:
-		return storepb.StatementType_ALTER_TYPE
-	case *oracleast.TruncateStmt:
-		return storepb.StatementType_TRUNCATE
-	case *oracleast.RenameStmt:
-		return storepb.StatementType_RENAME
-	case *oracleast.CommentStmt:
-		return storepb.StatementType_COMMENT
-	case *oracleast.InsertStmt:
-		return storepb.StatementType_INSERT
-	case *oracleast.UpdateStmt:
-		return storepb.StatementType_UPDATE
-	case *oracleast.DeleteStmt:
-		return storepb.StatementType_DELETE
-	// An anonymous block is how Oracle runs a procedure (SQL*Plus EXEC expands to
-	// one), and its body is not classified statement by statement.
-	case *oracleast.CallStmt, *oracleast.PLSQLBlock:
-		return storepb.StatementType_EXECUTE
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func classifyAdminDDLStatementType(action string, objectType oracleast.ObjectType) storepb.StatementType {
-	if objectType != oracleast.OBJECT_DATABASE {
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-	switch strings.ToUpper(action) {
-	case "CREATE":
+func convertStatementType(t analysis.StatementType) storepb.StatementType {
+	switch t {
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case "ALTER":
-		return storepb.StatementType_ALTER_DATABASE
-	case "DROP":
+	case analysis.CreateTable:
+		return storepb.StatementType_CREATE_TABLE
+	case analysis.CreateIndex:
+		return storepb.StatementType_CREATE_INDEX
+	case analysis.CreateView:
+		return storepb.StatementType_CREATE_VIEW
+	case analysis.CreateSequence:
+		return storepb.StatementType_CREATE_SEQUENCE
+	case analysis.CreateSchema:
+		return storepb.StatementType_CREATE_SCHEMA
+	case analysis.CreateFunction:
+		return storepb.StatementType_CREATE_FUNCTION
+	case analysis.CreateTrigger:
+		return storepb.StatementType_CREATE_TRIGGER
+	case analysis.CreateProcedure:
+		return storepb.StatementType_CREATE_PROCEDURE
+	case analysis.CreateType:
+		return storepb.StatementType_CREATE_TYPE
+	case analysis.DropDatabase:
 		return storepb.StatementType_DROP_DATABASE
-	default:
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
-	}
-}
-
-func classifyDropStatementType(objectType oracleast.ObjectType) storepb.StatementType {
-	switch objectType {
-	case oracleast.OBJECT_DATABASE:
-		return storepb.StatementType_DROP_DATABASE
-	case oracleast.OBJECT_TABLE:
+	case analysis.DropTable:
 		return storepb.StatementType_DROP_TABLE
-	case oracleast.OBJECT_VIEW, oracleast.OBJECT_MATERIALIZED_VIEW:
+	case analysis.DropView:
 		return storepb.StatementType_DROP_VIEW
-	case oracleast.OBJECT_INDEX:
+	case analysis.DropIndex:
 		return storepb.StatementType_DROP_INDEX
-	case oracleast.OBJECT_SEQUENCE:
+	case analysis.DropSequence:
 		return storepb.StatementType_DROP_SEQUENCE
-	case oracleast.OBJECT_FUNCTION:
+	case analysis.DropFunction:
 		return storepb.StatementType_DROP_FUNCTION
-	case oracleast.OBJECT_TRIGGER:
+	case analysis.DropTrigger:
 		return storepb.StatementType_DROP_TRIGGER
-	case oracleast.OBJECT_PROCEDURE:
+	case analysis.DropProcedure:
 		return storepb.StatementType_DROP_PROCEDURE
-	case oracleast.OBJECT_TYPE, oracleast.OBJECT_TYPE_BODY:
+	case analysis.DropType:
 		return storepb.StatementType_DROP_TYPE
+	case analysis.AlterDatabase:
+		return storepb.StatementType_ALTER_DATABASE
+	case analysis.AlterTable:
+		return storepb.StatementType_ALTER_TABLE
+	case analysis.AlterIndex:
+		return storepb.StatementType_ALTER_INDEX
+	case analysis.AlterView:
+		return storepb.StatementType_ALTER_VIEW
+	case analysis.AlterSequence:
+		return storepb.StatementType_ALTER_SEQUENCE
+	case analysis.AlterType:
+		return storepb.StatementType_ALTER_TYPE
+	case analysis.Truncate:
+		return storepb.StatementType_TRUNCATE
+	case analysis.Rename:
+		return storepb.StatementType_RENAME
+	case analysis.Comment:
+		return storepb.StatementType_COMMENT
+	case analysis.Insert:
+		return storepb.StatementType_INSERT
+	case analysis.Update:
+		return storepb.StatementType_UPDATE
+	case analysis.Delete:
+		return storepb.StatementType_DELETE
+	case analysis.Execute:
+		return storepb.StatementType_EXECUTE
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
