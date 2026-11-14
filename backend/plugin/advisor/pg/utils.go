@@ -71,26 +71,6 @@ func getInsertedRows(res []any) (int64, error) {
 	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
 }
 
-// hasDataModifyingCTE reports whether a WITH clause contains INSERT, UPDATE, DELETE, or MERGE.
-// PostgreSQL only allows data-modifying statements in a top-level WITH.
-func hasDataModifyingCTE(with *ast.WithClause) bool {
-	if with == nil || with.Ctes == nil {
-		return false
-	}
-	for _, item := range with.Ctes.Items {
-		cte, ok := item.(*ast.CommonTableExpr)
-		if !ok {
-			continue
-		}
-		switch cte.Ctequery.(type) {
-		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-			return true
-		default:
-		}
-	}
-	return false
-}
-
 // rangeVarTableName extracts the table name from a RangeVar.
 func rangeVarTableName(rv *ast.RangeVar) string {
 	if rv == nil {
@@ -269,31 +249,6 @@ func listStrings(list *ast.List) []string {
 	for _, item := range list.Items {
 		if s, ok := item.(*ast.String); ok {
 			result = append(result, s.Str)
-		}
-	}
-	return result
-}
-
-// dropObjectNames extracts object names from a DropStmt.
-// Returns list of qualified name string slices.
-func dropObjectNames(drop *ast.DropStmt) [][]string {
-	if drop.Objects == nil {
-		return nil
-	}
-	var result [][]string
-	for _, item := range drop.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		if len(parts) > 0 {
-			result = append(result, parts)
 		}
 	}
 	return result

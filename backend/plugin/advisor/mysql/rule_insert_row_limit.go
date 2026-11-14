@@ -3,9 +3,10 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -24,7 +25,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, &InsertRowLimitAdvisor{})
 }
 
-// InsertRowLimitAdvisor is the advisor checking for insert row limit.
+// InsertRowLimitAdvisor is the advisor checking for insert row limit. omni
+// (mysql/v1review.StatementInsertRowLimitProbes) picks the INSERTs whose rows
+// the database must estimate; this adapter EXPLAINs and estimates them, and
+// omni (StatementInsertRowLimit) judges every INSERT.
 type InsertRowLimitAdvisor struct {
 }
 
@@ -43,10 +47,62 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	maxRow := int(numberPayload.Number)
 	driver := checkCtx.Driver
 	title := checkCtx.Rule.Type.String()
-	var advice []*storepb.Advice
 	var explains advisor.ExplainBudget
 
-	for _, stmt := range checkCtx.ParsedStatements {
+	nodes, stmts := mysqlNodes(checkCtx.ParsedStatements)
+	probes := make(map[int]v1review.Probe)
+	if driver != nil {
+		for _, i := range mysqlv1review.StatementInsertRowLimitProbes(nodes) {
+			if !explains.Spend(statementStartPosition(stmts[i])) {
+				continue
+			}
+			text := dryRunText(stmts[i].Text)
+			plan, err := mysqldriver.ExplainJSON(ctx, driver, text)
+			if err != nil {
+				probes[i] = v1review.Probe{Error: err.Error()}
+				continue
+			}
+			rowCount, err := mysqldriver.EstimateAffectedRows(ctx, driver, nodes[i], text, plan)
+			if err != nil {
+				probes[i] = v1review.Probe{CountError: err.Error()}
+				continue
+			}
+			probes[i] = v1review.Probe{Rows: rowCount}
+		}
+	}
+
+	var advice []*storepb.Advice
+	for _, f := range mysqlv1review.StatementInsertRowLimit(nodes, probes, maxRow) {
+		stmt := stmts[f.Statement]
+		text := dryRunText(stmt.Text)
+		adviceCode, content := code.InsertTooManyRows, ""
+		switch f.Code {
+		case v1review.DryRunFailed:
+			content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
+		case v1review.RowCountFailed:
+			adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
+		case v1review.RowLimitExceeded:
+			content = fmt.Sprintf("\"%s\" inserts %s rows. The count exceeds %d.", text, f.Value, maxRow)
+		default:
+			continue
+		}
+		advice = append(advice, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       content,
+			StartPosition: statementStartPosition(stmt),
+		})
+	}
+	return explains.AppendSkippedAdvice(advice, title, code.InsertTooManyRows), nil
+}
+
+// mysqlNodes returns the statements that parsed to an omni node, with their
+// nodes, index for index.
+func mysqlNodes(parsed []base.ParsedStatement) ([]ast.Node, []base.ParsedStatement) {
+	var nodes []ast.Node
+	var stmts []base.ParsedStatement
+	for _, stmt := range parsed {
 		if stmt.AST == nil {
 			continue
 		}
@@ -54,72 +110,16 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		if !ok {
 			continue
 		}
-		ins, ok := node.(*ast.InsertStmt)
-		if !ok {
-			continue
-		}
-
-		baseLine := stmt.BaseLine()
-		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
-		position := base.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
-
-		// INSERT ... SELECT and INSERT ... TABLE: use EXPLAIN to count rows.
-		// Both carry their source as a SelectStmt now.
-		if ins.Select != nil {
-			if driver == nil {
-				continue
-			}
-			if !explains.Spend(position) {
-				continue
-			}
-
-			plan, err := mysqldriver.ExplainJSON(ctx, driver, text)
-			if err != nil {
-				advice = append(advice, &storepb.Advice{
-					Status:        level,
-					Code:          code.InsertTooManyRows.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-					StartPosition: position,
-				})
-				continue
-			}
-			rowCount, err := mysqldriver.EstimateAffectedRows(ctx, driver, ins, text, plan)
-			if err != nil {
-				advice = append(advice, &storepb.Advice{
-					Status:        level,
-					Code:          code.Internal.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-					StartPosition: position,
-				})
-				continue
-			}
-			if rowCount > int64(maxRow) {
-				advice = append(advice, &storepb.Advice{
-					Status:        level,
-					Code:          code.InsertTooManyRows.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, rowCount, maxRow),
-					StartPosition: position,
-				})
-			}
-			continue
-		}
-
-		// INSERT ... VALUES: count value rows directly.
-		if len(ins.Values) > maxRow {
-			advice = append(advice, &storepb.Advice{
-				Status:        level,
-				Code:          code.InsertTooManyRows.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, len(ins.Values), maxRow),
-				StartPosition: position,
-			})
-		}
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
 	}
+	return nodes, stmts
+}
 
-	return explains.AppendSkippedAdvice(advice, title, code.InsertTooManyRows), nil
+// statementStartPosition is the position of the statement's first
+// non-blank character.
+func statementStartPosition(stmt base.ParsedStatement) *storepb.Position {
+	return base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
 }
 
 func contentStartIndex(text string) int {

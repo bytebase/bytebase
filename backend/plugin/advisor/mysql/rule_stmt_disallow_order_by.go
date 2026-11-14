@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.
+// The judgment lives in omni (mysql/v1review.StatementDisallowOrderBy); this
+// adapter renders its findings as advice.
 type DisallowOrderByAdvisor struct {
 }
 
@@ -32,45 +36,27 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 		return nil, err
 	}
 
-	rule := &disallowOrderByRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type disallowOrderByRule struct {
-	BaseRule
-}
-
-func (*disallowOrderByRule) Name() string {
-	return "DisallowOrderByRule"
-}
-
-func (r *disallowOrderByRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	switch n := node.(type) {
-	case *ast.DeleteStmt:
-		if len(n.OrderBy) > 0 {
-			r.addOrderByAdvice(code.DeleteUseOrderBy, text, n.Loc)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.UpdateStmt:
-		if len(n.OrderBy) > 0 {
-			r.addOrderByAdvice(code.UpdateUseOrderBy, text, n.Loc)
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	default:
+		for _, f := range mysqlv1review.StatementDisallowOrderBy([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          dmlOrderByCodes[f.Name].Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
+		}
 	}
+	return adviceList, nil
 }
 
-func (r *disallowOrderByRule) addOrderByAdvice(c code.Code, text string, loc ast.Loc) {
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          c.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", text),
-		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
-	})
-}
+var dmlOrderByCodes = map[string]code.Code{"UPDATE": code.UpdateUseOrderBy, "DELETE": code.DeleteUseOrderBy}

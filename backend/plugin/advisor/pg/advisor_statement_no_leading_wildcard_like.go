@@ -3,13 +3,14 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -20,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE, &StatementNoLeadingWildcardLikeAdvisor{})
 }
 
-// StatementNoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
+// StatementNoLeadingWildcardLikeAdvisor is the advisor checking for no
+// leading wildcard LIKE. The judgment lives in omni
+// (pg/v1review.StatementWhereNoLeadingWildcardLike); this adapter renders
+// its findings as advice.
 type StatementNoLeadingWildcardLikeAdvisor struct {
 }
 
@@ -31,56 +35,25 @@ func (*StatementNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	rule := &statementNoLeadingWildcardLikeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementNoLeadingWildcardLikeRule struct {
-	BaseRule
-}
-
-func (*statementNoLeadingWildcardLikeRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE)
-}
-
-func (r *statementNoLeadingWildcardLikeRule) OnStatement(node ast.Node) {
-	found := false
-	ast.Inspect(node, func(n ast.Node) bool {
-		if found {
-			return false
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		expr, ok := n.(*ast.A_Expr)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
-			return true
+			continue
 		}
-		if expr.Kind != ast.AEXPR_LIKE && expr.Kind != ast.AEXPR_ILIKE {
-			return true
+		for range pgv1review.StatementWhereNoLeadingWildcardLike([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementLeadingWildcardLike.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", statementTrimmedText(stmt)),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
 		}
-		// Check if right operand is a string constant starting with '%' or '_'.
-		if ac, ok := expr.Rexpr.(*ast.A_Const); ok {
-			if sv, ok := ac.Val.(*ast.String); ok {
-				if strings.HasPrefix(sv.Str, "%") || strings.HasPrefix(sv.Str, "_") {
-					found = true
-					r.AddAdvice(&storepb.Advice{
-						Status:  r.Level,
-						Code:    code.StatementLeadingWildcardLike.Int32(),
-						Title:   r.Title,
-						Content: fmt.Sprintf("\"%s\" uses leading wildcard LIKE", r.TrimmedStmtText()),
-						StartPosition: &storepb.Position{
-							Line:   r.ContentStartLine(),
-							Column: 0,
-						},
-					})
-					return false
-				}
-			}
-		}
-		return true
-	})
+	}
+	return adviceList, nil
 }

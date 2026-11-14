@@ -3,14 +3,15 @@ package oceanbase
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -22,6 +23,8 @@ func init() {
 }
 
 // StatementMergeAlterTableAdvisor is the advisor checking for merging ALTER TABLE statements.
+// The judgment lives in omni (oceanbase/v1review.StatementMergeAlterTable); this adapter
+// renders its findings as advice.
 type StatementMergeAlterTableAdvisor struct {
 }
 
@@ -32,90 +35,30 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &mergeAlterTableRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		tableMap: make(map[string]tableStatement),
-	}
-
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	rule.generateAdvice()
-	return rule.GetAdviceList(), nil
-}
-
-// tableStatement represents information about a table's statements.
-type tableStatement struct {
-	name     string
-	count    int
-	lastLine int
-}
-
-type mergeAlterTableRule struct {
-	BaseRule
-	tableMap map[string]tableStatement
-}
-
-func (*mergeAlterTableRule) Name() string {
-	return "StatementMergeAlterTableRule"
-}
-
-func (r *mergeAlterTableRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
+	title := checkCtx.Rule.Type.String()
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		tableName := n.Table.Name
-		r.tableMap[tableName] = tableStatement{
-			name:     tableName,
-			count:    1,
-			lastLine: r.BaseLine + int(r.ContentStartLine()),
-		}
-	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		tableName := n.Table.Name
-		table, ok := r.tableMap[tableName]
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
 		if !ok {
-			table = tableStatement{
-				name:  tableName,
-				count: 0,
-			}
+			continue
 		}
-		table.count++
-		table.lastLine = r.BaseLine + int(r.ContentStartLine())
-		r.tableMap[tableName] = table
-	default:
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
 	}
-}
-
-func (r *mergeAlterTableRule) generateAdvice() {
-	var tableList []tableStatement
-	for _, table := range r.tableMap {
-		tableList = append(tableList, table)
+	var adviceList []*storepb.Advice
+	for _, f := range oceanbasev1review.StatementMergeAlterTable(nodes) {
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.StatementRedundantAlterTable.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+		})
 	}
-	slices.SortFunc(tableList, func(i, j tableStatement) int {
-		if i.lastLine < j.lastLine {
-			return -1
-		}
-		if i.lastLine > j.lastLine {
-			return 1
-		}
-		return 0
-	})
-
-	for _, table := range tableList {
-		if table.count > 1 {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.StatementRedundantAlterTable.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: base.ConvertANTLRLineToPosition(table.lastLine),
-			})
-		}
-	}
+	return adviceList, nil
 }

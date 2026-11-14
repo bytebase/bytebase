@@ -118,3 +118,25 @@
 # Test: DROP TABLE is a different statement type
 - statement: DROP TABLE techbook;
   changeType: 1
+- statement: |-
+    TRUNCATE TABLE srv.db.dbo.t;
+    TRUNCATE TABLE dbo.##t;
+    TRUNCATE
+      TABLE [my schema].[tab]]le];
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "dbo.t" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'TRUNCATE TABLE "my schema.tab]le" is not allowed: TRUNCATE is minimally logged, bypasses DELETE triggers, and requires ALTER TABLE permission. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

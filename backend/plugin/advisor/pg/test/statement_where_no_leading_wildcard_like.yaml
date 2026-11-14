@@ -44,3 +44,13 @@
         line: 1
         column: 0
       endposition: null
+- statement: DELETE FROM t WHERE a ILIKE '_abc'
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"DELETE FROM t WHERE a ILIKE ''_abc''" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

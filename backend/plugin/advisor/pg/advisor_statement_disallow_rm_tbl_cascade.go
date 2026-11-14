@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_RM_TBL_CASCADE, &StatementDisallowRemoveTblCascadeAdvisor{})
 }
 
-// StatementDisallowRemoveTblCascadeAdvisor is the advisor checking for disallow CASCADE option when removing tables.
+// StatementDisallowRemoveTblCascadeAdvisor is the advisor checking for
+// disallow CASCADE option when removing tables. The judgment lives in omni
+// (pg/v1review.StatementDisallowRmTblCascade); this adapter renders its
+// findings as advice.
 type StatementDisallowRemoveTblCascadeAdvisor struct {
 }
 
@@ -29,47 +34,25 @@ func (*StatementDisallowRemoveTblCascadeAdvisor) Check(_ context.Context, checkC
 		return nil, err
 	}
 
-	rule := &statementDisallowRemoveTblCascadeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowRemoveTblCascadeRule struct {
-	BaseRule
-}
-
-func (*statementDisallowRemoveTblCascadeRule) Name() string {
-	return "statement.disallow-remove-table-cascade"
-}
-
-func (r *statementDisallowRemoveTblCascadeRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.DropStmt:
-		if n.RemoveType == int(ast.OBJECT_TABLE) && ast.DropBehavior(n.Behavior) == ast.DROP_CASCADE {
-			r.addCascadeAdvice()
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.TruncateStmt:
-		if n.Behavior == ast.DROP_CASCADE {
-			r.addCascadeAdvice()
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	default:
+		for range pgv1review.StatementDisallowRmTblCascade([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowCascade.Int32(),
+				Title:         title,
+				Content:       "The use of CASCADE is not permitted when removing a table",
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
+		}
 	}
-}
-
-func (r *statementDisallowRemoveTblCascadeRule) addCascadeAdvice() {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.StatementDisallowCascade.Int32(),
-		Title:   r.Title,
-		Content: "The use of CASCADE is not permitted when removing a table",
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }
