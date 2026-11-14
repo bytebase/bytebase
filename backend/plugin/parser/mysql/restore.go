@@ -53,6 +53,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		BackupTable:    backupItem.TargetTable.Table,
 		Columns:        columns.Normal,
 		Catalog:        newBackupCatalog(ctx, rCtx.InstanceID, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc),
+		CaseSensitive:  rCtx.IsCaseSensitive,
 	})
 }
 

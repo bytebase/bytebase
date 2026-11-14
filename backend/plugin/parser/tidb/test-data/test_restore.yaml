@@ -66,12 +66,8 @@
   backuptable: prefix_1_t_generated
   originaldatabase: db
   originaltable: t_generated
-  result: |-
-    /*
-    Original SQL:
-    UPDATE t_generated SET a = 1 WHERE a = 2;
-    */
-    INSERT INTO `db`.`t_generated` (`a`, `b`) SELECT `a`, `b` FROM `bbarchive`.`prefix_1_t_generated` ON DUPLICATE KEY UPDATE `a` = VALUES(`a`);
+  result: ""
+  error: 'prior backup cannot restore db.t_generated: the UPDATE changes unique key uk_c_generated, so the restore could match another row'
 - input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
