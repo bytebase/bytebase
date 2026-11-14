@@ -84,16 +84,6 @@ func columnComment(col *ast.ColumnDef) string {
 	return col.Comment
 }
 
-// tableOptionValue extracts a table option value by name (case-insensitive).
-func tableOptionValue(opts []*ast.TableOption, name string) string {
-	for _, opt := range opts {
-		if strings.EqualFold(opt.Name, name) {
-			return opt.Value
-		}
-	}
-	return ""
-}
-
 // dataTypeNameCompact returns a compact, lowercase type name string.
 func dataTypeNameCompact(dt *ast.DataType) string {
 	if dt == nil {
