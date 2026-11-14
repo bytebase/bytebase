@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/bytebase/omni/mysql/analysis"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
@@ -83,74 +84,59 @@ func GetStatementTypesWithPositions(asts []base.AST) ([]StatementTypeWithPositio
 }
 
 func classifyStatementType(node ast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	// CREATE
-	case *ast.CreateDatabaseStmt:
+	switch analysis.StatementTypeOf(node) {
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case *ast.CreateTableStmt:
+	case analysis.CreateTable:
 		return storepb.StatementType_CREATE_TABLE
-	case *ast.CreateIndexStmt:
-		return storepb.StatementType_CREATE_INDEX
-	case *ast.CreateViewStmt:
+	case analysis.CreateView:
 		return storepb.StatementType_CREATE_VIEW
-	case *ast.CreateEventStmt:
+	case analysis.CreateIndex:
+		return storepb.StatementType_CREATE_INDEX
+	case analysis.CreateEvent:
 		return storepb.StatementType_CREATE_EVENT
-	case *ast.CreateTriggerStmt:
+	case analysis.CreateTrigger:
 		return storepb.StatementType_CREATE_TRIGGER
-	case *ast.CreateFunctionStmt:
-		if n.IsProcedure {
-			return storepb.StatementType_CREATE_PROCEDURE
-		}
+	case analysis.CreateFunction:
 		return storepb.StatementType_CREATE_FUNCTION
-
-	// DROP
-	case *ast.DropDatabaseStmt:
+	case analysis.CreateProcedure:
+		return storepb.StatementType_CREATE_PROCEDURE
+	case analysis.DropDatabase:
 		return storepb.StatementType_DROP_DATABASE
-	case *ast.DropTableStmt:
+	case analysis.DropTable:
 		return storepb.StatementType_DROP_TABLE
-	case *ast.DropIndexStmt:
-		return storepb.StatementType_DROP_INDEX
-	case *ast.DropViewStmt:
+	case analysis.DropView:
 		return storepb.StatementType_DROP_VIEW
-	case *ast.DropEventStmt:
+	case analysis.DropIndex:
+		return storepb.StatementType_DROP_INDEX
+	case analysis.DropEvent:
 		return storepb.StatementType_DROP_EVENT
-	case *ast.DropTriggerStmt:
+	case analysis.DropTrigger:
 		return storepb.StatementType_DROP_TRIGGER
-	case *ast.DropRoutineStmt:
-		if n.IsProcedure {
-			return storepb.StatementType_DROP_PROCEDURE
-		}
+	case analysis.DropFunction:
 		return storepb.StatementType_DROP_FUNCTION
-
-	// ALTER
-	case *ast.AlterTableStmt:
-		return storepb.StatementType_ALTER_TABLE
-	case *ast.AlterDatabaseStmt:
+	case analysis.DropProcedure:
+		return storepb.StatementType_DROP_PROCEDURE
+	case analysis.AlterDatabase:
 		return storepb.StatementType_ALTER_DATABASE
-	case *ast.AlterViewStmt:
+	case analysis.AlterTable:
+		return storepb.StatementType_ALTER_TABLE
+	case analysis.AlterView:
 		return storepb.StatementType_ALTER_VIEW
-	case *ast.AlterEventStmt:
+	case analysis.AlterEvent:
 		return storepb.StatementType_ALTER_EVENT
-
-	// OTHER DDL
-	case *ast.TruncateStmt:
+	case analysis.Truncate:
 		return storepb.StatementType_TRUNCATE
-	case *ast.RenameTableStmt:
+	case analysis.Rename:
 		return storepb.StatementType_RENAME
-
-	// DML
-	case *ast.InsertStmt:
+	case analysis.Insert:
 		return storepb.StatementType_INSERT
-	case *ast.UpdateStmt:
+	case analysis.Update:
 		return storepb.StatementType_UPDATE
-	case *ast.DeleteStmt:
+	case analysis.Delete:
 		return storepb.StatementType_DELETE
-
-	// A procedure call or a prepared statement runs code the statement text does
-	// not show. PREPARE only defines the statement, so it stays unclassified.
-	case *ast.CallStmt, *ast.ExecuteStmt:
+	case analysis.Execute:
 		return storepb.StatementType_EXECUTE
-
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
