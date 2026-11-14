@@ -41,7 +41,7 @@ func (*ColumnRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Co
 				Code:          code.NoCharset.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Column %s does not have a character set specified", f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

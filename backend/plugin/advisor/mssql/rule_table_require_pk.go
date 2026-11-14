@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/mssql/ast"
 	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 	"github.com/bytebase/omni/v1review"
 
@@ -51,19 +50,4 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		})
 	}
 	return adviceList, nil
-}
-
-// tableRefText returns a human-readable string for a TableRef.
-func tableRefText(ref *ast.TableRef) string {
-	if ref == nil {
-		return ""
-	}
-	result := ref.Object
-	if ref.Schema != "" {
-		result = ref.Schema + "." + result
-	}
-	if ref.Database != "" {
-		result = ref.Database + "." + result
-	}
-	return result
 }

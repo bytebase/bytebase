@@ -50,7 +50,7 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 				Code:          code.VarcharLengthExceedsLimit.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("The length of the VARCHAR column `%s.%s` is bigger than %d", f.Table, f.Name, maximum),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

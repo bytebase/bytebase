@@ -43,7 +43,7 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 				Code:          code.DisabledColumnType.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", f.Value, f.Table, f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

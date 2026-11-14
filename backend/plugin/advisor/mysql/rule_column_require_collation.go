@@ -41,7 +41,7 @@ func (*ColumnRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.
 				Code:          code.NoCollation.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Column %s does not have a collation specified", f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

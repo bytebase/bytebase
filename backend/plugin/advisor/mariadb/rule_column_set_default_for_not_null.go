@@ -41,7 +41,7 @@ func (*ColumnSetDefaultForNotNullAdvisor) Check(_ context.Context, checkCtx advi
 				Code:          code.NotNullColumnWithNoDefault.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Column `%s`.`%s` is NOT NULL but doesn't have DEFAULT", f.Table, f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

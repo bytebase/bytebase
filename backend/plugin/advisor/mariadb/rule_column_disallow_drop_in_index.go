@@ -47,7 +47,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 			Code:          code.DropIndexColumn.Int32(),
 			Title:         checkCtx.Rule.Type.String(),
 			Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name),
-			StartPosition: findingPosition(stmts[f.Statement], f),
+			StartPosition: columnFindingPosition(stmts[f.Statement], f),
 		})
 	}
 	return adviceList, nil

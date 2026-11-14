@@ -3,13 +3,14 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -20,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND, &InsertDisallowOrderByRandAdvisor{})
 }
 
-// InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow order by rand in INSERT statements.
+// InsertDisallowOrderByRandAdvisor is the advisor checking for to disallow
+// order by rand in INSERT statements. The judgment lives in omni
+// (pg/v1review.StatementInsertDisallowOrderByRand); this adapter renders its
+// findings as advice.
 type InsertDisallowOrderByRandAdvisor struct {
 }
 
@@ -31,80 +35,25 @@ func (*InsertDisallowOrderByRandAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &insertDisallowOrderByRandRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type insertDisallowOrderByRandRule struct {
-	BaseRule
-}
-
-func (*insertDisallowOrderByRandRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND)
-}
-
-func (r *insertDisallowOrderByRandRule) OnStatement(node ast.Node) {
-	ins, ok := node.(*ast.InsertStmt)
-	if !ok {
-		return
-	}
-
-	sel, ok := ins.SelectStmt.(*ast.SelectStmt)
-	if !ok || sel == nil {
-		return
-	}
-
-	if r.hasOrderByRandom(sel) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.InsertUseOrderByRand.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", r.TrimmedStmtText()),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *insertDisallowOrderByRandRule) hasOrderByRandom(sel *ast.SelectStmt) bool {
-	if sel == nil {
-		return false
-	}
-
-	// For set operations, recurse into children.
-	if sel.Op != ast.SETOP_NONE {
-		return r.hasOrderByRandom(sel.Larg) || r.hasOrderByRandom(sel.Rarg)
-	}
-
-	if sel.SortClause == nil {
-		return false
-	}
-
-	for _, item := range sel.SortClause.Items {
-		sb, ok := item.(*ast.SortBy)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		fc, ok := sb.Node.(*ast.FuncCall)
-		if !ok {
-			continue
-		}
-		funcName := listStrings(fc.Funcname)
-		for _, name := range funcName {
-			lower := strings.ToLower(name)
-			if lower == "random" || lower == "random_between" {
-				return true
-			}
+		for range pgv1review.StatementInsertDisallowOrderByRand([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.InsertUseOrderByRand.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The INSERT statement uses ORDER BY random() or random_between(), related statement \"%s\"", statementTrimmedText(stmt)),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
 		}
 	}
-
-	return false
+	return adviceList, nil
 }

@@ -63,7 +63,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 				Code:          adviceCode.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       content,
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

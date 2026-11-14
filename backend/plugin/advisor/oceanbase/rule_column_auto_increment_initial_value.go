@@ -47,7 +47,7 @@ func (*ColumnAutoIncrementInitialValueAdvisor) Check(_ context.Context, checkCtx
 				Code:          code.AutoIncrementColumnInitialValueNotMatch.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("The initial auto-increment value in table `%s` is %s, which doesn't equal %v", f.Table, f.Value, value),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

@@ -117,16 +117,16 @@ func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
 	return nil
 }
 
-// findingPosition is where a finding's advice starts: the statement's first
+// columnFindingPosition is where a finding's advice starts: the statement's first
 // line plus the line of the finding's anchor within it.
-func findingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
+func columnFindingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
 	return base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
 }
 
 // statementPosition is where advice about a whole statement starts: the line
 // of the statement's first non-blank character.
 func statementPosition(stmt base.ParsedStatement) *storepb.Position {
-	return findingPosition(stmt, v1review.Finding{})
+	return columnFindingPosition(stmt, v1review.Finding{})
 }
 
 // v1reviewSchema returns the snapshot md holds for an omni rule, an empty

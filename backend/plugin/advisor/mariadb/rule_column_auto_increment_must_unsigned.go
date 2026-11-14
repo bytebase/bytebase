@@ -41,7 +41,7 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 				Code:          code.AutoIncrementColumnSigned.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", f.Table, f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

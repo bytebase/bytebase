@@ -2,16 +2,18 @@ package oracle
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -22,9 +24,14 @@ func init() {
 	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
 }
 
+// StatementDmlDryRunAdvisor is the advisor checking for DML dry run. omni
+// (oracle/v1review.StatementDMLDryRunProbes) picks the statements to dry-run;
+// this adapter runs EXPLAIN PLAN FOR them, and omni (StatementDMLDryRun)
+// judges the results.
 type StatementDmlDryRunAdvisor struct {
 }
 
+// Check checks for DML dry run.
 func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
@@ -36,63 +43,47 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
 		return nil, nil
 	}
-
-	rule := NewStatementDmlDryRunRule(ctx, level, checkCtx.Rule.Type.String(), checkCtx.Driver)
-
-	if checkCtx.Driver != nil {
-		return RunRules(checkCtx.ParsedStatements, []Rule{rule})
+	if checkCtx.Driver == nil {
+		return nil, nil
 	}
 
-	return rule.GetAdviceList()
-}
-
-// StatementDmlDryRunRule is the rule implementation for DML dry run checks.
-type StatementDmlDryRunRule struct {
-	BaseRule
-
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-// NewStatementDmlDryRunRule creates a new StatementDmlDryRunRule.
-func NewStatementDmlDryRunRule(ctx context.Context, level storepb.Advice_Status, title string, driver *sql.DB) *StatementDmlDryRunRule {
-	return &StatementDmlDryRunRule{
-		BaseRule: NewBaseRule(level, title, 0),
-		driver:   driver,
-		ctx:      ctx,
+	var nodes []ast.Node
+	var stmts []base.ParsedStatement
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
 	}
-}
 
-// Name returns the rule name.
-func (*StatementDmlDryRunRule) Name() string {
-	return "statement.dml-dry-run"
-}
-
-// OnStatement dry-runs top-level DML statements from the omni AST.
-func (r *StatementDmlDryRunRule) OnStatement(node ast.Node) {
-	switch node.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-		r.handleStmt(r.stmtText, r.baseLine+1)
-	default:
+	probes := make(map[int]v1review.Probe)
+	for n, i := range oraclev1review.StatementDMLDryRunProbes(nodes) {
+		if n >= common.MaximumLintExplainSize {
+			break
+		}
+		if _, err := advisor.Query(ctx, advisor.QueryContext{}, checkCtx.Driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmts[i].Text)); err != nil {
+			probes[i] = v1review.Probe{Error: err.Error()}
+		} else {
+			probes[i] = v1review.Probe{}
+		}
 	}
-}
 
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.
-
-func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
-	if r.explainCount >= common.MaximumLintExplainSize {
-		return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range oraclev1review.StatementDMLDryRun(nodes, probes) {
+		line := stmts[f.Statement].BaseLine() + 1
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.StatementDMLDryRunFailed.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Failed to dry run statement at line %d: %v", line, f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
+		})
 	}
-	r.explainCount++
-	if _, err := advisor.Query(r.ctx, advisor.QueryContext{}, r.driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", text)); err != nil {
-		r.AddAdvice(
-			r.level,
-			code.StatementDMLDryRunFailed.Int32(),
-			fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
-			base.ConvertANTLRLineToPosition(lineNumber),
-		)
-	}
+	return adviceList, nil
 }

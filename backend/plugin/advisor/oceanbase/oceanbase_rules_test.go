@@ -11,9 +11,8 @@ import (
 // fixtures in test/, so a rule that stops firing on OceanBase's own AST is caught
 // here rather than letting an OceanBase review pass silently.
 //
-// Two registered rules are not here: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
-// has no fixtures anywhere, and STATEMENT_DISALLOW_OFFLINE_DDL is covered by
-// its own test in this package.
+// One registered rule is not here: STATEMENT_DISALLOW_OFFLINE_DDL is covered
+// by its own test in this package.
 //
 // The fixtures are advisor/mysql's, which the rules share, but for
 // statement_insert_row_limit: OceanBase has its own advisor, which quotes the
@@ -55,6 +54,7 @@ func TestOceanBaseRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_NAMING_INDEX_UK, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NamingPayload{NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{Format: "^$|^uk_{{table}}_{{column_list}}$", MaxLength: 64}}},
 		{Type: storepb.SQLReviewRule_NAMING_TABLE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NamingPayload{NamingPayload: &storepb.SQLReviewRule_NamingRulePayload{Format: "^[a-z]+(_[a-z]+)*$", MaxLength: 64}}},
 		{Type: storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_STATEMENT_ADD_COLUMN_WITHOUT_POSITION, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}}},
 		{Type: storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_STATEMENT_DISALLOW_LIMIT, Level: storepb.SQLReviewRule_WARNING},

@@ -41,7 +41,7 @@ func (*ColumnDisallowDropAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 				Code:          code.DropColumn.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("drops column \"%s\" of table \"%s\"", f.Name, f.Table),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}

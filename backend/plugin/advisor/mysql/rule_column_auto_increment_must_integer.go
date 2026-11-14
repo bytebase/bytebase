@@ -41,7 +41,7 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 				Code:          code.AutoIncrementColumnNotInteger.Int32(),
 				Title:         checkCtx.Rule.Type.String(),
 				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", f.Table, f.Name),
-				StartPosition: findingPosition(stmt, f),
+				StartPosition: columnFindingPosition(stmt, f),
 			})
 		}
 	}
