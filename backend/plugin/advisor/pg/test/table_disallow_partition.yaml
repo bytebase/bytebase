@@ -22,3 +22,28 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE p PARTITION OF t FOR VALUES FROM (1) TO (2);
+- statement: ALTER INDEX i ATTACH PARTITION j;
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: Table partition is forbidden, but "ALTER INDEX i ATTACH PARTITION j" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t DETACH PARTITION p;
+- statement: |-
+    /* partitioned */
+    CREATE TABLE t(a int)
+    PARTITION BY HASH (a);
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: Table partition is forbidden, but "/* partitioned */\nCREATE TABLE t(a int)\nPARTITION BY HASH (a)" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

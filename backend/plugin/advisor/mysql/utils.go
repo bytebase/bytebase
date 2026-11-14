@@ -38,21 +38,6 @@ func tableName(ref *ast.TableRef) string {
 	return ref.Name
 }
 
-// indexColumns extracts column names from an index column list.
-// For expression-based index columns, it falls back to the column reference name.
-func indexColumns(cols []*ast.IndexColumn) []string {
-	if len(cols) == 0 {
-		return nil
-	}
-	var names []string
-	for _, col := range cols {
-		if ref, ok := col.Expr.(*ast.ColumnRef); ok {
-			names = append(names, ref.Column)
-		}
-	}
-	return names
-}
-
 // isNullable checks if a column allows NULL.
 // A column is nullable unless it has a NOT NULL constraint or is a PRIMARY KEY.
 func isNullable(col *ast.ColumnDef) bool {

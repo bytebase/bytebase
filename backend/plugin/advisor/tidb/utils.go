@@ -108,13 +108,11 @@ func (s Stmt) FirstTokenLine() int {
 var (
 	optionNamesCharset = []string{"CHARACTER SET", "CHARSET"}
 	optionNamesCollate = []string{"COLLATE"}
-	optionNamesComment = []string{"COMMENT"}
 )
 
 // databaseOption returns the lowercased value of the first option
 // whose Name matches any in `names` (case-insensitive), or "" if none
-// match. For case-insensitive identifiers (charset/collation names);
-// user-content values like COMMENT should use *Present variants.
+// match. For case-insensitive identifiers (charset/collation names).
 func databaseOption(opts []*omniast.DatabaseOption, names []string) string {
 	for _, opt := range opts {
 		if opt == nil {
@@ -144,24 +142,6 @@ func tableOption(opts []*omniast.TableOption, names []string) string {
 		}
 	}
 	return ""
-}
-
-// tableOptionPresent reports whether any option whose Name matches
-// any in `names` is in the slice; returns its raw value (case preserved —
-// user content). Distinguishes "no clause" from "clause with empty value"
-// (e.g. COMMENT ”).
-func tableOptionPresent(opts []*omniast.TableOption, names []string) (string, bool) {
-	for _, opt := range opts {
-		if opt == nil {
-			continue
-		}
-		for _, name := range names {
-			if strings.EqualFold(opt.Name, name) {
-				return opt.Value, true
-			}
-		}
-	}
-	return "", false
 }
 
 // optionNameMatches reports whether `optName` (case-insensitively)

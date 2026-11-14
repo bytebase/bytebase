@@ -17,3 +17,53 @@
         line: 5
         column: 0
       endposition: null
+- statement: ALTER TABLE MySchema.Identifier ADD Age INT;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE IF EXISTS MySchema.MyTable, [MySchema].[Identifier];
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE MySchema.Identifier;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- leading comment
+
+    CREATE TABLE MySchema.MyTable (Id INT);
+    ALTER TABLE
+      MySchema.Identifier ADD Age INT;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE myschema.identifier (Id INT);
+- statement: CREATE TABLE Identifier (Id INT);
+- statement: DROP VIEW MySchema.Identifier;
+- statement: IF 1 = 1 BEGIN DROP TABLE MySchema.Identifier; END;
+- statement: INSERT INTO MySchema.Identifier (Id, Name) VALUES (1, 'Alice');

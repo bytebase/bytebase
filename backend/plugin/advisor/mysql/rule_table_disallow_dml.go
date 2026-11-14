@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +23,7 @@ func init() {
 }
 
 // TableDisallowDMLAdvisor is the advisor checking for disallow DML on specific tables.
+// The judgment lives in omni (mysql/v1review.TableDisallowDML).
 type TableDisallowDMLAdvisor struct {
 }
 
@@ -29,78 +32,28 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	// A rule without a string array payload panics here, as V1 did.
+	disallowList := checkCtx.Rule.GetStringArrayPayload().List
 
-	rule := &tableDisallowDMLRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		disallowList: stringArrayPayload.List,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowDMLRule struct {
-	BaseRule
-	disallowList []string
-}
-
-func (*tableDisallowDMLRule) Name() string {
-	return "TableDisallowDMLRule"
-}
-
-func (r *tableDisallowDMLRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.DeleteStmt:
-		for _, name := range tableExprNames(n.Tables) {
-			r.checkTableName(name, r.LocToLine(n.Loc))
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.InsertStmt:
-		if n.Table != nil {
-			r.checkTableName(n.Table.Name, r.LocToLine(n.Loc))
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.SelectStmt:
-		if n.Into != nil && n.Into.Outfile != "" {
-			r.checkTableName(n.Into.Outfile, r.LocToLine(n.Loc))
-		}
-	case *ast.UpdateStmt:
-		for _, name := range tableExprNames(n.Tables) {
-			r.checkTableName(name, r.LocToLine(n.Loc))
-		}
-	default:
-	}
-}
-
-func (r *tableDisallowDMLRule) checkTableName(tableName string, lineNumber int32) {
-	for _, disallow := range r.disallowList {
-		if tableName == disallow {
-			absoluteLine := r.BaseLine + int(lineNumber)
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range mysqlv1review.TableDisallowDML([]ast.Node{node}, disallowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDisallowDML.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
-				StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
+				Title:         title,
+				Content:       fmt.Sprintf("DML is disallowed on table %s.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
-			return
 		}
 	}
-}
-
-// tableExprNames extracts table names from a slice of TableExpr.
-func tableExprNames(exprs []ast.TableExpr) []string {
-	var names []string
-	for _, expr := range exprs {
-		ast.Inspect(expr, func(n ast.Node) bool {
-			t, ok := n.(*ast.TableRef)
-			if !ok {
-				return true
-			}
-			names = append(names, t.Name)
-			return false
-		})
-	}
-	return names
+	return adviceList, nil
 }

@@ -65,3 +65,67 @@
         Position      VARCHAR(100)
     );
   changeType: 1
+- statement: ALTER TABLE [dbo].[Customer] ADD CONSTRAINT FK_Person FOREIGN KEY (Id) REFERENCES Person(Id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table dbo.Customer.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE Customer ADD CONSTRAINT FK_Person FOREIGN KEY (Id) REFERENCES Person(Id);
+    CREATE TABLE dbo.Customer (Id INT);
+- statement: ALTER TABLE Customer ADD PersonId INT REFERENCES Person(Id);
+- statement: |-
+    CREATE TABLE Customer (Id INT REFERENCES Person(Id));
+    ALTER TABLE Customer DROP CONSTRAINT FK_Person;
+    DROP TABLE Customer;
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table Customer.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Customer (
+      Id INT,
+      CONSTRAINT FK_Person FOREIGN KEY (Id) REFERENCES Person(Id),
+      PersonId INT REFERENCES Person(Id)
+    );
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table Customer.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE Customer (Id INT REFERENCES Person(Id));
+    CREATE TABLE Orders (Id INT);
+    ALTER TABLE Orders ADD CONSTRAINT FK_Customer FOREIGN KEY (Id) REFERENCES Customer(Id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table Customer.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: FOREIGN KEY is not allowed in the table Orders.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: IF 1 = 1 CREATE TABLE Customer (Id INT REFERENCES Person(Id));
