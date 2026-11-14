@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	omnipg "github.com/bytebase/omni/pg"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -433,11 +434,11 @@ func (c *sdlIntegrityChecker) validateViewDependenciesWithMergedTable(merged *me
 
 		for _, dep := range dependencies {
 			// Skip system schemas
-			if pgparser.IsSystemSchema(dep.schemaName) {
+			if pganalysis.IsSystemSchema(dep.schemaName) {
 				continue
 			}
 			// Skip system tables/views by name
-			if pgparser.IsSystemTable(dep.tableName) || pgparser.IsSystemView(dep.tableName) {
+			if pganalysis.IsSystemTable(dep.tableName) || pganalysis.IsSystemView(dep.tableName) {
 				continue
 			}
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strings"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/v1review"
 
@@ -41,7 +42,7 @@ func newLiveStatements(parsed []base.ParsedStatement) liveStatements {
 // statement an EXPLAIN ANALYZE runs, else the statement, without surrounding
 // white space and trailing semicolons.
 func (l liveStatements) probeText(i int) string {
-	_, text := pgparser.UnwrapExplainAnalyze(l.nodes[i], l.stmts[i].Text)
+	_, text := pganalysis.UnwrapExplainAnalyze(l.nodes[i], l.stmts[i].Text)
 	return strings.TrimRight(strings.TrimSpace(text), ";")
 }
 

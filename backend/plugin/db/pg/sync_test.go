@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 func TestIsAtLeastPG10(t *testing.T) {
@@ -81,7 +81,7 @@ LEFT JOIN pg_class c ON c.relname = cols.table_name AND c.relnamespace = n.oid A
 WHERE cols.table_schema NOT IN (%s)
   AND cols.table_schema NOT LIKE 'pg_temp%%'
   AND cols.table_schema NOT LIKE 'pg_toast%%'
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.SystemSchemaWhereClause)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pganalysis.SystemSchemaWhereClause)
 
 type columnQueryRow struct {
 	TableSchema        string
