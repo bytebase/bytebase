@@ -38,7 +38,7 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 		BackupDatabase:  targetDatabase,
 		TablePrefix:     tablePrefix,
 		Catalog:         newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc),
-		Columns: func(database, table string) ([]string, []string, error) {
+		Columns: func(database, table string) (analysis.TableColumns, error) {
 			return classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, database, table)
 		},
 	})
@@ -75,13 +75,19 @@ func convertBackupStatements(statement string, backups []analysis.BackupStatemen
 	return result, nil
 }
 
-// ExtractTables extracts table references from a DML statement.
+// ExtractTables extracts table references from a DML statement. dbMetadata,
+// which may be nil, is databaseName's metadata.
 func ExtractTables(databaseName string, node ast.Node, fullSQL string, offset int, dbMetadata *model.DatabaseMetadata) ([]StatementInfo, error) {
-	var database analysis.Database
+	var catalog analysis.Catalog
 	if dbMetadata != nil {
-		database = &catalogDatabase{database: dbMetadata}
+		catalog.GetDatabase = func(name string) (analysis.Database, error) {
+			if name != databaseName {
+				return nil, nil
+			}
+			return &catalogDatabase{database: dbMetadata}, nil
+		}
 	}
-	return analysis.ExtractTables(databaseName, node, fullSQL, offset, database)
+	return analysis.ExtractTables(databaseName, node, fullSQL, offset, catalog)
 }
 
 // newBackupCatalog reads the instance's metadata for prior backup. Unlike the
@@ -108,19 +114,19 @@ func newBackupCatalog(ctx context.Context, instanceID string, getDatabaseMetadat
 	return catalog
 }
 
-// classifyColumns returns a table's generated and other columns, and reports
-// a missing callback or database in Bytebase's words.
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, database, table string) ([]string, []string, error) {
+// classifyColumns returns what prior backup needs of a table's columns and
+// keys, and reports a missing callback or database in Bytebase's words.
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, isCaseSensitive bool, instanceID string, database, table string) (analysis.TableColumns, error) {
 	if getDatabaseMetadataFunc == nil {
-		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
+		return analysis.TableColumns{}, errors.New("GetDatabaseMetadataFunc is not set")
 	}
-	generated, normal, err := analysis.ClassifyColumns(newBackupCatalog(ctx, instanceID, getDatabaseMetadataFunc, listDatabaseNamesFunc), isCaseSensitive, database, table)
+	columns, err := analysis.ClassifyColumns(newBackupCatalog(ctx, instanceID, getDatabaseMetadataFunc, listDatabaseNamesFunc), isCaseSensitive, database, table)
 	var notFound *analysis.NotFoundError
 	if errors.As(err, &notFound) {
 		slog.Debug("failed to get database metadata", slog.String("instanceID", instanceID), slog.String("database", database))
-		return nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, database)
+		return analysis.TableColumns{}, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, database)
 	}
-	return generated, normal, err
+	return columns, err
 }
 
 // dmlKeywordStart returns the offset of the UPDATE or DELETE keyword of the

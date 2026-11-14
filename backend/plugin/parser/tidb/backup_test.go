@@ -158,6 +158,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t2",
@@ -172,6 +174,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "test",
@@ -216,6 +220,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t3",
@@ -230,6 +236,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "d",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 			},
 		},
@@ -281,7 +289,7 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal(
 		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
-			"INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
+			"INSERT INTO `backupDB`.`_rollback_0_test` (`a`,`b`,`c`) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, (SELECT id FROM test2) AS x WHERE test.id = x.id;",
 		result[0].Statement,
 	)
 
@@ -292,15 +300,15 @@ func TestBackupRejectsAndPreserves(t *testing.T) {
 	a.Len(result, 1)
 	a.Equal(
 		"CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;\n"+
-			"INSERT INTO `backupDB`.`_rollback_0_test` WITH x AS (SELECT id FROM test2) SELECT `test`.* FROM test JOIN x ON test.id = x.id;",
+			"INSERT INTO `backupDB`.`_rollback_0_test` (`a`,`b`,`c`) WITH x AS (SELECT id FROM test2) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test JOIN x ON test.id = x.id;",
 		result[0].Statement,
 	)
 	// The generated backup must be valid SQL (the CTE is defined before use).
 	_, perr := ParseTiDB(result[0].Statement)
 	a.NoError(perr, "generated CTE backup must re-parse as valid SQL")
 
-	// More than maxMixedDMLCount same-table statements use the UNION ALL path,
-	// which cannot emit a per-arm WITH (TiDB rejects WITH after UNION ALL). A CTE
+	// More than maxMixedDMLCount same-table statements use the UNION path,
+	// which cannot emit a per-arm WITH (TiDB rejects WITH after UNION). A CTE
 	// in that batch must be rejected rather than produce invalid SQL.
 	manyWithCTE := "DELETE FROM test WHERE id = 1;\n" +
 		"DELETE FROM test WHERE id = 2;\n" +

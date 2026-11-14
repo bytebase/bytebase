@@ -23,12 +23,12 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		return "", errors.Errorf("failed to extract single SQL: %v", err)
 	}
 
-	// Parse the filtered SQL and find the first DML node.
-	matchingNode, err := analysis.FirstDML(originalSQL)
+	// Parse the filtered SQL and find its DML nodes; the first decides.
+	matchingNodes, err := analysis.DMLs(originalSQL)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse statement")
 	}
-	if matchingNode == nil {
+	if len(matchingNodes) == 0 {
 		return "", errors.Errorf("no DML statement found in extracted SQL")
 	}
 
@@ -40,18 +40,18 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	_, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, sourceDatabase, backupItem.SourceTable.Table)
+	columns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, sourceDatabase, backupItem.SourceTable.Table)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
 	}
 
-	return analysis.RestoreSQL(matchingNode, analysis.RestoreOptions{
+	return analysis.RestoreSQL(matchingNodes, analysis.RestoreOptions{
 		Statement:      originalSQL,
 		Database:       sourceDatabase,
 		Table:          backupItem.SourceTable.Table,
 		BackupDatabase: targetDatabase,
 		BackupTable:    backupItem.TargetTable.Table,
-		Columns:        normalColumns,
+		Columns:        columns.Normal,
 		Catalog:        newBackupCatalog(ctx, rCtx.InstanceID, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc),
 	})
 }

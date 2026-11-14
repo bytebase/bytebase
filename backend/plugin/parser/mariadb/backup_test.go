@@ -146,6 +146,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t2",
@@ -160,6 +162,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "test",
@@ -204,6 +208,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t3",
@@ -218,6 +224,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "d",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 			},
 		},

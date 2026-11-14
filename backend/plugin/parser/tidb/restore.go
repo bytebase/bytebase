@@ -69,7 +69,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
 	}
-	_, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, sourceDatabase, backupItem.SourceTable.Table)
+	columns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.ListDatabaseNamesFunc, rCtx.IsCaseSensitive, rCtx.InstanceID, sourceDatabase, backupItem.SourceTable.Table)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
 	}
@@ -80,7 +80,7 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 		Table:          backupItem.SourceTable.Table,
 		BackupDatabase: targetDatabase,
 		BackupTable:    backupItem.TargetTable.Table,
-		Columns:        normalColumns,
+		Columns:        columns.Normal,
 		Catalog:        catalog,
 	})
 }

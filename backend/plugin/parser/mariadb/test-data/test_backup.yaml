@@ -20,29 +20,29 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  (WITH t_cte AS (
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1)
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1)
           UNION DISTINCT
           (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2)
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2)
           UNION DISTINCT
           (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3)
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3)
           UNION DISTINCT
           (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4)
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4)
           UNION DISTINCT
           (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5)
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5)
           UNION DISTINCT
           (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6);
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -59,9 +59,9 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test JOIN t_cte WHERE test.b1 = t_cte.b1;
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test JOIN t_cte WHERE test.b1 = t_cte.b1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -78,9 +78,9 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1;
+        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -101,19 +101,19 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  (SELECT `test`.* FROM test WHERE test.b1 = 1)
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 1)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 2)
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 2)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 3)
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 3)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 4)
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 4)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 5)
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 5)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 6)
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 6)
           UNION DISTINCT
-          (SELECT `test`.* FROM test WHERE test.b1 = 7);
+          (SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE test.b1 = 7);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -143,7 +143,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t1_db1` LIKE `db1`.`t1`;
-        INSERT INTO `backupDB`.`_rollback_t1_db1`  SELECT `t1`.* FROM db1.t1 WHERE c1 = 2;
+        INSERT INTO `backupDB`.`_rollback_t1_db1` (`a`,`b`,`c`)  SELECT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM db1.t1 WHERE c1 = 2;
       sourceschema: ""
       sourcetablename: t1
       targettablename: _rollback_t1_db1
@@ -155,7 +155,7 @@
         column: 39
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t2_db2` LIKE `db2`.`t2`;
-        INSERT INTO `backupDB`.`_rollback_t2_db2`  SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
+        INSERT INTO `backupDB`.`_rollback_t2_db2` (`a`,`b`,`c`)  SELECT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM db2.t2 WHERE c1 = 2;
       sourceschema: ""
       sourcetablename: t2
       targettablename: _rollback_t2_db2
@@ -169,7 +169,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test, test2 as t2 where test.id = t2.id;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, test2 as t2 where test.id = t2.id;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -183,7 +183,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test2_db` LIKE `db`.`test2`;
-        INSERT INTO `backupDB`.`_rollback_test2_db`  SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+        INSERT INTO `backupDB`.`_rollback_test2_db` (`a`,`b`,`c`)  SELECT DISTINCT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       sourceschema: ""
       sourcetablename: test2
       targettablename: _rollback_test2_db
@@ -195,7 +195,7 @@
         column: 64
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -209,7 +209,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test2_db` LIKE `db`.`test2`;
-        INSERT INTO `backupDB`.`_rollback_test2_db`  SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+        INSERT INTO `backupDB`.`_rollback_test2_db` (`a`,`b`,`c`)  SELECT DISTINCT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       sourceschema: ""
       sourcetablename: test2
       targettablename: _rollback_test2_db
@@ -221,7 +221,7 @@
         column: 70
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -235,7 +235,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test as t1 WHERE t1.c1 = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test as t1 WHERE t1.c1 = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -249,7 +249,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE c1 = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE c1 = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -263,7 +263,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `x`.* FROM test x WHERE x.c1 = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT `x`.`a`,`x`.`b`,`x`.`c` FROM test x WHERE x.c1 = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -277,7 +277,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE c1=2;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT `test`.`a`,`test`.`b`,`test`.`c` FROM test WHERE c1=2;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -291,7 +291,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -305,7 +305,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test2_db` LIKE `db`.`test2`;
-        INSERT INTO `backupDB`.`_rollback_test2_db`  SELECT `t2`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+        INSERT INTO `backupDB`.`_rollback_test2_db` (`a`,`b`,`c`)  SELECT DISTINCT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       sourceschema: ""
       sourcetablename: test2
       targettablename: _rollback_test2_db
@@ -317,7 +317,7 @@
         column: 71
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -331,7 +331,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test2_db` LIKE `db`.`test2`;
-        INSERT INTO `backupDB`.`_rollback_test2_db`  SELECT `t2`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_test2_db` (`a`,`b`,`c`)  SELECT DISTINCT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: test2
       targettablename: _rollback_test2_db
@@ -343,7 +343,7 @@
         column: 76
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -357,7 +357,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -371,7 +371,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test2_db` LIKE `db`.`test2`;
-        INSERT INTO `backupDB`.`_rollback_test2_db`  SELECT `t2`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_test2_db` (`a`,`b`,`c`)  SELECT DISTINCT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: test2
       targettablename: _rollback_test2_db
@@ -383,7 +383,7 @@
         column: 89
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1 INNER JOIN test2 t2 ON t1.a = t2.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -397,7 +397,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t1_db` LIKE `db`.`t1`;
-        INSERT INTO `backupDB`.`_rollback_t1_db`  SELECT `t1`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_t1_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: t1
       targettablename: _rollback_t1_db
@@ -411,7 +411,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t3_db` LIKE `db`.`t3`;
-        INSERT INTO `backupDB`.`_rollback_t3_db`  SELECT `t3`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_t3_db` (`a`,`b`,`d`)  SELECT DISTINCT `t3`.`a`,`t3`.`b`,`t3`.`d` FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: t3
       targettablename: _rollback_t3_db
@@ -425,7 +425,7 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t1_db` LIKE `db`.`t1`;
-        INSERT INTO `backupDB`.`_rollback_t1_db`  SELECT `t1`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_t1_db` (`a`,`b`,`c`)  SELECT DISTINCT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: t1
       targettablename: _rollback_t1_db
@@ -437,7 +437,7 @@
         column: 75
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_t3_db` LIKE `db`.`t3`;
-        INSERT INTO `backupDB`.`_rollback_t3_db`  SELECT `t3`.* FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
+        INSERT INTO `backupDB`.`_rollback_t3_db` (`a`,`b`,`d`)  SELECT DISTINCT `t3`.`a`,`t3`.`b`,`t3`.`d` FROM t1 INNER JOIN t3 ON t1.a = t3.a WHERE t1.a = 1;
       sourceschema: ""
       sourcetablename: t3
       targettablename: _rollback_t3_db
@@ -453,9 +453,9 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  (SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1)
+        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  (SELECT `t1`.`a`,`t1`.`b`,`t1`.`c` FROM test t1 WHERE t1.c1 = 1)
           UNION DISTINCT
-          (SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5);
+          (SELECT `t2`.`a`,`t2`.`b`,`t2`.`c` FROM test t2 WHERE t2.c1 = 5);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
