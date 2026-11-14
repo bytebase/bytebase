@@ -88,7 +88,7 @@ func snapshotObject(meta *metadatapb.DatabaseSchemaMetadata, key string) proto.M
 		case "table":
 			for _, t := range s.GetTables() {
 				if t.GetName() == name {
-					return t
+					return tableDefinition(t)
 				}
 			}
 		case "view":
@@ -131,4 +131,12 @@ func snapshotObject(meta *metadatapb.DatabaseSchemaMetadata, key string) proto.M
 		}
 	}
 	return nil
+}
+
+// tableDefinition is t without the statistics sync records, which change with
+// the data rather than the definition.
+func tableDefinition(t *metadatapb.TableMetadata) *metadatapb.TableMetadata {
+	t = proto.CloneOf(t)
+	t.RowCount, t.DataSize, t.IndexSize, t.DataFree = 0, 0, 0, 0
+	return t
 }

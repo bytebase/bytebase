@@ -56,3 +56,21 @@ func TestOmniDiffMetadataMigrationAcrossDatabaseNames(t *testing.T) {
 	require.NotContains(t, sql, sdlDatabaseContext)
 	require.Contains(t, sql, "VIEW `v` AS select `t`.`id` AS `id` from `t`")
 }
+
+func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnIncompleteTable(t *testing.T) {
+	snapshot := func(rows int64, extra ...*metadatapb.ColumnMetadata) *metadatapb.DatabaseSchemaMetadata {
+		m := oneTableSnapshot("d", append([]*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}, extra...))
+		m.Schemas[0].Tables = append(m.Schemas[0].Tables, &metadatapb.TableMetadata{
+			Name:     "unparsed",
+			Columns:  []*metadatapb.ColumnMetadata{{Name: "a", Type: "int", Default: "((("}},
+			RowCount: rows, DataSize: rows * 16,
+		})
+		return m
+	}
+	sql, err := omniDiffMetadataMigration(
+		metadataFromProto(snapshot(10)),
+		metadataFromProto(snapshot(20, &metadatapb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Default: "NULL"})),
+	)
+	require.NoError(t, err)
+	require.Equal(t, "ALTER TABLE `t` ADD COLUMN `b` int DEFAULT NULL", sql)
+}
