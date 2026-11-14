@@ -48,24 +48,3 @@ func convertExplainError(explain string, err error) (string, error) {
 func DescribeExplain(statement string) (format string, executed bool, ok bool) {
 	return analysis.DescribeExplain(statement)
 }
-
-// getWithClause returns the WITH clause of a statement, the only one where PostgreSQL allows
-// data-modifying statements.
-func getWithClause(node ast.Node) *ast.WithClause {
-	switch n := node.(type) {
-	case *ast.SelectStmt:
-		return n.WithClause
-	case *ast.InsertStmt:
-		return n.WithClause
-	case *ast.UpdateStmt:
-		return n.WithClause
-	case *ast.DeleteStmt:
-		return n.WithClause
-	case *ast.MergeStmt:
-		return n.WithClause
-	case *ast.CreateTableAsStmt:
-		return getWithClause(n.Query)
-	default:
-		return nil
-	}
-}
