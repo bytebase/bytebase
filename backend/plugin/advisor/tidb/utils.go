@@ -4,7 +4,6 @@ package tidb
 import (
 	"fmt"
 	"log/slog"
-	"slices"
 	"strings"
 	"unicode"
 
@@ -17,28 +16,6 @@ import (
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
-type tablePK map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tablePK) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
 
 // Stmt bundles an omni/tidb AST node with the source text and base line of
 // the statement it came from. The base line is needed to convert byte offsets
@@ -96,167 +73,6 @@ func isRandFuncCall(expr omniast.ExprNode) bool {
 		return false
 	}
 	return strings.EqualFold(fc.Name, "RAND")
-}
-
-// constraintAdviceName returns the constraint name suitable for
-// embedding in advice content. Falls back to "PRIMARY" for unnamed
-// PRIMARY KEY constraints (cumulative #28: pingcap-tidb accepted the
-// non-standard `PRIMARY KEY index_name (cols)` extension and captured
-// the index_name; omni follows standard MySQL grammar where PRIMARY
-// KEY doesn't accept an index_name and silently drops it. "PRIMARY"
-// is MySQL's canonical internal name for the primary key — better UX
-// than the empty backticks the raw `c.Name` would produce).
-//
-// Promoted to utils.go in batch 18 (originally file-local in batch
-// 17's advisor_index_key_number_limit.go) when a second consumer
-// (advisor_index_no_duplicate_column) needed the same fallback.
-func constraintAdviceName(c *omniast.Constraint) string {
-	if c == nil {
-		return ""
-	}
-	if name := constraintName(c); name != "" {
-		return name
-	}
-	if c.Type == omniast.ConstrPrimaryKey {
-		return "PRIMARY"
-	}
-	return ""
-}
-
-// constraintName returns the CONSTRAINT symbol, else the name written after
-// FOREIGN KEY, which omni keeps in IndexName.
-func constraintName(c *omniast.Constraint) string {
-	if c.Name != "" {
-		return c.Name
-	}
-	return c.IndexName
-}
-
-// dataTypeNameCompact returns a compact, lowercase type-name string
-// for use in advice content + allowlist comparisons. Mirrors the mysql
-// helper of the same name (mysql/utils.go). Length/scale info is
-// intentionally omitted — pingcap's `tidbparser.TypeString` and the
-// canonical fixture rendering both elide it (e.g. `varchar(5)` → "varchar").
-func dataTypeNameCompact(dt *omniast.DataType) string {
-	if dt == nil {
-		return ""
-	}
-	return strings.ToLower(dt.Name)
-}
-
-// indexFamilyCallbacks parameterizes the shared CREATE TABLE / ALTER TABLE
-// walk used by the index-family advisors (advisor_index_pk_type,
-// advisor_index_type_no_blob, advisor_index_primary_key_type_allowlist).
-// The three advisors share scaffolding — same top-level type switch, same
-// AlterTable command-arm dispatch, same `pkData` accumulator — but diverge
-// at every callback site (which constraint types they care about, which
-// column-level constraint flags violations, what content the advice emits).
-// Encoding the spine here removes ~30 lines of duplication per advisor;
-// the per-rule logic stays in each advisor's callbacks.
-//
-// Each callback returns the [`pkData`] entries this command contributed,
-// so the helper concatenates results without owning advice formatting
-// (which differs per advisor and stays in-file).
-type indexFamilyCallbacks struct {
-	// onColumn fires for each column observed in CREATE TABLE columns and
-	// ALTER TABLE ADD COLUMN. Implementations typically record the column
-	// in the per-checker tracker (so ADD INDEX on a just-added column can
-	// resolve its type later) and emit a violation if the column itself
-	// declares a triggering inline constraint (e.g. PRIMARY KEY / UNIQUE).
-	onColumn func(tableName string, line int, col *omniast.ColumnDef) []pkData
-	// onConstraint fires for each top-level constraint observed: CREATE
-	// TABLE table-level constraints and ALTER TABLE ADD CONSTRAINT / ADD
-	// INDEX / ADD PRIMARY KEY / etc. Empirically tidb omni emits all
-	// `ALTER TABLE ADD ...` forms via ATAddConstraint; ATAddIndex is also
-	// dispatched here for sibling parity (cumulative #17).
-	onConstraint func(tableName string, line int, constraint *omniast.Constraint) []pkData
-	// onChangeColumn fires for ALTER TABLE CHANGE/MODIFY COLUMN. The
-	// helper resolves the OLD column name (cmd.Name for CHANGE COLUMN
-	// when set; falling back to the new column's name for MODIFY COLUMN
-	// or unnamed CHANGE) so callbacks can clean up tracker state before
-	// re-recording.
-	onChangeColumn func(tableName string, oldColumnName string, line int, newCol *omniast.ColumnDef) []pkData
-}
-
-// collectIndexFamilyCreateTable walks a CreateTableStmt's columns and
-// table-level constraints, dispatching each to the per-advisor callbacks.
-// Line positions: column line is the column's start; constraint line is
-// the constraint's start. Returns the concatenated pkData; advice
-// formatting/emission stays in the caller.
-func collectIndexFamilyCreateTable(ostmt Stmt, n *omniast.CreateTableStmt, cb indexFamilyCallbacks) []pkData {
-	if n == nil || n.Table == nil {
-		return nil
-	}
-	tableName := n.Table.Name
-	var result []pkData
-	for _, column := range n.Columns {
-		if column == nil {
-			continue
-		}
-		if cb.onColumn != nil {
-			result = append(result, cb.onColumn(tableName, ostmt.AbsoluteLine(column.Loc.Start), column)...)
-		}
-	}
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
-			continue
-		}
-		if cb.onConstraint != nil {
-			result = append(result, cb.onConstraint(tableName, ostmt.AbsoluteLine(constraint.Loc.Start), constraint)...)
-		}
-	}
-	return result
-}
-
-// collectIndexFamilyAlterTable walks an AlterTableStmt's commands,
-// dispatching ATAddColumn / ATAddConstraint+ATAddIndex / ATChangeColumn+
-// ATModifyColumn to the per-advisor callbacks. Other command types are
-// ignored. The line for every command is the top-level statement's start
-// (matching pingcap-typed visitors that read `node.OriginTextPosition()`
-// for ALTER TABLE specs). Returns the concatenated pkData.
-func collectIndexFamilyAlterTable(ostmt Stmt, n *omniast.AlterTableStmt, cb indexFamilyCallbacks) []pkData {
-	if n == nil || n.Table == nil {
-		return nil
-	}
-	tableName := n.Table.Name
-	stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-	var result []pkData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case omniast.ATAddColumn:
-			if cb.onColumn == nil {
-				continue
-			}
-			for _, column := range addColumnTargets(cmd) {
-				result = append(result, cb.onColumn(tableName, stmtLine, column)...)
-			}
-		case omniast.ATAddConstraint, omniast.ATAddIndex:
-			// Empirically tidb omni emits only ATAddConstraint for
-			// `ALTER TABLE ... ADD …` forms (bare and named); ATAddIndex
-			// is reserved (cumulative #17). Dual arm preserved for sibling
-			// parity with the naming-convention advisors and forward-compat
-			// against grammar evolution.
-			if cmd.Constraint != nil && cb.onConstraint != nil {
-				result = append(result, cb.onConstraint(tableName, stmtLine, cmd.Constraint)...)
-			}
-		case omniast.ATChangeColumn, omniast.ATModifyColumn:
-			if cmd.Column == nil || cb.onChangeColumn == nil {
-				continue
-			}
-			newCol := cmd.Column
-			oldColumnName := newCol.Name
-			if cmd.Type == omniast.ATChangeColumn && cmd.Name != "" {
-				// CHANGE COLUMN: cmd.Name is the OLD column name.
-				oldColumnName = cmd.Name
-			}
-			result = append(result, cb.onChangeColumn(tableName, oldColumnName, stmtLine, newCol)...)
-		default:
-		}
-	}
-	return result
 }
 
 // addColumnTargets returns the column definitions added by an ATAddColumn
@@ -329,27 +145,6 @@ func stmtNodes(stmts []Stmt) []omniast.Node {
 		nodes[i] = stmt.Node
 	}
 	return nodes
-}
-
-// indexColumns extracts column names from an omni IndexColumn list.
-// Expression-based parts that are not bare column refs are silently
-// skipped — e.g., functional indexes like `INDEX idx ((LOWER(name)))`
-// contribute no name. Any rule that needs to inspect index expressions
-// should not route through this helper.
-func indexColumns(cols []*omniast.IndexColumn) []string {
-	if len(cols) == 0 {
-		return nil
-	}
-	var names []string
-	for _, col := range cols {
-		if col == nil {
-			continue
-		}
-		if ref, ok := col.Expr.(*omniast.ColumnRef); ok {
-			names = append(names, ref.Column)
-		}
-	}
-	return names
 }
 
 // v1reviewSchema returns the snapshot md holds for an omni rule, an empty

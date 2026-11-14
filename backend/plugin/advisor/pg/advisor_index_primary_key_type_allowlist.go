@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
-// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
+// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key
+// type allowlist. The judgment lives in omni
+// (pg/v1review.IndexPrimaryKeyTypeAllowlist); this adapter passes the
+// payload's list and renders the findings as advice.
 type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
@@ -30,80 +34,23 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	// A rule without a string array payload panics here, and advisor.Check
+	// reports the panic as the rule's error.
+	allowlist := checkCtx.Rule.GetStringArrayPayload().List
 
-	rule := &indexPrimaryKeyTypeAllowlistRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		allowlist: stringArrayPayload.List,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexPrimaryKeyTypeAllowlistRule struct {
-	BaseRule
-
-	allowlist []string
-}
-
-func (*indexPrimaryKeyTypeAllowlistRule) Name() string {
-	return "index_primary_key_type_allowlist"
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	default:
-	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) handleCreateStmt(n *ast.CreateStmt) {
-	cols, constraints := tableElements(n)
-
-	// Build column name -> type mapping
-	columnTypes := make(map[string]string)
-	for _, col := range cols {
-		typeName := normalizePostgreSQLType(typeNameFull(col.TypeName))
-		columnTypes[col.Colname] = typeName
-
-		// Check column-level PRIMARY KEY constraint
-		for _, c := range columnConstraints(col) {
-			if c.Contype == ast.CONSTR_PRIMARY {
-				if !isTypeInList(typeName, r.allowlist) {
-					r.addTypeAdvice(col.Colname, typeName, r.FindLineByName(col.Colname))
-				}
-			}
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for i, node := range nodes {
+		for _, f := range pgv1review.IndexPrimaryKeyTypeAllowlist([]ast.Node{node}, allowlist) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.IndexPKType.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The column %q is one of the primary key, but its type %q is not in allowlist", f.Name, f.Value),
+				StartPosition: findingPosition(stmts[i], f),
+			})
 		}
 	}
-
-	// Check table-level PRIMARY KEY constraints
-	for _, c := range constraints {
-		if c.Contype != ast.CONSTR_PRIMARY {
-			continue
-		}
-		for _, colName := range constraintColumns(c) {
-			if colType, ok := columnTypes[colName]; ok {
-				if !isTypeInList(colType, r.allowlist) {
-					r.addTypeAdvice(colName, colType, r.FindLineByName(colName))
-				}
-			}
-		}
-	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) addTypeAdvice(columnName, columnType string, line int32) {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.IndexPKType.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("The column %q is one of the primary key, but its type %q is not in allowlist", columnName, columnType),
-		StartPosition: &storepb.Position{
-			Line:   line,
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

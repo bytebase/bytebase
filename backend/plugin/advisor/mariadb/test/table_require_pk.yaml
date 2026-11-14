@@ -170,3 +170,58 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t2 LIKE tech_book;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `t2` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t3 AS SELECT * FROM tech_book;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `t3` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book DROP COLUMN id;
+    ALTER TABLE tech_book DROP COLUMN name;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `tech_book` requires PRIMARY KEY
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE TECH_BOOK DROP COLUMN id;
+    ALTER TABLE tech_book DROP COLUMN name;
+- statement: |-
+    CREATE TABLE b (x INT);
+    CREATE TABLE a (y INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `b` requires PRIMARY KEY
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table `a` requires PRIMARY KEY
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

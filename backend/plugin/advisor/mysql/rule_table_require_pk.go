@@ -3,19 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
-)
-
-const (
-	primaryKeyName = "PRIMARY"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -26,7 +23,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePKAdvisor{})
 }
 
-// TableRequirePKAdvisor is the advisor checking table requires PK.
+// TableRequirePKAdvisor is the advisor checking table requires PK. The
+// judgment lives in omni (mysql/v1review.TableRequirePK); this adapter passes
+// the statements and the pre-change schema and renders the findings as advice.
 type TableRequirePKAdvisor struct {
 }
 
@@ -37,199 +36,46 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	rule := &tableRequirePKRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		tables:           make(map[string]columnSet),
-		line:             make(map[string]int),
-		originalMetadata: checkCtx.OriginalMetadata,
-	}
-
-	// Walk all statements.
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	// Generate advice after walking all statements.
-	rule.generateAdviceList()
-
-	return rule.GetAdviceList(), nil
-}
-
-type tableRequirePKRule struct {
-	BaseRule
-	tables           map[string]columnSet
-	line             map[string]int
-	originalMetadata *model.DatabaseMetadata
-}
-
-func (*tableRequirePKRule) Name() string {
-	return "TableRequirePKRule"
-}
-
-func (r *tableRequirePKRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.DropTableStmt:
-		r.checkDropTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableRequirePKRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	r.initEmptyTable(tableName)
-	r.line[tableName] = r.BaseLine + int(r.LocToLine(n.Loc))
-
-	// Check column-level PRIMARY KEY.
-	for _, col := range n.Columns {
-		if col == nil {
+	var nodes []ast.Node
+	var stmts []base.ParsedStatement
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		for _, c := range col.Constraints {
-			if c.Type == ast.ColConstrPrimaryKey {
-				r.tables[tableName] = newColumnSet([]string{col.Name})
-			}
-		}
-	}
-
-	// Check table-level PRIMARY KEY constraint.
-	for _, constraint := range n.Constraints {
-		if constraint.Type == ast.ConstrPrimaryKey {
-			r.tables[tableName] = newColumnSet(constraint.Columns)
-		}
-	}
-}
-
-func (r *tableRequirePKRule) checkDropTable(n *ast.DropTableStmt) {
-	for _, ref := range n.Tables {
-		if ref != nil {
-			delete(r.tables, ref.Name)
-		}
-	}
-}
-
-func (r *tableRequirePKRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	lineNumber := r.BaseLine + int(r.LocToLine(n.Loc))
-
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		switch cmd.Type {
-		case ast.ATAddConstraint:
-			if cmd.Constraint != nil && cmd.Constraint.Type == ast.ConstrPrimaryKey {
-				r.tables[tableName] = newColumnSet(cmd.Constraint.Columns)
-			}
-		case ast.ATDropConstraint:
-			// DROP PRIMARY KEY
-			if strings.EqualFold(cmd.Name, primaryKeyName) || cmd.Name == "" {
-				// cmd.Name == "" when it's DROP PRIMARY KEY (no explicit constraint name)
-				r.initEmptyTable(tableName)
-				r.line[tableName] = lineNumber
-			}
-		case ast.ATDropIndex:
-			if strings.EqualFold(cmd.Name, primaryKeyName) {
-				r.initEmptyTable(tableName)
-				r.line[tableName] = lineNumber
-			}
-		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				r.handleColumnDef(tableName, cmd.Column)
-			}
-			for _, col := range cmd.Columns {
-				r.handleColumnDef(tableName, col)
-			}
-		case ast.ATChangeColumn:
-			if cmd.Column != nil {
-				oldColumn := cmd.Name
-				newColumn := cmd.Column.Name
-				if r.changeColumn(tableName, oldColumn, newColumn) {
-					r.line[tableName] = lineNumber
-				}
-				r.handleColumnDef(tableName, cmd.Column)
-			}
-		case ast.ATModifyColumn:
-			if cmd.Column != nil {
-				r.handleColumnDef(tableName, cmd.Column)
-			}
-		case ast.ATDropColumn:
-			if r.dropColumn(tableName, cmd.Name) {
-				r.line[tableName] = lineNumber
-			}
-		default:
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
+	}
+	// A nil schema makes omni panic where V1 did with no original metadata.
+	var original *v1review.Schema
+	if checkCtx.OriginalMetadata != nil {
+		original = &v1review.Schema{
+			Metadata:            checkCtx.OriginalMetadata.GetProto(),
+			ObjectCaseSensitive: checkCtx.OriginalMetadata.GetIsObjectCaseSensitive(),
 		}
 	}
-}
 
-func (r *tableRequirePKRule) handleColumnDef(tableName string, col *ast.ColumnDef) {
-	if col == nil {
-		return
-	}
-	for _, c := range col.Constraints {
-		if c.Type == ast.ColConstrPrimaryKey {
-			r.tables[tableName] = newColumnSet([]string{col.Name})
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.TableRequirePK(nodes, original) {
+		if f.Code != v1review.TablePrimaryKeyMissing {
+			continue
 		}
-	}
-}
-
-func (r *tableRequirePKRule) generateAdviceList() {
-	tableList := r.getTableList()
-	for _, tableName := range tableList {
-		if len(r.tables[tableName]) == 0 {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.TableNoPK.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", tableName),
-				StartPosition: base.ConvertANTLRLineToPosition(r.line[tableName]),
-			})
+		line := 0
+		if f.Statement >= 0 {
+			stmt := stmts[f.Statement]
+			line = stmt.BaseLine() + int(findingLine(stmt.Text, f))
 		}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.TableNoPK.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Table `%s` requires PRIMARY KEY", f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
+		})
 	}
-}
-
-func (r *tableRequirePKRule) changeColumn(tableName string, oldColumn string, newColumn string) bool {
-	if r.dropColumn(tableName, oldColumn) {
-		pk := r.tables[tableName]
-		pk[newColumn] = true
-		return true
-	}
-	return false
-}
-
-func (r *tableRequirePKRule) dropColumn(tableName string, colName string) bool {
-	if _, ok := r.tables[tableName]; !ok {
-		pk := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(primaryKeyName)
-		if pk == nil {
-			return false
-		}
-		r.tables[tableName] = newColumnSet(pk.GetProto().GetExpressions())
-	}
-
-	pk := r.tables[tableName]
-	_, columnInPk := pk[colName]
-	delete(r.tables[tableName], colName)
-	return columnInPk
-}
-
-func (r *tableRequirePKRule) initEmptyTable(name string) {
-	r.tables[name] = make(columnSet)
-}
-
-func (r *tableRequirePKRule) getTableList() []string {
-	var tableList []string
-	for tableName := range r.tables {
-		tableList = append(tableList, tableName)
-	}
-	return tableList
+	return adviceList, nil
 }

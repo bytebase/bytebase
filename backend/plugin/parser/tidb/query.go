@@ -39,7 +39,7 @@ func validateQuery(statement string) (bool, bool, error) {
 		case *ast.SetStmt, *ast.SetTransactionStmt:
 			// omni splits SET TRANSACTION into its own node; pingcap folded it
 			// into SetStmt, which the editor allowed as a session setting that
-			// requires execution. getQueryType classifies both the same way.
+			// requires execution. query span classifies both the same way.
 			hasExecute = true
 		case *ast.ShowStmt:
 		case *ast.ExplainStmt:

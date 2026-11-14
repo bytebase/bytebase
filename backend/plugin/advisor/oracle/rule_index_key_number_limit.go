@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -23,6 +25,9 @@ func init() {
 }
 
 // IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
+// The judgment lives in omni (oracle/v1review.IndexKeyNumberLimit); this
+// adapter reads the limit from the rule's payload and renders the findings as
+// advice.
 type IndexKeyNumberLimitAdvisor struct {
 }
 
@@ -37,77 +42,30 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if int(numberPayload.Number) <= 0 {
+	limit := int(numberPayload.Number)
+	if limit <= 0 {
 		return nil, nil
 	}
 
-	rule := NewIndexKeyNumberLimitRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, int(numberPayload.Number))
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// IndexKeyNumberLimitRule is the rule implementation for index key number limit.
-type IndexKeyNumberLimitRule struct {
-	BaseRule
-
-	currentDatabase string
-	max             int
-}
-
-// NewIndexKeyNumberLimitRule creates a new IndexKeyNumberLimitRule.
-func NewIndexKeyNumberLimitRule(level storepb.Advice_Status, title string, currentDatabase string, maxKeys int) *IndexKeyNumberLimitRule {
-	return &IndexKeyNumberLimitRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		max:             maxKeys,
-	}
-}
-
-// Name returns the rule name.
-func (*IndexKeyNumberLimitRule) Name() string {
-	return "index.key-number-limit"
-}
-
-// OnStatement checks CREATE INDEX and constraint column counts in the omni AST.
-func (r *IndexKeyNumberLimitRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateIndexStmt:
-		if n.Columns != nil && len(n.Columns.Items) > r.max {
-			r.AddAdvice(
-				r.level,
-				code.IndexKeyNumberExceedsLimit.Int32(),
-				fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
-			)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.CreateTableStmt:
-		for _, c := range tableConstraints(n.Constraints) {
-			r.checkConstraint(c)
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		for _, cmd := range alterTableCmds(n) {
-			if cmd.Constraint != nil {
-				r.checkConstraint(cmd.Constraint)
-			}
+		for _, f := range oraclev1review.IndexKeyNumberLimit([]ast.Node{node}, limit) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.IndexKeyNumberExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Index key number should be less than or equal to %d", limit),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-	default:
 	}
+	return adviceList, nil
 }
-
-func (r *IndexKeyNumberLimitRule) checkConstraint(c *ast.TableConstraint) {
-	if c == nil || (c.Type != ast.CONSTRAINT_PRIMARY && c.Type != ast.CONSTRAINT_UNIQUE) {
-		return
-	}
-	if c.Columns != nil && len(c.Columns.Items) > r.max {
-		r.AddAdvice(
-			r.level,
-			code.IndexKeyNumberExceedsLimit.Int32(),
-			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			base.ConvertANTLRLineToPosition(r.locLine(c.Loc)),
-		)
-	}
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

@@ -3,15 +3,16 @@ package oceanbase
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
-	"github.com/pkg/errors"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -23,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, &IndexPkTypeAdvisor{})
 }
 
-// IndexPkTypeAdvisor is the advisor checking for correct type of PK.
+// IndexPkTypeAdvisor is the advisor checking for correct type of PK. The
+// judgment lives in omni (oceanbase/v1review.IndexPKTypeLimit); this adapter
+// passes the script and the pre-change schema and renders the findings as
+// advice.
 type IndexPkTypeAdvisor struct {
 }
 
@@ -34,171 +38,59 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := &indexPkTypeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableColumnTypes),
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	findings, err := oceanbasev1review.IndexPKTypeLimit(nodes, schemaOf(checkCtx.OriginalMetadata))
+	if err != nil {
+		readMissingSchema(checkCtx.OriginalMetadata, err)
+		return nil, err
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexPkTypeRule struct {
-	BaseRule
-	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableColumnTypes
-}
-
-func (*indexPkTypeRule) Name() string {
-	return "IndexPkTypeRule"
-}
-
-func (r *indexPkTypeRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *indexPkTypeRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, col := range n.Columns {
-		if col == nil || col.TypeName == nil {
-			continue
-		}
-		columnType := r.getIntOrBigIntStr(col.TypeName)
-		for _, c := range col.Constraints {
-			if c.Type == ast.ColConstrPrimaryKey {
-				r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(col.Loc)))
-			}
-		}
-		r.tablesNewColumns.set(tableName, col.Name, columnType)
-	}
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
-			continue
-		}
-		r.checkConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
-	}
-}
-
-func (r *indexPkTypeRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			for _, col := range getColumnsFromCmd(cmd) {
-				if col == nil || col.TypeName == nil {
-					continue
-				}
-				columnType := r.getIntOrBigIntStr(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATModifyColumn:
-			if cmd.Column != nil && cmd.Column.TypeName != nil {
-				col := cmd.Column
-				columnType := r.getIntOrBigIntStr(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATChangeColumn:
-			r.tablesNewColumns.delete(tableName, cmd.Name)
-			if cmd.Column != nil && cmd.Column.TypeName != nil {
-				col := cmd.Column
-				columnType := r.getIntOrBigIntStr(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						r.addAdvice(tableName, col.Name, columnType, r.BaseLine+int(r.LocToLine(n.Loc)))
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				r.checkConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
-			}
-		default:
-		}
-	}
-}
-
-func (r *indexPkTypeRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
-	if constraint.Type != ast.ConstrPrimaryKey {
-		return
-	}
-	for _, columnName := range constraint.Columns {
-		columnType, err := r.getPKColumnType(tableName, columnName)
-		if err != nil {
-			continue
-		}
-		r.addAdvice(tableName, columnName, columnType, r.BaseLine+int(line))
-	}
-}
-
-func (r *indexPkTypeRule) addAdvice(tableName, columnName, columnType string, lineNumber int) {
-	if !strings.EqualFold(columnType, "INT") && !strings.EqualFold(columnType, "BIGINT") {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range findings {
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
 			Code:          code.IndexPKType.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", tableName, columnName, columnType),
-			StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
+			Title:         title,
+			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", f.Table, f.Name, f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 		})
 	}
+	return adviceList, nil
 }
 
-func (r *indexPkTypeRule) getPKColumnType(tableName string, columnName string) (string, error) {
-	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
-		return columnType, nil
-	}
-	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
-	if column != nil {
-		return column.GetProto().Type, nil
-	}
-	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
-}
-
-func (*indexPkTypeRule) getIntOrBigIntStr(dt *ast.DataType) string {
-	if dt == nil {
-		return ""
-	}
-	switch strings.ToUpper(dt.Name) {
-	case "INT", "INTEGER":
-		return "INT"
-	case "BIGINT":
-		return "BIGINT"
-	default:
-		name := strings.ToLower(dt.Name)
-		if dt.Length > 0 {
-			if dt.Scale > 0 {
-				return fmt.Sprintf("%s(%d,%d)", name, dt.Length, dt.Scale)
-			}
-			return fmt.Sprintf("%s(%d)", name, dt.Length)
+// scriptNodes returns the statements that have an omni AST and their nodes,
+// in order, so a finding's Statement indexes both.
+func scriptNodes(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.Node) {
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range parsed {
+		if stmt.AST == nil {
+			continue
 		}
-		return name
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
+	}
+	return stmts, nodes
+}
+
+// schemaOf returns a snapshot as omni reads it; nil holds nothing.
+func schemaOf(m *model.DatabaseMetadata) v1review.Schema {
+	if m == nil {
+		return v1review.Schema{}
+	}
+	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
+}
+
+// readMissingSchema repeats the V1 advisors' unguarded read of a snapshot
+// omni found missing, so a nil snapshot panics where it did and
+// advisor.Check reports the panic as the rule's error.
+func readMissingSchema(m *model.DatabaseMetadata, err error) {
+	if err == v1review.ErrSchemaMissing {
+		m.GetSchemaMetadata("")
 	}
 }

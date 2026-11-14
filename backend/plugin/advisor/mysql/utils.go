@@ -2,110 +2,12 @@
 package mysql
 
 import (
-	"strings"
-
-	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
-// tableName --> columnName --> columnType.
-type tableColumnTypes map[string]map[string]string
-
-func (t tableColumnTypes) set(tableName string, columnName string, columnType string) {
-	if _, ok := t[tableName]; !ok {
-		t[tableName] = make(map[string]string)
-	}
-	t[tableName][columnName] = columnType
-}
-
-func (t tableColumnTypes) get(tableName string, columnName string) (columnType string, ok bool) {
-	if _, ok := t[tableName]; !ok {
-		return "", false
-	}
-	col, ok := t[tableName][columnName]
-	return col, ok
-}
-
-func (t tableColumnTypes) delete(tableName string, columnName string) {
-	if _, ok := t[tableName]; !ok {
-		return
-	}
-	delete(t[tableName], columnName)
-}
-
-// tableName extracts the table name from a TableRef.
-func tableName(ref *ast.TableRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Name
-}
-
-// indexColumns extracts column names from an index column list.
-// For expression-based index columns, it falls back to the column reference name.
-func indexColumns(cols []*ast.IndexColumn) []string {
-	if len(cols) == 0 {
-		return nil
-	}
-	var names []string
-	for _, col := range cols {
-		if ref, ok := col.Expr.(*ast.ColumnRef); ok {
-			names = append(names, ref.Column)
-		}
-	}
-	return names
-}
-
-// constraintName returns the CONSTRAINT symbol, else the name written after
-// FOREIGN KEY, which omni keeps in IndexName.
-func constraintName(c *ast.Constraint) string {
-	if c.Name != "" {
-		return c.Name
-	}
-	return c.IndexName
-}
-
-// dataTypeNameCompact returns a compact, lowercase type name string.
-func dataTypeNameCompact(dt *ast.DataType) string {
-	if dt == nil {
-		return ""
-	}
-	return strings.ToLower(dt.Name)
-}
-
-// getColumnsFromCmd extracts column definitions from an AlterTableCmd.
-func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
-	if cmd == nil {
-		return nil
-	}
-	switch cmd.Type {
-	case ast.ATAddColumn:
-		if cmd.Column != nil {
-			return []*ast.ColumnDef{cmd.Column}
-		}
-		return cmd.Columns
-	case ast.ATModifyColumn, ast.ATChangeColumn:
-		if cmd.Column != nil {
-			return []*ast.ColumnDef{cmd.Column}
-		}
-	default:
-	}
-	return nil
-}
 
 // columnFindingPosition is where a finding's advice starts: the statement's first
 // line plus the line of the finding's anchor within it.
