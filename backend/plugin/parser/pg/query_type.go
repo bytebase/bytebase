@@ -44,4 +44,3 @@ func isExplainAnalyzeStmt(n *ast.ExplainStmt) bool {
 	}
 	return analyze
 }
-
