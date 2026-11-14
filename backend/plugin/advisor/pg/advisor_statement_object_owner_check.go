@@ -7,12 +7,14 @@ import (
 	"log/slog"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -23,10 +25,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_OBJECT_OWNER_CHECK, &StatementObjectOwnerCheckAdvisor{})
 }
 
-const (
-	pgDatabaseOwner = "pg_database_owner"
-)
-
+// StatementObjectOwnerCheckAdvisor checks that statements change only
+// objects the current role owns. This adapter reads the current role from the
+// database; omni (pg/v1review.StatementObjectOwnerCheck) judges the statements
+// against the synced schema's owners.
 type StatementObjectOwnerCheckAdvisor struct {
 }
 
@@ -36,7 +38,6 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, err
 	}
 
-	dbMetadata := model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_POSTGRES, checkCtx.IsObjectCaseSensitive)
 	currentRole := checkCtx.DBSchema.Owner
 	if !checkCtx.TenantMode {
 		currentRole, err = getCurrentUser(ctx, checkCtx.Driver)
@@ -45,229 +46,37 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 			currentRole = checkCtx.DBSchema.Owner
 		}
 	}
+	schema := v1review.Schema{Metadata: checkCtx.DBSchema, ObjectCaseSensitive: checkCtx.IsObjectCaseSensitive}
 
-	rule := &statementObjectOwnerCheckRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		dbMetadata:  dbMetadata,
-		currentRole: currentRole,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementObjectOwnerCheckRule struct {
-	BaseRule
-	dbMetadata  *model.DatabaseMetadata
-	currentRole string
-}
-
-// Name returns the rule name.
-func (*statementObjectOwnerCheckRule) Name() string {
-	return "statement.object-owner-check"
-}
-
-func (r *statementObjectOwnerCheckRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.VariableSetStmt:
-		// SET ROLE handling - no-op for now (same as ANTLR version)
-	case *ast.AlterSeqStmt:
-		if n.Sequence != nil {
-			r.checkSchemaOwnership(schemaName(n.Sequence))
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		if n.Relation != nil {
-			schemaName := schemaName(n.Relation)
-			tableName := rangeVarTableName(n.Relation)
-			r.checkTableOwnership(schemaName, tableName)
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.AlterTypeStmt:
-		parts := listStrings(n.TypeName)
-		var schemaName string
-		if len(parts) >= 2 {
-			schemaName = parts[0]
-		}
-		r.checkSchemaOwnership(schemaName)
-	case *ast.CreateExtensionStmt:
-		schemaName := defaultSchema
-		if n.Options != nil {
-			for _, item := range n.Options.Items {
-				if elem, ok := item.(*ast.DefElem); ok && elem.Defname == "schema" {
-					if s, ok := elem.Arg.(*ast.String); ok {
-						schemaName = s.Str
-					}
-				}
-			}
-		}
-		r.checkSchemaOwnership(schemaName)
-	case *ast.CreateFunctionStmt:
-		schemaName := extractSchemaFromFuncname(n.Funcname)
-		r.checkSchemaOwnership(schemaName)
-	case *ast.IndexStmt:
-		if n.Relation != nil {
-			r.checkSchemaOwnership(schemaName(n.Relation))
-		}
-	case *ast.CreateSchemaStmt:
-		owner := r.dbMetadata.GetProto().GetOwner()
-		if owner != r.currentRole {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Title:   r.Title,
-				Content: fmt.Sprintf("Database \"%s\" is owned by \"%s\", but the current role is \"%s\".", r.dbMetadata.GetProto().GetName(), owner, r.currentRole),
+		for _, f := range pgv1review.StatementObjectOwnerCheck([]ast.Node{node}, schema, currentRole) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Title:   title,
+				Content: fmt.Sprintf("%s \"%s\" is owned by \"%s\", but the current role is \"%s\".", f.Name, f.Table, f.Value, currentRole),
 				Code:    code.StatementObjectOwnerCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
+					Line:   (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine()),
 					Column: 0,
 				},
 			})
 		}
-	case *ast.CreateSeqStmt:
-		if n.Sequence != nil {
-			r.checkSchemaOwnership(schemaName(n.Sequence))
-		}
-	case *ast.CreateStmt:
-		if n.Relation != nil {
-			r.checkSchemaOwnership(schemaName(n.Relation))
-		}
-	case *ast.CreateTrigStmt:
-		if n.Relation != nil {
-			r.checkSchemaOwnership(schemaName(n.Relation))
-		}
-	case *ast.DefineStmt:
-		if n.Kind == ast.OBJECT_TYPE {
-			parts := listStrings(n.Defnames)
-			var schemaName string
-			if len(parts) >= 2 {
-				schemaName = parts[0]
-			}
-			r.checkSchemaOwnership(schemaName)
-		}
-	case *ast.CreateTableAsStmt:
-		// Handles CREATE MATERIALIZED VIEW
-		if n.Objtype == ast.OBJECT_MATVIEW && n.Into != nil && n.Into.Rel != nil {
-			r.checkSchemaOwnership(schemaName(n.Into.Rel))
-		}
-	case *ast.AlterFunctionStmt:
-		// DROP FUNCTION is handled by DropStmt in omni AST
-		// AlterFunctionStmt handles ALTER FUNCTION
-		if n.Func != nil {
-			schemaName := extractSchemaFromObjectWithArgs(n.Func)
-			r.checkSchemaOwnership(schemaName)
-		}
-	case *ast.DropStmt:
-		r.handleDropStmt(n)
-	case *ast.RenameStmt:
-		r.handleRenameStmt(n)
-	default:
 	}
-}
-
-func (r *statementObjectOwnerCheckRule) handleDropStmt(n *ast.DropStmt) {
-	// For DROP INDEX, DROP TYPE, etc., check schema ownership via object names
-	names := dropObjectNames(n)
-	for _, parts := range names {
-		var schemaName string
-		if len(parts) >= 2 {
-			schemaName = parts[0]
-		}
-		r.checkSchemaOwnership(schemaName)
-	}
-}
-
-func (r *statementObjectOwnerCheckRule) handleRenameStmt(n *ast.RenameStmt) {
-	switch n.RenameType {
-	case ast.OBJECT_SCHEMA:
-		// ALTER SCHEMA RENAME
-		if n.Subname != "" {
-			r.checkSchemaOwnership(n.Subname)
-		}
-	case ast.OBJECT_INDEX:
-		// ALTER INDEX RENAME
-		if n.Relation != nil {
-			r.checkSchemaOwnership(schemaName(n.Relation))
-		}
-	default:
-	}
-}
-
-func (r *statementObjectOwnerCheckRule) checkSchemaOwnership(schemaName string) {
-	if schemaName == "" {
-		schemaName = defaultSchema
-	}
-
-	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
-	if schemaMeta == nil {
-		return
-	}
-
-	owner := schemaMeta.GetProto().GetOwner()
-	if owner == pgDatabaseOwner {
-		owner = r.dbMetadata.GetProto().GetOwner()
-	}
-	if owner != r.currentRole {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Title:   r.Title,
-			Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, r.currentRole),
-			Code:    code.StatementObjectOwnerCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *statementObjectOwnerCheckRule) checkTableOwnership(schemaName, tableName string) {
-	if schemaName == "" {
-		schemaName = defaultSchema
-	}
-
-	schemaMeta := r.dbMetadata.GetSchemaMetadata(schemaName)
-	if schemaMeta == nil {
-		return
-	}
-
-	tableMeta := schemaMeta.GetTable(tableName)
-	if tableMeta == nil {
-		return
-	}
-
-	owner := tableMeta.GetOwner()
-	if owner == pgDatabaseOwner {
-		owner = r.dbMetadata.GetProto().GetOwner()
-	}
-	if owner != r.currentRole {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", tableName, owner, r.currentRole),
-			Code:    code.StatementObjectOwnerCheck.Int32(),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }
 
 // extractSchemaFromFuncname extracts the schema name from a function's qualified name list.
 func extractSchemaFromFuncname(funcname *ast.List) string {
 	parts := listStrings(funcname)
-	if len(parts) >= 2 {
-		return parts[0]
-	}
-	return ""
-}
-
-// extractSchemaFromObjectWithArgs extracts the schema from an ObjectWithArgs node.
-func extractSchemaFromObjectWithArgs(obj *ast.ObjectWithArgs) string {
-	if obj == nil || obj.Objname == nil {
-		return ""
-	}
-	parts := listStrings(obj.Objname)
 	if len(parts) >= 2 {
 		return parts[0]
 	}

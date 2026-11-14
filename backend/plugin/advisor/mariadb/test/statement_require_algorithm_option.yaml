@@ -13,3 +13,13 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN c int, LOCK = NONE;
+  want:
+    - status: 2
+      code: 236
+      title: STATEMENT_REQUIRE_ALGORITHM_OPTION
+      content: ALTER TABLE statement should include ALGORITHM option
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

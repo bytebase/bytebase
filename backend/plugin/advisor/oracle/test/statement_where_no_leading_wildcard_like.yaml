@@ -60,3 +60,28 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    BEGIN
+      DELETE FROM t WHERE a NOT LIKE '%x';
+    END;
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: Avoid using leading wildcard LIKE.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    UPDATE t SET b = 1
+    WHERE a LIKE '%abc'
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: Avoid using leading wildcard LIKE.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

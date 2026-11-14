@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,8 @@ func init() {
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for disallow COMMIT.
+// The judgment lives in omni (tidb/v1review.StatementDisallowCommit); this
+// adapter renders its findings as advice.
 type StatementDisallowCommitAdvisor struct {
 }
 
@@ -36,19 +39,18 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
+	title := checkCtx.Rule.Type.String()
 	var adviceList []*storepb.Advice
 	for _, ostmt := range stmts {
-		if _, ok := ostmt.Node.(*ast.CommitStmt); !ok {
-			continue
+		for range tidbv1review.StatementDisallowCommit([]ast.Node{ostmt.Node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowCommit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", ostmt.TrimmedText()),
+				StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+			})
 		}
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          code.StatementDisallowCommit.Int32(),
-			Title:         checkCtx.Rule.Type.String(),
-			Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", ostmt.TrimmedText()),
-			StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
-		})
 	}
-
 	return adviceList, nil
 }
