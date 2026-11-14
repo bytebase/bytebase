@@ -47,3 +47,21 @@
 # types regardless of length-bearing form.
 - statement: CREATE TABLE t(a VARCHAR(255), b BLOB, c TINYINT(1))
   changeType: 1
+- statement: ALTER TABLE t ADD a json, MODIFY b JSON;
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`a` is
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column `t`.`b` is
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

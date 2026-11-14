@@ -88,3 +88,23 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE t ADD COLUMN (a DOUBLE AUTO_INCREMENT, b BOOL AUTO_INCREMENT),
+      MODIFY c VARCHAR(5) AUTO_INCREMENT;
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`a` requires integer type
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`c` requires integer type
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -13,3 +13,32 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE t
+      CHANGE COLUMN a b INT,
+      CHANGE c d INT;
+  want:
+    - status: 2
+      code: 406
+      title: COLUMN_DISALLOW_CHANGE
+      content: |-
+        "ALTER TABLE t
+          CHANGE COLUMN a b INT,
+          CHANGE c d INT;" contains CHANGE COLUMN statement
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 406
+      title: COLUMN_DISALLOW_CHANGE
+      content: |-
+        "ALTER TABLE t
+          CHANGE COLUMN a b INT,
+          CHANGE c d INT;" contains CHANGE COLUMN statement
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t MODIFY COLUMN a BIGINT, RENAME COLUMN b TO c;
+- statement: CREATE PROCEDURE p() BEGIN ALTER TABLE t CHANGE a b INT; END;

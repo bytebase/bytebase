@@ -1,0 +1,36 @@
+- statement: ALTER TABLE t ADD COLUMN a INT, MODIFY b INT, DROP INDEX idx;
+- statement: |-
+    ALTER TABLE db.t
+      DROP COLUMN a,
+      DROP b;
+  want:
+    - status: 2
+      code: 425
+      title: COLUMN_DISALLOW_DROP
+      content: drops column "a" of table "t"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 425
+      title: COLUMN_DISALLOW_DROP
+      content: drops column "b" of table "t"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a INT);
+    ALTER TABLE t DROP COLUMN a;
+    DROP TABLE t;
+  want:
+    - status: 2
+      code: 425
+      title: COLUMN_DISALLOW_DROP
+      content: drops column "a" of table "t"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN ALTER TABLE t DROP COLUMN a; END;

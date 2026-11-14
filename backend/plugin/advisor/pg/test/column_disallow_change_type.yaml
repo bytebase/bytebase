@@ -11,3 +11,22 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD COLUMN c1 int
   changeType: 1
+- statement: |-
+    ALTER TABLE t
+      ALTER COLUMN a TYPE bigint,
+      ALTER COLUMN b TYPE text;
+  changeType: 1
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: |-
+        The statement "ALTER TABLE t
+          ALTER COLUMN a TYPE bigint,
+          ALTER COLUMN b TYPE text" changes column type
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ALTER COLUMN a SET DEFAULT 1;
+  changeType: 1

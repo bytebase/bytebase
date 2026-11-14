@@ -3,13 +3,14 @@ package oceanbase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -21,6 +22,8 @@ func init() {
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.
+// The judgment lives in omni (oceanbase/v1review.ColumnDisallowChange); this adapter prints each
+// finding's statement and places the advice at its first line.
 type ColumnDisallowChangingAdvisor struct {
 }
 
@@ -31,42 +34,18 @@ func (*ColumnDisallowChangingAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDisallowChangingRule struct {
-	BaseRule
-}
-
-func (*columnDisallowChangingRule) Name() string {
-	return "ColumnDisallowChangingRule"
-}
-
-func (r *columnDisallowChangingRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		if cmd.Type == ast.ATChangeColumn {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for range oceanbasev1review.ColumnDisallowChange([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.UseChangeColumnStatement.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", strings.TrimSpace(stmt.Text)),
+				StartPosition: statementPosition(stmt),
 			})
 		}
 	}
+	return adviceList, nil
 }

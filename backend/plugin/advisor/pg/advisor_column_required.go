@@ -3,12 +3,12 @@ package pg
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,9 +23,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequirementAdvisor{})
 }
 
-type columnSet map[string]bool
-
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
+// The judgment lives in omni (pg/v1review.ColumnRequired); this adapter
+// passes the required columns and renders one advice per anchor.
 type ColumnRequirementAdvisor struct {
 }
 
@@ -41,129 +41,27 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, errors.New("string_array_payload is required for column required rule")
 	}
 
-	requiredColumnsMap := make(columnSet)
-	for _, col := range stringArrayPayload.List {
-		requiredColumnsMap[col] = true
-	}
-
-	rule := &columnRequirementRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		requiredColumnsMap: requiredColumnsMap,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnRequirementRule struct {
-	BaseRule
-
-	requiredColumnsMap columnSet
-}
-
-func (*columnRequirementRule) Name() string {
-	return "column_requirement"
-}
-
-func (r *columnRequirementRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	case *ast.RenameStmt:
-		r.handleRenameStmt(n)
-	default:
-	}
-}
-
-func (r *columnRequirementRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	// Copy required columns to check against
-	required := make(columnSet)
-	for col := range r.requiredColumnsMap {
-		required[col] = true
-	}
-
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		delete(required, col.Colname)
-	}
-
-	if len(required) > 0 {
-		var missingColumns []string
-		for column := range required {
-			missingColumns = append(missingColumns, column)
-		}
-		slices.Sort(missingColumns)
-
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NoRequiredColumn.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *columnRequirementRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) == ast.AT_DropColumn {
-			colName := cmd.Name
-			if r.requiredColumnsMap[colName] {
-				r.AddAdvice(&storepb.Advice{
-					Status:  r.Level,
-					Code:    code.NoRequiredColumn.Int32(),
-					Title:   r.Title,
-					Content: fmt.Sprintf("Table %q requires columns: %s", tableName, colName),
-					StartPosition: &storepb.Position{
-						Line:   r.ContentStartLine(),
-						Column: 0,
-					},
-				})
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		findings := pgv1review.ColumnRequired([]ast.Node{nodes[i]}, stringArrayPayload.List)
+		for j := 0; j < len(findings); {
+			f := findings[j]
+			var missingColumns []string
+			for ; j < len(findings) && findings[j].Start == f.Start && findings[j].End == f.End; j++ {
+				missingColumns = append(missingColumns, findings[j].Name)
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Code:    code.NoRequiredColumn.Int32(),
+				Title:   checkCtx.Rule.Type.String(),
+				Content: fmt.Sprintf("Table %q requires columns: %s", f.Table, strings.Join(missingColumns, ", ")),
+				StartPosition: &storepb.Position{
+					Line:   findingLine(stmt, f),
+					Column: 0,
+				},
+			})
 		}
 	}
-}
-
-func (r *columnRequirementRule) handleRenameStmt(n *ast.RenameStmt) {
-	if n.RenameType != ast.OBJECT_COLUMN {
-		return
-	}
-
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	oldName := n.Subname
-	newName := n.Newname
-
-	if r.requiredColumnsMap[oldName] && oldName != newName {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NoRequiredColumn.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table %q requires columns: %s", tableName, oldName),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }
