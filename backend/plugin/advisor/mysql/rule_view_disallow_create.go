@@ -3,13 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -20,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_VIEW_DISALLOW_CREATE, &ViewDisallowCreateAdvisor{})
 }
 
-// ViewDisallowCreateAdvisor is the advisor checking for disallow creating view.
+// ViewDisallowCreateAdvisor is the advisor checking for disallow creating view. The judgment
+// lives in omni (mysql/v1review.SystemViewDisallowCreate); this adapter renders the findings as
+// advice.
 type ViewDisallowCreateAdvisor struct {
 }
 
@@ -31,36 +35,25 @@ func (*ViewDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, err
 	}
 
-	rule := &viewDisallowCreateRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.SystemViewDisallowCreate([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          advisorcode.DisallowCreateView.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", strings.TrimSpace(stmt.Text)),
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type viewDisallowCreateRule struct {
-	BaseRule
-}
-
-func (*viewDisallowCreateRule) Name() string {
-	return "ViewDisallowCreateRule"
-}
-
-func (r *viewDisallowCreateRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.CreateViewStmt)
-	if !ok {
-		return
-	}
-	if n.Name != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          advisorcode.DisallowCreateView.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("View is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-		})
-	}
+	return adviceList, nil
 }

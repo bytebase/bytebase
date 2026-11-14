@@ -88,3 +88,56 @@
       endposition: null
 - statement: -- this is a comment
   changeType: 1
+- statement: |-
+    CREATE TABLE z (a int);
+    CREATE TABLE b ("x.y" int, c int);
+  changeType: 1
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "A" is nullable, which is not allowed.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "C" is nullable, which is not allowed.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "y" is nullable, which is not allowed.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t ADD a int;
+    ALTER TABLE t MODIFY a varchar2(10);
+  changeType: 1
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "A" is nullable, which is not allowed.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a int, b int, CONSTRAINT pk PRIMARY KEY (a))
+  changeType: 1
+  want:
+    - status: 2
+      code: 402
+      title: COLUMN_NO_NULL
+      content: Column "B" is nullable, which is not allowed.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -239,3 +239,16 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (id INT, created_ts INT, updated_ts INT, creator_id INT, updater_id INT);
+    ALTER TABLE t DROP COLUMN id;
+    ALTER TABLE t RENAME COLUMN a TO b;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `t` requires columns: id'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

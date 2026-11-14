@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -22,6 +24,9 @@ func init() {
 }
 
 // RequireAlgorithmOrLockOptionAdvisor is the advisor checking for required algorithm or lock options.
+// The judgment lives in omni (mariadb/v1review.StatementRequireAlgorithmOption
+// and StatementRequireLockOption); this adapter renders its findings as
+// advice.
 type RequireAlgorithmOrLockOptionAdvisor struct {
 }
 
@@ -31,58 +36,30 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 
-	requiredOption, errorCode := "ALGORITHM", code.StatementNoAlgorithmOption
+	requiredOption, errorCode, judge := "ALGORITHM", code.StatementNoAlgorithmOption, mariadbv1review.StatementRequireAlgorithmOption
 	if checkCtx.Rule.Type == storepb.SQLReviewRule_STATEMENT_REQUIRE_LOCK_OPTION {
-		requiredOption, errorCode = "LOCK", code.StatementNoLockOption
+		requiredOption, errorCode, judge = "LOCK", code.StatementNoLockOption, mariadbv1review.StatementRequireLockOption
 	}
 
-	rule := &requireAlgoLockRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		requiredOption: requiredOption,
-		errorCode:      errorCode,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type requireAlgoLockRule struct {
-	BaseRule
-	requiredOption string
-	errorCode      code.Code
-}
-
-func (*requireAlgoLockRule) Name() string {
-	return "RequireAlgorithmOrLockOptionRule"
-}
-
-func (r *requireAlgoLockRule) OnStatement(node ast.Node) {
-	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	hasOption := false
-	for _, cmd := range alter.Commands {
-		if r.requiredOption == "ALGORITHM" && cmd.Type == ast.ATAlgorithm {
-			hasOption = true
-			break
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		if r.requiredOption == "LOCK" && cmd.Type == ast.ATLock {
-			hasOption = true
-			break
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range judge([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          int32(errorCode),
+				Title:         title,
+				Content:       "ALTER TABLE statement should include " + requiredOption + " option",
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
 	}
-
-	if !hasOption {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          int32(r.errorCode),
-			Title:         r.Title,
-			Content:       "ALTER TABLE statement should include " + r.requiredOption + " option",
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
-		})
-	}
+	return adviceList, nil
 }

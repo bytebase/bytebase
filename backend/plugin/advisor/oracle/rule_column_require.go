@@ -4,16 +4,17 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -25,6 +26,8 @@ func init() {
 }
 
 // ColumnRequireAdvisor is the advisor checking for column requirement.
+// The judgment lives in omni (oracle/v1review.ColumnRequired); this adapter
+// passes the required columns and renders one advice per statement.
 type ColumnRequireAdvisor struct {
 }
 
@@ -39,94 +42,31 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, errors.New("string_array_payload is required for column required rule")
 	}
 
-	rule := NewColumnRequireRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-type columnSet map[string]bool
-
-// ColumnRequireRule is the rule implementation for column requirement.
-type ColumnRequireRule struct {
-	BaseRule
-
-	currentDatabase string
-	requiredColumns columnSet
-}
-
-// NewColumnRequireRule creates a new ColumnRequireRule.
-func NewColumnRequireRule(level storepb.Advice_Status, title string, currentDatabase string, columnList []string) *ColumnRequireRule {
-	requiredColumns := make(columnSet)
-	for _, column := range columnList {
-		requiredColumns[column] = true
-	}
-	return &ColumnRequireRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		requiredColumns: requiredColumns,
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnRequireRule) Name() string {
-	return "column.require"
-}
-
-// OnStatement checks required columns in CREATE TABLE and ALTER TABLE.
-func (r *ColumnRequireRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		missing := make(columnSet)
-		for column := range r.requiredColumns {
-			missing[column] = true
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		for _, col := range columnDefs(n.Columns) {
-			delete(missing, col.Name)
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		r.addMissingColumnsAdvice(lastObjectName(n.Name), missing, r.locLine(n.Loc))
-	case *ast.AlterTableStmt:
-		missing := make(columnSet)
-		for _, cmd := range alterTableCmds(n) {
-			switch cmd.Action {
-			case ast.AT_DROP_COLUMN:
-				if _, ok := r.requiredColumns[cmd.ColumnName]; ok {
-					missing[cmd.ColumnName] = true
-				}
-			case ast.AT_RENAME_COLUMN:
-				if cmd.ColumnName != cmd.NewName {
-					if _, ok := r.requiredColumns[cmd.ColumnName]; ok {
-						missing[cmd.ColumnName] = true
-					}
-				}
-			default:
-			}
+		findings := oraclev1review.ColumnRequired([]ast.Node{node}, stringArrayPayload.List)
+		if len(findings) == 0 {
+			continue
 		}
-		r.addMissingColumnsAdvice(lastObjectName(n.Name), missing, r.locLine(n.Loc))
-	default:
+		var missingColumns []string
+		for _, f := range findings {
+			missingColumns = append(missingColumns, fmt.Sprintf("%q", f.Name))
+		}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.NoRequiredColumn.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Table %q requires columns: %s", findings[0].Table, strings.Join(missingColumns, ", ")),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, findings[0])),
+		})
 	}
+	return adviceList, nil
 }
-
-func (r *ColumnRequireRule) addMissingColumnsAdvice(tableName string, missing columnSet, line int) {
-	if len(missing) == 0 {
-		return
-	}
-	missingColumns := []string{}
-	for column := range missing {
-		missingColumns = append(missingColumns, fmt.Sprintf("%q", column))
-	}
-	slices.Sort(missingColumns)
-	r.AddAdvice(
-		r.level,
-		code.NoRequiredColumn.Int32(),
-		fmt.Sprintf("Table %q requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-		base.ConvertANTLRLineToPosition(line),
-	)
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// Ignore other node types
-
-// OnExit is called when the parser exits a rule context.
-
-// Ignore other node types

@@ -865,6 +865,7 @@
     --
     -- Function structure for `calculate_interest`
     --
+    DELIMITER ;;
     CREATE FUNCTION `calculate_interest`(principal DECIMAL(15,2), rate DECIMAL(5,4), years INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC
     BEGIN
         RETURN principal * POW(1 + rate, years);
@@ -1750,6 +1751,7 @@
     --
     -- Function structure for `lookup_token`
     --
+    DELIMITER ;;
     CREATE FUNCTION `lookup_token`(p_a BIGINT, p_b VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC
     BEGIN
         RETURN p_b;

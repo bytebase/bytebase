@@ -35,3 +35,13 @@
     );
     ALTER TABLE task_run ADD CONSTRAINT task_run_task_id_fk_task_id FOREIGN KEY (task_id) REFERENCES task (id) NOT VALID;
   changeType: 1
+- statement: ALTER TABLE tech_book ADD FOREIGN KEY (id) REFERENCES t (id), ADD FOREIGN KEY (id) REFERENCES u (id) NOT VALID;
+  want:
+    - status: 2
+      code: 229
+      title: STATEMENT_ADD_FOREIGN_KEY_NOT_VALID
+      content: Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

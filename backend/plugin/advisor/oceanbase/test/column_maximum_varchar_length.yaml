@@ -21,3 +21,47 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE db.t(
+      a VARCHAR(2560),
+      b VARCHAR(2561)
+    );
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `t.b` is bigger than 2560
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN (a VARCHAR(3000), b CHAR(255)),
+      MODIFY COLUMN c VARCHAR(5000),
+      CHANGE COLUMN d e VARCHAR(4000);
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `t.a` is bigger than 2560
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `t.c` is bigger than 2560
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The length of the VARCHAR column `t.e` is bigger than 2560
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // StatementDisallowCommitAdvisor is the advisor checking for disallowing commit.
+// The judgment lives in omni (oceanbase/v1review.StatementDisallowCommit); this adapter
+// renders its findings as advice.
 type StatementDisallowCommitAdvisor struct {
 }
 
@@ -32,35 +36,26 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &disallowCommitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(stmt.Text)
+		for _, f := range oceanbasev1review.StatementDisallowCommit([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowCommit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", text),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type disallowCommitRule struct {
-	BaseRule
-}
-
-func (*disallowCommitRule) Name() string {
-	return "StatementDisallowCommitRule"
-}
-
-func (r *disallowCommitRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.CommitStmt)
-	if !ok {
-		return
-	}
-	text := strings.TrimSpace(r.StmtText)
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          code.StatementDisallowCommit.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", text),
-		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-	})
+	return adviceList, nil
 }

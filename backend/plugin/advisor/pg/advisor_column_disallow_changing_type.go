@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, &ColumnDisallowChangingTypeAdvisor{})
 }
 
-// ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow changing column type.
+// ColumnDisallowChangingTypeAdvisor is the advisor checking for disallow
+// changing column type. The judgment lives in omni
+// (pg/v1review.ColumnDisallowChangeType); this adapter renders the findings as
+// advice that prints the statement.
 type ColumnDisallowChangingTypeAdvisor struct {
 }
 
@@ -31,48 +35,22 @@ func (*ColumnDisallowChangingTypeAdvisor) Check(_ context.Context, checkCtx advi
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingTypeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDisallowChangingTypeRule struct {
-	BaseRule
-}
-
-func (*columnDisallowChangingTypeRule) Name() string {
-	return "column-disallow-changing-type"
-}
-
-func (r *columnDisallowChangingTypeRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) == ast.AT_AlterColumnType {
-			stmtText := strings.TrimSpace(r.StmtText)
-			// Remove trailing semicolons for cleaner display
-			stmtText = strings.TrimRight(stmtText, ";")
-			stmtText = strings.TrimSpace(stmtText)
-
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range pgv1review.ColumnDisallowChangeType([]ast.Node{nodes[i]}) {
+			stmtText := strings.TrimSpace(strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
 				Code:    code.ChangeColumnType.Int32(),
-				Title:   r.Title,
+				Title:   checkCtx.Rule.Type.String(),
 				Content: fmt.Sprintf("The statement \"%s\" changes column type", stmtText),
 				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
+					Line:   findingLine(stmt, f),
 					Column: 0,
 				},
 			})
-			return // Only report once per ALTER TABLE statement
 		}
 	}
+	return adviceList, nil
 }

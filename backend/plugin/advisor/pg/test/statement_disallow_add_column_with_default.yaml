@@ -11,3 +11,13 @@
         line: 1
         column: 0
       endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN a int DEFAULT 0, ADD COLUMN b int DEFAULT 1;
+  want:
+    - status: 2
+      code: 210
+      title: STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT
+      content: Adding column with DEFAULT will locked the whole table and rewriting each rows
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -3,13 +3,14 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -21,6 +22,8 @@ func init() {
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.
+// The judgment lives in omni (mysql/v1review.ColumnDisallowChangingOrder); this adapter prints each
+// finding's statement and places the advice at its first line.
 type ColumnDisallowChangingOrderAdvisor struct {
 }
 
@@ -31,47 +34,18 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &columnDisallowChangingOrderRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDisallowChangingOrderRule struct {
-	BaseRule
-}
-
-func (*columnDisallowChangingOrderRule) Name() string {
-	return "ColumnDisallowChangingOrderRule"
-}
-
-func (r *columnDisallowChangingOrderRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case ast.ATModifyColumn, ast.ATChangeColumn:
-			// Check if FIRST or AFTER is specified (column reordering).
-			if cmd.First || cmd.After != "" {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.ChangeColumnOrder.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("\"%s\" changes column order", r.QueryText()),
-					StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-				})
-			}
-		default:
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for range mysqlv1review.ColumnDisallowChangingOrder([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.ChangeColumnOrder.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("\"%s\" changes column order", strings.TrimSpace(stmt.Text)),
+				StartPosition: statementPosition(stmt),
+			})
 		}
 	}
+	return adviceList, nil
 }

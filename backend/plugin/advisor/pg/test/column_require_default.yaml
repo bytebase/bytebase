@@ -60,3 +60,25 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a int GENERATED ALWAYS AS IDENTITY, b int DEFAULT 1);
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column "t"."a" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN a serial, ADD COLUMN b int;
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_REQUIRE_DEFAULT
+      content: Column "t"."b" in schema "public" doesn't have DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -4,14 +4,15 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -23,6 +24,8 @@ func init() {
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for column type disallow list.
+// The judgment lives in omni (oracle/v1review.ColumnTypeDisallowList); this
+// adapter passes the list and renders the findings as advice.
 type ColumnTypeDisallowListAdvisor struct {
 }
 
@@ -33,59 +36,28 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	// A missing payload panics here, which advisor.Check reports as an error.
+	disallowList := checkCtx.Rule.GetStringArrayPayload().List
 
-	rule := NewColumnTypeDisallowListRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, stringArrayPayload.List)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnTypeDisallowListRule is the rule implementation for column type disallow list.
-type ColumnTypeDisallowListRule struct {
-	BaseRule
-
-	currentDatabase string
-	disallowList    []string
-}
-
-// NewColumnTypeDisallowListRule creates a new ColumnTypeDisallowListRule.
-func NewColumnTypeDisallowListRule(level storepb.Advice_Status, title string, currentDatabase string, disallowList []string) *ColumnTypeDisallowListRule {
-	return &ColumnTypeDisallowListRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		disallowList:    disallowList,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.ColumnTypeDisallowList([]ast.Node{node}, disallowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DisabledColumnType.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Disallow column type %s but column \"%s\" is", f.Value, f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
-
-// Name returns the rule name.
-func (*ColumnTypeDisallowListRule) Name() string {
-	return "column.type-disallow-list"
-}
-
-// OnStatement checks column data types in the omni AST.
-func (r *ColumnTypeDisallowListRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		col, ok := n.(*ast.ColumnDef)
-		if !ok || col.TypeName == nil {
-			return
-		}
-		typeName := typeName(col.TypeName)
-		for _, disallowType := range r.disallowList {
-			if strings.EqualFold(typeName, disallowType) {
-				r.AddAdvice(
-					r.level,
-					code.DisabledColumnType.Int32(),
-					fmt.Sprintf("Disallow column type %s but column \"%s\" is", typeName, col.Name),
-					base.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
-				)
-				return
-			}
-		}
-	})
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// Ignore other node types
-
-// OnExit is called when the parser exits a rule context.

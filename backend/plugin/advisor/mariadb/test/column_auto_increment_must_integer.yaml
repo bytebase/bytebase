@@ -94,3 +94,42 @@
         line: 2
         column: 31
       endposition: null
+- statement: |-
+    CREATE TABLE db.t(
+      a BIGINT AUTO_INCREMENT,
+      b TINYINT,
+      c FLOAT AUTO_INCREMENT
+    );
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`c` requires integer type
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a SMALLINT AUTO_INCREMENT, b MEDIUMINT AUTO_INCREMENT, c FLOAT AUTO_INCREMENT);
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`c` requires integer type
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN (a INT, b DOUBLE AUTO_INCREMENT),
+      CHANGE COLUMN c d VARCHAR(10);
+  want:
+    - status: 2
+      code: 410
+      title: COLUMN_AUTO_INCREMENT_MUST_INTEGER
+      content: Auto-increment column `t`.`b` requires integer type
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a FLOAT AUTO_INCREMENT); END;

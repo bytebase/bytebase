@@ -35,3 +35,26 @@
       endposition: null
 - statement: SELECT 1;
   changeType: 1
+- statement: |-
+    SELECT a FROM t
+    WHERE EXISTS (SELECT b
+      FROM u);
+    IF 1 = 1
+      SELECT a FROM t;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELETE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELETE statement.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

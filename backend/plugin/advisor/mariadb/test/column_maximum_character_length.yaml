@@ -49,3 +49,37 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE db.t(
+      a CHAR(0),
+      b CHAR(21)
+    );
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `t.b` is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN (a CHAR(30), b CHAR(10));
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `t.a` is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a NCHAR(30), b VARCHAR(30));
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `t.a` is bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
