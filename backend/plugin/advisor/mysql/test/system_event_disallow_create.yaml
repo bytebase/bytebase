@@ -26,4 +26,3 @@
         column: 0
       endposition: null
 - statement: ALTER EVENT e DISABLE;
-- statement: CREATE PROCEDURE p() BEGIN CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO SELECT 1; END;
