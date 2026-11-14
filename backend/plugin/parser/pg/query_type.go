@@ -6,11 +6,6 @@ import (
 	"github.com/bytebase/omni/pg/ast"
 )
 
-// hasIntoClause checks if a SelectStmt has an INTO clause (SELECT INTO).
-func hasIntoClause(n *ast.SelectStmt) bool {
-	return intoClause(n) != nil
-}
-
 // intoClause returns the INTO clause of n, searching set-operation arms
 // (UNION/INTERSECT/EXCEPT) — the parser attaches INTO to the first arm, not the root.
 func intoClause(n *ast.SelectStmt) *ast.IntoClause {
@@ -50,16 +45,3 @@ func isExplainAnalyzeStmt(n *ast.ExplainStmt) bool {
 	return analyze
 }
 
-// UnwrapExplainAnalyze returns the statement that an EXPLAIN ANALYZE executes and that statement's text
-// within text, the text of the EXPLAIN. It returns any other node and text unchanged.
-func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
-	explain, ok := node.(*ast.ExplainStmt)
-	if !ok || !isExplainAnalyzeStmt(explain) {
-		return node, text
-	}
-	inner, ok := explainedText(explain, text)
-	if !ok {
-		return explain.Query, text
-	}
-	return explain.Query, inner
-}
