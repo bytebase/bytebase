@@ -126,9 +126,10 @@ func rewriteMySQLSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (
 	if stmt.Procedure != nil {
 		return rewriteMySQLSelectProcedureLimit(sql, limitCount)
 	}
-	// OFFSET n ROWS without FETCH takes no LIMIT after it.
-	if stmt.Limit != nil && stmt.Limit.Count == nil {
-		return "", errors.New("cannot add LIMIT to OFFSET without FETCH")
+	// A FETCH count is no hard cap under WITH TIES, and OFFSET ... ROWS takes
+	// no LIMIT after it, so the caller wraps either form instead.
+	if stmt.Limit != nil && stmt.Limit.Fetch {
+		return "", errors.New("cannot rewrite FETCH or OFFSET ... ROWS")
 	}
 	if stmt.Limit != nil && stmt.Limit.Count != nil {
 		existingLimit := extractMySQLLimit(stmt.Limit.Count)
