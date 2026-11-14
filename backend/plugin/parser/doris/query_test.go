@@ -309,6 +309,12 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"SET PROPERTY sets a user's properties", "SET PROPERTY FOR 'u' 'max_user_connections' = '1000'", false, false},
 		{"SET PROPERTY for the current user", "SET PROPERTY 'max_user_connections' = '1000'", false, false},
 		{"a variable named property", "SET PROPERTY = 1", true, false},
+		{"SET LDAP_ADMIN_PASSWORD stores the LDAP bind password", "SET LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"SET LDAP_ADMIN_PASSWORD with PASSWORD()", "SET LDAP_ADMIN_PASSWORD = PASSWORD('x')", false, false},
+		{"SET LDAP_ADMIN_PASSWORD beside a session variable", "SET time_zone = 'UTC', LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"a user variable named ldap_admin_password", "SET @ldap_admin_password = 'x'", true, false},
+		{"SET TRANSACTION", "SET TRANSACTION READ ONLY", true, false},
+		{"a user variable", "SET @a = 1", true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			valid, explicitReadOnly, err := validateQuery(tc.statement)

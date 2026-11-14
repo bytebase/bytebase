@@ -1,6 +1,9 @@
 package starrocks
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/bytebase/omni/starrocks/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -51,16 +54,28 @@ func validateQuery(statement string) (bool, bool, error) {
 //
 // Only variable assignment qualifies. SET PASSWORD and SET DEFAULT STORAGE VAULT are
 // separate nodes and stay refused, as they are for Postgres: they administer the
-// server rather than prepare a read. SET ... AS DEFAULT STORAGE VOLUME, which sets
-// the cluster's default volume, is refused too.
+// server rather than prepare a read. Also refused: SET ... AS DEFAULT STORAGE VOLUME,
+// which sets the cluster's default volume; SET DEFAULT ROLE ... TO user, which
+// changes users' default roles; and SET LDAP_ADMIN_PASSWORD, which stores the
+// cluster's LDAP bind password. SET ROLE only activates roles for the session.
 func needsExecute(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SetStmt:
-		return n.Type != "DEFAULT STORAGE VOLUME"
+		return n.Type != "DEFAULT STORAGE VOLUME" && !slices.ContainsFunc(n.Items, setsServerState)
 	case *ast.UnsetStmt:
 		return true
 	}
 	return false
+}
+
+// setsServerState reports whether a SET item is one of the server-changing forms
+// omni parses as an item: SET DEFAULT ROLE, and LDAP_ADMIN_PASSWORD, which StarRocks
+// lexes as a non-reserved word and so reads as a variable name.
+func setsServerState(item *ast.SetItem) bool {
+	if item.UserVariable {
+		return false
+	}
+	return item.Name == "default role" || strings.EqualFold(item.Name, "ldap_admin_password")
 }
 
 // isReadOnlyAST returns true when the given top-level AST node represents a
