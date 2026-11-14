@@ -298,6 +298,12 @@ func TestGetQuerySpanWithErrors(t *testing.T) {
 			statement: "SELECT , , FROM users",
 			wantErr:   true,
 		},
+		{
+			// A relation names a column; CQL cannot filter on a UDT field.
+			name:      "WHERE on a UDT field",
+			statement: "SELECT * FROM users WHERE addr.city = 'x'",
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -396,15 +402,6 @@ func TestWhereColumnExtraction(t *testing.T) {
 			expectedPredicateColumns: []base.ColumnResource{
 				{Database: "test_keyspace", Table: "users", Column: "id"},
 				{Database: "test_keyspace", Table: "users", Column: "name"},
-			},
-			expectedTable: "users",
-		},
-		{
-			name:      "WHERE with dot access (UDT field)",
-			statement: "SELECT * FROM users WHERE addr.city = 'x'",
-			expectedPredicateColumns: []base.ColumnResource{
-				{Database: "test_keyspace", Table: "users", Column: "addr"},
-				{Database: "test_keyspace", Table: "users", Column: "city"},
 			},
 			expectedTable: "users",
 		},
