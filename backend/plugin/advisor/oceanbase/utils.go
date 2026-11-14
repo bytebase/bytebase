@@ -9,16 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
 // contentStartIndex returns the offset of the first non-whitespace byte of text,
 // which is where a statement's own text begins after any leading blank lines.
 func contentStartIndex(text string) int {

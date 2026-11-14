@@ -71,14 +71,6 @@ func getInsertedRows(res []any) (int64, error) {
 	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
 }
 
-// rangeVarTableName extracts the table name from a RangeVar.
-func rangeVarTableName(rv *ast.RangeVar) string {
-	if rv == nil {
-		return ""
-	}
-	return rv.Relname
-}
-
 // columnConstraints iterates over a ColumnDef's constraint list.
 func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	if col == nil || col.Constraints == nil {

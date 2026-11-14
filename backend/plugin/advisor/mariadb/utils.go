@@ -9,16 +9,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
 // columnFindingPosition is where a finding's advice starts: the statement's first
 // line plus the line of the finding's anchor within it.
 func columnFindingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {

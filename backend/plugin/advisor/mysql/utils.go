@@ -2,31 +2,12 @@
 package mysql
 
 import (
-	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
-// tableName extracts the table name from a TableRef.
-func tableName(ref *ast.TableRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Name
-}
 
 // columnFindingPosition is where a finding's advice starts: the statement's first
 // line plus the line of the finding's anchor within it.

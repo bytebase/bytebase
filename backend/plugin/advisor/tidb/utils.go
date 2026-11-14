@@ -4,7 +4,6 @@ package tidb
 import (
 	"fmt"
 	"log/slog"
-	"slices"
 	"strings"
 	"unicode"
 
@@ -17,28 +16,6 @@ import (
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
-
-type columnSet map[string]bool
-
-func newColumnSet(columns []string) columnSet {
-	res := make(columnSet)
-	for _, col := range columns {
-		res[col] = true
-	}
-	return res
-}
-
-type tablePK map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tablePK) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
-}
 
 // Stmt bundles an omni/tidb AST node with the source text and base line of
 // the statement it came from. The base line is needed to convert byte offsets
