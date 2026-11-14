@@ -123,3 +123,13 @@
 # fixture pins the non-trigger contract.
 - statement: SELECT * FROM t WHERE a LIKE ('%abc')
   changeType: 1
+- statement: SELECT name LIKE '%a' FROM tech_book;
+  want:
+    - status: 2
+      code: 204
+      title: STATEMENT_WHERE_NO_LEADING_WILDCARD_LIKE
+      content: '"SELECT name LIKE ''%a'' FROM tech_book;" uses leading wildcard LIKE'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

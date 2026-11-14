@@ -53,3 +53,21 @@
       endposition: null
 - statement: |
     SELECT CURDATE();
+- statement: WITH c AS (SELECT id FROM tech_book) SELECT id FROM c WHERE id IN (SELECT id FROM tech_book);
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: '"WITH c AS (SELECT id FROM tech_book) SELECT id FROM c WHERE id IN (SELECT id FROM tech_book);" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: '"WITH c AS (SELECT id FROM tech_book) SELECT id FROM c WHERE id IN (SELECT id FROM tech_book);" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

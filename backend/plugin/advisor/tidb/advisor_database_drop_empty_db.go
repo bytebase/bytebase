@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE, &DatabaseAllowDropIfEmptyAdvisor{})
 }
 
-// DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
+// DatabaseAllowDropIfEmptyAdvisor is the advisor checking the
+// MySQLDatabaseAllowDropIfEmpty rule. The judgment lives in omni
+// (tidb/v1review.DatabaseDropEmptyDatabase); this adapter passes the
+// pre-change schema and renders the findings as advice.
 type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
@@ -37,47 +42,38 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	checker := &allowDropEmptyDBChecker{
-		level:            level,
-		title:            checkCtx.Rule.Type.String(),
-		originalMetadata: checkCtx.OriginalMetadata,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.DatabaseDropEmptyDatabase([]ast.Node{stmt.Node}, dropDatabaseSchema(checkCtx.OriginalMetadata, stmt.Node)) {
+			advice := &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
+			}
+			switch f.Code {
+			case v1review.DatabaseNotCurrent:
+				advice.Code = code.NotCurrentDatabase.Int32()
+				advice.Content = fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", f.Name, checkCtx.OriginalMetadata.DatabaseName())
+			case v1review.DatabaseNotEmpty:
+				advice.Code = code.DatabaseNotEmpty.Int32()
+				advice.Content = fmt.Sprintf("Database `%s` is not allowed to drop if not empty", f.Name)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, advice)
+		}
 	}
-
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
+	return adviceList, nil
 }
 
-type allowDropEmptyDBChecker struct {
-	adviceList       []*storepb.Advice
-	level            storepb.Advice_Status
-	title            string
-	originalMetadata *model.DatabaseMetadata
-}
-
-func (c *allowDropEmptyDBChecker) checkStmt(ostmt Stmt) {
-	node, ok := ostmt.Node.(*ast.DropDatabaseStmt)
-	if !ok {
-		return
+// dropDatabaseSchema returns the pre-change schema one statement is judged
+// against: the metadata for a DROP DATABASE, and nothing for any other, which
+// reads none. The metadata is read unguarded, so nil metadata panics on a
+// DROP DATABASE only, and advisor.Check reports the panic as the rule's error.
+func dropDatabaseSchema(metadata *model.DatabaseMetadata, node ast.Node) v1review.Schema {
+	if _, ok := node.(*ast.DropDatabaseStmt); !ok {
+		return v1review.Schema{}
 	}
-	line := ostmt.AbsoluteLine(node.Loc.Start)
-	if c.originalMetadata.DatabaseName() != node.Name {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.NotCurrentDatabase.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, c.originalMetadata.DatabaseName()),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	} else if !c.originalMetadata.HasNoTable() {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.DatabaseNotEmpty.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	}
+	return v1review.Schema{Metadata: metadata.GetProto(), ObjectCaseSensitive: metadata.GetIsObjectCaseSensitive()}
 }

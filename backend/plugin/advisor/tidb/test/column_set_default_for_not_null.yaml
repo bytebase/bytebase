@@ -103,3 +103,21 @@
   changeType: 1
 - statement: CREATE TABLE t(a INT, c INT GENERATED ALWAYS AS (a + 1) STORED NOT NULL)
   changeType: 1
+- statement: CREATE TABLE t (ID INT NOT NULL, id2 INT NOT NULL, PRIMARY KEY (id));
+  want:
+    - status: 2
+      code: 404
+      title: COLUMN_SET_DEFAULT_FOR_NOT_NULL
+      content: Column `t`.`ID` is NOT NULL but doesn't have DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 404
+      title: COLUMN_SET_DEFAULT_FOR_NOT_NULL
+      content: Column `t`.`id2` is NOT NULL but doesn't have DEFAULT
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

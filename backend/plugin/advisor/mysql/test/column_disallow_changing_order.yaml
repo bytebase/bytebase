@@ -49,3 +49,31 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE t ADD COLUMN a INT FIRST, ADD COLUMN b INT AFTER a;
+- statement: |-
+    ALTER TABLE t
+      MODIFY COLUMN a INT FIRST,
+      CHANGE COLUMN b c INT AFTER a;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: |-
+        "ALTER TABLE t
+          MODIFY COLUMN a INT FIRST,
+          CHANGE COLUMN b c INT AFTER a;" changes column order
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: |-
+        "ALTER TABLE t
+          MODIFY COLUMN a INT FIRST,
+          CHANGE COLUMN b c INT AFTER a;" changes column order
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -3,19 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"slices"
 
-	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-)
-
-const (
-	maxDefaultCurrentTimeColumCount   = 2
-	maxOnUpdateCurrentTimeColumnCount = 1
 )
 
 var (
@@ -27,6 +21,7 @@ func init() {
 }
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.
+// The judgment lives in omni (mysql/v1review.ColumnCurrentTimeCountLimit).
 type ColumnCurrentTimeCountLimitAdvisor struct {
 }
 
@@ -37,138 +32,28 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &columnCurrentTimeCountLimitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		tableSet: make(map[string]currentTimeTableData),
-	}
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.ColumnCurrentTimeCountLimit(nodes) {
+		var adviceCode code.Code
+		var content string
+		switch f.Code {
+		case v1review.ColumnDefaultCurrentTimeCount:
+			adviceCode = code.DefaultCurrentTimeColumnCountExceedsLimit
+			content = fmt.Sprintf("Table `%s` has %s DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, mysqlv1review.ColumnCurrentTimeDefaultLimit)
+		case v1review.ColumnOnUpdateCurrentTimeCount:
+			adviceCode = code.OnUpdateCurrentTimeColumnCountExceedsLimit
+			content = fmt.Sprintf("Table `%s` has %s ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, mysqlv1review.ColumnCurrentTimeOnUpdateLimit)
+		default:
 			continue
 		}
-		node, ok := mysqlparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         checkCtx.Rule.Type.String(),
+			Content:       content,
+			StartPosition: columnFindingPosition(stmts[f.Statement], f),
+		})
 	}
-
-	rule.generateAdvice()
-
-	return rule.GetAdviceList(), nil
-}
-
-type currentTimeTableData struct {
-	tableName                string
-	defaultCurrentTimeCount  int
-	onUpdateCurrentTimeCount int
-	line                     int
-}
-
-type columnCurrentTimeCountLimitRule struct {
-	BaseRule
-	tableSet map[string]currentTimeTableData
-}
-
-func (r *columnCurrentTimeCountLimitRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnCurrentTimeCountLimitRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, col := range n.Columns {
-		if col.TypeName == nil || !isTimeType(col.TypeName) {
-			continue
-		}
-		r.checkTimeColumn(tableName, col)
-	}
-}
-
-func (r *columnCurrentTimeCountLimitRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, cmd := range n.Commands {
-		for _, col := range getColumnsFromCmd(cmd) {
-			if col.TypeName == nil || !isTimeType(col.TypeName) {
-				continue
-			}
-			r.checkTimeColumn(tableName, col)
-		}
-	}
-}
-
-func (r *columnCurrentTimeCountLimitRule) checkTimeColumn(tableName string, col *ast.ColumnDef) {
-	if isDefaultCurrentTime(col) {
-		table, exists := r.tableSet[tableName]
-		if !exists {
-			table = currentTimeTableData{tableName: tableName}
-		}
-		table.defaultCurrentTimeCount++
-		table.line = r.BaseLine + int(r.LocToLine(col.Loc))
-		r.tableSet[tableName] = table
-	}
-	if isOnUpdateCurrentTime(col) {
-		table, exists := r.tableSet[tableName]
-		if !exists {
-			table = currentTimeTableData{tableName: tableName}
-		}
-		table.onUpdateCurrentTimeCount++
-		table.line = r.BaseLine + int(r.LocToLine(col.Loc))
-		r.tableSet[tableName] = table
-	}
-}
-
-func (r *columnCurrentTimeCountLimitRule) generateAdvice() {
-	var tableList []currentTimeTableData
-	for _, table := range r.tableSet {
-		tableList = append(tableList, table)
-	}
-	slices.SortFunc(tableList, func(a, b currentTimeTableData) int {
-		if a.line < b.line {
-			return -1
-		}
-		if a.line > b.line {
-			return 1
-		}
-		return 0
-	})
-	for _, table := range tableList {
-		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
-			})
-		}
-		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				StartPosition: &storepb.Position{
-					Line: int32(table.line),
-				},
-			})
-		}
-	}
+	return adviceList, nil
 }

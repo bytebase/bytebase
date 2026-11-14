@@ -49,7 +49,7 @@ func GetNode(a base.AST) (omniast.Node, bool) {
 // is now a hard error: the omni parser is the only parser, so a statement it
 // rejects must fail the batch the way a legacy ANTLR syntax error did.
 func parseStatementNode(text string) (omniast.Node, error) {
-	file, err := parseSnowflakeAST(text)
+	file, err := omniparser.Parse(text)
 	if err != nil {
 		return nil, err
 	}

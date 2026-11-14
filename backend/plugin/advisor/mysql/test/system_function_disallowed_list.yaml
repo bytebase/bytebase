@@ -39,3 +39,66 @@
         line: 1
         column: 0
       endposition: null
+- statement: SELECT a FROM t WHERE a = ABS(RAND()) GROUP BY UUID() ORDER BY SLEEP(1);
+  want:
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: Function "RAND" is disallowed, but "SELECT a FROM t WHERE a = ABS(RAND()) GROUP BY UUID() ORDER BY SLEEP(1);" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: Function "SLEEP" is disallowed, but "SELECT a FROM t WHERE a = ABS(RAND()) GROUP BY UUID() ORDER BY SLEEP(1);" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: Function "UUID" is disallowed, but "SELECT a FROM t WHERE a = ABS(RAND()) GROUP BY UUID() ORDER BY SLEEP(1);" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT a FROM (SELECT RAND() AS a) d;
+- statement: INSERT INTO t VALUES (RAND()) ON DUPLICATE KEY UPDATE a = UUID();
+  want:
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: Function "RAND" is disallowed, but "INSERT INTO t VALUES (RAND()) ON DUPLICATE KEY UPDATE a = UUID();" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ALTER COLUMN a SET DEFAULT (UUID());
+  want:
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: Function "UUID" is disallowed, but "ALTER TABLE t ALTER COLUMN a SET DEFAULT (UUID());" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1;
+
+    SELECT
+      RAND();
+  want:
+    - status: 2
+      code: 1702
+      title: SYSTEM_FUNCTION_DISALLOWED_LIST
+      content: |-
+        Function "RAND" is disallowed, but "SELECT
+          RAND();" uses
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

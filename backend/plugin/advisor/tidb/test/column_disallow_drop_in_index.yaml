@@ -87,3 +87,36 @@
     CREATE TABLE t(A int, INDEX idx_A(A));
     ALTER TABLE t DROP COLUMN a
   changeType: 1
+- statement: |-
+    CREATE TABLE w(a INT, b INT, c INT, UNIQUE KEY uk (b), KEY k (c));
+    ALTER TABLE w DROP COLUMN b;
+    ALTER TABLE w DROP COLUMN c;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`w`.`c` cannot drop index column'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book DROP COLUMN name;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`tech_book`.`name` cannot drop index column'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE orders DROP COLUMN Customer_Name, DROP COLUMN customer_name;
+  want:
+    - status: 2
+      code: 424
+      title: COLUMN_DISALLOW_DROP_IN_INDEX
+      content: '`orders`.`customer_name` cannot drop index column'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

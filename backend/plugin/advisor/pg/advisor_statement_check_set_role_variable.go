@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,6 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_CHECK_SET_ROLE_VARIABLE, &StatementCheckSetRoleVariable{})
 }
 
+// StatementCheckSetRoleVariable is the advisor for checking that the role is
+// set first. The judgment lives in omni
+// (pg/v1review.StatementCheckSetRoleVariable); this adapter renders its
+// findings as advice.
 type StatementCheckSetRoleVariable struct {
 }
 
@@ -27,47 +33,25 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &statementCheckSetRoleVariableRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var nodes []ast.Node
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		if node, ok := pgparser.GetNode(stmt.AST); ok {
+			nodes = append(nodes, node)
+		}
 	}
-
-	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	if !rule.hasSetRole {
-		advice = append(advice, &storepb.Advice{
+	var adviceList []*storepb.Advice
+	for range pgv1review.StatementCheckSetRoleVariable(nodes) {
+		adviceList = append(adviceList, &storepb.Advice{
 			Status:        level,
 			Code:          code.StatementCheckSetRoleVariable.Int32(),
-			Title:         rule.Title,
+			Title:         title,
 			Content:       "No SET ROLE statement found.",
 			StartPosition: nil,
 		})
 	}
-
-	return advice, nil
-}
-
-type statementCheckSetRoleVariableRule struct {
-	BaseRule
-
-	hasSetRole      bool
-	foundNonSetStmt bool
-}
-
-func (*statementCheckSetRoleVariableRule) Name() string {
-	return "statement.check-set-role-variable"
-}
-
-func (r *statementCheckSetRoleVariableRule) OnStatement(node ast.Node) {
-	if setStmt, ok := node.(*ast.VariableSetStmt); ok {
-		if !r.foundNonSetStmt && isRoleOrSearchPathSet(setStmt) {
-			r.hasSetRole = true
-		}
-		return
-	}
-
-	// Any non-SET statement marks that SET ROLE must have already appeared.
-	r.foundNonSetStmt = true
+	return adviceList, nil
 }

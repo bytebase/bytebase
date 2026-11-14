@@ -632,3 +632,26 @@
         line: 1
         column: 0
       endposition: null
+- statement: SELECT * FROM pokes WHERE dbo.MyFn(c1) = 1;
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Function "DBO.MYFN" is applied to indexed column "c1" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT * FROM other_db.dbo.pokes WHERE ABS(c1) = 1;
+- statement: |-
+    SELECT * FROM pokes p
+    WHERE EXISTS (SELECT 1 FROM pokes q WHERE q.foo = p.c2 + 1);
+  want:
+    - status: 2
+      code: 234
+      title: STATEMENT_WHERE_DISALLOW_FUNCTIONS_AND_CALCULATIONS
+      content: Calculation is applied to indexed column "c2" in the WHERE clause, which prevents index usage
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

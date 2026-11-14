@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for UPDATE/DELETE statements.
+// The judgment lives in omni (mariadb/v1review.StatementWhereRequireUpdateDelete); this adapter
+// renders its findings as advice.
 type WhereRequirementForUpdateDeleteAdvisor struct {
 }
 
@@ -32,47 +36,26 @@ func (*WhereRequirementForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx
 		return nil, err
 	}
 
-	rule := &whereRequirementForUpdateDeleteRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type whereRequirementForUpdateDeleteRule struct {
-	BaseRule
-}
-
-func (*whereRequirementForUpdateDeleteRule) Name() string {
-	return "WhereRequirementForUpdateDeleteRule"
-}
-
-func (r *whereRequirementForUpdateDeleteRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	switch n := node.(type) {
-	case *ast.DeleteStmt:
-		if n.Where == nil {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(stmt.Text)
+		for _, f := range mariadbv1review.StatementWhereRequireUpdateDelete([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.StatementNoWhere.Int32(),
-				Title:         r.Title,
+				Title:         title,
 				Content:       fmt.Sprintf("\"%s\" requires WHERE clause", text),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
-	case *ast.UpdateStmt:
-		if n.Where == nil {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.StatementNoWhere.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("\"%s\" requires WHERE clause", text),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
-			})
-		}
-	default:
 	}
+	return adviceList, nil
 }

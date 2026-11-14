@@ -170,6 +170,8 @@ func TestMySQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_TABLE_LIMIT_SIZE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 0}}},
 		{Type: storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 1000}}},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "updated_ts", "creator_id", "updater_id"}}}},
+		// The same columns listed with duplicates must report the same advice.
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRED, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_StringArrayPayload{StringArrayPayload: &storepb.SQLReviewRule_StringArrayRulePayload{List: []string{"id", "created_ts", "id", "updated_ts", "creator_id", "updater_id", "updater_id"}}}},
 		{Type: storepb.SQLReviewRule_COLUMN_NO_NULL, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_DISALLOW_CHANGE_TYPE, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_SET_DEFAULT_FOR_NOT_NULL, Level: storepb.SQLReviewRule_WARNING},
@@ -185,6 +187,8 @@ func TestMySQLRules(t *testing.T) {
 		{Type: storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_INITIAL_VALUE, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 20}}},
 		{Type: storepb.SQLReviewRule_COLUMN_AUTO_INCREMENT_MUST_UNSIGNED, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_CHARSET, Level: storepb.SQLReviewRule_WARNING},
+		{Type: storepb.SQLReviewRule_COLUMN_REQUIRE_COLLATION, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, Level: storepb.SQLReviewRule_WARNING},
 		{Type: storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, Level: storepb.SQLReviewRule_WARNING, Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}}},
 		{Type: storepb.SQLReviewRule_INDEX_PK_TYPE_LIMIT, Level: storepb.SQLReviewRule_WARNING},
@@ -504,5 +508,39 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		require.Len(t, adviceList, 1)
 		require.Equal(t, code.StatementDMLDryRunFailed.Int32(), adviceList[0].Code)
 		require.Contains(t, adviceList[0].Content, "dry runs failed")
+	})
+
+	t.Run("a batch that mixes in DDL is not dry-run at all", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t2 (id INT);\n"+stmt, rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Driver:          db,
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		require.Empty(t, testMySQLAdvisorQueries)
+	})
+
+	t.Run("only INSERT, UPDATE and DELETE are dry-run, each once", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "SELECT 1;\nINSERT INTO tech_book VALUES (1, 'a');\n"+stmt+"\nDELETE FROM tech_book;", rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Driver:          db,
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		var explains []string
+		for _, q := range testMySQLAdvisorQueries {
+			if strings.HasPrefix(q, "EXPLAIN ") {
+				explains = append(explains, q)
+			}
+		}
+		require.Equal(t, []string{
+			"EXPLAIN INSERT INTO tech_book VALUES (1, 'a');",
+			"EXPLAIN " + stmt,
+			"EXPLAIN DELETE FROM tech_book;",
+		}, explains)
 	})
 }

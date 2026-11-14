@@ -21,23 +21,6 @@ type getDatabaseDefinitionCase struct {
 	Expected    string `yaml:"expected"`
 }
 
-// TestGetDatabaseDefinition pins the DDL generated for each metadata input,
-// and re-parses that DDL to prove it is valid MySQL syntax.
-//
-// The input is metadata rather than a schema text on purpose: deriving it by
-// parsing would cap this test's reach at whatever GetDatabaseMetadata happens to
-// extract, so any generator branch the parser cannot feed would go untested.
-// unbalancedDelimiterBlocks names the cases whose definition ends a routine with
-// ";;" without a DELIMITER directive having made ";;" the terminator. writeEvent,
-// writeTrigger and writeProcedure all emit the opening "DELIMITER ;;"; only
-// writeFunction leaves it out, so a client restoring such a dump ends the
-// function at the first semicolon in its body. The golden records that output;
-// giving writeFunction the opener empties this map.
-var unbalancedDelimiterBlocks = map[string]bool{
-	"Stored procedures and functions":                                               true,
-	"Check constraints with string literals and function with multiline parameters": true,
-}
-
 // requireDelimiterDiscipline checks what a mysql client relies on to restore a
 // dump: a line ending in ";;" terminates a statement only while a DELIMITER
 // directive has ";;" active.
@@ -58,6 +41,12 @@ func requireDelimiterDiscipline(t *testing.T, definition string) {
 	}
 }
 
+// TestGetDatabaseDefinition pins the DDL generated for each metadata input,
+// and re-parses that DDL to prove it is valid MySQL syntax.
+//
+// The input is metadata rather than a schema text on purpose: deriving it by
+// parsing would cap this test's reach at whatever GetDatabaseMetadata happens to
+// extract, so any generator branch the parser cannot feed would go untested.
 func TestGetDatabaseDefinition(t *testing.T) {
 	const (
 		record   = false
@@ -82,9 +71,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 			// script syntax the schema parser does not accept, so those
 			// definitions are checked for delimiter discipline instead.
 			if strings.Contains(definition, "DELIMITER") {
-				if !unbalancedDelimiterBlocks[tc.Description] {
-					requireDelimiterDiscipline(t, definition)
-				}
+				requireDelimiterDiscipline(t, definition)
 			} else {
 				_, err = GetDatabaseMetadata(definition)
 				require.NoError(t, err, "generated definition should parse")
