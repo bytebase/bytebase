@@ -202,7 +202,7 @@
   querySpan:
     type: 1
     results:
-      - name: f1
+      - name: F1
         sourcecolumns:
           - server: ""
             database: bhs
@@ -212,7 +212,7 @@
         isplainfield: true
         sourcefieldpaths: []
         selectasterisk: false
-      - name: f2
+      - name: F2
         sourcecolumns:
           - server: ""
             database: bhs
@@ -316,8 +316,23 @@
       - server: ""
         database: bhs
         schema: dbo
+        table: tableA
+        column: Id
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: tableA
+        column: condition
+      - server: ""
+        database: bhs
+        schema: dbo
         table: tableB
         column: F1
+      - server: ""
+        database: bhs
+        schema: dbo
+        table: tableB
+        column: mainid
 
 - description: Test simple correlated subquery - fix for outer table sources
   statement: |-
@@ -412,7 +427,7 @@
   querySpan:
     type: 1
     results:
-      - name: wangrnumber
+      - name: WanGrNumber
         sourcecolumns:
           - server: ""
             database: Invoice
@@ -429,6 +444,11 @@
         table: vw_gr_wan_number
         column: ""
     predicatecolumns:
+      - server: ""
+        database: Invoice
+        schema: dbo
+        table: existing_gr_number
+        column: wan_gr_number
       - server: ""
         database: Invoice
         schema: dbo
