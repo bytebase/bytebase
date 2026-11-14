@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -76,7 +76,7 @@ func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, repo
 	if len(changed) == 0 {
 		return nil
 	}
-	sort.Strings(changed)
+	slices.Sort(changed)
 	return errors.Errorf("cannot generate a migration for objects whose definitions could not be loaded: %s", strings.Join(changed, "; "))
 }
 
