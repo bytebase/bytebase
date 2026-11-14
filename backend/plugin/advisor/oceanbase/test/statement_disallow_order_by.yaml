@@ -23,3 +23,21 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    /* comment */
+    UPDATE tech_book
+    SET name = 'a'
+    ORDER BY id;
+  want:
+    - status: 2
+      code: 1104
+      title: STATEMENT_DISALLOW_ORDER_BY
+      content: |-
+        ORDER BY clause is forbidden in DELETE and UPDATE statements, but "/* comment */
+        UPDATE tech_book
+        SET name = 'a'
+        ORDER BY id;" uses
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

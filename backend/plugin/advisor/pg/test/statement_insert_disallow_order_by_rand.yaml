@@ -11,3 +11,13 @@
         line: 1
         column: 0
       endposition: null
+- statement: INSERT INTO tech_book (SELECT * FROM t UNION (SELECT * FROM u ORDER BY random()))
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: The INSERT statement uses ORDER BY random() or random_between(), related statement "INSERT INTO tech_book (SELECT * FROM t UNION (SELECT * FROM u ORDER BY random()))"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -5,11 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var _ advisor.Advisor = (*StatementDisallowTruncateAdvisor)(nil)
@@ -18,6 +21,9 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE, &StatementDisallowTruncateAdvisor{})
 }
 
+// StatementDisallowTruncateAdvisor is the advisor disallowing TRUNCATE. The
+// judgment lives in omni (oceanbase/v1review.StatementDisallowTruncate); this
+// adapter renders its findings as advice.
 type StatementDisallowTruncateAdvisor struct{}
 
 func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -25,70 +31,35 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	rule := &statementDisallowTruncateRule{
-		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
 
-type statementDisallowTruncateRule struct{ BaseRule }
-
-func (*statementDisallowTruncateRule) Name() string { return "StatementDisallowTruncateRule" }
-
-func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.TruncateStmt:
-		for _, tbl := range n.Tables {
-			r.emitTable(tbl, n.Loc)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		for _, cmd := range n.Commands {
-			if cmd.Type != ast.ATTruncatePartition {
+		for _, f := range oceanbasev1review.StatementDisallowTruncate([]ast.Node{node}) {
+			var content string
+			switch f.Code {
+			case v1review.Truncate:
+				content = fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.`, f.Table)
+			case v1review.TruncatePartition:
+				content = fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.`, f.Table, f.Name)
+			default:
 				continue
 			}
-			// Point the advice at the individual ALTER command, not the
-			// ALTER TABLE statement. A multi-command ALTER TABLE splits the
-			// truncate clause onto its own line and the user needs to jump
-			// to that line, not the statement head.
-			loc := cmd.Loc
-			if cmd.AllPartitions {
-				r.emitPartition(n.Table, "ALL PARTITIONS", loc)
-				continue
-			}
-			for _, pname := range cmd.PartitionNames {
-				r.emitPartition(n.Table, pname, loc)
-			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowTruncate.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-	default:
 	}
-}
-
-func (r *statementDisallowTruncateRule) emitTable(tbl *ast.TableRef, loc ast.Loc) {
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          code.StatementDisallowTruncate.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.`, qualifyMySQLName(tbl)),
-		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
-	})
-}
-
-func (r *statementDisallowTruncateRule) emitPartition(tbl *ast.TableRef, partition string, loc ast.Loc) {
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          code.StatementDisallowTruncate.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.`, qualifyMySQLName(tbl), partition),
-		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
-	})
-}
-
-func qualifyMySQLName(tbl *ast.TableRef) string {
-	if tbl.Schema != "" {
-		return tbl.Schema + "." + tbl.Name
-	}
-	return tbl.Name
+	return adviceList, nil
 }

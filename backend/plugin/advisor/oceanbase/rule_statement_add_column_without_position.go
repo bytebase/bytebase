@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -21,6 +23,8 @@ func init() {
 }
 
 // StatementAddColumnWithoutPositionAdvisor is the advisor checking for no position in ADD COLUMN clause.
+// The judgment lives in omni (oceanbase/v1review.StatementAddColumnWithoutPosition); this adapter
+// renders its findings as advice.
 type StatementAddColumnWithoutPositionAdvisor struct {
 }
 
@@ -31,51 +35,25 @@ func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkC
 		return nil, err
 	}
 
-	rule := &addColumnWithoutPositionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type addColumnWithoutPositionRule struct {
-	BaseRule
-}
-
-func (*addColumnWithoutPositionRule) Name() string {
-	return "StatementAddColumnWithoutPositionRule"
-}
-
-func (r *addColumnWithoutPositionRule) OnStatement(node ast.Node) {
-	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-	if alter.Table == nil {
-		return
-	}
-
-	for _, cmd := range alter.Commands {
-		if cmd.Type != ast.ATAddColumn {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		var position string
-		if cmd.First {
-			position = "FIRST"
-		} else if cmd.After != "" {
-			position = "AFTER"
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		if position != "" {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range oceanbasev1review.StatementAddColumnWithoutPosition([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.StatementAddColumnWithPosition.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("add column with position \"%s\"", position),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
+				Title:         title,
+				Content:       fmt.Sprintf("add column with position \"%s\"", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
 	}
+	return adviceList, nil
 }
