@@ -253,6 +253,21 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 	}
 }
 
+func TestMetadataDiffEngine(t *testing.T) {
+	t.Parallel()
+	for raw, want := range map[storepb.Engine]storepb.Engine{
+		storepb.Engine_MYSQL:       storepb.Engine_MYSQL,
+		storepb.Engine_MARIADB:     storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE:   storepb.Engine_OCEANBASE,
+		storepb.Engine_POSTGRES:    storepb.Engine_POSTGRES,
+		storepb.Engine_COCKROACHDB: storepb.Engine_COCKROACHDB,
+	} {
+		parser, err := convertToParserEngine(raw)
+		require.NoError(t, err)
+		require.Equal(t, want, metadataDiffEngine(raw, parser), raw)
+	}
+}
+
 func TestFormatDatabaseResourceName(t *testing.T) {
 	t.Parallel()
 	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
