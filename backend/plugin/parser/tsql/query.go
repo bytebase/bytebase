@@ -29,18 +29,3 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 func HasSelectInto(sel *ast.SelectStmt) bool {
 	return analysis.HasSelectInto(sel)
 }
-
-// selectIntoTarget returns the INTO target of sel, searching set-operation
-// arms — T-SQL attaches INTO to the first arm of a UNION, not the root.
-func selectIntoTarget(sel *ast.SelectStmt) *ast.TableRef {
-	if sel == nil {
-		return nil
-	}
-	if sel.IntoTable != nil {
-		return sel.IntoTable
-	}
-	if target := selectIntoTarget(sel.Larg); target != nil {
-		return target
-	}
-	return selectIntoTarget(sel.Rarg)
-}
