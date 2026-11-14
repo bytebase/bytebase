@@ -94,11 +94,11 @@
 # --- Carveout cases (no advice) ---
 
 # Test: local temp table
-- statement: TRUNCATE TABLE #tmp;
+- statement: 'TRUNCATE TABLE #tmp;'
   changeType: 1
 
 # Test: global temp table (still starts with "#")
-- statement: TRUNCATE TABLE ##global_tmp;
+- statement: 'TRUNCATE TABLE ##global_tmp;'
   changeType: 1
 
 # Test: bracket-quoted temp table with schema prefix
