@@ -20,29 +20,29 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  WITH t_cte AS (
+        INSERT INTO `backupDB`.`_rollback_test_db`  (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1)
           UNION DISTINCT
-          WITH t_cte AS (
+          (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2)
           UNION DISTINCT
-          WITH t_cte AS (
+          (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3)
           UNION DISTINCT
-          WITH t_cte AS (
+          (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4)
           UNION DISTINCT
-          WITH t_cte AS (
+          (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5)
           UNION DISTINCT
-          WITH t_cte AS (
+          (WITH t_cte AS (
           SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -101,19 +101,19 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1
+        INSERT INTO `backupDB`.`_rollback_test_db`  (SELECT `test`.* FROM test WHERE test.b1 = 1)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 2
+          (SELECT `test`.* FROM test WHERE test.b1 = 2)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 3
+          (SELECT `test`.* FROM test WHERE test.b1 = 3)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 4
+          (SELECT `test`.* FROM test WHERE test.b1 = 4)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 5
+          (SELECT `test`.* FROM test WHERE test.b1 = 5)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 6
+          (SELECT `test`.* FROM test WHERE test.b1 = 6)
           UNION DISTINCT
-          SELECT `test`.* FROM test WHERE test.b1 = 7;
+          (SELECT `test`.* FROM test WHERE test.b1 = 7);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
@@ -453,9 +453,9 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1
+        INSERT INTO `backupDB`.`_rollback_test_db`  (SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1)
           UNION DISTINCT
-          SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5;
+          (SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db

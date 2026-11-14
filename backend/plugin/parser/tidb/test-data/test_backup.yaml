@@ -9,19 +9,19 @@
   result:
     - statement: |-
         CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db`  SELECT `test`.* FROM test WHERE test.b1 = 1
+        INSERT INTO `backupDB`.`_rollback_test_db`  (SELECT `test`.* FROM test WHERE test.b1 = 1)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 2
+          (SELECT `test`.* FROM test WHERE test.b1 = 2)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 3
+          (SELECT `test`.* FROM test WHERE test.b1 = 3)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 4
+          (SELECT `test`.* FROM test WHERE test.b1 = 4)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 5
+          (SELECT `test`.* FROM test WHERE test.b1 = 5)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 6
+          (SELECT `test`.* FROM test WHERE test.b1 = 6)
           UNION ALL
-          SELECT `test`.* FROM test WHERE test.b1 = 7;
+          (SELECT `test`.* FROM test WHERE test.b1 = 7);
       sourceschema: ""
       sourcetablename: test
       targettablename: _rollback_test_db
