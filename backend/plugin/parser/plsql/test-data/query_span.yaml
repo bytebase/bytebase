@@ -292,7 +292,7 @@
           column: ""
     predicatecolumns: []
 - description: Test for Join
-  statement: SELECT T1.* FROM T1 JOIN T2;
+  statement: SELECT T1.* FROM T1 JOIN T2 ON 1 = 1;
   defaultDatabase: PUBLIC
   metadata: |-
     {
