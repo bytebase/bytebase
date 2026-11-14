@@ -86,3 +86,23 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t (a INT ZEROFILL AUTO_INCREMENT, b BIGINT AUTO_INCREMENT);
+    ALTER TABLE t ADD c INT AUTO_INCREMENT;
+  want:
+    - status: 2
+      code: 417
+      title: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
+      content: Auto-increment column `t`.`b` is not UNSIGNED type
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 417
+      title: COLUMN_AUTO_INCREMENT_MUST_UNSIGNED
+      content: Auto-increment column `t`.`c` is not UNSIGNED type
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

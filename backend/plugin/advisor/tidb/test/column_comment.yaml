@@ -170,3 +170,18 @@
         line: 3
         column: 0
       endposition: null
+- statement: |-
+    -- lead
+    ALTER TABLE t
+      ADD COLUMN a INT,
+      MODIFY b INT COMMENT '';
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`a` requires comments
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t (a INT COMMENT 'héllo wö');

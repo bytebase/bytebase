@@ -21,8 +21,6 @@ func statementLineForOffset(text string, offset int) int {
 // (It is the ANTLR-free survivor of the legacy GenericChecker walker, which
 // was deleted with the ANTLR parser cutover.)
 type BaseRule struct {
-	level      storepb.Advice_Status
-	title      string
 	adviceList []*storepb.Advice
 	baseLine   int
 }

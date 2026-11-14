@@ -79,28 +79,6 @@ func rangeVarTableName(rv *ast.RangeVar) string {
 	return rv.Relname
 }
 
-// schemaName extracts the schema name from a RangeVar, defaulting to "public".
-func schemaName(rv *ast.RangeVar) string {
-	if rv == nil || rv.Schemaname == "" {
-		return "public"
-	}
-	return rv.Schemaname
-}
-
-// constraintColumns extracts column names from a Constraint's Keys list.
-func constraintColumns(c *ast.Constraint) []string {
-	if c == nil || c.Keys == nil {
-		return nil
-	}
-	var cols []string
-	for _, item := range c.Keys.Items {
-		if s, ok := item.(*ast.String); ok {
-			cols = append(cols, s.Str)
-		}
-	}
-	return cols
-}
-
 // columnConstraints iterates over a ColumnDef's constraint list.
 func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	if col == nil || col.Constraints == nil {
@@ -133,20 +111,6 @@ func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint)
 		}
 	}
 	return cols, cons
-}
-
-// alterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
-func alterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
-	if alter.Cmds == nil {
-		return nil
-	}
-	var cmds []*ast.AlterTableCmd
-	for _, item := range alter.Cmds.Items {
-		if cmd, ok := item.(*ast.AlterTableCmd); ok {
-			cmds = append(cmds, cmd)
-		}
-	}
-	return cmds
 }
 
 // sessionSettings holds, in order, the statements that set the role or search path, which an EXPLAIN
@@ -221,23 +185,6 @@ func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	}
 	name := strings.ToLower(stmt.Name)
 	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
-}
-
-// typeName extracts the type name string from a TypeName node.
-func typeName(tn *ast.TypeName) string {
-	if tn == nil || tn.Names == nil {
-		return ""
-	}
-	var parts []string
-	for _, item := range tn.Names.Items {
-		if s, ok := item.(*ast.String); ok {
-			parts = append(parts, s.Str)
-		}
-	}
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
 }
 
 // listStrings extracts string values from an ast.List.

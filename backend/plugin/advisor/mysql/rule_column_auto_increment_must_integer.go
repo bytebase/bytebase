@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +21,7 @@ func init() {
 }
 
 // ColumnAutoIncrementMustIntegerAdvisor is the advisor checking for auto-increment column type.
+// The judgment lives in omni (mysql/v1review.ColumnAutoIncrementMustInteger).
 type ColumnAutoIncrementMustIntegerAdvisor struct {
 }
 
@@ -31,77 +32,18 @@ func (*ColumnAutoIncrementMustIntegerAdvisor) Check(_ context.Context, checkCtx 
 		return nil, err
 	}
 
-	rule := &columnAutoIncrementMustIntegerRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		node, ok := mysqlparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
-	}
-
-	return rule.GetAdviceList(), nil
-}
-
-type columnAutoIncrementMustIntegerRule struct {
-	BaseRule
-}
-
-func (r *columnAutoIncrementMustIntegerRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnAutoIncrementMustIntegerRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, col := range n.Columns {
-		r.checkColumn(tableName, col)
-	}
-}
-
-func (r *columnAutoIncrementMustIntegerRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, cmd := range n.Commands {
-		for _, col := range getColumnsFromCmd(cmd) {
-			r.checkColumn(tableName, col)
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range mysqlv1review.ColumnAutoIncrementMustInteger([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.AutoIncrementColumnNotInteger.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", f.Table, f.Name),
+				StartPosition: columnFindingPosition(stmt, f),
+			})
 		}
 	}
-}
-
-func (r *columnAutoIncrementMustIntegerRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !isAutoIncrement(col) {
-		return
-	}
-	if !isIntegerType(col.TypeName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.AutoIncrementColumnNotInteger.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` requires integer type", tableName, col.Name),
-			StartPosition: &storepb.Position{
-				Line: r.LocToLine(col.Loc),
-			},
-		})
-	}
+	return adviceList, nil
 }

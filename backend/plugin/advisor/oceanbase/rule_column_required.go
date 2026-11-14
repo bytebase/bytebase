@@ -3,15 +3,17 @@ package oceanbase
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -23,6 +25,8 @@ func init() {
 }
 
 // ColumnRequirementAdvisor is the advisor checking for column requirement.
+// The judgment lives in omni (oceanbase/v1review.ColumnRequired); this adapter
+// passes the required columns and renders one advice per table.
 type ColumnRequirementAdvisor struct {
 }
 
@@ -37,183 +41,47 @@ func (*ColumnRequirementAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	if stringArrayPayload == nil {
 		return nil, errors.New("string_array_payload is required for column required rule")
 	}
-	requiredColumns := make(columnSet)
-	for _, column := range stringArrayPayload.List {
-		requiredColumns[column] = true
-	}
 
-	rule := &columnRequiredRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		requiredColumns: requiredColumns,
-		tables:          make(tableState),
-		line:            make(map[string]int),
-	}
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	findings := oceanbasev1review.ColumnRequired(nodes, stringArrayPayload.List)
 
-	adviceList := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	adviceList = append(adviceList, rule.generateAdviceList()...)
+	var adviceList []*storepb.Advice
+	for i := 0; i < len(findings); {
+		f := findings[i]
+		var missingColumns []string
+		for ; i < len(findings) && findings[i].Table == f.Table; i++ {
+			missingColumns = append(missingColumns, findings[i].Name)
+		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Code:    code.NoRequiredColumn.Int32(),
+			Title:   checkCtx.Rule.Type.String(),
+			Content: fmt.Sprintf("Table `%s` requires columns: %s", f.Table, strings.Join(missingColumns, ", ")),
+			StartPosition: &storepb.Position{
+				Line:   int32(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+				Column: 0,
+			},
+		})
+	}
 	return adviceList, nil
 }
 
-type columnRequiredRule struct {
-	BaseRule
-	requiredColumns columnSet
-	tables          tableState
-	line            map[string]int
-}
-
-func (*columnRequiredRule) Name() string {
-	return "ColumnRequiredRule"
-}
-
-func (r *columnRequiredRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.DropTableStmt:
-		r.checkDropTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnRequiredRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	r.line[tableName] = int(r.LocToLine(n.Loc)) + r.BaseLine
-	r.initEmptyTable(tableName)
-
-	for _, col := range n.Columns {
-		r.addColumn(tableName, col.Name)
-	}
-}
-
-func (r *columnRequiredRule) checkDropTable(n *ast.DropTableStmt) {
-	for _, ref := range n.Tables {
-		tableName := tableName(ref)
-		delete(r.tables, tableName)
-	}
-}
-
-func (r *columnRequiredRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range n.Commands {
-		lineNumber := int(r.LocToLine(cmd.Loc)) + r.BaseLine
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				r.addColumn(tableName, cmd.Column.Name)
-			}
-			for _, col := range cmd.Columns {
-				r.addColumn(tableName, col.Name)
-			}
-		case ast.ATDropColumn:
-			if r.dropColumn(tableName, cmd.Name) {
-				r.line[tableName] = lineNumber
-			}
-		case ast.ATRenameColumn:
-			if r.renameColumn(tableName, cmd.Name, cmd.NewName) {
-				r.line[tableName] = lineNumber
-			}
-		case ast.ATChangeColumn:
-			if r.renameColumn(tableName, cmd.Name, cmd.NewName) {
-				r.line[tableName] = lineNumber
-			}
-		default:
+// parsedNodes returns the statements that carry an omni node and their nodes,
+// index for index, for a rule that judges the statements together.
+func parsedNodes(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.Node) {
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range parsed {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-}
-
-func (r *columnRequiredRule) generateAdviceList() []*storepb.Advice {
-	var adviceList []*storepb.Advice
-	tableList := r.tables.tableList()
-	for _, tableName := range tableList {
-		table := r.tables[tableName]
-		var missingColumns []string
-		for columnName := range r.requiredColumns {
-			if exists, ok := table[columnName]; !ok || !exists {
-				missingColumns = append(missingColumns, columnName)
-			}
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-
-		if len(missingColumns) > 0 {
-			slices.Sort(missingColumns)
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  r.Level,
-				Code:    code.NoRequiredColumn.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Table `%s` requires columns: %s", tableName, strings.Join(missingColumns, ", ")),
-				StartPosition: &storepb.Position{
-					Line:   int32(r.line[tableName]),
-					Column: 0,
-				},
-			})
-		}
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
 	}
-	return adviceList
-}
-
-func (r *columnRequiredRule) initEmptyTable(tableName string) columnSet {
-	r.tables[tableName] = make(columnSet)
-	return r.tables[tableName]
-}
-
-func (r *columnRequiredRule) addColumn(tableName string, columnName string) {
-	if _, ok := r.requiredColumns[columnName]; !ok {
-		return
-	}
-
-	if table, ok := r.tables[tableName]; !ok {
-		r.initFullTable(tableName)
-	} else {
-		table[columnName] = true
-	}
-}
-
-func (r *columnRequiredRule) dropColumn(tableName string, columnName string) bool {
-	if _, ok := r.requiredColumns[columnName]; !ok {
-		return false
-	}
-	table, ok := r.tables[tableName]
-	if !ok {
-		table = r.initFullTable(tableName)
-	}
-	table[columnName] = false
-	return true
-}
-
-func (r *columnRequiredRule) renameColumn(tableName string, oldColumn string, newColumn string) bool {
-	_, oldNeed := r.requiredColumns[oldColumn]
-	_, newNeed := r.requiredColumns[newColumn]
-	if !oldNeed && !newNeed {
-		return false
-	}
-	table, ok := r.tables[tableName]
-	if !ok {
-		table = r.initFullTable(tableName)
-	}
-	if oldNeed {
-		table[oldColumn] = false
-	}
-	if newNeed {
-		table[newColumn] = true
-	}
-	return oldNeed
-}
-
-func (r *columnRequiredRule) initFullTable(tableName string) columnSet {
-	table := r.initEmptyTable(tableName)
-	for column := range r.requiredColumns {
-		table[column] = true
-	}
-	return table
+	return stmts, nodes
 }

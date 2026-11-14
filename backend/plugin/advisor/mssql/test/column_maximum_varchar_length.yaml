@@ -33,3 +33,47 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    SELECT CAST(x AS VARCHAR(3000)) FROM t;
+    DECLARE @v NVARCHAR(MAX);
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a VARCHAR,
+      b NCHAR(2561)
+    );
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ALTER COLUMN a VARCHAR(2561);
+  want:
+    - status: 2
+      code: 422
+      title: COLUMN_MAXIMUM_VARCHAR_LENGTH
+      content: The maximum varchar length is 2560.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

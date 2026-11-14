@@ -2,10 +2,11 @@
 package mariadb
 
 import (
-	"slices"
-	"strings"
+	"github.com/bytebase/omni/v1review"
 
-	"github.com/bytebase/omni/mariadb/ast"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 type columnSet map[string]bool
@@ -18,224 +19,23 @@ func newColumnSet(columns []string) columnSet {
 	return res
 }
 
-type tableState map[string]columnSet
-
-// tableList returns table list in lexicographical order.
-func (t tableState) tableList() []string {
-	var tableList []string
-	for tableName := range t {
-		tableList = append(tableList, tableName)
-	}
-	slices.Sort(tableList)
-	return tableList
+// columnFindingPosition is where a finding's advice starts: the statement's first
+// line plus the line of the finding's anchor within it.
+func columnFindingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
+	return base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
 }
 
-// tableName extracts the table name from a TableRef.
-func tableName(ref *ast.TableRef) string {
-	if ref == nil {
-		return ""
-	}
-	return ref.Name
+// statementPosition is where advice about a whole statement starts: the line
+// of the statement's first non-blank character.
+func statementPosition(stmt base.ParsedStatement) *storepb.Position {
+	return columnFindingPosition(stmt, v1review.Finding{})
 }
 
-// isNullable checks if a column allows NULL.
-// A column is nullable unless it has a NOT NULL constraint or is a PRIMARY KEY.
-func isNullable(col *ast.ColumnDef) bool {
-	if col == nil {
-		return true
+// v1reviewSchema returns the snapshot md holds for an omni rule, an empty
+// one when md is nil.
+func v1reviewSchema(md *model.DatabaseMetadata) v1review.Schema {
+	if md == nil {
+		return v1review.Schema{}
 	}
-	for _, c := range col.Constraints {
-		if c.Type == ast.ColConstrNotNull || c.Type == ast.ColConstrPrimaryKey {
-			return false
-		}
-	}
-	return true
-}
-
-// hasDefault checks if a column has a DEFAULT value.
-func hasDefault(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	if col.DefaultValue != nil {
-		return true
-	}
-	for _, c := range col.Constraints {
-		if c.Type == ast.ColConstrDefault {
-			return true
-		}
-	}
-	return false
-}
-
-// isAutoIncrement checks if a column has AUTO_INCREMENT.
-func isAutoIncrement(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	return col.AutoIncrement
-}
-
-// columnComment extracts the COMMENT string from a column definition.
-func columnComment(col *ast.ColumnDef) string {
-	if col == nil {
-		return ""
-	}
-	return col.Comment
-}
-
-// dataTypeNameCompact returns a compact, lowercase type name string.
-func dataTypeNameCompact(dt *ast.DataType) string {
-	if dt == nil {
-		return ""
-	}
-	return strings.ToLower(dt.Name)
-}
-
-// isIntegerType checks if the data type is an integer type.
-func isIntegerType(dt *ast.DataType) bool {
-	if dt == nil {
-		return false
-	}
-	switch strings.ToUpper(dt.Name) {
-	case "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INTEGER":
-		return true
-	default:
-		return false
-	}
-}
-
-// isTimeType checks if the data type is DATETIME or TIMESTAMP.
-func isTimeType(dt *ast.DataType) bool {
-	if dt == nil {
-		return false
-	}
-	switch strings.ToUpper(dt.Name) {
-	case "DATETIME", "TIMESTAMP":
-		return true
-	default:
-		return false
-	}
-}
-
-// isDefaultCurrentTime checks if a column has DEFAULT CURRENT_TIMESTAMP / NOW().
-func isDefaultCurrentTime(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	return isCurrentTimeFuncCall(col.DefaultValue)
-}
-
-// isOnUpdateCurrentTime checks if a column has ON UPDATE CURRENT_TIMESTAMP / NOW().
-func isOnUpdateCurrentTime(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	return isCurrentTimeFuncCall(col.OnUpdate)
-}
-
-// isCurrentTimeFuncCall checks if an expression is a CURRENT_TIMESTAMP/NOW() call.
-func isCurrentTimeFuncCall(expr ast.ExprNode) bool {
-	if expr == nil {
-		return false
-	}
-	fc, ok := expr.(*ast.FuncCallExpr)
-	if !ok {
-		return false
-	}
-	switch strings.ToUpper(fc.Name) {
-	case "NOW", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP":
-		return true
-	default:
-		return false
-	}
-}
-
-// getColumnsFromCmd extracts column definitions from an AlterTableCmd.
-func getColumnsFromCmd(cmd *ast.AlterTableCmd) []*ast.ColumnDef {
-	if cmd == nil {
-		return nil
-	}
-	switch cmd.Type {
-	case ast.ATAddColumn:
-		if cmd.Column != nil {
-			return []*ast.ColumnDef{cmd.Column}
-		}
-		return cmd.Columns
-	case ast.ATModifyColumn, ast.ATChangeColumn:
-		if cmd.Column != nil {
-			return []*ast.ColumnDef{cmd.Column}
-		}
-	default:
-	}
-	return nil
-}
-
-// isPrimaryKey checks if a column has a PRIMARY KEY constraint.
-func isPrimaryKey(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	for _, c := range col.Constraints {
-		if c.Type == ast.ColConstrPrimaryKey {
-			return true
-		}
-	}
-	return false
-}
-
-// pKColumnNames returns a set of column names that are part of a primary key.
-func pKColumnNames(columns []*ast.ColumnDef, constraints []*ast.Constraint) map[string]bool {
-	result := make(map[string]bool)
-	for _, col := range columns {
-		if isPrimaryKey(col) {
-			result[col.Name] = true
-		}
-	}
-	for _, c := range constraints {
-		if c.Type == ast.ConstrPrimaryKey {
-			for _, name := range c.Columns {
-				result[name] = true
-			}
-		}
-	}
-	return result
-}
-
-// isDefaultExemptType checks if a column type is exempt from requiring DEFAULT
-// (BLOB, TEXT, JSON, GEOMETRY and spatial types).
-func isDefaultExemptType(col *ast.ColumnDef) bool {
-	if col == nil || col.TypeName == nil {
-		return false
-	}
-	switch strings.ToUpper(col.TypeName.Name) {
-	case "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB",
-		"TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT",
-		"JSON", "GEOMETRY", "POINT", "LINESTRING", "POLYGON",
-		"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION",
-		"GEOMCOLLECTION":
-		return true
-	default:
-		return false
-	}
-}
-
-// columnNeedDefaultNotNull checks if a NOT NULL column needs a DEFAULT value
-// (excludes BLOB, TEXT, JSON, GEOMETRY, and AUTO_INCREMENT columns).
-func columnNeedDefaultNotNull(col *ast.ColumnDef) bool {
-	if col == nil {
-		return false
-	}
-	if isNullable(col) || hasDefault(col) || isPrimaryKey(col) || col.AutoIncrement {
-		return false
-	}
-	if col.TypeName != nil {
-		switch strings.ToUpper(col.TypeName.Name) {
-		case "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB",
-			"TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT",
-			"JSON", "GEOMETRY", "SERIAL":
-			return false
-		}
-	}
-	return true
+	return v1review.Schema{Metadata: md.GetProto(), ObjectCaseSensitive: md.GetIsObjectCaseSensitive()}
 }
