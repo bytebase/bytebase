@@ -8,3 +8,23 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP DATABASE Test;
+  want:
+    - status: 2
+      code: 702
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `Test` that is trying to be deleted is not the current database `test`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP DATABASE IF EXISTS other;
+  want:
+    - status: 2
+      code: 702
+      title: DATABASE_DROP_EMPTY_DATABASE
+      content: Database `other` that is trying to be deleted is not the current database `test`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
