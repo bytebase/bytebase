@@ -68,8 +68,8 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 // the read-only editor path. A SELECT writes if it has an INTO target (SELECT ...
 // INTO creates a table) or any of its CTE terms is data-modifying.
 //
-// The read-only gate uses it; classifyQueryType (query_type.go) shares containsWriteCTE
-// so the permission check treats the same SELECTs as DML.
+// The read-only gate uses it; omni's pg/analysis classifies the same SELECTs as DML
+// for the permission check.
 func isWriteSelect(n *ast.SelectStmt) bool {
 	if n == nil {
 		return false

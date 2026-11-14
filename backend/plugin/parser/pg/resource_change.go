@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
 
@@ -20,7 +21,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	changedResources := model.NewChangedResources(dbMetadata)
 	searchPath := dbMetadata.GetSearchPath()
 	if currentSchema != "" {
-		searchPath = searchPathForSelectedSchema(currentSchema, searchPath)
+		searchPath = analysis.SearchPathForSelectedSchema(currentSchema, searchPath)
 	}
 	if len(searchPath) == 0 {
 		searchPath = []string{"public"}

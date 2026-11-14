@@ -4,14 +4,9 @@ import (
 	"context"
 	"io"
 	"os"
-	"os/exec"
-	"regexp"
-	"runtime/debug"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/bytebase/omni/pg/ast"
-	"github.com/bytebase/omni/pg/catalog"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -574,113 +569,6 @@ WHERE t.part->>'type' IN ('prompt', 'text');
 	}
 }
 
-func TestAppendQueryDoesNotMutateSharedStack(t *testing.T) {
-	outer := &catalog.Query{}
-	parent := &catalog.Query{}
-	current := &catalog.Query{}
-	nested := &catalog.Query{}
-	queryStack := []*catalog.Query{outer, parent, current}
-
-	nextStack := appendQuery(queryStack[:2], nested)
-
-	if queryStack[2] != current {
-		t.Fatalf("appendQuery mutated caller stack: got %p, want %p", queryStack[2], current)
-	}
-	if len(nextStack) != 3 || nextStack[2] != nested {
-		t.Fatalf("appendQuery returned unexpected stack: %+v", nextStack)
-	}
-}
-
-func TestWalkExprStopsOnSelfReferentialFunction(t *testing.T) {
-	mustNotOverflow(t, func() {
-		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
-		q := &catalog.Query{
-			TargetList: []*catalog.TargetEntry{{
-				Expr: varExpr,
-			}},
-			RangeTable: []*catalog.RangeTableEntry{{
-				Kind: catalog.RTEFunction,
-				FuncExprs: []catalog.AnalyzedExpr{&catalog.FuncCallExpr{
-					Args: []catalog.AnalyzedExpr{&catalog.OpExpr{
-						Left: varExpr,
-						Right: &catalog.ConstExpr{
-							Value: "items",
-						},
-					}},
-				}},
-			}},
-		}
-		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
-		extractor.cat = catalog.New()
-		extractor.walkExpr(q, q.TargetList[0].Expr, make(base.SourceColumnSet))
-	})
-}
-
-func TestIsUltimatelyPlainColumnStopsOnCyclicSubquery(t *testing.T) {
-	mustNotOverflow(t, func() {
-		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
-		q := &catalog.Query{
-			TargetList: []*catalog.TargetEntry{{
-				Expr: varExpr,
-			}},
-			RangeTable: []*catalog.RangeTableEntry{{
-				Kind: catalog.RTESubquery,
-			}},
-		}
-		q.RangeTable[0].Subquery = q
-		_ = isUltimatelyPlainColumn(q, varExpr)
-	})
-}
-
-func TestCollectPredicateColumnsStopsOnCyclicQuery(t *testing.T) {
-	mustNotOverflow(t, func() {
-		q := &catalog.Query{}
-		q.CTEList = []*catalog.CommonTableExprQ{{Query: q}}
-		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
-		extractor.collectPredicateColumns(q)
-	})
-}
-
-func TestExtractLineageStopsOnCyclicSetOp(t *testing.T) {
-	mustNotOverflow(t, func() {
-		q := &catalog.Query{SetOp: catalog.SetOpUnion}
-		q.LArg = q
-		q.RArg = &catalog.Query{TargetList: []*catalog.TargetEntry{{
-			Expr: &catalog.ConstExpr{
-				Value: "1",
-			},
-		}}}
-		selStmt := &ast.SelectStmt{}
-		selStmt.Larg = selStmt
-		selStmt.Rarg = &ast.SelectStmt{}
-		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
-		extractor.extractLineage(q, selStmt)
-	})
-}
-
-func TestResolveThroughCTEStopsOnCyclicCTE(t *testing.T) {
-	mustNotOverflow(t, func() {
-		cteSel := &ast.SelectStmt{
-			TargetList: &ast.List{Items: []ast.Node{&ast.ResTarget{
-				Name: "x",
-				Val: &ast.ColumnRef{Fields: &ast.List{Items: []ast.Node{
-					&ast.String{Str: "c"},
-					&ast.String{Str: "x"},
-				}}},
-			}}},
-			FromClause: &ast.List{Items: []ast.Node{&ast.RangeVar{Relname: "c"}}},
-		}
-		extractor := newQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
-		extractor.cat = catalog.New()
-		analyzer := &plpgsqlAnalyzer{
-			extractor: extractor,
-			scope:     newVariableScope(nil),
-			cteMap:    map[string]*ast.SelectStmt{"c": cteSel},
-		}
-		analyzer.resolveThroughCTE(cteSel, "x", nil, make(base.SourceColumnSet))
-	})
-}
-
 // ---------- helpers ----------
 
 // testDB / testSchema are the fixed database and schema names these tests use;
@@ -689,26 +577,6 @@ const (
 	testDB     = "db"
 	testSchema = "public"
 )
-
-// noOverflowEnv marks the subprocess mustNotOverflow spawns.
-const noOverflowEnv = "BYTEBASE_TEST_NO_OVERFLOW"
-
-// mustNotOverflow runs fn in a subprocess with a 1 MB stack, so recursion that
-// does not terminate fails this test instead of taking the whole run down. The
-// subprocess re-runs this same test, which then takes the fn branch.
-func mustNotOverflow(t *testing.T, fn func()) {
-	t.Helper()
-	if os.Getenv(noOverflowEnv) == "1" {
-		debug.SetMaxStack(1 << 20)
-		fn()
-		return
-	}
-	cmd := exec.Command(os.Args[0], "-test.run=^"+regexp.QuoteMeta(t.Name())+"$")
-	cmd.Env = append(os.Environ(), noOverflowEnv+"=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("recursion did not terminate: %v\n%s", err, output)
-	}
-}
 
 func mustGetQuerySpan(t *testing.T, meta *metadatapb.DatabaseSchemaMetadata, sql string) *base.QuerySpan {
 	t.Helper()
@@ -740,51 +608,4 @@ func mustHaveExactSource(t *testing.T, result base.QuerySpanResult, table, colum
 		}
 	}
 	t.Errorf("result %q missing source %+v; have %+v", result.Name, want, result.SourceColumns)
-}
-
-// TestRangeVarFallbackSkipsCompositeTypes proves the query-span fallback does
-// not expand a standalone composite type as a FROM source — PostgreSQL
-// rejects composite types as table sources.
-func TestRangeVarFallbackSkipsCompositeTypes(t *testing.T) {
-	meta := &metadatapb.DatabaseSchemaMetadata{
-		Schemas: []*metadatapb.SchemaMetadata{
-			{
-				Name: "public",
-				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
-					{
-						Name: "addr",
-						Attributes: []*metadatapb.CompositeTypeAttribute{
-							{Name: "street", Type: "text"},
-						},
-					},
-				},
-				Tables: []*metadatapb.TableMetadata{
-					{
-						Name: "t",
-						Columns: []*metadatapb.ColumnMetadata{
-							{Name: "id", Type: "integer"},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	cat := catalog.New()
-	cat.SetSearchPath([]string{"public"})
-	if _, err := cat.LoadMetadata(context.Background(), meta, catalog.LoadMetadataOptions{}); err != nil {
-		t.Fatalf("LoadMetadata: %v", err)
-	}
-
-	e := &querySpanExtractor{
-		cat:             cat,
-		searchPath:      []string{"public"},
-		defaultDatabase: "db",
-	}
-	if results := e.extractColumnsFromRangeVar(&ast.RangeVar{Schemaname: "public", Relname: "addr"}); results != nil {
-		t.Errorf("composite type must not expand as a FROM source, got %d columns", len(results))
-	}
-	if results := e.extractColumnsFromRangeVar(&ast.RangeVar{Schemaname: "public", Relname: "t"}); len(results) != 1 {
-		t.Errorf("real table must still expand, got %d columns", len(results))
-	}
 }

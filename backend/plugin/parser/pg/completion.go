@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	omnipg "github.com/bytebase/omni/pg"
+	"github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	pgparser "github.com/bytebase/omni/pg/parser"
 
@@ -273,7 +274,7 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) insertFunctions() {
-	for _, name := range getBuiltinFunctions() {
+	for _, name := range analysis.BuiltinFunctions() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeFunction,
 			Text: name + "()",
