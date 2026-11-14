@@ -1122,12 +1122,12 @@ func writeCommentOnMaterializedView(buf *strings.Builder, schemaName, mvName, co
 
 ### 4.1 Single-file SDL Format
 
-**File**: `backend/plugin/schema/pg/get_database_definition.go` - `getSDLFormat` function
+**File**: omni `pg/catalog/definition_sdl.go` - `databaseSDL` function
 
 Add the new object type to single-file SDL generation:
 
 ```go
-func getSDLFormat(dbSchema *model.DatabaseSchema, schemaVersion string) (string, error) {
+func databaseSDL(dbSchema *model.DatabaseSchema, schemaVersion string) (string, error) {
     var buf bytes.Buffer
 
     // ... write schemas ...
@@ -1190,10 +1190,10 @@ func getSDLFormat(dbSchema *model.DatabaseSchema, schemaVersion string) (string,
 
 ### 4.2 Multi-file SDL Format
 
-**File**: `backend/plugin/schema/pg/get_database_definition.go` - `GetMultiFileDatabaseDefinition` function
+**File**: omni `pg/catalog/definition_multi_file.go` - `MultiFileDefinition` function
 
 ```go
-func GetMultiFileDatabaseDefinition(dbSchema *model.DatabaseSchema, schemaVersion string) ([]schema.File, error) {
+func MultiFileDefinition(dbSchema *model.DatabaseSchema, schemaVersion string) ([]schema.File, error) {
     var files []schema.File
 
     for _, schemaMetadata := range dbSchema.Schemas {
@@ -1246,7 +1246,7 @@ func GetMultiFileDatabaseDefinition(dbSchema *model.DatabaseSchema, schemaVersio
 
 ### 4.3 Implement SDL Write Functions
 
-**File**: `backend/plugin/schema/pg/get_database_definition.go`
+**File**: omni `pg/catalog/definition_sdl.go`
 
 #### Write Object SDL
 
@@ -2017,8 +2017,8 @@ Use this checklist to ensure complete implementation:
 #### SDL Output
 - [ ] Object write function implemented (`writeXXXSDL`)
 - [ ] Comment write function implemented (`writeXXXCommentSDL`)
-- [ ] Integrated into single-file format (`getSDLFormat`)
-- [ ] Integrated into multi-file format (`GetMultiFileDatabaseDefinition`)
+- [ ] Integrated into single-file format (`databaseSDL`)
+- [ ] Integrated into multi-file format (`MultiFileDefinition`)
 - [ ] Correct file path for multi-file format
 
 #### Testing
