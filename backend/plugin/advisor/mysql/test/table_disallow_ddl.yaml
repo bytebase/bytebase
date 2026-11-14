@@ -1,0 +1,66 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE x(a int);
+
+    /* c */
+    ALTER TABLE db.t
+      ADD COLUMN b INT;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table t.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: DROP TABLE t, x, u;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table u.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: RENAME TABLE t TO x, x TO u;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table t.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE u;
+  want:
+    - status: 2
+      code: 613
+      title: TABLE_DISALLOW_DDL
+      content: DDL is disallowed on table u.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE T(a int);
+- statement: INSERT INTO t VALUES (1);
+- statement: CREATE PROCEDURE p() BEGIN DROP TABLE t; END;

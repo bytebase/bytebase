@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
 }
 
-// TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.
+// TableDisallowPartitionAdvisor is the advisor checking for disallow table
+// partition. The judgment lives in omni (tidb/v1review.TableDisallowPartition);
+// this adapter renders the findings as advice.
 type TableDisallowPartitionAdvisor struct {
 }
 
@@ -38,52 +42,22 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 	title := checkCtx.Rule.Type.String()
 
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		advice := checkStmtForPartition(ostmt, level, title)
-		if advice != nil {
-			adviceList = append(adviceList, advice)
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.TableDisallowPartition([]ast.Node{stmt.Node}) {
+			if f.Code != v1review.TablePartitioned {
+				continue
+			}
+			// V1 printed the whole statement and placed it on the
+			// statement's first token.
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          advisorcode.CreateTablePartition.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", stmt.TrimmedText()),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.FirstTokenLine()),
+			})
 		}
 	}
 
 	return adviceList, nil
-}
-
-// checkStmtForPartition returns at most ONE advice per top-level
-// statement, mirroring pingcap-typed predecessor's break-after-first-
-// match cardinality. Pre-omni pingcap matched `spec.Tp ==
-// AlterTablePartition` which is the REPARTITION form only (ALTER
-// TABLE t PARTITION BY ...) — that maps to omni's `ATPartitionBy`.
-// Partition-management forms (ADD PARTITION, DROP PARTITION, etc.)
-// are NOT covered by this rule in either era; long-standing
-// pre-omni behavior preserved per invariant #10. Mysql analog
-// (mysql/rule_table_disallow_partition.go) has identical scope.
-func checkStmtForPartition(ostmt Stmt, level storepb.Advice_Status, title string) *storepb.Advice {
-	text := ostmt.TrimmedText()
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Partitions != nil {
-			return buildPartitionAdvice(level, title, text, ostmt.FirstTokenLine())
-		}
-	case *ast.AlterTableStmt:
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			if cmd.Type == ast.ATPartitionBy && cmd.PartitionBy != nil {
-				return buildPartitionAdvice(level, title, text, ostmt.FirstTokenLine())
-			}
-		}
-	default:
-	}
-	return nil
-}
-
-func buildPartitionAdvice(level storepb.Advice_Status, title, text string, line int) *storepb.Advice {
-	return &storepb.Advice{
-		Status:        level,
-		Code:          advisorcode.CreateTablePartition.Int32(),
-		Title:         title,
-		Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", text),
-		StartPosition: base.ConvertANTLRLineToPosition(line),
-	}
 }

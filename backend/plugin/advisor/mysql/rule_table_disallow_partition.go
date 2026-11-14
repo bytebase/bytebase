@@ -3,13 +3,17 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
-	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +25,7 @@ func init() {
 }
 
 // TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.
+// The judgment lives in omni (mysql/v1review.TableDisallowPartition).
 type TableDisallowPartitionAdvisor struct {
 }
 
@@ -31,60 +36,25 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &tableDisallowPartitionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowPartitionRule struct {
-	BaseRule
-}
-
-func (*tableDisallowPartitionRule) Name() string {
-	return "TableDisallowPartitionRule"
-}
-
-func (r *tableDisallowPartitionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableDisallowPartitionRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Partitions != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          advisorcode.CreateTablePartition.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-		})
-	}
-}
-
-func (r *tableDisallowPartitionRule) checkAlterTable(n *ast.AlterTableStmt) {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if cmd.Type == ast.ATPartitionBy && cmd.PartitionBy != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
-				Code:          advisorcode.CreateTablePartition.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range mysqlv1review.TableDisallowPartition([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.CreateTablePartition.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, v1review.Finding{}))),
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

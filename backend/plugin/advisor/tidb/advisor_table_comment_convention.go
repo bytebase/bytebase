@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,12 +23,13 @@ func init() {
 }
 
 // TableCommentConventionAdvisor checks the comment convention for tables.
+// The judgment lives in omni (tidb/v1review.TableComment); this adapter
+// converts the rule's payload into the omni config and renders the findings
+// as advice.
 type TableCommentConventionAdvisor struct {
 }
 
-// Check is Recipe A. Only matches *ast.CreateTableStmt at top level —
-// CREATE TABLE doesn't nest, and EXPLAIN-DDL is invalid grammar in both
-// pingcap and omni.
+// Check checks for table comment convention.
 func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -36,38 +39,33 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 	if err != nil {
 		return nil, err
 	}
-	payload := checkCtx.Rule.GetCommentConventionPayload()
-	title := checkCtx.Rule.Type.String()
+	// A nil cfg makes omni panic at the first judged statement, as V1 did
+	// when the rule had no payload.
+	var cfg *v1review.TableCommentConfig
+	if payload := checkCtx.Rule.GetCommentConventionPayload(); payload != nil {
+		cfg = &v1review.TableCommentConfig{Required: payload.Required, MaxLength: int(payload.MaxLength)}
+	}
 
+	title := checkCtx.Rule.Type.String()
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		n, ok := ostmt.Node.(*ast.CreateTableStmt)
-		if !ok || n.Table == nil {
-			continue
-		}
-		// omni TableOption.Value is the literal comment string (no quotes,
-		// no ESCAPE wrapper); pingcap stored it the same way after restore.
-		// The "exists" signal is the option's presence in the slice, not a
-		// non-empty value (a deliberate empty COMMENT '' is still present).
-		comment, exists := tableOptionPresent(n.Options, optionNamesComment)
-		line := ostmt.FirstTokenLine()
-		if payload.Required && !exists {
-			adviceList = append(adviceList, &storepb.Advice{
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.TableComment([]ast.Node{stmt.Node}, cfg) {
+			advice := &storepb.Advice{
 				Status:        level,
-				Code:          code.CommentEmpty.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("Table `%s` requires comments", n.Table.Name),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
-			})
-		}
-		if payload.MaxLength >= 0 && int32(len(comment)) > payload.MaxLength {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          code.CommentTooLong.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", n.Table.Name, payload.MaxLength),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
-			})
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.FirstTokenLine()),
+			}
+			switch f.Code {
+			case v1review.TableCommentMissing:
+				advice.Code = code.CommentEmpty.Int32()
+				advice.Content = fmt.Sprintf("Table `%s` requires comments", f.Name)
+			case v1review.TableCommentTooLong:
+				advice.Code = code.CommentTooLong.Int32()
+				advice.Content = fmt.Sprintf("The length of table `%s` comment should be within %d characters", f.Name, cfg.MaxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, advice)
 		}
 	}
 	return adviceList, nil
