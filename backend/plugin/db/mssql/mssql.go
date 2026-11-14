@@ -18,6 +18,7 @@ import (
 
 	// Import MSSQL driver.
 
+	mssqlanalysis "github.com/bytebase/omni/mssql/analysis"
 	"github.com/golang-sql/sqlexp"
 	gomssqldb "github.com/microsoft/go-mssqldb"
 	"github.com/microsoft/go-mssqldb/azuread"
@@ -36,7 +37,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
-	tsqlbatch "github.com/bytebase/bytebase/backend/plugin/parser/tsql/batch"
 )
 
 var (
@@ -269,7 +269,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 
 	totalAffectRows := int64(0)
 
-	batch := tsqlbatch.NewBatcher(statement)
+	batch := mssqlanalysis.NewBatcher(statement)
 
 	for idx := 0; ; {
 		command, err := batch.Next()
@@ -295,7 +295,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 			continue
 		}
 		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
+		case *mssqlanalysis.GoCommand:
 			b := batch.Batch()
 			// Try send the batch to server.
 			idx++
@@ -328,7 +328,7 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, statement string,
 func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	totalAffectRows := int64(0)
 
-	batch := tsqlbatch.NewBatcher(statement)
+	batch := mssqlanalysis.NewBatcher(statement)
 
 	for idx := 0; ; {
 		command, err := batch.Next()
@@ -354,7 +354,7 @@ func (d *Driver) executeInAutoCommitMode(ctx context.Context, statement string, 
 			continue
 		}
 		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
+		case *mssqlanalysis.GoCommand:
 			b := batch.Batch()
 			// Execute the batch in auto-commit mode
 			idx++
@@ -440,7 +440,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	// Special handling for EXPLAIN queries in MSSQL is now integrated into queryBatch
 
 	// Regular query processing (unchanged)
-	batch := tsqlbatch.NewBatcher(statement)
+	batch := mssqlanalysis.NewBatcher(statement)
 	// Callers pair results[i] with the request's i-th statement, so the further
 	// result sets of procedure calls come after every statement's result.
 	var results, procedureResults []*v1pb.QueryResult
@@ -467,7 +467,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			continue
 		}
 		switch v := command.(type) {
-		case *tsqlbatch.GoCommand:
+		case *mssqlanalysis.GoCommand:
 			b := batch.Batch()
 			// Query the batch.
 			qr, more, err := d.queryBatch(ctx, conn, b.Text, queryContext)
