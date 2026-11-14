@@ -333,28 +333,14 @@ func (s *Server) checkEnvironment(ctx context.Context, c *instanceCreation) erro
 	if id == "" {
 		return nil
 	}
-	resp, err := s.apiRequest(ctx, v1connect.SettingServiceGetSettingProcedure, map[string]any{"name": common.SettingNamePrefix + v1pb.Setting_ENVIRONMENT.String()})
-	if err != nil {
-		return errors.Wrap(err, "failed to read the environments")
-	}
-	var names []string
+	names, err := s.readEnvironmentOrder(ctx)
+	var refused *apiRefusal
 	switch {
-	// Every workspace stores its environments when it is created, so a
-	// workspace without the setting has none, as store.GetEnvironment reads it.
-	case resp.Status == http.StatusNotFound:
 	// A role that may add instances without reading the environments still can.
-	case resp.Status == http.StatusForbidden:
+	case errors.As(err, &refused) && refused.status == http.StatusForbidden:
 		return nil
-	case resp.Status >= http.StatusBadRequest:
-		return errors.Errorf("failed to read the environments: HTTP %d: %s", resp.Status, parseError(resp.Body))
-	default:
-		setting := &v1pb.Setting{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, setting); err != nil {
-			return errors.Wrap(err, "failed to parse the environments")
-		}
-		for _, environment := range setting.GetValue().GetEnvironment().GetEnvironments() {
-			names = append(names, common.EnvironmentNamePrefix+environment.GetId())
-		}
+	case err != nil:
+		return errors.Wrap(err, "failed to read the environments")
 	}
 	if slices.Contains(names, common.EnvironmentNamePrefix+id) {
 		return nil

@@ -1,0 +1,69 @@
+=== bytebase.gitlab-ci.yml ===
+# Bytebase review and deploy jobs. They run in the default stages test and deploy.
+variables:
+  BYTEBASE_URL: "https://bytebase.example.com"
+  BYTEBASE_WORKLOAD_IDENTITY: deploy-ci@shop.workload.bytebase.com
+  BYTEBASE_PROJECT: projects/shop
+  BYTEBASE_TARGETS: instances/pg-test/databases/shop_test,instances/pg-prod/databases/shop_prod
+  BYTEBASE_FILE_PATTERN: "migrations/*.sql"
+  BYTEBASE_ACTION_IMAGE: bytebase/bytebase-action:3.24.0
+
+bytebase-sql-review:
+  stage: test
+  image: $BYTEBASE_ACTION_IMAGE
+  id_tokens:
+    BYTEBASE_ID_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH
+      changes:
+        - migrations/*.sql
+  script:
+    - bytebase-action check --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN
+
+bytebase-create-rollout:
+  stage: deploy
+  image: $BYTEBASE_ACTION_IMAGE
+  id_tokens:
+    BYTEBASE_ID_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - migrations/*.sql
+  script:
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --targets="$BYTEBASE_TARGETS" --file-pattern=$BYTEBASE_FILE_PATTERN --output=bytebase-metadata.json
+  artifacts:
+    paths: [bytebase-metadata.json]
+
+bytebase-deploy-to-test:
+  stage: deploy
+  image: $BYTEBASE_ACTION_IMAGE
+  needs: [bytebase-create-rollout]
+  id_tokens:
+    BYTEBASE_ID_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - migrations/*.sql
+  environment: test
+  script:
+    - PLAN=$(jq -r .plan bytebase-metadata.json)
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --target-stage=environments/test --plan=$PLAN
+
+bytebase-deploy-to-prod:
+  stage: deploy
+  image: $BYTEBASE_ACTION_IMAGE
+  needs: [bytebase-create-rollout, bytebase-deploy-to-test]
+  id_tokens:
+    BYTEBASE_ID_TOKEN:
+      aud: bytebase
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - migrations/*.sql
+  environment: prod
+  script:
+    - PLAN=$(jq -r .plan bytebase-metadata.json)
+    - bytebase-action rollout --url=$BYTEBASE_URL --project=$BYTEBASE_PROJECT --target-stage=environments/prod --plan=$PLAN

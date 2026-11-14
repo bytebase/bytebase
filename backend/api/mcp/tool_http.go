@@ -11,8 +11,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 	"github.com/bytebase/bytebase/backend/component/audit"
@@ -207,6 +209,27 @@ func (r *responseRecorder) WriteHeader(status int) {
 	}
 	r.wroteHeader = true
 	r.status = status
+}
+
+// apiRefusal is an internal API read that answered with an error status.
+type apiRefusal struct {
+	status int
+	reason string
+}
+
+func (e *apiRefusal) Error() string { return e.reason }
+
+// readAPI calls a read and decodes its answer into message. A refused read is
+// an *apiRefusal.
+func (s *Server) readAPI(ctx context.Context, procedure string, body map[string]any, message proto.Message) error {
+	resp, err := s.apiRequest(ctx, procedure, body)
+	if err != nil {
+		return err
+	}
+	if why := refusal(resp, nil); why != "" {
+		return &apiRefusal{status: resp.Status, reason: why}
+	}
+	return common.ProtojsonUnmarshaler.Unmarshal(resp.Body, message)
 }
 
 // parseError extracts the error message from an API error response body.

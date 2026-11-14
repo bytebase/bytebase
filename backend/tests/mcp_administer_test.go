@@ -337,4 +337,43 @@ func TestMCPCreatesAWorkloadIdentityAfterAConfirmation(t *testing.T) {
 	a.Equal([]string{"bytebase"}, identity.GetWorkloadIdentityConfig().GetAllowedAudiences())
 	a.Equal("repo:acme-corp/deploy:*", identity.GetWorkloadIdentityConfig().GetSubjectPattern())
 	a.True(granted(), "the identity holds the GitOps Service Agent role with no condition")
+
+	listed := callAPIOnSession(ctx, t, session, "WorkloadIdentityService/ListWorkloadIdentities", map[string]any{"parent": ctl.project.Name})
+	a.Equal(http.StatusOK, listed.Status, listed.Error)
+	a.Contains(listed.RawResponse, email, "the reads are served, so the agent sees what exists")
+
+	// The files for the identity: a database in prod gives one deploy job.
+	instance := createPgInstance(ctx, t, ctl, "mcp-gitops")
+	databaseName := generateRandomString("gitopsdb")
+	a.NoError(ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, ""))
+	database := instance.Name + "/databases/" + databaseName
+
+	failed, text = callToolOnSession(ctx, t, session, "get_gitops_workflow", map[string]any{
+		"project":          projectID,
+		"targets":          []string{database},
+		"workloadIdentity": email,
+	})
+	a.False(failed, text)
+	for _, want := range []string{
+		`GitOps workflow files for project "` + projectID + `", for GitHub Actions.`,
+		"Deploy order: prod (1 database).",
+		`whose subject pattern is "repo:acme-corp/deploy:*"`,
+		"Its roles in the project: GitOps Service Agent.",
+		"=== .github/workflows/bytebase-review.yml ===",
+		"=== .github/workflows/bytebase-deploy.yml ===",
+		`BYTEBASE_URL: "` + ctl.profile.ExternalURL + `"`,
+		"BYTEBASE_WORKLOAD_IDENTITY: " + email,
+		"--targets=" + database + " \\",
+		"  deploy-to-prod:",
+	} {
+		a.Contains(text, want)
+	}
+
+	failed, text = callToolOnSession(ctx, t, session, "get_gitops_workflow", map[string]any{
+		"project":          projectID,
+		"targets":          []string{instance.Name + "/databases/missing"},
+		"workloadIdentity": email,
+	})
+	a.True(failed, text)
+	a.Contains(text, "INVALID_TARGETS")
 }

@@ -921,9 +921,11 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	}
 
 	served, unavailable = servedAndUnavailable("WorkloadIdentityService")
-	a.Contains(served, "WorkloadIdentityService/CreateWorkloadIdentity", "the session creates an identity through the tool")
+	for _, method := range []string{"GetWorkloadIdentity", "ListWorkloadIdentities", "CreateWorkloadIdentity"} {
+		a.Contains(served, "WorkloadIdentityService/"+method, "the session reads identities and creates one through the tool")
+	}
 	a.Contains(served, "through the administer_workspace tool", "the listing names the one way to create an identity")
-	for _, method := range []string{"GetWorkloadIdentity", "ListWorkloadIdentities", "UpdateWorkloadIdentity", "DeleteWorkloadIdentity"} {
+	for _, method := range []string{"UpdateWorkloadIdentity", "DeleteWorkloadIdentity"} {
 		a.NotContains(served, "WorkloadIdentityService/"+method,
 			"search_api must not offer WorkloadIdentityService/%s, which the session can never call", method)
 		a.Contains(unavailable, "WorkloadIdentityService/"+method)
@@ -944,7 +946,7 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	a.Contains(available, "WorkspaceService", "a service keeping any served method stays listed")
 	a.Contains(available, "UserService", "and so does the one that kept only GetCurrentUser")
 	a.Contains(available, "SettingService", "and the one that kept only GetSetting")
-	a.Contains(available, "WorkloadIdentityService", "and the one that kept only the create")
+	a.Contains(available, "WorkloadIdentityService", "and the one that kept its reads and the create")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{
