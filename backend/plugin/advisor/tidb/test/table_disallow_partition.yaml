@@ -67,3 +67,34 @@
 # the omni port.
 - statement: ALTER TABLE tech_book DROP PARTITION p0
   changeType: 1
+- statement: |-
+    ALTER TABLE t ADD PARTITION (PARTITION p2 VALUES LESS THAN (20));
+    ALTER TABLE t DROP PARTITION p0;
+    ALTER TABLE t REMOVE PARTITIONING;
+    CREATE TABLE t2 LIKE t;
+- statement: |-
+    -- leading comment
+    CREATE TABLE t(a int)
+      PARTITION BY HASH(a) PARTITIONS 4;
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "-- leading comment
+        CREATE TABLE t(a int)
+          PARTITION BY HASH(a) PARTITIONS 4;" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN b int PARTITION BY KEY(a) PARTITIONS 2;
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: Table partition is forbidden, but "ALTER TABLE t ADD COLUMN b int PARTITION BY KEY(a) PARTITIONS 2;" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

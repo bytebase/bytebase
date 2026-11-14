@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,7 +21,9 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_REQUIRE_PK, &TableRequirePkAdvisor{})
 }
 
-// TableRequirePkAdvisor is the advisor checking for table require primary key..
+// TableRequirePkAdvisor is the advisor checking for table require primary
+// key. The judgment lives in omni (mssql/v1review.TableRequirePK); this
+// adapter renders the findings as advice.
 type TableRequirePkAdvisor struct {
 }
 
@@ -30,142 +34,23 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		return nil, err
 	}
 
-	rule := &tableRequirePkRule{
-		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		tableHasPK:    make(map[string]bool),
-		tableOriginal: make(map[string]string),
-		tableLine:     make(map[string]int32),
-		tableBaseLine: make(map[string]int),
-	}
-
-	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	advice = append(advice, rule.generateFinalAdvice()...)
-	return advice, nil
-}
-
-type tableRequirePkRule struct {
-	BaseRule
-
-	// tableHasPK tracks whether each table has a primary key.
-	tableHasPK map[string]bool
-	// tableOriginal maps normalized name to original text.
-	tableOriginal map[string]string
-	// tableLine maps normalized name to the line within the statement.
-	tableLine map[string]int32
-	// tableBaseLine maps normalized name to the BaseLine of the statement.
-	tableBaseLine map[string]int
-}
-
-func (*tableRequirePkRule) Name() string {
-	return "TableRequirePkRule"
-}
-
-func (r *tableRequirePkRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.handleCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableRequirePkRule) handleCreateTable(n *ast.CreateTableStmt) {
-	if n.Name == nil {
-		return
-	}
-	norm := normalizeTableRef(n.Name, "dbo")
-	original := tableRefText(n.Name)
-
-	r.tableHasPK[norm] = false
-	r.tableOriginal[norm] = original
-	r.tableLine[norm] = r.LocToLine(n.Name.Loc)
-	r.tableBaseLine[norm] = r.BaseLine
-
-	// Check column-level PK constraints.
-	if n.Columns != nil {
-		for _, item := range n.Columns.Items {
-			col, ok := item.(*ast.ColumnDef)
-			if !ok {
-				continue
-			}
-			if col.Constraints != nil {
-				for _, cItem := range col.Constraints.Items {
-					cd, ok := cItem.(*ast.ConstraintDef)
-					if !ok {
-						continue
-					}
-					if cd.Type == ast.ConstraintPrimaryKey {
-						r.tableHasPK[norm] = true
-						return
-					}
-				}
-			}
-		}
-	}
-
-	// Check table-level constraints.
-	if n.Constraints != nil {
-		for _, item := range n.Constraints.Items {
-			cd, ok := item.(*ast.ConstraintDef)
-			if !ok {
-				continue
-			}
-			if cd.Type == ast.ConstraintPrimaryKey {
-				r.tableHasPK[norm] = true
-				return
-			}
-		}
-	}
-}
-
-func (r *tableRequirePkRule) handleAlterTable(n *ast.AlterTableStmt) {
-	if n.Name == nil || n.Actions == nil {
-		return
-	}
-	norm := normalizeTableRef(n.Name, "dbo")
-
-	for _, item := range n.Actions.Items {
-		action, ok := item.(*ast.AlterTableAction)
-		if !ok {
+	stmts, nodes := tableStateStatements(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range mssqlv1review.TableRequirePK(nodes) {
+		if f.Code != v1review.TablePrimaryKeyMissing {
 			continue
 		}
-		switch action.Type {
-		case ast.ATAddColumn:
-			// Check inline PK on added column: ALTER TABLE t ADD id INT PRIMARY KEY.
-			if action.Column != nil && action.Column.Constraints != nil {
-				for _, cItem := range action.Column.Constraints.Items {
-					if cd, ok := cItem.(*ast.ConstraintDef); ok && cd.Type == ast.ConstraintPrimaryKey {
-						r.tableHasPK[norm] = true
-					}
-				}
-			}
-		case ast.ATAddConstraint:
-			if action.Constraint != nil && action.Constraint.Type == ast.ConstraintPrimaryKey {
-				r.tableHasPK[norm] = true
-			}
-		case ast.ATDropConstraint:
-			// Conservatively mark as no PK when a constraint is dropped.
-		default:
-		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.TableNoPK.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", f.Name),
+			StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+		})
 	}
-}
-
-func (r *tableRequirePkRule) generateFinalAdvice() []*storepb.Advice {
-	var result []*storepb.Advice
-	for norm, hasPK := range r.tableHasPK {
-		if !hasPK {
-			line := r.tableLine[norm] + int32(r.tableBaseLine[norm])
-			result = append(result, &storepb.Advice{
-				Status:        r.Level,
-				Code:          code.TableNoPK.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Table %s requires PRIMARY KEY.", r.tableOriginal[norm]),
-				StartPosition: &storepb.Position{Line: line},
-			})
-		}
-	}
-	return result
+	return adviceList, nil
 }
 
 // tableRefText returns a human-readable string for a TableRef.

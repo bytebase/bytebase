@@ -70,3 +70,24 @@
         line: 5
         column: 0
       endposition: null
+- statement: ALTER TABLE t ADD PARTITION (PARTITION p2 VALUES LESS THAN (20));
+- statement: ALTER TABLE t REMOVE PARTITIONING;
+- statement: |-
+    CREATE TABLE a(b INT);
+
+    /* c */
+    CREATE TABLE t(a int)
+      PARTITION BY HASH(a) PARTITIONS 4;
+  want:
+    - status: 2
+      code: 608
+      title: TABLE_DISALLOW_PARTITION
+      content: |-
+        Table partition is forbidden, but "/* c */
+        CREATE TABLE t(a int)
+          PARTITION BY HASH(a) PARTITIONS 4;" creates
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a int) PARTITION BY HASH(a); END;

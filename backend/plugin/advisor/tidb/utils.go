@@ -89,44 +89,6 @@ func (s Stmt) FirstTokenLine() int {
 	return s.AbsoluteLine(0)
 }
 
-// AST-shape accessors for omni TableOption / DatabaseOption / ColumnDef.
-//
-// Cumulative shape divergence #14: omni replaces pingcap's
-// `{Tp: enum, StrValue}` model with `{Name: "CANONICAL KEYWORD", Value}`
-// for both Table and Database options. omni normalizes Name to uppercase
-// regardless of user case, but EqualFold is used here for safety. These
-// accessors centralize the lookup so future advisors don't repeat the
-// shape-aware logic.
-
-// omni preserves the user's keyword form on TableOption.Name and
-// DatabaseOption.Name — CHARSET and CHARACTER SET are NOT canonicalized
-// to a single form. Pingcap canonicalized at the enum level (both
-// produced TableOptionCharset / DatabaseOptionCharset). Accessors below
-// take a name-set and match any of them, EqualFold-style. Helps batch
-// authors avoid the silent-regression failure mode where mechanically
-// using only the canonical name misses the shorthand form.
-var (
-	optionNamesComment = []string{"COMMENT"}
-)
-
-// tableOptionPresent reports whether any option whose Name matches
-// any in `names` is in the slice; returns its raw value (case preserved —
-// user content). Distinguishes "no clause" from "clause with empty value"
-// (e.g. COMMENT ”).
-func tableOptionPresent(opts []*omniast.TableOption, names []string) (string, bool) {
-	for _, opt := range opts {
-		if opt == nil {
-			continue
-		}
-		for _, name := range names {
-			if strings.EqualFold(opt.Name, name) {
-				return opt.Value, true
-			}
-		}
-	}
-	return "", false
-}
-
 // columnCharset returns the column-level CHARACTER SET (lowercased)
 // from ColumnDef.TypeName.Charset. Empty if no clause.
 func columnCharset(col *omniast.ColumnDef) string {

@@ -3,14 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,6 +23,7 @@ func init() {
 }
 
 // TableNoDuplicateIndexAdvisor is the advisor checking for no duplicate index in table.
+// The judgment lives in omni (mysql/v1review.TableNoDuplicateIndex).
 type TableNoDuplicateIndexAdvisor struct {
 }
 
@@ -32,190 +34,30 @@ func (*TableNoDuplicateIndexAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := &tableNoDuplicateIndexRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type duplicateIndex struct {
-	indexName string
-	indexType string
-	unique    bool
-	fulltext  bool
-	spatial   bool
-	table     string
-	columns   []string
-	line      int
-}
-
-type tableNoDuplicateIndexRule struct {
-	BaseRule
-	indexList []duplicateIndex
-}
-
-func (*tableNoDuplicateIndexRule) Name() string {
-	return "TableNoDuplicateIndexRule"
-}
-
-func (r *tableNoDuplicateIndexRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	case *ast.CreateIndexStmt:
-		r.checkCreateIndex(n)
-	default:
-	}
-}
-
-func (r *tableNoDuplicateIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
+	// The rule judges the statements together, so a finding's range can lie
+	// in an earlier statement than the one that reports it.
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		r.handleConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
-	}
-	if index := hasDuplicateIndexes(r.indexList); index != nil {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DuplicateIndexInTable.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: base.ConvertANTLRLineToPosition(index.line),
-		})
-	}
-}
-
-func (r *tableNoDuplicateIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				r.handleConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
-			}
-		default:
+		if node, ok := mysqlparser.GetNode(stmt.AST); ok {
+			stmts = append(stmts, stmt)
+			nodes = append(nodes, node)
 		}
 	}
-	if index := hasDuplicateIndexes(r.indexList); index != nil {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.TableNoDuplicateIndex(nodes) {
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
 			Code:          code.DuplicateIndexInTable.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: base.ConvertANTLRLineToPosition(index.line),
+			Title:         title,
+			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", f.Table, f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 		})
 	}
-}
-
-func (r *tableNoDuplicateIndexRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
-	switch constraint.Type {
-	case ast.ConstrPrimaryKey, ast.ConstrUnique, ast.ConstrIndex, ast.ConstrFulltextIndex, ast.ConstrSpatialIndex:
-	default:
-		return
-	}
-
-	index := duplicateIndex{
-		indexType: "BTREE",
-		line:      r.BaseLine + int(line),
-		table:     tableName,
-		columns:   constraint.Columns,
-		indexName: constraint.Name,
-	}
-	if constraint.IndexType != "" {
-		index.indexType = constraint.IndexType
-	}
-	switch constraint.Type {
-	case ast.ConstrUnique:
-		index.unique = true
-	case ast.ConstrFulltextIndex:
-		index.fulltext = true
-	case ast.ConstrSpatialIndex:
-		index.spatial = true
-	default:
-	}
-	r.indexList = append(r.indexList, index)
-}
-
-func (r *tableNoDuplicateIndexRule) checkCreateIndex(n *ast.CreateIndexStmt) {
-	if n.Table == nil {
-		return
-	}
-
-	tableName := n.Table.Name
-	index := duplicateIndex{
-		indexType: "BTREE",
-		line:      r.BaseLine + int(r.LocToLine(n.Loc)),
-		table:     tableName,
-		indexName: n.IndexName,
-		columns:   indexColumns(n.Columns),
-	}
-	if n.IndexType != "" {
-		index.indexType = n.IndexType
-	}
-	if n.Unique {
-		index.unique = true
-	} else if n.Fulltext {
-		index.fulltext = true
-	} else if n.Spatial {
-		index.spatial = true
-	}
-
-	r.indexList = append(r.indexList, index)
-	if dup := hasDuplicateIndexes(r.indexList); dup != nil {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DuplicateIndexInTable.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, dup.indexName),
-			StartPosition: base.ConvertANTLRLineToPosition(dup.line),
-		})
-	}
-}
-
-// hasDuplicateIndexes returns the first duplicate index if found, otherwise nil.
-func hasDuplicateIndexes(indexList []duplicateIndex) *duplicateIndex {
-	seen := make(map[string]struct{})
-	for _, index := range indexList {
-		key := indexKey(index)
-		if _, exists := seen[key]; exists {
-			return &index
-		}
-		seen[key] = struct{}{}
-	}
-	return nil
-}
-
-// indexKey returns a string key for the index with the index type and columns.
-func indexKey(index duplicateIndex) string {
-	parts := []string{}
-	if index.unique {
-		parts = append(parts, "unique")
-	}
-	if index.fulltext {
-		parts = append(parts, "fulltext")
-	}
-	if index.spatial {
-		parts = append(parts, "spatial")
-	}
-	parts = append(parts, index.indexType)
-	parts = append(parts, index.table)
-	parts = append(parts, index.columns...)
-	return strings.Join(parts, "-")
+	return adviceList, nil
 }

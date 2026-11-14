@@ -5,10 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -19,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoForeignKeyAdvisor{})
 }
 
-// TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key..
+// TableNoForeignKeyAdvisor is the advisor checking for table disallow
+// foreign key. The judgment lives in omni
+// (mssql/v1review.TableNoForeignKey); this adapter renders the findings as
+// advice.
 type TableNoForeignKeyAdvisor struct {
 }
 
@@ -30,128 +37,40 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := &tableNoForeignKeyRule{
-		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		tableHasFK:    make(map[string]bool),
-		tableOriginal: make(map[string]string),
-		tableLine:     make(map[string]int32),
-		tableBaseLine: make(map[string]int),
-	}
-
-	advice := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	advice = append(advice, rule.generateFinalAdvice()...)
-	return advice, nil
-}
-
-type tableNoForeignKeyRule struct {
-	BaseRule
-
-	tableHasFK    map[string]bool
-	tableOriginal map[string]string
-	tableLine     map[string]int32
-	tableBaseLine map[string]int
-}
-
-func (*tableNoForeignKeyRule) Name() string {
-	return "TableNoForeignKeyRule"
-}
-
-func (r *tableNoForeignKeyRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.handleCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableNoForeignKeyRule) handleCreateTable(n *ast.CreateTableStmt) {
-	if n.Name == nil {
-		return
-	}
-	norm := normalizeTableRef(n.Name, "dbo")
-	original := tableRefText(n.Name)
-
-	r.tableHasFK[norm] = false
-	r.tableOriginal[norm] = original
-	r.tableLine[norm] = r.LocToLine(n.Name.Loc)
-	r.tableBaseLine[norm] = r.BaseLine
-
-	// Check column-level FK constraints.
-	if n.Columns != nil {
-		for _, item := range n.Columns.Items {
-			col, ok := item.(*ast.ColumnDef)
-			if !ok {
-				continue
-			}
-			if col.Constraints != nil {
-				for _, cItem := range col.Constraints.Items {
-					cd, ok := cItem.(*ast.ConstraintDef)
-					if !ok {
-						continue
-					}
-					if cd.Type == ast.ConstraintForeignKey {
-						r.tableHasFK[norm] = true
-						r.tableLine[norm] = r.LocToLine(cd.Loc)
-						return
-					}
-				}
-			}
+	stmts, nodes := tableStateStatements(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range mssqlv1review.TableNoForeignKey(nodes) {
+		if f.Code != v1review.TableForeignKey {
+			continue
 		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.TableHasFK.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", f.Name),
+			StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+		})
 	}
-
-	// Check table-level constraints.
-	if n.Constraints != nil {
-		for _, item := range n.Constraints.Items {
-			cd, ok := item.(*ast.ConstraintDef)
-			if !ok {
-				continue
-			}
-			if cd.Type == ast.ConstraintForeignKey {
-				r.tableHasFK[norm] = true
-				r.tableLine[norm] = r.LocToLine(cd.Loc)
-				return
-			}
-		}
-	}
+	return adviceList, nil
 }
 
-func (r *tableNoForeignKeyRule) handleAlterTable(n *ast.AlterTableStmt) {
-	if n.Name == nil || n.Actions == nil {
-		return
-	}
-	norm := normalizeTableRef(n.Name, "dbo")
-
-	for _, item := range n.Actions.Items {
-		action, ok := item.(*ast.AlterTableAction)
+// tableStateStatements returns the statements with an omni AST and their
+// nodes, index for index, for the rules that judge across statements.
+func tableStateStatements(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.Node) {
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range parsed {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := tsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		if action.Type == ast.ATAddConstraint && action.Constraint != nil && action.Constraint.Type == ast.ConstraintForeignKey {
-			r.tableHasFK[norm] = true
-			if _, exists := r.tableOriginal[norm]; !exists {
-				r.tableOriginal[norm] = tableRefText(n.Name)
-			}
-			r.tableLine[norm] = r.LocToLine(action.Constraint.Loc)
-			r.tableBaseLine[norm] = r.BaseLine
-		}
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
 	}
-}
-
-func (r *tableNoForeignKeyRule) generateFinalAdvice() []*storepb.Advice {
-	var result []*storepb.Advice
-	for norm, hasFK := range r.tableHasFK {
-		if hasFK {
-			line := r.tableLine[norm] + int32(r.tableBaseLine[norm])
-			result = append(result, &storepb.Advice{
-				Status:        r.Level,
-				Code:          code.TableHasFK.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("FOREIGN KEY is not allowed in the table %s.", r.tableOriginal[norm]),
-				StartPosition: &storepb.Position{Line: line},
-			})
-		}
-	}
-	return result
+	return stmts, nodes
 }
