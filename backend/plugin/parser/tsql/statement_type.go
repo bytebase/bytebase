@@ -1,11 +1,10 @@
 package tsql
 
 import (
-	"github.com/bytebase/omni/mssql/ast"
+	"github.com/bytebase/omni/mssql/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -16,7 +15,7 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		if !ok {
 			return nil, errors.New("expected omni AST for MSSQL")
 		}
-		sqlTypeSet[getStatementType(node)] = true
+		sqlTypeSet[convertStatementType(analysis.StatementTypeOf(node))] = true
 	}
 	var sqlTypes []storepb.StatementType
 	for sqlType := range sqlTypeSet {
@@ -25,49 +24,45 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	return sqlTypes, nil
 }
 
-func getStatementType(node ast.Node) storepb.StatementType {
-	switch n := node.(type) {
-	case *ast.AlterDatabaseStmt:
+func convertStatementType(t analysis.StatementType) storepb.StatementType {
+	switch t {
+	case analysis.AlterDatabase:
 		return storepb.StatementType_ALTER_DATABASE
-	case *ast.AlterIndexStmt:
+	case analysis.AlterIndex:
 		return storepb.StatementType_ALTER_INDEX
-	case *ast.AlterTableStmt:
+	case analysis.AlterTable:
 		return storepb.StatementType_ALTER_TABLE
-	case *ast.CreateDatabaseStmt:
+	case analysis.CreateDatabase:
 		return storepb.StatementType_CREATE_DATABASE
-	case *ast.CreateIndexStmt:
+	case analysis.CreateIndex:
 		return storepb.StatementType_CREATE_INDEX
-	case *ast.CreateSchemaStmt:
+	case analysis.CreateSchema:
 		return storepb.StatementType_CREATE_SCHEMA
-	case *ast.CreateTableStmt:
+	case analysis.CreateTable:
 		return storepb.StatementType_CREATE_TABLE
-	case *ast.CreateViewStmt:
+	case analysis.CreateView:
 		return storepb.StatementType_CREATE_VIEW
-	case *ast.DropStmt:
-		switch n.ObjectType {
-		case ast.DropDatabase:
-			return storepb.StatementType_DROP_DATABASE
-		case ast.DropIndex:
-			return storepb.StatementType_DROP_INDEX
-		case ast.DropSchema:
-			return storepb.StatementType_DROP_SCHEMA
-		case ast.DropTable:
-			return storepb.StatementType_DROP_TABLE
-		case ast.DropView:
-			return storepb.StatementType_DROP_VIEW
-		default:
-		}
-	case *ast.TruncateStmt:
+	case analysis.DropDatabase:
+		return storepb.StatementType_DROP_DATABASE
+	case analysis.DropIndex:
+		return storepb.StatementType_DROP_INDEX
+	case analysis.DropSchema:
+		return storepb.StatementType_DROP_SCHEMA
+	case analysis.DropTable:
+		return storepb.StatementType_DROP_TABLE
+	case analysis.DropView:
+		return storepb.StatementType_DROP_VIEW
+	case analysis.Truncate:
 		return storepb.StatementType_TRUNCATE
-	case *ast.DeleteStmt:
+	case analysis.Delete:
 		return storepb.StatementType_DELETE
-	case *ast.InsertStmt:
+	case analysis.Insert:
 		return storepb.StatementType_INSERT
-	case *ast.UpdateStmt:
+	case analysis.Update:
 		return storepb.StatementType_UPDATE
-	case *ast.ExecStmt:
+	case analysis.Execute:
 		return storepb.StatementType_EXECUTE
 	default:
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	}
-	return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 }
