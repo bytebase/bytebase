@@ -2,10 +2,9 @@ package tidb
 
 import (
 	"context"
-	"unicode"
 	"unicode/utf8"
 
-	omnitidbparser "github.com/bytebase/omni/tidb/parser"
+	"github.com/bytebase/omni/tidb/analysis"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -18,32 +17,23 @@ func init() {
 }
 
 // GetStatementRanges returns LSP-compatible ranges (0-based line, UTF-16 character)
-// for each top-level SQL statement in statement.
-//
-// Implementation note: this uses omni/tidb's Split, which is a pure lexical
-// scanner and works on both valid and invalid SQL. This is required for LSP
-// use cases — the caller (e.g. SQL editor Ctrl+Enter) asks for ranges while the
-// user is mid-edit, so any grammar-level Parse would fail-fast and drop ranges
-// for statements preceding a syntax error. Split is soft-fail by construction.
+// for each top-level SQL statement in statement. The ranges come from a lexical
+// split, so the editor still gets them while the user is mid-edit.
 func GetStatementRanges(_ context.Context, _ base.StatementRangeContext, statement string) ([]base.Range, error) {
-	segments := omnitidbparser.Split(statement)
-	if len(segments) == 0 {
+	byteRanges := analysis.StatementRanges(statement)
+	if byteRanges == nil {
 		return nil, nil
 	}
 
 	positions := buildBytePositionMap(statement)
 
-	ranges := make([]base.Range, 0, len(segments))
-	for _, seg := range segments {
-		startOffset := min(seg.ByteStart+leadingWhitespaceBytes(statement, seg.ByteStart, seg.ByteEnd), seg.ByteEnd)
-
-		endOffset := seg.ByteEnd + delimLenAt(statement, seg.ByteEnd)
-
-		start, ok := positionAt(positions, startOffset)
+	ranges := make([]base.Range, 0, len(byteRanges))
+	for _, r := range byteRanges {
+		start, ok := positionAt(positions, r.Start)
 		if !ok {
 			continue
 		}
-		end, ok := positionAt(positions, endOffset)
+		end, ok := positionAt(positions, r.End)
 		if !ok {
 			continue
 		}
@@ -78,54 +68,12 @@ func buildBytePositionMap(sql string) []lsp.Position {
 }
 
 // positionAt returns the LSP Position at a rune-aligned byte offset. Offsets
-// that land inside a multi-byte UTF-8 sequence silently return the zero
-// Position (because buildBytePositionMap only populates entries at rune
-// boundaries), so callers must pass boundaries produced by Split or other
-// rune-aware tokenizers. Out-of-bounds offsets return ok=false.
+// that land inside a multi-byte UTF-8 sequence return the zero Position, since
+// buildBytePositionMap only fills rune boundaries. Out-of-bounds offsets return
+// ok=false.
 func positionAt(positions []lsp.Position, byteOffset int) (lsp.Position, bool) {
 	if byteOffset < 0 || byteOffset >= len(positions) {
 		return lsp.Position{}, false
 	}
 	return positions[byteOffset], true
-}
-
-// leadingWhitespaceBytes returns the number of leading Unicode whitespace bytes
-// within sql[start:end]. Mirrors the whitespace trim performed by the ANTLR-based
-// statement-range helper so TiDB ranges line up with snowflake/doris/pg behavior.
-func leadingWhitespaceBytes(sql string, start, end int) int {
-	if start < 0 {
-		start = 0
-	}
-	if end > len(sql) {
-		end = len(sql)
-	}
-	i := start
-	for i < end {
-		r, size := utf8.DecodeRuneInString(sql[i:])
-		if !unicode.IsSpace(r) {
-			break
-		}
-		i += size
-	}
-	return i - start
-}
-
-// delimLenAt returns the length of the statement delimiter that sits at
-// sql[byteEnd:], if any. For the common default delimiter (';') this is 1; for
-// the last segment without a trailing delimiter it is 0. Custom DELIMITER
-// directives are not fully tracked here — the range will simply stop at the
-// start of the custom delimiter in that case, which is sufficient for cursor-
-// contained-in-range checks used by BYT-9157. UX consequence: a cursor placed
-// directly on the bytes of a custom delimiter (e.g. between the two '$' of
-// '$$') won't match any range, and the editor falls back to its out-of-range
-// behavior for Ctrl+Enter. Cursors inside the statement body — the common
-// case — are unaffected.
-func delimLenAt(sql string, byteEnd int) int {
-	if byteEnd < 0 || byteEnd >= len(sql) {
-		return 0
-	}
-	if sql[byteEnd] == ';' {
-		return 1
-	}
-	return 0
 }
