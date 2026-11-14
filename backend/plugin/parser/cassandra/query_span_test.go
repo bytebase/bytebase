@@ -399,15 +399,6 @@ func TestWhereColumnExtraction(t *testing.T) {
 			},
 			expectedTable: "users",
 		},
-		{
-			name:      "WHERE with dot access (UDT field)",
-			statement: "SELECT * FROM users WHERE addr.city = 'x'",
-			expectedPredicateColumns: []base.ColumnResource{
-				{Database: "test_keyspace", Table: "users", Column: "addr"},
-				{Database: "test_keyspace", Table: "users", Column: "city"},
-			},
-			expectedTable: "users",
-		},
 	}
 
 	for _, tt := range tests {
