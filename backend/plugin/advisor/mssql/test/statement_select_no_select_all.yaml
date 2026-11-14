@@ -33,3 +33,25 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    SELECT a,
+      t.*
+    FROM t
+    WHERE EXISTS (SELECT * FROM u);
+  want:
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 203
+      title: STATEMENT_SELECT_NO_SELECT_ALL
+      content: Avoid using SELECT *.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

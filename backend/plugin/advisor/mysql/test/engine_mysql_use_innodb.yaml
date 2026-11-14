@@ -112,3 +112,40 @@
       endposition: null
 - statement: |
     SET foreign_key_checks=0;
+- statement: |-
+    CREATE TABLE MyISAM(a int)
+
+    ENGINE = MyISAM;
+  want:
+    - status: 2
+      code: 501
+      title: ENGINE_MYSQL_USE_INNODB
+      content: |-
+        "CREATE TABLE MyISAM(a int)
+
+        ENGINE = MyISAM;" doesn't use InnoDB engine
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ENGINE = CSV, ENGINE = MEMORY;
+  want:
+    - status: 2
+      code: 501
+      title: ENGINE_MYSQL_USE_INNODB
+      content: '"ALTER TABLE t ENGINE = CSV, ENGINE = MEMORY;" doesn''t use InnoDB engine'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SET SESSION default_storage_engine = 'MyISAM';
+  want:
+    - status: 2
+      code: 501
+      title: ENGINE_MYSQL_USE_INNODB
+      content: '"SET SESSION default_storage_engine = ''MyISAM'';" doesn''t use InnoDB engine'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SET @@default_storage_engine = CSV;

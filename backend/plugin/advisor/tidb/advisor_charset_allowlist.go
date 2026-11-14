@@ -3,9 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,14 +22,13 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
 }
 
-// CharsetAllowlistAdvisor checks for charset allowlist.
+// CharsetAllowlistAdvisor checks for charset allowlist. The judgment lives in
+// omni (tidb/v1review.SystemCharsetAllowlist); this adapter passes the rule's
+// payload and renders the findings as advice.
 type CharsetAllowlistAdvisor struct {
 }
 
-// Check is Recipe A. Empirically verified safe: EXPLAIN doesn't accept
-// DDL in either pingcap or omni grammar (parse-error before reaching the
-// advisor), and CreateDatabase/CreateTable/AlterDatabase/AlterTable
-// can't nest themselves. No wrapper-statement risk.
+// Check checks for charset allowlist.
 func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -38,142 +38,32 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
-	allowlist := make(map[string]bool)
-	for _, charset := range stringArrayPayload.List {
-		allowlist[strings.ToLower(charset)] = true
-	}
+	allowList := stringArrayPayload.List
 
 	title := checkCtx.Rule.Type.String()
 	var adviceList []*storepb.Advice
-
-	emit := func(text, charset string, line int) {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          advisorcode.DisabledCharset.Int32(),
-			Title:         title,
-			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", text, charset),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	}
-
-	for _, ostmt := range stmts {
-		text := ostmt.TrimmedText()
-		stmtLine := ostmt.FirstTokenLine()
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateDatabaseStmt:
-			if cs := databaseOption(n.Options, optionNamesCharset); cs != "" {
-				if _, ok := allowlist[cs]; !ok {
-					emit(text, cs, stmtLine)
-				}
-			}
-		case *ast.AlterDatabaseStmt:
-			if cs := databaseOption(n.Options, optionNamesCharset); cs != "" {
-				if _, ok := allowlist[cs]; !ok {
-					emit(text, cs, stmtLine)
-				}
-			}
-		case *ast.CreateTableStmt:
-			// Table-level charset first; pingcap parity stops at the first
-			// violation per top-level statement (table-level OR column-level,
-			// not both).
-			if cs := tableOption(n.Options, optionNamesCharset); cs != "" {
-				if _, ok := allowlist[cs]; !ok {
-					emit(text, cs, stmtLine)
-					continue
-				}
-			}
-			for _, col := range n.Columns {
-				if col == nil {
-					continue
-				}
-				cs := columnCharset(col)
-				if cs == "" {
-					continue
-				}
-				if _, ok := allowlist[cs]; !ok {
-					emit(text, cs, ostmt.AbsoluteLine(col.Loc.Start))
-					break
-				}
-			}
-		case *ast.AlterTableStmt:
-			// Pingcap parity: a single ALTER TABLE statement emits AT MOST
-			// ONE advice regardless of how many commands violate. Pingcap's
-			// pattern set `code`/`disabledCharset` inside the spec loop
-			// without break, with one append after the loop — multiple
-			// violations overwrite, last violation wins. Mirroring exactly
-			// (Codex P2 round-1 catch on PR #20217).
-			var lastViolation string
-			for _, cmd := range n.Commands {
-				if cmd == nil {
-					continue
-				}
-				switch cmd.Type {
-				case ast.ATTableOption:
-					if cmd.Option == nil {
-						continue
-					}
-					if !optionNameMatches(cmd.Option.Name, optionNamesCharset) {
-						continue
-					}
-					cs := strings.ToLower(cmd.Option.Value)
-					if cs == "" {
-						continue
-					}
-					if _, ok := allowlist[cs]; !ok {
-						lastViolation = cs
-					}
-				case ast.ATConvertCharset:
-					// `ALTER TABLE t CONVERT TO CHARACTER SET cs [COLLATE c]`.
-					// Pingcap parses this as AlterTableOption with the
-					// charset in spec.Options (Tp=TableOptionCharset), so the
-					// pingcap-typed advisor flagged it. Omni splits into
-					// ATConvertCharset with charset on cmd.Name (and optional
-					// collation on cmd.NewName); cmd.Option is nil. Without
-					// this case, mechanical migration silently misses the
-					// CONVERT form (Codex P2 round-2 catch on PR #20217).
-					cs := strings.ToLower(cmd.Name)
-					if cs == "" {
-						continue
-					}
-					if _, ok := allowlist[cs]; !ok {
-						lastViolation = cs
-					}
-				case ast.ATAddColumn:
-					for _, col := range addColumnTargets(cmd) {
-						if col == nil {
-							continue
-						}
-						cs := columnCharset(col)
-						if cs == "" {
-							continue
-						}
-						if _, ok := allowlist[cs]; !ok {
-							lastViolation = cs
-							break // pingcap parity: only first violating column per spec
-						}
-					}
-				case ast.ATChangeColumn, ast.ATModifyColumn:
-					if cmd.Column == nil {
-						continue
-					}
-					cs := columnCharset(cmd.Column)
-					if cs == "" {
-						continue
-					}
-					if _, ok := allowlist[cs]; !ok {
-						lastViolation = cs
-					}
-				default:
-				}
-			}
-			if lastViolation != "" {
-				emit(text, lastViolation, stmtLine)
-			}
-		default:
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.SystemCharsetAllowlist([]ast.Node{stmt.Node}, allowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          advisorcode.DisabledCharset.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", stmt.TrimmedText(), f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(allowlistFindingLine(stmt, f)),
+			})
 		}
 	}
-
 	return adviceList, nil
+}
+
+// allowlistFindingLine is the line the V1 charset and collation rules
+// reported: the line a CREATE TABLE column starts on for a finding anchoring
+// that column, and the statement's first token, comments included, for a
+// finding anchoring the whole statement.
+func allowlistFindingLine(stmt Stmt, f v1review.Finding) int {
+	if n, ok := stmt.Node.(*ast.CreateTableStmt); ok && f.Start != max(n.Loc.Start, 0) {
+		return stmt.AbsoluteLine(f.Start)
+	}
+	return stmt.FirstTokenLine()
 }

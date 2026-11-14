@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_ADD_FOREIGN_KEY_NOT_VALID, &StatementAddFKNotValidAdvisor{})
 }
 
-// StatementAddFKNotValidAdvisor is the advisor checking for adding foreign key constraints without NOT VALID.
+// StatementAddFKNotValidAdvisor is the advisor checking for adding foreign
+// key constraints without NOT VALID. The judgment lives in omni
+// (pg/v1review.StatementAddForeignKeyNotValid); this adapter renders its
+// findings as advice.
 type StatementAddFKNotValidAdvisor struct {
 }
 
@@ -29,49 +34,25 @@ func (*StatementAddFKNotValidAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &statementAddFKNotValidRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementAddFKNotValidRule struct {
-	BaseRule
-}
-
-func (*statementAddFKNotValidRule) Name() string {
-	return "statement_add_fk_not_valid"
-}
-
-func (r *statementAddFKNotValidRule) OnStatement(node ast.Node) {
-	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(alter) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddConstraint {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		constraint, ok := cmd.Def.(*ast.Constraint)
-		if !ok || constraint.Contype != ast.CONSTR_FOREIGN {
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		if !constraint.SkipValidation {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.StatementAddFKWithValidation.Int32(),
-				Title:   r.Title,
-				Content: "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
+		for range pgv1review.StatementAddForeignKeyNotValid([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementAddFKWithValidation.Int32(),
+				Title:         title,
+				Content:       "Adding foreign keys with validation will block reads and writes. You can add check foreign keys not valid and then validate separately",
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
 			})
 		}
 	}
+	return adviceList, nil
 }

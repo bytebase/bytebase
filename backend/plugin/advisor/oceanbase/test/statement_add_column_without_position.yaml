@@ -1,0 +1,21 @@
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN a INT FIRST,
+      ADD COLUMN b INT AFTER a;
+  want:
+    - status: 2
+      code: 231
+      title: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
+      content: add column with position "AFTER"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 231
+      title: STATEMENT_ADD_COLUMN_WITHOUT_POSITION
+      content: add column with position "FIRST"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

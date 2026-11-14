@@ -15,3 +15,29 @@
       endposition: null
 - statement: /* this is a comment */
   changeType: 1
+- statement: CREATE DATABASE test ENCODING 'utf8'
+- statement: CREATE DATABASE test ENCODING 'LATIN1' ENCODING 'UTF8'
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"" used disabled encoding ''latin1'''
+      startposition:
+        line: 0
+        column: 0
+      endposition: null
+- statement: CREATE DATABASE test ENCODING 6
+- statement: ALTER DATABASE test SET client_encoding = 'LATIN1'
+- statement: |-
+    SELECT 1;
+
+    CREATE DATABASE test ENCODING 'EUC_JP';
+  want:
+    - status: 2
+      code: 1001
+      title: SYSTEM_CHARSET_ALLOWLIST
+      content: '"" used disabled encoding ''euc_jp'''
+      startposition:
+        line: 0
+        column: 0
+      endposition: null

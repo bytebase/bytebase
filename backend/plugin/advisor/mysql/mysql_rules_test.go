@@ -502,4 +502,38 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		require.Equal(t, code.StatementDMLDryRunFailed.Int32(), adviceList[0].Code)
 		require.Contains(t, adviceList[0].Content, "dry runs failed")
 	})
+
+	t.Run("a batch that mixes in DDL is not dry-run at all", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t2 (id INT);\n"+stmt, rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Driver:          db,
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		require.Empty(t, testMySQLAdvisorQueries)
+	})
+
+	t.Run("only INSERT, UPDATE and DELETE are dry-run, each once", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
+		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "SELECT 1;\nINSERT INTO tech_book VALUES (1, 'a');\n"+stmt+"\nDELETE FROM tech_book;", rules, advisor.Context{
+			DBType:          storepb.Engine_MYSQL,
+			Driver:          db,
+			NoAppendBuiltin: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, adviceList)
+		var explains []string
+		for _, q := range testMySQLAdvisorQueries {
+			if strings.HasPrefix(q, "EXPLAIN ") {
+				explains = append(explains, q)
+			}
+		}
+		require.Equal(t, []string{
+			"EXPLAIN INSERT INTO tech_book VALUES (1, 'a');",
+			"EXPLAIN " + stmt,
+			"EXPLAIN DELETE FROM tech_book;",
+		}, explains)
+	})
 }

@@ -3,16 +3,15 @@ package mariadb
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
@@ -24,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, &StatementAffectedRowLimitAdvisor{})
 }
 
-// StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE affected row limit.
+// StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE
+// affected row limit. omni (mariadb/v1review.StatementAffectedRowLimitProbes)
+// picks the statements to estimate; this adapter EXPLAINs and estimates them,
+// and omni (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -38,71 +40,56 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
 	maxRow := int(numberPayload.Number)
 	driver := checkCtx.Driver
 	if driver == nil {
 		return nil, nil
 	}
-	title := checkCtx.Rule.Type.String()
-	var advice []*storepb.Advice
-	var explains advisor.ExplainBudget
 
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
+	title := checkCtx.Rule.Type.String()
+	var explains advisor.ExplainBudget
+	nodes, stmts := mariadbNodes(checkCtx.ParsedStatements)
+	probes := make(map[int]v1review.Probe)
+	for _, i := range mariadbv1review.StatementAffectedRowLimitProbes(nodes) {
+		if !explains.Spend(statementStartPosition(stmts[i])) {
 			continue
 		}
-		node, ok := mariadbparser.GetNode(stmt.AST)
-		if !ok {
+		query := mariadbparser.AffectedRowsQuery(nodes[i], stmts[i].Text)
+		plan, err := mysqldriver.ExplainJSON(ctx, driver, query)
+		if err != nil {
+			probes[i] = v1review.Probe{Error: err.Error()}
 			continue
 		}
-		switch node.(type) {
-		case *ast.UpdateStmt, *ast.DeleteStmt:
+		rowCount, err := mysqldriver.EstimateAffectedRowsMariaDB(ctx, driver, nodes[i], query, plan)
+		if err != nil {
+			probes[i] = v1review.Probe{CountError: err.Error()}
+			continue
+		}
+		probes[i] = v1review.Probe{Rows: rowCount}
+	}
+
+	var advice []*storepb.Advice
+	for _, f := range mariadbv1review.StatementAffectedRowLimit(nodes, probes, maxRow) {
+		stmt := stmts[f.Statement]
+		text := dryRunText(stmt.Text)
+		adviceCode, content := code.StatementAffectedRowExceedsLimit, ""
+		switch f.Code {
+		case v1review.DryRunFailed:
+			content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
+		case v1review.RowCountFailed:
+			adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
+		case v1review.RowLimitExceeded:
+			content = fmt.Sprintf("\"%s\" affected %s rows (estimated). The count exceeds %d.", text, f.Value, maxRow)
 		default:
 			continue
 		}
-
-		baseLine := stmt.BaseLine()
-		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
-		position := base.ConvertANTLRLineToPosition(baseLine + int(mariadbparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
-
-		if !explains.Spend(position) {
-			continue
-		}
-
-		query := mariadbparser.AffectedRowsQuery(node, stmt.Text)
-		plan, err := mysqldriver.ExplainJSON(ctx, driver, query)
-		if err != nil {
-			advice = append(advice, &storepb.Advice{
-				Status:        level,
-				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-				StartPosition: position,
-			})
-			continue
-		}
-		rowCount, err := mysqldriver.EstimateAffectedRowsMariaDB(ctx, driver, node, query, plan)
-		if err != nil {
-			advice = append(advice, &storepb.Advice{
-				Status:        level,
-				Code:          code.Internal.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-				StartPosition: position,
-			})
-			continue
-		}
-		if rowCount > int64(maxRow) {
-			advice = append(advice, &storepb.Advice{
-				Status:        level,
-				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, maxRow),
-				StartPosition: position,
-			})
-		}
+		advice = append(advice, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       content,
+			StartPosition: statementStartPosition(stmt),
+		})
 	}
-
 	return explains.AppendSkippedAdvice(advice, title, code.StatementAffectedRowExceedsLimit), nil
 }

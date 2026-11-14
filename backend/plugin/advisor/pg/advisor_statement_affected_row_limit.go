@@ -2,18 +2,15 @@ package pg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strings"
 
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -25,6 +22,9 @@ func init() {
 }
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE/MERGE affected row limit.
+// omni (pg/v1review.StatementAffectedRowLimitProbes) picks the statements to
+// estimate; this adapter EXPLAINs them under the session settings before
+// them, and omni (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -34,118 +34,50 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	if err != nil {
 		return nil, err
 	}
-
 	numberPayload := checkCtx.Rule.GetNumberPayload()
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
-	if int(numberPayload.Number) <= 0 || checkCtx.Driver == nil {
+	maxRow := int(numberPayload.Number)
+	if maxRow <= 0 || checkCtx.Driver == nil {
 		return nil, nil
 	}
 
-	rule := &statementAffectedRowLimitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maxRow:     int(numberPayload.Number),
-		ctx:        ctx,
-		driver:     checkCtx.Driver,
-		tenantMode: checkCtx.TenantMode,
-	}
-
-	adviceList := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	return rule.explains.AppendSkippedAdvice(adviceList, rule.Title, code.StatementAffectedRowExceedsLimit), nil
-}
-
-type statementAffectedRowLimitRule struct {
-	BaseRule
-	maxRow     int
-	driver     *sql.DB
-	ctx        context.Context
-	explains   advisor.ExplainBudget
-	settings   sessionSettings
-	tenantMode bool
-}
-
-func (*statementAffectedRowLimitRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT)
-}
-
-func (r *statementAffectedRowLimitRule) OnStatement(node ast.Node) {
-	r.settings.add(node, r.TrimmedStmtText())
-	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
-	switch n := node.(type) {
-	case *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-		r.checkAffectedRows(text)
-	case *ast.SelectStmt:
-		if hasDataModifyingCTE(n.WithClause) {
-			r.checkAffectedRows(text)
+	title := checkCtx.Rule.Type.String()
+	var explains advisor.ExplainBudget
+	l := newLiveStatements(checkCtx.ParsedStatements)
+	probes := make(map[int]v1review.Probe)
+	l.probeEach(pgv1review.StatementAffectedRowLimitProbes(l.nodes), func(i int, settings []string) {
+		if !explains.Spend(&storepb.Position{Line: l.startLine(i) + int32(l.stmts[i].BaseLine())}) {
+			return
 		}
-	case *ast.InsertStmt:
-		if hasDataModifyingCTE(n.WithClause) {
-			r.checkAffectedRows(text)
+		probes[i] = explainRows(ctx, checkCtx.Driver, checkCtx.TenantMode, settings, l.probeText(i), getAffectedRows)
+	})
+
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.StatementAffectedRowLimit(l.nodes, probes, maxRow) {
+		text := l.probeText(f.Statement)
+		adviceCode, content := code.StatementAffectedRowExceedsLimit, ""
+		switch f.Code {
+		case v1review.DryRunFailed:
+			content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
+		case v1review.RowCountFailed:
+			adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
+		case v1review.RowLimitExceeded:
+			content = fmt.Sprintf("The statement \"%s\" affected %s rows (estimated). The count exceeds %d.", text, f.Value, maxRow)
+		default:
+			continue
 		}
-	case *ast.CreateTableAsStmt:
-		if query, ok := n.Query.(*ast.SelectStmt); ok && hasDataModifyingCTE(query.WithClause) {
-			r.checkAffectedRows(text)
-		}
-	default:
-	}
-}
-
-func (r *statementAffectedRowLimitRule) checkAffectedRows(text string) {
-	if !r.explains.Spend(&storepb.Position{Line: r.ContentStartLine() + int32(r.BaseLine)}) {
-		return
-	}
-
-	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
-
-	res, err := advisor.Query(r.ctx, advisor.QueryContext{
-		TenantMode:    r.tenantMode,
-		PreExecutions: r.settings.statements(),
-	}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
-
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.StatementAffectedRowExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Code:    adviceCode.Int32(),
+			Title:   title,
+			Content: content,
 			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-		return
-	}
-
-	rowCount, err := getAffectedRows(res)
-	if err != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.Internal.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-		return
-	}
-
-	if rowCount > int64(r.maxRow) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.StatementAffectedRowExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The statement \"%s\" affected %d rows (estimated). The count exceeds %d.", statementText, rowCount, r.maxRow),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
+				Line:   l.startLine(f.Statement) + int32(l.stmts[f.Statement].BaseLine()),
 				Column: 0,
 			},
 		})
 	}
+	return explains.AppendSkippedAdvice(adviceList, title, code.StatementAffectedRowExceedsLimit), nil
 }

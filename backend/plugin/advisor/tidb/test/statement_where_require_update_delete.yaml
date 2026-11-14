@@ -57,3 +57,23 @@
   changeType: 1
 - statement: EXPLAIN UPDATE tech_book SET id = 1 WHERE id > 10
   changeType: 1
+- statement: CREATE PROCEDURE p() BEGIN DELETE FROM tech_book; END;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"CREATE PROCEDURE p() BEGIN DELETE FROM tech_book; END;" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: UPDATE tech_book SET name = 'a' LIMIT 1;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: '"UPDATE tech_book SET name = ''a'' LIMIT 1;" requires WHERE clause'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -3305,7 +3305,7 @@ func exoticCases() []exoticCase {
 			// `(cast(json_extract(`tags`,_utf8mb4\'$.ids\') as unsigned array))` carried two things the
 			// omni loader rejects — the `_utf8mb4'…'` charset introducer before the JSON-path literal
 			// (`unexpected token`) and backslash-escaped single quotes (`syntax error at or near "\"`).
-			// normalizeFunctionalIndexExpr in get_database_definition.go now unescapes the quotes and
+			// normalizeFunctionalIndexExpr in omni mysql/catalog/definition.go unescapes the quotes and
 			// strips the introducer, so the dumped expr is `((cast(json_extract(`tags`,'$.ids') as
 			// unsigned array)))`; omni's functional-index normalizer canonicalizes the dumped and user
 			// forms identically and the no-op is empty. (The `AS UNSIGNED ARRAY` cast itself is accepted
@@ -3451,7 +3451,7 @@ func exoticCases() []exoticCase {
 			// FIXED (Bug A): the dumper rendered the BIT default as a quoted string (`DEFAULT 'b\\'0\\''`)
 			// because the sync stores the bit literal QUOTE()-escaped in ColumnMetadata.Default; omni then
 			// loaded a string default that never matched the user's `b'0'`, re-emitting `MODIFY ... DEFAULT
-			// b'0'` every no-op. renderColumnDefault in get_database_definition.go now recovers the bit
+			// b'0'` every no-op. renderColumnDefault in omni mysql/catalog/definition.go recovers the bit
 			// literal and emits it unquoted (`DEFAULT b'0'`, matching SHOW CREATE / mysqldump); omni #352
 			// canonicalizes the bit literal so the no-op is empty. b64 (no default) is fine.
 			bGap:       false,

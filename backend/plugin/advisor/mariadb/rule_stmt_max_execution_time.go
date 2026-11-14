@@ -3,10 +3,9 @@ package mariadb
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +22,8 @@ func init() {
 }
 
 // MaxExecutionTimeAdvisor is the advisor checking for the max execution time.
+// The judgment lives in omni (mariadb/v1review.StatementMaxExecutionTime);
+// this adapter renders its findings as advice.
 type MaxExecutionTimeAdvisor struct {
 }
 
@@ -32,12 +33,7 @@ func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	// MariaDB spells MySQL's max_execution_time max_statement_time.
-	const systemVariable = "max_statement_time"
-
-	hasSet := false
-	var allAdvice []*storepb.Advice
-
+	var nodes []ast.Node
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
@@ -46,36 +42,16 @@ func (*MaxExecutionTimeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		if !ok {
 			continue
 		}
-
-		switch n := node.(type) {
-		case *ast.SetStmt:
-			for _, assign := range n.Assignments {
-				if assign.Column == nil || assign.Value == nil {
-					continue
-				}
-				varName := assign.Column.Column
-				if strings.ToLower(varName) == systemVariable {
-					if intLit, ok := assign.Value.(*ast.IntLit); ok {
-						_ = intLit
-						hasSet = true
-					} else if str, ok := assign.Value.(*ast.StringLit); ok {
-						if _, err := strconv.Atoi(str.Value); err == nil {
-							hasSet = true
-						}
-					}
-				}
-			}
-		default:
-			if !hasSet && len(allAdvice) == 0 {
-				allAdvice = append(allAdvice, &storepb.Advice{
-					Status:  level,
-					Code:    code.StatementNoMaxExecutionTime.Int32(),
-					Title:   checkCtx.Rule.Type.String(),
-					Content: fmt.Sprintf("The %s is not set", systemVariable),
-				})
-			}
-		}
+		nodes = append(nodes, node)
 	}
-
+	var allAdvice []*storepb.Advice
+	for _, f := range mariadbv1review.StatementMaxExecutionTime(nodes) {
+		allAdvice = append(allAdvice, &storepb.Advice{
+			Status:  level,
+			Code:    code.StatementNoMaxExecutionTime.Int32(),
+			Title:   checkCtx.Rule.Type.String(),
+			Content: fmt.Sprintf("The %s is not set", f.Name),
+		})
+	}
 	return allAdvice, nil
 }

@@ -4,9 +4,9 @@ package bigquery
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	omniast "github.com/bytebase/omni/googlesql/ast"
+	googlesqlv1review "github.com/bytebase/omni/googlesql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -26,7 +26,10 @@ func init() {
 	advisor.Register(storepb.Engine_BIGQUERY, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &WhereRequireForUpdateDeleteAdvisor{})
 }
 
-// WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement for UPDATE and DELETE statement.
+// WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause
+// requirement for UPDATE and DELETE statement. The judgment lives in omni
+// (googlesql/v1review.StatementWhereRequireUpdateDelete); this adapter renders
+// its findings as advice.
 type WhereRequireForUpdateDeleteAdvisor struct {
 }
 
@@ -37,67 +40,22 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	checker := &whereRequireForUpdateDeleteChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
 		ast, ok := stmt.AST.(*googlesql.AST)
 		if !ok || ast.Node == nil {
 			continue
 		}
-		checker.checkStmt(ast.Node, stmt.Text, stmt.BaseLine())
-	}
-
-	return checker.adviceList, nil
-}
-
-type whereRequireForUpdateDeleteChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-// checkStmt flags UPDATE and DELETE statements without a WHERE clause,
-// including those nested in scripts (BEGIN ... END, IF, loops). MERGE
-// WHEN ... THEN UPDATE/DELETE actions are separate merge nodes and are not
-// flagged.
-func (c *whereRequireForUpdateDeleteChecker) checkStmt(node omniast.Node, text string, baseLine int) {
-	omniast.Inspect(node, func(n omniast.Node) bool {
-		switch stmt := n.(type) {
-		case *omniast.UpdateStmt:
-			if stmt.Where == nil {
-				c.addAdvice("UPDATE", text, baseLine, stmt.Loc.Start)
-			}
-		case *omniast.DeleteStmt:
-			if stmt.Where == nil {
-				c.addAdvice("DELETE", text, baseLine, stmt.Loc.Start)
-			}
-		default:
+		for _, f := range googlesqlv1review.StatementWhereRequireUpdateDelete([]omniast.Node{ast.Node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("WHERE clause is required for %s statement.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + statementFindingLine(stmt.Text, f)),
+			})
 		}
-		return true
-	})
-}
-
-func (c *whereRequireForUpdateDeleteChecker) addAdvice(statementType, text string, baseLine, offset int) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:        c.level,
-		Code:          code.StatementNoWhere.Int32(),
-		Title:         c.title,
-		Content:       fmt.Sprintf("WHERE clause is required for %s statement.", statementType),
-		StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
-	})
-}
-
-// statementLineForOffset returns the 1-based line within text that holds the
-// byte offset. An unknown (-1) or out-of-range offset clamps to the text bounds.
-func statementLineForOffset(text string, offset int) int {
-	if offset < 0 {
-		offset = 0
 	}
-	if offset > len(text) {
-		offset = len(text)
-	}
-	return strings.Count(text[:offset], "\n") + 1
+	return adviceList, nil
 }

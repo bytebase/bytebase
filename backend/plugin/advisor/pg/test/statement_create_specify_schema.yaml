@@ -11,3 +11,13 @@
       endposition: null
 - statement: CREATE TABLE public.t(id int);
   changeType: 1
+- statement: CREATE TABLE p PARTITION OF public.t FOR VALUES IN (1);
+  want:
+    - status: 2
+      code: 216
+      title: STATEMENT_CREATE_SPECIFY_SCHEMA
+      content: Table schema should be specified.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
