@@ -305,7 +305,10 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},
 		{"a SET does not launder a DDL beside it", "SET time_zone = 'UTC'; DROP TABLE t", false, false},
 		{"SET PASSWORD administers the server", "SET PASSWORD FOR 'u' = 'x'", false, false},
-		{"SET ... AS DEFAULT STORAGE VAULT administers the server", "SET v AS DEFAULT STORAGE VAULT", false, false},
+		{"SET DEFAULT STORAGE VAULT administers the server", "SET v AS DEFAULT STORAGE VAULT", false, false},
+		{"SET PROPERTY sets a user's properties", "SET PROPERTY FOR 'u' 'max_user_connections' = '1000'", false, false},
+		{"SET PROPERTY for the current user", "SET PROPERTY 'max_user_connections' = '1000'", false, false},
+		{"a variable named property", "SET PROPERTY = 1", true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			valid, explicitReadOnly, err := validateQuery(tc.statement)
