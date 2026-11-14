@@ -3,8 +3,9 @@ package pg
 import (
 	"context"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // CountAffectedRows returns the planner's estimate of the rows the statement modifies. A search
@@ -28,5 +29,5 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 	if err := queryRow(ctx, "EXPLAIN (FORMAT JSON) "+statement).Scan(&plan); err != nil {
 		return 0, err
 	}
-	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
+	return pganalysis.EstimatedAffectedRowsFromExplainJSON(plan)
 }
