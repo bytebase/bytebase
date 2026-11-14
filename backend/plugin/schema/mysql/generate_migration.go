@@ -2,11 +2,14 @@ package mysql
 
 import (
 	"fmt"
+	"io"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -670,7 +673,7 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *metadatapb.ColumnMe
 	}
 
 	// Spatial SRID (MySQL 8.0): after NOT NULL, before DEFAULT — the SDL dumper's
-	// canonical position (see printColumnClause).
+	// canonical position (omni mysql/catalog printColumnClause).
 	writeColumnSRIDAttribute(buf, column)
 
 	// Handle AUTO_INCREMENT before default value
@@ -688,7 +691,7 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *metadatapb.ColumnMe
 	}
 
 	// INVISIBLE column (MySQL 8.0.23+): before COMMENT, matching the SHOW CREATE canonical
-	// order and the SDL dumper (printColumnClause).
+	// order and the SDL dumper (omni mysql/catalog printColumnClause).
 	writeColumnInvisibleAttribute(buf, column)
 
 	if column.Comment != "" {
@@ -1138,4 +1141,267 @@ func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *metadat
 	// Trigger comments are retrieved from INFORMATION_SCHEMA.TRIGGERS but cannot be set via DDL
 	// The comment field is read-only and set by MySQL itself
 	return nil
+}
+
+// printPartitionClause and the column attribute writers below copy omni's
+// mysql/catalog definition renderer, which owns the dump form; the migration
+// generator emits the same clauses.
+func printPartitionClause(buf *strings.Builder, partitions []*metadatapb.TablePartitionMetadata, engine string) error {
+	if len(partitions) == 0 {
+		return nil
+	}
+	vsc := getVersionSpecificComment(partitions)
+	curComment := vsc
+	if _, err := fmt.Fprintf(buf, "%s PARTITION BY ", curComment); err != nil {
+		return err
+	}
+	switch partitions[0].Type {
+	case metadatapb.TablePartitionMetadata_RANGE:
+		if _, err := fmt.Fprintf(buf, "RANGE (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
+		if _, err := fmt.Fprintf(buf, "RANGE COLUMNS (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_LIST:
+		if _, err := fmt.Fprintf(buf, "LIST (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
+		if _, err := fmt.Fprintf(buf, "LIST COLUMNS (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_HASH:
+		if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_KEY:
+		if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_LINEAR_HASH:
+		if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	case metadatapb.TablePartitionMetadata_LINEAR_KEY:
+		if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Expression); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("unknown partition type: %v", partitions[0].Type)
+	}
+
+	useDefault := int64(0)
+	if partitions[0].UseDefault != "" {
+		var err error
+		useDefault, err = strconv.ParseInt(partitions[0].UseDefault, 10, 64)
+		if err != nil {
+			return err
+		}
+	}
+	if useDefault != 0 {
+		if _, err := fmt.Fprintf(buf, "\nPARTITIONS %d", useDefault); err != nil {
+			return err
+		}
+	}
+
+	if len(partitions[0].Subpartitions) > 0 {
+		if _, err := fmt.Fprint(buf, "\nSUBPARTITION BY "); err != nil {
+			return err
+		}
+		switch partitions[0].Subpartitions[0].Type {
+		case metadatapb.TablePartitionMetadata_HASH:
+			if _, err := fmt.Fprintf(buf, "HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case metadatapb.TablePartitionMetadata_LINEAR_HASH:
+			if _, err := fmt.Fprintf(buf, "LINEAR HASH (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case metadatapb.TablePartitionMetadata_KEY:
+			if _, err := fmt.Fprintf(buf, "KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		case metadatapb.TablePartitionMetadata_LINEAR_KEY:
+			if _, err := fmt.Fprintf(buf, "LINEAR KEY (%s)", partitions[0].Subpartitions[0].Expression); err != nil {
+				return err
+			}
+		default:
+			return errors.Errorf("invalid subpartition type: %v", partitions[0].Subpartitions[0].Type)
+		}
+	}
+
+	subUseDefault := 0
+	if len(partitions[0].Subpartitions) > 0 && partitions[0].Subpartitions[0].UseDefault != "" {
+		var err error
+		subUseDefault, err = strconv.Atoi(partitions[0].Subpartitions[0].UseDefault)
+		if err != nil {
+			return err
+		}
+	}
+
+	if subUseDefault != 0 {
+		if _, err := fmt.Fprintf(buf, "\nSUBPARTITIONS %d", subUseDefault); err != nil {
+			return err
+		}
+	}
+
+	if useDefault == 0 {
+		if _, err := fmt.Fprint(buf, "\n("); err != nil {
+			return err
+		}
+		preposition, err := getPrepositionByType(partitions[0].Type)
+		if err != nil {
+			return err
+		}
+		for i, partition := range partitions {
+			if i != 0 {
+				if _, err := fmt.Fprint(buf, ",\n "); err != nil {
+					return err
+				}
+			}
+			if _, err := fmt.Fprintf(buf, "PARTITION %s", mysqlQuoteIdentifier(partition.Name)); err != nil {
+				return err
+			}
+			if preposition != "" {
+				if partition.Value != "MAXVALUE" {
+					if _, err := fmt.Fprintf(buf, " VALUES %s (%s)", preposition, partition.Value); err != nil {
+						return err
+					}
+				} else {
+					if _, err := fmt.Fprintf(buf, " VALUES %s %s", preposition, partition.Value); err != nil {
+						return err
+					}
+				}
+			}
+
+			if subUseDefault == 0 && len(partition.Subpartitions) > 0 {
+				if _, err := fmt.Fprint(buf, "\n ("); err != nil {
+					return err
+				}
+				for j, subPartition := range partition.Subpartitions {
+					if _, err := fmt.Fprintf(buf, "SUBPARTITION %s", mysqlQuoteIdentifier(subPartition.Name)); err != nil {
+						return err
+					}
+					if err := writePartitionOptions(buf, engine); err != nil {
+						return err
+					}
+					if j == len(partition.Subpartitions)-1 {
+						if _, err := fmt.Fprint(buf, ")"); err != nil {
+							return err
+						}
+					} else {
+						if _, err := fmt.Fprint(buf, ",\n  "); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				if err := writePartitionOptions(buf, engine); err != nil {
+					return err
+				}
+			}
+
+			if i == len(partitions)-1 {
+				if _, err := fmt.Fprint(buf, ")"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if _, err := fmt.Fprint(buf, " */"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getPrepositionByType(tp metadatapb.TablePartitionMetadata_Type) (string, error) {
+	switch tp {
+	case metadatapb.TablePartitionMetadata_RANGE:
+		return "LESS THAN", nil
+	case metadatapb.TablePartitionMetadata_RANGE_COLUMNS:
+		return "LESS THAN", nil
+	case metadatapb.TablePartitionMetadata_LIST:
+		return "IN", nil
+	case metadatapb.TablePartitionMetadata_LIST_COLUMNS:
+		return "IN", nil
+	case metadatapb.TablePartitionMetadata_HASH, metadatapb.TablePartitionMetadata_KEY, metadatapb.TablePartitionMetadata_LINEAR_HASH, metadatapb.TablePartitionMetadata_LINEAR_KEY:
+		return "", nil
+	default:
+		return "", errors.Errorf("unsupported partition type: %v", tp)
+	}
+}
+
+func writePartitionOptions(buf io.StringWriter, engine string) error {
+	/*
+		int err = 0;
+		err += add_space(fptr);
+		if (p_elem->tablespace_name) {
+			err += add_string(fptr, "TABLESPACE = ");
+			err += add_ident_string(fptr, p_elem->tablespace_name);
+			err += add_space(fptr);
+		}
+		if (p_elem->nodegroup_id != UNDEF_NODEGROUP)
+			err += add_keyword_int(fptr, "NODEGROUP", (longlong)p_elem->nodegroup_id);
+		if (p_elem->part_max_rows)
+			err += add_keyword_int(fptr, "MAX_ROWS", (longlong)p_elem->part_max_rows);
+		if (p_elem->part_min_rows)
+			err += add_keyword_int(fptr, "MIN_ROWS", (longlong)p_elem->part_min_rows);
+		if (!(current_thd->variables.sql_mode & MODE_NO_DIR_IN_CREATE)) {
+			if (p_elem->data_file_name)
+			err += add_keyword_path(fptr, "DATA DIRECTORY", p_elem->data_file_name);
+			if (p_elem->index_file_name)
+			err += add_keyword_path(fptr, "INDEX DIRECTORY", p_elem->index_file_name);
+		}
+		if (p_elem->part_comment)
+			err += add_keyword_string(fptr, "COMMENT", true, p_elem->part_comment);
+		return err + add_engine(fptr, p_elem->engine_type);
+	*/
+	// TODO(zp): Get all the partition options from the metadata is too complex, just write
+	// the engine for now. It must be the table's own engine: MySQL rejects a partitioned
+	// table whose partitions name a different one with "ERROR 1497: The mix of handlers in
+	// the partitions is not allowed in this version of MySQL", and partitioning a
+	// non-InnoDB table is still legal on 5.7.
+	if engine == "" {
+		engine = "InnoDB"
+	}
+	if _, err := buf.WriteString(" ENGINE=" + engine); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func getVersionSpecificComment(partitions []*metadatapb.TablePartitionMetadata) string {
+	if len(partitions) == 0 {
+		return ""
+	}
+	partition := partitions[0]
+	if partition.Type == metadatapb.TablePartitionMetadata_RANGE_COLUMNS || partition.Type == metadatapb.TablePartitionMetadata_LIST_COLUMNS {
+		// MySQL introduce columns partitioning in 5.5+
+		return "\n/*!50500"
+	}
+	return "\n/*!50100"
+}
+
+// writeColumnSRIDAttribute emits the ` /*!80003 SRID n */` column attribute when the
+// column carries an explicit SRID — including the valid SRID 0, which presence (not a
+// zero sentinel) distinguishes from "no SRID".
+func writeColumnSRIDAttribute(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
+	if column.Srid != nil {
+		_, _ = fmt.Fprintf(buf, " /*!80003 SRID %d */", column.GetSrid())
+	}
+}
+
+// writeColumnInvisibleAttribute emits the ` /*!80023 INVISIBLE */` column attribute for
+// invisible columns (MySQL 8.0.23+). MySQL's canonical SHOW CREATE order places INVISIBLE
+// before COMMENT for both regular and generated columns (verified against 8.0.32), so callers
+// emit it before COMMENT.
+func writeColumnInvisibleAttribute(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
+	if column.IsInvisible {
+		_, _ = buf.WriteString(" /*!80023 INVISIBLE */")
+	}
 }
