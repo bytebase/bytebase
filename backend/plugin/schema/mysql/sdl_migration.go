@@ -219,7 +219,7 @@ func mysqlDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (s
 //
 // The scan is literal- and comment-aware: a '…' or "…" string literal — say a view
 // body or CHECK expression whose text happens to contain the byte sequence
-// `bbcatalog`.`x` — is copied opaquely (scanViewBodyToken, the shared quote/identifier
+// `bbcatalog`.`x` — is copied opaquely (scanViewBodyToken, a quote/identifier
 // scanner), so only identifier-position qualifiers are stripped, and the identifier
 // following a stripped qualifier is itself copied opaquely so even an object literally
 // named "bbcatalog" keeps its own quoting. Comments matter because omni emits routine
@@ -537,5 +537,72 @@ func replaceAdvice(content string) *storepb.Advice {
 		Code:    code.SDLReplaceOperation.Int32(),
 		Title:   "CREATE OR REPLACE operation detected",
 		Content: content,
+	}
+}
+
+// isViewBodySpaceByte reports whether b is whitespace between tokens.
+func isViewBodySpaceByte(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
+}
+
+// scanViewBodyToken returns the end offset of the token starting at i (a non-space
+// byte): a whole '…'/"…" string literal, a whole `…` identifier, a word run, or a
+// single punctuation byte. String literals honor backslash escapes and doubled
+// delimiters; backtick identifiers only doubled backticks. An unterminated literal or
+// identifier runs to the end. It copies the scanner omni's SDL dump uses for view bodies.
+func scanViewBodyToken(body string, i int) int {
+	switch c := body[i]; c {
+	case '\'', '"':
+		for j := i + 1; j < len(body); {
+			switch {
+			case body[j] == '\\' && j+1 < len(body):
+				j += 2
+			case body[j] == c:
+				if j+1 < len(body) && body[j+1] == c {
+					j += 2
+					continue
+				}
+				return j + 1
+			default:
+				j++
+			}
+		}
+		return len(body)
+	case '`':
+		for j := i + 1; j < len(body); {
+			if body[j] == '`' {
+				if j+1 < len(body) && body[j+1] == '`' {
+					j += 2
+					continue
+				}
+				return j + 1
+			}
+			j++
+		}
+		return len(body)
+	default:
+		if !isViewBodyWordByte(body[i]) {
+			return i + 1
+		}
+		j := i + 1
+		for j < len(body) && isViewBodyWordByte(body[j]) {
+			j++
+		}
+		return j
+	}
+}
+
+// isViewBodyWordByte reports whether b can be part of a bare word. Multibyte (>= 0x80)
+// bytes are treated as word bytes so an unquoted multibyte identifier stays one token.
+func isViewBodyWordByte(b byte) bool {
+	switch {
+	case b >= 'a' && b <= 'z', b >= 'A' && b <= 'Z', b >= '0' && b <= '9':
+		return true
+	case b == '_' || b == '$':
+		return true
+	case b >= 0x80:
+		return true
+	default:
+		return false
 	}
 }

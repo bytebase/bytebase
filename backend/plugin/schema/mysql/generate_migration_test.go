@@ -281,3 +281,63 @@ func TestDiffMigrationKeepsSystemVersioning(t *testing.T) {
 	a.NoError(err)
 	a.Empty(migration)
 }
+
+// TestWriteColumnDefinitionBodyGeneratedOrder pins the migration generator's attribute
+// order for a generated column (BYT-9830). MySQL's grammar requires the
+// `GENERATED ALWAYS AS (...) STORED|VIRTUAL` clause to precede NOT NULL and the SRID
+// attribute; emitting SRID/NOT NULL first (the prior order) is rejected with ERROR 1064
+// for a generated spatial column. The canonical order — verified against MySQL 8.0.32
+// via SHOW CREATE — is:
+//
+//	type GENERATED ALWAYS AS (expr) STORED|VIRTUAL [NOT NULL] [SRID] [INVISIBLE] [COMMENT]
+func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
+	srid := func(v uint32) *uint32 { return &v }
+	stored := &metadatapb.GenerationMetadata{
+		Type:       metadatapb.GenerationMetadata_TYPE_STORED,
+		Expression: "st_srid(point(`lng`,`lat`),4326)",
+	}
+
+	render := func(col *metadatapb.ColumnMetadata) string {
+		var buf strings.Builder
+		writeColumnDefinitionBody(&buf, col)
+		return buf.String()
+	}
+
+	// Generated spatial column, NOT NULL + SRID — the failing case. The generation clause
+	// must come first, then NOT NULL, then SRID.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), Generation: stored}))
+
+	// Nullable generated spatial column: no NOT NULL, SRID still after the generation clause.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED /*!80003 SRID 0 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: true, Srid: srid(0), Generation: stored}))
+
+	// Generated spatial column that is also INVISIBLE and has a COMMENT: INVISIBLE precedes
+	// COMMENT, matching SHOW CREATE's canonical order for both regular and generated columns.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: stored}))
+
+	// Regular (non-generated) INVISIBLE column with a COMMENT: INVISIBLE precedes COMMENT,
+	// the same canonical order as the generated column above (verified against 8.0.32).
+	require.Equal(t,
+		"int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
+		render(&metadatapb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
+
+	// Plain (non-spatial) VIRTUAL generated column still emits the generation clause and
+	// nothing spurious.
+	require.Equal(t,
+		"int GENERATED ALWAYS AS (`a` + 1) VIRTUAL",
+		render(&metadatapb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Generation: &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
+			Expression: "`a` + 1",
+		}}))
+
+	// Regression: a non-generated NOT NULL spatial column keeps the regular order
+	// (NOT NULL then SRID, no generation clause).
+	require.Equal(t,
+		"point NOT NULL /*!80003 SRID 4326 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326)}))
+}
