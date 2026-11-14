@@ -295,6 +295,8 @@ func TestAuditRowKeepsItsSubstance(t *testing.T) {
 // wrong.
 func TestAuditRedactionDoesNotMutateTheCallersMessage(t *testing.T) {
 	for name, message := range map[string]proto.Message{
+		"neon discovery":             &v1pb.DiscoverNeonBranchesRequest{ApiKey: secretSentinel},
+		"instance import":            &v1pb.ImportInstancesRequest{Credential: &v1pb.ImportInstancesRequest_NeonCredential{NeonCredential: &v1pb.NeonCredential{ApiKey: secretSentinel}}, Imports: []*v1pb.InstanceImport{{Password: new(secretSentinel), Instance: &v1pb.Instance{DataSources: []*v1pb.DataSource{{Password: secretSentinel}}}}}},
 		"service account response":   &v1pb.ServiceAccount{ServiceKey: secretSentinel},
 		"project webhook response":   &v1pb.Project{Webhooks: []*v1pb.Webhook{{Url: secretSentinel}}},
 		"release response":           &v1pb.Release{Files: []*v1pb.Release_File{{Statement: []byte(secretSentinel)}}},

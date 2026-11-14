@@ -467,18 +467,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	metadata := proto.CloneOf(instance.Metadata)
-	metadata.LastSyncTime = instanceMeta.Metadata.LastSyncTime
-	metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.MysqlLowerCaseTableNames
-	metadata.Roles = instanceMeta.Metadata.Roles
-
+	metadata := proto.CloneOf(instanceMeta.Metadata)
+	metadata.Version = instanceMeta.Version
 	updateInstance := &store.UpdateInstanceMessage{
-		ResourceID: &instance.ResourceID,
-		Workspace:  instance.Workspace,
-		Metadata:   metadata,
-	}
-	if instanceMeta.Version != instance.Metadata.GetVersion() {
-		metadata.Version = instanceMeta.Version
+		ResourceID:   &instance.ResourceID,
+		Workspace:    instance.Workspace,
+		SyncMetadata: metadata,
 	}
 	updatedInstance, err = s.store.UpdateInstance(ctx, updateInstance)
 	if err != nil {

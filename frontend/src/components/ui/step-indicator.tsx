@@ -18,6 +18,7 @@ export function StepIndicator({
   orientation = "horizontal",
   variant = "default",
   onStepClick,
+  ariaLabel,
 }: {
   readonly steps: StepIndicatorStep[];
   readonly currentIndex?: number;
@@ -34,6 +35,7 @@ export function StepIndicator({
   readonly variant?: "default" | "rail";
   // Makes each step a button that moves the wizard to it.
   readonly onStepClick?: (index: number) => void;
+  readonly ariaLabel?: string;
 }) {
   const activeIndex =
     currentIndex ??
@@ -100,6 +102,7 @@ export function StepIndicator({
   if (orientation === "horizontal" && variant === "rail") {
     return (
       <ol
+        aria-label={ariaLabel}
         data-slot="step-indicator"
         data-variant="rail"
         className={cn("flex w-full items-center", className)}
@@ -151,6 +154,7 @@ export function StepIndicator({
   if (orientation === "vertical") {
     return (
       <ol
+        aria-label={ariaLabel}
         data-slot="step-indicator"
         data-orientation="vertical"
         className={cn("flex flex-col", className)}
@@ -214,7 +218,15 @@ export function StepIndicator({
                 : "bg-control-bg-hover text-control-light"
             )}
           >
-            {isCompleted ? <Check className="size-3.5" /> : index + 1}
+            {isCompleted ? (
+              <Check
+                className="size-3.5"
+                role="img"
+                aria-label={String(index + 1)}
+              />
+            ) : (
+              index + 1
+            )}
           </div>
           <span
             className={cn(
@@ -228,7 +240,13 @@ export function StepIndicator({
         </div>
       );
       return (
-        <li key={step.key ?? index} className="flex items-center gap-x-2">
+        <li
+          key={step.key ?? index}
+          aria-current={
+            !onStepClick && index === activeIndex ? "step" : undefined
+          }
+          className="flex items-center gap-x-2"
+        >
           {index > 0 && (
             <div
               className={cn("h-px bg-control-border", compact ? "w-4" : "w-8")}
@@ -253,6 +271,7 @@ export function StepIndicator({
   const list = (
     <ol
       ref={listRef}
+      aria-label={ariaLabel}
       data-slot="step-indicator"
       className={cn(
         "flex flex-wrap items-center gap-x-2 gap-y-1 px-0.5",

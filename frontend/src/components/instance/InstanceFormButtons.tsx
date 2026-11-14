@@ -408,6 +408,7 @@ export function InstanceFormButtons({
       });
       const updateMask: string[] = [];
       if (instancePatch.title !== inst.title) updateMask.push("title");
+      if (instancePatch.vendor !== inst.vendor) updateMask.push("vendor");
       if (instancePatch.externalLink !== inst.externalLink)
         updateMask.push("external_link");
       if (instancePatch.activation !== inst.activation)

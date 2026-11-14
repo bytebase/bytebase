@@ -173,7 +173,7 @@ func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request samp
 			return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
 		}
 		if created {
-			return m.prepareOwned(lifecycleCtx, setup, payload, false)
+			return m.prepareOwned(lifecycleCtx, setup, payload, false, request.Limits)
 		}
 		if setup.ActivatedAt != nil {
 			return m.activeSetup(lifecycleCtx, setup, payload)
@@ -187,7 +187,7 @@ func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request samp
 			if err != nil {
 				return nil, err
 			}
-			return m.prepareOwned(lifecycleCtx, claimed, claimedPayload, true)
+			return m.prepareOwned(lifecycleCtx, claimed, claimedPayload, true, request.Limits)
 		}
 		if err := sample.SleepContext(lifecycleCtx, delay); err != nil {
 			return nil, sample.NewFailure(sample.FailureDeadlineExceeded, err)
@@ -237,7 +237,7 @@ func (m *Manager) reserve(ctx context.Context, request sample.PrepareRequest) (*
 	})
 }
 
-func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SelfHostSampleInstanceSetupPayload, takeover bool) (*store.InstanceMessage, error) {
+func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SelfHostSampleInstanceSetupPayload, takeover bool, limits *store.InstanceLimits) (*store.InstanceMessage, error) {
 	if len(payload.Instances) != 1 || payload.Instances[0].ProjectId == nil {
 		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("sample setup entitlement is already consumed"))
 	}
@@ -251,6 +251,7 @@ func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceS
 		return nil, m.compensate(ctx, setup, payload, err)
 	}
 	registered, err := sample.CreateMetadata(ctx, m.store, sample.Registration{
+		Limits:            limits,
 		WorkspaceID:       setup.WorkspaceID,
 		InstanceProjectID: entry.ProjectId,
 		EnvironmentID:     entry.EnvironmentId,

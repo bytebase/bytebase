@@ -63,6 +63,7 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
+import { Vendor } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
@@ -606,6 +607,8 @@ export function InstanceDetailView({
             {cachedInstance && (
               <p className="text-sm text-control-light break-words">
                 {engineNameV1(instance.engine)}
+                {instance.vendor === Vendor.NEON &&
+                  ` (${t("instance.vendor.neon")})`}
                 {instance.engineVersion && ` · ${instance.engineVersion}`}
               </p>
             )}

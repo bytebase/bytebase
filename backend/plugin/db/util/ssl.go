@@ -247,6 +247,9 @@ func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.Fallb
 }
 
 func applyPGTLSConfigForHost(dst *tls.Config, host string, src *tls.Config) {
+	// PostgreSQL proxies use SNI for routing even when certificate verification
+	// is handled by our custom verifier or disabled by the user.
+	dst.ServerName = host
 	if len(src.Certificates) > 0 {
 		dst.Certificates = append([]tls.Certificate(nil), src.Certificates...)
 	}

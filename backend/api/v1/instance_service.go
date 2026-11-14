@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"log/slog"
 	"path/filepath"
 	"slices"
@@ -39,6 +40,7 @@ import (
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
 	store          *store.Store
+	secret         string
 	profile        *config.Profile
 	licenseService *enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
@@ -189,9 +191,10 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager sample.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, secret string, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager sample.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
+		secret:         secret,
 		profile:        profile,
 		licenseService: licenseService,
 		dbFactory:      dbFactory,
@@ -368,6 +371,10 @@ func (s *InstanceService) ListInstanceDatabase(ctx context.Context, req *connect
 
 // CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Request[v1pb.CreateInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	return s.createInstanceWithSync(ctx, req, true)
+}
+
+func (s *InstanceService) createInstanceWithSync(ctx context.Context, req *connect.Request[v1pb.CreateInstanceRequest], sync bool) (*connect.Response[v1pb.Instance], error) {
 	if req.Msg.Instance == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("instance must be set"))
 	}
@@ -394,6 +401,11 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	instanceMessage.Workspace = workspaceID
 	instanceMessage.ProjectID = projectID
+	if instanceMessage.EnvironmentID != nil {
+		if err := s.checkEnvironmentExists(ctx, workspaceID, *instanceMessage.EnvironmentID); err != nil {
+			return nil, err
+		}
+	}
 	for _, ds := range instanceMessage.Metadata.GetDataSources() {
 		if err := validateAndSanitizeDataSourceTLS(ds); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -422,12 +434,16 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 
-	instance, err := s.store.CreateInstance(ctx, instanceMessage)
+	instance, err := s.store.CreateInstance(ctx, instanceMessage, s.instanceLimits(ctx, workspaceID))
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("instance ID %q already exists", req.Msg.InstanceId))
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
+	}
+
+	if !sync {
+		return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
@@ -477,6 +493,7 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 	instance, err := s.sampleManager.PrepareSampleProjectInstance(ctx, sample.PrepareRequest{
 		WorkspaceID: workspaceID,
 		ProjectID:   *projectID,
+		Limits:      s.instanceLimits(ctx, workspaceID),
 	})
 	if err != nil {
 		return nil, sampleProjectInstanceConnectError(err)
@@ -485,6 +502,10 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 }
 
 func sampleProjectInstanceConnectError(err error) error {
+	var limit *store.InstanceLimitError
+	if errors.As(err, &limit) {
+		return connect.NewError(connect.CodeResourceExhausted, err)
+	}
 	switch sample.FailureKindOf(err) {
 	case sample.FailureFailedPrecondition:
 		return connect.NewError(connect.CodeFailedPrecondition, err)
@@ -539,6 +560,25 @@ func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %q not found", *parent))
 	}
 	return &projectID, nil
+}
+
+type environmentNotFoundError struct {
+	id string
+}
+
+func (e *environmentNotFoundError) Error() string {
+	return fmt.Sprintf("environment %q not found", e.id)
+}
+
+func (s *InstanceService) checkEnvironmentExists(ctx context.Context, workspaceID, environmentID string) error {
+	environment, err := s.store.GetEnvironmentByID(ctx, workspaceID, environmentID)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if environment == nil {
+		return connect.NewError(connect.CodeNotFound, &environmentNotFoundError{id: environmentID})
+	}
+	return nil
 }
 
 func instanceWithMetadata(instance *store.InstanceMessage, metadata *storepb.Instance) *store.InstanceMessage {
@@ -884,12 +924,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInvalidArgument, err)
 				}
-				environment, err := s.store.GetEnvironmentByID(ctx, common.GetWorkspaceIDFromContext(ctx), envID)
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, err)
-				}
-				if environment == nil {
-					return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("environment %q not found", envID))
+				if err := s.checkEnvironmentExists(ctx, common.GetWorkspaceIDFromContext(ctx), envID); err != nil {
+					return nil, err
 				}
 				patch.EnvironmentID = &envID
 			}
@@ -913,6 +949,8 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 				return nil, err
 			}
 			patch.Metadata.DataSources = dataSources
+		case "vendor":
+			patch.Metadata.Vendor = storepb.Vendor(req.Msg.Instance.Vendor)
 		case "activation":
 			if !instance.Metadata.GetActivation() && req.Msg.Instance.Activation {
 				updateActivation = true
@@ -933,6 +971,10 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		}
 	}
 
+	if err := validateInstanceVendor(patch.Metadata); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Check feature gates after all fields are processed so that activation
 	// changes in the same request are visible to the license check.
 	if updateSyncInterval {
@@ -948,9 +990,10 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 		return nil, err
 	}
 
+	patch.Limits = s.instanceLimits(ctx, workspaceID)
 	ins, err := s.store.UpdateInstance(ctx, patch)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
 	}
 	result := s.convertToV1Instance(ctx, ins)
 	return connect.NewResponse(result), nil
@@ -1071,12 +1114,13 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
 		Deleted:    &undeletePatch,
+		Limits:     s.instanceLimits(ctx, instance.Workspace),
 	})
 	if err != nil {
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
 	}
 
 	// Handle sample instance undelete (restart) if applicable
@@ -1222,6 +1266,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 	}
 	metadata := proto.CloneOf(instance.Metadata)
 	metadata.DataSources = append(metadata.DataSources, dataSource)
+	if err := validateInstanceVendor(metadata); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
@@ -1247,9 +1294,10 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
 		Metadata:   metadata,
+		Limits:     s.instanceLimits(ctx, instance.Workspace),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
 	}
 
 	result := s.convertToV1Instance(ctx, instance)
@@ -1335,6 +1383,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		return nil, err
 	}
 
+	if err := validateInstanceVendor(metadata); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	if err := s.checkInstanceDataSources(ctx, instance, metadata.GetDataSources()); err != nil {
 		return nil, err
 	}
@@ -1352,9 +1403,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
 		Metadata:   metadata,
+		Limits:     s.instanceLimits(ctx, instance.Workspace),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
 	}
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
@@ -1572,9 +1624,10 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		ResourceID: &instance.ResourceID,
 		Workspace:  instance.Workspace,
 		Metadata:   metadata,
+		Limits:     s.instanceLimits(ctx, instance.Workspace),
 	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, instanceWriteError(err)
 	}
 
 	result := s.convertToV1Instance(ctx, instance)
@@ -1719,4 +1772,20 @@ func validateExtraConnectionParameters(engine storepb.Engine, params map[string]
 		// No validation needed for other engines
 	}
 	return nil
+}
+
+func (s *InstanceService) instanceLimits(ctx context.Context, workspaceID string) *store.InstanceLimits {
+	limits := &store.InstanceLimits{Count: new(s.licenseService.GetInstanceLimit(ctx, workspaceID))}
+	if !s.licenseService.IsUnifiedInstanceLicense(ctx, workspaceID) {
+		limits.Activated = new(s.licenseService.GetActivatedInstanceLimit(ctx, workspaceID))
+	}
+	return limits
+}
+
+func instanceWriteError(err error) error {
+	var limit *store.InstanceLimitError
+	if errors.As(err, &limit) {
+		return connect.NewError(connect.CodeResourceExhausted, err)
+	}
+	return connect.NewError(connect.CodeInternal, err)
 }
