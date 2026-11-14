@@ -6,7 +6,6 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -2256,99 +2255,6 @@ func compareEvents(diff *MetadataDiff, _ string, oldSchema, newSchema *model.Sch
 			})
 		}
 	}
-}
-
-// FilterPostgresArchiveSchema filters out schema diff objects related to bbdataarchive schema.
-func FilterPostgresArchiveSchema(diff *MetadataDiff) *MetadataDiff {
-	if diff == nil {
-		return nil
-	}
-
-	archiveSchemaName := common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES)
-
-	// Create a new diff object with filtered changes
-	filtered := &MetadataDiff{
-		DatabaseName: diff.DatabaseName,
-		OldDatabase:  diff.OldDatabase,
-		NewDatabase:  diff.NewDatabase,
-	}
-
-	// Filter schema changes
-	for _, schemaChange := range diff.SchemaChanges {
-		if schemaChange.SchemaName != archiveSchemaName {
-			filtered.SchemaChanges = append(filtered.SchemaChanges, schemaChange)
-		}
-	}
-
-	// Filter table changes
-	for _, tableChange := range diff.TableChanges {
-		if tableChange.SchemaName != archiveSchemaName {
-			filtered.TableChanges = append(filtered.TableChanges, tableChange)
-		}
-	}
-
-	// Filter view changes
-	for _, viewChange := range diff.ViewChanges {
-		if viewChange.SchemaName != archiveSchemaName {
-			filtered.ViewChanges = append(filtered.ViewChanges, viewChange)
-		}
-	}
-
-	// Filter materialized view changes
-	for _, mvChange := range diff.MaterializedViewChanges {
-		if mvChange.SchemaName != archiveSchemaName {
-			filtered.MaterializedViewChanges = append(filtered.MaterializedViewChanges, mvChange)
-		}
-	}
-
-	// Filter function changes
-	for _, funcChange := range diff.FunctionChanges {
-		if funcChange.SchemaName != archiveSchemaName {
-			filtered.FunctionChanges = append(filtered.FunctionChanges, funcChange)
-		}
-	}
-
-	// Filter procedure changes
-	for _, procChange := range diff.ProcedureChanges {
-		if procChange.SchemaName != archiveSchemaName {
-			filtered.ProcedureChanges = append(filtered.ProcedureChanges, procChange)
-		}
-	}
-
-	// Filter sequence changes
-	for _, seqChange := range diff.SequenceChanges {
-		if seqChange.SchemaName != archiveSchemaName {
-			filtered.SequenceChanges = append(filtered.SequenceChanges, seqChange)
-		}
-	}
-
-	// Filter enum type changes
-	for _, enumChange := range diff.EnumTypeChanges {
-		if enumChange.SchemaName != archiveSchemaName {
-			filtered.EnumTypeChanges = append(filtered.EnumTypeChanges, enumChange)
-		}
-	}
-
-	// Filter composite type changes
-	for _, compositeChange := range diff.CompositeTypeChanges {
-		if compositeChange.SchemaName != archiveSchemaName {
-			filtered.CompositeTypeChanges = append(filtered.CompositeTypeChanges, compositeChange)
-		}
-	}
-
-	// Filter comment changes
-	for _, commentChange := range diff.CommentChanges {
-		if commentChange.SchemaName != archiveSchemaName {
-			filtered.CommentChanges = append(filtered.CommentChanges, commentChange)
-		}
-	}
-
-	// Extensions, Event triggers, and Events are database-level objects, not schema-specific, so copy them all
-	filtered.ExtensionChanges = diff.ExtensionChanges
-	filtered.EventTriggerChanges = diff.EventTriggerChanges
-	filtered.EventChanges = diff.EventChanges
-
-	return filtered
 }
 
 // normalizePostgreSQLFunction normalizes PostgreSQL function definitions for comparison
