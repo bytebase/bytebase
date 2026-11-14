@@ -1,24 +1,8 @@
 package oracle
 
 import (
-	"fmt"
-
 	"github.com/bytebase/omni/oracle/ast"
 )
-
-func objectName(name *ast.ObjectName, currentSchema string) string {
-	if name == nil {
-		return ""
-	}
-	schema := name.Schema
-	if schema == "" {
-		schema = currentSchema
-	}
-	if schema == "" {
-		return name.Name
-	}
-	return fmt.Sprintf("%s.%s", schema, name.Name)
-}
 
 func lastObjectName(name *ast.ObjectName) string {
 	if name == nil {
@@ -32,19 +16,6 @@ func listItems(list *ast.List) []ast.Node {
 		return nil
 	}
 	return list.Items
-}
-
-func columnDefs(list *ast.List) []*ast.ColumnDef {
-	if list == nil {
-		return nil
-	}
-	result := make([]*ast.ColumnDef, 0, len(list.Items))
-	for _, item := range list.Items {
-		if col, ok := item.(*ast.ColumnDef); ok {
-			result = append(result, col)
-		}
-	}
-	return result
 }
 
 func tableConstraints(list *ast.List) []*ast.TableConstraint {
@@ -71,28 +42,6 @@ func alterTableCmds(stmt *ast.AlterTableStmt) []*ast.AlterTableCmd {
 		}
 	}
 	return result
-}
-
-func columnConstraints(col *ast.ColumnDef) []*ast.ColumnConstraint {
-	if col == nil || col.Constraints == nil {
-		return nil
-	}
-	result := make([]*ast.ColumnConstraint, 0, len(col.Constraints.Items))
-	for _, item := range col.Constraints.Items {
-		if c, ok := item.(*ast.ColumnConstraint); ok {
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-func columnHasConstraint(col *ast.ColumnDef, typ ast.ConstraintType) bool {
-	for _, c := range columnConstraints(col) {
-		if c.Type == typ {
-			return true
-		}
-	}
-	return false
 }
 
 func walk(node ast.Node, visit func(ast.Node)) {

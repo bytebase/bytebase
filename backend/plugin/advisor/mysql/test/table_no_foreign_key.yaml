@@ -22,3 +22,72 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE book(id INT, author_id INT REFERENCES author (id));
+- statement: ALTER TABLE book DROP FOREIGN KEY fk_book_author_id;
+- statement: |-
+    CREATE TABLE db.book(
+      id INT,
+      author_id INT,
+      FOREIGN KEY (author_id) REFERENCES author (id),
+      editor_id INT,
+      CONSTRAINT fk_book_editor_id FOREIGN KEY (editor_id) REFERENCES editor (id)
+    );
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `book`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `book`
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE book
+      ADD COLUMN c INT,
+      ADD CONSTRAINT fk_book_c FOREIGN KEY (c) REFERENCES c (id);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `book`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE book(id INT, FOREIGN KEY (id) REFERENCES author (id)); END;
+- statement: |-
+    SELECT 1;
+    SELECT 2;
+    CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES u (b));
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1;
+    SELECT 2;
+
+    ALTER TABLE t
+      ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES u (b);
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 6
+        column: 0
+      endposition: null

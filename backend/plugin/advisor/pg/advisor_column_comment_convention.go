@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/pg/ast"
 	pgv1review "github.com/bytebase/omni/pg/v1review"
 	"github.com/bytebase/omni/v1review"
 
@@ -79,12 +78,4 @@ func commentLimits(payload *storepb.SQLReviewRule_CommentConventionRulePayload) 
 		return payload.Required, -1
 	}
 	return payload.Required, int(payload.MaxLength)
-}
-
-// stringVal extracts a string value from a Node.
-func stringVal(n ast.Node) string {
-	if s, ok := n.(*ast.String); ok {
-		return s.Str
-	}
-	return ""
 }
