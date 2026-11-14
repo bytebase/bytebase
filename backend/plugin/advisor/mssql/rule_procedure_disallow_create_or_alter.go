@@ -4,16 +4,22 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, &ProcedureDisallowCreateOrAlterAdvisor{})
 }
 
+// ProcedureDisallowCreateOrAlterAdvisor is the advisor disallowing creating
+// or altering procedures. The judgment lives in omni
+// (mssql/v1review.SystemProcedureDisallowCreate); this adapter renders the
+// findings as advice.
 type ProcedureDisallowCreateOrAlterAdvisor struct{}
 
 func (*ProcedureDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -21,26 +27,25 @@ func (*ProcedureDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx 
 	if err != nil {
 		return nil, err
 	}
-	rule := &procedureDisallowCreateOrAlterRule{BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type procedureDisallowCreateOrAlterRule struct {
-	BaseRule
-}
-
-func (*procedureDisallowCreateOrAlterRule) Name() string {
-	return "ProcedureDisallowCreateOrAlterRule"
-}
-
-func (r *procedureDisallowCreateOrAlterRule) OnStatement(node ast.Node) {
-	if n, ok := node.(*ast.CreateProcedureStmt); ok {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DisallowCreateProcedure.Int32(),
-			Title:         r.Title,
-			Content:       "Creating or altering procedures is prohibited",
-			StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
-		})
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mssqlv1review.SystemProcedureDisallowCreate([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DisallowCreateProcedure.Int32(),
+				Title:         title,
+				Content:       "Creating or altering procedures is prohibited",
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
+		}
 	}
+	return adviceList, nil
 }

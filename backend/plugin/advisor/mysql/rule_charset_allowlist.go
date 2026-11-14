@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,7 +24,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_CHARSET_ALLOWLIST, &CharsetAllowlistAdvisor{})
 }
 
-// CharsetAllowlistAdvisor is the advisor checking for charset allowlist.
+// CharsetAllowlistAdvisor is the advisor checking for charset allowlist. The
+// judgment lives in omni (mysql/v1review.SystemCharsetAllowlist); this
+// adapter passes the rule's payload and renders the findings as advice.
 type CharsetAllowlistAdvisor struct {
 }
 
@@ -32,123 +37,36 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	allowList := stringArrayPayload.List
 
-	allowList := make(map[string]bool)
-	for _, charset := range stringArrayPayload.List {
-		allowList[strings.ToLower(charset)] = true
-	}
-
-	rule := &charsetAllowlistRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		allowList: allowList,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type charsetAllowlistRule struct {
-	BaseRule
-	allowList map[string]bool
-}
-
-func (*charsetAllowlistRule) Name() string {
-	return "CharsetAllowlistRule"
-}
-
-func (r *charsetAllowlistRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateDatabaseStmt:
-		r.checkCreateDatabase(n)
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterDatabaseStmt:
-		r.checkAlterDatabase(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *charsetAllowlistRule) checkCharset(charset string, line int) {
-	charset = strings.ToLower(charset)
-	if charset != "" && !r.allowList[charset] {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DisabledCharset.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", r.QueryText(), charset),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	}
-}
-
-func (r *charsetAllowlistRule) checkCreateDatabase(n *ast.CreateDatabaseStmt) {
-	for _, opt := range n.Options {
-		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
-			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
-			break
-		}
-	}
-}
-
-func (r *charsetAllowlistRule) checkCreateTable(n *ast.CreateTableStmt) {
-	// Check table-level charset option.
-	for _, opt := range n.Options {
-		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") {
-			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
-			break
-		}
-	}
-	// Check column-level charset.
-	for _, col := range n.Columns {
-		if col == nil || col.TypeName == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if col.TypeName.Charset != "" {
-			r.checkCharset(col.TypeName.Charset, r.BaseLine+int(r.LocToLine(n.Loc)))
-		}
-	}
-}
-
-func (r *charsetAllowlistRule) checkAlterDatabase(n *ast.AlterDatabaseStmt) {
-	for _, opt := range n.Options {
-		if strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "CHARSET") {
-			r.checkCharset(opt.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
-		}
-	}
-}
-
-func (r *charsetAllowlistRule) checkAlterTable(n *ast.AlterTableStmt) {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		switch cmd.Type {
-		case ast.ATAddColumn, ast.ATModifyColumn, ast.ATChangeColumn:
-			for _, col := range getColumnsFromCmd(cmd) {
-				if col == nil || col.TypeName == nil {
-					continue
-				}
-				if col.TypeName.Charset != "" {
-					r.checkCharset(col.TypeName.Charset, r.BaseLine+int(r.LocToLine(n.Loc)))
-				}
-			}
-		case ast.ATTableOption:
-			if cmd.Option != nil {
-				if strings.EqualFold(cmd.Option.Name, "CHARACTER SET") || strings.EqualFold(cmd.Option.Name, "CHARSET") || strings.EqualFold(cmd.Option.Name, "DEFAULT CHARSET") {
-					r.checkCharset(cmd.Option.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
-				}
-			}
-		case ast.ATConvertCharset:
-			if cmd.Option != nil {
-				if strings.EqualFold(cmd.Option.Name, "CHARACTER SET") || strings.EqualFold(cmd.Option.Name, "CHARSET") {
-					r.checkCharset(cmd.Option.Value, r.BaseLine+int(r.LocToLine(n.Loc)))
-				}
-			}
-		default:
+		for _, f := range mysqlv1review.SystemCharsetAllowlist([]ast.Node{node}, allowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DisabledCharset.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", strings.TrimSpace(stmt.Text), f.Name),
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
+			})
 		}
 	}
+	return adviceList, nil
+}
+
+// findingPositionBaseLineTwice is the position of a finding as the V1 rules
+// that passed an absolute line to BaseRule.AddAdvice reported it: the
+// finding's line within its statement, plus the statement's base line twice.
+func findingPositionBaseLineTwice(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
+	position := base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
+	position.Line += int32(stmt.BaseLine())
+	return position
 }

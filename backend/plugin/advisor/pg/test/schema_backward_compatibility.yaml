@@ -37,3 +37,62 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t DROP COLUMN a;
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE TABLE u(a int);
+    ALTER TABLE t DROP COLUMN a;
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t DROP COLUMN a" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE s1.t(a int);
+    CREATE UNIQUE INDEX i ON s2.t (a);
+- statement: ALTER TABLE t ADD CHECK (a > 0) NOT VALID, DROP COLUMN b
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t ADD CHECK (a > 0) NOT VALID, DROP COLUMN b" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES u (a) NOT VALID
+  want:
+    - status: 2
+      code: 108
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES u (a) NOT VALID" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER SCHEMA s RENAME TO r
+  want:
+    - status: 2
+      code: 102
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER SCHEMA s RENAME TO r" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP DATABASE IF EXISTS d
+  want:
+    - status: 2
+      code: 101
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"DROP DATABASE IF EXISTS d" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

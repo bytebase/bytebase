@@ -3,13 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -20,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOW_CREATE, &FunctionDisallowCreateAdvisor{})
 }
 
-// FunctionDisallowCreateAdvisor is the advisor checking for disallow creating function.
+// FunctionDisallowCreateAdvisor is the advisor checking for disallow creating function. The judgment
+// lives in omni (mysql/v1review.SystemFunctionDisallowCreate); this adapter renders the findings as
+// advice.
 type FunctionDisallowCreateAdvisor struct {
 }
 
@@ -31,36 +35,25 @@ func (*FunctionDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &functionDisallowCreateRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.SystemFunctionDisallowCreate([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          advisorcode.DisallowCreateFunction.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Function is forbidden, but \"%s\" creates", strings.TrimSpace(stmt.Text)),
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type functionDisallowCreateRule struct {
-	BaseRule
-}
-
-func (*functionDisallowCreateRule) Name() string {
-	return "FunctionDisallowCreateRule"
-}
-
-func (r *functionDisallowCreateRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.CreateFunctionStmt)
-	if !ok || n.IsProcedure {
-		return
-	}
-	if n.Name != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          advisorcode.DisallowCreateFunction.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Function is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-		})
-	}
+	return adviceList, nil
 }
