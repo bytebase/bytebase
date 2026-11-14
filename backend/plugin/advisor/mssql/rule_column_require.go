@@ -3,16 +3,15 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -23,11 +22,12 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_COLUMN_REQUIRED, &ColumnRequireAdvisor{})
 }
 
-// ColumnRequireAdvisor is the advisor checking for column requirement..
+// ColumnRequireAdvisor is the advisor checking for column requirement.
+// The judgment lives in omni (mssql/v1review.ColumnRequired).
 type ColumnRequireAdvisor struct {
 }
 
-// Check checks for column requirement..
+// Check checks for column requirement.
 func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
@@ -39,110 +39,24 @@ func (*ColumnRequireAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, errors.New("string_array_payload is required for column required rule")
 	}
 
-	rule := &columnRequireRule{
-		BaseRule:       BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		requireColumns: make(map[string]any),
-	}
-	for _, col := range stringArrayPayload.List {
-		rule.requireColumns[col] = true
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnRequireRule struct {
-	BaseRule
-
-	requireColumns map[string]any
-}
-
-func (*columnRequireRule) Name() string {
-	return "ColumnRequireRule"
-}
-
-func (r *columnRequireRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.handleCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnRequireRule) handleCreateTable(n *ast.CreateTableStmt) {
-	if n.Name == nil {
-		return
-	}
-
-	// Build set of columns present.
-	present := make(map[string]bool)
-	if n.Columns != nil {
-		for _, item := range n.Columns.Items {
-			col, ok := item.(*ast.ColumnDef)
-			if !ok {
-				continue
-			}
-			present[strings.ToLower(col.Name)] = true
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-
-	// Find missing required columns.
-	var missing []string
-	for col := range r.requireColumns {
-		if !present[strings.ToLower(col)] {
-			missing = append(missing, col)
-		}
-	}
-	slices.Sort(missing)
-
-	tableName := tableRefText(n.Name)
-	for _, col := range missing {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NoRequiredColumn.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Table %s missing required column \"%s\"", tableName, col),
-			StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
-		})
-	}
-}
-
-func (r *columnRequireRule) handleAlterTable(n *ast.AlterTableStmt) {
-	if n.Name == nil || n.Actions == nil {
-		return
-	}
-
-	tableName := tableRefText(n.Name)
-	for _, item := range n.Actions.Items {
-		action, ok := item.(*ast.AlterTableAction)
+		node, ok := tsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		if action.Type == ast.ATDropColumn {
-			// Collect all dropped column names from both ColName and Names list.
-			var colNames []string
-			if action.ColName != "" {
-				colNames = append(colNames, strings.ToLower(action.ColName))
-			}
-			if action.Names != nil {
-				for _, nameItem := range action.Names.Items {
-					if ref, ok := nameItem.(*ast.TableRef); ok && ref.Object != "" {
-						colNames = append(colNames, strings.ToLower(ref.Object))
-					}
-				}
-			}
-			for _, colName := range colNames {
-				if _, ok := r.requireColumns[colName]; ok {
-					r.AddAdvice(&storepb.Advice{
-						Status:        r.Level,
-						Code:          code.NoRequiredColumn.Int32(),
-						Title:         r.Title,
-						Content:       fmt.Sprintf("Table %s missing required column \"%s\"", tableName, colName),
-						StartPosition: &storepb.Position{Line: r.LocToLine(n.Loc)},
-					})
-				}
-			}
+		for _, f := range mssqlv1review.ColumnRequired([]ast.Node{node}, stringArrayPayload.List) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NoRequiredColumn.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("Table %s missing required column \"%s\"", f.Table, f.Name),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
 		}
 	}
+	return adviceList, nil
 }

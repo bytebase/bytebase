@@ -11,3 +11,20 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE t ADD COLUMN a int,
+      ADD COLUMN b text DEFAULT 'x' || lower('Y');
+  changeType: 1
+  want:
+    - status: 2
+      code: 420
+      title: COLUMN_DEFAULT_DISALLOW_VOLATILE
+      content: Column "t"."b" in schema "public" has volatile DEFAULT
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a timestamp DEFAULT now());
+  changeType: 1
+- statement: ALTER TABLE t ADD COLUMN a timestamp DEFAULT CURRENT_TIMESTAMP;
+  changeType: 1

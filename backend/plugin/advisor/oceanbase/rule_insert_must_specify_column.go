@@ -3,13 +3,16 @@ package oceanbase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -21,6 +24,8 @@ func init() {
 }
 
 // InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
+// The judgment lives in omni (oceanbase/v1review.StatementInsertMustSpecifyColumn); this adapter
+// renders its findings as advice.
 type InsertMustSpecifyColumnAdvisor struct {
 }
 
@@ -31,52 +36,26 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &insertMustSpecifyColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
+		for _, f := range oceanbasev1review.StatementInsertMustSpecifyColumn([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.InsertNotSpecifyColumn.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", text),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type insertMustSpecifyColumnRule struct {
-	BaseRule
-}
-
-func (*insertMustSpecifyColumnRule) Name() string {
-	return "InsertMustSpecifyColumnRule"
-}
-
-func (r *insertMustSpecifyColumnRule) OnStatement(node ast.Node) {
-	ins, ok := node.(*ast.InsertStmt)
-	if !ok {
-		return
-	}
-
-	text := r.TrimmedStmtText() + ";"
-
-	// INSERT ... SELECT without columns.
-	if ins.Select != nil && len(ins.Columns) == 0 {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.InsertNotSpecifyColumn.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", text),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
-		})
-		return
-	}
-
-	// INSERT ... VALUES without columns.
-	if len(ins.Values) > 0 && len(ins.Columns) == 0 {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.InsertNotSpecifyColumn.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", text),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
-		})
-	}
+	return adviceList, nil
 }

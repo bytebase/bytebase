@@ -43,3 +43,35 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE t DROP COLUMN id, DROP COLUMN creator_id;
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "t" requires columns: creator_id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "t" requires columns: id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t AS SELECT 1 AS a;
+  changeType: 1
+- statement: ALTER VIEW v RENAME COLUMN id TO pk;
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "v" requires columns: id'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -81,3 +81,19 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    WITH c AS (SELECT x FROM t WHERE y = 1)
+    -- comment
+    // slash comment
+
+    SELECT a
+    FROM c;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELECT statement.
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

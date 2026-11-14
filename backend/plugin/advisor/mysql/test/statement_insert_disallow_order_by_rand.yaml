@@ -23,3 +23,22 @@
         line: 2
         column: 0
       endposition: null
+- statement: INSERT INTO tech_book (SELECT * FROM tech_book ORDER BY RAND()) UNION (SELECT * FROM tech_book ORDER BY rand(1));
+  want:
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book (SELECT * FROM tech_book ORDER BY RAND()) UNION (SELECT * FROM tech_book ORDER BY rand(1));" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1108
+      title: STATEMENT_INSERT_DISALLOW_ORDER_BY_RAND
+      content: '"INSERT INTO tech_book (SELECT * FROM tech_book ORDER BY RAND()) UNION (SELECT * FROM tech_book ORDER BY rand(1));" uses ORDER BY RAND in the INSERT statement'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO tech_book SELECT * FROM (SELECT * FROM tech_book ORDER BY RAND()) t;

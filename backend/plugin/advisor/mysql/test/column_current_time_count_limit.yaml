@@ -74,3 +74,61 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a TIMESTAMP ON UPDATE NOW());
+    CREATE TABLE t(b DATETIME ON UPDATE CURRENT_TIMESTAMP);
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE db.t(a TIMESTAMP ON UPDATE NOW());
+    ALTER TABLE t MODIFY a TIMESTAMP ON UPDATE NOW();
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE b(x TIMESTAMP ON UPDATE NOW(), y TIMESTAMP ON UPDATE NOW());
+    CREATE TABLE a(x TIMESTAMP ON UPDATE NOW(), y TIMESTAMP ON UPDATE NOW());
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `b` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `a` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a DATE DEFAULT (CURRENT_DATE), b DATE DEFAULT (CURRENT_DATE), c DATE DEFAULT (CURRENT_DATE), d INT);
+- statement: |-
+    CREATE TABLE t(a TIMESTAMP ON UPDATE NOW());
+    DROP TABLE t;
+    CREATE TABLE t(b TIMESTAMP ON UPDATE NOW());
+  want:
+    - status: 2
+      code: 419
+      title: COLUMN_CURRENT_TIME_COUNT_LIMIT
+      content: Table `t` has 2 ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than 1.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

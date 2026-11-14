@@ -100,3 +100,23 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE t (a CHAR(30), b BINARY(40));
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `a` is 30, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD COLUMN (a CHAR(30), b CHAR(40)), MODIFY c CHAR(50);
+  want:
+    - status: 2
+      code: 415
+      title: COLUMN_MAXIMUM_CHARACTER_LENGTH
+      content: The length of the CHAR column `b` is 40, bigger than 20, please use VARCHAR instead
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

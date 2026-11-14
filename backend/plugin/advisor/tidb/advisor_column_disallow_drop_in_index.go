@@ -3,8 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,29 +23,10 @@ func init() {
 }
 
 // ColumnDisallowDropInIndexAdvisor is the advisor checking for disallow DROP COLUMN in index.
+// The judgment lives in omni (tidb/v1review.ColumnDisallowDropInIndex).
 type ColumnDisallowDropInIndexAdvisor struct{}
 
-// Check tracks index-column membership across the reviewed statements
-// (Recipe A cross-stmt state) and emits an advice when an ALTER TABLE
-// DROP COLUMN targets a column that's part of an index.
-//
-// Per-arm state-mutation semantics (cumulative #25 audit axis):
-//   - CreateTableStmt: INCREMENT — populate tables[name][col]=true for
-//     each plain column in the table's KEY/INDEX constraints (omni
-//     ConstrIndex; pingcap analog was ConstraintIndex, plain non-unique
-//     only — UNIQUE / PRIMARY KEY / FULLTEXT / SPATIAL are NOT tracked).
-//   - AlterTableStmt ATDropColumn: SIDE-LOAD CATALOG + READ — populate
-//     tables[name] from OriginalMetadata.ListIndexes() (which reflects
-//     the FINAL schema state including any pre-statement indexes the
-//     reviewed CREATE TABLEs didn't add), then check if the dropped
-//     column is in the index set. Side-load is idempotent across
-//     multiple DROP COLUMN cmds in the same ALTER.
-//
-// Identifier case-sensitivity (cumulative #19): pre-omni used `.O`
-// (original case) throughout; omni's direct strings preserve user case.
-// `CREATE TABLE t(A INT, INDEX(A)); ALTER TABLE t DROP COLUMN a` does
-// NOT fire (case-mismatched lookup misses the index set) — matches
-// pingcap-tidb's pre-omni case-sensitive behavior. Pinned with fixture.
+// Check checks for disallow DROP COLUMN in index.
 func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -55,60 +38,33 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	title := checkCtx.Rule.Type.String()
-	tables := make(tableState)
+	if checkCtx.OriginalMetadata == nil && slices.ContainsFunc(stmts, dropsColumn) {
+		// V1 read the snapshot at the first DROP COLUMN and panicked on a
+		// nil one; advisor.Check reports that panic as the rule's error.
+		checkCtx.OriginalMetadata.GetSchemaMetadata("")
+	}
 
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			tableName := n.Table.Name
-			if tables[tableName] == nil {
-				tables[tableName] = make(columnSet)
-			}
-			for _, c := range n.Constraints {
-				if c == nil || c.Type != ast.ConstrIndex {
-					continue
-				}
-				for _, col := range indexColumns(c.IndexColumns) {
-					tables[tableName][col] = true
-				}
-			}
-		case *ast.AlterTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			tableName := n.Table.Name
-			stmtLine := ostmt.FirstTokenLine()
-			for _, cmd := range n.Commands {
-				if cmd == nil || cmd.Type != ast.ATDropColumn {
-					continue
-				}
-				if tableMetadata := checkCtx.OriginalMetadata.GetSchemaMetadata("").GetTable(tableName); tableMetadata != nil {
-					if tables[tableName] == nil {
-						tables[tableName] = make(columnSet)
-					}
-					for _, idx := range tableMetadata.ListIndexes() {
-						for _, indexedCol := range idx.GetProto().GetExpressions() {
-							tables[tableName][indexedCol] = true
-						}
-					}
-				}
-				colName := cmd.Name
-				if _, isIndexCol := tables[tableName][colName]; isIndexCol {
-					adviceList = append(adviceList, &storepb.Advice{
-						Status:        level,
-						Code:          code.DropIndexColumn.Int32(),
-						Title:         title,
-						Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, colName),
-						StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
-					})
-				}
-			}
-		default:
-		}
+	for _, f := range tidbv1review.ColumnDisallowDropInIndex(stmtNodes(stmts), v1reviewSchema(checkCtx.OriginalMetadata)) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.DropIndexColumn.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", f.Table, f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(stmts[f.Statement].FirstTokenLine()),
+		})
 	}
 	return adviceList, nil
+}
+
+// dropsColumn reports whether the statement is an ALTER TABLE naming a table
+// with a DROP COLUMN action.
+func dropsColumn(stmt Stmt) bool {
+	alter, ok := stmt.Node.(*ast.AlterTableStmt)
+	if !ok || alter.Table == nil {
+		return false
+	}
+	return slices.ContainsFunc(alter.Commands, func(cmd *ast.AlterTableCmd) bool {
+		return cmd != nil && cmd.Type == ast.ATDropColumn
+	})
 }

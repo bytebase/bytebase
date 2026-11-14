@@ -9,3 +9,14 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE OR REPLACE VIEW v AS SELECT 2;
+  want:
+    - status: 2
+      code: 1601
+      title: SYSTEM_VIEW_DISALLOW_CREATE
+      content: View is forbidden, but "CREATE OR REPLACE VIEW v AS SELECT 2;" creates
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER VIEW v AS SELECT 3;

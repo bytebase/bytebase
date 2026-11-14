@@ -60,13 +60,6 @@ func (r *BaseRule) locLine(loc ast.Loc) int {
 	return r.baseLine + int(plsqlparser.ByteOffsetToRunePosition(r.stmtText, loc.Start).Line)
 }
 
-func (r *BaseRule) rawText(loc ast.Loc) string {
-	if loc.Start < 0 || loc.End < loc.Start || r.stmtText == "" || loc.End > len(r.stmtText) {
-		return ""
-	}
-	return r.stmtText[loc.Start:loc.End]
-}
-
 // OnStatement is a no-op default for rules while they are migrated to omni.
 func (*BaseRule) OnStatement(_ ast.Node) {}
 

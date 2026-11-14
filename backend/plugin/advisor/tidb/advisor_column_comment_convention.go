@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,20 +23,11 @@ func init() {
 }
 
 // ColumnCommentConventionAdvisor checks the comment convention for columns.
+// The judgment lives in omni (tidb/v1review.ColumnComment).
 type ColumnCommentConventionAdvisor struct {
 }
 
-// Check is Recipe A. Matches *ast.CreateTableStmt and *ast.AlterTableStmt
-// at top level; neither nests. EXPLAIN-DDL is invalid grammar in both
-// pingcap and omni.
-//
-// Cumulative shape divergence #14: column comment in omni lives in the
-// direct field ColumnDef.Comment (a normalized string), not in
-// column.Options[].Expr as in pingcap. The pingcap-typed advisor needed a
-// fallible restoreNode call (and an internal-error advice path on
-// failure); omni's direct field eliminates both. The internal-error
-// advice path is intentionally removed in this migration — there's no
-// fallible op left to wrap.
+// Check checks the comment convention for columns.
 func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -48,96 +41,43 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	title := checkCtx.Rule.Type.String()
 
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		var rows []columnCommentRow
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			if n.Table == nil {
-				continue
+	for _, stmt := range stmts {
+		_, isAlter := stmt.Node.(*ast.AlterTableStmt)
+		for _, f := range tidbv1review.ColumnComment([]ast.Node{stmt.Node}, payload.GetRequired(), commentMaxLength(payload)) {
+			line := stmt.AbsoluteLine(f.Start)
+			if isAlter {
+				line = stmt.FirstTokenLine()
 			}
-			tableName := n.Table.Name
-			for _, col := range n.Columns {
-				if col == nil {
+			advice := &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				StartPosition: base.ConvertANTLRLineToPosition(line),
+			}
+			switch f.Code {
+			case v1review.ColumnCommentMissing:
+				advice.Code = code.CommentEmpty.Int32()
+				advice.Content = fmt.Sprintf("Column `%s`.`%s` requires comments", f.Table, f.Name)
+			case v1review.ColumnCommentTooLong:
+				if payload.MaxLength < 0 {
 					continue
 				}
-				rows = append(rows, columnCommentRow{
-					table:   tableName,
-					column:  col.Name,
-					exists:  columnHasComment(col),
-					comment: col.Comment,
-					line:    ostmt.AbsoluteLine(col.Loc.Start),
-				})
-			}
-		case *ast.AlterTableStmt:
-			if n.Table == nil {
+				advice.Code = code.CommentTooLong.Int32()
+				advice.Content = fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", f.Table, f.Name, payload.MaxLength)
+			default:
 				continue
 			}
-			tableName := n.Table.Name
-			stmtLine := ostmt.FirstTokenLine()
-			for _, cmd := range n.Commands {
-				if cmd == nil {
-					continue
-				}
-				switch cmd.Type {
-				case ast.ATAddColumn:
-					for _, col := range addColumnTargets(cmd) {
-						if col == nil {
-							continue
-						}
-						rows = append(rows, columnCommentRow{
-							table:   tableName,
-							column:  col.Name,
-							exists:  columnHasComment(col),
-							comment: col.Comment,
-							line:    stmtLine,
-						})
-					}
-				case ast.ATChangeColumn, ast.ATModifyColumn:
-					if cmd.Column == nil {
-						continue
-					}
-					rows = append(rows, columnCommentRow{
-						table:   tableName,
-						column:  cmd.Column.Name,
-						exists:  columnHasComment(cmd.Column),
-						comment: cmd.Column.Comment,
-						line:    stmtLine,
-					})
-				default:
-				}
-			}
-		default:
-			continue
-		}
-
-		for _, r := range rows {
-			if payload.Required && !r.exists {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.CommentEmpty.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("Column `%s`.`%s` requires comments", r.table, r.column),
-					StartPosition: base.ConvertANTLRLineToPosition(r.line),
-				})
-			}
-			if payload.MaxLength >= 0 && int32(len(r.comment)) > payload.MaxLength {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.CommentTooLong.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", r.table, r.column, payload.MaxLength),
-					StartPosition: base.ConvertANTLRLineToPosition(r.line),
-				})
-			}
+			adviceList = append(adviceList, advice)
 		}
 	}
 	return adviceList, nil
 }
 
-type columnCommentRow struct {
-	table   string
-	column  string
-	exists  bool
-	comment string
-	line    int
+// commentMaxLength is the payload's MaxLength, and -1 for a nil payload so
+// that every column comes back and reading the payload for it fails, as V1
+// did for the first column it judged.
+func commentMaxLength(payload *storepb.SQLReviewRule_CommentConventionRulePayload) int {
+	if payload == nil {
+		return -1
+	}
+	return int(payload.MaxLength)
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,7 +21,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_TYPE_DISALLOW_LIST, &ColumnTypeDisallowListAdvisor{})
 }
 
-// ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.
+// ColumnTypeDisallowListAdvisor is the advisor checking for column type
+// restriction. The judgment lives in omni (pg/v1review.ColumnTypeDisallowList);
+// this adapter passes the disallowed types and renders the findings as advice.
 type ColumnTypeDisallowListAdvisor struct {
 }
 
@@ -31,105 +34,24 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	// V1 read the list without a nil check, so a missing payload panics.
+	disallowed := checkCtx.Rule.GetStringArrayPayload().List
 
-	typeRestriction := make(map[string]bool)
-	for _, tp := range stringArrayPayload.List {
-		typeRestriction[strings.ToLower(tp)] = true
-	}
-
-	rule := &columnTypeDisallowListRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		typeRestriction: typeRestriction,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnTypeDisallowListRule struct {
-	BaseRule
-
-	typeRestriction map[string]bool
-}
-
-func (*columnTypeDisallowListRule) Name() string {
-	return "column_type_disallow_list"
-}
-
-func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *columnTypeDisallowListRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		if col.TypeName != nil {
-			r.checkType(tableName, col.Colname, col.TypeName, col.Colname)
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range pgv1review.ColumnTypeDisallowList([]ast.Node{nodes[i]}, disallowed) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Code:    code.DisabledColumnType.Int32(),
+				Title:   checkCtx.Rule.Type.String(),
+				Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(f.Value), f.Table, f.Name),
+				StartPosition: &storepb.Position{
+					Line:   findingLine(stmt, f),
+					Column: 0,
+				},
+			})
 		}
 	}
-}
-
-func (r *columnTypeDisallowListRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		switch ast.AlterTableType(cmd.Subtype) {
-		case ast.AT_AddColumn:
-			colDef, ok := cmd.Def.(*ast.ColumnDef)
-			if !ok || colDef == nil || colDef.TypeName == nil {
-				continue
-			}
-			r.checkType(tableName, colDef.Colname, colDef.TypeName, colDef.Colname)
-		case ast.AT_AlterColumnType:
-			typeName, ok := cmd.Def.(*ast.ColumnDef)
-			if !ok || typeName == nil || typeName.TypeName == nil {
-				continue
-			}
-			r.checkType(tableName, cmd.Name, typeName.TypeName, cmd.Name)
-		default:
-		}
-	}
-}
-
-func (r *columnTypeDisallowListRule) checkType(tableName, columnName string, tn *ast.TypeName, searchName string) {
-	// Build a type text from the TypeName for equivalence checking
-	typeText := typeName(tn)
-
-	var matchedDisallowedType string
-	for disallowedType := range r.typeRestriction {
-		if areTypesEquivalent(typeText, disallowedType) {
-			matchedDisallowedType = disallowedType
-			break
-		}
-	}
-
-	if matchedDisallowedType != "" {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.DisabledColumnType.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Disallow column type %s but column %q.%q is", strings.ToUpper(matchedDisallowedType), tableName, columnName),
-			StartPosition: &storepb.Position{
-				Line:   r.FindLineByName(searchName),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

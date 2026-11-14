@@ -3,9 +3,9 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,7 +20,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_REQUIRE_DEFAULT, &ColumnRequireDefaultAdvisor{})
 }
 
-// ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.
+// ColumnRequireDefaultAdvisor is the advisor checking for column default
+// requirement. The judgment lives in omni (pg/v1review.ColumnRequireDefault);
+// this adapter renders the findings as advice.
 type ColumnRequireDefaultAdvisor struct {
 }
 
@@ -31,108 +33,21 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := &columnRequireDefaultRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnRequireDefaultRule struct {
-	BaseRule
-}
-
-func (*columnRequireDefaultRule) Name() string {
-	return "column_require_default"
-}
-
-func (r *columnRequireDefaultRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *columnRequireDefaultRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		if !r.hasDefault(col) {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range pgv1review.ColumnRequireDefault([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
 				Code:    code.NoDefault.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, col.Colname, "public"),
+				Title:   checkCtx.Rule.Type.String(),
+				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", f.Table, f.Name, "public"),
 				StartPosition: &storepb.Position{
-					Line:   r.FindLineByName(col.Colname),
+					Line:   findingLine(stmt, f),
 					Column: 0,
 				},
 			})
 		}
 	}
-}
-
-func (r *columnRequireDefaultRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
-			continue
-		}
-		colDef, ok := cmd.Def.(*ast.ColumnDef)
-		if !ok || colDef == nil {
-			continue
-		}
-		if !r.hasDefault(colDef) {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.NoDefault.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Column %q.%q in schema %q doesn't have DEFAULT", tableName, colDef.Colname, "public"),
-				StartPosition: &storepb.Position{
-					Line:   r.FindLineByName(colDef.Colname),
-					Column: 0,
-				},
-			})
-		}
-	}
-}
-
-// hasDefault checks if a column definition has a DEFAULT clause
-// or uses a serial type (which has an implicit default).
-func (*columnRequireDefaultRule) hasDefault(col *ast.ColumnDef) bool {
-	// Check if ColumnDef has RawDefault set directly
-	if col.RawDefault != nil {
-		return true
-	}
-
-	// Check if the type is serial/bigserial/smallserial (which have implicit defaults)
-	typeName := typeName(col.TypeName)
-	lower := strings.ToLower(typeName)
-	if lower == "serial" || lower == "bigserial" || lower == "smallserial" ||
-		lower == "serial4" || lower == "serial8" || lower == "serial2" {
-		return true
-	}
-
-	// Check for explicit DEFAULT constraint in the constraints list
-	for _, c := range columnConstraints(col) {
-		if c.Contype == ast.CONSTR_DEFAULT {
-			return true
-		}
-	}
-
-	return false
+	return adviceList, nil
 }
