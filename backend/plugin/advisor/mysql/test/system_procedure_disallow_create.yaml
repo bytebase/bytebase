@@ -17,3 +17,5 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE FUNCTION f() RETURNS INT RETURN 1;
+- statement: ALTER PROCEDURE p COMMENT 'x';

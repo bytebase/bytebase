@@ -23,3 +23,27 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    -- Altering a function is reported, as is CREATE OR ALTER.
+
+    CREATE OR ALTER FUNCTION dbo.f1() RETURNS INT AS BEGIN RETURN 1 END;
+    GO
+    ALTER FUNCTION dbo.f1() RETURNS INT AS BEGIN RETURN 2 END;
+  want:
+    - status: 2
+      code: 1701
+      title: SYSTEM_FUNCTION_DISALLOW_CREATE
+      content: Creating or altering functions is prohibited
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1701
+      title: SYSTEM_FUNCTION_DISALLOW_CREATE
+      content: Creating or altering functions is prohibited
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE dbo.p1 AS SELECT 1;

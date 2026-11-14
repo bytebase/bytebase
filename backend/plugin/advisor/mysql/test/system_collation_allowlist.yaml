@@ -134,3 +134,63 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a varchar(10) COLLATE latin1_bin,
+      b varchar(10)
+    ) COLLATE utf8mb4_bin;
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        "CREATE TABLE t(
+          a varchar(10) COLLATE latin1_bin,
+          b varchar(10)
+        ) COLLATE utf8mb4_bin;" used disabled collation 'latin1_bin'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        "CREATE TABLE t(
+          a varchar(10) COLLATE latin1_bin,
+          b varchar(10)
+        ) COLLATE utf8mb4_bin;" used disabled collation 'utf8mb4_bin'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+
+    ALTER TABLE t
+      MODIFY a varchar(10) COLLATE latin1_bin,
+      COLLATE = utf8mb4_bin;
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        "ALTER TABLE t
+          MODIFY a varchar(10) COLLATE latin1_bin,
+          COLLATE = utf8mb4_bin;" used disabled collation 'latin1_bin'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        "ALTER TABLE t
+          MODIFY a varchar(10) COLLATE latin1_bin,
+          COLLATE = utf8mb4_bin;" used disabled collation 'utf8mb4_bin'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
