@@ -49,9 +49,20 @@ var testMetadata = []*metadatapb.DatabaseSchemaMetadata{
 	},
 }
 
+// testExtractor resolves statements against one query span context, as the
+// statements of a batch share theirs. Case-insensitive matching is on,
+// matching T-SQL's default collation semantics.
+type testExtractor struct {
+	gCtx            base.GetQuerySpanContext
+	defaultDatabase string
+}
+
+func (e *testExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
+	return resolveQuerySpan(ctx, e.gCtx, statement, e.defaultDatabase, "dbo", true)
+}
+
 // newTestExtractor builds an extractor wired to the default mock catalog.
-// Case-insensitive matching is on, matching T-SQL's default collation semantics.
-func newTestExtractor(t *testing.T, defaultDatabase string) *querySpanExtractor {
+func newTestExtractor(t *testing.T, defaultDatabase string) *testExtractor {
 	t.Helper()
 	getter, lister := buildMockDatabaseMetadataGetter(testMetadata)
 	gCtx := base.GetQuerySpanContext{
@@ -59,7 +70,7 @@ func newTestExtractor(t *testing.T, defaultDatabase string) *querySpanExtractor 
 		ListDatabaseNamesFunc:   lister,
 		TempTables:              make(map[string]*base.PhysicalTable),
 	}
-	return newQuerySpanExtractor(defaultDatabase, "dbo", gCtx, true)
+	return &testExtractor{gCtx: gCtx, defaultDatabase: defaultDatabase}
 }
 
 type expectedColumn struct {
@@ -280,7 +291,7 @@ func TestQuerySpan_DeclareTableVariableRoundTrip(t *testing.T) {
 	}
 
 	// Step 1: DECLARE populates TempTables.
-	q1 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q1 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span1, err := q1.getQuerySpan(context.Background(), "DECLARE @t TABLE(id INT, name NVARCHAR(50))")
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span1.Type)
@@ -289,7 +300,7 @@ func TestQuerySpan_DeclareTableVariableRoundTrip(t *testing.T) {
 	require.Equal(t, []string{"id", "name"}, gCtx.TempTables["@t"].Columns)
 
 	// Step 2: SELECT from @t resolves via TempTables.
-	q2 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q2 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span2, err := q2.getQuerySpan(context.Background(), "SELECT id, name FROM @t")
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span2.Type)
@@ -393,14 +404,14 @@ func TestQuerySpan_TempTableDefinitions(t *testing.T) {
 		TempTables:              make(map[string]*base.PhysicalTable),
 	}
 
-	q1 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q1 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span1, err := q1.getQuerySpan(context.Background(), "CREATE TABLE #tmp(id INT, name NVARCHAR(50))")
 	require.NoError(t, err)
 	require.Equal(t, base.DDL, span1.Type)
 	require.Contains(t, gCtx.TempTables, "#tmp")
 	require.Equal(t, []string{"id", "name"}, gCtx.TempTables["#tmp"].Columns)
 
-	q2 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q2 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span2, err := q2.getQuerySpan(context.Background(), "SELECT id, name FROM #tmp")
 	require.NoError(t, err)
 	require.Len(t, span2.Results, 2)
@@ -416,11 +427,11 @@ func TestQuerySpan_TempTableDefinitionsCaseInsensitive(t *testing.T) {
 		TempTables:              make(map[string]*base.PhysicalTable),
 	}
 
-	q1 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q1 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	_, err := q1.getQuerySpan(context.Background(), "CREATE TABLE #Tmp(id INT, name NVARCHAR(50))")
 	require.NoError(t, err)
 
-	q2 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q2 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span2, err := q2.getQuerySpan(context.Background(), "SELECT id, name FROM #tmp")
 	require.NoError(t, err)
 	require.Len(t, span2.Results, 2)
@@ -436,14 +447,14 @@ func TestQuerySpan_SelectIntoTempTableRegistersColumns(t *testing.T) {
 		TempTables:              make(map[string]*base.PhysicalTable),
 	}
 
-	q1 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q1 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span1, err := q1.getQuerySpan(context.Background(), "SELECT a AS id, b INTO #selected FROM t")
 	require.NoError(t, err)
 	require.Equal(t, base.Select, span1.Type)
 	require.Contains(t, gCtx.TempTables, "#selected")
 	require.Equal(t, []string{"id", "b"}, gCtx.TempTables["#selected"].Columns)
 
-	q2 := newQuerySpanExtractor("db", "dbo", gCtx, true)
+	q2 := &testExtractor{gCtx: gCtx, defaultDatabase: "db"}
 	span2, err := q2.getQuerySpan(context.Background(), "SELECT * FROM #selected")
 	require.NoError(t, err)
 	require.Len(t, span2.Results, 2)
