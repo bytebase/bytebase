@@ -173,12 +173,12 @@ $$ LANGUAGE plpgsql;`,
 		{
 			name:     "Only DO keyword",
 			stmt:     `DO`,
-			expected: true, // omni parser accepts bare DO as a valid DoStmt
+			expected: false, // PostgreSQL requires a body, and omni rejects DO without one
 		},
 		{
 			name:     "DO without body",
 			stmt:     `DO;`,
-			expected: true, // omni parser accepts DO; as a valid DoStmt
+			expected: false, // PostgreSQL requires a body, and omni rejects DO without one
 		},
 		{
 			name:     "Malformed DO block",
