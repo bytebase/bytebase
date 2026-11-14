@@ -122,6 +122,14 @@ func rewriteMySQLLimitBeforeProcedure(sql string, tokens []omnimariadbparser.Tok
 }
 
 func rewriteMySQLSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
+	// LIMIT goes before PROCEDURE, which the token rewrite places.
+	if stmt.Procedure != nil {
+		return rewriteMySQLSelectProcedureLimit(sql, limitCount)
+	}
+	// OFFSET n ROWS without FETCH takes no LIMIT after it.
+	if stmt.Limit != nil && stmt.Limit.Count == nil {
+		return "", errors.New("cannot add LIMIT to OFFSET without FETCH")
+	}
 	if stmt.Limit != nil && stmt.Limit.Count != nil {
 		existingLimit := extractMySQLLimit(stmt.Limit.Count)
 		if existingLimit >= 0 && existingLimit <= limitCount {
