@@ -76,7 +76,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		if wrapped.Node == nil {
 			continue
 		}
-		node, text := UnwrapExplainAnalyze(wrapped.Node, wrapped.Text)
+		node, text := analysis.UnwrapExplainAnalyze(wrapped.Node, wrapped.Text)
 
 		switch n := node.(type) {
 		case *ast.TransactionStmt:
