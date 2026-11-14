@@ -24,14 +24,14 @@ func GetQuerySpan(
 	database, _ string,
 	ignoreCaseSensitive bool,
 ) (*base.QuerySpan, error) {
-	querySpan, err := getQuerySpan(ctx, gCtx, stmt.Text, database, ignoreCaseSensitive)
+	querySpan, err := resolveQuerySpan(ctx, gCtx, stmt.Text, database, ignoreCaseSensitive)
 	if err != nil {
 		return nil, convertError(err, stmt)
 	}
 	return querySpan, nil
 }
 
-func getQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
+func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string, ignoreCaseSensitive bool) (*base.QuerySpan, error) {
 	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
 		DefaultDatabase:     database,
 		IgnoreCaseSensitive: ignoreCaseSensitive,

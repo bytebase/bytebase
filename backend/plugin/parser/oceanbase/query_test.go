@@ -180,7 +180,7 @@ func TestValidateQueryExplainInto(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantValid, gotValid)
 
-			span, err := getQuerySpan(context.Background(), base.GetQuerySpanContext{}, tc.statement, "db", false)
+			span, err := resolveQuerySpan(context.Background(), base.GetQuerySpanContext{}, tc.statement, "db", false)
 			require.NoError(t, err)
 			wantType := base.Explain
 			if !tc.wantValid {

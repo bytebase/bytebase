@@ -19,14 +19,14 @@ func init() {
 
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
-	querySpan, err := getQuerySpan(ctx, gCtx, stmt.Text, database)
+	querySpan, err := resolveQuerySpan(ctx, gCtx, stmt.Text, database)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span from statement: %s", stmt.Text)
 	}
 	return querySpan, nil
 }
 
-func getQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string) (*base.QuerySpan, error) {
+func resolveQuerySpan(ctx context.Context, gCtx base.GetQuerySpanContext, statement, database string) (*base.QuerySpan, error) {
 	span, err := analysis.ResolveQuerySpan(statement, analysis.ResolveOptions{
 		DefaultDatabase: database,
 		Catalog:         newCatalog(ctx, gCtx),
