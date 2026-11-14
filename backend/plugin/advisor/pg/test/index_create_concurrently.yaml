@@ -20,3 +20,30 @@
     );
     CREATE INDEX IDX_feed_subscription_userId ON feed_subscription (userId);
   changeType: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE INDEX idx_t_a ON t(a);
+    CREATE INDEX idx_book ON tech_book(id);
+    DROP INDEX idx_book;
+    DROP INDEX CONCURRENTLY idx_t_a;
+  want:
+    - status: 2
+      code: 814
+      title: INDEX_CREATE_CONCURRENTLY
+      content: Creating indexes will block writes on the table, unless use CONCURRENTLY
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 818
+      title: INDEX_CREATE_CONCURRENTLY
+      content: Droping indexes will block writes on the table, unless use CONCURRENTLY
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE public.t2(a int);
+    CREATE INDEX idx_t2_a ON public.t2(a);
+    CREATE INDEX idx_s_t2 ON other.t2(a);

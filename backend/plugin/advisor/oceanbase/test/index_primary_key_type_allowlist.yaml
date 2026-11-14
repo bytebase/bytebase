@@ -160,3 +160,26 @@
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY;
+- statement: ALTER TABLE tech_book ADD PRIMARY KEY (id, name, missing);
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column `name` in table `tech_book` is one of the primary key, but its type "varchar(255)" is not in allowlist
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a VARCHAR(5), b BIGINT UNSIGNED PRIMARY KEY, c NUMBER(10) PRIMARY KEY);
+    ALTER TABLE t MODIFY COLUMN a INT;
+    ALTER TABLE t ADD PRIMARY KEY (a);
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column `c` in table `t` is one of the primary key, but its type "decimal" is not in allowlist
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

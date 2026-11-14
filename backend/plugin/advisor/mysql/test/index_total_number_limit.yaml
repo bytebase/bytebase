@@ -70,3 +70,20 @@
         line: 10
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int,
+      KEY i1 (a), KEY i2 (b), KEY i3 (c), KEY i4 (d), KEY i5 (e), KEY i6 (f));
+  want:
+    - status: 2
+      code: 813
+      title: INDEX_TOTAL_NUMBER_LIMIT
+      content: The count of index in table `t` should be no more than 5, but found 6
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int,
+      KEY i1 (a), KEY i2 (b), KEY i3 (c), KEY i4 (d), KEY i5 (e));
+    ALTER TABLE t ADD SPATIAL INDEX s (a);
+    ALTER TABLE t ADD COLUMN g INT UNIQUE;
