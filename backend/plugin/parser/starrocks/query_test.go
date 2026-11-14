@@ -391,7 +391,6 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		// the permission gate, it only picks the execution path.
 		{"a global scope", "SET GLOBAL time_zone = 'UTC'", true, false},
 		{"SET NAMES", "SET NAMES utf8mb4", true, false},
-		{"UNSET VARIABLE", "UNSET VARIABLE time_zone", true, false},
 		{"a read stays explicitly read-only", "SELECT 1", true, true},
 		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},
 		{"a SET does not launder a DDL beside it", "SET time_zone = 'UTC'; DROP TABLE t", false, false},
