@@ -34,11 +34,12 @@ type StatementInfo = analysis.DMLTarget
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	backups, err := analysis.TransformDMLToSelect(statement, analysis.BackupOptions{
-		DefaultDatabase: sourceDatabase,
-		BackupDatabase:  targetDatabase,
-		TablePrefix:     tablePrefix,
-		CaseSensitive:   tCtx.IsCaseSensitive,
-		Catalog:         newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc),
+		DefaultDatabase:      sourceDatabase,
+		BackupDatabase:       targetDatabase,
+		TablePrefix:          tablePrefix,
+		CaseSensitive:        tCtx.IsCaseSensitive,
+		Catalog:              newBackupCatalog(ctx, tCtx.InstanceID, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc),
+		ReferencingDatabases: tCtx.ReferencingDatabases(ctx),
 		Columns: func(database, table string) (analysis.TableColumns, error) {
 			return classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IsCaseSensitive, tCtx.InstanceID, database, table)
 		},

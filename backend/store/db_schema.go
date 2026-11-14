@@ -76,6 +76,36 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
+// ListDatabasesWithCrossDatabaseForeignKeys lists the instance's databases
+// whose synced metadata may hold a foreign key into another database. The
+// MySQL-family syncs fill a foreign key's referencedSchema only for another
+// database, and protojson leaves an empty one out, so the key's name in the
+// stored text is the test; matching the text spares parsing every database's
+// metadata. It may list a database whose text names the key otherwise.
+func (s *Store) ListDatabasesWithCrossDatabaseForeignKeys(ctx context.Context, instanceID string) ([]string, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT db_name
+		FROM db_schema
+		WHERE instance = $1 AND metadata::text LIKE '%"referencedSchema"%'
+		ORDER BY db_name`, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var names []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
 // UpsertDBSchema upserts the schema a sync read from the live database at
 // syncedAt. Syncs overlap - a migration task dumps the schema it just changed
 // while the queued syncer is still dumping what it read before the migration -
