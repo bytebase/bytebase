@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -325,7 +326,7 @@ func (o *ExecuteOptions) LogCommandResponse(affectedRows int64, allAffectedRows 
 		CommandResponse: &storepb.TaskRunLog_CommandResponse{
 			AffectedRows:    affectedRows,
 			AllAffectedRows: allAffectedRows,
-			Error:           rerr,
+			Error:           common.SanitizeJSONString(rerr),
 		},
 	})
 	if err != nil {
