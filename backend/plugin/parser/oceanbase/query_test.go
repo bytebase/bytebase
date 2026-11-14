@@ -1,6 +1,7 @@
 package oceanbase
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -179,13 +180,13 @@ func TestValidateQueryExplainInto(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantValid, gotValid)
 
-			node, err := singleStatement(tc.statement)
+			span, err := getQuerySpan(context.Background(), base.GetQuerySpanContext{}, tc.statement, "db", false)
 			require.NoError(t, err)
 			wantType := base.Explain
 			if !tc.wantValid {
 				wantType = base.DML
 			}
-			require.Equal(t, wantType, classifyQueryType(node, false, tc.statement))
+			require.Equal(t, wantType, span.Type)
 		})
 	}
 }
