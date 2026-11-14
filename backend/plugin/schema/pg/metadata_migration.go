@@ -22,16 +22,11 @@ const (
 	viewCommentObjectFormat = "VIEW \"%s\".\"%s\""
 )
 
-func pgDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	return pgDiffMetadataMigrationForEngine(storepb.Engine_POSTGRES, oldSchema, newSchema)
-}
-
+// pgDiffCockroachMetadataMigration diffs CockroachDB snapshots with Bytebase's
+// metadata differ and renders the migration with this file's generator, which
+// PostgreSQL used before its metadata diffs moved to omni's catalog.
 func pgDiffCockroachMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	return pgDiffMetadataMigrationForEngine(storepb.Engine_COCKROACHDB, oldSchema, newSchema)
-}
-
-func pgDiffMetadataMigrationForEngine(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	diff, err := schema.GetDatabaseSchemaDiff(engine, oldSchema, newSchema)
+	diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_COCKROACHDB, oldSchema, newSchema)
 	if err != nil {
 		return "", err
 	}
