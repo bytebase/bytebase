@@ -51,10 +51,13 @@ func validateQuery(statement string) (bool, bool, error) {
 //
 // Only variable assignment qualifies. SET PASSWORD and SET DEFAULT STORAGE VAULT are
 // separate nodes and stay refused, as they are for Postgres: they administer the
-// server rather than prepare a read.
+// server rather than prepare a read. SET ... AS DEFAULT STORAGE VOLUME, which sets
+// the cluster's default volume, is refused too.
 func needsExecute(node ast.Node) bool {
-	switch node.(type) {
-	case *ast.SetStmt, *ast.UnsetStmt:
+	switch n := node.(type) {
+	case *ast.SetStmt:
+		return n.Type != "DEFAULT STORAGE VOLUME"
+	case *ast.UnsetStmt:
 		return true
 	}
 	return false
