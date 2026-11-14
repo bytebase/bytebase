@@ -5,11 +5,11 @@ import (
 	"slices"
 	"strings"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -58,7 +58,7 @@ func getAffectedRows(res []any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
+	return pganalysis.EstimatedAffectedRowsFromExplainJSON(plan)
 }
 
 // getInsertedRows returns the estimated rows an INSERT adds, without the rows its data-modifying
@@ -68,7 +68,7 @@ func getInsertedRows(res []any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
+	return pganalysis.EstimatedInsertedRowsFromExplainJSON(plan)
 }
 
 // columnConstraints iterates over a ColumnDef's constraint list.
