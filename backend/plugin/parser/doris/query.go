@@ -1,6 +1,9 @@
 package doris
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/bytebase/omni/doris/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -57,15 +60,20 @@ func validateQuery(statement string) (bool, bool, error) {
 // Only variable assignment qualifies. SET PASSWORD and SET DEFAULT STORAGE VAULT are
 // separate nodes and stay refused, as they are for Postgres: they administer the
 // server rather than prepare a read. SET PROPERTY, which sets a user's properties,
-// is refused too.
+// and SET LDAP_ADMIN_PASSWORD, which stores the cluster's LDAP bind password, are
+// refused too.
 func needsExecute(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SetStmt:
-		return n.Type != "PROPERTY"
+		return n.Type != "PROPERTY" && !slices.ContainsFunc(n.Items, setsLDAPAdminPassword)
 	case *ast.UnsetStmt:
 		return true
 	}
 	return false
+}
+
+func setsLDAPAdminPassword(item *ast.SetItem) bool {
+	return !item.UserVariable && strings.EqualFold(item.Name, "ldap_admin_password")
 }
 
 // isReadOnlyAST returns true when the given top-level AST node represents a
