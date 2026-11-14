@@ -17,41 +17,8 @@
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10
     ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 6;
-  result:
-    - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1)
-          UNION DISTINCT
-          (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2)
-          UNION DISTINCT
-          (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3)
-          UNION DISTINCT
-          (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4)
-          UNION DISTINCT
-          (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5)
-          UNION DISTINCT
-          (WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6);
-      sourceschema: ""
-      sourcetablename: test
-      targettablename: _rollback_test_db
-      startposition:
-        line: 1
-        column: 1
-      endposition:
-        line: 18
-        column: 79
+  result: []
+  error: 'failed to prepare transformation: prior backup cannot handle a statement that reads db.test after an earlier statement changes it'
 - input: |-
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10

@@ -20,6 +20,8 @@ import (
 type rollbackCase struct {
 	Input  string
 	Result []base.BackupStatement
+	// Error is the refusal, when prior backup cannot back the input up.
+	Error string `yaml:",omitempty"`
 }
 
 func TestBackup(t *testing.T) {
@@ -48,7 +50,10 @@ func TestBackup(t *testing.T) {
 			ListDatabaseNamesFunc:   lister,
 			IsCaseSensitive:         false,
 		}, t.Input, "db", "backupDB", "_rollback")
-		a.NoError(err)
+		errText := ""
+		if err != nil {
+			errText = err.Error()
+		}
 		slices.SortFunc(result, func(x, y base.BackupStatement) int {
 			if x.TargetTableName == y.TargetTableName {
 				if x.Statement < y.Statement {
@@ -68,8 +73,12 @@ func TestBackup(t *testing.T) {
 
 		if record {
 			tests[i].Result = result
+			tests[i].Error = errText
 		} else {
-			a.Equal(t.Result, result, t.Input)
+			a.Equal(t.Error, errText, t.Input)
+			if errText == "" {
+				a.Equal(t.Result, result, t.Input)
+			}
 		}
 	}
 	if record {
