@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +23,7 @@ func init() {
 }
 
 // TableDisallowDDLAdvisor is the advisor checking for disallow DDL on specific tables.
+// The judgment lives in omni (mysql/v1review.TableDisallowDDL).
 type TableDisallowDDLAdvisor struct {
 }
 
@@ -29,68 +32,28 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 	if err != nil {
 		return nil, err
 	}
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	// A rule without a string array payload panics here, as V1 did.
+	disallowList := checkCtx.Rule.GetStringArrayPayload().List
 
-	rule := &tableDisallowDDLRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		disallowList: stringArrayPayload.List,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowDDLRule struct {
-	BaseRule
-	disallowList []string
-}
-
-func (*tableDisallowDDLRule) Name() string {
-	return "TableDisallowDDLRule"
-}
-
-func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table != nil {
-			r.checkTableName(n.Table.Name, r.LocToLine(n.Loc))
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		if n.Table != nil {
-			r.checkTableName(n.Table.Name, r.LocToLine(n.Loc))
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.DropTableStmt:
-		for _, tbl := range n.Tables {
-			r.checkTableName(tbl.Name, r.LocToLine(n.Loc))
-		}
-	case *ast.RenameTableStmt:
-		for _, pair := range n.Pairs {
-			if pair.Old != nil {
-				r.checkTableName(pair.Old.Name, r.LocToLine(n.Loc))
-			}
-		}
-	case *ast.TruncateStmt:
-		for _, tbl := range n.Tables {
-			r.checkTableName(tbl.Name, r.LocToLine(n.Loc))
-		}
-	default:
-	}
-}
-
-func (r *tableDisallowDDLRule) checkTableName(tableName string, lineNumber int32) {
-	for _, disallow := range r.disallowList {
-		if tableName == disallow {
-			absoluteLine := r.BaseLine + int(lineNumber)
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range mysqlv1review.TableDisallowDDL([]ast.Node{node}, disallowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDisallowDDL.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("DDL is disallowed on table %s.", tableName),
-				StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
+				Title:         title,
+				Content:       fmt.Sprintf("DDL is disallowed on table %s.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

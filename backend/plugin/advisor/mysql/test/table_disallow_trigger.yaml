@@ -14,3 +14,36 @@
         line: 2
         column: 0
       endposition: null
+- statement: DROP TRIGGER ins_sum;
+- statement: |-
+    CREATE TABLE a(b INT);
+
+    /* c */
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+       FOR EACH ROW SET @sum = @sum + NEW.amount;
+  want:
+    - status: 2
+      code: 610
+      title: TABLE_DISALLOW_TRIGGER
+      content: |-
+        Trigger is forbidden, but "/* c */
+        CREATE TRIGGER ins_sum BEFORE INSERT ON account
+           FOR EACH ROW SET @sum = @sum + NEW.amount;" creates
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1;
+    SELECT 2;
+
+    CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;
+  want:
+    - status: 2
+      code: 610
+      title: TABLE_DISALLOW_TRIGGER
+      content: Trigger is forbidden, but "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;" creates
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

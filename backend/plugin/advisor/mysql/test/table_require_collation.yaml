@@ -1,0 +1,60 @@
+- statement: CREATE TABLE t(a int) COLLATE utf8mb4_bin;
+- statement: CREATE TABLE t(a int) DEFAULT COLLATE = utf8mb4_bin;
+- statement: CREATE TABLE db.t(a int);
+  want:
+    - status: 2
+      code: 617
+      title: TABLE_REQUIRE_COLLATION
+      content: Table t does not have a collation specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int) CHARSET utf8mb4;
+  want:
+    - status: 2
+      code: 617
+      title: TABLE_REQUIRE_COLLATION
+      content: Table t does not have a collation specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a text COLLATE utf8mb4_bin);
+  want:
+    - status: 2
+      code: 617
+      title: TABLE_REQUIRE_COLLATION
+      content: Table t does not have a collation specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t AS SELECT 1;
+  want:
+    - status: 2
+      code: 617
+      title: TABLE_REQUIRE_COLLATION
+      content: Table t does not have a collation specified
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE a(b int) COLLATE utf8mb4_bin;
+
+    /* c */
+    CREATE TABLE t(
+      a int
+    );
+  want:
+    - status: 2
+      code: 617
+      title: TABLE_REQUIRE_COLLATION
+      content: Table t does not have a collation specified
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t COLLATE utf8mb4_bin;
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a int); END;

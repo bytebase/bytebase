@@ -46,13 +46,6 @@ func listStrings(list *ast.List) []string {
 	return result
 }
 
-func listItems(list *ast.List) []ast.Node {
-	if list == nil {
-		return nil
-	}
-	return list.Items
-}
-
 func columnDefs(list *ast.List) []*ast.ColumnDef {
 	if list == nil {
 		return nil
