@@ -42,3 +42,32 @@
         line: 5
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b text,
+      KEY idx_hash USING HASH (a),
+      KEY idx_trailing (a) USING HASH,
+      FULLTEXT KEY ft (b),
+      FOREIGN KEY (a) REFERENCES p(a)
+    );
+  want:
+    - status: 2
+      code: 816
+      title: INDEX_TYPE_ALLOW_LIST
+      content: Index type `FULLTEXT` is not allowed
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE INDEX idx_before USING HASH ON t(a);
+    CREATE INDEX idx_after ON t(a) USING HASH;
+    CREATE FULLTEXT INDEX ft ON t(b);
+  want:
+    - status: 2
+      code: 816
+      title: INDEX_TYPE_ALLOW_LIST
+      content: Index type `FULLTEXT` is not allowed
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

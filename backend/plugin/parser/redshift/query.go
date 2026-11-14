@@ -51,13 +51,13 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 func validateEditorStatement(node redshiftast.Node) (bool, bool) {
 	switch n := node.(type) {
 	case *redshiftast.SelectStmt:
-		if n.IntoClause != nil || hasDMLInWithClause(n.WithClause) {
+		if hasSelectIntoClause(n) || hasDMLInWithClause(n.WithClause) {
 			return false, false
 		}
 		return true, true
 	case *redshiftast.ExplainStmt:
 		if hasExplainAnalyze(n) {
-			if selectStmt, ok := n.Query.(*redshiftast.SelectStmt); ok && selectStmt.IntoClause == nil && !hasDMLInWithClause(selectStmt.WithClause) {
+			if selectStmt, ok := n.Query.(*redshiftast.SelectStmt); ok && !hasSelectIntoClause(selectStmt) && !hasDMLInWithClause(selectStmt.WithClause) {
 				return true, false
 			}
 			return false, false

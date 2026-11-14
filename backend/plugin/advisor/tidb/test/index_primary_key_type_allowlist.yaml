@@ -196,3 +196,25 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE orders ADD PRIMARY KEY (order_id, amount)
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column `amount` in table `orders` is one of the primary key, but its type "decimal(10,2)" is not in allowlist
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a DECIMAL(4,1) PRIMARY KEY, b INT UNSIGNED PRIMARY KEY)
+  changeType: 1
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column `a` in table `t` is one of the primary key, but its type "decimal" is not in allowlist
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

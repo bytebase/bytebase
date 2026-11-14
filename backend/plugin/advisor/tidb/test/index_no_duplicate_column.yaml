@@ -156,3 +156,49 @@
 # cumulative #29 contract precisely.
 - statement: CREATE TABLE t(a int, INDEX idx1 ((a + 1), (a + 1)))
   changeType: 1
+- statement: CREATE UNIQUE INDEX uk ON t (a, b, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `uk` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int, b int, PRIMARY KEY pk_ab (a, b, a))
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: PRIMARY KEY `PRIMARY` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE FULLTEXT INDEX ft ON t (a, a)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: INDEX `ft` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- leading comment
+    ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a, a) REFERENCES p(a, b)
+  changeType: 1
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: FOREIGN KEY `fk` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

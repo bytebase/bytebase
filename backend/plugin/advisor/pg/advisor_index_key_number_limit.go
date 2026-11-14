@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_KEY_NUMBER_LIMIT, &IndexKeyNumberLimitAdvisor{})
 }
 
-// IndexKeyNumberLimitAdvisor is the advisor checking for index key number limit.
+// IndexKeyNumberLimitAdvisor is the advisor checking for index key number
+// limit. The judgment lives in omni (pg/v1review.IndexKeyNumberLimit); this
+// adapter converts the rule's payload and renders the findings as advice.
 type IndexKeyNumberLimitAdvisor struct {
 }
 
@@ -36,97 +39,21 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
+	limit := int(numberPayload.Number)
 
-	rule := &indexKeyNumberLimitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		max: int(numberPayload.Number),
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexKeyNumberLimitRule struct {
-	BaseRule
-
-	max int
-}
-
-func (*indexKeyNumberLimitRule) Name() string {
-	return "index_key_number_limit"
-}
-
-func (r *indexKeyNumberLimitRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.IndexStmt:
-		r.handleIndexStmt(n)
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *indexKeyNumberLimitRule) handleIndexStmt(n *ast.IndexStmt) {
-	keyCount := len(indexColumns(n))
-	if r.max > 0 && keyCount > r.max {
-		indexName := n.Idxname
-		tableName := rangeVarTableName(n.Relation)
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", indexName, tableName, r.max),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *indexKeyNumberLimitRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	_, constraints := tableElements(n)
-	for _, c := range constraints {
-		r.checkConstraint(c, tableName)
-	}
-}
-
-func (r *indexKeyNumberLimitRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	for _, cmd := range alterTableCmds(n) {
-		if cmd.Subtype == int(ast.AT_AddConstraint) {
-			if c, ok := cmd.Def.(*ast.Constraint); ok {
-				r.checkConstraint(c, tableName)
-			}
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for i, node := range nodes {
+		for _, f := range pgv1review.IndexKeyNumberLimit([]ast.Node{node}, limit) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.IndexKeyNumberExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", f.Name, f.Table, limit),
+				StartPosition: findingPosition(stmts[i], f),
+			})
 		}
 	}
-}
-
-func (r *indexKeyNumberLimitRule) checkConstraint(c *ast.Constraint, tableName string) {
-	var keyCount int
-	switch c.Contype {
-	case ast.CONSTR_PRIMARY, ast.CONSTR_UNIQUE:
-		keyCount = len(constraintColumns(c))
-	case ast.CONSTR_FOREIGN:
-		keyCount = len(listStrings(c.FkAttrs))
-	default:
-		return
-	}
-	if r.max > 0 && keyCount > r.max {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.IndexKeyNumberExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The number of keys of index %q in table %q should be not greater than %d", c.Conname, tableName, r.max),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

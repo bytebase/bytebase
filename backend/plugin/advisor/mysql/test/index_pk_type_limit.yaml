@@ -160,3 +160,27 @@
 - statement: |-
     CREATE TABLE t(id int);
     ALTER TABLE t CHANGE COLUMN id id2 INT(5) PRIMARY KEY;
+- statement: CREATE TABLE t(a INTEGER PRIMARY KEY, b INT UNSIGNED, c DECIMAL(10,2), PRIMARY KEY (b, c));
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PK_TYPE_LIMIT
+      content: Columns in primary key must be INT/BIGINT but `t`.`c` is decimal(10,2)
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD PRIMARY KEY (id, name, missing);
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PK_TYPE_LIMIT
+      content: Columns in primary key must be INT/BIGINT but `tech_book`.`name` is varchar(255)
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a VARCHAR(5));
+    ALTER TABLE t CHANGE COLUMN a b INT;
+    ALTER TABLE t ADD PRIMARY KEY (a, b);

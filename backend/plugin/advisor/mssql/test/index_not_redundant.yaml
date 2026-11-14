@@ -22,3 +22,55 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE INDEX test_index ON pokes (c10);
+  want:
+    - status: 2
+      code: 817
+      title: INDEX_NOT_REDUNDANT
+      content: Redundant indexes with the same prefix ('idx_1' and 'test_index') in 'dbo.pokes' is not allowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX test_index ON sales.orders (customer_id, note);
+  want:
+    - status: 2
+      code: 817
+      title: INDEX_NOT_REDUNDANT
+      content: Redundant indexes with the same prefix ('idx_customer' and 'test_index') in 'sales.orders' is not allowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX test_index ON master.dbo.pokes (c1);
+  want:
+    - status: 2
+      code: 817
+      title: INDEX_NOT_REDUNDANT
+      content: Redundant indexes with the same prefix ('idx_0' and 'test_index') in 'dbo.pokes' is not allowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX test_index ON other_db.dbo.pokes (c1);
+- statement: CREATE INDEX test_index ON dbo.POKES (c1);
+- statement: CREATE INDEX test_index ON dbo.pokes (C1);
+- statement: CREATE INDEX test_index ON dbo.pokes (c2, c1);
+- statement: |-
+    CREATE INDEX idx_a ON dbo.pokes (c3);
+
+    CREATE UNIQUE INDEX idx_b
+      ON dbo.pokes (c1, c3);
+  want:
+    - status: 2
+      code: 817
+      title: INDEX_NOT_REDUNDANT
+      content: Redundant indexes with the same prefix ('idx_0' and 'idx_b') in 'dbo.pokes' is not allowed
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    BEGIN
+      CREATE INDEX test_index ON dbo.pokes (c1);
+    END;
