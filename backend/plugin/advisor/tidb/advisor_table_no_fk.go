@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
 }
 
-// TableNoFKAdvisor is the advisor checking table disallow foreign key.
+// TableNoFKAdvisor is the advisor checking table disallow foreign key. The
+// judgment lives in omni (tidb/v1review.TableNoForeignKey); this adapter
+// renders the findings as advice.
 type TableNoFKAdvisor struct {
 }
 
@@ -35,64 +39,21 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	checker := &tableNoFKChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type tableNoFKChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-func (c *tableNoFKChecker) checkStmt(ostmt Stmt) {
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table == nil {
-			return
-		}
-		for _, constraint := range n.Constraints {
-			if constraint == nil || constraint.Type != ast.ConstrForeignKey {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.TableNoForeignKey([]ast.Node{stmt.Node}) {
+			if f.Code != v1review.TableForeignKey {
 				continue
 			}
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableHasFK.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
-				StartPosition: base.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(constraint.Loc.Start)),
+				Title:         title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", f.Table),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
-	case *ast.AlterTableStmt:
-		if n.Table == nil {
-			return
-		}
-		stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-		for _, cmd := range n.Commands {
-			if cmd == nil {
-				continue
-			}
-			if cmd.Type != ast.ATAddConstraint || cmd.Constraint == nil {
-				continue
-			}
-			if cmd.Constraint.Type != ast.ConstrForeignKey {
-				continue
-			}
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
-				Code:          code.TableHasFK.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", n.Table.Name),
-				StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
-			})
-		}
-	default:
 	}
+	return adviceList, nil
 }

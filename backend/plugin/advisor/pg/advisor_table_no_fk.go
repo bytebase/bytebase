@@ -5,10 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoFKAdvisor{})
 }
 
-// TableNoFKAdvisor is the advisor checking table disallow foreign key.
+// TableNoFKAdvisor is the advisor checking table disallow foreign key. The
+// judgment lives in omni (pg/v1review.TableNoForeignKey); this adapter
+// renders the findings as advice.
 type TableNoFKAdvisor struct {
 }
 
@@ -30,88 +35,31 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	rule := &tableNoFKRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableNoFKRule struct {
-	BaseRule
-}
-
-func (*tableNoFKRule) Name() string {
-	return "table_no_fk"
-}
-
-func (r *tableNoFKRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-// handleCreateStmt handles CREATE TABLE with FK constraints.
-func (r *tableNoFKRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	schema := schemaName(n.Relation)
-
-	cols, constraints := tableElements(n)
-
-	// Check table-level constraints for FOREIGN KEY
-	for _, c := range constraints {
-		if c.Contype == ast.CONSTR_FOREIGN {
-			r.addFKAdvice(schema, tableName)
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-
-	// Check column-level constraints for REFERENCES (column-level FK)
-	for _, col := range cols {
-		for _, c := range columnConstraints(col) {
-			if c.Contype == ast.CONSTR_FOREIGN {
-				r.addFKAdvice(schema, tableName)
-				return
-			}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	}
-}
-
-// handleAlterTableStmt handles ALTER TABLE ADD CONSTRAINT with FK.
-func (r *tableNoFKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	schema := schemaName(n.Relation)
-
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddConstraint {
-			constraint, ok := cmd.Def.(*ast.Constraint)
-			if !ok || constraint == nil {
+		// V1 anchored every finding on the statement text's first
+		// non-whitespace line and quoted the trimmed statement text.
+		text := &BaseRule{StmtText: stmt.Text}
+		for _, f := range pgv1review.TableNoForeignKey([]ast.Node{node}) {
+			if f.Code != v1review.TableForeignKey {
 				continue
 			}
-			if constraint.Contype == ast.CONSTR_FOREIGN {
-				r.addFKAdvice(schema, tableName)
-				return
-			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.TableHasFK.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", f.Value, f.Table, text.TrimmedStmtText()),
+				StartPosition: &storepb.Position{Line: text.ContentStartLine() + int32(stmt.BaseLine())},
+			})
 		}
 	}
-}
-
-func (r *tableNoFKRule) addFKAdvice(schemaName, tableName string) {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.TableHasFK.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("Foreign key is not allowed in the table %q.%q, related statement: \"%s\"", schemaName, tableName, r.TrimmedStmtText()),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

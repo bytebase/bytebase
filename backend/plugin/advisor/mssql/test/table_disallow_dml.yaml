@@ -58,3 +58,55 @@
         line: 1
         column: 0
       endposition: null
+- statement: INSERT MySchema.Identifier (Id, Name) VALUES (1, 'Alice');
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO [MySchema].[Identifier] (Id, Name) VALUES (1, 'Alice');
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: INSERT INTO MySchema.MyTable SELECT * FROM MySchema.Identifier;
+- statement: UPDATE i SET Name = 'Bob' FROM MySchema.Identifier AS i;
+- statement: |-
+    WITH c AS (SELECT 1 AS Id)
+    DELETE FROM MySchema.Identifier WHERE Id IN (SELECT Id FROM c);
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DELETE FROM myschema.identifier WHERE Id = 1;
+- statement: IF 1 = 1 INSERT INTO MySchema.Identifier (Id) VALUES (1);
+- statement: |-
+    -- leading comment
+
+    SELECT * FROM MySchema.Identifier;
+    UPDATE
+      MySchema.Identifier SET Name = 'Bob';
+  want:
+    - status: 2
+      code: 614
+      title: TABLE_DISALLOW_DML
+      content: DML is disallowed on table MySchema.Identifier.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: TRUNCATE TABLE MySchema.Identifier;
