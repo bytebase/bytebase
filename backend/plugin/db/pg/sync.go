@@ -1498,13 +1498,10 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 			Comment:   sequenceComment,
 			SkipDump:  skipDump,
 		}
-		if columnOidKey, ok := sequenceOwnerMap[oid]; ok {
-			if tableKey, ok := tableOidMap[columnOidKey.TableOid]; ok {
+		if owner, ok := sequenceOwnerMap[oid]; ok {
+			if tableKey, ok := tableOidMap[owner.TableOid]; ok {
 				sequence.OwnerTable = tableKey.Table
-				// PostgreSQL column ID is 1-based.
-				if len(tableKey.Columns) > columnOidKey.ColumnID-1 {
-					sequence.OwnerColumn = tableKey.Columns[columnOidKey.ColumnID-1].Name
-				}
+				sequence.OwnerColumn = owner.ColumnName
 			}
 		}
 
@@ -1517,37 +1514,40 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 	return sequenceMap, nil
 }
 
-type ColumnOidKey struct {
-	TableOid int
-	ColumnID int
+type sequenceOwnerKey struct {
+	TableOid   int
+	ColumnName string
 }
 
-func getSequenceOwners(txn *sql.Tx) (map[int]ColumnOidKey, error) {
+func getSequenceOwners(txn *sql.Tx) (map[int]sequenceOwnerKey, error) {
 	query := `
 	SELECT
 		c.oid,
-		refobjid AS owning_tab,
-		refobjsubid AS owning_col
+		d.refobjid AS owning_tab,
+		a.attname AS owning_col
 	FROM pg_class c
-  		LEFT JOIN pg_depend d ON
-  			(c.relkind =  'S' AND
+  		JOIN pg_depend d ON
+  			(c.relkind = 'S' AND
                 d.classid = 'pg_class'::regclass AND d.objid = c.oid AND
                 d.objsubid = 0 AND
                 d.refclassid = 'pg_class'::regclass AND d.deptype IN ('a', 'i'))
-	WHERE refobjid is NOT NULL and refobjsubid is NOT NULL;`
+		JOIN pg_attribute a ON
+			(a.attrelid = d.refobjid AND a.attnum = d.refobjsubid)
+	WHERE NOT a.attisdropped;`
 
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	sequenceOwnerMap := make(map[int]ColumnOidKey)
+	sequenceOwnerMap := make(map[int]sequenceOwnerKey)
 	for rows.Next() {
-		var oid, tableOid, columnID int
-		if err := rows.Scan(&oid, &tableOid, &columnID); err != nil {
+		var oid, tableOid int
+		var columnName string
+		if err := rows.Scan(&oid, &tableOid, &columnName); err != nil {
 			return nil, err
 		}
-		sequenceOwnerMap[oid] = ColumnOidKey{TableOid: tableOid, ColumnID: columnID}
+		sequenceOwnerMap[oid] = sequenceOwnerKey{TableOid: tableOid, ColumnName: columnName}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
