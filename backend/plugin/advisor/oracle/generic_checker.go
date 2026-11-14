@@ -53,13 +53,6 @@ func (r *BaseRule) SetStatement(baseLine int, stmtText string) {
 	r.stmtText = stmtText
 }
 
-func (r *BaseRule) locLine(loc ast.Loc) int {
-	if loc.Start < 0 || r.stmtText == "" {
-		return r.baseLine + 1
-	}
-	return r.baseLine + int(plsqlparser.ByteOffsetToRunePosition(r.stmtText, loc.Start).Line)
-}
-
 // OnStatement is a no-op default for rules while they are migrated to omni.
 func (*BaseRule) OnStatement(_ ast.Node) {}
 

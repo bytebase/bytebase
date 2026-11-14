@@ -79,28 +79,6 @@ func rangeVarTableName(rv *ast.RangeVar) string {
 	return rv.Relname
 }
 
-// schemaName extracts the schema name from a RangeVar, defaulting to "public".
-func schemaName(rv *ast.RangeVar) string {
-	if rv == nil || rv.Schemaname == "" {
-		return "public"
-	}
-	return rv.Schemaname
-}
-
-// constraintColumns extracts column names from a Constraint's Keys list.
-func constraintColumns(c *ast.Constraint) []string {
-	if c == nil || c.Keys == nil {
-		return nil
-	}
-	var cols []string
-	for _, item := range c.Keys.Items {
-		if s, ok := item.(*ast.String); ok {
-			cols = append(cols, s.Str)
-		}
-	}
-	return cols
-}
-
 // columnConstraints iterates over a ColumnDef's constraint list.
 func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
 	if col == nil || col.Constraints == nil {
@@ -133,20 +111,6 @@ func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint)
 		}
 	}
 	return cols, cons
-}
-
-// alterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
-func alterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
-	if alter.Cmds == nil {
-		return nil
-	}
-	var cmds []*ast.AlterTableCmd
-	for _, item := range alter.Cmds.Items {
-		if cmd, ok := item.(*ast.AlterTableCmd); ok {
-			cmds = append(cmds, cmd)
-		}
-	}
-	return cmds
 }
 
 // sessionSettings holds, in order, the statements that set the role or search path, which an EXPLAIN
@@ -223,53 +187,6 @@ func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
 }
 
-// typeName extracts the type name string from a TypeName node.
-func typeName(tn *ast.TypeName) string {
-	if tn == nil || tn.Names == nil {
-		return ""
-	}
-	var parts []string
-	for _, item := range tn.Names.Items {
-		if s, ok := item.(*ast.String); ok {
-			parts = append(parts, s.Str)
-		}
-	}
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
-}
-
-// typeNameFull extracts the full type name with modifiers from a TypeName node.
-// For example, "character varying(20)" instead of just "character varying".
-func typeNameFull(tn *ast.TypeName) string {
-	name := typeName(tn)
-	if name == "" {
-		return ""
-	}
-	if tn.Typmods != nil && len(tn.Typmods.Items) > 0 {
-		var mods []string
-		for _, item := range tn.Typmods.Items {
-			switch v := item.(type) {
-			case *ast.Integer:
-				mods = append(mods, fmt.Sprintf("%d", v.Ival))
-			case *ast.A_Const:
-				if iv, ok := v.Val.(*ast.Integer); ok {
-					mods = append(mods, fmt.Sprintf("%d", iv.Ival))
-				}
-			default:
-			}
-		}
-		if len(mods) > 0 {
-			name += "(" + strings.Join(mods, ",") + ")"
-		}
-	}
-	if tn.ArrayBounds != nil && len(tn.ArrayBounds.Items) > 0 {
-		name += "[]"
-	}
-	return name
-}
-
 // listStrings extracts string values from an ast.List.
 func listStrings(list *ast.List) []string {
 	if list == nil {
@@ -282,18 +199,4 @@ func listStrings(list *ast.List) []string {
 		}
 	}
 	return result
-}
-
-// indexColumns extracts column names from an IndexStmt's IndexParams list.
-func indexColumns(idx *ast.IndexStmt) []string {
-	if idx == nil || idx.IndexParams == nil {
-		return nil
-	}
-	var cols []string
-	for _, item := range idx.IndexParams.Items {
-		if elem, ok := item.(*ast.IndexElem); ok && elem.Name != "" {
-			cols = append(cols, elem.Name)
-		}
-	}
-	return cols
 }

@@ -252,3 +252,51 @@
         line: 3
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a TEXT UNIQUE, b LONG VARBINARY UNIQUE, c TINYBLOB UNIQUE, FULLTEXT KEY (a), FOREIGN KEY (b) REFERENCES p(b));
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`b` is mediumblob
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`b` is mediumblob
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`c` is tinyblob
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a BLOB, b INT);
+    CREATE VECTOR INDEX v ON t(a);
+    CREATE INDEX idx_a ON t(a(10), b);
+    ALTER TABLE t CHANGE COLUMN a a2 INT, ADD UNIQUE (a2);
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is blob
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is blob
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

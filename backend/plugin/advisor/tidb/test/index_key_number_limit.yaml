@@ -80,3 +80,49 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a int, b int, c int, d int, e int, f int, PRIMARY KEY (a, b, c, d, e, f))
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `PRIMARY` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx ON t (a, b, c, (a + 1), (b + 1), (c + 1))
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `idx` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int, b int, c int, d int, e int, f int, FOREIGN KEY fk_idx (a, b, c, d, e, f) REFERENCES p(a, b, c, d, e, f))
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `fk_idx` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    /* leading comment */
+    ALTER TABLE t ADD INDEX idx (a, b, c, d, e, f)
+  changeType: 1
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `idx` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

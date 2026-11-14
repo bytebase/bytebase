@@ -177,14 +177,3 @@ func inSlice(str string, slice []string) bool {
 	}
 	return false
 }
-
-// isTypeInList checks if a column type matches any type in the given list,
-// considering type equivalence.
-func isTypeInList(columnType string, typeList []string) bool {
-	for _, listType := range typeList {
-		if areTypesEquivalent(columnType, listType) {
-			return true
-		}
-	}
-	return false
-}

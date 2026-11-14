@@ -252,3 +252,43 @@
         line: 3
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a TEXT UNIQUE, b BLOB, c TINYBLOB UNIQUE, FULLTEXT KEY (a), KEY k ((b)), FOREIGN KEY (b) REFERENCES p(b));
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`b` is blob
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`c` is tinyblob
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a BLOB, b INT);
+    CREATE INDEX idx_a ON t((a), b) LOCAL;
+    CREATE VECTOR INDEX v ON t(a);
+    ALTER TABLE t CHANGE COLUMN a a2 INT, ADD UNIQUE (a2);
+  want:
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is blob
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 804
+      title: INDEX_TYPE_NO_BLOB
+      content: Columns in index must not be BLOB but `t`.`a` is blob
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
