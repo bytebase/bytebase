@@ -398,6 +398,16 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"SET DEFAULT STORAGE VAULT administers the server", "SET DEFAULT STORAGE VAULT v", false, false},
 		{"SET DEFAULT STORAGE VOLUME administers the cluster", "SET v AS DEFAULT STORAGE VOLUME", false, false},
 		{"SET CATALOG switches the session", "SET CATALOG hive", true, false},
+		{"SET WAREHOUSE switches the session", "SET WAREHOUSE w", true, false},
+		{"SET ROLE activates roles for the session", "SET ROLE r1, r2", true, false},
+		{"SET ROLE ALL", "SET ROLE ALL EXCEPT r1", true, false},
+		{"SET DEFAULT ROLE changes a user's default roles", "SET DEFAULT ROLE r TO u", false, false},
+		{"SET DEFAULT ROLE ALL for several users", "SET DEFAULT ROLE ALL TO 'u1'@'%', u2", false, false},
+		{"SET LDAP_ADMIN_PASSWORD stores the LDAP bind password", "SET LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"SET LDAP_ADMIN_PASSWORD in lowercase with PASSWORD()", "set ldap_admin_password = password('x')", false, false},
+		{"SET LDAP_ADMIN_PASSWORD beside a session variable", "SET time_zone = 'UTC', LDAP_ADMIN_PASSWORD = 'x'", false, false},
+		{"a user variable named ldap_admin_password", "SET @ldap_admin_password = 'x'", true, false},
+		{"SET TRANSACTION", "SET TRANSACTION READ ONLY", true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			valid, explicitReadOnly, err := validateQuery(tc.statement)

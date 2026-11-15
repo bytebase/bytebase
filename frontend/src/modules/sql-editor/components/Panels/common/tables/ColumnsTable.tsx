@@ -206,9 +206,13 @@ function ForeignKeyDisplay({
         const referencedColumn = referencedTable?.columns.find(
           (c) => c.name === fk.referencedColumns[position]
         );
-        const label = multiSchema
+        let label = multiSchema
           ? `${referencedSchema?.name ?? ""}.${referencedTable?.name ?? ""}(${referencedColumn?.name ?? ""})`
           : `${referencedTable?.name ?? ""}(${referencedColumn?.name ?? ""})`;
+        if (!multiSchema && fk.referencedSchema) {
+          // A key into another database, which this metadata does not hold.
+          label = `${fk.referencedSchema}.${fk.referencedTable}(${fk.referencedColumns[position] ?? ""})`;
+        }
         return (
           <span key={fk.name} className="break-all">
             {label}

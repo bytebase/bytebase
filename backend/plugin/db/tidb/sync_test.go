@@ -1,12 +1,18 @@
 package tidb
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/testing/protocmp"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func TestSetColumnMetadataDefault(t *testing.T) {
@@ -333,4 +339,40 @@ func TestSupportsCheckConstraintTable(t *testing.T) {
 			require.Equal(t, tc.want, supportsCheckConstraintTable(tc.version))
 		})
 	}
+}
+
+func TestSyncForeignKeyReferencedDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+	other := database + "_other"
+	_, err := container.GetDB().ExecContext(ctx, fmt.Sprintf(`
+CREATE DATABASE %[2]s;
+CREATE TABLE %[2]s.parent (id INT PRIMARY KEY);
+CREATE TABLE %[1]s.parent (id INT PRIMARY KEY);
+CREATE TABLE %[1]s.child (
+	id INT PRIMARY KEY,
+	local_id INT,
+	qualified_id INT,
+	remote_id INT,
+	CONSTRAINT fk_local FOREIGN KEY (local_id) REFERENCES %[1]s.parent (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+	CONSTRAINT fk_qualified FOREIGN KEY (qualified_id) REFERENCES %[1]s.parent (id) ON DELETE SET NULL ON UPDATE RESTRICT,
+	CONSTRAINT fk_remote FOREIGN KEY (remote_id) REFERENCES %[2]s.parent (id) ON DELETE CASCADE ON UPDATE RESTRICT
+);
+`, database, other))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := container.GetDB().ExecContext(context.Background(), fmt.Sprintf("DROP TABLE %s.child; DROP DATABASE %s", database, other))
+		require.NoError(t, err)
+	})
+
+	driver := openTestDriver(ctx, t, container)
+	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
+	foreignKeys, err := driver.getForeignKeyList(ctx, database)
+	require.NoError(t, err)
+	require.Empty(t, cmp.Diff([]*metadatapb.ForeignKeyMetadata{
+		{Name: "fk_local", Columns: []string{"local_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "RESTRICT", OnUpdate: "RESTRICT", MatchType: "NONE"},
+		{Name: "fk_qualified", Columns: []string{"qualified_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "SET NULL", OnUpdate: "RESTRICT", MatchType: "NONE"},
+		{Name: "fk_remote", Columns: []string{"remote_id"}, ReferencedSchema: other, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "CASCADE", OnUpdate: "RESTRICT", MatchType: "NONE"},
+	}, foreignKeys[db.TableKey{Table: "child"}], protocmp.Transform()))
 }
