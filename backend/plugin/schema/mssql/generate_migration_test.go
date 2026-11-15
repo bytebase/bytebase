@@ -147,7 +147,7 @@ func TestGetViewDependencies(t *testing.T) {
 				"WITH cte AS (SELECT id FROM [dbo].[a]) " +
 				"SELECT id FROM cte",
 			schema:   "dbo",
-			expected: []string{"dbo.a", "dbo.cte"},
+			expected: []string{"dbo.a"},
 		},
 	}
 

@@ -244,3 +244,47 @@ func requireStoredSchema(ctx context.Context, t *testing.T, fixture *storePostgr
 	require.NotNil(t, schema.GetSchemaMetadata("public").GetTable(table))
 	require.Equal(t, table, string(schema.GetRawDump()))
 }
+
+func TestListDatabasesWithCrossDatabaseForeignKeys(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default'), ('instance-b', 'default');
+	`)
+	ctx, s := fixture.ctx, fixture.store
+
+	keyed := func(referencedSchema string) *metadatapb.DatabaseSchemaMetadata {
+		return &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Tables: []*metadatapb.TableMetadata{{
+			Name:        "child",
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{{Name: "fk", ReferencedSchema: referencedSchema, ReferencedTable: "parent"}},
+		}}}}}
+	}
+	// The same database names in two instances: db_schema is keyed by (instance, db_name).
+	for _, row := range []struct {
+		instanceID, database string
+		metadata             *metadatapb.DatabaseSchemaMetadata
+	}{
+		{"instance-a", "cross", keyed("parent_db")},
+		{"instance-a", "local", keyed("")},
+		{"instance-a", "plain", schemaWithTable("t")},
+		{"instance-b", "cross", keyed("")},
+		{"instance-b", "local", keyed("parent_db")},
+	} {
+		_, err := s.UpsertDatabase(ctx, &store.DatabaseMessage{
+			ProjectID:    "default",
+			InstanceID:   row.instanceID,
+			DatabaseName: row.database,
+			Metadata:     &storepb.DatabaseMetadata{},
+		})
+		require.NoError(t, err)
+		stored, err := s.UpsertDBSchema(ctx, row.instanceID, row.database, row.metadata, nil, time.Now())
+		require.NoError(t, err)
+		require.True(t, stored)
+	}
+
+	names, err := s.ListDatabasesWithCrossDatabaseForeignKeys(ctx, "instance-a")
+	require.NoError(t, err)
+	require.Equal(t, []string{"cross"}, names)
+	names, err = s.ListDatabasesWithCrossDatabaseForeignKeys(ctx, "instance-b")
+	require.NoError(t, err)
+	require.Equal(t, []string{"local"}, names)
+}

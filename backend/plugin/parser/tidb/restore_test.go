@@ -22,6 +22,8 @@ type restoreCase struct {
 	OriginalDatabase string
 	OriginalTable    string
 	Result           string
+	// Error is the refusal, when prior backup cannot restore the input.
+	Error string `yaml:",omitempty"`
 }
 
 func TestRestore(t *testing.T) {
@@ -68,11 +70,16 @@ func TestRestore(t *testing.T) {
 					Column: 0,
 				},
 			})
-			a.NoError(err)
+			errText := ""
+			if err != nil {
+				errText = err.Error()
+			}
 
 			if record {
 				tests[i].Result = result
+				tests[i].Error = errText
 			} else {
+				a.Equal(t.Error, errText, t.Input)
 				a.Equal(t.Result, result, t.Input)
 			}
 		}
