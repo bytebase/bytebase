@@ -1036,7 +1036,7 @@ func TestQuerySpanScenarioBatch2_SubqueryCTEAndSetCoverage(t *testing.T) {
 			span, err := resolveQuerySpan(context.Background(), gCtx, statement, "db", false)
 			require.NoError(t, err, statement)
 			require.Equal(t, []base.QuerySpanResult{
-				{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: true},
+				{Name: "a", SourceColumns: sourceColumnSetFromResources([]base.ColumnResource{{Database: "db", Table: "t", Column: "a"}, {Database: "db", Table: "t2", Column: "a"}}), IsPlainField: false},
 			}, span.Results, statement)
 		}
 	})

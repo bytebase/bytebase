@@ -18,45 +18,25 @@
       SELECT * FROM test WHERE test.b1 > 10
     ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 6;
   result: []
-  error: 'failed to prepare transformation: prior backup cannot handle a statement that reads db.test after an earlier statement changes it'
+  error: |-
+    failed to prepare transformation: failed to parse sql: syntax error at or near "UPDATE" (line 3, column 3)
+    related text: ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 1;
 - input: |-
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10
     ) DELETE FROM test USING test JOIN t_cte WHERE test.b1 = t_cte.b1;
-  result:
-    - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test JOIN t_cte WHERE test.b1 = t_cte.b1;
-      sourceschema: ""
-      sourcetablename: test
-      targettablename: _rollback_test_db
-      startposition:
-        line: 1
-        column: 1
-      endposition:
-        line: 3
-        column: 67
+  result: []
+  error: |-
+    failed to prepare transformation: failed to parse sql: syntax error at or near "DELETE" (line 3, column 3)
+    related text: ) DELETE FROM test USING test JOIN t_cte WHERE test.b1 = t_cte.b1;
 - input: |-
     WITH t_cte AS (
       SELECT * FROM test WHERE test.b1 > 10
     ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1;
-  result:
-    - statement: |-
-        CREATE TABLE `backupDB`.`_rollback_test_db` LIKE `db`.`test`;
-        INSERT INTO `backupDB`.`_rollback_test_db` (`a`,`b`,`c`)  WITH t_cte AS (
-          SELECT * FROM test WHERE test.b1 > 10
-        ) SELECT DISTINCT `test`.`a`,`test`.`b`,`test`.`c` FROM test, t_cte WHERE test.b1 = t_cte.b1;
-      sourceschema: ""
-      sourcetablename: test
-      targettablename: _rollback_test_db
-      startposition:
-        line: 1
-        column: 1
-      endposition:
-        line: 3
-        column: 63
+  result: []
+  error: |-
+    failed to prepare transformation: failed to parse sql: syntax error at or near "UPDATE" (line 3, column 3)
+    related text: ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1;
 - input: |-
     UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;

@@ -184,7 +184,7 @@ SELECT PRODUCT_ID, CATEGORY, SUM(SALES_AMOUNT) AS TOTAL_REVENUE
 FROM PRODUCT_SALES
 GROUP BY PRODUCT_ID, CATEGORY;
 
-COMMENT ON VIEW PRODUCT_SALES_VIEW IS 'Product sales view';
+COMMENT ON TABLE PRODUCT_SALES_VIEW IS 'Product sales view';
 COMMENT ON MATERIALIZED VIEW PRODUCT_SALES_MV IS 'Product sales materialized view';
 `,
 			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
