@@ -193,6 +193,51 @@ func TestSyncEvents(t *testing.T) {
 	}, schema.Events, protocmp.Transform()))
 }
 
+func TestSyncForeignKeyReferencedDatabase(t *testing.T) {
+	server := newOceanBaseTestServer(t)
+	ctx := context.Background()
+	database := fmt.Sprintf("sync_fk_%d", time.Now().UnixNano())
+	other := database + "_other"
+
+	admin := server.open(ctx, t, server.user, server.password, "")
+	for _, name := range []string{database, other} {
+		_, err := admin.db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE `%s`", name))
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() {
+		for _, name := range []string{database, other} {
+			_, err := admin.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`", name))
+			require.NoError(t, err)
+		}
+	})
+
+	driver := server.open(ctx, t, server.user, server.password, database)
+	for _, statement := range []string{
+		fmt.Sprintf("CREATE TABLE `%s`.parent (id INT PRIMARY KEY)", other),
+		"CREATE TABLE parent (id INT PRIMARY KEY)",
+		fmt.Sprintf(`CREATE TABLE child (
+	id INT PRIMARY KEY,
+	local_id INT,
+	qualified_id INT,
+	remote_id INT,
+	CONSTRAINT fk_local FOREIGN KEY (local_id) REFERENCES parent (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+	CONSTRAINT fk_qualified FOREIGN KEY (qualified_id) REFERENCES `+"`%s`"+`.parent (id) ON DELETE SET NULL ON UPDATE RESTRICT,
+	CONSTRAINT fk_remote FOREIGN KEY (remote_id) REFERENCES `+"`%s`"+`.parent (id) ON DELETE CASCADE ON UPDATE RESTRICT
+)`, database, other),
+	} {
+		_, err := driver.db.ExecContext(ctx, statement)
+		require.NoError(t, err, statement)
+	}
+
+	foreignKeys, err := driver.getForeignKeyList(ctx, database)
+	require.NoError(t, err)
+	require.Empty(t, cmp.Diff([]*metadatapb.ForeignKeyMetadata{
+		{Name: "fk_local", Columns: []string{"local_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "RESTRICT", OnUpdate: "RESTRICT", MatchType: "NONE"},
+		{Name: "fk_qualified", Columns: []string{"qualified_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "SET NULL", OnUpdate: "RESTRICT", MatchType: "NONE"},
+		{Name: "fk_remote", Columns: []string{"remote_id"}, ReferencedSchema: other, ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "CASCADE", OnUpdate: "RESTRICT", MatchType: "NONE"},
+	}, foreignKeys[db.TableKey{Table: "child"}], protocmp.Transform()))
+}
+
 // OceanBase keeps listing a dropped database's events under its name, so a database created
 // again under that name lists an event created again twice.
 func TestSyncEventsOfRecreatedDatabase(t *testing.T) {
