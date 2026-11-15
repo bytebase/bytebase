@@ -79,8 +79,8 @@ func TestValidateSQLForEditor(t *testing.T) {
 				)
 				update t set a = 1;
 				`,
-			valid:       false,
-			gotAllQuery: false,
+			// MariaDB has no WITH before a DML statement.
+			err: true,
 		},
 		{
 			statement: `
@@ -91,8 +91,8 @@ func TestValidateSQLForEditor(t *testing.T) {
 				)
 				insert into t values (1, 2, 3);
 				`,
-			valid:       false,
-			gotAllQuery: false,
+			// MariaDB has no WITH before a DML statement.
+			err: true,
 		},
 		{
 			statement:   "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",

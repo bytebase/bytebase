@@ -55,7 +55,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 		},
 		{
 			name: "function",
-			want: "--\n-- Function structure for `f`\n--\nCREATE FUNCTION `f`() RETURNS int RETURN 1;;\nDELIMITER ;\n\n",
+			want: "--\n-- Function structure for `f`\n--\nDELIMITER ;;\nCREATE FUNCTION `f`() RETURNS int RETURN 1;;\nDELIMITER ;\n\n",
 			get: func() (string, error) {
 				return schema.GetFunctionDefinition(storepb.Engine_OCEANBASE, "", &metadatapb.FunctionMetadata{Name: "f", Definition: "CREATE FUNCTION `f`() RETURNS int RETURN 1"})
 			},
