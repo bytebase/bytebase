@@ -71,40 +71,6 @@ func getInsertedRows(res []any) (int64, error) {
 	return pganalysis.EstimatedInsertedRowsFromExplainJSON(plan)
 }
 
-// columnConstraints iterates over a ColumnDef's constraint list.
-func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
-	if col == nil || col.Constraints == nil {
-		return nil
-	}
-	var result []*ast.Constraint
-	for _, item := range col.Constraints.Items {
-		if c, ok := item.(*ast.Constraint); ok {
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-// tableElements iterates over a CreateStmt's table elements,
-// returning column defs and table constraints separately.
-func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
-	if create.TableElts == nil {
-		return nil, nil
-	}
-	var cols []*ast.ColumnDef
-	var cons []*ast.Constraint
-	for _, item := range create.TableElts.Items {
-		switch n := item.(type) {
-		case *ast.ColumnDef:
-			cols = append(cols, n)
-		case *ast.Constraint:
-			cons = append(cons, n)
-		default:
-		}
-	}
-	return cols, cons
-}
-
 // sessionSettings holds, in order, the statements that set the role or search path, which an EXPLAIN
 // replays. A SET LOCAL setting lasts until its transaction ends, ROLLBACK also drops the settings of
 // its transaction, and DISCARD ALL drops every setting.
@@ -177,18 +143,4 @@ func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	}
 	name := strings.ToLower(stmt.Name)
 	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
-}
-
-// listStrings extracts string values from an ast.List.
-func listStrings(list *ast.List) []string {
-	if list == nil {
-		return nil
-	}
-	var result []string
-	for _, item := range list.Items {
-		if s, ok := item.(*ast.String); ok {
-			result = append(result, s.Str)
-		}
-	}
-	return result
 }

@@ -74,15 +74,6 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	return adviceList, nil
 }
 
-// extractSchemaFromFuncname extracts the schema name from a function's qualified name list.
-func extractSchemaFromFuncname(funcname *ast.List) string {
-	parts := listStrings(funcname)
-	if len(parts) >= 2 {
-		return parts[0]
-	}
-	return ""
-}
-
 func getCurrentUser(ctx context.Context, driver *sql.DB) (string, error) {
 	var user string
 	err := driver.QueryRowContext(ctx, "SELECT CURRENT_USER").Scan(&user)
