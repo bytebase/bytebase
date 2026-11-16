@@ -957,13 +957,13 @@ describe("InstanceFormButtons", () => {
 
     await act(async () => {
       root.render(
-        <InstanceFormButtons contentClassName="mx-auto w-full max-w-4xl" />
+        <InstanceFormButtons contentClassName="mx-auto w-full max-w-5xl" />
       );
     });
 
     expect(
       container.querySelector('[data-testid="sticky-action-footer"]')
-    ).toHaveAttribute("data-content-class", "mx-auto w-full max-w-4xl");
+    ).toHaveAttribute("data-content-class", "mx-auto w-full max-w-5xl");
 
     const testButton = Array.from(container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("instance.test-connection")
@@ -975,7 +975,7 @@ describe("InstanceFormButtons", () => {
 
     expect(
       container.querySelector("p.text-error")?.parentElement
-    ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
+    ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
 
     await act(async () => {
       root.unmount();

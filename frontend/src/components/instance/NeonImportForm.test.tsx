@@ -787,7 +787,7 @@ test("Back preserves selections and settings", async () => {
   mount();
   expect(
     document.querySelector('[data-slot="sticky-action-footer-content"]')
-  ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
+  ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   await connect();
   selectAll();
   expect(
@@ -801,7 +801,7 @@ test("Back preserves selections and settings", async () => {
   fireEvent.click(button("common.back"));
   expect(
     document.querySelector('[data-slot="sticky-action-footer-content"]')
-  ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
+  ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   expect(screen.getByLabelText("instance.neon.connect.api-key")).toHaveValue(
     "napi_example"
   );
@@ -827,7 +827,7 @@ test("portals Step 0 StickyActionFooter into footerContainer when provided", () 
     ).toBeNull();
     expect(
       footerSlot.querySelector('[data-slot="sticky-action-footer-content"]')
-    ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
+    ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
     expect(
       within(footerSlot).getByRole("button", { name: "common.cancel" })
     ).toBeVisible();

@@ -89,6 +89,7 @@ import {
 } from "./neon-import";
 
 const PAGE_SIZE = 50;
+const FOOTER_CONTENT_CLASS = "mx-auto w-full max-w-5xl";
 
 type Step = 0 | 1 | 2 | 3;
 type Confirm =
@@ -820,7 +821,7 @@ export function NeonImportForm({
       case 0:
         return (
           <StickyActionFooter
-            contentClassName="mx-auto w-full max-w-4xl"
+            contentClassName={FOOTER_CONTENT_CLASS}
             left={
               <Button
                 type="button"
@@ -857,7 +858,7 @@ export function NeonImportForm({
       case 1:
         return (
           <StickyActionFooter
-            contentClassName="mx-auto w-full max-w-5xl"
+            contentClassName={FOOTER_CONTENT_CLASS}
             left={
               <Button appearance="outline" onClick={() => setStep(0)}>
                 {t("common.back")}
@@ -909,7 +910,7 @@ export function NeonImportForm({
       case 2:
         return (
           <StickyActionFooter
-            contentClassName="mx-auto w-full max-w-5xl"
+            contentClassName={FOOTER_CONTENT_CLASS}
             left={
               <Button appearance="outline" onClick={() => setStep(1)}>
                 {t("common.back")}
@@ -953,7 +954,7 @@ export function NeonImportForm({
       default:
         return activity === "auto" ? (
           <StickyActionFooter
-            contentClassName="mx-auto w-full max-w-5xl"
+            contentClassName={FOOTER_CONTENT_CLASS}
             left={
               <Button
                 variant="destructive"
@@ -967,7 +968,7 @@ export function NeonImportForm({
           />
         ) : (
           <StickyActionFooter
-            contentClassName="mx-auto w-full max-w-5xl"
+            contentClassName={FOOTER_CONTENT_CLASS}
             right={
               <>
                 {unresolved > 0 &&

@@ -18,7 +18,6 @@ import { FormField, ResponsiveFormLayout } from "@/components/ui/form";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { cn } from "@/lib/utils";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
@@ -131,7 +130,7 @@ function CreateInstanceFormInner({
   const isNeon =
     basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
   const showNeonImport = isNeon && method === "discover";
-  const isNeonWideStep = showNeonImport && neonStep > 0;
+  const hideNeonEntryHeader = showNeonImport && neonStep > 0;
   const neonCapacity = remainingInstanceCapacity({
     instanceCountLimit: useAppStore((state) => state.instanceCountLimit()),
     totalInstanceCount: useAppStore((state) => state.totalInstanceCount()),
@@ -295,12 +294,9 @@ function CreateInstanceFormInner({
         >
           <ResponsiveFormLayout
             density="compact"
-            className={cn(
-              "mx-auto flex w-full flex-col gap-y-4 px-4 py-4 sm:px-6",
-              isNeonWideStep ? "max-w-5xl" : "max-w-4xl"
-            )}
+            className="mx-auto flex w-full max-w-5xl flex-col gap-y-4 px-4 py-4 sm:px-6"
           >
-            {canPrepareSampleProjectInstance && !isNeonWideStep && (
+            {canPrepareSampleProjectInstance && !hideNeonEntryHeader && (
               <Alert
                 className="w-full"
                 title={t("instance.sample-project-instance-title")}
@@ -331,7 +327,10 @@ function CreateInstanceFormInner({
                 </Button>
               </Alert>
             )}
-            <div hidden={isNeonWideStep} className="flex w-full flex-col gap-4">
+            <div
+              hidden={hideNeonEntryHeader}
+              className="flex w-full flex-col gap-4"
+            >
               <InstanceFormBody
                 engineOnly
                 disabled={neonBusy || state.isRequesting}
@@ -442,7 +441,7 @@ function CreateInstanceFormInner({
         <div ref={setFooterSlot} />
         {!showNeonImport && (
           <InstanceFormButtons
-            contentClassName="mx-auto w-full max-w-4xl"
+            contentClassName="mx-auto w-full max-w-5xl"
             onCreated={onCreated}
             onAskAgent={handleAskAgent}
           />

@@ -312,7 +312,7 @@ describe("CreateInstanceView", () => {
       ?.closest(".overflow-auto");
     expect(scroller).toHaveClass("scrollbar-gutter-stable");
     expect(scroller?.firstElementChild).toHaveClass("mx-auto");
-    expect(scroller?.firstElementChild).toHaveClass("max-w-4xl");
+    expect(scroller?.firstElementChild).toHaveClass("max-w-5xl");
     expect(scroller?.firstElementChild).toHaveClass("px-4");
     expect(scroller?.firstElementChild).toHaveClass("sm:px-6");
 
@@ -323,7 +323,7 @@ describe("CreateInstanceView", () => {
     expect(buttons).not.toHaveClass("sm:px-6");
     expect(buttons).toHaveAttribute(
       "data-content-class",
-      "mx-auto w-full max-w-4xl"
+      "mx-auto w-full max-w-5xl"
     );
 
     act(() => {
@@ -805,7 +805,7 @@ test("collapses the engine, hosting, and method controls after Connect", () => {
   const scroller = view.container.querySelector(
     ".overflow-auto"
   ) as HTMLElement;
-  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-4xl");
+  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-5xl");
   const engine = view.getAllByTestId("instance-form-body")[0];
   expect(engine).toBeVisible();
   expect(
@@ -818,7 +818,7 @@ test("collapses the engine, hosting, and method controls after Connect", () => {
     view.queryByRole("radiogroup", { name: "instance.neon.method.title" })
   ).toBeNull();
   fireEvent.click(view.getByText("mock back to connect"));
-  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-4xl");
+  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-5xl");
   expect(engine).toBeVisible();
   expect(
     view.getByRole("radiogroup", { name: "instance.neon.method.title" })
