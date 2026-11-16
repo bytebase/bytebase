@@ -51,3 +51,86 @@
 - statement: |
     CREATE TABLE book(name VARCHAR(255));
     ALTER TABLE book ADD COLUMN (id int AUTO_INCREMENT, a int, b int, c int, d int);
+- statement: |-
+    CREATE TABLE book(
+      name VARCHAR(255),
+      a int AUTO_INCREMENT,
+      PRIMARY KEY (a));
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int);
+
+    -- auto_increment column on a later line
+    ALTER TABLE book
+      ADD COLUMN name VARCHAR(255),
+      MODIFY COLUMN id
+        int AUTO_INCREMENT,
+      ADD COLUMN (b int AUTO_INCREMENT, c int);
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`b` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(a BIGINT SERIAL DEFAULT VALUE);
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(a SERIAL);
+- statement: CREATE TABLE Shop.book(`a``b` int AUTO_INCREMENT PRIMARY KEY);
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`a`b` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(`数数数数数数数数数数数数数数数数数数数数数` int AUTO_INCREMENT PRIMARY KEY);
+    CREATE TABLE book(`数数数数数数数数数数数数数数数数数数数数数数` int AUTO_INCREMENT PRIMARY KEY);
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME COLUMN id TO a;
+- statement: CREATE PROCEDURE pr() BEGIN CREATE TABLE book(a int AUTO_INCREMENT PRIMARY KEY); END;

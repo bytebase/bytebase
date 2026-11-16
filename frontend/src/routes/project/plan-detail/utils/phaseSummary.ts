@@ -12,7 +12,7 @@ import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import type { AutomatedReviewRow } from "./planGates";
-import { reviewSummaryPart } from "./reviewLabels";
+import { type ReviewSummaryPart, reviewSummaryPart } from "./reviewLabels";
 
 export type { PlanCheckSummary } from "@/lib/plan/check";
 
@@ -187,9 +187,9 @@ export const buildReviewSummaryV2 = (
   t: T,
   rows: readonly AutomatedReviewRow[],
   openDiscussions: number
-): string => {
-  if (!issue) return "";
-  const parts: string[] = [];
+): ReviewSummaryPart[] => {
+  if (!issue) return [];
+  const parts: ReviewSummaryPart[] = [];
   const roles = issue.approvalTemplate?.flow?.roles ?? [];
   if (!issue.draft) {
     if (
@@ -221,7 +221,7 @@ export const buildReviewSummaryV2 = (
       t("plan.deploy-waiting.open-discussions", { count: openDiscussions })
     );
   }
-  return parts.join(" · ");
+  return parts;
 };
 
 export const buildDeploySummary = (

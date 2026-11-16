@@ -2230,7 +2230,6 @@
       "needs-attention": "{{count}} de {{total}} requieren atención",
       "no-findings": "Sin hallazgos",
       "not-run": "Aún no se ha ejecutado",
-      "nothing-needs-attention": "Nada requiere atención",
       "off": "desactivada",
       "off-for-project": "Desactivada en este proyecto",
       "opens-in-sql": "Haz clic para recorrerlos en el SQL.",
@@ -2283,7 +2282,7 @@
       "overridden_other": "{{count}} hallazgos P0 de {{reviewer}} se resolvieron sin cambios",
       "ready-to-deploy": "Todo superado; listo para desplegar.",
       "reviewer-failed": "{{reviewer}} no se pudo ejecutar",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} aún no se ha ejecutado",
       "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
       "reviewer-running": "{{reviewer}} en ejecución",
@@ -3513,7 +3512,7 @@
             "title": "Proponer cambios"
           },
           "read-access": {
-            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Reglas de aprobación, entornos, tipos semánticos y clasificación de datos · Concesiones de acceso, incluidas las solicitudes pendientes",
+            "details": "Quién tiene cada rol en el espacio de trabajo y sus proyectos · Grupos y sus miembros · Roles y sus permisos · Reglas y exenciones de enmascaramiento · Políticas de implementación, de consulta de datos, de etiquetas y de revisión · Reglas de aprobación, entornos, tipos semánticos y clasificación de datos · Concesiones de acceso, incluidas las solicitudes pendientes · Identidades de CI y quién puede iniciar sesión con ellas",
             "title": "Leer miembros, roles y políticas"
           },
           "read-data": {

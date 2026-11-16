@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE/DELETE statement.
+// The judgment lives in omni (mysql/v1review.StatementDisallowLimit); this
+// adapter renders its findings as advice.
 type StatementDisallowLimitAdvisor struct {
 }
 
@@ -32,74 +36,27 @@ func (*StatementDisallowLimitAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &disallowLimitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type disallowLimitRule struct {
-	BaseRule
-}
-
-func (*disallowLimitRule) Name() string {
-	return "StatementDisallowLimitRule"
-}
-
-func (r *disallowLimitRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	switch n := node.(type) {
-	case *ast.DeleteStmt:
-		if n.Limit != nil {
-			r.addLimitAdvice(code.DeleteUseLimit, text, n.Loc)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.UpdateStmt:
-		if n.Limit != nil {
-			r.addLimitAdvice(code.UpdateUseLimit, text, n.Loc)
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.InsertStmt:
-		if n.Select != nil {
-			r.checkSelectLimit(n.Select, text)
+		for _, f := range mysqlv1review.StatementDisallowLimit([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          dmlLimitCodes[f.Name].Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-	default:
 	}
+	return adviceList, nil
 }
 
-func (r *disallowLimitRule) checkSelectLimit(sel *ast.SelectStmt, text string) {
-	if sel == nil {
-		return
-	}
-	if inner := sel.ParenSource; inner != nil {
-		if sel.Limit != nil {
-			r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
-		}
-		r.checkSelectLimit(inner, text)
-		return
-	}
-	if sel.SetOp != ast.SetOpNone {
-		// Check set operation top-level limit.
-		if sel.Limit != nil {
-			r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
-		}
-		r.checkSelectLimit(sel.Left, text)
-		r.checkSelectLimit(sel.Right, text)
-		return
-	}
-	if sel.Limit != nil {
-		r.addLimitAdvice(code.InsertUseLimit, text, sel.Loc)
-	}
-}
-
-func (r *disallowLimitRule) addLimitAdvice(c code.Code, text string, _ ast.Loc) {
-	r.AddAdviceAbsolute(&storepb.Advice{
-		Status:        r.Level,
-		Code:          c.Int32(),
-		Title:         r.Title,
-		Content:       fmt.Sprintf("LIMIT clause is forbidden in INSERT, UPDATE and DELETE statement, but \"%s\" uses", text),
-		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
-	})
-}
+var dmlLimitCodes = map[string]code.Code{"INSERT": code.InsertUseLimit, "UPDATE": code.UpdateUseLimit, "DELETE": code.DeleteUseLimit}

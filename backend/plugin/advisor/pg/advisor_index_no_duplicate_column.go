@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, &IndexNoDuplicateColumnAdvisor{})
 }
 
-// IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.
+// IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate
+// columns in index. The judgment lives in omni
+// (pg/v1review.IndexNoDuplicateColumn); this adapter renders the findings as
+// advice.
 type IndexNoDuplicateColumnAdvisor struct {
 }
 
@@ -30,108 +34,19 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &indexNoDuplicateColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexNoDuplicateColumnRule struct {
-	BaseRule
-}
-
-func (*indexNoDuplicateColumnRule) Name() string {
-	return "index_no_duplicate_column"
-}
-
-func (r *indexNoDuplicateColumnRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.IndexStmt:
-		r.handleIndexStmt(n)
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) handleIndexStmt(n *ast.IndexStmt) {
-	indexName := n.Idxname
-	tableName := rangeVarTableName(n.Relation)
-	columns := indexColumns(n)
-	if dupCol := findDuplicate(columns); dupCol != "" {
-		r.addDuplicateAdvice("INDEX", indexName, tableName, dupCol, r.ContentStartLine())
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	_, constraints := tableElements(n)
-	for _, c := range constraints {
-		r.checkConstraint(c, tableName)
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	for _, cmd := range alterTableCmds(n) {
-		if cmd.Subtype == int(ast.AT_AddConstraint) {
-			if c, ok := cmd.Def.(*ast.Constraint); ok {
-				r.checkConstraint(c, tableName)
-			}
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for i, node := range nodes {
+		for _, f := range pgv1review.IndexNoDuplicateColumn([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DuplicateColumnInIndex.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("%s %q has duplicate column %q.%q", f.Value, f.Name, f.Table, f.Other),
+				StartPosition: findingPosition(stmts[i], f),
+			})
 		}
 	}
-}
-
-func (r *indexNoDuplicateColumnRule) checkConstraint(c *ast.Constraint, tableName string) {
-	var columns []string
-	var constraintType, keyword string
-	switch c.Contype {
-	case ast.CONSTR_PRIMARY:
-		constraintType = "PRIMARY KEY"
-		keyword = "PRIMARY KEY"
-		columns = constraintColumns(c)
-	case ast.CONSTR_UNIQUE:
-		constraintType = "UNIQUE KEY"
-		keyword = "UNIQUE"
-		columns = constraintColumns(c)
-	case ast.CONSTR_FOREIGN:
-		constraintType = "FOREIGN KEY"
-		keyword = "FOREIGN KEY"
-		columns = listStrings(c.FkAttrs)
-	default:
-		return
-	}
-	if dupCol := findDuplicate(columns); dupCol != "" {
-		r.addDuplicateAdvice(constraintType, c.Conname, tableName, dupCol, r.FindLineByName(keyword))
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) addDuplicateAdvice(constraintType, constraintName, tableName, duplicateColumn string, line int32) {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.DuplicateColumnInIndex.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("%s %q has duplicate column %q.%q", constraintType, constraintName, tableName, duplicateColumn),
-		StartPosition: &storepb.Position{
-			Line:   line,
-			Column: 0,
-		},
-	})
-}
-
-func findDuplicate(columns []string) string {
-	seen := make(map[string]bool)
-	for _, col := range columns {
-		if seen[col] {
-			return col
-		}
-		seen[col] = true
-	}
-	return ""
+	return adviceList, nil
 }

@@ -8,3 +8,6 @@
   changeType: 1
 - statement: CREATE TYPE public.mood AS ENUM ('sad', 'happy');
   changeType: 1
+- statement: |-
+    DROP TABLE public.tech_book, test_schema.t;
+    CREATE SCHEMA another;

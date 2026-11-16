@@ -2,14 +2,17 @@ package tidb
 
 import (
 	"context"
-	"strings"
+	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -20,146 +23,71 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_INDEX_UK, &NamingUKConventionAdvisor{})
 }
 
-// NamingUKConventionAdvisor is the advisor checking for unique key naming convention.
+// NamingUKConventionAdvisor is the advisor checking for unique key naming
+// convention. The judgment lives in omni (tidb/v1review.NamingUniqueKey);
+// this adapter validates the template's tokens, converts the rule's payload
+// into the omni config, and renders the findings as advice.
 type NamingUKConventionAdvisor struct {
 }
 
 // Check checks for unique key naming convention.
 func (*NamingUKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	// Capture originalMetadata in a local so the collector closure can read
-	// it without runNamingConventionRule needing advisor.Context in its
-	// callback signature — the FK rule doesn't need metadata, so keeping
-	// the helper signature uniform is cleaner than threading a Context arg.
-	originalMetadata := checkCtx.OriginalMetadata
-	return runNamingConventionRule(checkCtx, namingRuleConfig{
-		mismatchCode:       code.NamingUKConventionMismatch,
-		typeNoun:           "Unique key",
-		internalErrorTitle: "Internal error for unique key naming convention rule",
-	}, func(ostmt Stmt) []*indexMetaData {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			return collectUKCreateTable(ostmt, n)
-		case *ast.AlterTableStmt:
-			return collectUKAlterTable(ostmt, n, originalMetadata)
-		case *ast.CreateIndexStmt:
-			return collectUKCreateIndex(ostmt, n)
-		}
-		return nil
-	})
-}
+	stmts, err := getTiDBNodes(checkCtx)
+	if err != nil {
+		return nil, err
+	}
 
-// Pingcap had three distinct constraint enums (ConstraintUniq /
-// ConstraintUniqKey / ConstraintUniqIndex) for the syntactic forms
-// `UNIQUE`, `UNIQUE KEY`, and `UNIQUE INDEX`. Omni unifies all three under
-// `ast.ConstrUnique`. The single switch arm here covers all three forms.
-// Per Phase 1.5 cumulative shape-divergence table item #2.
-func collectUKCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
 	}
-	tableName := n.Table.Name
-	var res []*indexMetaData
-	for _, constraint := range n.Constraints {
-		if constraint == nil || constraint.Type != ast.ConstrUnique {
-			continue
-		}
-		columnList := constraint.Columns
-		if len(columnList) == 0 {
-			columnList = indexColumns(constraint.IndexColumns)
-		}
-		metaData := map[string]string{
-			advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-			advisor.TableNameTemplateToken:  tableName,
-		}
-		res = append(res, &indexMetaData{
-			indexName: constraint.Name,
-			tableName: tableName,
-			metaData:  metaData,
-			line:      ostmt.AbsoluteLine(constraint.Loc.Start),
-		})
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for this rule")
 	}
-	return res
-}
+	templateList, _ := advisor.ParseTemplateTokens(namingPayload.Format)
+	for _, key := range templateList {
+		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
+			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
+		}
+	}
 
-func collectUKAlterTable(ostmt Stmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	maxLength := int(namingPayload.MaxLength)
+	if maxLength == 0 {
+		maxLength = advisor.DefaultNameLengthLimit
 	}
-	tableName := n.Table.Name
-	stmtLine := ostmt.FirstTokenLine()
-	var res []*indexMetaData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		// Mirror mysql omni: ATAddIndex covers `ALTER TABLE ... ADD UNIQUE
-		// INDEX uk (col)`, ATAddConstraint covers `ADD CONSTRAINT uk UNIQUE`.
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint == nil || cmd.Constraint.Type != ast.ConstrUnique {
+	cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
+
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings := tidbv1review.NamingUniqueKey([]ast.Node{stmt.Node}, cfg, renameIndexSchema(stmt.Node, checkCtx.OriginalMetadata))
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.PatternInvalid:
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   "Internal error for unique key naming convention rule",
+					Content: fmt.Sprintf("%q meet internal error %q", stmt.TrimmedText(), f.Detail),
+				})
+				continue
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("Unique key in table `%s` mismatches the naming convention, expect %q but found `%s`", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("Unique key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
 				continue
 			}
-			columnList := cmd.Constraint.Columns
-			if len(columnList) == 0 {
-				columnList = indexColumns(cmd.Constraint.IndexColumns)
-			}
-			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				advisor.TableNameTemplateToken:  tableName,
-			}
-			res = append(res, &indexMetaData{
-				indexName: cmd.Constraint.Name,
-				tableName: tableName,
-				metaData:  metaData,
-				line:      stmtLine,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingUKConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(keyFindingLine(stmt, f)),
 			})
-		case ast.ATRenameIndex:
-			schema := originalMetadata.GetSchemaMetadata("")
-			if schema == nil {
-				continue
-			}
-			index := schema.GetIndex(cmd.Name)
-			if index == nil {
-				continue
-			}
-			if !index.GetProto().GetUnique() {
-				// Non-unique index naming convention is handled by
-				// advisor_naming_index_convention.go.
-				continue
-			}
-			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
-				advisor.TableNameTemplateToken:  tableName,
-			}
-			res = append(res, &indexMetaData{
-				indexName: cmd.NewName,
-				tableName: tableName,
-				metaData:  metaData,
-				line:      stmtLine,
-			})
-		default:
 		}
 	}
-	return res
-}
-
-func collectUKCreateIndex(ostmt Stmt, n *ast.CreateIndexStmt) []*indexMetaData {
-	if !n.Unique {
-		return nil
-	}
-	if n.Table == nil {
-		return nil
-	}
-	tableName := n.Table.Name
-	columnList := indexColumns(n.Columns)
-	metaData := map[string]string{
-		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-		advisor.TableNameTemplateToken:  tableName,
-	}
-	return []*indexMetaData{{
-		indexName: n.IndexName,
-		tableName: tableName,
-		metaData:  metaData,
-		line:      ostmt.FirstTokenLine(),
-	}}
+	return adviceList, nil
 }

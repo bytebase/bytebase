@@ -1,17 +1,18 @@
 package tidb
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -23,10 +24,12 @@ func init() {
 }
 
 // ColumnNoNullAdvisor is the advisor checking for column no NULL value.
+// The judgment lives in omni (tidb/v1review.ColumnNoNull).
 type ColumnNoNullAdvisor struct {
 }
 
-// Check checks for column no NULL value.
+// Check checks for column no NULL value. Advice is ordered by line, then
+// column name, the two statements of one line included.
 func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -37,157 +40,64 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	if err != nil {
 		return nil, err
 	}
-
-	checker := &columnNoNullChecker{
-		level:         level,
-		title:         checkCtx.Rule.Type.String(),
-		columnSet:     make(map[string]columnName),
-		finalMetadata: checkCtx.FinalMetadata,
+	title := checkCtx.Rule.Type.String()
+	if checkCtx.FinalMetadata == nil && slices.ContainsFunc(stmts, definesColumn) {
+		// V1 read the snapshot once it had a column to judge and panicked
+		// on a nil one; advisor.Check reports that panic as the rule's error.
+		checkCtx.FinalMetadata.GetSchemaMetadata("")
 	}
 
-	for _, ostmt := range stmts {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			checker.checkCreateTable(n, ostmt)
-		case *ast.AlterTableStmt:
-			checker.checkAlterTable(n, ostmt)
-		default:
-		}
+	type located struct {
+		line   int
+		column string
+		advice *storepb.Advice
 	}
-
-	return checker.generateAdvice(), nil
-}
-
-type columnNoNullChecker struct {
-	adviceList    []*storepb.Advice
-	level         storepb.Advice_Status
-	title         string
-	columnSet     map[string]columnName
-	finalMetadata *model.DatabaseMetadata
-}
-
-func (c *columnNoNullChecker) checkCreateTable(n *ast.CreateTableStmt, ostmt Stmt) {
-	if n.Table == nil {
-		return
+	var found []located
+	for _, f := range tidbv1review.ColumnNoNull(stmtNodes(stmts), v1reviewSchema(checkCtx.FinalMetadata)) {
+		line := stmts[f.Statement].AbsoluteLine(f.Start)
+		found = append(found, located{line, f.Name, &storepb.Advice{
+			Status:        level,
+			Code:          code.ColumnCannotNull.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", f.Table, f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
+		}})
 	}
-	tableName := n.Table.Name
-	for _, col := range n.Columns {
-		if col == nil {
-			continue
-		}
-		cn := columnName{
-			tableName:  tableName,
-			columnName: col.Name,
-			line:       ostmt.AbsoluteLine(col.Loc.Start),
-		}
-		if _, exists := c.columnSet[cn.name()]; !exists {
-			c.columnSet[cn.name()] = cn
-		}
-	}
-}
-
-func (c *columnNoNullChecker) checkAlterTable(n *ast.AlterTableStmt, ostmt Stmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	// Match prior pingcap behavior: report the line of the ALTER TABLE statement
-	// itself, not the line of each affected column inside the statement.
-	stmtLine := ostmt.AbsoluteLine(n.Loc.Start)
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		var columns []string
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			// omni populates either Columns (multi-column ADD COLUMN (...))
-			// or Column (single-column ADD COLUMN). Mutually exclusive in
-			// practice but not enforced by the type — read defensively.
-			if len(cmd.Columns) > 0 {
-				for _, col := range cmd.Columns {
-					if col != nil {
-						columns = append(columns, col.Name)
-					}
-				}
-			} else if cmd.Column != nil {
-				columns = append(columns, cmd.Column.Name)
-			}
-		case ast.ATChangeColumn:
-			// Only care about the new column name.
-			if cmd.Column != nil {
-				columns = append(columns, cmd.Column.Name)
-			}
-		default:
-			// MODIFY COLUMN (ATModifyColumn) is intentionally NOT handled.
-			// Pre-existing inheritance from the pingcap-AST version of this
-			// advisor — `ALTER TABLE t MODIFY COLUMN x INT NULL` slips past.
-			// Not an omni-introduced regression; preserve current behavior.
-		}
-		for _, name := range columns {
-			cn := columnName{
-				tableName:  tableName,
-				columnName: name,
-				line:       stmtLine,
-			}
-			if _, exists := c.columnSet[cn.name()]; !exists {
-				c.columnSet[cn.name()] = cn
-			}
-		}
-	}
-}
-
-func (c *columnNoNullChecker) generateAdvice() []*storepb.Advice {
-	var columnList []columnName
-	for _, column := range c.columnSet {
-		columnList = append(columnList, column)
-	}
-	slices.SortFunc(columnList, func(i, j columnName) int {
-		if i.line != j.line {
-			if i.line < j.line {
-				return -1
-			}
-			return 1
-		}
-		if i.columnName < j.columnName {
-			return -1
-		}
-		if i.columnName > j.columnName {
-			return 1
-		}
-		return 0
+	slices.SortStableFunc(found, func(a, b located) int {
+		return cmp.Or(cmp.Compare(a.line, b.line), cmp.Compare(a.column, b.column))
 	})
-
-	for _, column := range columnList {
-		schema := c.finalMetadata.GetSchemaMetadata("")
-		if schema == nil {
-			continue
-		}
-		table := schema.GetTable(column.tableName)
-		if table == nil {
-			continue
-		}
-		col := table.GetColumn(column.columnName)
-		if col != nil && col.GetProto().Nullable {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
-				Code:          code.ColumnCannotNull.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s`.`%s` cannot have NULL value", column.tableName, column.columnName),
-				StartPosition: base.ConvertANTLRLineToPosition(column.line),
-			})
-		}
+	var adviceList []*storepb.Advice
+	for _, l := range found {
+		adviceList = append(adviceList, l.advice)
 	}
-
-	return c.adviceList
+	return adviceList, nil
 }
 
-type columnName struct {
-	tableName  string
-	columnName string
-	line       int
-}
-
-func (c columnName) name() string {
-	return fmt.Sprintf("%s.%s", c.tableName, c.columnName)
+// definesColumn reports whether the statement gives the rule a column to
+// judge: a CREATE TABLE naming a table with a column, or an ALTER TABLE
+// naming a table that adds a column or changes one.
+func definesColumn(stmt Stmt) bool {
+	switch n := stmt.Node.(type) {
+	case *ast.CreateTableStmt:
+		return n.Table != nil && slices.ContainsFunc(n.Columns, func(col *ast.ColumnDef) bool { return col != nil })
+	case *ast.AlterTableStmt:
+		if n.Table == nil {
+			return false
+		}
+		return slices.ContainsFunc(n.Commands, func(cmd *ast.AlterTableCmd) bool {
+			if cmd == nil {
+				return false
+			}
+			switch cmd.Type {
+			case ast.ATAddColumn:
+				return slices.ContainsFunc(addColumnTargets(cmd), func(col *ast.ColumnDef) bool { return col != nil })
+			case ast.ATChangeColumn:
+				return cmd.Column != nil
+			default:
+				return false
+			}
+		})
+	default:
+		return false
+	}
 }

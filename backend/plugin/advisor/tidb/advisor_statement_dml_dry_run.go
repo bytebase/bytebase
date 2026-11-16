@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -23,7 +25,9 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_STATEMENT_DML_DRY_RUN, &StatementDmlDryRunAdvisor{})
 }
 
-// StatementDmlDryRunAdvisor is the advisor checking for DML dry run.
+// StatementDmlDryRunAdvisor is the advisor checking for DML dry run. omni
+// (tidb/v1review.StatementDMLDryRunProbes) picks the statements to dry-run;
+// this adapter probes them, and omni (StatementDMLDryRun) judges the results.
 type StatementDmlDryRunAdvisor struct {
 }
 
@@ -33,7 +37,6 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if err != nil {
 		return nil, err
 	}
-
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
@@ -44,106 +47,89 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
 		return nil, nil
 	}
-
 	if checkCtx.Driver == nil {
 		return nil, nil
 	}
 
-	checker := &statementDmlDryRunChecker{
-		ctx:    ctx,
-		driver: checkCtx.Driver,
-		level:  level,
-		title:  checkCtx.Rule.Type.String(),
+	prober := &statementDmlDryRunProber{ctx: ctx, driver: checkCtx.Driver}
+	nodes := make([]ast.Node, len(stmts))
+	for i, stmt := range stmts {
+		nodes[i] = stmt.Node
 	}
-	for _, ostmt := range stmts {
-		checker.check(ostmt)
-		if checker.explainCount >= common.MaximumLintExplainSize {
+	probes := make(map[int]v1review.Probe)
+	for n, i := range tidbv1review.StatementDMLDryRunProbes(nodes) {
+		if reason, failed := prober.probe(stmts[i]); failed {
+			probes[i] = v1review.Probe{Error: reason}
+		} else {
+			probes[i] = v1review.Probe{}
+		}
+		if n+1 >= common.MaximumLintExplainSize {
 			break
 		}
 	}
 
-	return checker.adviceList, nil
-}
-
-type statementDmlDryRunChecker struct {
-	ctx          context.Context
-	driver       *sql.DB
-	level        storepb.Advice_Status
-	title        string
-	adviceList   []*storepb.Advice
-	explainCount int
-}
-
-// check dispatches a single top-level statement. Recipe A (top-level
-// type-switch): omni surfaces TiDB BATCH as *ast.BatchStmt and plain DML as
-// *ast.{Insert,Update,Delete}Stmt — both top-level here, so a walk is
-// unnecessary. EXPLAIN-wrapped DML (e.g. "EXPLAIN DELETE ...") is degenerate
-// input for a dry-run advisor and intentionally not descended into.
-func (c *statementDmlDryRunChecker) check(ostmt Stmt) {
-	switch node := ostmt.Node.(type) {
-	case *ast.BatchStmt:
-		c.checkBatch(ostmt, node)
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		c.explainCount++
-		c.explain(ostmt, strings.TrimRight(ostmt.TrimmedText(), ";"))
-	default:
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range tidbv1review.StatementDMLDryRun(nodes, probes) {
+		ostmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.StatementDMLDryRunFailed.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", ostmt.TrimmedText(), f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+		})
 	}
+	return adviceList, nil
 }
 
-// checkBatch validates a TiDB BATCH (non-transactional DML) statement, e.g.
-// "BATCH ON id LIMIT 5000 DELETE ...":
+// statementDmlDryRunProber runs one statement's dry-run queries.
+type statementDmlDryRunProber struct {
+	ctx    context.Context
+	driver *sql.DB
+}
+
+// probe dry-runs one statement and returns the reason it failed, if it did.
+// A BATCH (non-transactional DML, e.g. "BATCH ON id LIMIT 5000 DELETE ..."):
 //  1. Run "BATCH ... DRY RUN ..." to validate the batch-splitting logic.
 //  2. EXPLAIN the inner DML to validate the DML itself.
-func (c *statementDmlDryRunChecker) checkBatch(ostmt Stmt, node *ast.BatchStmt) {
-	c.explainCount++
-
-	// Step 1: validate batch splitting via TiDB's native BATCH DRY RUN. omni
-	// has no statement-level SQL deparse, so the DRY RUN form is derived by
+func (c *statementDmlDryRunProber) probe(ostmt Stmt) (string, bool) {
+	node, ok := ostmt.Node.(*ast.BatchStmt)
+	if !ok {
+		return c.explain(strings.TrimRight(ostmt.TrimmedText(), ";"))
+	}
+	// omni has no statement-level SQL deparse, so the DRY RUN form is derived by
 	// injecting the keyword into the original statement text immediately before
 	// the inner DML (located via the inner DML node's Loc). BATCH DRY RUN
 	// requires auto-commit mode, so we use QueryContext directly instead of
 	// advisor.Query (which wraps in a transaction).
 	if dryRunSQL, ok := dmlDryRunBatchSQL(ostmt, node); ok {
 		if err := c.queryInAutoCommit(dryRunSQL); err != nil {
-			c.appendFailure(ostmt, err.Error())
 			// Don't continue to EXPLAIN if BATCH DRY RUN failed.
-			return
+			return err.Error(), true
 		}
 	}
-
-	// Step 2: EXPLAIN the inner DML. EXPLAIN doesn't accept BATCH syntax, so we
-	// slice the inner DML out of the original text via its Loc.
+	// EXPLAIN doesn't accept BATCH syntax, so we slice the inner DML out of the
+	// original text via its Loc.
 	innerSQL, ok := dmlDryRunInnerSQL(ostmt, node)
 	if !ok {
-		c.appendFailure(ostmt, "failed to extract inner DML")
-		return
+		return "failed to extract inner DML", true
 	}
-	c.explain(ostmt, innerSQL)
+	return c.explain(innerSQL)
 }
 
-// explain runs EXPLAIN on sql and records advice if it fails. The advice text
-// is the full original statement (ostmt), matching the pre-omni behavior where
-// BATCH advices reported the whole BATCH statement, not the inner DML.
-func (c *statementDmlDryRunChecker) explain(ostmt Stmt, sql string) {
+// explain runs EXPLAIN on sql and returns the error's text if it failed.
+func (c *statementDmlDryRunProber) explain(sql string) (string, bool) {
 	if _, err := advisor.Query(c.ctx, advisor.QueryContext{}, c.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
-		c.appendFailure(ostmt, err.Error())
+		return err.Error(), true
 	}
-}
-
-func (c *statementDmlDryRunChecker) appendFailure(ostmt Stmt, reason string) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:        c.level,
-		Code:          code.StatementDMLDryRunFailed.Int32(),
-		Title:         c.title,
-		Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", ostmt.TrimmedText(), reason),
-		StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
-	})
+	return "", false
 }
 
 // queryInAutoCommit runs a query in auto-commit mode (without wrapping in a
 // transaction). Required for TiDB's BATCH DRY RUN, which cannot run inside a
 // transaction.
-func (c *statementDmlDryRunChecker) queryInAutoCommit(statement string) error {
+func (c *statementDmlDryRunProber) queryInAutoCommit(statement string) error {
 	rows, err := c.driver.QueryContext(c.ctx, statement)
 	if err != nil {
 		return err

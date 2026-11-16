@@ -3,9 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
-// TableDropNamingConventionAdvisor is the advisor checking the MySQLTableDropNamingConvention rule.
+// TableDropNamingConventionAdvisor is the advisor checking the
+// MySQLTableDropNamingConvention rule. The judgment lives in omni
+// (tidb/v1review.TableDropNaming); this adapter converts the rule's payload
+// into the omni config and renders the findings as advice.
 type TableDropNamingConventionAdvisor struct {
 }
 
@@ -42,49 +46,30 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for table drop naming convention rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format}
+	if _, err := cfg.Compile(); err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	checker := &namingDropTableConventionChecker{
-		level:  level,
-		title:  checkCtx.Rule.Type.String(),
-		format: format,
-	}
-
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type namingDropTableConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-}
-
-func (c *namingDropTableConventionChecker) checkStmt(ostmt Stmt) {
-	node, ok := ostmt.Node.(*ast.DropTableStmt)
-	if !ok {
-		return
-	}
-	line := ostmt.AbsoluteLine(node.Loc.Start)
-	for _, table := range node.Tables {
-		if table == nil {
-			continue
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings, err := tidbv1review.TableDropNaming([]ast.Node{stmt.Node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		if !c.format.MatchString(table.Name) {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
+		for _, f := range findings {
+			if f.Code != v1review.NameMismatch {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDropNamingConventionMismatch.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", table.Name, c.format),
-				StartPosition: base.ConvertANTLRLineToPosition(line),
+				Title:         title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, namingPayload.Format),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
 	}
+	return adviceList, nil
 }

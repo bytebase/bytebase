@@ -242,51 +242,6 @@ func TestGetStatementWithResultLimitFallback(t *testing.T) {
 	}
 }
 
-func TestGetStatementWithResultLimitInline(t *testing.T) {
-	testCases := []struct {
-		stmt    string
-		count   int
-		wantErr bool
-		want    string
-	}{
-		{
-			stmt:    "SELECT * FROM t LIMIT 1 + 2",
-			count:   5,
-			wantErr: true,
-		},
-		{
-			stmt:    "SELECT * FROM t LIMIT @row_count",
-			count:   5,
-			wantErr: true,
-		},
-		{
-			stmt:    "SELECT * FROM a; SELECT * FROM b;",
-			count:   5,
-			wantErr: true,
-		},
-		{
-			stmt:    "SELECT col1 FROM table1 PROCEDURE ANALYSE(10, 2000); SELECT * FROM b;",
-			count:   5,
-			wantErr: true,
-		},
-		{
-			stmt:  "UPDATE t SET a = 1",
-			count: 5,
-			want:  "UPDATE t SET a = 1",
-		},
-	}
-
-	for _, tc := range testCases {
-		got, err := statementWithResultLimitInline(tc.stmt, tc.count)
-		if tc.wantErr {
-			require.Error(t, err, tc.stmt)
-			continue
-		}
-		require.NoError(t, err, tc.stmt)
-		require.Equal(t, tc.want, got, tc.stmt)
-	}
-}
-
 func TestGetStatementWithResultLimitUnicodeBeforeInto(t *testing.T) {
 	stmt := "SELECT 'ı' FROM t INTO OUTFILE '/tmp/a';"
 	want := "SELECT 'ı' FROM t LIMIT 10 INTO OUTFILE '/tmp/a';"

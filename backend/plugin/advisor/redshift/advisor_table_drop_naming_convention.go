@@ -3,9 +3,10 @@ package redshift
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	redshiftast "github.com/bytebase/omni/redshift/ast"
+	redshiftv1review "github.com/bytebase/omni/redshift/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -23,6 +24,9 @@ func init() {
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
+// The judgment lives in omni (redshift/v1review.TableDropNaming); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type TableDropNamingConventionAdvisor struct {
 }
 
@@ -38,80 +42,37 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for table drop naming convention rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format}
+	if _, err := cfg.Compile(); err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	checker := &tableDropNamingConventionChecker{
-		level:      level,
-		title:      checkCtx.Rule.Type.String(),
-		format:     format,
-		adviceList: []*storepb.Advice{},
-	}
-
+	title := checkCtx.Rule.Type.String()
+	adviceList := []*storepb.Advice{}
 	for _, stmt := range checkCtx.ParsedStatements {
 		node, ok := parserredshift.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.checkStmt(node, stmt.Start)
-	}
-
-	return checker.adviceList, nil
-}
-
-type tableDropNamingConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-}
-
-func (c *tableDropNamingConventionChecker) checkStmt(node redshiftast.Node, startPosition *storepb.Position) {
-	dropStmt, ok := node.(*redshiftast.DropStmt)
-	if !ok {
-		return
-	}
-	if redshiftast.ObjectType(dropStmt.RemoveType) != redshiftast.OBJECT_TABLE {
-		return
-	}
-	for _, tableName := range dropTableNames(dropStmt) {
-		if tableName == "" || c.format.MatchString(tableName) {
-			continue
+		findings, err := redshiftv1review.TableDropNaming([]redshiftast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.TableDropNamingConventionMismatch.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, c.format),
-			StartPosition: startPosition,
-		})
-	}
-}
-
-func dropTableNames(dropStmt *redshiftast.DropStmt) []string {
-	if dropStmt.Objects == nil {
-		return nil
-	}
-
-	var result []string
-	for _, item := range dropStmt.Objects.Items {
-		var parts []string
-		switch n := item.(type) {
-		case *redshiftast.List:
-			for _, nameItem := range n.Items {
-				if s, ok := nameItem.(*redshiftast.String); ok {
-					parts = append(parts, s.Str)
-				}
+		for _, f := range findings {
+			if f.Code != v1review.NameMismatch {
+				continue
 			}
-		case *redshiftast.RangeVar:
-			parts = append(parts, n.Relname)
-		default:
-		}
-		if len(parts) > 0 {
-			result = append(result, parts[len(parts)-1])
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Code:    code.TableDropNamingConventionMismatch.Int32(),
+				Title:   title,
+				Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, namingPayload.Format),
+				// V1 anchored every finding on where the splitter starts the
+				// statement, which can be whitespace or a comment before the
+				// statement node the finding's range covers.
+				StartPosition: stmt.Start,
+			})
 		}
 	}
-	return result
+	return adviceList, nil
 }

@@ -75,3 +75,74 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id INT,
+      author_id INT,
+      CONSTRAINT fk_book_author
+        FOREIGN KEY (author_id) REFERENCES author (id)
+    );
+  want:
+    - status: 2
+      code: 305
+      title: NAMING_INDEX_FK
+      content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found `fk_book_author`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id INT);
+    ALTER TABLE book
+      ADD COLUMN author_id INT,
+      ADD FOREIGN KEY fk_book_author (author_id) REFERENCES author (id);
+  want:
+    - status: 2
+      code: 305
+      title: NAMING_INDEX_FK
+      content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found `fk_book_author`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE shop.book(a INT, b INT, FOREIGN KEY fk_book_author (a, b) REFERENCES lib.author (x, y));
+  want:
+    - status: 2
+      code: 305
+      title: NAMING_INDEX_FK
+      content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_a_b_author_x_y$" but found `fk_book_author`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE shop.book(a INT, b INT, FOREIGN KEY fk_book_a_b_author_x_y (a, b) REFERENCES lib.author (x, y));
+- statement: CREATE TABLE book(a INT, CONSTRAINT `数数数数数数数数数数数数数数数数数数数数数数` FOREIGN KEY (a) REFERENCES author (id));
+  want:
+    - status: 2
+      code: 305
+      title: NAMING_INDEX_FK
+      content: Foreign key `数数数数数数数数数数数数数数数数数数数数数数` in table `book` mismatches the naming convention, its length should be within 64 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 305
+      title: NAMING_INDEX_FK
+      content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_a_author_id$" but found `数数数数数数数数数数数数数数数数数数数数数数`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE `a.c`(x INT, FOREIGN KEY fk_abc_x_p_id (x) REFERENCES p (id));
+- statement: CREATE TABLE `a(`(x INT, FOREIGN KEY fk1 (x) REFERENCES p (id));
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for foreign key naming convention rule
+      content: '"CREATE TABLE `a(`(x INT, FOREIGN KEY fk1 (x) REFERENCES p (id))" meet internal error "error parsing regexp: missing closing ): `^$|^fk_a(_x_p_id$`"'
+      startposition: null
+      endposition: null
+- statement: CREATE TABLE book(author_id INT REFERENCES author (id));
+- statement: ALTER TABLE tech_book ADD COLUMN (author_id INT, FOREIGN KEY fk1 (author_id) REFERENCES author (id));
+- statement: CREATE PROCEDURE pr() BEGIN ALTER TABLE tech_book ADD FOREIGN KEY fk1 (author_id) REFERENCES author (id); END;

@@ -680,11 +680,6 @@
           schema: dbo
           table: MyTable1
           column: ""
-        - server: ""
-          database: db
-          schema: dbo
-          table: tt1
-          column: ""
     predicatecolumns: []
 - description: Test for multiple CTE.
   statement: |-
@@ -774,16 +769,6 @@
           database: db
           schema: dbo
           table: MyTable2
-          column: ""
-        - server: ""
-          database: db
-          schema: dbo
-          table: tt1
-          column: ""
-        - server: ""
-          database: db
-          schema: dbo
-          table: tt2
           column: ""
     predicatecolumns:
         - server: ""
@@ -895,10 +880,5 @@
           database: db
           schema: dbo
           table: MyTable1
-          column: ""
-        - server: ""
-          database: db
-          schema: dbo
-          table: cte_01
           column: ""
     predicatecolumns: []

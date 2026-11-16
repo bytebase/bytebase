@@ -3,15 +3,15 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"math"
-	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -22,7 +22,8 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_COLUMN_MAXIMUM_VARCHAR_LENGTH, &ColumnMaximumVarcharLengthAdvisor{})
 }
 
-// ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length..
+// ColumnMaximumVarcharLengthAdvisor is the advisor checking for maximum varchar length.
+// The judgment lives in omni (mssql/v1review.ColumnMaximumVarcharLength).
 type ColumnMaximumVarcharLengthAdvisor struct {
 }
 
@@ -36,69 +37,29 @@ func (*ColumnMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advi
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
-	if int(numberPayload.Number) <= 0 {
+	maximum := int(numberPayload.Number)
+	if maximum <= 0 {
 		return nil, nil
 	}
 
-	rule := &columnMaximumVarcharLengthRule{
-		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		maximum:  int(numberPayload.Number),
-		checkTypeString: map[string]bool{
-			"varchar":  true,
-			"nvarchar": true,
-			"char":     true,
-			"nchar":    true,
-		},
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnMaximumVarcharLengthRule struct {
-	BaseRule
-	checkTypeString map[string]bool
-	maximum         int
-}
-
-func (*columnMaximumVarcharLengthRule) Name() string {
-	return "ColumnMaximumVarcharLengthRule"
-}
-
-func (r *columnMaximumVarcharLengthRule) OnStatement(node ast.Node) {
-	seen := make(map[*ast.DataType]bool)
-	ast.Inspect(node, func(n ast.Node) bool {
-		dt, ok := n.(*ast.DataType)
-		if !ok || dt == nil {
-			return true
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		if seen[dt] {
-			return true
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		seen[dt] = true
-
-		normalizedType := strings.ToLower(dt.Name)
-		if !r.checkTypeString[normalizedType] {
-			return true
-		}
-
-		currentLength := 0
-		if dt.MaxLength {
-			currentLength = math.MaxInt32
-		} else if dt.Length != nil {
-			if lit, ok := dt.Length.(*ast.Literal); ok {
-				currentLength = int(lit.Ival)
-			}
-		}
-
-		if currentLength > r.maximum {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range mssqlv1review.ColumnMaximumVarcharLength([]ast.Node{node}, maximum) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.VarcharLengthExceedsLimit.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-				StartPosition: &storepb.Position{Line: r.LocToLine(dt.Loc)},
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("The maximum varchar length is %d.", maximum),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
 			})
 		}
-		return true
-	})
+	}
+	return adviceList, nil
 }

@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -21,6 +21,7 @@ func init() {
 }
 
 // ColumnAutoIncrementMustUnsignedAdvisor is the advisor checking for unsigned auto-increment column.
+// The judgment lives in omni (oceanbase/v1review.ColumnAutoIncrementMustUnsigned).
 type ColumnAutoIncrementMustUnsignedAdvisor struct {
 }
 
@@ -31,77 +32,18 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 		return nil, err
 	}
 
-	rule := &columnAutoIncrementMustUnsignedRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	for _, stmt := range checkCtx.ParsedStatements {
-		if stmt.AST == nil {
-			continue
-		}
-		node, ok := oceanbaseparser.GetNode(stmt.AST)
-		if !ok {
-			continue
-		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
-	}
-
-	return rule.GetAdviceList(), nil
-}
-
-type columnAutoIncrementMustUnsignedRule struct {
-	BaseRule
-}
-
-func (r *columnAutoIncrementMustUnsignedRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnAutoIncrementMustUnsignedRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, col := range n.Columns {
-		r.checkColumn(tableName, col)
-	}
-}
-
-func (r *columnAutoIncrementMustUnsignedRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	for _, cmd := range n.Commands {
-		for _, col := range getColumnsFromCmd(cmd) {
-			r.checkColumn(tableName, col)
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range oceanbasev1review.ColumnAutoIncrementMustUnsigned([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.AutoIncrementColumnSigned.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", f.Table, f.Name),
+				StartPosition: columnFindingPosition(stmt, f),
+			})
 		}
 	}
-}
-
-func (r *columnAutoIncrementMustUnsignedRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	if !isAutoIncrement(col) {
-		return
-	}
-	if col.TypeName == nil || (!col.TypeName.Unsigned && !col.TypeName.Zerofill) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.AutoIncrementColumnSigned.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", tableName, col.Name),
-			StartPosition: &storepb.Position{
-				Line: r.LocToLine(col.Loc),
-			},
-		})
-	}
+	return adviceList, nil
 }

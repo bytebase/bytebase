@@ -75,8 +75,8 @@ func TestContainsDelimiterDirective(t *testing.T) {
 // StarRocks-only spelling must be refused rather than quietly accepted, which is what
 // routing the connection through a sibling engine's grammar would do.
 func TestValidateSQLForEditorUsesDorisGrammar(t *testing.T) {
-	// StarRocks generated column AS (expr); Doris wants GENERATED ALWAYS AS.
-	const starRocksOnlyDDL = "CREATE TABLE t (a INT, b INT AS (a + 1)) DUPLICATE KEY(a) DISTRIBUTED BY HASH(a)"
+	// StarRocks's primary key table model; Doris has no PRIMARY KEY model.
+	const starRocksOnlyDDL = "CREATE TABLE t (a INT) PRIMARY KEY(a) DISTRIBUTED BY HASH(a)"
 	_, _, err := base.ValidateSQLForEditor(storepb.Engine_DORIS, starRocksOnlyDDL)
 	require.Error(t, err)
 

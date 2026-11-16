@@ -5,11 +5,13 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -21,6 +23,8 @@ func init() {
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.
+// The judgment lives in omni (oracle/v1review.StatementSelectNoSelectAll); this adapter
+// renders its findings as advice.
 type SelectNoSelectAllAdvisor struct {
 }
 
@@ -31,50 +35,25 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// SelectNoSelectAllRule is the rule implementation for no select all.
-type SelectNoSelectAllRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewSelectNoSelectAllRule creates a new SelectNoSelectAllRule.
-func NewSelectNoSelectAllRule(level storepb.Advice_Status, title string, currentDatabase string) *SelectNoSelectAllRule {
-	return &SelectNoSelectAllRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*SelectNoSelectAllRule) Name() string {
-	return "select.no-select-all"
-}
-
-// OnStatement checks SELECT targets in the omni AST.
-func (r *SelectNoSelectAllRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		target, ok := n.(*ast.ResTarget)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
 		if !ok {
-			return
+			continue
 		}
-		if _, ok := target.Expr.(*ast.Star); !ok {
-			return
+		for _, f := range oraclev1review.StatementSelectNoSelectAll([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementSelectAll.Int32(),
+				Title:         title,
+				Content:       "Avoid using SELECT *.",
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-		r.AddAdvice(
-			r.level,
-			code.StatementSelectAll.Int32(),
-			"Avoid using SELECT *.",
-			base.ConvertANTLRLineToPosition(r.locLine(target.Loc)),
-		)
-	})
+	}
+	return adviceList, nil
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

@@ -2,15 +2,15 @@ package mssql
 
 import (
 	"context"
-	"slices"
-	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -22,6 +22,7 @@ func init() {
 }
 
 // ColumnTypeDisallowListAdvisor is the advisor checking for disallowed types for column.
+// The judgment lives in omni (mssql/v1review.ColumnTypeDisallowList).
 type ColumnTypeDisallowListAdvisor struct {
 }
 
@@ -35,43 +36,24 @@ func (*ColumnTypeDisallowListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, errors.New("string_array_payload is required for column type disallow list rule")
 	}
 
-	disallowTypes := make([]string, 0, len(stringArrayPayload.List))
-	for _, tp := range stringArrayPayload.List {
-		disallowTypes = append(disallowTypes, strings.ToUpper(tp))
-	}
-
-	rule := &columnTypeDisallowListRule{
-		BaseRule:      BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		disallowTypes: disallowTypes,
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnTypeDisallowListRule struct {
-	BaseRule
-	disallowTypes []string
-}
-
-func (*columnTypeDisallowListRule) Name() string {
-	return "ColumnTypeDisallowListRule"
-}
-
-func (r *columnTypeDisallowListRule) OnStatement(node ast.Node) {
-	ast.Inspect(node, func(n ast.Node) bool {
-		dt, ok := n.(*ast.DataType)
-		if !ok || dt == nil {
-			return true
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		formattedDataType := strings.ToUpper(dt.Name)
-		if slices.Contains(r.disallowTypes, formattedDataType) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mssqlv1review.ColumnTypeDisallowList([]ast.Node{node}, stringArrayPayload.List) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.DisabledColumnType.Int32(),
-				Title:         r.Title,
-				Content:       "Column type " + formattedDataType + " is disallowed",
-				StartPosition: &storepb.Position{Line: r.LocToLine(dt.Loc)},
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       "Column type " + f.Value + " is disallowed",
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
 			})
 		}
-		return true
-	})
+	}
+	return adviceList, nil
 }

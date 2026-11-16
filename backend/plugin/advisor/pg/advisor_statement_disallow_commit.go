@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_COMMIT, &StatementDisallowCommitAdvisor{})
 }
 
-// StatementDisallowCommitAdvisor is the advisor checking for disallowing COMMIT statements.
+// StatementDisallowCommitAdvisor is the advisor checking for disallowing
+// COMMIT statements. The judgment lives in omni
+// (pg/v1review.StatementDisallowCommit); this adapter renders its findings
+// as advice.
 type StatementDisallowCommitAdvisor struct {
 }
 
@@ -30,46 +35,29 @@ func (*StatementDisallowCommitAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &statementDisallowCommitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range pgv1review.StatementDisallowCommit([]ast.Node{node}) {
+			stmtText := statementTrimmedText(stmt)
+			if stmtText == "" {
+				stmtText = "<unknown statement>"
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementDisallowCommit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", stmtText),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowCommitRule struct {
-	BaseRule
-}
-
-func (*statementDisallowCommitRule) Name() string {
-	return "statement_disallow_commit"
-}
-
-func (r *statementDisallowCommitRule) OnStatement(node ast.Node) {
-	txn, ok := node.(*ast.TransactionStmt)
-	if !ok {
-		return
-	}
-
-	if txn.Kind != ast.TRANS_STMT_COMMIT {
-		return
-	}
-
-	stmtText := r.TrimmedStmtText()
-	if stmtText == "" {
-		stmtText = "<unknown statement>"
-	}
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.StatementDisallowCommit.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("Commit is not allowed, related statement: \"%s\"", stmtText),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

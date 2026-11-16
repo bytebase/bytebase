@@ -68,3 +68,77 @@
 - statement: CREATE TABLE SCRATCH LIKE SOURCE_TABLE;DROP TABLE SCRATCH;
   changeType: 1
   want: null
+- statement: |-
+    CREATE TABLE IF NOT EXISTS T(ID INT);
+    CREATE TABLE T(ID INT);
+    DROP TABLE T;
+- statement: |-
+    CREATE SCHEMA IF NOT EXISTS S1;
+    DROP SCHEMA S1;
+    CREATE DATABASE IF NOT EXISTS D1;
+    DROP DATABASE D1;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop schema "TEST_DB.S1" may cause incompatibility with the existing data and code
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 101
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop database "D1" may cause incompatibility with the existing data and code
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE T(ID INT);
+    DROP TABLE T;
+    DROP TABLE T;
+- statement: |-
+    DROP TABLE "t";
+    DROP TABLE OTHER_DB.S.T;
+  want:
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop table "TEST_DB.PUBLIC.t" may cause incompatibility with the existing data and code
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 103
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop table "OTHER_DB.S.T" may cause incompatibility with the existing data and code
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE T(ID INT, A INT, B INT);
+    ALTER TABLE T DROP COLUMN A, B;
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop column "A","B" may cause incompatibility with the existing data and code
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    DROP
+    SCHEMA S1;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop schema "TEST_DB.S1" may cause incompatibility with the existing data and code
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

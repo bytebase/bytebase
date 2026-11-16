@@ -71,3 +71,14 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE t ADD a INT FIRST, MODIFY b INT;
+- statement: ALTER TABLE t MODIFY a INT FIRST, CHANGE b c INT AFTER a;
+  want:
+    - status: 2
+      code: 407
+      title: COLUMN_DISALLOW_CHANGING_ORDER
+      content: '"ALTER TABLE t MODIFY a INT FIRST, CHANGE b c INT AFTER a;" changes column order'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -5,17 +5,23 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_DISALLOW_DDL, &TableDisallowDDLAdvisor{})
 }
 
+// TableDisallowDDLAdvisor checks for DDL on the tables the rule lists. The
+// judgment lives in omni (mssql/v1review.TableDisallowDDL); this adapter
+// renders the findings as advice.
 type TableDisallowDDLAdvisor struct{}
 
 func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -28,62 +34,28 @@ func (*TableDisallowDDLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("string_array_payload is required for table disallow DDL rule")
 	}
 
-	rule := &tableDisallowDDLRule{
-		BaseRule:     BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		disallowList: stringArrayPayload.List,
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowDDLRule struct {
-	BaseRule
-	disallowList []string
-}
-
-func (*tableDisallowDDLRule) Name() string {
-	return "TableDisallowDDLRule"
-}
-
-func (r *tableDisallowDDLRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Name != nil {
-			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		if n.Name != nil {
-			r.checkTableName(normalizeTableRef(n.Name, "", ""), r.LocToLine(n.Loc))
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.DropStmt:
-		if n.ObjectType != ast.DropTable || n.Names == nil {
-			return
-		}
-		for _, item := range n.Names.Items {
-			ref, ok := item.(*ast.TableRef)
-			if !ok || ref == nil {
+		for _, f := range mssqlv1review.TableDisallowDDL([]ast.Node{node}, stringArrayPayload.List) {
+			if f.Code != v1review.TableDisallowed {
 				continue
 			}
-			r.checkTableName(normalizeTableRef(ref, "", ""), r.LocToLine(n.Loc))
-		}
-	case *ast.TruncateStmt:
-		if n.Table != nil {
-			r.checkTableName(normalizeTableRef(n.Table, "", ""), r.LocToLine(n.Loc))
-		}
-	default:
-	}
-}
-
-func (r *tableDisallowDDLRule) checkTableName(normalizedTableName string, line int32) {
-	for _, disallow := range r.disallowList {
-		if normalizedTableName == disallow {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDisallowDDL.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("DDL is disallowed on table %s.", normalizedTableName),
-				StartPosition: &storepb.Position{Line: line},
+				Title:         title,
+				Content:       fmt.Sprintf("DDL is disallowed on table %s.", f.Name),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

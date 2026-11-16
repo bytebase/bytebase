@@ -58,7 +58,7 @@ go test ./backend/plugin/schema/tidb/ -run '^TestGetDatabaseDefinition$' -count=
 - Generated DDL must be byte-stable before it can be pinned. Walk maps in sorted
   key order in the generators.
 
-## Two deviations
+## Deviations
 
 Oracle's migration inputs are `oldMetadata`/`newMetadata`, protojson captured
 from a real Oracle, where every other engine's are `oldSchema`/`newSchema`
@@ -66,6 +66,12 @@ schema text. Converting them would rewrite all 34 cases: a metadata/DDL/metadata
 round trip is lossless for 0 of its 68 blobs.
 
 PostgreSQL registers neither `GenerateMigration` nor `GetDatabaseMetadata`, so it
-has no fixture for either. Its migration generation is covered by
-`metadata_migration_test.go`, whose hand-written assertions carry intent a golden
-cannot. Do not convert those.
+has no fixture for either. Its metadata migrations run on omni's catalog and are
+tested in omni's `pg/catalog`, against PostgreSQL. `metadata_migration_test.go`
+covers the generator CockroachDB keeps; its hand-written assertions carry intent
+a golden cannot. Do not convert those.
+
+MySQL's metadata migrations run on omni's catalog, so their goldens live in omni
+(`mysql/catalog/testdata/metadata_migration.yaml`, with omni's own `record` flag
+and a MySQL oracle test). `mysql/testdata/generate_migration.yaml` covers the
+Bytebase generator that MariaDB and OceanBase keep.

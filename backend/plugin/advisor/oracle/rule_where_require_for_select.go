@@ -3,14 +3,15 @@ package oracle
 
 import (
 	"context"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -22,6 +23,8 @@ func init() {
 }
 
 // WhereRequireForSelectAdvisor is the advisor checking for WHERE clause requirement.
+// The judgment lives in omni (oracle/v1review.StatementWhereRequireSelect); this adapter
+// renders its findings as advice.
 type WhereRequireForSelectAdvisor struct {
 }
 
@@ -32,59 +35,25 @@ func (*WhereRequireForSelectAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := NewWhereRequireForSelectRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// WhereRequireForSelectRule is the rule implementation for WHERE clause requirement in SELECT.
-type WhereRequireForSelectRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewWhereRequireForSelectRule creates a new WhereRequireForSelectRule.
-func NewWhereRequireForSelectRule(level storepb.Advice_Status, title string, currentDatabase string) *WhereRequireForSelectRule {
-	return &WhereRequireForSelectRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*WhereRequireForSelectRule) Name() string {
-	return "where.require-for-select"
-}
-
-// OnStatement checks SELECT statements with FROM clauses in the omni AST.
-func (r *WhereRequireForSelectRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		selectStmt, ok := n.(*ast.SelectStmt)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
 		if !ok {
-			return
+			continue
 		}
-		if selectStmt.FromClause == nil || len(selectStmt.FromClause.Items) == 0 {
-			return
+		for _, f := range oraclev1review.StatementWhereRequireSelect([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       "WHERE clause is required for SELECT statement.",
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-		if len(selectStmt.FromClause.Items) == 1 {
-			if table, ok := selectStmt.FromClause.Items[0].(*ast.TableRef); ok && table.Name != nil && strings.EqualFold(table.Name.Name, "DUAL") {
-				return
-			}
-		}
-		if selectStmt.WhereClause == nil {
-			r.AddAdvice(
-				r.level,
-				code.StatementNoWhere.Int32(),
-				"WHERE clause is required for SELECT statement.",
-				base.ConvertANTLRLineToPosition(r.locLine(selectStmt.Loc)),
-			)
-		}
-	})
+	}
+	return adviceList, nil
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.
-
-// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.

@@ -48,3 +48,40 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE TABLE u(a int);
+    ALTER TABLE t DROP COLUMN a;
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t DROP COLUMN a;" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t LIKE u;
+    ALTER TABLE t DROP COLUMN a;
+  want:
+    - status: 2
+      code: 105
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t DROP COLUMN a;" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD CHECK (a > 0) NOT ENFORCED;
+- statement: ALTER TABLE t ADD COLUMN c int, MODIFY a bigint, DROP COLUMN b;
+  want:
+    - status: 2
+      code: 111
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: '"ALTER TABLE t ADD COLUMN c int, MODIFY a bigint, DROP COLUMN b;" may cause incompatibility with the existing data and code'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW v;

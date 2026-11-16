@@ -55,3 +55,21 @@
         line: 4
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE tech_book ADD COLUMN a int;
+    ALTER TABLE tech_book ADD COLUMN b int;
+    CREATE TABLE tech_book(id int);
+- statement: |-
+    ALTER TABLE db1.t ADD COLUMN a int;
+
+    ALTER TABLE db2.t ADD COLUMN b int;
+    ALTER TABLE T ADD COLUMN c int;
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 2 statements to modify table `t`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

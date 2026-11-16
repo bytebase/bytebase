@@ -11,6 +11,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	metadatapb "github.com/bytebase/omni/metadata"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
@@ -19,7 +20,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // SyncInstance syncs the instance.
@@ -43,7 +43,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	var filteredDatabases []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
-		if pgparser.IsSystemDatabase(database.Name) {
+		if pganalysis.IsSystemDatabase(database.Name) {
 			continue
 		}
 		filteredDatabases = append(filteredDatabases, database)
@@ -285,7 +285,7 @@ SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true
         WHERE contype = 'c' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
         AND nsp.nspname NOT LIKE 'pg_temp%%'
         AND nsp.nspname NOT LIKE 'pg_toast%%'
-        ORDER BY nsp.nspname, rel.relname, con.conname`, pgparser.SystemSchemaWhereClause)
+        ORDER BY nsp.nspname, rel.relname, con.conname`, pganalysis.SystemSchemaWhereClause)
 
 func getChecks(txn *sql.Tx) (map[db.TableKey][]*metadatapb.CheckConstraintMetadata, error) {
 	checksMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
@@ -319,7 +319,7 @@ SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true
         INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace
         WHERE contype = 'x' and ` + fmt.Sprintf(`nsp.nspname NOT IN (%s)
         AND nsp.nspname NOT LIKE 'pg_temp%%'
-        AND nsp.nspname NOT LIKE 'pg_toast%%'`, pgparser.SystemSchemaWhereClause)
+        AND nsp.nspname NOT LIKE 'pg_toast%%'`, pganalysis.SystemSchemaWhereClause)
 
 func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata, error) {
 	excludesMap := make(map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata)
@@ -370,7 +370,7 @@ WHERE
 	AND n.nspname NOT LIKE 'pg_toast%%'
 	AND c.contype = 'f'
 	AND c.conparentid = 0
-ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
+ORDER BY fk_schema, fk_table, fk_name;`, pganalysis.SystemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
@@ -498,7 +498,7 @@ WHERE nspname NOT IN (%s)
   AND nspname NOT LIKE 'pg_temp%%'
   AND nspname NOT LIKE 'pg_toast%%'
 ORDER BY nspname;
-`, pgparser.SystemSchemaWhereClause)
+`, pganalysis.SystemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, []string, []bool, error) {
 	rows, err := txn.Query(listSchemaQuery)
@@ -516,7 +516,7 @@ func getSchemas(txn *sql.Tx, extensionDepend map[int]bool) ([]string, []string, 
 		if err := rows.Scan(&oid, &schemaName, &schemaOwner, &comment); err != nil {
 			return nil, nil, nil, nil, err
 		}
-		if pgparser.IsSystemSchema(schemaName) {
+		if pganalysis.IsSystemSchema(schemaName) {
 			continue
 		}
 		skipDump = append(skipDump, extensionDepend[oid])
@@ -572,7 +572,7 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 	WHERE tbl.schemaname NOT IN (%s)
 	  AND tbl.schemaname NOT LIKE 'pg_temp%%'
 	  AND tbl.schemaname NOT LIKE 'pg_toast%%'%s
-	ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause, relisPartition)
+	ORDER BY tbl.schemaname, tbl.tablename;`, pganalysis.SystemSchemaWhereClause, relisPartition)
 }
 
 // getTables gets all tables of a database.
@@ -618,7 +618,7 @@ func getTables(
 		}
 		table.DataSize = dataSize.Int64
 		table.IndexSize = indexSize.Int64
-		if pgparser.IsSystemTable(table.Name) {
+		if pganalysis.IsSystemTable(table.Name) {
 			continue
 		}
 		if extensionDepend[oid] {
@@ -706,7 +706,7 @@ WHERE
 	AND n.nspname NOT IN (%s)
 	AND n.nspname NOT LIKE 'pg_temp%%'
 	AND n.nspname NOT LIKE 'pg_toast%%'
-ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
+ORDER BY c.oid;`, pganalysis.SystemSchemaWhereClause)
 
 func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.IndexMetadata, checksMap map[db.TableKey][]*metadatapb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata) (map[db.TableKey][]*metadatapb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*metadatapb.TablePartitionMetadata)
@@ -721,7 +721,7 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.Inde
 		if err := rows.Scan(&schemaName, &tableName, &inhSchemaName, &inhTableName, &partitionType, &relPartBound, &partKeyDef); err != nil {
 			return nil, err
 		}
-		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
+		if pganalysis.IsSystemTable(tableName) || pganalysis.IsSystemTable(inhTableName) {
 			continue
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
@@ -864,7 +864,7 @@ WHERE a.attnum > 0
 	AND nc.nspname NOT IN (%s)
 	AND nc.nspname NOT LIKE 'pg_temp%%'
 	AND nc.nspname NOT LIKE 'pg_toast%%'
-ORDER BY nc.nspname, c.relname, a.attnum;`, columnDefault, pgparser.SystemSchemaWhereClause)
+ORDER BY nc.nspname, c.relname, a.attnum;`, columnDefault, pganalysis.SystemSchemaWhereClause)
 }
 
 // getTableColumns gets the columns of a table.
@@ -968,7 +968,7 @@ FROM pg_catalog.pg_matviews m
 WHERE m.schemaname NOT IN (%s)
   AND m.schemaname NOT LIKE 'pg_temp%%'
   AND m.schemaname NOT LIKE 'pg_toast%%'
-ORDER BY m.schemaname, m.matviewname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY m.schemaname, m.matviewname;`, pganalysis.SystemSchemaWhereClause)
 
 func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.IndexMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*metadatapb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
 	matviewMap := make(map[string][]*metadatapb.MaterializedViewMetadata)
@@ -988,7 +988,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.In
 			return nil, nil, err
 		}
 		// Skip system views.
-		if pgparser.IsSystemView(matview.Name) {
+		if pganalysis.IsSystemView(matview.Name) {
 			continue
 		}
 		if extensionDepend[oid] {
@@ -1035,7 +1035,7 @@ FROM pg_catalog.pg_views v
 WHERE v.schemaname NOT IN (%s)
   AND v.schemaname NOT LIKE 'pg_temp%%'
   AND v.schemaname NOT LIKE 'pg_toast%%'
-ORDER BY v.schemaname, v.viewname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY v.schemaname, v.viewname;`, pganalysis.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*metadatapb.ViewMetadata, map[int]*db.TableKey, error) {
@@ -1056,7 +1056,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadat
 			return nil, nil, err
 		}
 		// Skip system views.
-		if pgparser.IsSystemView(view.Name) {
+		if pganalysis.IsSystemView(view.Name) {
 			continue
 		}
 		if extensionDepend[oid] {
@@ -1283,7 +1283,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*meta
 	  AND pn.nspname NOT LIKE 'pg_temp%%'
 	  AND pn.nspname NOT LIKE 'pg_toast%%'
 	ORDER BY pn.nspname, pt.typname, pe.enumsortorder;`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	rows, err := txn.Query(fmt.Sprintf(query, pganalysis.SystemSchemaWhereClause))
 	if err != nil {
 		return nil, err
 	}
@@ -1397,7 +1397,7 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 		if err := rows.Scan(&typeOid, &classOid, &schemaName, &typeName, &typeComment, &attributeName, &attributeType, &attributeCollation, &attributeComment); err != nil {
 			return nil, err
 		}
-		if pgparser.IsSystemSchema(schemaName) {
+		if pganalysis.IsSystemSchema(schemaName) {
 			continue
 		}
 
@@ -1456,7 +1456,7 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 	WHERE s.schemaname NOT IN (%s)
 	  AND s.schemaname NOT LIKE 'pg_temp%%%%'
 	  AND s.schemaname NOT LIKE 'pg_toast%%%%'
-	ORDER BY s.schemaname, s.sequencename;`, pgparser.SystemSchemaWhereClause)
+	ORDER BY s.schemaname, s.sequencename;`, pganalysis.SystemSchemaWhereClause)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -1569,7 +1569,7 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 		LEFT JOIN pg_namespace as pn ON pn.oid = pc.relnamespace
 	WHERE pn.nspname NOT IN (%s) AND pt.tgisinternal = false
 	ORDER BY pn.nspname, pc.relname, pt.tgname;`
-	rows, err := txn.Query(fmt.Sprintf(query, pgparser.SystemSchemaWhereClause))
+	rows, err := txn.Query(fmt.Sprintf(query, pganalysis.SystemSchemaWhereClause))
 	if err != nil {
 		return nil, err
 	}
@@ -1742,7 +1742,7 @@ JOIN pg_am am ON i.relam = am.oid` + fmt.Sprintf(`
 WHERE n.nspname NOT IN (%s)
   AND n.nspname NOT LIKE 'pg_temp%%'
   AND n.nspname NOT LIKE 'pg_toast%%'
-ORDER BY n.nspname, t.relname, i.relname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY n.nspname, t.relname, i.relname;`, pganalysis.SystemSchemaWhereClause)
 
 // parseIndexOptions parses PostgreSQL indoption int2vector to extract sort order information
 // indoption is a space-separated string of integers where each integer is a bitmask:
@@ -1868,7 +1868,7 @@ where n.nspname not in (%s)
   AND n.nspname NOT LIKE 'pg_toast%%'
   AND p.prokind <> 'a'
   AND pt.typrelid IS NOT NULL
-`, pgparser.SystemSchemaWhereClause)
+`, pganalysis.SystemSchemaWhereClause)
 
 func getFunctionDependencyTables(txn *sql.Tx) (map[int][]int, error) {
 	dependencyTableMap := make(map[int][]int)
@@ -1910,7 +1910,7 @@ where n.nspname not in (%s)
   AND n.nspname NOT LIKE 'pg_temp%%'
   AND n.nspname NOT LIKE 'pg_toast%%'
   AND p.prokind <> 'a'
-order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
+order by function_schema, function_name;`, pganalysis.SystemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
 func getFunctions(
@@ -1936,7 +1936,7 @@ func getFunctions(
 			return nil, err
 		}
 		// Skip internal functions.
-		if pgparser.IsSystemFunction(function.Name, function.Definition) {
+		if pganalysis.IsSystemFunction(function.Name, function.Definition) {
 			continue
 		}
 		if extensionDepend[oid] {

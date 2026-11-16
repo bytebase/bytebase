@@ -3,18 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -25,6 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_TEXT_FIELDS_TOTAL_LENGTH, &TableMaximumVarcharLengthAdvisor{})
 }
 
+// TableMaximumVarcharLengthAdvisor checks the total text length of a table's
+// columns. The judgment lives in omni
+// (mysql/v1review.TableTextFieldsTotalLength); this adapter passes the schema
+// after the change and renders the findings as advice.
 type TableMaximumVarcharLengthAdvisor struct {
 }
 
@@ -37,16 +39,18 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
-	rule := &tableTextFieldsTotalLengthRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		finalMetadata: checkCtx.FinalMetadata,
-		maximum:       int(numberPayload.Number),
+	maximum := int(numberPayload.Number)
+	// A nil schema makes omni panic where V1 did with no final metadata.
+	var final *v1review.Schema
+	if checkCtx.FinalMetadata != nil {
+		final = &v1review.Schema{
+			Metadata:            checkCtx.FinalMetadata.GetProto(),
+			ObjectCaseSensitive: checkCtx.FinalMetadata.GetIsObjectCaseSensitive(),
+		}
 	}
 
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {
 			continue
@@ -55,114 +59,23 @@ func (*TableMaximumVarcharLengthAdvisor) Check(_ context.Context, checkCtx advis
 		if !ok {
 			continue
 		}
-		rule.SetStatement(stmt.BaseLine(), stmt.Text)
-		rule.OnStatement(node)
-	}
-
-	return rule.GetAdviceList(), nil
-}
-
-type tableTextFieldsTotalLengthRule struct {
-	BaseRule
-	finalMetadata *model.DatabaseMetadata
-	maximum       int
-}
-
-func (r *tableTextFieldsTotalLengthRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableTextFieldsTotalLengthRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	schema := r.finalMetadata.GetSchemaMetadata("")
-	if schema == nil {
-		return
-	}
-	tableInfo := schema.GetTable(tableName)
-	if tableInfo == nil {
-		return
-	}
-	total := getTotalTextLength(tableInfo)
-	if total > int64(r.maximum) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.IndexCountExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
-			StartPosition: &storepb.Position{
-				Line: r.LocToLine(n.Loc),
-			},
-		})
-	}
-}
-
-func (r *tableTextFieldsTotalLengthRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-	schema := r.finalMetadata.GetSchemaMetadata("")
-	if schema == nil {
-		return
-	}
-	tableInfo := schema.GetTable(tableName)
-	if tableInfo == nil {
-		return
-	}
-	total := getTotalTextLength(tableInfo)
-	if total > int64(r.maximum) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.TotalTextLengthExceedsLimit.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table %q total text column length (%d) exceeds the limit (%d).", tableName, total, r.maximum),
-			StartPosition: &storepb.Position{
-				Line: r.LocToLine(n.Loc),
-			},
-		})
-	}
-}
-
-func getTotalTextLength(tableInfo *model.TableMetadata) int64 {
-	var total int64
-	columns := tableInfo.GetProto().GetColumns()
-	for _, column := range columns {
-		total += getTextLength(column.Type)
-	}
-	return total
-}
-
-func getTextLength(s string) int64 {
-	s = strings.ToLower(s)
-	switch s {
-	case "char", "binary":
-		return 1
-	case "tinyblob", "tinytext":
-		return 255
-	case "blob", "text":
-		return 65_535
-	case "mediumblob", "mediumtext":
-		return 16_777_215
-	case "longblob", "longtext":
-		return 4_294_967_295
-	default:
-		re := regexp.MustCompile(`[a-z]+\((\d+)\)`)
-		match := re.FindStringSubmatch(s)
-		if len(match) >= 2 {
-			n, err := strconv.ParseInt(match[1], 10, 64)
-			if err == nil {
-				return int64(n)
+		// V1 reported a CREATE TABLE under the index count code.
+		adviceCode := code.TotalTextLengthExceedsLimit
+		if _, ok := node.(*ast.CreateTableStmt); ok {
+			adviceCode = code.IndexCountExceedsLimit
+		}
+		for _, f := range mysqlv1review.TableTextFieldsTotalLength([]ast.Node{node}, final, maximum) {
+			if f.Code != v1review.TableTextTooLong {
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          adviceCode.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table %q total text column length (%s) exceeds the limit (%d).", f.Name, f.Value, maximum),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
 		}
 	}
-	return 0
+	return adviceList, nil
 }

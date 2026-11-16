@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -21,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_DATABASE_DROP_EMPTY_DATABASE, &DatabaseAllowDropIfEmptyAdvisor{})
 }
 
-// DatabaseAllowDropIfEmptyAdvisor is the advisor checking the MySQLDatabaseAllowDropIfEmpty rule.
+// DatabaseAllowDropIfEmptyAdvisor is the advisor checking the
+// MySQLDatabaseAllowDropIfEmpty rule. The judgment lives in omni
+// (mariadb/v1review.DatabaseDropEmptyDatabase); this adapter passes the
+// pre-change schema and renders the findings as advice.
 type DatabaseAllowDropIfEmptyAdvisor struct {
 }
 
@@ -32,48 +37,45 @@ func (*DatabaseAllowDropIfEmptyAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &databaseDropEmptyDBRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		originMetadata: checkCtx.OriginalMetadata,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mariadbv1review.DatabaseDropEmptyDatabase([]ast.Node{node}, dropDatabaseSchema(checkCtx.OriginalMetadata, node)) {
+			advice := &storepb.Advice{
+				Status:        level,
+				Title:         title,
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
+			}
+			switch f.Code {
+			case v1review.DatabaseNotCurrent:
+				advice.Code = code.NotCurrentDatabase.Int32()
+				advice.Content = fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", f.Name, checkCtx.OriginalMetadata.DatabaseName())
+			case v1review.DatabaseNotEmpty:
+				advice.Code = code.DatabaseNotEmpty.Int32()
+				advice.Content = fmt.Sprintf("Database `%s` is not allowed to drop if not empty", f.Name)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, advice)
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
+	return adviceList, nil
 }
 
-type databaseDropEmptyDBRule struct {
-	BaseRule
-	originMetadata *model.DatabaseMetadata
-}
-
-func (*databaseDropEmptyDBRule) Name() string {
-	return "DatabaseDropEmptyDBRule"
-}
-
-func (r *databaseDropEmptyDBRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.DropDatabaseStmt)
-	if !ok {
-		return
+// dropDatabaseSchema returns the pre-change schema one statement is judged
+// against: the metadata for a DROP DATABASE, and nothing for any other, which
+// reads none. The metadata is read unguarded, so nil metadata panics on a
+// DROP DATABASE only, and advisor.Check reports the panic as the rule's error.
+func dropDatabaseSchema(metadata *model.DatabaseMetadata, node ast.Node) v1review.Schema {
+	if _, ok := node.(*ast.DropDatabaseStmt); !ok {
+		return v1review.Schema{}
 	}
-	dbName := n.Name
-	line := r.BaseLine + int(r.LocToLine(n.Loc))
-	if r.originMetadata.DatabaseName() != dbName {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NotCurrentDatabase.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", dbName, r.originMetadata.DatabaseName()),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	} else if !r.originMetadata.HasNoTable() {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DatabaseNotEmpty.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", dbName),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	}
+	return v1review.Schema{Metadata: metadata.GetProto(), ObjectCaseSensitive: metadata.GetIsObjectCaseSensitive()}
 }

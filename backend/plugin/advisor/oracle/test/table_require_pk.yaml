@@ -34,3 +34,39 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE t DROP PRIMARY KEY;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table "TEST_DB"."T" requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(id INT);
+    DROP VIEW t;
+- statement: |-
+    CREATE TABLE t(id INT PRIMARY KEY);
+    ALTER TABLE t
+      DROP PRIMARY KEY;
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table "TEST_DB"."T" requires PRIMARY KEY.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE TABLE "x".t(id INT);
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: Table "x"."T" requires PRIMARY KEY.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

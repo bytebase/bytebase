@@ -2230,7 +2230,6 @@
       "needs-attention": "{{count}}/{{total}} cần xử lý",
       "no-findings": "Không có phát hiện",
       "not-run": "Chưa chạy",
-      "nothing-needs-attention": "Không có mục nào cần xử lý",
       "off": "đã tắt",
       "off-for-project": "Đã tắt cho dự án này",
       "opens-in-sql": "Nhấp để xem lần lượt trong SQL.",
@@ -2283,7 +2282,7 @@
       "overridden_other": "{{count}} phát hiện P0 trong {{reviewer}} đã được giải quyết mà không sửa",
       "ready-to-deploy": "Mọi thứ đã đạt; sẵn sàng triển khai.",
       "reviewer-failed": "{{reviewer}} không thể chạy",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} chưa chạy",
       "reviewer-outdated": "SQL đã thay đổi sau khi {{reviewer}} chạy",
       "reviewer-running": "{{reviewer}} đang chạy",
@@ -3513,7 +3512,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-access": {
-            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Quy tắc phê duyệt, môi trường, loại ngữ nghĩa và phân loại dữ liệu · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt",
+            "details": "Ai giữ vai trò nào trong không gian làm việc và các dự án của nó · Nhóm và thành viên của nhóm · Vai trò và quyền của vai trò · Quy tắc che giấu và miễn trừ che giấu · Chính sách triển khai, truy vấn dữ liệu, tag và rà soát · Quy tắc phê duyệt, môi trường, loại ngữ nghĩa và phân loại dữ liệu · Cấp quyền truy cập, kể cả các yêu cầu đang chờ duyệt · Danh tính CI và ai có thể đăng nhập bằng chúng",
             "title": "Đọc thành viên, vai trò và chính sách"
           },
           "read-data": {

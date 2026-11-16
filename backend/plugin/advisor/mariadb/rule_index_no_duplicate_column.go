@@ -6,11 +6,13 @@ import (
 	"regexp"
 
 	"github.com/bytebase/omni/mariadb/ast"
+	mariadbv1review "github.com/bytebase/omni/mariadb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -21,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MARIADB, storepb.SQLReviewRule_INDEX_NO_DUPLICATE_COLUMN, &IndexNoDuplicateColumnAdvisor{})
 }
 
-// IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate columns in index.
+// IndexNoDuplicateColumnAdvisor is the advisor checking for no duplicate
+// columns in index. The judgment lives in omni
+// (mariadb/v1review.IndexNoDuplicateColumn); this adapter renders the findings
+// as advice.
 type IndexNoDuplicateColumnAdvisor struct {
 }
 
@@ -32,133 +37,27 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &indexNoDuplicateColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexNoDuplicateColumnRule struct {
-	BaseRule
-}
-
-func (*indexNoDuplicateColumnRule) Name() string {
-	return "IndexNoDuplicateColumnRule"
-}
-
-func (r *indexNoDuplicateColumnRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	case *ast.CreateIndexStmt:
-		r.checkCreateIndex(n)
-	default:
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		r.handleConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+		node, ok := mariadbparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		switch cmd.Type {
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				r.handleConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
-			}
-		default:
+		for _, f := range mariadbv1review.IndexNoDuplicateColumn([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.DuplicateColumnInIndex.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", f.Value, keyName(stmt.Text, f), f.Table, f.Other),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
 	}
-}
-
-func (r *indexNoDuplicateColumnRule) checkCreateIndex(n *ast.CreateIndexStmt) {
-	if n.Table == nil {
-		return
-	}
-	if n.Fulltext || n.Spatial {
-		return
-	}
-
-	tableName := n.Table.Name
-	indexName := n.IndexName
-
-	indexType := "INDEX "
-	if n.Unique {
-		indexType = "UNIQUE INDEX "
-	}
-
-	columnList := indexColumns(n.Columns)
-	if column, duplicate := hasDuplicateColumn(columnList); duplicate {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DuplicateColumnInIndex.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-		})
-	}
-}
-
-func (r *indexNoDuplicateColumnRule) handleConstraint(tableName string, constraint *ast.Constraint, line int32) {
-	var columnList []string
-	indexType := ""
-	switch constraint.Type {
-	case ast.ConstrPrimaryKey:
-		columnList = constraint.Columns
-		indexType = "PRIMARY KEY "
-	case ast.ConstrUnique:
-		columnList = constraint.Columns
-		indexType = "UNIQUE KEY "
-	case ast.ConstrIndex:
-		columnList = constraint.Columns
-		indexType = "INDEX "
-	case ast.ConstrForeignKey:
-		columnList = constraint.Columns
-		indexType = "FOREIGN KEY "
-	case ast.ConstrFulltextIndex, ast.ConstrSpatialIndex:
-		return
-	default:
-		return
-	}
-
-	indexName := constraintName(constraint)
-	// Workaround: omni parser doesn't capture PRIMARY KEY constraint names.
-	// Extract from statement text as a fallback.
-	if indexName == "" && constraint.Type == ast.ConstrPrimaryKey {
-		indexName = extractPKNameFromText(r.StmtText)
-	}
-	if column, duplicate := hasDuplicateColumn(columnList); duplicate {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.DuplicateColumnInIndex.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("%s`%s` has duplicate column `%s`.`%s`", indexType, indexName, tableName, column),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
-		})
-	}
+	return adviceList, nil
 }
 
 // primaryKeyNameRe extracts the optional constraint name from a PRIMARY KEY clause.
@@ -173,15 +72,4 @@ func extractPKNameFromText(stmtText string) string {
 		return m[1]
 	}
 	return ""
-}
-
-func hasDuplicateColumn(keyList []string) (string, bool) {
-	listMap := make(map[string]struct{})
-	for _, keyName := range keyList {
-		if _, exists := listMap[keyName]; exists {
-			return keyName, true
-		}
-		listMap[keyName] = struct{}{}
-	}
-	return "", false
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,7 @@ func init() {
 }
 
 // ColumnDisallowChangingOrderAdvisor is the advisor checking for disallow changing column order.
+// The judgment lives in omni (tidb/v1review.ColumnDisallowChangingOrder).
 type ColumnDisallowChangingOrderAdvisor struct {
 }
 
@@ -36,27 +38,18 @@ func (*ColumnDisallowChangingOrderAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 	title := checkCtx.Rule.Type.String()
+
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		alter, ok := ostmt.Node.(*ast.AlterTableStmt)
-		if !ok {
-			continue
-		}
-		// Single-advice-per-statement contract (mirrors pingcap-tidb).
-		// Mysql analog emits per-cmd; preserve pingcap behavior.
-		if firstAlterCommandMatching(alter, func(cmd *ast.AlterTableCmd) bool {
-			return (cmd.Type == ast.ATChangeColumn || cmd.Type == ast.ATModifyColumn) &&
-				(cmd.First || cmd.After != "")
-		}) >= 0 {
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.ColumnDisallowChangingOrder([]ast.Node{stmt.Node}) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.ChangeColumnOrder.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" changes column order", ostmt.TrimmedText()),
-				StartPosition: base.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
+				Content:       fmt.Sprintf("\"%s\" changes column order", stmt.TrimmedText()),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
 	}
-
 	return adviceList, nil
 }

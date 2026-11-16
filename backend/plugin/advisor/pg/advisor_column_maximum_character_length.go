@@ -3,11 +3,11 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -22,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_MAXIMUM_CHARACTER_LENGTH, &ColumnMaximumCharacterLengthAdvisor{})
 }
 
-// ColumnMaximumCharacterLengthAdvisor is the advisor checking for maximum character length.
+// ColumnMaximumCharacterLengthAdvisor is the advisor checking for maximum
+// character length. The judgment lives in omni
+// (pg/v1review.ColumnMaximumCharacterLength); this adapter passes the maximum
+// and renders the findings as advice.
 type ColumnMaximumCharacterLengthAdvisor struct {
 }
 
@@ -37,140 +40,30 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if int(numberPayload.Number) <= 0 {
+	maximum := int(numberPayload.Number)
+	if maximum <= 0 {
 		return nil, nil
 	}
 
-	rule := &columnMaximumCharacterLengthRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maximum: int(numberPayload.Number),
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnMaximumCharacterLengthRule struct {
-	BaseRule
-
-	maximum int
-}
-
-func (*columnMaximumCharacterLengthRule) Name() string {
-	return "column-maximum-character-length"
-}
-
-func (r *columnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *columnMaximumCharacterLengthRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := formatTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		if col.TypeName == nil {
-			continue
-		}
-		charLength := r.getCharLength(col.TypeName)
-		if charLength > r.maximum {
-			r.addAdvice(tableName, col.Colname, col.Colname)
-			return // Only report first violation
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range pgv1review.ColumnMaximumCharacterLength([]ast.Node{nodes[i]}, maximum) {
+			tableName := fmt.Sprintf("%q", f.Table)
+			if f.Value != "" {
+				tableName = fmt.Sprintf("%q.%q", f.Value, f.Table)
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Code:    code.CharLengthExceedsLimit.Int32(),
+				Title:   checkCtx.Rule.Type.String(),
+				Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", f.Name, tableName, maximum),
+				StartPosition: &storepb.Position{
+					Line:   findingLine(stmt, f),
+					Column: 0,
+				},
+			})
 		}
 	}
-}
-
-func (r *columnMaximumCharacterLengthRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := formatTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		switch ast.AlterTableType(cmd.Subtype) {
-		case ast.AT_AddColumn:
-			colDef, ok := cmd.Def.(*ast.ColumnDef)
-			if !ok || colDef == nil || colDef.TypeName == nil {
-				continue
-			}
-			charLength := r.getCharLength(colDef.TypeName)
-			if charLength > r.maximum {
-				r.addAdvice(tableName, colDef.Colname, colDef.Colname)
-				return
-			}
-		case ast.AT_AlterColumnType:
-			typeName, ok := cmd.Def.(*ast.ColumnDef)
-			if !ok || typeName == nil || typeName.TypeName == nil {
-				continue
-			}
-			charLength := r.getCharLength(typeName.TypeName)
-			if charLength > r.maximum {
-				r.addAdvice(tableName, cmd.Name, cmd.Name)
-				return
-			}
-		default:
-		}
-	}
-}
-
-// getCharLength returns the character length if the type is CHAR/CHARACTER/NCHAR (without VARYING).
-// Returns 0 for non-character types or VARCHAR types.
-func (*columnMaximumCharacterLengthRule) getCharLength(tn *ast.TypeName) int {
-	name := strings.ToLower(typeName(tn))
-
-	// Only check fixed-length char types (char, character, bpchar, nchar)
-	// Skip varchar, character varying, text
-	switch name {
-	case "char", "character", "bpchar", "nchar":
-		// OK, continue
-	default:
-		return 0
-	}
-
-	// Get the length from Typmods
-	if tn.Typmods == nil || len(tn.Typmods.Items) == 0 {
-		return 0
-	}
-
-	// First typmod item is the length
-	if intVal, ok := tn.Typmods.Items[0].(*ast.Integer); ok {
-		return int(intVal.Ival)
-	}
-
-	return 0
-}
-
-func (r *columnMaximumCharacterLengthRule) addAdvice(tableName, columnName, searchName string) {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.CharLengthExceedsLimit.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf("The length of the CHAR column %q in table %s is bigger than %d, please use VARCHAR instead", columnName, tableName, r.maximum),
-		StartPosition: &storepb.Position{
-			Line:   r.FindLineByName(searchName),
-			Column: 0,
-		},
-	})
-}
-
-// formatTableName formats a RangeVar as a quoted table name string for display.
-func formatTableName(rv *ast.RangeVar) string {
-	if rv == nil || rv.Relname == "" {
-		return ""
-	}
-	if rv.Schemaname != "" {
-		return fmt.Sprintf("%q.%q", rv.Schemaname, rv.Relname)
-	}
-	return fmt.Sprintf("%q", rv.Relname)
+	return adviceList, nil
 }

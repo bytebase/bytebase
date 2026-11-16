@@ -6,12 +6,15 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,7 +25,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_NAMING_INDEX_FK, &NamingFKConventionAdvisor{})
 }
 
-// NamingFKConventionAdvisor is the advisor checking for foreign key naming convention.
+// NamingFKConventionAdvisor is the advisor checking for foreign key naming
+// convention. The judgment lives in omni (mysql/v1review.NamingForeignKey);
+// this adapter validates the template's tokens, converts the rule's payload
+// into the omni config and renders the findings as advice.
 type NamingFKConventionAdvisor struct {
 }
 
@@ -38,9 +44,7 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format := namingPayload.Format
-	templateList, _ := advisor.ParseTemplateTokens(format)
-
+	templateList, _ := advisor.ParseTemplateTokens(namingPayload.Format)
 	for _, key := range templateList {
 		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
 			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
@@ -51,143 +55,48 @@ func (*NamingFKConventionAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
+	cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
 
-	rule := &namingFKRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:       format,
-		maxLength:    maxLength,
-		templateList: templateList,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-// fkIndexMetaData is the metadata for foreign key.
-type fkIndexMetaData struct {
-	indexName string
-	tableName string
-	metaData  map[string]string
-	line      int
-}
-
-type namingFKRule struct {
-	BaseRule
-	format       string
-	maxLength    int
-	templateList []string
-}
-
-func (*namingFKRule) Name() string {
-	return "NamingFKConventionRule"
-}
-
-func (r *namingFKRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *namingFKRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	var indexDataList []*fkIndexMetaData
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if metaData := r.handleConstraint(tableName, constraint, r.BaseLine+int(r.LocToLine(constraint.Loc))); metaData != nil {
-			indexDataList = append(indexDataList, metaData)
-		}
-	}
-	r.handleIndexList(indexDataList)
-}
-
-func (r *namingFKRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := ""
-	if n.Table != nil {
-		tableName = n.Table.Name
-	}
-	var indexDataList []*fkIndexMetaData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		if cmd.Type == ast.ATAddConstraint && cmd.Constraint != nil {
-			if metaData := r.handleConstraint(tableName, cmd.Constraint, r.BaseLine+int(r.LocToLine(n.Loc))); metaData != nil {
-				indexDataList = append(indexDataList, metaData)
-			}
-		}
-	}
-	r.handleIndexList(indexDataList)
-}
-
-func (r *namingFKRule) handleIndexList(indexDataList []*fkIndexMetaData) {
-	for _, indexData := range indexDataList {
-		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
+		findings, err := mysqlv1review.NamingForeignKey([]ast.Node{node}, cfg)
 		if err != nil {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.Internal.Int32(),
-				Title:   "Internal error for foreign key naming convention rule",
-				Content: fmt.Sprintf("%q meet internal error %q", r.TrimmedStmtText(), err.Error()),
-			})
-			continue
+			return nil, err
 		}
-		if !regex.MatchString(indexData.indexName) {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.PatternInvalid:
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   "Internal error for foreign key naming convention rule",
+					Content: fmt.Sprintf("%q meet internal error %q", strings.TrimRight(strings.TrimSpace(stmt.Text), ";"), f.Detail),
+				})
+				continue
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NamingFKConventionMismatch.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Foreign key in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
-				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
-			})
-		}
-		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.NamingFKConventionMismatch.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Foreign key `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
-				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
 	}
-}
-
-func (*namingFKRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *fkIndexMetaData {
-	// Focus on foreign key.
-	if constraint.Type != ast.ConstrForeignKey {
-		return nil
-	}
-
-	indexName := constraintName(constraint)
-
-	referencingColumnList := constraint.Columns
-	referencedTable := ""
-	if constraint.RefTable != nil {
-		referencedTable = constraint.RefTable.Name
-	}
-	referencedColumnList := constraint.RefColumns
-
-	metaData := map[string]string{
-		advisor.ReferencingTableNameTemplateToken:  tableName,
-		advisor.ReferencingColumnNameTemplateToken: strings.Join(referencingColumnList, "_"),
-		advisor.ReferencedTableNameTemplateToken:   referencedTable,
-		advisor.ReferencedColumnNameTemplateToken:  strings.Join(referencedColumnList, "_"),
-	}
-	return &fkIndexMetaData{
-		indexName: indexName,
-		tableName: tableName,
-		metaData:  metaData,
-		line:      line,
-	}
+	return adviceList, nil
 }

@@ -52,3 +52,40 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    BEGIN
+      UPDATE t SET a = 1;
+      IF x > 0 THEN
+        DELETE FROM t;
+      END IF;
+    END;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    MERGE INTO t USING s ON (t.id = s.id)
+    WHEN MATCHED THEN UPDATE SET t.a = s.a;
+    DELETE FROM t2
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

@@ -34,3 +34,41 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int) COMMENT '';
+    CREATE TABLE u(a int) comment = 'ééééé';
+    CREATE TABLE v(a int) COMMENT 'éééééé';
+    ALTER TABLE w COMMENT 'a very long comment';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: The length of table `v` comment should be within 10 characters
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    -- leading comment
+
+    CREATE TABLE db.t2 LIKE t;
+    /* block */ CREATE TABLE t3 AS SELECT 1;
+    CREATE TABLE t4(a int COMMENT 'column comment')
+      COMMENT 'ab' COMMENT 'a much longer one';
+  want:
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Table `t2` requires comments
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Table `t3` requires comments
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

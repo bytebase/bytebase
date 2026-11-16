@@ -2,23 +2,63 @@ package output
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/action/github"
+	"github.com/bytebase/bytebase/action/gitlab"
+	"github.com/bytebase/bytebase/action/result"
 	"github.com/bytebase/bytebase/action/world"
 )
 
-// WriteOutput writes the output JSON and GitHub step summary if applicable.
-func WriteOutput(w *world.World) {
+// maxErrorAnnotations is GitHub's limit on error annotations for one step.
+const maxErrorAnnotations = 10
+
+// WriteOutput writes what a command reports: the output JSON, and for a
+// rollout its result in the job log and on the CI's own surfaces. A surface
+// that cannot be written is logged and does not fail the command.
+func WriteOutput(w *world.World, out io.Writer) {
 	if err := writeOutputJSON(w); err != nil {
 		w.Logger.Error("failed to write output JSON", "error", err)
 	}
+	writeResultBlock(w, out)
 	if err := writeGitHubStepSummary(w); err != nil {
 		w.Logger.Error("failed to write GitHub step summary", "error", err)
+	}
+	if err := writeGitLabAnnotations(w); err != nil {
+		w.Logger.Error("failed to write GitLab annotations", "error", err)
+	}
+}
+
+// writeResultBlock prints the rollout result to the job log.
+func writeResultBlock(w *world.World, out io.Writer) {
+	if w.Result == nil {
+		return
+	}
+	switch w.Platform {
+	case world.GitHub:
+		// Statements and database errors are printed as they are, so the
+		// runner must not read a line of them as a workflow command.
+		// https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#stopping-and-starting-workflow-commands
+		token := uuid.NewString()
+		_, _ = fmt.Fprintf(out, "\n::stop-commands::%s\n%s::%s::\n", token, result.RenderText(w.Result, nil), token)
+		for i, failure := range w.Result.Failures() {
+			if i == maxErrorAnnotations {
+				break
+			}
+			_, _ = fmt.Fprintln(out, github.ErrorCommand(failure))
+		}
+	case world.GitLab:
+		_, _ = fmt.Fprint(out, "\n"+result.RenderText(w.Result, gitlab.FoldSection(time.Now())))
+	default:
+		_, _ = fmt.Fprint(out, "\n"+result.RenderText(w.Result, nil))
 	}
 }
 
@@ -54,6 +94,9 @@ func writeOutputJSON(w *world.World) error {
 	if w.OutputMap.Rollout != "" {
 		outputData["rollout"] = w.OutputMap.Rollout
 	}
+	if w.Result != nil {
+		outputData["result"] = w.Result
+	}
 	if w.OutputMap.CheckResults != nil {
 		// Use protojson to marshal CheckResults with camelCase keys
 		checkResultsJSON, err := protojson.Marshal(w.OutputMap.CheckResults)
@@ -85,6 +128,9 @@ func writeGitHubStepSummary(w *world.World) error {
 	}
 
 	filename := os.Getenv("GITHUB_STEP_SUMMARY")
+	if filename == "" {
+		return nil
+	}
 	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open GitHub step summary file: %s", filename)
@@ -96,4 +142,12 @@ func writeGitHubStepSummary(w *world.World) error {
 		return errors.Wrapf(err, "failed to write GitHub step summary: %s", filename)
 	}
 	return nil
+}
+
+// writeGitLabAnnotations links the GitLab job page to the rollout.
+func writeGitLabAnnotations(w *world.World) error {
+	if w.Platform != world.GitLab || w.Result == nil {
+		return nil
+	}
+	return gitlab.WriteRolloutAnnotations(w.Result.URL)
 }

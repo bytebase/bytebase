@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +24,8 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_DISALLOW_SET_CHARSET, &TableDisallowSetCharsetAdvisor{})
 }
 
+// TableDisallowSetCharsetAdvisor is the advisor checking for disallow setting a table charset.
+// The judgment lives in omni (mysql/v1review.TableDisallowSetCharset).
 type TableDisallowSetCharsetAdvisor struct {
 }
 
@@ -30,61 +35,25 @@ func (*TableDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &tableDisallowSetCharsetRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowSetCharsetRule struct {
-	BaseRule
-}
-
-func (*tableDisallowSetCharsetRule) Name() string {
-	return "TableDisallowSetCharsetRule"
-}
-
-func (r *tableDisallowSetCharsetRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableDisallowSetCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
-	for _, opt := range n.Options {
-		if opt != nil && strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARACTER SET") {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.DisallowSetCharset.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-			})
-		}
-	}
-}
-
-func (r *tableDisallowSetCharsetRule) checkAlterTable(n *ast.AlterTableStmt) {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if cmd.Type == ast.ATConvertCharset {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range mysqlv1review.TableDisallowSetCharset([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.DisallowSetCharset.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				Title:         title,
+				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, v1review.Finding{}))),
 			})
 		}
 	}
+	return adviceList, nil
 }

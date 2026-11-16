@@ -16,7 +16,7 @@ import (
 func init() {
 	schema.RegisterDiffSDLMigration(storepb.Engine_POSTGRES, pgDiffSDLMigration)
 	schema.RegisterDiffSDLMigration(storepb.Engine_COCKROACHDB, pgDiffSDLMigration)
-	schema.RegisterDiffMetadataMigration(storepb.Engine_POSTGRES, pgDiffMetadataMigration)
+	schema.RegisterDiffMetadataMigration(storepb.Engine_POSTGRES, omniDiffMetadataMigration)
 	schema.RegisterDiffMetadataMigration(storepb.Engine_COCKROACHDB, pgDiffCockroachMetadataMigration)
 	schema.RegisterSDLDropAdvices(storepb.Engine_POSTGRES, pgSDLDropAdvices)
 	schema.RegisterSDLDropAdvices(storepb.Engine_COCKROACHDB, pgSDLDropAdvices)

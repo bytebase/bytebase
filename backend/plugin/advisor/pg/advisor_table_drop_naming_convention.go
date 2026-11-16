@@ -3,15 +3,17 @@ package pg
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_TABLE_DROP_NAMING_CONVENTION, &TableDropNamingConventionAdvisor{})
 }
 
-// TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
+// TableDropNamingConventionAdvisor is the advisor checking for table drop
+// with naming convention. The judgment lives in omni
+// (pg/v1review.TableDropNaming); this adapter converts the rule's payload
+// into the omni config and renders the findings as advice.
 type TableDropNamingConventionAdvisor struct {
 }
 
@@ -38,55 +43,41 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for table drop naming convention rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format}
+	if _, err := cfg.Compile(); err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	rule := &tableDropNamingConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format: format,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDropNamingConventionRule struct {
-	BaseRule
-	format *regexp.Regexp
-}
-
-// Name returns the rule name.
-func (*tableDropNamingConventionRule) Name() string {
-	return "table.drop-naming-convention"
-}
-
-// OnStatement is called for each top-level statement AST node.
-func (r *tableDropNamingConventionRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.DropStmt)
-	if !ok {
-		return
-	}
-	if n.RemoveType != int(ast.OBJECT_TABLE) {
-		return
-	}
-
-	for _, obj := range dropObjects(n) {
-		tableName := obj[1] // [schema, name]
-		if !r.format.MatchString(tableName) {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.TableDropNamingConventionMismatch.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", tableName, r.format),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := pgv1review.TableDropNaming([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		// V1 anchored every finding on the statement text's first
+		// non-whitespace line, which can be a leading comment above the
+		// statement node the finding's range covers.
+		line := (&BaseRule{StmtText: stmt.Text}).ContentStartLine() + int32(stmt.BaseLine())
+		for _, f := range findings {
+			if f.Code != v1review.NameMismatch {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.TableDropNamingConventionMismatch.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("`%s` mismatches drop table naming convention, naming format should be %q", f.Name, namingPayload.Format),
+				StartPosition: &storepb.Position{Line: line},
 			})
 		}
 	}
+	return adviceList, nil
 }

@@ -59,3 +59,5 @@
         line: 1
         column: 0
       endposition: null
+- statement: INSERT INTO tech_book (SELECT * FROM tech_book ORDER BY RAND()) UNION (SELECT * FROM tech_book ORDER BY rand(1));
+- statement: INSERT INTO tech_book SELECT * FROM (SELECT * FROM tech_book ORDER BY RAND()) t;

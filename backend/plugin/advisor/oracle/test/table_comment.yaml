@@ -57,3 +57,56 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    COMMENT ON TABLE t IS 'comments';
+    CREATE TABLE t(a int);
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'comments';
+- statement: |-
+    CREATE TABLE "other".t(a int);
+    COMMENT ON TABLE t IS 'comments';
+  want:
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Comment is required for table "other"."T"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    CREATE TABLE t(b int);
+  want:
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Comment is required for table "TEST_DB"."T"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: TABLE_COMMENT
+      content: Comment is required for table "TEST_DB"."T"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT 1 FROM dual;
+    CREATE TABLE t(
+      a int
+    );
+    COMMENT ON TABLE t IS 'looooooong comments';
+  want:
+    - status: 2
+      code: 1301
+      title: TABLE_COMMENT
+      content: Table "TEST_DB"."T" comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

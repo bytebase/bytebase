@@ -3,15 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_FUNCTION_DISALLOWED_LIST, &FunctionDisallowedListAdvisor{})
 }
 
-// FunctionDisallowedListAdvisor is the advisor checking for disallowed function list.
+// FunctionDisallowedListAdvisor is the advisor checking for disallowed
+// function list. The judgment lives in omni
+// (mysql/v1review.SystemFunctionDisallowedList); this adapter passes the
+// rule's payload and renders the findings as advice.
 type FunctionDisallowedListAdvisor struct {
 }
 
@@ -32,164 +35,27 @@ func (*FunctionDisallowedListAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
+	disallowList := stringArrayPayload.List
 
-	var disallowList []string
-	for _, fn := range stringArrayPayload.List {
-		disallowList = append(disallowList, strings.ToUpper(fn))
-	}
-
-	rule := &functionDisallowedListRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		disallowList: disallowList,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type functionDisallowedListRule struct {
-	BaseRule
-	disallowList []string
-}
-
-func (*functionDisallowedListRule) Name() string {
-	return "FunctionDisallowedListRule"
-}
-
-func (r *functionDisallowedListRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.SelectStmt:
-		r.checkSelectStmt(n)
-	case *ast.InsertStmt:
-		r.checkInsertStmt(n)
-	case *ast.UpdateStmt:
-		r.checkUpdateStmt(n)
-	case *ast.DeleteStmt:
-		r.checkDeleteStmt(n)
-	case *ast.CreateTableStmt:
-		r.checkCreateTableStmt(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *functionDisallowedListRule) checkExpr(expr ast.ExprNode) {
-	if expr == nil {
-		return
-	}
-	ast.Inspect(expr, func(n ast.Node) bool {
-		fn, ok := n.(*ast.FuncCallExpr)
-		if !ok {
-			return true
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		if slices.Contains(r.disallowList, strings.ToUpper(fn.Name)) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.SystemFunctionDisallowedList([]ast.Node{node}, disallowList) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.DisabledFunction.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", fn.Name, r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(fn.Loc))),
+				Title:         title,
+				Content:       fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", f.Name, strings.TrimSpace(stmt.Text)),
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
 			})
 		}
-		return true
-	})
-}
-
-func (r *functionDisallowedListRule) checkCreateTableStmt(n *ast.CreateTableStmt) {
-	if n == nil {
-		return
 	}
-	for _, col := range n.Columns {
-		if col == nil {
-			continue
-		}
-		r.checkExpr(col.DefaultValue)
-		r.checkExpr(col.OnUpdate)
-	}
-}
-
-func (r *functionDisallowedListRule) checkAlterTableStmt(n *ast.AlterTableStmt) {
-	if n == nil {
-		return
-	}
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		for _, col := range getColumnsFromCmd(cmd) {
-			if col == nil {
-				continue
-			}
-			r.checkExpr(col.DefaultValue)
-			r.checkExpr(col.OnUpdate)
-		}
-		r.checkExpr(cmd.DefaultExpr)
-	}
-}
-
-func (r *functionDisallowedListRule) checkSelectStmt(n *ast.SelectStmt) {
-	if n == nil {
-		return
-	}
-	for _, cte := range n.CTEs {
-		if cte != nil {
-			r.checkSelectStmt(cte.Select)
-		}
-	}
-	if inner := n.ParenSource; inner != nil {
-		r.checkSelectStmt(inner)
-	}
-	if n.SetOp != ast.SetOpNone {
-		r.checkSelectStmt(n.Left)
-		r.checkSelectStmt(n.Right)
-	}
-	for _, expr := range n.TargetList {
-		r.checkExpr(expr)
-	}
-	r.checkExpr(n.Where)
-	for _, expr := range n.GroupBy {
-		r.checkExpr(expr)
-	}
-	r.checkExpr(n.Having)
-	for _, item := range n.OrderBy {
-		if item != nil {
-			r.checkExpr(item.Expr)
-		}
-	}
-}
-
-func (r *functionDisallowedListRule) checkInsertStmt(n *ast.InsertStmt) {
-	if n == nil {
-		return
-	}
-	for _, row := range n.Values {
-		for _, expr := range row {
-			r.checkExpr(expr)
-		}
-	}
-	if n.Select != nil {
-		r.checkSelectStmt(n.Select)
-	}
-}
-
-func (r *functionDisallowedListRule) checkUpdateStmt(n *ast.UpdateStmt) {
-	if n == nil {
-		return
-	}
-	for _, assign := range n.SetList {
-		if assign != nil {
-			r.checkExpr(assign.Value)
-		}
-	}
-	r.checkExpr(n.Where)
-}
-
-func (r *functionDisallowedListRule) checkDeleteStmt(n *ast.DeleteStmt) {
-	if n == nil {
-		return
-	}
-	r.checkExpr(n.Where)
+	return adviceList, nil
 }

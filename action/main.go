@@ -41,7 +41,8 @@ func main() {
 			if world.GetJobPlatform() == world.GitHub {
 				_, _ = fmt.Println(github.ErrorCommand(signInErr.Error()))
 			}
-		} else {
+		} else if rolloutErr := new(command.RolloutError); !errors.As(err, &rolloutErr) {
+			// A stopped rollout has printed its result, which names the cause.
 			slog.Error("failed to execute command", "error", fmt.Sprintf("%+v", err))
 		}
 		os.Exit(1)

@@ -97,3 +97,170 @@
       endposition: null
 - statement: ALTER TABLE tech_book ADD CONSTRAINT uk_tech_book_id_name UNIQUE KEY uk1 (id, name)
   changeType: 1
+- statement: |-
+    CREATE TABLE book (
+      id INT,
+      name VARCHAR(20),
+      UNIQUE INDEX uk_book_id (id),
+      UNIQUE KEY bad_name (name)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_name$" but found `bad_name`
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT, name VARCHAR(20), CONSTRAINT sym UNIQUE KEY uk_book_id (id), UNIQUE named (name))
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_id$" but found `sym`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_name$" but found `named`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT, name VARCHAR(20), UNIQUE uk_book_id_name (id DESC, name(10), (lower(name))), UNIQUE expr ((id + 1)))
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_$" but found `expr`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT PRIMARY KEY, name VARCHAR(20) UNIQUE, code INT UNIQUE KEY, KEY bad_idx (name))
+  changeType: 1
+- statement: CREATE TABLE `a.c` (x INT, UNIQUE uk_abc_x (x))
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD KEY bad_idx (id), ADD COLUMN code INT UNIQUE, ADD UNIQUE bad_one (id), ADD CONSTRAINT bad_two UNIQUE (name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id$" but found `bad_one`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found `bad_two`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE UNIQUE INDEX bad_fn ON test.tech_book((lower(name)), id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id$" but found `bad_fn`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE orders RENAME INDEX old_uk TO uk_orders_id_name
+  changeType: 1
+- statement: ALTER TABLE orders RENAME INDEX old_uk TO uk_orders_order_id
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `orders` mismatches the naming convention, expect "^$|^uk_orders_id_name$" but found `uk_orders_order_id`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME KEY OLD_UK TO bad_name
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `bad_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME INDEX old_index TO bad_name, RENAME INDEX missing TO bad_name
+  changeType: 1
+- statement: CREATE UNIQUE INDEX uk_x ON `bo(ok`(id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for unique key naming convention rule
+      content: '"CREATE UNIQUE INDEX uk_x ON `bo(ok`(id)" meet internal error "error parsing regexp: missing closing ): `^$|^uk_bo(ok_id$`"'
+      startposition: null
+      endposition: null
+- statement: CREATE UNIQUE INDEX `名名名名名名名名名名名名名名名名名名名名名名` ON tech_book(id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key `名名名名名名名名名名名名名名名名名名名名名名` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `名名名名名名名名名名名名名名名名名名名名名名`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- add a unique key
+    ALTER TABLE tech_book ADD UNIQUE bad_name (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id$" but found `bad_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE UNIQUE INDEX uk_tech_book_id ON tech_book(id);
+    /* note */
+    ALTER TABLE tech_book
+      ADD UNIQUE bad_name (id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id$" but found `bad_name`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE UNIQUE INDEX bad_name ON tech_book(id); END
+  changeType: 1
+- statement: EXPLAIN ALTER TABLE tech_book ADD UNIQUE bad_name (id)
+  changeType: 1

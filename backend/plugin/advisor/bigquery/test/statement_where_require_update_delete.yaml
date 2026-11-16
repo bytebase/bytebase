@@ -72,3 +72,28 @@
         line: 2
         column: 0
       endposition: null
+- statement: UPDATE ds.t SET a = 1 FROM ds.s;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for UPDATE statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    IF TRUE THEN
+      DELETE FROM ds.t;
+    ELSE
+      UPDATE ds.t SET a = 1 WHERE b = 2;
+    END IF;
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_UPDATE_DELETE
+      content: WHERE clause is required for DELETE statement.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

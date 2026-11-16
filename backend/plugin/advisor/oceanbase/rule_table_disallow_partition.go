@@ -3,13 +3,17 @@ package oceanbase
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -20,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
 }
 
-// TableDisallowPartitionAdvisor is the advisor checking for disallow table partition.
+// TableDisallowPartitionAdvisor is the advisor checking for disallow table
+// partition. The judgment lives in omni
+// (oceanbase/v1review.TableDisallowPartition); this adapter renders the
+// findings as advice.
 type TableDisallowPartitionAdvisor struct {
 }
 
@@ -31,60 +38,31 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &tableDisallowPartitionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowPartitionRule struct {
-	BaseRule
-}
-
-func (*tableDisallowPartitionRule) Name() string {
-	return "TableDisallowPartitionRule"
-}
-
-func (r *tableDisallowPartitionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableDisallowPartitionRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Partitions != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          advisorcode.CreateTablePartition.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-		})
-	}
-}
-
-func (r *tableDisallowPartitionRule) checkAlterTable(n *ast.AlterTableStmt) {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if cmd.Type == ast.ATPartitionBy && cmd.PartitionBy != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oceanbasev1review.TableDisallowPartition([]ast.Node{node}) {
+			if f.Code != v1review.TablePartitioned {
+				continue
+			}
+			// V1 printed the whole statement and placed it on the
+			// statement's first non-blank line, which a zero-range finding
+			// gives.
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          advisorcode.CreateTablePartition.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", r.QueryText()),
-				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				Title:         title,
+				Content:       fmt.Sprintf("Table partition is forbidden, but \"%s\" creates", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, v1review.Finding{}))),
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

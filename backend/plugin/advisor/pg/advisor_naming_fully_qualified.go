@@ -3,14 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -21,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_FULLY_QUALIFIED, &FullyQualifiedObjectNameAdvisor{})
 }
 
-// FullyQualifiedObjectNameAdvisor is the advisor checking for fully qualified object names.
+// FullyQualifiedObjectNameAdvisor is the advisor checking for fully
+// qualified object names. The judgment lives in omni
+// (pg/v1review.NamingFullyQualified); this adapter passes it the synced
+// schema and renders the findings as advice.
 type FullyQualifiedObjectNameAdvisor struct {
 }
 
@@ -31,132 +35,32 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 	if err != nil {
 		return nil, err
 	}
+	schema := v1review.Schema{Metadata: checkCtx.DBSchema}
 
-	rule := &fullyQualifiedObjectNameRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		dbMetadata: checkCtx.DBSchema,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type fullyQualifiedObjectNameRule struct {
-	BaseRule
-
-	dbMetadata *metadatapb.DatabaseSchemaMetadata
-}
-
-func (*fullyQualifiedObjectNameRule) Name() string {
-	return "naming_fully_qualified"
-}
-
-func (r *fullyQualifiedObjectNameRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.CreateSeqStmt:
-		r.checkRangeVar(n.Sequence)
-	case *ast.CreateTrigStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.IndexStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.DropStmt:
-		r.handleDropStmt(n)
-	case *ast.AlterTableStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.AlterSeqStmt:
-		r.checkRangeVar(n.Sequence)
-	case *ast.RenameStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.InsertStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.UpdateStmt:
-		r.checkRangeVar(n.Relation)
-	case *ast.SelectStmt:
-		r.handleSelectStmt(n)
-	default:
-	}
-}
-
-func (r *fullyQualifiedObjectNameRule) handleDropStmt(n *ast.DropStmt) {
-	for _, nameParts := range dropObjectNames(n) {
-		objName := strings.Join(nameParts, ".")
-		if !isFullyQualifiedName(objName) {
-			r.addUnqualifiedAdvice(objName)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-}
-
-func (r *fullyQualifiedObjectNameRule) handleSelectStmt(n *ast.SelectStmt) {
-	if r.dbMetadata == nil {
-		return
-	}
-
-	schemaNameMap := r.getSchemaNameMapFromPublic()
-
-	for _, rv := range collectFromClauseRangeVars(n.FromClause) {
-		tableName := rv.Relname
-		// Only check tables that exist in the schema
-		if schemaNameMap == nil || schemaNameMap[tableName] {
-			if rv.Schemaname == "" {
-				r.addUnqualifiedAdvice(tableName)
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		// V1 anchored every finding on the statement text's last line.
+		line := (&BaseRule{StmtText: stmt.Text}).ContentEndLine() + int32(stmt.BaseLine())
+		for _, f := range pgv1review.NamingFullyQualified([]ast.Node{node}, schema) {
+			if f.Code != v1review.NameUnqualified {
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          int32(code.NamingNotFullyQualifiedName),
+				Title:         title,
+				Content:       fmt.Sprintf("unqualified object name: '%s'", f.Name),
+				StartPosition: &storepb.Position{Line: line},
+			})
 		}
 	}
-}
-
-func (r *fullyQualifiedObjectNameRule) checkRangeVar(rv *ast.RangeVar) {
-	if rv == nil {
-		return
-	}
-	var objName string
-	if rv.Schemaname != "" {
-		objName = rv.Schemaname + "." + rv.Relname
-	} else {
-		objName = rv.Relname
-	}
-	if !isFullyQualifiedName(objName) {
-		r.addUnqualifiedAdvice(objName)
-	}
-}
-
-func (r *fullyQualifiedObjectNameRule) addUnqualifiedAdvice(objName string) {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    int32(code.NamingNotFullyQualifiedName),
-		Title:   r.Title,
-		Content: fmt.Sprintf("unqualified object name: '%s'", objName),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentEndLine(),
-			Column: 0,
-		},
-	})
-}
-
-// getSchemaNameMapFromPublic creates a map of table names from the database schema.
-func (r *fullyQualifiedObjectNameRule) getSchemaNameMapFromPublic() map[string]bool {
-	if r.dbMetadata == nil || r.dbMetadata.Schemas == nil {
-		return nil
-	}
-	filterMap := map[string]bool{}
-	for _, schema := range r.dbMetadata.Schemas {
-		for _, tbl := range schema.Tables {
-			filterMap[tbl.Name] = true
-		}
-		for _, tbl := range schema.ExternalTables {
-			filterMap[tbl.Name] = true
-		}
-	}
-	return filterMap
-}
-
-// isFullyQualifiedName checks if an object name is fully qualified (contains a dot).
-func isFullyQualifiedName(objName string) bool {
-	if objName == "" {
-		return true
-	}
-	return strings.Contains(objName, ".")
+	return adviceList, nil
 }

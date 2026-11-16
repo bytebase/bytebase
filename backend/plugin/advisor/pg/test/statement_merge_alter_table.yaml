@@ -14,3 +14,17 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    ALTER TABLE t ADD COLUMN b int;
+    ALTER TABLE public.t
+      ADD COLUMN c int;
+  want:
+    - status: 2
+      code: 207
+      title: STATEMENT_MERGE_ALTER_TABLE
+      content: There are 3 statements to modify table `t`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

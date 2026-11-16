@@ -24,3 +24,29 @@
       endposition: null
 - statement: SELECT 1 FROM dual
   changeType: 1
+- statement: |-
+    SELECT 1 FROM Dual;
+    SELECT a FROM t
+    WHERE b IN (SELECT b FROM u);
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELECT statement.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    SELECT a FROM t
+    UNION ALL
+    SELECT a FROM u WHERE a > 0
+  want:
+    - status: 2
+      code: 202
+      title: STATEMENT_WHERE_REQUIRE_SELECT
+      content: WHERE clause is required for SELECT statement.
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

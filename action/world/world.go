@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bytebase/bytebase/action/result"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -82,6 +83,8 @@ type World struct {
 		CheckResults *v1pb.CheckReleaseResponse `json:"checkResults,omitempty"`
 	}
 	Rollout *v1pb.Rollout
+	// What the rollout command reports, built once the command stops waiting.
+	Result *result.Result
 }
 
 func NewWorld() *World {

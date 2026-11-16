@@ -87,3 +87,35 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a VARCHAR(20) CHARSET binary, b VARCHAR(20) COLLATE utf8mb4_bin);
+- statement: |-
+    CREATE TABLE t(
+      a VARCHAR(20) CHARSET ascii,
+      b TEXT CHARACTER SET latin1
+    );
+  want:
+    - status: 2
+      code: 414
+      title: COLUMN_DISALLOW_SET_CHARSET
+      content: |-
+        Disallow set column charset but "CREATE TABLE t(
+          a VARCHAR(20) CHARSET ascii,
+          b TEXT CHARACTER SET latin1
+        );" does
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 414
+      title: COLUMN_DISALLOW_SET_CHARSET
+      content: |-
+        Disallow set column charset but "CREATE TABLE t(
+          a VARCHAR(20) CHARSET ascii,
+          b TEXT CHARACTER SET latin1
+        );" does
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4;

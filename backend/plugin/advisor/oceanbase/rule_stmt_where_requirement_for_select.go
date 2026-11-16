@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // WhereRequirementForSelectAdvisor is the advisor checking for the WHERE clause requirement for SELECT statements.
+// The judgment lives in omni (oceanbase/v1review.StatementWhereRequireSelect); this adapter
+// renders its findings as advice.
 type WhereRequirementForSelectAdvisor struct {
 }
 
@@ -32,89 +36,26 @@ func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &whereRequirementForSelectRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type whereRequirementForSelectRule struct {
-	BaseRule
-}
-
-func (*whereRequirementForSelectRule) Name() string {
-	return "WhereRequirementForSelectRule"
-}
-
-func (r *whereRequirementForSelectRule) OnStatement(node ast.Node) {
-	sel, ok := node.(*ast.SelectStmt)
-	if !ok {
-		return
-	}
-	text := strings.TrimSpace(r.StmtText)
-	r.checkSelectStmt(sel, text)
-}
-
-func (r *whereRequirementForSelectRule) checkSelectStmt(sel *ast.SelectStmt, text string) {
-	if sel == nil {
-		return
-	}
-
-	// Check CTEs.
-	for _, cte := range sel.CTEs {
-		if cte.Select != nil {
-			r.checkSelectStmt(cte.Select, text)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(stmt.Text)
+		for _, f := range oceanbasev1review.StatementWhereRequireSelect([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" requires WHERE clause", text),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
 	}
-	if inner := sel.ParenSource; inner != nil {
-		r.checkSelectStmt(inner, text)
-		return
-	}
-
-	// Check set operations (UNION left/right).
-	if sel.SetOp != ast.SetOpNone {
-		r.checkSelectStmt(sel.Left, text)
-		r.checkSelectStmt(sel.Right, text)
-		return
-	}
-
-	// Allow SELECT queries without a FROM clause, e.g. SELECT 1.
-	if len(sel.From) == 0 {
-		return
-	}
-
-	if sel.Where == nil {
-		r.AddAdviceAbsolute(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.StatementNoWhere.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", text),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(sel.Loc))),
-		})
-	}
-
-	// Check subqueries in WHERE, FROM, and target list.
-	// We inspect each subtree individually (not the whole SelectStmt) to avoid
-	// recursing into the SelectStmt itself, which checkSelectStmt already handles.
-	var subtrees []ast.Node
-	subtrees = append(subtrees, sel.Where)
-	for _, from := range sel.From {
-		subtrees = append(subtrees, from)
-	}
-	for _, target := range sel.TargetList {
-		subtrees = append(subtrees, target)
-	}
-	for _, subtree := range subtrees {
-		ast.Inspect(subtree, func(n ast.Node) bool {
-			if sub, ok := n.(*ast.SelectStmt); ok {
-				r.checkSelectStmt(sub, text)
-				return false
-			}
-			return true
-		})
-	}
+	return adviceList, nil
 }

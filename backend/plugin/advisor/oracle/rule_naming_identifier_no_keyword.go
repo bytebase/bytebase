@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +24,8 @@ func init() {
 }
 
 // NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
+// The judgment lives in omni (oracle/v1review.NamingIdentifierNoKeyword);
+// this adapter renders the findings as advice.
 type NamingIdentifierNoKeywordAdvisor struct {
 }
 
@@ -33,45 +36,25 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// NamingIdentifierNoKeywordRule is the rule implementation for identifier naming convention without keyword.
-type NamingIdentifierNoKeywordRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewNamingIdentifierNoKeywordRule creates a new NamingIdentifierNoKeywordRule.
-func NewNamingIdentifierNoKeywordRule(level storepb.Advice_Status, title string, currentDatabase string) *NamingIdentifierNoKeywordRule {
-	return &NamingIdentifierNoKeywordRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingIdentifierNoKeywordRule) Name() string {
-	return "naming.identifier-no-keyword"
-}
-
-// OnStatement checks identifiers exposed by the omni AST.
-func (r *NamingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
-	for _, ident := range identifiers(node) {
-		if plsqlparser.IsOracleKeyword(ident.name) {
-			r.AddAdvice(
-				r.level,
-				code.NameIsKeywordIdentifier.Int32(),
-				fmt.Sprintf("Identifier %q is a keyword and should be avoided", ident.name),
-				base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
-			)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.NamingIdentifierNoKeyword([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NameIsKeywordIdentifier.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Identifier %q is a keyword and should be avoided", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
 	}
+	return adviceList, nil
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

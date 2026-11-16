@@ -4,9 +4,10 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
+	snowflakev1review "github.com/bytebase/omni/snowflake/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,8 +24,28 @@ func init() {
 	advisor.Register(storepb.Engine_SNOWFLAKE, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &MigrationCompatibilityAdvisor{})
 }
 
-// MigrationCompatibilityAdvisor is the advisor checking for migration compatibility.
+// MigrationCompatibilityAdvisor is the advisor checking for migration
+// compatibility. The judgment lives in omni
+// (snowflake/v1review.SchemaBackwardCompatibility); this adapter renders the
+// findings as advice.
 type MigrationCompatibilityAdvisor struct {
+}
+
+// compatibilityAdvice is the advice code and content format V1 reported for
+// each omni finding, and whether V1 reported it at WARNING whatever the
+// rule's level: a drop of an object the change created IF NOT EXISTS.
+var compatibilityAdvice = map[v1review.Code]struct {
+	code    code.Code
+	format  string
+	warning bool
+}{
+	v1review.IncompatibleDropTable:            {code.CompatibilityDropTable, "Drop table %s may cause incompatibility with the existing data and code", false},
+	v1review.IncompatibleDropMaybeNewTable:    {code.CompatibilityDropTable, "Drop table %s may cause incompatibility with the existing data and code", true},
+	v1review.IncompatibleDropSchema:           {code.CompatibilityDropSchema, "Drop schema %s may cause incompatibility with the existing data and code", false},
+	v1review.IncompatibleDropMaybeNewSchema:   {code.CompatibilityDropSchema, "Drop schema %s may cause incompatibility with the existing data and code", true},
+	v1review.IncompatibleDropDatabase:         {code.CompatibilityDropDatabase, "Drop database %s may cause incompatibility with the existing data and code", false},
+	v1review.IncompatibleDropMaybeNewDatabase: {code.CompatibilityDropDatabase, "Drop database %s may cause incompatibility with the existing data and code", true},
+	v1review.IncompatibleDropColumn:           {code.CompatibilityDropColumn, "Drop column %s may cause incompatibility with the existing data and code", false},
 }
 
 // Check checks for migration compatibility.
@@ -34,180 +55,38 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	checker := &migrationCompatibilityChecker{
-		level:                              level,
-		title:                              checkCtx.Rule.Type.String(),
-		currentDatabase:                    checkCtx.CurrentDatabase,
-		normalizedNewCreateTableNameMap:    make(map[string]bool),
-		normalizedNewCreateSchemaNameMap:   make(map[string]bool),
-		normalizedNewCreateDatabaseNameMap: make(map[string]bool),
-	}
-
+	// The rule judges a statement against the ones before it, so it takes
+	// them all at once and names each finding's statement by index.
+	var nodes []omniast.Node
+	var stmts []base.ParsedStatement
 	for _, stmt := range checkCtx.ParsedStatements {
 		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.checkStmt(node, stmt.Text, stmt.BaseLine())
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
 	}
 
-	return checker.adviceList, nil
-}
-
-// migrationCompatibilityChecker checks for migration compatibility issues.
-type migrationCompatibilityChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-
-	// normalizedNewCreateTableNameMap contain the new created table name in normalized format, e.g. "SNOWFLAKE.PUBLIC.TABLE", If there are IF NOT EXISTS, the value will be false.
-	normalizedNewCreateTableNameMap map[string]bool
-	// normalizedNewCreateSchemaNameMap contain the new created schema name in normalized format, e.g. "SNOWFLAKE.PUBLIC", If there are IF NOT EXISTS, the value will be false.
-	normalizedNewCreateSchemaNameMap map[string]bool
-	// normalizedNewCreateDatabaseNameMap contain the new created database name in normalized format, e.g. "SNOWFLAKE", If there are IF NOT EXISTS, the value will be false.
-	normalizedNewCreateDatabaseNameMap map[string]bool
-
-	// currentDatabase is the current database name.
-	currentDatabase string
-}
-
-// checkStmt dispatches one top-level statement node, mirroring the legacy
-// listener's context cases: CREATE TABLE [AS SELECT] / CREATE SCHEMA /
-// CREATE DATABASE record new objects; DROP TABLE / DROP SCHEMA /
-// DROP DATABASE / ALTER TABLE ... DROP COLUMN produce compatibility advices.
-func (c *migrationCompatibilityChecker) checkStmt(node omniast.Node, text string, baseLine int) {
-	switch stmt := node.(type) {
-	case *omniast.CreateTableStmt:
-		// Covers both CREATE TABLE and CREATE TABLE ... AS SELECT (the legacy
-		// grammar had two contexts; omni folds CTAS into CreateTableStmt).
-		c.normalizedNewCreateTableNameMap[c.normalizeTableName(stmt.Name)] = !stmt.IfNotExists
-	case *omniast.CreateSchemaStmt:
-		c.normalizedNewCreateSchemaNameMap[c.normalizeSchemaName(stmt.Name)] = !stmt.IfNotExists
-	case *omniast.CreateDatabaseStmt:
-		c.normalizedNewCreateDatabaseNameMap[normalizeDatabaseName(stmt.Name)] = !stmt.IfNotExists
-	case *omniast.DropStmt:
-		if stmt.Kind != omniast.DropTable {
-			return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range snowflakev1review.SchemaBackwardCompatibility(nodes, checkCtx.CurrentDatabase) {
+		advice, ok := compatibilityAdvice[f.Code]
+		if !ok {
+			continue
 		}
-		normalizedFullDropTableName := c.normalizeTableName(stmt.Name)
-		mustNewCreate, ok := c.normalizedNewCreateTableNameMap[normalizedFullDropTableName]
-		if ok && mustNewCreate {
-			return
+		status := level
+		if advice.warning {
+			status = storepb.Advice_WARNING
 		}
-		level := c.level
-		if ok && !mustNewCreate {
-			level = storepb.Advice_WARNING
-		}
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          code.CompatibilityDropTable.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Drop table %q may cause incompatibility with the existing data and code", normalizedFullDropTableName),
-			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        status,
+			Code:          advice.code.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf(advice.format, f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
 		})
-	case *omniast.DropSchemaStmt:
-		normalizedFullDropSchemaName := c.normalizeSchemaName(stmt.Name)
-		mustNewCreate, ok := c.normalizedNewCreateSchemaNameMap[normalizedFullDropSchemaName]
-		if ok && mustNewCreate {
-			return
-		}
-		level := c.level
-		if ok && !mustNewCreate {
-			level = storepb.Advice_WARNING
-		}
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          code.CompatibilityDropSchema.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Drop schema %q may cause incompatibility with the existing data and code", normalizedFullDropSchemaName),
-			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
-		})
-	case *omniast.DropDatabaseStmt:
-		normalizedFullDropDatabaseName := normalizeDatabaseName(stmt.Name)
-		mustNewCreate, ok := c.normalizedNewCreateDatabaseNameMap[normalizedFullDropDatabaseName]
-		if ok && mustNewCreate {
-			return
-		}
-		level := c.level
-		if ok && !mustNewCreate {
-			level = storepb.Advice_WARNING
-		}
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          code.CompatibilityDropDatabase.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Drop database %q may cause incompatibility with the existing data and code", normalizedFullDropDatabaseName),
-			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
-		})
-	case *omniast.AlterTableStmt:
-		for _, action := range stmt.Actions {
-			if action == nil || action.Kind != omniast.AlterTableDropColumn {
-				continue
-			}
-			normalizedAllColumnNames := make([]string, 0, len(action.DropColumnNames))
-			for _, columnName := range action.DropColumnNames {
-				if columnName.IsEmpty() {
-					continue
-				}
-				normalizedAllColumnNames = append(normalizedAllColumnNames, fmt.Sprintf("%q", columnName.Normalize()))
-			}
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:        c.level,
-				Code:          code.CompatibilityDropColumn.Int32(),
-				Title:         c.title,
-				Content:       fmt.Sprintf("Drop column %s may cause incompatibility with the existing data and code", strings.Join(normalizedAllColumnNames, ",")),
-				StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, stmt.Loc.Start)),
-			})
-		}
-	default:
-		// Other statement types
 	}
-}
-
-// normalizeTableName mirrors the legacy NormalizeSnowSQLObjectName(name,
-// currentDatabase, "PUBLIC") for omni object names: each present part is
-// folded per Snowflake rules (unquoted uppercased, quoted verbatim), missing
-// database/schema parts fall back to the current database and PUBLIC.
-func (c *migrationCompatibilityChecker) normalizeTableName(name *omniast.ObjectName) string {
-	database := c.currentDatabase
-	schema := "PUBLIC"
-	var table string
-	if name != nil {
-		if d := name.Database.Normalize(); d != "" {
-			database = d
-		}
-		if s := name.Schema.Normalize(); s != "" {
-			schema = s
-		}
-		table = name.Name.Normalize()
-	}
-	parts := []string{database, schema}
-	if table != "" {
-		parts = append(parts, table)
-	}
-	return strings.Join(parts, ".")
-}
-
-// normalizeSchemaName mirrors the legacy NormalizeSnowSQLSchemaName(name,
-// currentDatabase) for omni object names. A 2-part schema name parses as
-// Schema.Name (database.schema); a 1-part name parses as just Name (schema).
-func (c *migrationCompatibilityChecker) normalizeSchemaName(name *omniast.ObjectName) string {
-	database := c.currentDatabase
-	var schema string
-	if name != nil {
-		if d := name.Schema.Normalize(); d != "" {
-			database = d
-		}
-		schema = name.Name.Normalize()
-	}
-	return strings.Join([]string{database, schema}, ".")
-}
-
-// normalizeDatabaseName mirrors the legacy NormalizeSnowSQLObjectNamePart on
-// the single identifier of CREATE/DROP DATABASE.
-func normalizeDatabaseName(name *omniast.ObjectName) string {
-	if name == nil {
-		return ""
-	}
-	return name.Name.Normalize()
+	return adviceList, nil
 }

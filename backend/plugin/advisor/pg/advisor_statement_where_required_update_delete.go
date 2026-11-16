@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE, &StatementWhereRequiredUpdateDeleteAdvisor{})
 }
 
-// StatementWhereRequiredUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement in UPDATE/DELETE.
+// StatementWhereRequiredUpdateDeleteAdvisor is the advisor checking for
+// WHERE clause requirement in UPDATE/DELETE. The judgment lives in omni
+// (pg/v1review.StatementWhereRequireUpdateDelete); this adapter renders its
+// findings as advice.
 type StatementWhereRequiredUpdateDeleteAdvisor struct {
 }
 
@@ -30,52 +35,25 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 		return nil, err
 	}
 
-	rule := &statementWhereRequiredUpdateDeleteRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementWhereRequiredUpdateDeleteRule struct {
-	BaseRule
-}
-
-func (*statementWhereRequiredUpdateDeleteRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_WHERE_REQUIRE_UPDATE_DELETE)
-}
-
-func (r *statementWhereRequiredUpdateDeleteRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.UpdateStmt:
-		if n.WhereClause == nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.StatementNoWhere.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("\"%s\" requires WHERE clause", r.TrimmedStmtText()),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range pgv1review.StatementWhereRequireUpdateDelete([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" requires WHERE clause", statementTrimmedText(stmt)),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
 			})
 		}
-	case *ast.DeleteStmt:
-		if n.WhereClause == nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.StatementNoWhere.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("\"%s\" requires WHERE clause", r.TrimmedStmtText()),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-		}
-	default:
 	}
+	return adviceList, nil
 }

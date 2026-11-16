@@ -85,6 +85,16 @@ describe("SharePointSheet", () => {
     mocks.upsertSetting.mockClear();
   });
 
+  test("links to the setup guide", () => {
+    renderSheet();
+    expect(
+      screen.getByRole("link", { name: "common.learn-more" })
+    ).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console"
+    );
+  });
+
   test("shows that a secret is saved without revealing it", () => {
     renderSheet();
     expect(

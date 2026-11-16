@@ -3,15 +3,17 @@ package pg
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -22,7 +24,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_NAMING_COLUMN, &NamingColumnConventionAdvisor{})
 }
 
-// NamingColumnConventionAdvisor is the advisor checking for column naming convention.
+// NamingColumnConventionAdvisor is the advisor checking for column naming
+// convention. The judgment lives in omni (pg/v1review.NamingColumn); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingColumnConventionAdvisor struct {
 }
 
@@ -38,103 +43,51 @@ func (*NamingColumnConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, errors.New("naming_payload is required for this rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
-
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-
-	rule := &namingColumnConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:    format,
-		maxLength: maxLength,
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingColumnConventionRule struct {
-	BaseRule
-
-	format    *regexp.Regexp
-	maxLength int
-}
-
-func (*namingColumnConventionRule) Name() string {
-	return "naming_column_convention"
-}
-
-func (r *namingColumnConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	case *ast.RenameStmt:
-		r.handleRenameStmt(n)
-	default:
-	}
-}
-
-func (r *namingColumnConventionRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	cols, _ := tableElements(n)
-	for _, col := range cols {
-		r.checkColumnName(tableName, col.Colname)
-	}
-}
-
-func (r *namingColumnConventionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) == ast.AT_AddColumn {
-			if colDef, ok := cmd.Def.(*ast.ColumnDef); ok {
-				r.checkColumnName(tableName, colDef.Colname)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		findings, err := pgv1review.NamingColumn([]ast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", f.Table, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
+			default:
+				continue
 			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
+				Code:    code.NamingColumnConventionMismatch.Int32(),
+				Title:   title,
+				Content: content,
+				// V1 reports the line of the name's first occurrence in the
+				// statement text, which is not always the column itself.
+				StartPosition: &storepb.Position{
+					Line: (&BaseRule{StmtText: stmt.Text}).FindLineByName(f.Name) + int32(stmt.BaseLine()),
+				},
+			})
 		}
 	}
-}
-
-func (r *namingColumnConventionRule) handleRenameStmt(n *ast.RenameStmt) {
-	if n.RenameType == ast.OBJECT_COLUMN {
-		tableName := rangeVarTableName(n.Relation)
-		r.checkColumnName(tableName, n.Newname)
-	}
-}
-
-func (r *namingColumnConventionRule) checkColumnName(tableName, columnName string) {
-	line := r.FindLineByName(columnName)
-
-	if !r.format.MatchString(columnName) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingColumnConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, naming format should be %q", tableName, columnName, r.format),
-			StartPosition: &storepb.Position{
-				Line:   line,
-				Column: 0,
-			},
-		})
-	}
-
-	if r.maxLength > 0 && len(columnName) > r.maxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.NamingColumnConventionMismatch.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("\"%s\".\"%s\" mismatches column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
-			StartPosition: &storepb.Position{
-				Line:   line,
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

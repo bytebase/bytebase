@@ -3,6 +3,7 @@ package pg
 import (
 	"strings"
 
+	"github.com/bytebase/omni/pg/analysis"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -34,7 +35,7 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 			continue
 		}
 
-		stmtTypes := classifyStatementTypes(wrapped.Node)
+		stmtTypes := convertStatementTypes(analysis.StatementTypes(wrapped.Node))
 		if len(stmtTypes) == 0 {
 			continue
 		}
@@ -74,4 +75,16 @@ func GetStatementTypesForRegistry(asts []base.AST) ([]storepb.StatementType, err
 		types[i] = r.Type
 	}
 	return types, nil
+}
+
+// convertStatementTypes maps omni's statement types to storepb's by name and
+// drops a name storepb does not know.
+func convertStatementTypes(types []analysis.StatementType) []storepb.StatementType {
+	var result []storepb.StatementType
+	for _, t := range types {
+		if value := storepb.StatementType(storepb.StatementType_value[string(t)]); value != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
+			result = append(result, value)
+		}
+	}
+	return result
 }

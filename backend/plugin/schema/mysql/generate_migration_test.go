@@ -26,9 +26,10 @@ type generateMigrationCase struct {
 	Expected    string `yaml:"expected"`
 }
 
-// TestGenerateMigration pins the DDL that takes oldSchema to newSchema. Cases come
-// in both directions for each schema pair, so an object appears once as a create
-// and once as a drop.
+// TestGenerateMigration pins the DDL that takes oldSchema to newSchema for MariaDB
+// and OceanBase, which keep Bytebase's MySQL generator. Cases come in both
+// directions for each schema pair, so an object appears once as a create and once
+// as a drop.
 func TestGenerateMigration(t *testing.T) {
 	const (
 		record   = false
@@ -42,11 +43,8 @@ func TestGenerateMigration(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.Description, func(t *testing.T) {
-			diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL,
+			migration, err := schema.DiffMigration(storepb.Engine_MARIADB,
 				parseSchema(t, tc.OldSchema), parseSchema(t, tc.NewSchema))
-			require.NoError(t, err)
-
-			migration, err := schema.GenerateMigration(storepb.Engine_MYSQL, diff)
 			require.NoError(t, err)
 
 			if record {
@@ -117,7 +115,7 @@ func TestDiffMigrationPartitionedTableEmittedOnce(t *testing.T) {
 			source := partitionedTable(partitionCount)
 
 			// Target does not have the table yet: the 1061 shape.
-			migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+			migration, err := schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(), databaseOf(source))
 			a.NoError(err)
 			a.Equal(1, strings.Count(migration, "CREATE TABLE"), "CREATE TABLE must be emitted once:\n%s", migration)
 			a.Equal(1, strings.Count(migration, "CREATE INDEX `sindex`"), "sindex must be emitted once:\n%s", migration)
@@ -130,13 +128,13 @@ func TestDiffMigrationPartitionedTableEmittedOnce(t *testing.T) {
 				Collation: source.Collation,
 				Columns:   source.Columns,
 			}
-			migration, err = schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(bare), databaseOf(source))
+			migration, err = schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(bare), databaseOf(source))
 			a.NoError(err)
 			a.Equal(1, strings.Count(migration, "ADD PRIMARY KEY"), "primary key must be added once:\n%s", migration)
 			a.Equal(1, strings.Count(migration, "CREATE INDEX `sindex`"), "sindex must be emitted once:\n%s", migration)
 
 			// Diffing the table against itself stays convergent.
-			migration, err = schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(source), databaseOf(partitionedTable(partitionCount)))
+			migration, err = schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(source), databaseOf(partitionedTable(partitionCount)))
 			a.NoError(err)
 			a.Empty(migration)
 		})
@@ -147,7 +145,7 @@ func TestDiffMigrationPreservesPartitioning(t *testing.T) {
 	a := require.New(t)
 	source := partitionedTable(3)
 
-	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+	migration, err := schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(), databaseOf(source))
 	a.NoError(err)
 	a.Contains(migration, "PARTITION BY RANGE (to_days(`dt`))", "created table must keep its partitioning:\n%s", migration)
 	for _, partition := range source.Partitions {
@@ -166,7 +164,7 @@ func TestDiffMigrationPartitionEngineMatchesTable(t *testing.T) {
 			source := partitionedTable(2)
 			source.Engine = engine
 
-			migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+			migration, err := schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(), databaseOf(source))
 			a.NoError(err)
 			a.Equal(len(source.Partitions), strings.Count(migration, "PARTITION `p"),
 				"every partition must be emitted:\n%s", migration)
@@ -187,7 +185,7 @@ func TestDiffMigrationQuotesPartitionNames(t *testing.T) {
 		{Name: "order", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "MAXVALUE"},
 	}
 
-	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+	migration, err := schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(), databaseOf(source))
 	a.NoError(err)
 	a.Contains(migration, "PARTITION `select`", "reserved-word partition name must be quoted:\n%s", migration)
 	a.Contains(migration, "PARTITION `order`", "reserved-word partition name must be quoted:\n%s", migration)
@@ -262,7 +260,7 @@ func TestDiffMigrationKeepsSystemVersioning(t *testing.T) {
 		},
 	}
 
-	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(implicit, explicit))
+	migration, err := schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(), databaseOf(implicit, explicit))
 	a.NoError(err)
 	a.Equal("CREATE TABLE IF NOT EXISTS `explicit_period` (\n"+
 		"  `id` int,\n"+
@@ -277,7 +275,85 @@ func TestDiffMigrationKeepsSystemVersioning(t *testing.T) {
 		") ENGINE=InnoDB WITH SYSTEM VERSIONING;\n"+
 		"\n", migration)
 
-	migration, err = schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(implicit, explicit), databaseOf(implicit, explicit))
+	migration, err = schema.DiffMigration(storepb.Engine_MARIADB, databaseOf(implicit, explicit), databaseOf(implicit, explicit))
 	a.NoError(err)
 	a.Empty(migration)
+}
+
+// TestWriteColumnDefinitionBodyGeneratedOrder pins the migration generator's attribute
+// order for a generated column (BYT-9830). MySQL's grammar requires the
+// `GENERATED ALWAYS AS (...) STORED|VIRTUAL` clause to precede NOT NULL and the SRID
+// attribute; emitting SRID/NOT NULL first (the prior order) is rejected with ERROR 1064
+// for a generated spatial column. The canonical order — verified against MySQL 8.0.32
+// via SHOW CREATE — is:
+//
+//	type GENERATED ALWAYS AS (expr) STORED|VIRTUAL [NOT NULL] [SRID] [INVISIBLE] [COMMENT]
+func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
+	srid := func(v uint32) *uint32 { return &v }
+	stored := &metadatapb.GenerationMetadata{
+		Type:       metadatapb.GenerationMetadata_TYPE_STORED,
+		Expression: "st_srid(point(`lng`,`lat`),4326)",
+	}
+
+	render := func(col *metadatapb.ColumnMetadata) string {
+		var buf strings.Builder
+		writeColumnDefinitionBody(&buf, col)
+		return buf.String()
+	}
+
+	// Generated spatial column, NOT NULL + SRID — the failing case. The generation clause
+	// must come first, then NOT NULL, then SRID.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), Generation: stored}))
+
+	// Nullable generated spatial column: no NOT NULL, SRID still after the generation clause.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED /*!80003 SRID 0 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: true, Srid: srid(0), Generation: stored}))
+
+	// Generated spatial column that is also INVISIBLE and has a COMMENT: INVISIBLE precedes
+	// COMMENT, matching SHOW CREATE's canonical order for both regular and generated columns.
+	require.Equal(t,
+		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: stored}))
+
+	// Regular (non-generated) INVISIBLE column with a COMMENT: INVISIBLE precedes COMMENT,
+	// the same canonical order as the generated column above (verified against 8.0.32).
+	require.Equal(t,
+		"int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
+		render(&metadatapb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
+
+	// Plain (non-spatial) VIRTUAL generated column still emits the generation clause and
+	// nothing spurious.
+	require.Equal(t,
+		"int GENERATED ALWAYS AS (`a` + 1) VIRTUAL",
+		render(&metadatapb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Generation: &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
+			Expression: "`a` + 1",
+		}}))
+
+	// Regression: a non-generated NOT NULL spatial column keeps the regular order
+	// (NOT NULL then SRID, no generation clause).
+	require.Equal(t,
+		"point NOT NULL /*!80003 SRID 4326 */",
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326)}))
+}
+
+func TestDiffMigrationOceanBaseEventWithoutDefinition(t *testing.T) {
+	databaseOf := func(events ...*metadatapb.EventMetadata) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name:    "db",
+			Schemas: []*metadatapb.SchemaMetadata{{Name: "", Events: events}},
+		}, nil, &storepb.DatabaseConfig{}, storepb.Engine_OCEANBASE, true)
+	}
+	withEvent := databaseOf(&metadatapb.EventMetadata{Name: "e"})
+
+	migration, err := schema.DiffMigration(storepb.Engine_OCEANBASE, databaseOf(), withEvent)
+	require.NoError(t, err)
+	require.Empty(t, migration)
+
+	migration, err = schema.DiffMigration(storepb.Engine_OCEANBASE, withEvent, databaseOf())
+	require.NoError(t, err)
+	require.Equal(t, "DROP EVENT IF EXISTS `e`;\n\n", migration)
 }

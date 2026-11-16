@@ -3,9 +3,9 @@ package snowflake
 
 import (
 	"context"
-	"slices"
 
-	omniast "github.com/bytebase/omni/snowflake/ast"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
+	snowflakev1review "github.com/bytebase/omni/snowflake/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +23,8 @@ func init() {
 }
 
 // SelectNoSelectAllAdvisor is the advisor checking for no select all.
+// The judgment lives in omni (snowflake/v1review.StatementSelectNoSelectAll);
+// this adapter renders its findings as advice.
 type SelectNoSelectAllAdvisor struct {
 }
 
@@ -33,66 +35,22 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	checker := &selectNoSelectAllChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
 		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.checkStmt(node, stmt.Text, stmt.BaseLine())
-	}
-
-	return checker.adviceList, nil
-}
-
-type selectNoSelectAllChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-// checkStmt flags every `*` / `qualifier.*` SELECT-list item anywhere in the
-// statement (top-level query, subqueries, CTEs, INSERT ... SELECT, ...),
-// mirroring the legacy listener that fired on every Select_list_elem holding a
-// column_elem_star. Stars inside expressions (e.g. COUNT(*)) are not
-// SELECT-list stars and are not flagged, matching the legacy behavior.
-func (c *selectNoSelectAllChecker) checkStmt(node omniast.Node, text string, baseLine int) {
-	// Collect the star-token offsets first and emit advices in text order so
-	// the advice order matches the legacy depth-first listener walk.
-	var starOffsets []int
-	omniast.Inspect(node, func(n omniast.Node) bool {
-		selectStmt, ok := n.(*omniast.SelectStmt)
-		if !ok {
-			return true
+		for _, f := range snowflakev1review.StatementSelectNoSelectAll([]snowflakeast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementSelectAll.Int32(),
+				Title:         title,
+				Content:       "Avoid using SELECT *.",
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-		for _, target := range selectStmt.Targets {
-			if target == nil || !target.Star {
-				continue
-			}
-			// Anchor on the `*` token itself (the legacy rule used the STAR
-			// token's line). For both `*` and `qualifier.*` the star is the
-			// last byte of the StarExpr.
-			offset := target.Loc.Start
-			if star, ok := target.Expr.(*omniast.StarExpr); ok && star.Loc.IsValid() {
-				offset = star.Loc.End - 1
-			}
-			starOffsets = append(starOffsets, offset)
-		}
-		return true
-	})
-	slices.Sort(starOffsets)
-
-	for _, offset := range starOffsets {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.StatementSelectAll.Int32(),
-			Title:         c.title,
-			Content:       "Avoid using SELECT *.",
-			StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
-		})
 	}
+	return adviceList, nil
 }

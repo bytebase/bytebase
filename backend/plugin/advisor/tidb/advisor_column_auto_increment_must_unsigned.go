@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,7 @@ func init() {
 }
 
 // ColumnAutoIncrementMustUnsignedAdvisor is the advisor checking for unsigned auto-increment column.
+// The judgment lives in omni (tidb/v1review.ColumnAutoIncrementMustUnsigned).
 type ColumnAutoIncrementMustUnsignedAdvisor struct {
 }
 
@@ -35,56 +37,19 @@ func (*ColumnAutoIncrementMustUnsignedAdvisor) Check(_ context.Context, checkCtx
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnAutoIncrementMustUnsignedChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
+	title := checkCtx.Rule.Type.String()
 
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.ColumnAutoIncrementMustUnsigned([]ast.Node{stmt.Node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.AutoIncrementColumnSigned.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", f.Table, f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
+			})
+		}
 	}
-
-	return checker.adviceList, nil
-}
-
-type columnAutoIncrementMustUnsignedChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-func (c *columnAutoIncrementMustUnsignedChecker) checkStmt(ostmt Stmt) {
-	cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
-		return !autoIncrementColumnIsUnsigned(col)
-	})
-	for _, col := range cols {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.AutoIncrementColumnSigned.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("Auto-increment column `%s`.`%s` is not UNSIGNED type", col.table, col.column),
-			StartPosition: base.ConvertANTLRLineToPosition(col.line),
-		})
-	}
-}
-
-// autoIncrementColumnIsUnsigned returns true unless the column is
-// AUTO_INCREMENT and neither Unsigned nor Zerofill is set. Pingcap-typed
-// `mysql.HasUnsignedFlag(column.Tp.GetFlag())` returned true when EITHER
-// the unsigned flag OR the zerofill flag was set (ZEROFILL implies
-// UNSIGNED in MySQL). Omni splits the bits: `col.TypeName.Unsigned` and
-// `col.TypeName.Zerofill` are separate booleans. Check both to preserve
-// pingcap-tidb behavior. Mirrors mysql analog at
-// `mysql/rule_column_auto_increment_must_unsigned.go:102`.
-func autoIncrementColumnIsUnsigned(col *ast.ColumnDef) bool {
-	if col == nil {
-		return true
-	}
-	if !col.AutoIncrement {
-		return true
-	}
-	if col.TypeName == nil {
-		return false
-	}
-	return col.TypeName.Unsigned || col.TypeName.Zerofill
+	return adviceList, nil
 }

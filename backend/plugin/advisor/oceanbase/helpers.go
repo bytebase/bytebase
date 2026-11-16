@@ -12,22 +12,3 @@ func lineOf(baseLine int, text string, loc ast.Loc) int {
 	}
 	return baseLine + int(oceanbaseparser.ByteOffsetToRunePosition(text, loc.Start).Line)
 }
-
-func tableSchemaAndName(table *ast.TableRef) (string, string) {
-	if table == nil {
-		return "", ""
-	}
-	return table.Schema, table.Name
-}
-
-func columnHasPrimaryKey(column *ast.ColumnDef) bool {
-	if column == nil {
-		return false
-	}
-	for _, constraint := range column.Constraints {
-		if constraint.Type == ast.ColConstrPrimaryKey {
-			return true
-		}
-	}
-	return false
-}

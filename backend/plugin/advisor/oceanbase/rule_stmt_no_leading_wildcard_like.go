@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // NoLeadingWildcardLikeAdvisor is the advisor checking for no leading wildcard LIKE.
+// The judgment lives in omni (oceanbase/v1review.StatementWhereNoLeadingWildcardLike); this adapter
+// renders its findings as advice.
 type NoLeadingWildcardLikeAdvisor struct {
 }
 
@@ -32,47 +36,26 @@ func (*NoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advisor.C
 		return nil, err
 	}
 
-	rule := &noLeadingWildcardLikeRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type noLeadingWildcardLikeRule struct {
-	BaseRule
-}
-
-func (*noLeadingWildcardLikeRule) Name() string {
-	return "NoLeadingWildcardLikeRule"
-}
-
-func (r *noLeadingWildcardLikeRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	ast.Inspect(node, func(n ast.Node) bool {
-		if like, ok := n.(*ast.LikeExpr); ok {
-			r.checkLikeExpr(like, text)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		return true
-	})
-}
-
-func (r *noLeadingWildcardLikeRule) checkLikeExpr(like *ast.LikeExpr, text string) {
-	if like.Pattern == nil {
-		return
-	}
-	if str, ok := like.Pattern.(*ast.StringLit); ok {
-		if strings.HasPrefix(str.Value, "%") {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(stmt.Text)
+		for _, f := range oceanbasev1review.StatementWhereNoLeadingWildcardLike([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.StatementLeadingWildcardLike.Int32(),
-				Title:         r.Title,
+				Title:         title,
 				Content:       fmt.Sprintf("\"%s\" uses leading wildcard LIKE", text),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(like.Loc))),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
 	}
+	return adviceList, nil
 }

@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_COLUMN_WITH_DEFAULT, &StatementDisallowAddColumnWithDefaultAdvisor{})
 }
 
-// StatementDisallowAddColumnWithDefaultAdvisor is the advisor checking for to disallow add column with default.
+// StatementDisallowAddColumnWithDefaultAdvisor is the advisor checking for
+// to disallow add column with default. The judgment lives in omni
+// (pg/v1review.StatementDisallowAddColumnWithDefault); this adapter renders
+// its findings as advice.
 type StatementDisallowAddColumnWithDefaultAdvisor struct {
 }
 
@@ -29,60 +34,25 @@ func (*StatementDisallowAddColumnWithDefaultAdvisor) Check(_ context.Context, ch
 		return nil, err
 	}
 
-	rule := &statementDisallowAddColumnWithDefaultRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowAddColumnWithDefaultRule struct {
-	BaseRule
-}
-
-func (*statementDisallowAddColumnWithDefaultRule) Name() string {
-	return "statement.disallow-add-column-with-default"
-}
-
-func (r *statementDisallowAddColumnWithDefaultRule) OnStatement(node ast.Node) {
-	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(alter) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		colDef, ok := cmd.Def.(*ast.ColumnDef)
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		if colDef.RawDefault != nil {
-			r.addAdvice()
-			return
-		}
-		for _, c := range columnConstraints(colDef) {
-			if c.Contype == ast.CONSTR_DEFAULT {
-				r.addAdvice()
-				return
-			}
+		for range pgv1review.StatementDisallowAddColumnWithDefault([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementAddColumnWithDefault.Int32(),
+				Title:         title,
+				Content:       "Adding column with DEFAULT will locked the whole table and rewriting each rows",
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
 		}
 	}
-}
-
-func (r *statementDisallowAddColumnWithDefaultRule) addAdvice() {
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    code.StatementAddColumnWithDefault.Int32(),
-		Title:   r.Title,
-		Content: "Adding column with DEFAULT will locked the whole table and rewriting each rows",
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

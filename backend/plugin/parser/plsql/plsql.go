@@ -3,8 +3,8 @@ package plsql
 import (
 	"regexp"
 	"strconv"
-	"strings"
 
+	"github.com/bytebase/omni/oracle/analysis"
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
@@ -59,21 +59,8 @@ func parsePLSQLStatements(statement string) ([]base.ParsedStatement, error) {
 	return result, nil
 }
 
-type Version struct {
-	First  int
-	Second int
-}
-
-// GTE returns true if the version is greater than or equal to the base version.
-func (v *Version) GTE(base *Version) bool {
-	if v.First > base.First {
-		return true
-	}
-	if v.First == base.First {
-		return v.Second >= base.Second
-	}
-	return false
-}
+// Version is an Oracle release, such as 12.2.
+type Version = analysis.Version
 
 func ParseVersion(banner string) (*Version, error) {
 	re := regexp.MustCompile(`(\d+)\.(\d+)`)
@@ -90,13 +77,4 @@ func ParseVersion(banner string) (*Version, error) {
 		return &Version{First: firstVersion, Second: secondVersion}, nil
 	}
 	return nil, errors.Errorf("failed to parse version from banner: %s", banner)
-}
-
-// IsOracleKeyword returns true if the given text is an Oracle keyword.
-func IsOracleKeyword(text string) bool {
-	if len(text) == 0 {
-		return false
-	}
-
-	return oracleKeywords[strings.ToUpper(text)] || oracleReservedWords[strings.ToUpper(text)]
 }

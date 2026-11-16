@@ -129,3 +129,42 @@
         line: 3
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a int, PRIMARY KEY pk_t (a, a), KEY idx_case (a, A), KEY idx_paren ((a), (a)) LOCAL);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: PRIMARY KEY `pk_t` has duplicate column `t`.`a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int);
+    CREATE UNIQUE INDEX uk_paren ON t(a, (a)) GLOBAL;
+    ALTER TABLE t ADD UNIQUE KEY uk_b (b, a, b) LOCAL, ADD CONSTRAINT fk FOREIGN KEY (a, a) REFERENCES p(a, b);
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE INDEX `uk_paren` has duplicate column `t`.`a`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: FOREIGN KEY `fk` has duplicate column `t`.`a`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY `uk_b` has duplicate column `t`.`b`
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

@@ -83,3 +83,262 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE
+      `select` (
+      `select` int,
+      `From` int
+    );
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "From" is a keyword and should be avoided
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE status_log (
+      id int COMMENT 'data',
+      memo int,
+      `status` int,
+      `data` int
+    );
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "status" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "data" is a keyword and should be avoided
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE execute_log (
+      id int,
+      ```execute``` int
+    );
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "execute" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE TABLE `Execute` (`SELECT` int, name int, absent int, adddate int);
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "Execute" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "SELECT" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "name" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t (
+      a int,
+      CONSTRAINT `select`
+        FOREIGN KEY `from` (a) REFERENCES p (id),
+      CONSTRAINT `where` UNIQUE KEY `order` (a),
+      PRIMARY KEY `group` (a),
+      KEY
+        `by` (a)
+    );
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "order" is a keyword and should be avoided
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "by" is a keyword and should be avoided
+      startposition:
+        line: 7
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      ADD COLUMN `select` int,
+      ADD (`from` int),
+      RENAME COLUMN name TO `where`,
+      CHANGE COLUMN id `order` int,
+      ADD INDEX `group` (id),
+      RENAME INDEX idx TO `by`,
+      ADD CONSTRAINT `having` FOREIGN KEY `limit` (id) REFERENCES p (id),
+      RENAME TO `into`;
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "by" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "group" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "having" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "into" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "limit" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "order" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "where" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE `select`
+      MODIFY COLUMN `from` int,
+      DROP COLUMN `where`,
+      ADD COLUMN (c int, KEY `order` (c));
+- statement: |-
+    CREATE UNIQUE INDEX
+      `select` ON tech_book (id);
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "select" is a keyword and should be avoided
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE VIEW `select` AS SELECT 1 AS `from`;
+    CREATE PROCEDURE p() CREATE TABLE `where` (`order` int);
+- statement: |-
+    -- from
+    CREATE TABLE t (id int);
+
+    /* from */
+    CREATE TABLE u (
+      id int,
+      `from` int
+    );
+  want:
+    - status: 2
+      code: 308
+      title: NAMING_IDENTIFIER_NO_KEYWORD
+      content: Identifier "from" is a keyword and should be avoided
+      startposition:
+        line: 4
+        column: 0
+      endposition: null

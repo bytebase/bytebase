@@ -48,6 +48,16 @@ describe("ExportDestinationsPage", () => {
     mocks.stored = undefined;
   });
 
+  test("links to the SharePoint guide", () => {
+    render(<ExportDestinationsPage />);
+    expect(
+      screen.getByRole("link", { name: "common.learn-more" })
+    ).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console"
+    );
+  });
+
   test("offers to configure SharePoint when it is not set up", async () => {
     render(<ExportDestinationsPage />);
     expect(

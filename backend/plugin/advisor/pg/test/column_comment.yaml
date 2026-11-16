@@ -53,3 +53,45 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN public.t.a IS 'note';
+  changeType: 1
+- statement: |-
+    COMMENT ON COLUMN t.a IS 'note';
+    CREATE TABLE t(a int);
+  changeType: 1
+- statement: |-
+    ALTER TABLE t ADD COLUMN a int, ADD COLUMN b int;
+    COMMENT ON COLUMN t.b IS 'loooooooong comments';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: Column `t.b` comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN d.s.t.a IS 'note';
+  changeType: 1
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

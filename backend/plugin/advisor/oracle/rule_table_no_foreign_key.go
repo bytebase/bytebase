@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -21,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_ORACLE, storepb.SQLReviewRule_TABLE_NO_FOREIGN_KEY, &TableNoForeignKeyAdvisor{})
 }
 
-// TableNoForeignKeyAdvisor is the advisor checking for table disallow foreign key.
+// TableNoForeignKeyAdvisor is the advisor checking for table disallow
+// foreign key. The judgment lives in omni
+// (oracle/v1review.TableNoForeignKey); this adapter renders the findings as
+// advice.
 type TableNoForeignKeyAdvisor struct {
 }
 
@@ -32,85 +35,20 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := NewTableNoForeignKeyRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// TableNoForeignKeyRule is the rule implementation for table disallow foreign key.
-type TableNoForeignKeyRule struct {
-	BaseRule
-
-	currentDatabase string
-	tableWithFK     map[string]bool
-	tableLine       map[string]int
-}
-
-// NewTableNoForeignKeyRule creates a new TableNoForeignKeyRule.
-func NewTableNoForeignKeyRule(level storepb.Advice_Status, title string, currentDatabase string) *TableNoForeignKeyRule {
-	return &TableNoForeignKeyRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		tableWithFK:     make(map[string]bool),
-		tableLine:       make(map[string]int),
-	}
-}
-
-// Name returns the rule name.
-func (*TableNoForeignKeyRule) Name() string {
-	return "table.no-foreign-key"
-}
-
-// OnStatement checks foreign keys from omni CREATE/ALTER TABLE nodes.
-func (r *TableNoForeignKeyRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		if r.createTableHasFK(n) {
-			r.tableWithFK[tableName] = true
-			r.tableLine[tableName] = r.locLine(n.Loc)
+	nodes, stmts := tableRuleStatements(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range oraclev1review.TableNoForeignKey(nodes, checkCtx.CurrentDatabase) {
+		if f.Code != v1review.TableForeignKey {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		for _, cmd := range alterTableCmds(n) {
-			if cmd.Constraint != nil && cmd.Constraint.Type == ast.CONSTRAINT_FOREIGN {
-				r.tableWithFK[tableName] = true
-				r.tableLine[tableName] = r.locLine(cmd.Constraint.Loc)
-			}
-		}
-	default:
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.TableHasFK.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(f.Name)),
+			StartPosition: tableRuleFindingPosition(stmts, f),
+		})
 	}
-}
-
-func (*TableNoForeignKeyRule) createTableHasFK(stmt *ast.CreateTableStmt) bool {
-	for _, col := range columnDefs(stmt.Columns) {
-		if columnHasConstraint(col, ast.CONSTRAINT_FOREIGN) {
-			return true
-		}
-	}
-	for _, c := range tableConstraints(stmt.Constraints) {
-		if c.Type == ast.CONSTRAINT_FOREIGN {
-			return true
-		}
-	}
-	return false
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.
-
-// GetAdviceList returns the advice list.
-func (r *TableNoForeignKeyRule) GetAdviceList() ([]*storepb.Advice, error) {
-	for tableName, hasFK := range r.tableWithFK {
-		if hasFK {
-			r.AddAdvice(
-				r.level,
-				code.TableHasFK.Int32(),
-				fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(tableName)),
-				base.ConvertANTLRLineToPosition(r.tableLine[tableName]),
-			)
-		}
-	}
-	return r.BaseRule.GetAdviceList()
+	return adviceList, nil
 }

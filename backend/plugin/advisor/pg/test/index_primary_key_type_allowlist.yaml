@@ -31,3 +31,29 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a integer,
+      b int8,
+      c varchar(20),
+      d numeric(10, 2) PRIMARY KEY,
+      PRIMARY KEY (a, b, c, missing)
+    );
+  want:
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column "c" is one of the primary key, but its type "character varying(20)" is not in allowlist
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 803
+      title: INDEX_PRIMARY_KEY_TYPE_ALLOWLIST
+      content: The column "d" is one of the primary key, but its type "numeric(10,2)" is not in allowlist
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD PRIMARY KEY (name);

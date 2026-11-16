@@ -26,3 +26,13 @@
         line: 3
         column: 0
       endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN c int, ALGORITHM = INPLACE;
+  want:
+    - status: 2
+      code: 237
+      title: STATEMENT_REQUIRE_LOCK_OPTION
+      content: ALTER TABLE statement should include LOCK option
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

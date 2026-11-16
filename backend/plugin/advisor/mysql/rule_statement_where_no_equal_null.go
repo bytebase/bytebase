@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +23,9 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_WHERE_NO_EQUAL_NULL, &StatementWhereNoEqualNullAdvisor{})
 }
 
+// StatementWhereNoEqualNullAdvisor is the advisor checking for WHERE comparisons with NULL.
+// The judgment lives in omni (mysql/v1review.StatementWhereNoEqualNull); this
+// adapter renders its findings as advice.
 type StatementWhereNoEqualNullAdvisor struct {
 }
 
@@ -30,53 +35,25 @@ func (*StatementWhereNoEqualNullAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &whereNoEqualNullRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type whereNoEqualNullRule struct {
-	BaseRule
-}
-
-func (*whereNoEqualNullRule) Name() string {
-	return "StatementWhereNoEqualNullRule"
-}
-
-func (r *whereNoEqualNullRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	// Collect WHERE expressions from all SelectStmt nodes (including UNION branches).
-	ast.Inspect(node, func(n ast.Node) bool {
-		sel, ok := n.(*ast.SelectStmt)
-		if !ok {
-			return true
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		if sel.Where != nil {
-			ast.Inspect(sel.Where, func(wn ast.Node) bool {
-				if bin, ok := wn.(*ast.BinaryExpr); ok {
-					if (bin.Op == ast.BinOpEq || bin.Op == ast.BinOpNe) && isNullLiteral(bin.Right) {
-						r.AddAdviceAbsolute(&storepb.Advice{
-							Status:        r.Level,
-							Code:          code.StatementWhereNoEqualNull.Int32(),
-							Title:         r.Title,
-							Content:       fmt.Sprintf("WHERE clause contains equal null: %s", text),
-							StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(bin.Loc))),
-						})
-					}
-				}
-				return true
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.StatementWhereNoEqualNull([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementWhereNoEqualNull.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("WHERE clause contains equal null: %s", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
-		return true
-	})
-}
-
-func isNullLiteral(expr ast.ExprNode) bool {
-	_, ok := expr.(*ast.NullLit)
-	return ok
+	}
+	return adviceList, nil
 }

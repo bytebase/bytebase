@@ -4,11 +4,12 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/db/pg"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_NON_TRANSACTIONAL, &NonTransactionalAdvisor{})
 }
 
-// NonTransactionalAdvisor is the advisor checking for non-transactional statements.
+// NonTransactionalAdvisor is the advisor checking for non-transactional
+// statements. The judgment lives in omni
+// (pg/v1review.StatementNonTransactional); this adapter renders its findings
+// as advice.
 type NonTransactionalAdvisor struct {
 }
 
@@ -30,42 +34,25 @@ func (*NonTransactionalAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	rule := &nonTransactionalRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range pgv1review.StatementNonTransactional([]ast.Node{node}, stmt.Text) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNonTransactional.Int32(),
+				Title:         title,
+				Content:       "This statement is non-transactional",
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type nonTransactionalRule struct {
-	BaseRule
-}
-
-func (*nonTransactionalRule) Name() string {
-	return "statement.non-transactional"
-}
-
-func (r *nonTransactionalRule) OnStatement(node ast.Node) {
-	switch node.(type) {
-	case *ast.DropdbStmt, *ast.IndexStmt, *ast.DropStmt, *ast.VacuumStmt:
-	default:
-		return
-	}
-
-	stmtText := r.TrimmedStmtText()
-	if pg.IsNonTransactionStatement(stmtText) {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.StatementNonTransactional.Int32(),
-			Title:   r.Title,
-			Content: "This statement is non-transactional",
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

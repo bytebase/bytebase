@@ -3,16 +3,13 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/bytebase/omni/mysql/ast"
-	"github.com/pkg/errors"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -23,7 +20,11 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
-// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
+// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key
+// type allowlist. The judgment lives in omni
+// (mysql/v1review.IndexPrimaryKeyTypeAllowlist); this adapter passes the
+// script, the payload and the pre-change schema and renders the findings as
+// advice.
 type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
@@ -33,187 +34,28 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 	if err != nil {
 		return nil, err
 	}
-	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
-	allowlist := make(map[string]bool)
-	for _, tp := range stringArrayPayload.List {
-		allowlist[strings.ToLower(tp)] = true
-	}
 
-	rule := &indexPrimaryKeyTypeAllowlistRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		allowlist:        allowlist,
-		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableColumnTypes),
-	}
+	// A rule without the payload panics here, which advisor.Check reports
+	// as the rule's error.
+	allowlist := checkCtx.Rule.GetStringArrayPayload().List
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type indexPrimaryKeyTypeAllowlistRule struct {
-	BaseRule
-	allowlist        map[string]bool
-	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableColumnTypes
-}
-
-func (*indexPrimaryKeyTypeAllowlistRule) Name() string {
-	return "IndexPrimaryKeyTypeAllowlistRule"
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	findings, err := mysqlv1review.IndexPrimaryKeyTypeAllowlist(nodes, allowlist, schemaOf(checkCtx.OriginalMetadata))
+	if err != nil {
+		readMissingSchema(checkCtx.OriginalMetadata, err)
+		return nil, err
 	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range findings {
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.IndexPKType.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+		})
 	}
-	tableName := n.Table.Name
-	for _, col := range n.Columns {
-		if col == nil || col.TypeName == nil {
-			continue
-		}
-		columnType := dataTypeNameCompact(col.TypeName)
-		for _, c := range col.Constraints {
-			if c.Type == ast.ColConstrPrimaryKey {
-				if _, exists := r.allowlist[columnType]; !exists {
-					r.AddAdviceAbsolute(&storepb.Advice{
-						Status:        r.Level,
-						Code:          code.IndexPKType.Int32(),
-						Title:         r.Title,
-						Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-						StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(col.Loc))),
-					})
-				}
-			}
-		}
-		r.tablesNewColumns.set(tableName, col.Name, columnType)
-	}
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
-			continue
-		}
-		r.checkConstraint(tableName, constraint, r.LocToLine(constraint.Loc))
-	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			for _, col := range getColumnsFromCmd(cmd) {
-				if col == nil || col.TypeName == nil {
-					continue
-				}
-				columnType := dataTypeNameCompact(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						if _, exists := r.allowlist[columnType]; !exists {
-							r.AddAdviceAbsolute(&storepb.Advice{
-								Status:        r.Level,
-								Code:          code.IndexPKType.Int32(),
-								Title:         r.Title,
-								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-							})
-						}
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATModifyColumn:
-			if cmd.Column != nil && cmd.Column.TypeName != nil {
-				col := cmd.Column
-				columnType := dataTypeNameCompact(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						if _, exists := r.allowlist[columnType]; !exists {
-							r.AddAdviceAbsolute(&storepb.Advice{
-								Status:        r.Level,
-								Code:          code.IndexPKType.Int32(),
-								Title:         r.Title,
-								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-							})
-						}
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATChangeColumn:
-			r.tablesNewColumns.delete(tableName, cmd.Name)
-			if cmd.Column != nil && cmd.Column.TypeName != nil {
-				col := cmd.Column
-				columnType := dataTypeNameCompact(col.TypeName)
-				for _, c := range col.Constraints {
-					if c.Type == ast.ColConstrPrimaryKey {
-						if _, exists := r.allowlist[columnType]; !exists {
-							r.AddAdviceAbsolute(&storepb.Advice{
-								Status:        r.Level,
-								Code:          code.IndexPKType.Int32(),
-								Title:         r.Title,
-								Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", col.Name, tableName, columnType),
-								StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-							})
-						}
-					}
-				}
-				r.tablesNewColumns.set(tableName, col.Name, columnType)
-			}
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				r.checkConstraint(tableName, cmd.Constraint, r.LocToLine(n.Loc))
-			}
-		default:
-		}
-	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) checkConstraint(tableName string, constraint *ast.Constraint, line int32) {
-	if constraint.Type != ast.ConstrPrimaryKey {
-		return
-	}
-	for _, columnName := range constraint.Columns {
-		columnType, err := r.getPKColumnType(tableName, columnName)
-		if err != nil {
-			continue
-		}
-		columnType = strings.ToLower(columnType)
-		if _, exists := r.allowlist[columnType]; !exists {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.IndexPKType.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", columnName, tableName, columnType),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
-			})
-		}
-	}
-}
-
-func (r *indexPrimaryKeyTypeAllowlistRule) getPKColumnType(tableName string, columnName string) (string, error) {
-	if columnType, ok := r.tablesNewColumns.get(tableName, columnName); ok {
-		return columnType, nil
-	}
-	column := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetColumn(columnName)
-	if column != nil {
-		return column.GetProto().Type, nil
-	}
-	return "", errors.Errorf("cannot find the type of `%s`.`%s`", tableName, columnName)
+	return adviceList, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	metadatapb "github.com/bytebase/omni/metadata"
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/pkg/errors"
 
 	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
@@ -21,7 +22,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	crparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // SyncInstance syncs the instance.
@@ -389,7 +389,7 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*met
 		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount, &comment); err != nil {
 			return nil, nil, err
 		}
-		if pgparser.IsSystemTable(table.Name) {
+		if pganalysis.IsSystemTable(table.Name) {
 			continue
 		}
 		if comment.Valid {
@@ -482,7 +482,7 @@ func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*metadatapb.TablePartiti
 		if err := rows.Scan(&schemaName, &tableName, &inhSchemaName, &inhTableName, &partitionType, &relPartBound); err != nil {
 			return nil, err
 		}
-		if pgparser.IsSystemTable(tableName) || pgparser.IsSystemTable(inhTableName) {
+		if pganalysis.IsSystemTable(tableName) || pganalysis.IsSystemTable(inhTableName) {
 			continue
 		}
 		key := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
@@ -606,7 +606,7 @@ func getMaterializedViews(txn *sql.Tx) (map[string][]*metadatapb.MaterializedVie
 			return nil, err
 		}
 		// Skip system views.
-		if pgparser.IsSystemView(matview.Name) {
+		if pganalysis.IsSystemView(matview.Name) {
 			continue
 		}
 
@@ -663,7 +663,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadat
 			return nil, err
 		}
 		// Skip system views.
-		if pgparser.IsSystemView(view.Name) {
+		if pganalysis.IsSystemView(view.Name) {
 			continue
 		}
 
@@ -927,7 +927,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*metadatapb.FunctionMetadata, error
 			return nil, err
 		}
 		// Skip internal functions.
-		if pgparser.IsSystemFunction(function.Name, function.Definition) {
+		if pganalysis.IsSystemFunction(function.Name, function.Definition) {
 			continue
 		}
 

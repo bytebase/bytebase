@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_ADD_NOT_NULL, &StatementDisallowAddNotNullAdvisor{})
 }
 
-// StatementDisallowAddNotNullAdvisor is the advisor checking for to disallow add not null.
+// StatementDisallowAddNotNullAdvisor is the advisor checking for to disallow
+// add not null. The judgment lives in omni
+// (pg/v1review.StatementDisallowAddNotNull); this adapter renders its
+// findings as advice.
 type StatementDisallowAddNotNullAdvisor struct {
 }
 
@@ -30,44 +35,25 @@ func (*StatementDisallowAddNotNullAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := &statementDisallowAddNotNullRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowAddNotNullRule struct {
-	BaseRule
-}
-
-func (*statementDisallowAddNotNullRule) Name() string {
-	return "statement_disallow_add_not_null"
-}
-
-func (r *statementDisallowAddNotNullRule) OnStatement(node ast.Node) {
-	alter, ok := node.(*ast.AlterTableStmt)
-	if !ok {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(alter) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_SetNotNull {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		columnName := cmd.Name
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.StatementAddNotNull.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", columnName),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range pgv1review.StatementDisallowAddNotNull([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementAddNotNull.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Setting NOT NULL will block reads and writes. You can use CHECK (%q IS NOT NULL) instead", f.Name),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
+		}
 	}
+	return adviceList, nil
 }

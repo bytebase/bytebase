@@ -4,9 +4,8 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"slices"
 
-	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +22,8 @@ func init() {
 }
 
 // ColumnRequireDefaultAdvisor is the advisor checking for column default requirement.
+// The judgment lives in omni (oracle/v1review.ColumnRequireDefault); this
+// adapter renders the findings as advice.
 type ColumnRequireDefaultAdvisor struct {
 }
 
@@ -33,95 +34,18 @@ func (*ColumnRequireDefaultAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnRequireDefaultRule is the rule implementation for column default requirement.
-type ColumnRequireDefaultRule struct {
-	BaseRule
-
-	currentDatabase  string
-	noDefaultColumns columnMap
-}
-
-// NewColumnRequireDefaultRule creates a new ColumnRequireDefaultRule.
-func NewColumnRequireDefaultRule(level storepb.Advice_Status, title string, currentDatabase string) *ColumnRequireDefaultRule {
-	return &ColumnRequireDefaultRule{
-		BaseRule:         NewBaseRule(level, title, 0),
-		currentDatabase:  currentDatabase,
-		noDefaultColumns: make(columnMap),
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range oraclev1review.ColumnRequireDefault(nodes, checkCtx.CurrentDatabase) {
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          code.NoDefault.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Column %q doesn't have default value", f.Name),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+		})
 	}
-}
-
-// Name returns the rule name.
-func (*ColumnRequireDefaultRule) Name() string {
-	return "column.require-default"
-}
-
-// OnStatement records columns without defaults from omni CREATE/ALTER TABLE nodes.
-func (r *ColumnRequireDefaultRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		for _, col := range columnDefs(n.Columns) {
-			r.recordNoDefaultColumn(tableName, col)
-		}
-	case *ast.AlterTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		for _, cmd := range alterTableCmds(n) {
-			for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
-				if col == nil {
-					continue
-				}
-				columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
-				if col.Default != nil {
-					delete(r.noDefaultColumns, columnID)
-				} else if cmd.Action == ast.AT_ADD_COLUMN {
-					r.noDefaultColumns[columnID] = r.locLine(col.Loc)
-				}
-			}
-		}
-	default:
-	}
-}
-
-func (r *ColumnRequireDefaultRule) recordNoDefaultColumn(tableName string, col *ast.ColumnDef) {
-	if col == nil {
-		return
-	}
-	columnID := fmt.Sprintf("%s.%s", tableName, col.Name)
-	if col.Default == nil {
-		r.noDefaultColumns[columnID] = r.locLine(col.Loc)
-	} else {
-		delete(r.noDefaultColumns, columnID)
-	}
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// Ignore other node types
-
-// OnExit is called when the parser exits a rule context.
-
-// Ignore other node types
-
-// GetAdviceList returns the advice list.
-func (r *ColumnRequireDefaultRule) GetAdviceList() ([]*storepb.Advice, error) {
-	var columnIDs []string
-	for columnID := range r.noDefaultColumns {
-		columnIDs = append(columnIDs, columnID)
-	}
-	slices.Sort(columnIDs)
-	for _, columnID := range columnIDs {
-		line := r.noDefaultColumns[columnID]
-		r.AddAdvice(
-			r.level,
-			code.NoDefault.Int32(),
-			fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
-			base.ConvertANTLRLineToPosition(line),
-		)
-	}
-	return r.BaseRule.GetAdviceList()
+	return adviceList, nil
 }

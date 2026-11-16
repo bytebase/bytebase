@@ -6,10 +6,13 @@ import (
 	"slices"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -20,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE, &StatementMergeAlterTableAdvisor{})
 }
 
-// StatementMergeAlterTableAdvisor is the advisor checking for no redundant ALTER TABLE statements.
+// StatementMergeAlterTableAdvisor is the advisor checking for no redundant
+// ALTER TABLE statements. The judgment lives in omni
+// (pg/v1review.StatementMergeAlterTable); this adapter renders its findings
+// as advice.
 type StatementMergeAlterTableAdvisor struct {
 }
 
@@ -31,110 +37,35 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		return nil, err
 	}
 
-	rule := &statementMergeAlterTableRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		tableMap: make(tableMap),
-	}
-
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	return rule.generateAdvice(), nil
-}
-
-type statementMergeAlterTableRule struct {
-	BaseRule
-	tableMap tableMap
-}
-
-type tableMap map[string]tableStatement
-
-type tableStatement struct {
-	schema string
-	name   string
-	count  int
-	line   int
-}
-
-func (m tableMap) set(schema string, table string, line int) {
-	t := tableStatement{
-		schema: schema,
-		name:   table,
-		count:  1,
-		line:   line,
-	}
-	m[t.key()] = t
-}
-
-func (m tableMap) add(schema string, table string, line int) {
-	if t, exists := m[fmt.Sprintf("%s.%s", schema, table)]; exists {
-		t.count++
-		t.line = line
-		m[t.key()] = t
-	}
-}
-
-func (t tableStatement) key() string {
-	return fmt.Sprintf("%s.%s", t.schema, t.name)
-}
-
-func (*statementMergeAlterTableRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_MERGE_ALTER_TABLE)
-}
-
-func (r *statementMergeAlterTableRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		if n.Relation != nil {
-			tableName := rangeVarTableName(n.Relation)
-			schema := schemaName(n.Relation)
-			if tableName != "" {
-				r.tableMap.set(schema, tableName, int(r.ContentEndLine()))
-			}
+	title := checkCtx.Rule.Type.String()
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.AlterTableStmt:
-		if n.Relation != nil {
-			tableName := rangeVarTableName(n.Relation)
-			schema := schemaName(n.Relation)
-			if tableName != "" {
-				r.tableMap.add(schema, tableName, int(r.ContentEndLine()))
-			}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	default:
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
 	}
-}
-
-func (r *statementMergeAlterTableRule) generateAdvice() []*storepb.Advice {
 	var adviceList []*storepb.Advice
-	var tableList []tableStatement
-	for _, table := range r.tableMap {
-		tableList = append(tableList, table)
+	for _, f := range pgv1review.StatementMergeAlterTable(nodes) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Code:    code.StatementRedundantAlterTable.Int32(),
+			Title:   title,
+			Content: fmt.Sprintf("There are %s statements to modify table `%s`", f.Value, f.Table),
+			// V1 placed the finding on its last statement's last line
+			// relative to that statement, without the statement's base line,
+			// and ordered findings by that line.
+			StartPosition: &storepb.Position{Line: (&BaseRule{StmtText: stmts[f.Statement].Text}).ContentEndLine()},
+		})
 	}
-	slices.SortFunc(tableList, func(i, j tableStatement) int {
-		if i.line < j.line {
-			return -1
-		}
-		if i.line > j.line {
-			return 1
-		}
-		return 0
+	slices.SortStableFunc(adviceList, func(a, b *storepb.Advice) int {
+		return int(a.StartPosition.Line) - int(b.StartPosition.Line)
 	})
-	for _, table := range tableList {
-		if table.count > 1 {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  r.Level,
-				Code:    code.StatementRedundantAlterTable.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: &storepb.Position{
-					Line:   int32(table.line),
-					Column: 0,
-				},
-			})
-		}
-	}
-
-	return adviceList
+	return adviceList, nil
 }

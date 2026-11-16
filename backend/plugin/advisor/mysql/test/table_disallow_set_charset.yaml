@@ -31,3 +31,42 @@
         line: 5
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a int) DEFAULT CHARSET=utf8 COLLATE=utf8_bin CHARACTER SET utf8;
+  want:
+    - status: 2
+      code: 612
+      title: TABLE_DISALLOW_SET_CHARSET
+      content: Set charset on tables is disallowed, but "CREATE TABLE t(a int) DEFAULT CHARSET=utf8 COLLATE=utf8_bin CHARACTER SET utf8;" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 612
+      title: TABLE_DISALLOW_SET_CHARSET
+      content: Set charset on tables is disallowed, but "CREATE TABLE t(a int) DEFAULT CHARSET=utf8 COLLATE=utf8_bin CHARACTER SET utf8;" uses
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a int) COLLATE=utf8mb4_bin;
+- statement: CREATE TABLE t(a varchar(10) CHARACTER SET utf8);
+- statement: ALTER TABLE t DEFAULT CHARSET utf8mb4;
+- statement: |-
+    CREATE TABLE a(b INT);
+
+    /* c */
+    ALTER TABLE t
+      CONVERT TO CHARACTER SET utf8mb4;
+  want:
+    - status: 2
+      code: 612
+      title: TABLE_DISALLOW_SET_CHARSET
+      content: |-
+        Set charset on tables is disallowed, but "/* c */
+        ALTER TABLE t
+          CONVERT TO CHARACTER SET utf8mb4;" uses
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

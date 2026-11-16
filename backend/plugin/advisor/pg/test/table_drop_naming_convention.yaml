@@ -22,3 +22,89 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP TABLE public.foo, foo_delete.bar, public.baz_delete
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE db.public.foo
+  changeType: 1
+- statement: DROP TABLE Foo_DELETE, "Bar_DELETE"
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`Bar_DELETE` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- cleanup
+    DROP TABLE
+      foo
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    DROP TABLE foo_delete;
+
+    -- second
+    DROP TABLE
+      bar;
+    DROP TABLE baz
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`baz` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+- statement: DROP TABLE aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_delete
+  changeType: 1
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_de` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW foo; DROP MATERIALIZED VIEW foo; DROP FOREIGN TABLE foo; DROP INDEX foo
+  changeType: 1
+- statement: CREATE PROCEDURE drop_it() LANGUAGE SQL BEGIN ATOMIC DROP TABLE foo; END
+  changeType: 1

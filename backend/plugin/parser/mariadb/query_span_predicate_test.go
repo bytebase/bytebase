@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -282,9 +283,9 @@ func TestQuerySpanPredicateColumnsMatchEngines(t *testing.T) {
 					require.NoError(t, err)
 					seen := make(base.SourceColumnSet)
 					for _, result := range span.Results {
-						mergeSourceColumnSetInto(seen, result.SourceColumns)
+						maps.Copy(seen, result.SourceColumns)
 					}
-					mergeSourceColumnSetInto(seen, span.PredicateColumns)
+					maps.Copy(seen, span.PredicateColumns)
 					got := append(columnNames(seen), tc.other...)
 					got = slices.DeleteFunc(got, func(column string) bool { return slices.Contains(tc.unchecked, column) })
 					slices.Sort(got)

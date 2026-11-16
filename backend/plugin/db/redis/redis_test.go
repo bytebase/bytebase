@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -94,4 +95,97 @@ func TestQueryConnOnAllNodes(t *testing.T) {
 		require.Equal(t, want, results[i].Rows[0].Values[1].GetStringValue())
 		require.Equal(t, int64(1), results[i].RowsCount)
 	}
+}
+
+// serverError stands in for an error reply from the server, which go-redis
+// marks with the RedisError method.
+type serverError string
+
+func (e serverError) Error() string { return string(e) }
+func (serverError) RedisError()     {}
+
+func TestDatabasesFromConfigReply(t *testing.T) {
+	tests := []struct {
+		name         string
+		val          map[string]string
+		err          error
+		want         []int
+		wantFailopen bool
+		wantErr      bool
+	}{
+		{
+			name: "configured count",
+			val:  map[string]string{"databases": "3"},
+			want: []int{0, 1, 2},
+		},
+		{
+			name:         "reply without the databases setting",
+			val:          map[string]string{},
+			wantFailopen: true,
+		},
+		{
+			name:         "command removed by the vendor",
+			err:          serverError("ERR unknown command 'CONFIG', with args beginning with: 'GET' 'databases' "),
+			wantFailopen: true,
+		},
+		{
+			name:         "user without permission to run CONFIG",
+			err:          serverError("NOPERM User limited has no permissions to run the 'config|get' command"),
+			wantFailopen: true,
+		},
+		{
+			name:    "connection error",
+			err:     errors.New("dial tcp 127.0.0.1:6379: connect: connection refused"),
+			wantErr: true,
+		},
+		{
+			name:    "count that is not a number",
+			val:     map[string]string{"databases": "many"},
+			wantErr: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, failopen, err := databasesFromConfigReply(tc.val, tc.err)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, tc.wantFailopen, failopen)
+		})
+	}
+}
+
+func TestSyncInstanceWithoutConfigPermission(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.SharedRedisClusterContainer(t)
+	open := func(username, password string) db.Driver {
+		d, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Type:      storepb.DataSourceType_ADMIN,
+				Host:      container.GetHost(),
+				Port:      container.GetPort(),
+				Username:  username,
+				RedisType: storepb.DataSource_CLUSTER,
+			},
+			Password: password,
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, d.Close(ctx)) })
+		return d
+	}
+
+	_, err := open("", "").Execute(ctx, "ACL SETUSER noconfig on >noconfig-pw ~* +@all -config", db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	limited := open("noconfig", "noconfig-pw")
+	_, err = limited.Execute(ctx, "CONFIG GET databases", db.ExecuteOptions{})
+	require.ErrorContains(t, err, "NOPERM")
+
+	instance, err := limited.SyncInstance(ctx)
+	require.NoError(t, err)
+	require.Len(t, instance.Databases, 1)
+	require.Equal(t, "0", instance.Databases[0].Name)
 }

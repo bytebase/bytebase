@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,7 +20,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE, &ColumnDefaultDisallowVolatileAdvisor{})
 }
 
-// ColumnDefaultDisallowVolatileAdvisor is the advisor checking for column default volatile functions.
+// ColumnDefaultDisallowVolatileAdvisor is the advisor checking for column
+// default volatile functions. The judgment lives in omni
+// (pg/v1review.ColumnDefaultDisallowVolatile); this adapter renders the
+// findings as advice.
 type ColumnDefaultDisallowVolatileAdvisor struct {
 }
 
@@ -30,91 +34,21 @@ func (*ColumnDefaultDisallowVolatileAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 
-	rule := &columnDefaultDisallowVolatileRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnDefaultDisallowVolatileRule struct {
-	BaseRule
-}
-
-func (*columnDefaultDisallowVolatileRule) Name() string {
-	return string(storepb.SQLReviewRule_COLUMN_DEFAULT_DISALLOW_VOLATILE)
-}
-
-func (r *columnDefaultDisallowVolatileRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *columnDefaultDisallowVolatileRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := rangeVarTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) != ast.AT_AddColumn {
-			continue
-		}
-		colDef, ok := cmd.Def.(*ast.ColumnDef)
-		if !ok || colDef == nil {
-			continue
-		}
-
-		if r.hasVolatileDefault(colDef) {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range pgv1review.ColumnDefaultDisallowVolatile([]ast.Node{nodes[i]}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:  level,
 				Code:    code.NoDefault.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", tableName, colDef.Colname, "public"),
+				Title:   checkCtx.Rule.Type.String(),
+				Content: fmt.Sprintf("Column %q.%q in schema %q has volatile DEFAULT", f.Table, f.Name, "public"),
 				StartPosition: &storepb.Position{
-					Line:   r.FindLineByName(colDef.Colname),
+					Line:   findingLine(stmt, f),
 					Column: 0,
 				},
 			})
 		}
 	}
-}
-
-// hasVolatileDefault checks if a column definition has a default that contains a function call.
-func (*columnDefaultDisallowVolatileRule) hasVolatileDefault(col *ast.ColumnDef) bool {
-	// Check RawDefault for function calls
-	if col.RawDefault != nil && containsFuncCall(col.RawDefault) {
-		return true
-	}
-
-	// Check constraints for DEFAULT with function calls
-	for _, c := range columnConstraints(col) {
-		if c.Contype == ast.CONSTR_DEFAULT && c.RawExpr != nil && containsFuncCall(c.RawExpr) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// containsFuncCall uses ast.Inspect to walk the expression tree looking for FuncCall nodes.
-func containsFuncCall(node ast.Node) bool {
-	found := false
-	ast.Inspect(node, func(n ast.Node) bool {
-		if found {
-			return false
-		}
-		if _, ok := n.(*ast.FuncCall); ok {
-			found = true
-			return false
-		}
-		return true
-	})
-	return found
+	return adviceList, nil
 }

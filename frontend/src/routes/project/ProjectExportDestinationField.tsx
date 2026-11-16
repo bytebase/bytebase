@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import {
   FormControlGroup,
@@ -40,7 +41,12 @@ export function ProjectExportDestinationField({
           <FeatureBadge feature={PlanFeature.FEATURE_SHAREPOINT_EXPORT} />
         </span>
       }
-      description={t("project.settings.export-destination.description")}
+      description={
+        <>
+          {t("project.settings.export-destination.description")}{" "}
+          <LearnMoreLink href="https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console" />
+        </>
+      }
     >
       <FormControlGroup>
         <DestinationRow

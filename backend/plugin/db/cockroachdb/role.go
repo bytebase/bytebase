@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole, error) {
@@ -43,7 +43,7 @@ func (d *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.InstanceRole,
 			); err != nil {
 				return err
 			}
-			if pgparser.IsSystemUser(role) {
+			if pganalysis.IsSystemUser(role) {
 				continue
 			}
 

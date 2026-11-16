@@ -109,6 +109,7 @@
     - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
     - [DataSourceExternalSecret.TokenType](#bytebase-store-DataSourceExternalSecret-TokenType)
     - [DataSourceType](#bytebase-store-DataSourceType)
+    - [Vendor](#bytebase-store-Vendor)
   
 - [store/issue.proto](#store_issue-proto)
     - [Issue](#bytebase-store-Issue)
@@ -1738,6 +1739,7 @@ Instance is the proto for instances.
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | roles | [InstanceRole](#bytebase-store-InstanceRole) | repeated |  |
 | labels | [Instance.LabelsEntry](#bytebase-store-Instance-LabelsEntry) | repeated | Labels are key-value pairs that can be attached to the instance. For example, { &#34;org_group&#34;: &#34;infrastructure&#34;, &#34;environment&#34;: &#34;production&#34; } |
+| vendor | [Vendor](#bytebase-store-Vendor) |  |  |
 
 
 
@@ -1939,6 +1941,18 @@ CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM conne
 | DATA_SOURCE_UNSPECIFIED | 0 |  |
 | ADMIN | 1 |  |
 | READ_ONLY | 2 |  |
+
+
+
+<a name="bytebase-store-Vendor"></a>
+
+### Vendor
+Database service variant, independent of engine and registration method.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VENDOR_UNSPECIFIED | 0 |  |
+| NEON | 1 |  |
 
 
  

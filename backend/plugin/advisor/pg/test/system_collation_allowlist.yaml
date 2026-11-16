@@ -33,3 +33,58 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a text COLLATE "UTF8MB4_0900_AI_CI")
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: Use disabled collation "UTF8MB4_0900_AI_CI", related statement "CREATE TABLE t(a text COLLATE "UTF8MB4_0900_AI_CI")"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a text COLLATE public."unknown")
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE public."unknown")"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE t(a text COLLATE "x", b text COLLATE "y")
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: Use disabled collation "x", related statement "CREATE TABLE t(a text COLLATE "x", b text COLLATE "y")"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: Use disabled collation "y", related statement "CREATE TABLE t(a text COLLATE "x", b text COLLATE "y")"
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx ON t (a COLLATE "x")
+- statement: |-
+    CREATE TABLE t(a int);
+
+    ALTER TABLE t
+      ADD COLUMN b text COLLATE "x";
+  want:
+    - status: 2
+      code: 1201
+      title: SYSTEM_COLLATION_ALLOWLIST
+      content: |-
+        Use disabled collation "x", related statement "ALTER TABLE t
+          ADD COLUMN b text COLLATE "x";"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null

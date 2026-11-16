@@ -2230,7 +2230,6 @@
       "needs-attention": "{{total}} 项中有 {{count}} 项需要处理",
       "no-findings": "未发现问题",
       "not-run": "尚未运行",
-      "nothing-needs-attention": "无需处理",
       "off": "已关闭",
       "off-for-project": "此项目已关闭审核",
       "opens-in-sql": "点击在 SQL 中逐条查看。",
@@ -2283,7 +2282,7 @@
       "overridden_other": "{{reviewer}} 中有 {{count}} 个 P0 问题未修改就被解决",
       "ready-to-deploy": "全部通过，可以部署。",
       "reviewer-failed": "{{reviewer}} 无法运行",
-      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-findings": "{{reviewer}}：<findings />",
       "reviewer-not-run": "{{reviewer}} 尚未运行",
       "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
       "reviewer-running": "{{reviewer}} 运行中",
@@ -3513,7 +3512,7 @@
             "title": "提议变更"
           },
           "read-access": {
-            "details": "谁在工作空间及其项目中拥有哪个角色 · 群组及其成员 · 角色及其权限 · 脱敏规则和脱敏豁免 · 发布、数据查询、标签和审核策略 · 审批规则、环境、语义类型和数据分类 · 访问授权，包括待审批的申请",
+            "details": "谁在工作空间及其项目中拥有哪个角色 · 群组及其成员 · 角色及其权限 · 脱敏规则和脱敏豁免 · 发布、数据查询、标签和审核策略 · 审批规则、环境、语义类型和数据分类 · 访问授权，包括待审批的申请 · CI 身份及哪些任务可以以其身份登录",
             "title": "读取成员、角色和策略"
           },
           "read-data": {

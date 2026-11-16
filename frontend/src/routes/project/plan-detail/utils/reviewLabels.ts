@@ -2,7 +2,6 @@ import type {
   AutomatedReviewer,
   AutomatedReviewRow,
   FindingGroup,
-  FindingPriority,
 } from "./planGates";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
@@ -40,53 +39,22 @@ export const findingGroupLabel = (t: T, group: FindingGroup): string => {
 export const isPlanCheckRow = (row: AutomatedReviewRow): boolean =>
   row.reviewer !== "review";
 
-const PRIORITIES: readonly FindingPriority[] = ["p0", "p1", "p2"];
-
-// A reviewer's open findings, P0 first: "1 P0, 2 P1". A plan check reports
-// errors rather than priorities.
-export const openFindingsLabel = (t: T, row: AutomatedReviewRow): string =>
-  isPlanCheckRow(row)
-    ? t("plan.automated-review.n-errors", { count: row.findings.open })
-    : PRIORITIES.filter((priority) => row.findings[priority] > 0)
-        .map((priority) =>
-          t("plan.findings.n-priority", {
-            count: row.findings[priority],
-            priority: priority.toUpperCase(),
-          })
-        )
-        .join(t("plan.findings.separator"));
-
-// A held reviewer as a line of what the rollout waits on.
-export const reviewGateLabel = (t: T, row: AutomatedReviewRow): string => {
-  const reviewer = reviewerLabel(t, row.reviewer);
-  switch (row.conclusion) {
-    case "open":
-      return t("plan.deploy-waiting.reviewer-findings", {
-        reviewer,
-        findings: openFindingsLabel(t, row),
-      });
-    case "failed":
-      return t("plan.deploy-waiting.reviewer-failed", { reviewer });
-    case "outdated":
-      return t("plan.deploy-waiting.reviewer-outdated", { reviewer });
-    case "not-run":
-      return t("plan.deploy-waiting.reviewer-not-run", { reviewer });
-    default:
-      return t("plan.deploy-waiting.reviewer-running", { reviewer });
-  }
-};
+// A part of the collapsed Review summary: text, or a reviewer whose open
+// findings the page draws as it does where the rollout waits on them.
+export type ReviewSummaryPart = string | AutomatedReviewRow;
 
 // A reviewer's conclusion in a collapsed summary, saying what people decided
 // about its findings: "SQL review: 2 resolved, 1 P0 resolved without a
 // change".
-export const reviewSummaryPart = (t: T, row: AutomatedReviewRow): string => {
+export const reviewSummaryPart = (
+  t: T,
+  row: AutomatedReviewRow
+): ReviewSummaryPart => {
+  if (row.conclusion === "open") return row;
   const reviewer = reviewerLabel(t, row.reviewer);
   const { findings } = row;
   let status: string;
   switch (row.conclusion) {
-    case "open":
-      status = openFindingsLabel(t, row);
-      break;
     case "resolved":
       status = [
         findings.resolved > 0

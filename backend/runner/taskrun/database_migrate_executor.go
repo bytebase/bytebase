@@ -814,11 +814,12 @@ func (exec *DatabaseMigrateExecutor) backupData(
 	defer driver.Close(driverCtx)
 
 	tc := parserbase.TransformContext{
-		InstanceID:              instance.ResourceID,
-		GetDatabaseMetadataFunc: buildGetDatabaseMetadataFunc(exec.store, instance.Workspace),
-		ListDatabaseNamesFunc:   buildListDatabaseNamesFunc(exec.store),
-		IsCaseSensitive:         store.IsObjectCaseSensitive(instance),
-		DatabaseName:            database.DatabaseName,
+		InstanceID:                   instance.ResourceID,
+		GetDatabaseMetadataFunc:      buildGetDatabaseMetadataFunc(exec.store, instance.Workspace),
+		ListDatabaseNamesFunc:        buildListDatabaseNamesFunc(exec.store),
+		ListReferencingDatabasesFunc: exec.store.ListDatabasesWithCrossDatabaseForeignKeys,
+		IsCaseSensitive:              store.IsObjectCaseSensitive(instance),
+		DatabaseName:                 database.DatabaseName,
 	}
 	if database.Engine == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)

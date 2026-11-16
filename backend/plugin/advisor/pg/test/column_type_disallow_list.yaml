@@ -24,3 +24,25 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a jsonb, b json[]);
+  changeType: 1
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column "t"."b" is
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ALTER COLUMN a TYPE json;
+  changeType: 1
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Disallow column type JSON but column "t"."a" is
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -28,3 +28,61 @@
         line: 4
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE foo(a INT);
+
+    -- names on later lines
+    DROP TABLE
+      IF EXISTS
+      foo,
+      bar_delete,
+      baz;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`baz` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: DROP TABLE Shop.foo_delete, foo_delete.bar;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TEMPORARY TABLE foo;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP TABLE `foo``_delete`, `foo delete`;
+  want:
+    - status: 2
+      code: 603
+      title: TABLE_DROP_NAMING_CONVENTION
+      content: '`foo delete` mismatches drop table naming convention, naming format should be "_delete$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: DROP VIEW foo;
+- statement: CREATE PROCEDURE pr() BEGIN DROP TABLE foo; END;

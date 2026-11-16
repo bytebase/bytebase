@@ -4,16 +4,21 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_STATEMENT_SELECT_NO_SELECT_ALL, &SelectNoSelectAllAdvisor{})
 }
 
+// SelectNoSelectAllAdvisor is the advisor disallowing SELECT *. The judgment
+// lives in omni (mssql/v1review.StatementSelectNoSelectAll); this adapter
+// renders its findings as advice.
 type SelectNoSelectAllAdvisor struct{}
 
 func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -21,49 +26,26 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
-	rule := &selectNoSelectAllRule{BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
 
-type selectNoSelectAllRule struct {
-	BaseRule
-}
-
-func (*selectNoSelectAllRule) Name() string {
-	return "SelectNoSelectAllRule"
-}
-
-func (r *selectNoSelectAllRule) OnStatement(node ast.Node) {
-	// Find all SelectStmt nodes, then check their TargetList for StarExpr.
-	// This avoids false positives from COUNT(*) and similar expressions.
-	ast.Inspect(node, func(n ast.Node) bool {
-		sel, ok := n.(*ast.SelectStmt)
-		if !ok || sel.TargetList == nil {
-			return true
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		for _, item := range sel.TargetList.Items {
-			switch v := item.(type) {
-			case *ast.StarExpr:
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.StatementSelectAll.Int32(),
-					Title:         r.Title,
-					Content:       "Avoid using SELECT *.",
-					StartPosition: &storepb.Position{Line: r.LocToLine(v.Loc)},
-				})
-			case *ast.ResTarget:
-				if star, ok := v.Val.(*ast.StarExpr); ok {
-					r.AddAdvice(&storepb.Advice{
-						Status:        r.Level,
-						Code:          code.StatementSelectAll.Int32(),
-						Title:         r.Title,
-						Content:       "Avoid using SELECT *.",
-						StartPosition: &storepb.Position{Line: r.LocToLine(star.Loc)},
-					})
-				}
-			default:
-			}
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		return true
-	})
+		for _, f := range mssqlv1review.StatementSelectNoSelectAll([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementSelectAll.Int32(),
+				Title:         title,
+				Content:       "Avoid using SELECT *.",
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
+			})
+		}
+	}
+	return adviceList, nil
 }

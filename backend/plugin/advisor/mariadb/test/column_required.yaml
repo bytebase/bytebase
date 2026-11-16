@@ -210,3 +210,50 @@
       updater_id int,
       updated_ts timestamp
     );
+- statement: |-
+    CREATE TABLE book(id int);
+    DROP TABLE book;
+- statement: |-
+    ALTER TABLE book ADD COLUMN x int;
+    CREATE TABLE book(
+      id int,
+      created_ts timestamp
+    );
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id, updated_ts, updater_id'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int, creator_id int, created_ts timestamp, updater_id int, updated_ts timestamp);
+    ALTER TABLE book CHANGE COLUMN updated_ts updated_at timestamp;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: updated_ts'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int, creator_id int, created_ts timestamp, updater_id int, updated_ts timestamp);
+    ALTER TABLE book
+      ADD COLUMN x int,
+      DROP COLUMN creator_id;
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table `book` requires columns: creator_id'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE book ADD COLUMN x int;
+    ALTER TABLE book RENAME COLUMN x TO y;

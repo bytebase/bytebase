@@ -2,18 +2,15 @@ package oceanbase
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/omni/oceanbase/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
 
 var (
@@ -24,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, &StatementAffectedRowLimitAdvisor{})
 }
 
-// StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE affected row limit.
+// StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE
+// affected row limit. omni (oceanbase/v1review.StatementAffectedRowLimitProbes)
+// picks the statements to estimate; this adapter EXPLAINs them, and omni
+// (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -38,77 +38,42 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-	checker := &statementAffectedRowLimitChecker{
-		level:  level,
-		title:  checkCtx.Rule.Type.String(),
-		maxRow: int(numberPayload.Number),
-		driver: checkCtx.Driver,
-		ctx:    ctx,
-	}
+	maxRow := int(numberPayload.Number)
+	title := checkCtx.Rule.Type.String()
 
-	if checker.driver != nil {
-		for _, stmt := range checkCtx.ParsedStatements {
-			if stmt.AST == nil {
+	var explains advisor.ExplainBudget
+	nodes, stmts := oceanbaseNodes(checkCtx.ParsedStatements)
+	probes := make(map[int]v1review.Probe)
+	if checkCtx.Driver != nil {
+		for _, i := range oceanbasev1review.StatementAffectedRowLimitProbes(nodes) {
+			if !explains.Spend(nodePosition(stmts[i], nodes[i])) {
 				continue
 			}
-			node, ok := oceanbaseparser.GetNode(stmt.AST)
-			if !ok {
-				continue
-			}
-			switch n := node.(type) {
-			case *ast.UpdateStmt:
-				checker.handleStmt(stmt.Text, lineOf(stmt.BaseLine(), stmt.Text, n.Loc))
-			case *ast.DeleteStmt:
-				checker.handleStmt(stmt.Text, lineOf(stmt.BaseLine(), stmt.Text, n.Loc))
-			default:
-			}
+			probes[i] = explainRows(ctx, checkCtx.Driver, stmts[i].Text)
 		}
 	}
 
-	return checker.explains.AppendSkippedAdvice(checker.adviceList, checker.title, code.StatementAffectedRowExceedsLimit), nil
-}
-
-type statementAffectedRowLimitChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	maxRow     int
-	driver     *sql.DB
-	ctx        context.Context
-	explains   advisor.ExplainBudget
-}
-
-func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNumber int) {
-	if !checker.explains.Spend(base.ConvertANTLRLineToPosition(lineNumber)) {
-		return
-	}
-	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
-	if err != nil {
-		checker.adviceList = append(checker.adviceList, &storepb.Advice{
-			Status:        checker.level,
-			Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-			Title:         checker.title,
-			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
+	var adviceList []*storepb.Advice
+	for _, f := range oceanbasev1review.StatementAffectedRowLimit(nodes, probes, maxRow) {
+		text := stmts[f.Statement].Text
+		adviceCode, content := code.StatementAffectedRowExceedsLimit, ""
+		switch f.Code {
+		case v1review.DryRunFailed:
+			content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
+		case v1review.RowCountFailed:
+			adviceCode, content = code.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
+		case v1review.RowLimitExceeded:
+			content = fmt.Sprintf("\"%s\" affected %s rows (estimated). The count exceeds %d.", text, f.Value, maxRow)
+		default:
+			continue
+		}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       content,
+			StartPosition: findingPosition(stmts[f.Statement], f),
 		})
-	} else {
-		rowCount, err := getEstimatedRowsFromJSON(res)
-		if err != nil {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
-				Code:          code.Internal.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-				StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
-			})
-		} else if rowCount > int64(checker.maxRow) {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:        checker.level,
-				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
-				Title:         checker.title,
-				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, checker.maxRow),
-				StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
-			})
-		}
 	}
+	return explains.AppendSkippedAdvice(adviceList, title, code.StatementAffectedRowExceedsLimit), nil
 }

@@ -4,10 +4,10 @@ package snowflake
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
 
 	snowflakeast "github.com/bytebase/omni/snowflake/ast"
+	snowflakev1review "github.com/bytebase/omni/snowflake/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -26,6 +26,9 @@ func init() {
 }
 
 // TableDropNamingConventionAdvisor is the advisor checking for table drop with naming convention.
+// The judgment lives in omni (snowflake/v1review.TableDropNaming); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type TableDropNamingConventionAdvisor struct {
 }
 
@@ -41,74 +44,34 @@ func (*TableDropNamingConventionAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, errors.New("naming_payload is required for table drop naming convention rule")
 	}
 
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format}
+	if _, err := cfg.Compile(); err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
-	checker := &tableDropNamingConventionChecker{
-		level:      level,
-		title:      checkCtx.Rule.Type.String(),
-		format:     format,
-		adviceList: []*storepb.Advice{},
-	}
-
+	title := checkCtx.Rule.Type.String()
+	adviceList := []*storepb.Advice{}
 	for _, stmt := range checkCtx.ParsedStatements {
 		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.text = stmt.Text
-		checker.baseLine = stmt.BaseLine()
-		checker.checkStmt(node)
-	}
-
-	return checker.adviceList, nil
-}
-
-type tableDropNamingConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	format     *regexp.Regexp
-	// text is the SQL text of the statement currently being checked.
-	text string
-	// baseLine is the 0-based line of the current statement in the whole script.
-	baseLine int
-}
-
-// checkStmt checks DROP TABLE statements: the canonical (folded) table name
-// must match the configured naming format. Other DROP kinds (VIEW, DYNAMIC
-// TABLE, ...) are not checked, matching the legacy listener which only
-// subscribed to the plain DROP TABLE grammar rule.
-func (c *tableDropNamingConventionChecker) checkStmt(node snowflakeast.Node) {
-	dropStmt, ok := node.(*snowflakeast.DropStmt)
-	if !ok || dropStmt.Kind != snowflakeast.DropTable || dropStmt.Name == nil {
-		return
-	}
-
-	normalizedObjectName := dropStmt.Name.Name.Normalize()
-	if !c.format.MatchString(normalizedObjectName) {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.TableDropNamingConventionMismatch.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", normalizedObjectName, c.format),
-			StartPosition: c.positionAtOffset(dropStmt.Name.Name.Loc.Start),
-		})
-	}
-}
-
-// positionAtOffset converts a byte offset within the current statement text to
-// an advice position, reproducing the legacy baseLine + ANTLR-line arithmetic.
-// A negative (unknown) offset degrades to the statement's first line.
-func (c *tableDropNamingConventionChecker) positionAtOffset(offset int) *storepb.Position {
-	line := 1
-	if offset > 0 {
-		if offset > len(c.text) {
-			offset = len(c.text)
+		findings, err := snowflakev1review.TableDropNaming([]snowflakeast.Node{node}, cfg)
+		if err != nil {
+			return nil, err
 		}
-		line += strings.Count(c.text[:offset], "\n")
+		for _, f := range findings {
+			if f.Code != v1review.NameMismatch {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.TableDropNamingConventionMismatch.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("%q mismatches drop table naming convention, naming format should be %q", f.Name, namingPayload.Format),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
-	return base.ConvertANTLRLineToPosition(c.baseLine + line)
+	return adviceList, nil
 }

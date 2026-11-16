@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,8 +22,26 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
 }
 
-// CompatibilityAdvisor is the advisor checking for schema backward compatibility.
+// CompatibilityAdvisor is the advisor checking for schema backward
+// compatibility. The judgment lives in omni
+// (tidb/v1review.SchemaBackwardCompatibility); this adapter renders the
+// findings as advice.
 type CompatibilityAdvisor struct {
+}
+
+// compatibilityCodes maps each omni finding to the advice code V1 reported.
+var compatibilityCodes = map[v1review.Code]advisorcode.Code{
+	v1review.IncompatibleDropDatabase:  advisorcode.CompatibilityDropDatabase,
+	v1review.IncompatibleRenameTable:   advisorcode.CompatibilityRenameTable,
+	v1review.IncompatibleDropTable:     advisorcode.CompatibilityDropTable,
+	v1review.IncompatibleRenameColumn:  advisorcode.CompatibilityRenameColumn,
+	v1review.IncompatibleDropColumn:    advisorcode.CompatibilityDropColumn,
+	v1review.IncompatibleAddPrimaryKey: advisorcode.CompatibilityAddPrimaryKey,
+	v1review.IncompatibleAddUniqueKey:  advisorcode.CompatibilityAddUniqueKey,
+	v1review.IncompatibleAddForeignKey: advisorcode.CompatibilityAddForeignKey,
+	v1review.IncompatibleAddCheck:      advisorcode.CompatibilityAddCheck,
+	v1review.IncompatibleAlterCheck:    advisorcode.CompatibilityAlterCheck,
+	v1review.IncompatibleAlterColumn:   advisorcode.CompatibilityAlterColumn,
 }
 
 // Check checks schema backward compatibility.
@@ -36,119 +56,28 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	c := &compatibilityChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-	for _, ostmt := range stmts {
-		c.checkStmt(ostmt)
-	}
-
-	return c.adviceList, nil
-}
-
-type compatibilityChecker struct {
-	adviceList      []*storepb.Advice
-	level           storepb.Advice_Status
-	title           string
-	lastCreateTable string
-}
-
-func (c *compatibilityChecker) checkStmt(ostmt Stmt) {
-	// Line and code captured in the same arm so they cannot drift.
-	code := advisorcode.Ok
-	line := 0
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		if n.Table != nil {
-			c.lastCreateTable = n.Table.Name
-		}
-	case *ast.DropDatabaseStmt:
-		code = advisorcode.CompatibilityDropDatabase
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.RenameTableStmt:
-		code = advisorcode.CompatibilityRenameTable
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.DropTableStmt:
-		code = advisorcode.CompatibilityDropTable
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.AlterTableStmt:
-		if n.Table != nil && n.Table.Name == c.lastCreateTable {
-			break
-		}
-		code = c.classifyAlterTable(n)
-		line = ostmt.AbsoluteLine(n.Loc.Start)
-	case *ast.CreateIndexStmt:
-		if n.Table != nil && n.Table.Name != c.lastCreateTable && n.Unique {
-			code = advisorcode.CompatibilityAddUniqueKey
-			line = ostmt.AbsoluteLine(n.Loc.Start)
-		}
-	default:
+	// The rule judges a statement against the ones before it, so it takes
+	// them all at once and names each finding's statement by index.
+	nodes := make([]ast.Node, 0, len(stmts))
+	for _, stmt := range stmts {
+		nodes = append(nodes, stmt.Node)
 	}
 
-	if code != advisorcode.Ok {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
-			Code:          code.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", ostmt.Text),
-			StartPosition: base.ConvertANTLRLineToPosition(line),
-		})
-	}
-}
-
-// classifyAlterTable returns the first compatibility-impacting code among
-// the ALTER TABLE commands, or Ok if none.
-func (*compatibilityChecker) classifyAlterTable(n *ast.AlterTableStmt) advisorcode.Code {
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range tidbv1review.SchemaBackwardCompatibility(nodes) {
+		adviceCode, ok := compatibilityCodes[f.Code]
+		if !ok {
 			continue
 		}
-		switch cmd.Type {
-		case ast.ATRenameColumn:
-			return advisorcode.CompatibilityRenameColumn
-		case ast.ATDropColumn:
-			return advisorcode.CompatibilityDropColumn
-		case ast.ATRenameTable:
-			return advisorcode.CompatibilityRenameTable
-		case ast.ATAddConstraint:
-			if c := classifyAddConstraint(cmd.Constraint); c != advisorcode.Ok {
-				return c
-			}
-		case ast.ATAlterCheckEnforced:
-			// omni populates cmd.NewName with "ENFORCED" / "NOT ENFORCED";
-			// cmd.Constraint is not set. Flag only the ENFORCED transition.
-			if cmd.NewName == "ENFORCED" {
-				return advisorcode.CompatibilityAlterCheck
-			}
-		case ast.ATModifyColumn, ast.ATChangeColumn:
-			// Treat all MODIFY/CHANGE COLUMN as incompatible: column's
-			// current type is unknown at advice time, so type-widening and
-			// metadata-only changes false-positive.
-			return advisorcode.CompatibilityAlterColumn
-		default:
-		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("\"%s\" may cause incompatibility with the existing data and code", stmt.Text),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
+		})
 	}
-	return advisorcode.Ok
-}
-
-func classifyAddConstraint(constraint *ast.Constraint) advisorcode.Code {
-	if constraint == nil {
-		return advisorcode.Ok
-	}
-	switch constraint.Type {
-	case ast.ConstrPrimaryKey:
-		return advisorcode.CompatibilityAddPrimaryKey
-	case ast.ConstrUnique:
-		// All UNIQUE forms (UNIQUE / UNIQUE KEY / UNIQUE INDEX) route here.
-		return advisorcode.CompatibilityAddUniqueKey
-	case ast.ConstrForeignKey:
-		return advisorcode.CompatibilityAddForeignKey
-	case ast.ConstrCheck:
-		if !constraint.NotEnforced {
-			return advisorcode.CompatibilityAddCheck
-		}
-	default:
-	}
-	return advisorcode.Ok
+	return adviceList, nil
 }

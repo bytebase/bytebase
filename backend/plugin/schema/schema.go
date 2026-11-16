@@ -395,6 +395,8 @@ func SDLDropAdvices(engine storepb.Engine, userSDLText string, currentSchema *mo
 // convert both sides to SDL and diff (no server version is available here, so the
 // engine's default stored form applies). The legacy MetadataDiff + GenerateMigration
 // path remains the fallback for engines that haven't migrated yet.
+//
+// MySQL diffs every server version as 8.0, the one stored form omni's catalog keeps.
 func DiffMigration(engine storepb.Engine, oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	if f, ok := diffMetadataMigrations[engine]; ok {
 		return f(oldSchema, newSchema)

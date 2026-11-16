@@ -5,10 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +22,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_TABLE_DISALLOW_PARTITION, &TableDisallowPartitionAdvisor{})
 }
 
-// TableDisallowPartitionAdvisor is the advisor checking for partitioned tables.
+// TableDisallowPartitionAdvisor is the advisor checking for partitioned
+// tables. The judgment lives in omni (pg/v1review.TableDisallowPartition);
+// this adapter renders the findings as advice.
 type TableDisallowPartitionAdvisor struct {
 }
 
@@ -30,65 +35,31 @@ func (*TableDisallowPartitionAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 
-	rule := &tableDisallowPartitionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowPartitionRule struct {
-	BaseRule
-}
-
-// Name returns the rule name.
-func (*tableDisallowPartitionRule) Name() string {
-	return "table.disallow-partition"
-}
-
-// OnStatement is called for each top-level statement AST node.
-func (r *tableDisallowPartitionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	default:
-	}
-}
-
-func (r *tableDisallowPartitionRule) handleCreateStmt(n *ast.CreateStmt) {
-	if n.Partspec != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.CreateTablePartition.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.TrimmedStmtText()),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *tableDisallowPartitionRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	for _, cmd := range alterTableCmds(n) {
-		if ast.AlterTableType(cmd.Subtype) == ast.AT_AttachPartition {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.CreateTablePartition.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("Table partition is forbidden, but %q creates", r.TrimmedStmtText()),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		// V1 anchored every finding on the statement text's first
+		// non-whitespace line and quoted the trimmed statement text.
+		text := &BaseRule{StmtText: stmt.Text}
+		for _, f := range pgv1review.TableDisallowPartition([]ast.Node{node}) {
+			if f.Code != v1review.TablePartitioned {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.CreateTablePartition.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table partition is forbidden, but %q creates", text.TrimmedStmtText()),
+				StartPosition: &storepb.Position{Line: text.ContentStartLine() + int32(stmt.BaseLine())},
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

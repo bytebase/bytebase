@@ -107,3 +107,40 @@
       c11 long varbinary not null,
       c12 long varchar not null
     );
+- statement: |-
+    CREATE TABLE db.t(
+      a INT NOT NULL AUTO_INCREMENT,
+      b SERIAL NOT NULL,
+      c POINT NOT NULL,
+      d INT GENERATED ALWAYS AS (1) STORED NOT NULL
+    );
+  want:
+    - status: 2
+      code: 404
+      title: COLUMN_SET_DEFAULT_FOR_NOT_NULL
+      content: Column `t`.`c` is NOT NULL but doesn't have DEFAULT
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 404
+      title: COLUMN_SET_DEFAULT_FOR_NOT_NULL
+      content: Column `t`.`d` is NOT NULL but doesn't have DEFAULT
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN (a INT NOT NULL, b INT NULL),
+      CHANGE COLUMN c d INT NOT NULL DEFAULT 0;
+  want:
+    - status: 2
+      code: 404
+      title: COLUMN_SET_DEFAULT_FOR_NOT_NULL
+      content: Column `t`.`a` is NOT NULL but doesn't have DEFAULT
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

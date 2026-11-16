@@ -78,3 +78,192 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE book (
+      id INT,
+      name VARCHAR(20),
+      INDEX idx_book_id (id),
+      KEY bad_name (name)
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `book` mismatches the naming convention, expect "^$|^idx_book_name$" but found `bad_name`
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT, name VARCHAR(20), CONSTRAINT idx_book_id KEY named (id), CONSTRAINT sym INDEX (id))
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `book` mismatches the naming convention, expect "^$|^idx_book_id$" but found `named`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `book` mismatches the naming convention, expect "^$|^idx_book_id$" but found `sym`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT, name VARCHAR(20), KEY idx_book_id_name (id DESC, name(10), (lower(name))), KEY expr ((id + 1)))
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `book` mismatches the naming convention, expect "^$|^idx_book_$" but found `expr`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book (id INT PRIMARY KEY, name VARCHAR(20) UNIQUE, body TEXT, UNIQUE KEY bad_uk (name), FULLTEXT bad_ft (body), CONSTRAINT bad_fk FOREIGN KEY (id) REFERENCES tech_book (id))
+  changeType: 1
+- statement: CREATE TABLE `a.c` (x INT, KEY idx_abc_x (x))
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD FULLTEXT INDEX bad_ft (name), ADD UNIQUE bad_uk (id), ADD KEY bad_one (id), ADD INDEX bad_two (name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found `bad_one`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_name$" but found `bad_two`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE FULLTEXT INDEX bad_ft ON tech_book(name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_name$" but found `bad_ft`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE SPATIAL INDEX bad_sp ON tech_book(name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_name$" but found `bad_sp`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE INDEX bad_fn ON test.tech_book((lower(name)), id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found `bad_fn`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE orders RENAME INDEX old_index TO idx_orders_id_name
+  changeType: 1
+- statement: ALTER TABLE orders RENAME INDEX old_index TO idx_orders_customer_name
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `orders` mismatches the naming convention, expect "^$|^idx_orders_id_name$" but found `idx_orders_customer_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME KEY OLD_INDEX TO bad_name
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `bad_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME INDEX old_uk TO bad_name, RENAME INDEX missing TO bad_name
+  changeType: 1
+- statement: CREATE INDEX idx_x ON `bo(ok`(id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for index naming convention rule
+      content: '"CREATE INDEX idx_x ON `bo(ok`(id)" meet internal error "error parsing regexp: missing closing ): `^$|^idx_bo(ok_id$`"'
+      startposition: null
+      endposition: null
+- statement: CREATE INDEX `名名名名名名名名名名名名名名名名名名名名名名` ON tech_book(id, name)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index `名名名名名名名名名名名名名名名名名名名名名名` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found `名名名名名名名名名名名名名名名名名名名名名名`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- add an index
+    ALTER TABLE tech_book ADD INDEX bad_name (id)
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found `bad_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE INDEX idx_tech_book_id ON tech_book(id);
+    /* note */
+    ALTER TABLE tech_book
+      ADD INDEX bad_name (id);
+  changeType: 1
+  want:
+    - status: 2
+      code: 303
+      title: NAMING_INDEX_IDX
+      content: Index in table `tech_book` mismatches the naming convention, expect "^$|^idx_tech_book_id$" but found `bad_name`
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE INDEX bad_name ON tech_book(id); END
+  changeType: 1
+- statement: EXPLAIN ALTER TABLE tech_book ADD INDEX bad_name (id)
+  changeType: 1

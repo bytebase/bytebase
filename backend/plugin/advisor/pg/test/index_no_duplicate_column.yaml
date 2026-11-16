@@ -66,3 +66,26 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(a int, b int,
+      CONSTRAINT fk_t FOREIGN KEY (a, a) REFERENCES p(a, b),
+      CONSTRAINT uk_t UNIQUE (b, a, b)
+    );
+  want:
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: FOREIGN KEY "fk_t" has duplicate column "t"."a"
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 812
+      title: INDEX_NO_DUPLICATE_COLUMN
+      content: UNIQUE KEY "uk_t" has duplicate column "t"."b"
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE INDEX idx_case ON t(a, "A");

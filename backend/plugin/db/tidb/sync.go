@@ -718,10 +718,11 @@ func convertToStorepbTablePartitionType(tp string) metadatapb.TablePartitionMeta
 func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
 	fkQuery := `
 		SELECT
+			kcu.TABLE_SCHEMA,
 			fks.TABLE_NAME,
 			fks.CONSTRAINT_NAME,
 			kcu.COLUMN_NAME,
-			'',
+			kcu.REFERENCED_TABLE_SCHEMA,
 			fks.REFERENCED_TABLE_NAME,
 			kcu.REFERENCED_COLUMN_NAME,
 			fks.DELETE_RULE,
@@ -745,14 +746,15 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 	var buildingFk *metadatapb.ForeignKeyMetadata
 	var buildingTable string
 	for fkRows.Next() {
-		var tableName string
+		var tableSchema, tableName, referencedSchema string
 		var fk metadatapb.ForeignKeyMetadata
 		var column, referencedColumn string
 		if err := fkRows.Scan(
+			&tableSchema,
 			&tableName,
 			&fk.Name,
 			&column,
-			&fk.ReferencedSchema,
+			&referencedSchema,
 			&fk.ReferencedTable,
 			&referencedColumn,
 			&fk.OnDelete,
@@ -760,6 +762,13 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 			&fk.MatchType,
 		); err != nil {
 			return nil, err
+		}
+		// ReferencedSchema names only another database; consumers read an empty
+		// one as the foreign key's own database. TiDB's
+		// REFERENTIAL_CONSTRAINTS.UNIQUE_CONSTRAINT_SCHEMA is the foreign key's
+		// own database even when it references another (v8.5.0).
+		if referencedSchema != tableSchema {
+			fk.ReferencedSchema = referencedSchema
 		}
 
 		fk.Columns = append(fk.Columns, column)

@@ -4,10 +4,14 @@ import (
 	"context"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -18,7 +22,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY, &IndexConcurrentlyAdvisor{})
 }
 
-// IndexConcurrentlyAdvisor is the advisor checking for to create index concurrently.
+// IndexConcurrentlyAdvisor is the advisor checking for to create index
+// concurrently. The judgment lives in omni
+// (pg/v1review.IndexCreateConcurrently); this adapter passes the script and
+// renders the findings as advice.
 type IndexConcurrentlyAdvisor struct {
 }
 
@@ -29,64 +36,54 @@ func (*IndexConcurrentlyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		return nil, err
 	}
 
-	rule := &indexCreateConcurrentlyRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		newlyCreatedTables: make(map[string]bool),
+	stmts, nodes := scriptNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.IndexCreateConcurrently(nodes) {
+		advice := &storepb.Advice{
+			Status:        level,
+			Title:         title,
+			StartPosition: findingPosition(stmts[f.Statement], f),
+		}
+		switch f.Code {
+		case v1review.IndexCreatedNotConcurrently:
+			advice.Code = code.CreateIndexUnconcurrently.Int32()
+			advice.Content = "Creating indexes will block writes on the table, unless use CONCURRENTLY"
+		case v1review.IndexDroppedNotConcurrently:
+			advice.Code = code.DropIndexUnconcurrently.Int32()
+			advice.Content = "Droping indexes will block writes on the table, unless use CONCURRENTLY"
+		default:
+			continue
+		}
+		adviceList = append(adviceList, advice)
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
+	return adviceList, nil
 }
 
-type indexCreateConcurrentlyRule struct {
-	BaseRule
-
-	newlyCreatedTables map[string]bool
+// scriptNodes returns the statements that have an omni AST and their nodes,
+// in order, so a finding's Statement indexes both.
+func scriptNodes(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.Node) {
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range parsed {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
+	}
+	return stmts, nodes
 }
 
-func (*indexCreateConcurrentlyRule) Name() string {
-	return string(storepb.SQLReviewRule_INDEX_CREATE_CONCURRENTLY)
-}
-
-func (r *indexCreateConcurrentlyRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		tableName := rangeVarTableName(n.Relation)
-		if tableName != "" {
-			r.newlyCreatedTables[tableName] = true
-		}
-	case *ast.IndexStmt:
-		if !n.Concurrent {
-			tableName := rangeVarTableName(n.Relation)
-			if r.newlyCreatedTables[tableName] {
-				return
-			}
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.CreateIndexUnconcurrently.Int32(),
-				Title:   r.Title,
-				Content: "Creating indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-		}
-	case *ast.DropStmt:
-		if n.RemoveType == int(ast.OBJECT_INDEX) && !n.Concurrent {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.DropIndexUnconcurrently.Int32(),
-				Title:   r.Title,
-				Content: "Droping indexes will block writes on the table, unless use CONCURRENTLY",
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-		}
-	default:
+// findingPosition is where the V1 index rules reported a finding in stmt: the
+// line of Search's first occurrence in the statement text, or the text's
+// first non-blank line when the finding has no Search or the text lacks it.
+func findingPosition(stmt base.ParsedStatement, f v1review.Finding) *storepb.Position {
+	return &storepb.Position{
+		Line: (&BaseRule{StmtText: stmt.Text}).FindLineByName(f.Search) + int32(stmt.BaseLine()),
 	}
 }

@@ -2230,7 +2230,6 @@
       "needs-attention": "Needs attention: {{count}} of {{total}}",
       "no-findings": "No findings",
       "not-run": "Not run yet",
-      "nothing-needs-attention": "Nothing needs attention",
       "off": "off",
       "off-for-project": "Off for this project",
       "opens-in-sql": "Click to step through them in the SQL.",
@@ -2283,7 +2282,7 @@
       "overridden_other": "{{count}} P0 findings in {{reviewer}} were resolved without a change",
       "ready-to-deploy": "Everything passed; ready to deploy.",
       "reviewer-failed": "{{reviewer}} couldn't run",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} has not run",
       "reviewer-outdated": "SQL changed after {{reviewer}} ran",
       "reviewer-running": "{{reviewer}} is running",
@@ -3513,7 +3512,7 @@
             "title": "Propose changes"
           },
           "read-access": {
-            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Access grants, including pending requests",
+            "details": "Who holds which role in the workspace and its projects · Groups and their members · Roles and their permissions · Masking rules and exemptions · Rollout, data query, tag and review policies · Approval rules, environments, semantic types and data classification · Access grants, including pending requests · CI identities and who can sign in as them",
             "title": "Read members, roles and policies"
           },
           "read-data": {

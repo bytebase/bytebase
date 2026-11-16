@@ -47,18 +47,47 @@ func rolloutPreRun(_ *world.World) func(*cobra.Command, []string) error {
 	}
 }
 
+// RolloutError is a rollout that stopped on failed or canceled tasks. Its
+// message names them, so a job needs no stack trace after it.
+type RolloutError struct {
+	failures []string
+}
+
+func (e *RolloutError) Error() string {
+	message := "rollout stopped: " + e.failures[0]
+	if rest := len(e.failures) - 1; rest > 0 {
+		message += fmt.Sprintf(" (and %d more)", rest)
+	}
+	return message
+}
+
+var (
+	errFailedTasks   = errors.New("found failed tasks. view on Bytebase")
+	errCanceledTasks = errors.New("found canceled tasks. view on Bytebase")
+)
+
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
-	return func(command *cobra.Command, _ []string) error {
-		defer func() {
-			output.WriteOutput(w)
-		}()
+	return func(command *cobra.Command, _ []string) (err error) {
 		w.IsRollout = true
 		ctx := command.Context()
 		client, err := newClientFromWorld(w)
 		if err != nil {
+			output.WriteOutput(w, command.OutOrStdout())
 			return errors.Wrapf(err, "failed to create client")
 		}
-		defer client.close()
+		// The result is read after the command stops waiting, whether it
+		// succeeded or not, and before the client closes.
+		defer func() {
+			w.Result = collectResult(ctx, w, client)
+			client.close()
+			output.WriteOutput(w, command.OutOrStdout())
+			if w.Result == nil || (!errors.Is(err, errFailedTasks) && !errors.Is(err, errCanceledTasks)) {
+				return
+			}
+			if failures := w.Result.Failures(); len(failures) > 0 {
+				err = &RolloutError{failures: failures}
+			}
+		}()
 		if err := client.signIn(ctx); err != nil {
 			return err
 		}
@@ -242,10 +271,10 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 			}
 
 			if foundFailed {
-				return errors.Errorf("found failed tasks. view on Bytebase")
+				return errFailedTasks
 			}
 			if foundCanceled {
-				return errors.Errorf("found canceled tasks. view on Bytebase")
+				return errCanceledTasks
 			}
 
 			if done {

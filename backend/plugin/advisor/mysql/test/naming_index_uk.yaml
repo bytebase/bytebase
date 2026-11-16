@@ -70,3 +70,147 @@
       name VARCHAR(20),
       UNIQUE INDEX (name)
     );
+- statement: |
+    CREATE TABLE book(
+      id INT PRIMARY KEY,
+      name VARCHAR(20),
+      INDEX idx_name (name),
+      UNIQUE KEY uk_name (name)
+    );
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_name$" but found `uk_name`
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |
+    ALTER TABLE tech_book
+      ADD UNIQUE uk_tech_book_id (id),
+      ADD CONSTRAINT uk_name UNIQUE (name);
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found `uk_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT, CONSTRAINT uk_book_id UNIQUE KEY uk_id (id));
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_id$" but found `uk_id`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT UNIQUE, name VARCHAR(20) UNIQUE KEY);
+- statement: CREATE INDEX tech_book_id_name ON tech_book(id, name);
+- statement: CREATE FULLTEXT INDEX tech_book_name ON tech_book(name);
+- statement: CREATE UNIQUE INDEX uk_name ON tech_book((name), (id + 1));
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found `uk_name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id INT, name VARCHAR(20), UNIQUE uk_a ((name)), UNIQUE uk_b (id, (name)));
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_id$" but found `uk_b`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `book` mismatches the naming convention, expect "^$|^uk_book_name$" but found `uk_a`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE UNIQUE INDEX `uk name` ON tech_book(name);
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found `uk name`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE UNIQUE INDEX uk_name ON `tech(book`(name);
+  want:
+    - status: 2
+      code: 1
+      title: Internal error for unique key naming convention rule
+      content: '"CREATE UNIQUE INDEX uk_name ON `tech(book`(name)" meet internal error "error parsing regexp: missing closing ): `^$|^uk_tech(book_name$`"'
+      startposition: null
+      endposition: null
+- statement: CREATE UNIQUE INDEX `索索索索索索索索索索索索索索索索索索索索索索` ON tech_book(name);
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key `索索索索索索索索索索索索索索索索索索索索索索` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_name$" but found `索索索索索索索索索索索索索索索索索索索索索索`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book ADD COLUMN (creator_id INT, UNIQUE uk_creator (creator_id));
+- statement: ALTER TABLE tech_book RENAME INDEX old_index TO uk_tech_book;
+- statement: ALTER TABLE tech_book RENAME INDEX `PRIMARY` TO uk_tech_book;
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME INDEX not_exist TO uk_tech_book;
+- statement: ALTER TABLE not_exist RENAME INDEX old_uk TO uk_tech_book;
+- statement: ALTER TABLE TECH_BOOK RENAME INDEX OLD_UK TO uk_tech_book;
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `TECH_BOOK` mismatches the naming convention, expect "^$|^uk_TECH_BOOK_id_name$" but found `uk_tech_book`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE other_db.tech_book RENAME INDEX old_uk TO uk_tech_book;
+  want:
+    - status: 2
+      code: 304
+      title: NAMING_INDEX_UK
+      content: Unique key in table `tech_book` mismatches the naming convention, expect "^$|^uk_tech_book_id_name$" but found `uk_tech_book`
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |
+    CREATE UNIQUE INDEX uk_tech_book_name ON tech_book(name);
+    ALTER TABLE tech_book RENAME INDEX uk_tech_book_name TO uk_name;
+- statement: CREATE PROCEDURE p() BEGIN CREATE UNIQUE INDEX uk_name ON tech_book(name); END;

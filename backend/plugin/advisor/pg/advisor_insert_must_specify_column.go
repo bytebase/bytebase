@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,7 +21,10 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN, &InsertMustSpecifyColumnAdvisor{})
 }
 
-// InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce column specified.
+// InsertMustSpecifyColumnAdvisor is the advisor checking for to enforce
+// column specified. The judgment lives in omni
+// (pg/v1review.StatementInsertMustSpecifyColumn); this adapter renders its
+// findings as advice.
 type InsertMustSpecifyColumnAdvisor struct {
 }
 
@@ -30,40 +35,25 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 
-	rule := &insertMustSpecifyColumnRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for range pgv1review.StatementInsertMustSpecifyColumn([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.InsertNotSpecifyColumn.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", statementTrimmedText(stmt)),
+				StartPosition: &storepb.Position{Line: statementFindingLine(stmt)},
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type insertMustSpecifyColumnRule struct {
-	BaseRule
-}
-
-func (*insertMustSpecifyColumnRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_INSERT_MUST_SPECIFY_COLUMN)
-}
-
-func (r *insertMustSpecifyColumnRule) OnStatement(node ast.Node) {
-	ins, ok := node.(*ast.InsertStmt)
-	if !ok {
-		return
-	}
-
-	if ins.Cols == nil || len(ins.Cols.Items) == 0 {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.InsertNotSpecifyColumn.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", r.TrimmedStmtText()),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

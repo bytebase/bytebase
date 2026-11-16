@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -20,6 +22,7 @@ func init() {
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
+// The judgment lives in omni (mysql/v1review.ColumnComment).
 type ColumnCommentConventionAdvisor struct {
 }
 
@@ -30,98 +33,39 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		return nil, err
 	}
 	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
-
-	rule := &columnCommentConventionRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		payload: commentPayload,
+	// Without a payload, judge so that every column yields a finding: the
+	// payload is read for each finding below, so a nil payload panics at the
+	// first column, as this rule always has.
+	required, maxLength := true, 0
+	if commentPayload != nil {
+		required, maxLength = commentPayload.Required, int(commentPayload.MaxLength)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type columnCommentConventionRule struct {
-	BaseRule
-	payload *storepb.SQLReviewRule_CommentConventionRulePayload
-}
-
-func (*columnCommentConventionRule) Name() string {
-	return "ColumnCommentConventionRule"
-}
-
-func (r *columnCommentConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *columnCommentConventionRule) checkCreateTable(n *ast.CreateTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-
-	for _, col := range n.Columns {
-		r.checkColumn(tableName, col)
-	}
-}
-
-func (r *columnCommentConventionRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := tableName(n.Table)
-	if tableName == "" {
-		return
-	}
-
-	for _, cmd := range n.Commands {
-		switch cmd.Type {
-		case ast.ATAddColumn:
-			if cmd.Column != nil {
-				r.checkColumn(tableName, cmd.Column)
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	var adviceList []*storepb.Advice
+	for i, stmt := range stmts {
+		for _, f := range mysqlv1review.ColumnComment([]ast.Node{nodes[i]}, required, maxLength) {
+			limit := commentPayload.MaxLength
+			var adviceCode code.Code
+			var content string
+			switch f.Code {
+			case v1review.ColumnCommentTooLong:
+				adviceCode = code.CommentTooLong
+				content = fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", f.Table, f.Name, limit)
+			case v1review.ColumnCommentMissing:
+				adviceCode = code.CommentEmpty
+				content = fmt.Sprintf("Column `%s`.`%s` requires comments", f.Table, f.Name)
+			default:
+				continue
 			}
-			for _, col := range cmd.Columns {
-				r.checkColumn(tableName, col)
-			}
-		case ast.ATModifyColumn, ast.ATChangeColumn:
-			if cmd.Column != nil {
-				r.checkColumn(tableName, cmd.Column)
-			}
-		default:
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          adviceCode.Int32(),
+				Title:         checkCtx.Rule.Type.String(),
+				Content:       content,
+				StartPosition: columnFindingPosition(stmt, f),
+			})
 		}
 	}
-}
-
-func (r *columnCommentConventionRule) checkColumn(tableName string, col *ast.ColumnDef) {
-	comment := columnComment(col)
-
-	if comment != "" && r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.CommentTooLong.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, col.Name, r.payload.MaxLength),
-			StartPosition: &storepb.Position{
-				Line:   r.LocToLine(col.Loc),
-				Column: 0,
-			},
-		})
-	}
-
-	if comment == "" && r.payload.Required {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.CommentEmpty.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, col.Name),
-			StartPosition: &storepb.Position{
-				Line:   r.LocToLine(col.Loc),
-				Column: 0,
-			},
-		})
-	}
+	return adviceList, nil
 }

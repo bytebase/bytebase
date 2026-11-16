@@ -22,3 +22,16 @@
         line: 1
         column: 0
       endposition: null
+- statement: DROP INDEX CONCURRENTLY idx_tech_book_id_name
+  want:
+    - status: 2
+      code: 230
+      title: STATEMENT_NON_TRANSACTIONAL
+      content: This statement is non-transactional
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- maintenance
+    VACUUM tech_book

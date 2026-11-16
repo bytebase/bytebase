@@ -64,3 +64,143 @@
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
   changeType: 1
+- statement: |-
+    CREATE TABLE "creatorIds"(
+      id int,
+      "creatorId" int
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"creatorIds"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    -- adds "creatorId"
+    ALTER TABLE book
+      ADD COLUMN "creatorId" int
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      "creator""Id" int
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."creator"Id" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(
+      id int,
+      Creator_ID_9 int
+    )
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."creator_id_9" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE book(id int);
+    -- rename
+    ALTER TABLE book
+      RENAME COLUMN id TO "bookId"
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."bookId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE public.book
+      ADD COLUMN "creatorId" int,
+      ADD "updaterId" int,
+      ADD COLUMN IF NOT EXISTS updater_id int
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."updaterId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(id int, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa int, "数数数数数数数数数数数数数数数数数数数数数数" int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book"."数数数数数数数数数数数数数数数数数数数数数" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TYPE address ADD ATTRIBUTE "zipCode" text
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"address"."zipCode" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER VIEW book_view RENAME COLUMN id TO "bookId"
+  changeType: 1
+  want:
+    - status: 2
+      code: 302
+      title: NAMING_COLUMN
+      content: '"book_view"."bookId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TYPE address RENAME ATTRIBUTE zip TO "zipCode"
+  changeType: 1
+- statement: CREATE TABLE book_copy AS SELECT 1 AS "creatorId"
+  changeType: 1
+- statement: CREATE FOREIGN TABLE remote_book("creatorId" int) SERVER remote
+  changeType: 1
+- statement: CREATE SCHEMA app CREATE TABLE book("creatorId" int)
+  changeType: 1
+- statement: CREATE PROCEDURE rename_it() LANGUAGE SQL BEGIN ATOMIC ALTER TABLE book RENAME COLUMN id TO "bookId"; END
+  changeType: 1

@@ -3,9 +3,9 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"slices"
 
-	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -13,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+// The limits tidbv1review.ColumnCurrentTimeCountLimit judges, as the advice
+// prints them.
 const (
 	maxDefaultCurrentTimeColumCount   = 2
 	maxOnUpdateCurrentTimeColumnCount = 1
@@ -27,6 +29,7 @@ func init() {
 }
 
 // ColumnCurrentTimeCountLimitAdvisor is the advisor checking for current time column count limit.
+// The judgment lives in omni (tidb/v1review.ColumnCurrentTimeCountLimit).
 type ColumnCurrentTimeCountLimitAdvisor struct {
 }
 
@@ -43,128 +46,24 @@ func (*ColumnCurrentTimeCountLimitAdvisor) Check(_ context.Context, checkCtx adv
 	}
 	title := checkCtx.Rule.Type.String()
 
-	// Cross-statement accumulator: tracks per-table counts of
-	// DEFAULT-CURRENT_TIMESTAMP and ON-UPDATE-CURRENT_TIMESTAMP
-	// columns across all statements in the review. Pingcap-typed
-	// predecessor used the same single-pass accumulation pattern.
-	tableSet := make(map[string]currentTimeTableData)
-
-	for _, ostmt := range stmts {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			tableName := n.Table.Name
-			line := ostmt.AbsoluteLine(n.Loc.Start)
-			for _, column := range n.Columns {
-				countCurrentTimeColumn(tableSet, tableName, column, line)
-			}
-		case *ast.AlterTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			tableName := n.Table.Name
-			line := ostmt.AbsoluteLine(n.Loc.Start)
-			for _, cmd := range n.Commands {
-				if cmd == nil {
-					continue
-				}
-				switch cmd.Type {
-				case ast.ATAddColumn:
-					for _, column := range addColumnTargets(cmd) {
-						countCurrentTimeColumn(tableSet, tableName, column, line)
-					}
-				case ast.ATChangeColumn, ast.ATModifyColumn:
-					if cmd.Column != nil {
-						countCurrentTimeColumn(tableSet, tableName, cmd.Column, line)
-					}
-				default:
-				}
-			}
-		default:
-		}
-	}
-
-	return generateCurrentTimeAdvice(tableSet, level, title), nil
-}
-
-// currentTimeTableData accumulates per-table counts of columns
-// declaring DEFAULT CURRENT_TIMESTAMP and/or ON UPDATE CURRENT_TIMESTAMP
-// (or their synonyms NOW/LOCALTIME/LOCALTIMESTAMP).
-type currentTimeTableData struct {
-	tableName                string
-	defaultCurrentTimeCount  int
-	onUpdateCurrentTimeCount int
-	line                     int
-}
-
-// countCurrentTimeColumn increments the per-table counts for a single
-// column. Only DATETIME/TIMESTAMP columns are counted; the isTimeType
-// gate matches pingcap-typed predecessor's TypeDatetime/TypeTimestamp
-// switch.
-func countCurrentTimeColumn(tableSet map[string]currentTimeTableData, tableName string, column *ast.ColumnDef, line int) {
-	if column == nil || !isTimeType(column.TypeName) {
-		return
-	}
-	if isDefaultCurrentTime(column) {
-		table, exists := tableSet[tableName]
-		if !exists {
-			table = currentTimeTableData{tableName: tableName}
-		}
-		table.defaultCurrentTimeCount++
-		table.line = line
-		tableSet[tableName] = table
-	}
-	if isOnUpdateCurrentTime(column) {
-		table, exists := tableSet[tableName]
-		if !exists {
-			table = currentTimeTableData{tableName: tableName}
-		}
-		table.onUpdateCurrentTimeCount++
-		table.line = line
-		tableSet[tableName] = table
-	}
-}
-
-// generateCurrentTimeAdvice emits one advice per (table, category)
-// where the count exceeds the limit, sorted by line for deterministic
-// output. Mirrors pingcap-typed predecessor's generateAdvice exactly.
-func generateCurrentTimeAdvice(tableSet map[string]currentTimeTableData, level storepb.Advice_Status, title string) []*storepb.Advice {
-	var tableList []currentTimeTableData
-	for _, table := range tableSet {
-		tableList = append(tableList, table)
-	}
-	slices.SortFunc(tableList, func(a, b currentTimeTableData) int {
-		if a.line < b.line {
-			return -1
-		}
-		if a.line > b.line {
-			return 1
-		}
-		return 0
-	})
-
 	var adviceList []*storepb.Advice
-	for _, table := range tableList {
-		if table.defaultCurrentTimeCount > maxDefaultCurrentTimeColumCount {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          code.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				StartPosition: base.ConvertANTLRLineToPosition(table.line),
-			})
+	for _, f := range tidbv1review.ColumnCurrentTimeCountLimit(stmtNodes(stmts)) {
+		advice := &storepb.Advice{
+			Status:        level,
+			Title:         title,
+			StartPosition: base.ConvertANTLRLineToPosition(stmts[f.Statement].AbsoluteLine(f.Start)),
 		}
-		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:        level,
-				Code:          code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
-				Title:         title,
-				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				StartPosition: base.ConvertANTLRLineToPosition(table.line),
-			})
+		switch f.Code {
+		case v1review.ColumnDefaultCurrentTimeCount:
+			advice.Code = code.DefaultCurrentTimeColumnCountExceedsLimit.Int32()
+			advice.Content = fmt.Sprintf("Table `%s` has %s DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, maxDefaultCurrentTimeColumCount)
+		case v1review.ColumnOnUpdateCurrentTimeCount:
+			advice.Code = code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32()
+			advice.Content = fmt.Sprintf("Table `%s` has %s ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", f.Table, f.Value, maxOnUpdateCurrentTimeColumnCount)
+		default:
+			continue
 		}
+		adviceList = append(adviceList, advice)
 	}
-	return adviceList
+	return adviceList, nil
 }

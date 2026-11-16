@@ -5,7 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	omniast "github.com/bytebase/omni/snowflake/ast"
+	snowflakeast "github.com/bytebase/omni/snowflake/ast"
+	snowflakev1review "github.com/bytebase/omni/snowflake/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +24,8 @@ func init() {
 }
 
 // WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement for UPDATE and DELETE statement.
+// The judgment lives in omni (snowflake/v1review.StatementWhereRequireUpdateDelete);
+// this adapter renders its findings as advice.
 type WhereRequireForUpdateDeleteAdvisor struct {
 }
 
@@ -33,56 +36,22 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	checker := &whereRequireForUpdateDeleteChecker{
-		level: level,
-		title: checkCtx.Rule.Type.String(),
-	}
-
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
 	for _, stmt := range checkCtx.ParsedStatements {
 		node, ok := snowsqlparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		checker.checkStmt(node, stmt.Text, stmt.BaseLine())
-	}
-
-	return checker.adviceList, nil
-}
-
-type whereRequireForUpdateDeleteChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-}
-
-// checkStmt flags UPDATE and DELETE statements without a WHERE clause,
-// mirroring the legacy listener that fired on Update_statement and
-// Delete_statement contexts. MERGE WHEN ... THEN UPDATE/DELETE actions are
-// dedicated merge nodes in both ASTs and are not flagged.
-func (c *whereRequireForUpdateDeleteChecker) checkStmt(node omniast.Node, text string, baseLine int) {
-	omniast.Inspect(node, func(n omniast.Node) bool {
-		switch stmt := n.(type) {
-		case *omniast.UpdateStmt:
-			if stmt.Where == nil {
-				c.addAdvice("UPDATE", text, baseLine, stmt.Loc.Start)
-			}
-		case *omniast.DeleteStmt:
-			if stmt.Where == nil {
-				c.addAdvice("DELETE", text, baseLine, stmt.Loc.Start)
-			}
-		default:
-			// Ignore other node types
+		for _, f := range snowflakev1review.StatementWhereRequireUpdateDelete([]snowflakeast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("WHERE clause is required for %s statement.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
-		return true
-	})
-}
-
-func (c *whereRequireForUpdateDeleteChecker) addAdvice(statementType, text string, baseLine, offset int) {
-	c.adviceList = append(c.adviceList, &storepb.Advice{
-		Status:        c.level,
-		Code:          code.StatementNoWhere.Int32(),
-		Title:         c.title,
-		Content:       fmt.Sprintf("WHERE clause is required for %s statement.", statementType),
-		StartPosition: base.ConvertANTLRLineToPosition(baseLine + statementLineForOffset(text, offset)),
-	})
+	}
+	return adviceList, nil
 }

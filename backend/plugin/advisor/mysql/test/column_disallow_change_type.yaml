@@ -54,3 +54,43 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      MODIFY name VARCHAR(255),
+      CHANGE COLUMN creator creator VARCHAR(100);
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: |-
+        "ALTER TABLE tech_book
+          MODIFY name VARCHAR(255),
+          CHANGE COLUMN creator creator VARCHAR(100);" changes column type
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: ALTER TABLE orders MODIFY amount DECIMAL(10,2), MODIFY order_id INT UNSIGNED;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE orders MODIFY amount DECIMAL(10,2), MODIFY order_id INT UNSIGNED;" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE TECH_BOOK MODIFY ID BIGINT;
+  want:
+    - status: 2
+      code: 403
+      title: COLUMN_DISALLOW_CHANGE_TYPE
+      content: '"ALTER TABLE TECH_BOOK MODIFY ID BIGINT;" changes column type'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE unknown MODIFY id BIGINT;
+    ALTER TABLE tech_book MODIFY missing BIGINT;
+- statement: CREATE PROCEDURE p() BEGIN ALTER TABLE tech_book MODIFY id BIGINT; END;

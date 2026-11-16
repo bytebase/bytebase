@@ -89,3 +89,50 @@
 - statement: |-
     CREATE TABLE t(a int, b varchar(255));
     CREATE FULLTEXT INDEX idx ON t(b, b, b, b, b, b);
+- statement: |-
+    CREATE TABLE t(a int, b int, c int, d int, e int, f int,
+      PRIMARY KEY pk_t (a, b, c, d, e, f),
+      KEY idx_expr ((a + 1), (b + 1), (c + 1), (d + 1), (e + 1), (f + 1), a)
+    );
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `pk_t` in table `t` should be not greater than 5
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE INDEX idx_paren ON t((a), (b), (c), (d), (e), (f));
+    CREATE INDEX idx_expr ON t((a + 1), (b + 1), (c + 1), (d + 1), (e + 1), (f + 1));
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `idx_paren` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t ADD INDEX idx_1 (a, b, c, d, e, f),
+      ADD FULLTEXT INDEX ft (a, b, c, d, e, f),
+      ADD CONSTRAINT uk UNIQUE (a, b, c, d, e, f);
+  want:
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `idx_1` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 802
+      title: INDEX_KEY_NUMBER_LIMIT
+      content: The number of index `uk` in table `t` should be not greater than 5
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

@@ -3,13 +3,16 @@ package oracle
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -21,6 +24,8 @@ func init() {
 }
 
 // WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement.
+// The judgment lives in omni (oracle/v1review.StatementWhereRequireUpdateDelete); this adapter
+// renders its findings as advice.
 type WhereRequireForUpdateDeleteAdvisor struct {
 }
 
@@ -31,72 +36,25 @@ func (*WhereRequireForUpdateDeleteAdvisor) Check(_ context.Context, checkCtx adv
 		return nil, err
 	}
 
-	rule := NewWhereRequireForUpdateDeleteRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// WhereRequireForUpdateDeleteRule is the rule implementation for WHERE clause requirement in UPDATE/DELETE.
-type WhereRequireForUpdateDeleteRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewWhereRequireForUpdateDeleteRule creates a new WhereRequireForUpdateDeleteRule.
-func NewWhereRequireForUpdateDeleteRule(level storepb.Advice_Status, title string, currentDatabase string) *WhereRequireForUpdateDeleteRule {
-	return &WhereRequireForUpdateDeleteRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.StatementWhereRequireUpdateDelete([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementNoWhere.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("WHERE clause is required for %s statement.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
-
-// Name returns the rule name.
-func (*WhereRequireForUpdateDeleteRule) Name() string {
-	return "where.require-for-update-delete"
-}
-
-// OnStatement checks top-level UPDATE and DELETE statements in the omni AST.
-func (r *WhereRequireForUpdateDeleteRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.UpdateStmt:
-		if n.WhereClause == nil {
-			r.AddAdvice(
-				r.level,
-				code.StatementNoWhere.Int32(),
-				"WHERE clause is required for UPDATE statement.",
-				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
-			)
-		}
-	case *ast.DeleteStmt:
-		if n.WhereClause == nil {
-			r.AddAdvice(
-				r.level,
-				code.StatementNoWhere.Int32(),
-				"WHERE clause is required for DELETE statement.",
-				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
-			)
-		}
-	case *ast.PLSQLBlock:
-		r.checkPLSQLBlock(n)
-	default:
-	}
-}
-
-func (r *WhereRequireForUpdateDeleteRule) checkPLSQLBlock(block *ast.PLSQLBlock) {
-	walkPLSQLBlockStatements(block, func(stmt ast.StmtNode) bool {
-		switch stmt.(type) {
-		case *ast.UpdateStmt, *ast.DeleteStmt:
-			r.OnStatement(stmt)
-			return false
-		default:
-			return true
-		}
-	})
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// Ignore other node types
-
-// OnExit is called when the parser exits a rule context.

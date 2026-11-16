@@ -1339,9 +1339,11 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 
 	kcuQuery := `
 		SELECT
+			TABLE_SCHEMA,
 			TABLE_NAME,
 			CONSTRAINT_NAME,
 			COLUMN_NAME,
+			REFERENCED_TABLE_SCHEMA,
 			REFERENCED_COLUMN_NAME
 		FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
 		WHERE POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND TABLE_SCHEMA = ?
@@ -1380,17 +1382,24 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 	}
 	defer kcuQueryRows.Close()
 	for kcuQueryRows.Next() {
-		var tableName, fkName, column, referencedColumn string
+		var tableSchema, tableName, fkName, column, referencedSchema, referencedColumn string
 		if err := kcuQueryRows.Scan(
+			&tableSchema,
 			&tableName,
 			&fkName,
 			&column,
+			&referencedSchema,
 			&referencedColumn,
 		); err != nil {
 			return nil, err
 		}
 		key := db.IndexKey{Schema: "", Table: tableName, Index: fkName}
 		if fk, ok := fkMap[key]; ok {
+			// ReferencedSchema names only another database; consumers read an
+			// empty one as the foreign key's own database.
+			if referencedSchema != tableSchema {
+				fk.ReferencedSchema = referencedSchema
+			}
 			fk.Columns = append(fk.Columns, column)
 			fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
 		}

@@ -8,6 +8,12 @@ import "store/common.proto";
 
 option go_package = "generated-go/store";
 
+// Database service variant, independent of engine and registration method.
+enum Vendor {
+  VENDOR_UNSPECIFIED = 0;
+  NEON = 1;
+}
+
 message SyncDatabases {
   repeated string databases = 1;
 }
@@ -41,6 +47,8 @@ message Instance {
   // Labels are key-value pairs that can be attached to the instance.
   // For example, { "org_group": "infrastructure", "environment": "production" }
   map<string, string> labels = 13;
+
+  Vendor vendor = 14;
 }
 
 // InstanceRole is the API message for instance role.

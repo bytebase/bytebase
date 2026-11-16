@@ -20,6 +20,8 @@ import (
 type rollbackCase struct {
 	Input  string
 	Result []base.BackupStatement
+	// Error is the refusal, when prior backup cannot back the input up.
+	Error string `yaml:",omitempty"`
 }
 
 func TestBackup(t *testing.T) {
@@ -48,7 +50,10 @@ func TestBackup(t *testing.T) {
 			ListDatabaseNamesFunc:   lister,
 			IsCaseSensitive:         false,
 		}, t.Input, "db", "backupDB", "_rollback")
-		a.NoError(err)
+		errText := ""
+		if err != nil {
+			errText = err.Error()
+		}
 		slices.SortFunc(result, func(x, y base.BackupStatement) int {
 			if x.TargetTableName == y.TargetTableName {
 				if x.Statement < y.Statement {
@@ -68,8 +73,12 @@ func TestBackup(t *testing.T) {
 
 		if record {
 			tests[i].Result = result
+			tests[i].Error = errText
 		} else {
-			a.Equal(t.Result, result, t.Input)
+			a.Equal(t.Error, errText, t.Input)
+			if errText == "" {
+				a.Equal(t.Result, result, t.Input)
+			}
 		}
 	}
 	if record {
@@ -128,6 +137,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t2",
@@ -142,6 +153,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "test",
@@ -186,6 +199,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 				{
 					Name: "t3",
@@ -200,6 +215,8 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "d",
 						},
 					},
+					// Prior backup needs a row key to back up a table a join reads.
+					Indexes: []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"a"}}},
 				},
 			},
 		},
@@ -212,4 +229,48 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 		}, func(_ context.Context, _ string) ([]string, error) {
 			return []string{"db", "db1", "db2"}, nil
 		}
+}
+
+func TestBackupReadsReferencingDatabases(t *testing.T) {
+	keyed := func(name string, foreignKeys ...*metadatapb.ForeignKeyMetadata) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{
+			Name:        name,
+			Columns:     []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "parent_id"}},
+			Indexes:     []*metadatapb.IndexMetadata{{Name: "PRIMARY", Primary: true, Unique: true, Expressions: []string{"id"}}},
+			ForeignKeys: foreignKeys,
+		}
+	}
+	tables := map[string][]*metadatapb.TableMetadata{
+		"db":  {keyed("parent"), keyed("other")},
+		"app": {keyed("child", &metadatapb.ForeignKeyMetadata{Name: "fk_remote", Columns: []string{"parent_id"}, ReferencedSchema: "db", ReferencedTable: "parent", ReferencedColumns: []string{"id"}, OnDelete: "CASCADE"})},
+	}
+	var getter base.GetDatabaseMetadataFunc = func(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
+		return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name:    database,
+			Schemas: []*metadatapb.SchemaMetadata{{Tables: tables[database]}},
+		}, nil, nil, store.Engine_MYSQL, false), nil
+	}
+	lister := func(context.Context, string) ([]string, error) { return []string{"db", "app"}, nil }
+	transform := func(statement string, referencing base.ListDatabaseNamesFunc) error {
+		_, err := base.TransformDMLToSelect(context.Background(), store.Engine_MYSQL, base.TransformContext{
+			GetDatabaseMetadataFunc:      getter,
+			ListDatabaseNamesFunc:        lister,
+			ListReferencingDatabasesFunc: referencing,
+		}, statement, "db", "backupDB", "_rollback")
+		return err
+	}
+	const cascade = "foreign key fk_remote of app.child is ON DELETE CASCADE"
+
+	// Without the hook, every database is read.
+	require.ErrorContains(t, transform("DELETE FROM parent WHERE id = 1", nil), cascade)
+	require.ErrorContains(t, transform("DELETE FROM parent WHERE id = 1", func(context.Context, string) ([]string, error) {
+		return []string{"app"}, nil
+	}), cascade)
+	// The hook narrows the databases read, and is called once per backup.
+	calls := 0
+	require.NoError(t, transform("DELETE FROM parent WHERE id = 1; DELETE FROM other WHERE id = 1", func(context.Context, string) ([]string, error) {
+		calls++
+		return nil, nil
+	}))
+	require.Equal(t, 1, calls)
 }

@@ -146,59 +146,35 @@ func metadataFromProto(proto *metadatapb.DatabaseSchemaMetadata) *model.Database
 	return model.NewDatabaseMetadata(proto, nil, nil, storepb.Engine_MYSQL, true)
 }
 
-// TestDiffMigrationUsesLegacyMetadataPath proves the X1 dispatch: a MySQL
-// schema.DiffMigration call must go through the registered LEGACY metadata migration
-// (GetDatabaseSchemaDiff + GenerateMigration), NOT the MetadataToSDL -> LoadSDL
-// round-trip. The sentinel is a synced view whose stored body the omni SDL loader
-// rejects — the SDL path would fail the whole diff, while the legacy path treats view
-// bodies as opaque text and still diffs the tables.
-func TestDiffMigrationUsesLegacyMetadataPath(t *testing.T) {
-	brokenView := &metadatapb.ViewMetadata{
-		Name: "v_broken",
-		// Not parseable as a SELECT by the omni loader.
-		Definition: "select ((broken from",
-	}
-	oldProto := &metadatapb.DatabaseSchemaMetadata{
-		Name: "d",
-		Schemas: []*metadatapb.SchemaMetadata{{
-			Name: "",
-			Tables: []*metadatapb.TableMetadata{{
-				Name: "t",
-				Columns: []*metadatapb.ColumnMetadata{
-					{Name: "id", Type: "int", Nullable: false},
-				},
-			}},
-			Views: []*metadatapb.ViewMetadata{brokenView},
-		}},
-	}
-	newProto := &metadatapb.DatabaseSchemaMetadata{
-		Name: "d",
-		Schemas: []*metadatapb.SchemaMetadata{{
-			Name: "",
-			Tables: []*metadatapb.TableMetadata{{
-				Name: "t",
-				Columns: []*metadatapb.ColumnMetadata{
-					{Name: "id", Type: "int", Nullable: false},
-					{Name: "extra", Type: "varchar(10)", Nullable: true, Default: "NULL"},
-				},
-			}},
-			Views: []*metadatapb.ViewMetadata{brokenView},
-		}},
-	}
+// TestDiffMigrationRouting proves which generator each engine's metadata diff
+// reaches: MySQL's goes to omni's catalog, and MariaDB's and OceanBase's keep
+// Bytebase's MySQL generator, which ends each statement with ";\n\n". The view
+// body does not parse, and the SDL path, which loads it as text, would fail.
+func TestDiffMigrationRouting(t *testing.T) {
+	brokenView := &metadatapb.ViewMetadata{Name: "v_broken", Definition: "select ((broken from"}
+	id := &metadatapb.ColumnMetadata{Name: "id", Type: "int"}
+	extra := &metadatapb.ColumnMetadata{Name: "extra", Type: "varchar(10)", Nullable: true, Default: "NULL"}
+	oldProto := oneTableSnapshot("d", []*metadatapb.ColumnMetadata{id}, brokenView)
+	newProto := oneTableSnapshot("d", []*metadatapb.ColumnMetadata{id, extra}, brokenView)
 
 	sql, err := schema.DiffMigration(storepb.Engine_MYSQL, metadataFromProto(oldProto), metadataFromProto(newProto))
-	require.NoError(t, err, "metadata diff must not round-trip through the SDL loader")
-	require.Contains(t, sql, "ADD COLUMN `extra`")
+	require.NoError(t, err)
+	require.Equal(t, "ALTER TABLE `t` ADD COLUMN `extra` varchar(10) DEFAULT NULL", sql)
 
-	// Sanity: the SDL path really would reject this metadata — proving the sentinel bites.
+	for _, engine := range []storepb.Engine{storepb.Engine_MARIADB, storepb.Engine_OCEANBASE} {
+		sql, err := schema.DiffMigration(engine, metadataFromProto(oldProto), metadataFromProto(newProto))
+		require.NoError(t, err)
+		require.Equal(t, "ALTER TABLE `t` ADD COLUMN `extra` varchar(10) DEFAULT NULL;\n\n", sql, engine)
+	}
+
 	sdl, err := schema.MetadataToSDL(storepb.Engine_MYSQL, metadataFromProto(oldProto))
 	require.NoError(t, err)
 	_, err = schema.DiffSDLMigration(storepb.Engine_MYSQL, sdl, sdl, "")
-	require.Error(t, err, "sentinel view body must be un-loadable by the omni SDL path")
+	require.Error(t, err, "the SDL path must reject the view body")
 }
 
-// legacyColumnChangeSQL diffs two single-column tables through the registered legacy
-// metadata path and returns the migration SQL.
+// legacyColumnChangeSQL diffs two single-column tables through Bytebase's MySQL
+// generator, which OceanBase keeps, and returns the migration SQL.
 func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *metadatapb.ColumnMetadata) string {
 	t.Helper()
 	mk := func(col *metadatapb.ColumnMetadata) *model.DatabaseMetadata {
@@ -210,14 +186,13 @@ func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *metadatapb.ColumnMetada
 			}},
 		})
 	}
-	sql, err := schema.DiffMigration(storepb.Engine_MYSQL, mk(oldCol), mk(newCol))
+	sql, err := schema.DiffMigration(storepb.Engine_OCEANBASE, mk(oldCol), mk(newCol))
 	require.NoError(t, err)
 	return sql
 }
 
-// TestLegacyDiffSRIDAndInvisible locks the X10 pairing with X1: with metadata diffs
-// routed back onto the legacy differ/generator, that path must know the new SRID and
-// INVISIBLE column fields — an SRID-only or INVISIBLE-only change must produce a MODIFY
+// TestLegacyDiffSRIDAndInvisible: Bytebase's MySQL generator knows the SRID and
+// INVISIBLE column fields, so an SRID-only or INVISIBLE-only change produces a MODIFY
 // COLUMN rendering the dumper-canonical attribute comments.
 func TestLegacyDiffSRIDAndInvisible(t *testing.T) {
 	srid := func(v uint32) *uint32 { return &v }
@@ -3305,7 +3280,7 @@ func exoticCases() []exoticCase {
 			// `(cast(json_extract(`tags`,_utf8mb4\'$.ids\') as unsigned array))` carried two things the
 			// omni loader rejects — the `_utf8mb4'…'` charset introducer before the JSON-path literal
 			// (`unexpected token`) and backslash-escaped single quotes (`syntax error at or near "\"`).
-			// normalizeFunctionalIndexExpr in get_database_definition.go now unescapes the quotes and
+			// normalizeFunctionalIndexExpr in omni mysql/catalog/definition.go unescapes the quotes and
 			// strips the introducer, so the dumped expr is `((cast(json_extract(`tags`,'$.ids') as
 			// unsigned array)))`; omni's functional-index normalizer canonicalizes the dumped and user
 			// forms identically and the no-op is empty. (The `AS UNSIGNED ARRAY` cast itself is accepted
@@ -3451,7 +3426,7 @@ func exoticCases() []exoticCase {
 			// FIXED (Bug A): the dumper rendered the BIT default as a quoted string (`DEFAULT 'b\\'0\\''`)
 			// because the sync stores the bit literal QUOTE()-escaped in ColumnMetadata.Default; omni then
 			// loaded a string default that never matched the user's `b'0'`, re-emitting `MODIFY ... DEFAULT
-			// b'0'` every no-op. renderColumnDefault in get_database_definition.go now recovers the bit
+			// b'0'` every no-op. renderColumnDefault in omni mysql/catalog/definition.go recovers the bit
 			// literal and emits it unquoted (`DEFAULT b'0'`, matching SHOW CREATE / mysqldump); omni #352
 			// canonicalizes the bit literal so the no-op is empty. b64 (no default) is fine.
 			bGap:       false,

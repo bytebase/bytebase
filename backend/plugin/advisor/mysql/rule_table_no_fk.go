@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -21,6 +23,7 @@ func init() {
 }
 
 // TableNoFKAdvisor is the advisor checking table disallow foreign key.
+// The judgment lives in omni (mysql/v1review.TableNoForeignKey).
 type TableNoFKAdvisor struct {
 }
 
@@ -31,69 +34,29 @@ func (*TableNoFKAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		return nil, err
 	}
 
-	rule := &tableNoFKRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableNoFKRule struct {
-	BaseRule
-}
-
-func (*tableNoFKRule) Name() string {
-	return "TableNoFKRule"
-}
-
-func (r *tableNoFKRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	default:
-	}
-}
-
-func (r *tableNoFKRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, constraint := range n.Constraints {
-		if constraint.Type == ast.ConstrForeignKey {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.TableHasFK.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(constraint.Loc))),
-			})
-		}
-	}
-}
-
-func (r *tableNoFKRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if cmd.Type == ast.ATAddConstraint && cmd.Constraint != nil && cmd.Constraint.Type == ast.ConstrForeignKey {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.TableNoForeignKey([]ast.Node{node}) {
+			// V1 added the statement's base line twice: once itself and
+			// once more in BaseRule.AddAdvice.
+			position := base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f)))
+			position.Line += int32(stmt.BaseLine())
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableHasFK.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", tableName),
-				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(cmd.Constraint.Loc))),
+				Title:         title,
+				Content:       fmt.Sprintf("Foreign key is not allowed in the table `%s`", f.Name),
+				StartPosition: position,
 			})
 		}
 	}
+	return adviceList, nil
 }

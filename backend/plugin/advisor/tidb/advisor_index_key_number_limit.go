@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,22 +23,12 @@ func init() {
 }
 
 // IndexKeyNumberLimitAdvisor flags index/constraint declarations whose
-// number of key columns exceeds the configured maximum.
+// number of key columns exceeds the configured maximum. The judgment lives
+// in omni (tidb/v1review.IndexKeyNumberLimit); this adapter converts the
+// rule's payload and renders the findings as advice.
 type IndexKeyNumberLimitAdvisor struct{}
 
-// Check fires on per-constraint key counts in CREATE TABLE, CREATE
-// INDEX, and ALTER TABLE ADD CONSTRAINT. No cross-stmt state. Recipe A.
-//
-// Cumulative #2 coverage: pingcap-tidb's pre-omni indexKeyNumber()
-// helper handled `ConstraintUniq`, `ConstraintUniqKey`, and
-// `ConstraintUniqIndex` as three distinct enum values. Omni unifies
-// all three under `ConstrUnique` (verified empirically: parsing
-// `UNIQUE(a)`, `UNIQUE KEY uk(a)`, `UNIQUE INDEX ui(a)` all yields
-// `Type=ConstrUnique`). The omni port matches the single arm and
-// covers all three forms mechanically — NOT a regression.
-//
-// Cumulative #19 (case-sensitivity): pre-omni used `.O` throughout
-// (no `.L`). Omni preserves user case via direct strings. Mechanical.
+// Check checks for index key number limit.
 func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	stmts, err := getTiDBNodes(checkCtx)
 	if err != nil {
@@ -58,100 +49,17 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 	}
 	title := checkCtx.Rule.Type.String()
 
-	type violation struct {
-		table string
-		index string
-		line  int
-	}
-	var hits []violation
-
-	for _, ostmt := range stmts {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			for _, c := range n.Constraints {
-				if c == nil {
-					continue
-				}
-				if indexKeyCount(c) > maximum {
-					hits = append(hits, violation{
-						table: n.Table.Name,
-						index: constraintAdviceName(c),
-						line:  ostmt.AbsoluteLine(c.Loc.Start),
-					})
-				}
-			}
-		case *ast.CreateIndexStmt:
-			if n.Table == nil {
-				continue
-			}
-			if len(n.Columns) > maximum {
-				hits = append(hits, violation{
-					table: n.Table.Name,
-					index: n.IndexName,
-					line:  ostmt.FirstTokenLine(),
-				})
-			}
-		case *ast.AlterTableStmt:
-			if n.Table == nil {
-				continue
-			}
-			stmtLine := ostmt.FirstTokenLine()
-			for _, cmd := range n.Commands {
-				if cmd == nil || cmd.Constraint == nil {
-					continue
-				}
-				// Cumulative #17 sibling-parity convention: tidb omni
-				// emits only ATAddConstraint for all `ALTER TABLE ADD
-				// ...` forms today, but the dual arm is the recommended
-				// convention (batch 4 naming-trio + batch 8 index spine
-				// + utils.go collectIndexFamilyAlterTable) for forward-
-				// compat against grammar evolution that may start
-				// emitting ATAddIndex.
-				if cmd.Type != ast.ATAddConstraint && cmd.Type != ast.ATAddIndex {
-					continue
-				}
-				if indexKeyCount(cmd.Constraint) > maximum {
-					hits = append(hits, violation{
-						table: n.Table.Name,
-						index: constraintAdviceName(cmd.Constraint),
-						line:  stmtLine,
-					})
-				}
-			}
-		default:
+	adviceList := []*storepb.Advice{}
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.IndexKeyNumberLimit([]ast.Node{stmt.Node}, maximum) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.IndexKeyNumberExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", f.Name, f.Table, maximum),
+				StartPosition: base.ConvertANTLRLineToPosition(findingLine(stmt, f)),
+			})
 		}
 	}
-
-	adviceList := make([]*storepb.Advice, 0, len(hits))
-	for _, h := range hits {
-		adviceList = append(adviceList, &storepb.Advice{
-			Status:        level,
-			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
-			Title:         title,
-			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", h.index, h.table, maximum),
-			StartPosition: base.ConvertANTLRLineToPosition(h.line),
-		})
-	}
 	return adviceList, nil
-}
-
-// indexKeyCount returns the number of key columns declared by the
-// given constraint. INDEX/PK/UNIQUE store keys in `IndexColumns`;
-// FOREIGN KEY stores its local columns in `Columns []string` with
-// `IndexColumns` empty (verified empirically).
-func indexKeyCount(c *ast.Constraint) int {
-	if c == nil {
-		return 0
-	}
-	switch c.Type {
-	case ast.ConstrIndex, ast.ConstrPrimaryKey, ast.ConstrUnique:
-		return len(c.IndexColumns)
-	case ast.ConstrForeignKey:
-		return len(c.Columns)
-	default:
-		return 0
-	}
 }

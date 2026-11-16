@@ -2230,7 +2230,6 @@
       "needs-attention": "{{total}} 件中 {{count}} 件に対応が必要",
       "no-findings": "検出事項なし",
       "not-run": "未実行",
-      "nothing-needs-attention": "対応が必要な項目はありません",
       "off": "オフ",
       "off-for-project": "このプロジェクトではオフです",
       "opens-in-sql": "クリックすると SQL 内で順に確認できます。",
@@ -2283,7 +2282,7 @@
       "overridden_other": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
       "ready-to-deploy": "すべて通過しました。デプロイできます。",
       "reviewer-failed": "{{reviewer}} を実行できませんでした",
-      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-findings": "{{reviewer}}：<findings />",
       "reviewer-not-run": "{{reviewer}} は未実行です",
       "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
       "reviewer-running": "{{reviewer}} を実行中",
@@ -3513,7 +3512,7 @@
             "title": "変更を提案する"
           },
           "read-access": {
-            "details": "ワークスペースとそのプロジェクトで誰がどのロールを持つか · グループとそのメンバー · ロールとその権限 · マスキングルールとマスキング免除 · リリース戦略、およびデータクエリ・タグ・レビューのポリシー · 承認ルール、環境、セマンティックタイプ、データ分類 · アクセス付与（承認待ちのリクエストを含む）",
+            "details": "ワークスペースとそのプロジェクトで誰がどのロールを持つか · グループとそのメンバー · ロールとその権限 · マスキングルールとマスキング免除 · リリース戦略、およびデータクエリ・タグ・レビューのポリシー · 承認ルール、環境、セマンティックタイプ、データ分類 · アクセス付与（承認待ちのリクエストを含む） · CI 用 ID と、それでサインインできるジョブ",
             "title": "メンバー・ロール・ポリシーの読み取り"
           },
           "read-data": {

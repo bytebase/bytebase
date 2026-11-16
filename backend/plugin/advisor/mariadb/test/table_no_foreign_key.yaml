@@ -22,3 +22,40 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE t(
+      a int REFERENCES u(id),
+      b int,
+      CONSTRAINT fk_b FOREIGN KEY (b) REFERENCES u(id),
+      c int,
+      FOREIGN KEY (c) REFERENCES u(id)
+    );
+    ALTER TABLE t
+      ADD COLUMN d int,
+      ADD FOREIGN KEY (d) REFERENCES u(id);
+    ALTER TABLE t DROP FOREIGN KEY fk_b;
+  want:
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 6
+        column: 0
+      endposition: null
+    - status: 2
+      code: 602
+      title: TABLE_NO_FOREIGN_KEY
+      content: Foreign key is not allowed in the table `t`
+      startposition:
+        line: 16
+        column: 0
+      endposition: null

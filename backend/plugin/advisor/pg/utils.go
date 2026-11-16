@@ -2,32 +2,24 @@ package pg
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
+	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
-	for _, key := range templateList {
-		if token, ok := tokens[key]; ok {
-			template = strings.ReplaceAll(template, key, token)
-		}
+// originalSchema returns the pre-change schema the omni v1review rules look
+// names up in. A nil m gives an empty schema, in which every lookup misses.
+func originalSchema(m *model.DatabaseMetadata) v1review.Schema {
+	if m == nil {
+		return v1review.Schema{}
 	}
-
-	return regexp.Compile(template)
-}
-
-// normalizeSchemaName normalizes empty schema names to "public" (PostgreSQL default schema).
-func normalizeSchemaName(schemaName string) string {
-	if schemaName == "" {
-		return "public"
-	}
-	return schemaName
+	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
 }
 
 // getExplainSQL returns the query whose result getExplainPlan reads.
@@ -66,7 +58,7 @@ func getAffectedRows(res []any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
+	return pganalysis.EstimatedAffectedRowsFromExplainJSON(plan)
 }
 
 // getInsertedRows returns the estimated rows an INSERT adds, without the rows its data-modifying
@@ -76,105 +68,7 @@ func getInsertedRows(res []any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
-}
-
-// hasDataModifyingCTE reports whether a WITH clause contains INSERT, UPDATE, DELETE, or MERGE.
-// PostgreSQL only allows data-modifying statements in a top-level WITH.
-func hasDataModifyingCTE(with *ast.WithClause) bool {
-	if with == nil || with.Ctes == nil {
-		return false
-	}
-	for _, item := range with.Ctes.Items {
-		cte, ok := item.(*ast.CommonTableExpr)
-		if !ok {
-			continue
-		}
-		switch cte.Ctequery.(type) {
-		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-			return true
-		default:
-		}
-	}
-	return false
-}
-
-// rangeVarTableName extracts the table name from a RangeVar.
-func rangeVarTableName(rv *ast.RangeVar) string {
-	if rv == nil {
-		return ""
-	}
-	return rv.Relname
-}
-
-// schemaName extracts the schema name from a RangeVar, defaulting to "public".
-func schemaName(rv *ast.RangeVar) string {
-	if rv == nil || rv.Schemaname == "" {
-		return "public"
-	}
-	return rv.Schemaname
-}
-
-// constraintColumns extracts column names from a Constraint's Keys list.
-func constraintColumns(c *ast.Constraint) []string {
-	if c == nil || c.Keys == nil {
-		return nil
-	}
-	var cols []string
-	for _, item := range c.Keys.Items {
-		if s, ok := item.(*ast.String); ok {
-			cols = append(cols, s.Str)
-		}
-	}
-	return cols
-}
-
-// columnConstraints iterates over a ColumnDef's constraint list.
-func columnConstraints(col *ast.ColumnDef) []*ast.Constraint {
-	if col == nil || col.Constraints == nil {
-		return nil
-	}
-	var result []*ast.Constraint
-	for _, item := range col.Constraints.Items {
-		if c, ok := item.(*ast.Constraint); ok {
-			result = append(result, c)
-		}
-	}
-	return result
-}
-
-// tableElements iterates over a CreateStmt's table elements,
-// returning column defs and table constraints separately.
-func tableElements(create *ast.CreateStmt) ([]*ast.ColumnDef, []*ast.Constraint) {
-	if create.TableElts == nil {
-		return nil, nil
-	}
-	var cols []*ast.ColumnDef
-	var cons []*ast.Constraint
-	for _, item := range create.TableElts.Items {
-		switch n := item.(type) {
-		case *ast.ColumnDef:
-			cols = append(cols, n)
-		case *ast.Constraint:
-			cons = append(cons, n)
-		default:
-		}
-	}
-	return cols, cons
-}
-
-// alterTableCmds extracts AlterTableCmd items from an AlterTableStmt.
-func alterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
-	if alter.Cmds == nil {
-		return nil
-	}
-	var cmds []*ast.AlterTableCmd
-	for _, item := range alter.Cmds.Items {
-		if cmd, ok := item.(*ast.AlterTableCmd); ok {
-			cmds = append(cmds, cmd)
-		}
-	}
-	return cmds
+	return pganalysis.EstimatedInsertedRowsFromExplainJSON(plan)
 }
 
 // sessionSettings holds, in order, the statements that set the role or search path, which an EXPLAIN
@@ -249,170 +143,4 @@ func isRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	}
 	name := strings.ToLower(stmt.Name)
 	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
-}
-
-// typeName extracts the type name string from a TypeName node.
-func typeName(tn *ast.TypeName) string {
-	if tn == nil || tn.Names == nil {
-		return ""
-	}
-	var parts []string
-	for _, item := range tn.Names.Items {
-		if s, ok := item.(*ast.String); ok {
-			parts = append(parts, s.Str)
-		}
-	}
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
-}
-
-// typeNameFull extracts the full type name with modifiers from a TypeName node.
-// For example, "character varying(20)" instead of just "character varying".
-func typeNameFull(tn *ast.TypeName) string {
-	name := typeName(tn)
-	if name == "" {
-		return ""
-	}
-	if tn.Typmods != nil && len(tn.Typmods.Items) > 0 {
-		var mods []string
-		for _, item := range tn.Typmods.Items {
-			switch v := item.(type) {
-			case *ast.Integer:
-				mods = append(mods, fmt.Sprintf("%d", v.Ival))
-			case *ast.A_Const:
-				if iv, ok := v.Val.(*ast.Integer); ok {
-					mods = append(mods, fmt.Sprintf("%d", iv.Ival))
-				}
-			default:
-			}
-		}
-		if len(mods) > 0 {
-			name += "(" + strings.Join(mods, ",") + ")"
-		}
-	}
-	if tn.ArrayBounds != nil && len(tn.ArrayBounds.Items) > 0 {
-		name += "[]"
-	}
-	return name
-}
-
-// listStrings extracts string values from an ast.List.
-func listStrings(list *ast.List) []string {
-	if list == nil {
-		return nil
-	}
-	var result []string
-	for _, item := range list.Items {
-		if s, ok := item.(*ast.String); ok {
-			result = append(result, s.Str)
-		}
-	}
-	return result
-}
-
-// indexColumns extracts column names from an IndexStmt's IndexParams list.
-func indexColumns(idx *ast.IndexStmt) []string {
-	if idx == nil || idx.IndexParams == nil {
-		return nil
-	}
-	var cols []string
-	for _, item := range idx.IndexParams.Items {
-		if elem, ok := item.(*ast.IndexElem); ok && elem.Name != "" {
-			cols = append(cols, elem.Name)
-		}
-	}
-	return cols
-}
-
-// dropObjectNames extracts object names from a DropStmt.
-// Returns list of qualified name string slices.
-func dropObjectNames(drop *ast.DropStmt) [][]string {
-	if drop.Objects == nil {
-		return nil
-	}
-	var result [][]string
-	for _, item := range drop.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		if len(parts) > 0 {
-			result = append(result, parts)
-		}
-	}
-	return result
-}
-
-// collectFromClauseRangeVars recursively collects RangeVar nodes from a FROM clause list.
-func collectFromClauseRangeVars(fromClause *ast.List) []*ast.RangeVar {
-	if fromClause == nil {
-		return nil
-	}
-	var result []*ast.RangeVar
-	for _, item := range fromClause.Items {
-		result = append(result, collectRangeVars(item)...)
-	}
-	return result
-}
-
-// collectRangeVars recursively collects RangeVar nodes from a node,
-// including those inside subqueries.
-func collectRangeVars(node ast.Node) []*ast.RangeVar {
-	if node == nil {
-		return nil
-	}
-	switch n := node.(type) {
-	case *ast.RangeVar:
-		return []*ast.RangeVar{n}
-	case *ast.JoinExpr:
-		var result []*ast.RangeVar
-		result = append(result, collectRangeVars(n.Larg)...)
-		result = append(result, collectRangeVars(n.Rarg)...)
-		return result
-	case *ast.RangeSubselect:
-		// Recurse into subquery
-		if sel, ok := n.Subquery.(*ast.SelectStmt); ok {
-			return collectFromClauseRangeVars(sel.FromClause)
-		}
-		return nil
-	default:
-		return nil
-	}
-}
-
-// dropObjects extracts object names from a DropStmt.
-// Returns list of (schema, name) pairs.
-func dropObjects(drop *ast.DropStmt) [][2]string {
-	if drop.Objects == nil {
-		return nil
-	}
-	var result [][2]string
-	for _, item := range drop.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		switch len(parts) {
-		case 1:
-			result = append(result, [2]string{"public", parts[0]})
-		case 2:
-			result = append(result, [2]string{parts[0], parts[1]})
-		default:
-		}
-	}
-	return result
 }

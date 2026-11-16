@@ -126,3 +126,81 @@
         customer VARCHAR(50)
     );
     CREATE INDEX idx_customer_bj ON orders_bj (customer);
+- statement: |-
+    CREATE TABLE orders (
+      id INT,
+      customer_id INT,
+      INDEX idx_a (customer_id),
+      INDEX idx_b (customer_id)
+    );
+    INSERT INTO orders VALUES (1, 1);
+    DROP INDEX idx_b ON orders;
+    CREATE TABLE items (id INT);
+    ALTER TABLE items ADD COLUMN price INT;
+  want:
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`items` has duplicate index `idx_b`'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`items` has duplicate index `idx_b`'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`orders` has duplicate index `idx_b`'
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE orders (id INT, customer_id INT, INDEX idx_a (customer_id));
+
+    /* c */
+    ALTER TABLE orders
+      ADD INDEX idx_b (customer_id);
+  want:
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`orders` has duplicate index `idx_b`'
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE TABLE orders (id INT, PRIMARY KEY (id), INDEX idx_id (id));
+  want:
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`orders` has duplicate index `idx_id`'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE orders (id INT PRIMARY KEY, INDEX idx_id (id));
+- statement: CREATE TABLE orders (id INT, INDEX idx_a (id) USING HASH, INDEX idx_b (id));
+  want:
+    - status: 2
+      code: 815
+      title: TABLE_NO_DUPLICATE_INDEX
+      content: '`orders` has duplicate index `idx_b`'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE orders (id INT, INDEX idx_a USING HASH (id), INDEX idx_b (id));
+- statement: CREATE TABLE orders (id INT, INDEX idx_a (id), UNIQUE INDEX uk_a (id));
+- statement: |-
+    CREATE TABLE orders (id INT, INDEX idx_a (id));
+    CREATE TABLE items (id INT, INDEX idx_a (id));
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE orders (id INT, INDEX idx_a (id), INDEX idx_b (id)); END;

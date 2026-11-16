@@ -3,12 +3,15 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var _ advisor.Advisor = (*StatementDisallowTruncateAdvisor)(nil)
@@ -17,6 +20,9 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_STATEMENT_DISALLOW_TRUNCATE, &StatementDisallowTruncateAdvisor{})
 }
 
+// StatementDisallowTruncateAdvisor is the advisor disallowing TRUNCATE. The
+// judgment lives in omni (pg/v1review.StatementDisallowTruncate); this
+// adapter renders its findings as advice.
 type StatementDisallowTruncateAdvisor struct{}
 
 func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
@@ -24,54 +30,43 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 	if err != nil {
 		return nil, err
 	}
-	rule := &statementDisallowTruncateRule{
-		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type statementDisallowTruncateRule struct {
-	BaseRule
-}
-
-func (*statementDisallowTruncateRule) Name() string { return "statement_disallow_truncate" }
-
-func (r *statementDisallowTruncateRule) OnStatement(node ast.Node) {
-	stmt, ok := node.(*ast.TruncateStmt)
-	if !ok || stmt.Relations == nil {
-		return
-	}
-	cascade := stmt.Behavior == ast.DROP_CASCADE
-	restartSeqs := stmt.RestartSeqs
-	for _, item := range stmt.Relations.Items {
-		rv, ok := item.(*ast.RangeVar)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
 		if !ok {
 			continue
 		}
-		name := rv.Relname
-		if rv.Schemaname != "" {
-			name = rv.Schemaname + "." + rv.Relname
+		rule := &BaseRule{StmtText: stmt.Text}
+		for _, f := range pgv1review.StatementDisallowTruncate([]ast.Node{node}) {
+			suffix := ""
+			for _, option := range strings.Split(f.Value, ",") {
+				switch option {
+				case "CASCADE":
+					suffix += " CASCADE will wipe dependent tables."
+				case "RESTART IDENTITY":
+					suffix += " RESTART IDENTITY will reset owned sequences."
+				default:
+				}
+			}
+			loc := ast.Loc{Start: f.Start, End: f.End}
+			if f.Start == 0 && f.End == 0 {
+				loc.Start = -1
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status: level,
+				Code:   code.StatementDisallowTruncate.Int32(),
+				Title:  title,
+				Content: fmt.Sprintf(
+					`TRUNCATE TABLE %q is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.%s`,
+					f.Table, suffix,
+				),
+				StartPosition: &storepb.Position{Line: rule.LocToLine(loc) + int32(stmt.BaseLine())},
+			})
 		}
-		suffix := ""
-		if cascade {
-			suffix += " CASCADE will wipe dependent tables."
-		}
-		if restartSeqs {
-			suffix += " RESTART IDENTITY will reset owned sequences."
-		}
-		// Point each advice at its own relation in a multi-relation form,
-		// not at the TRUNCATE keyword. Loc falls back to the statement
-		// start when the parser did not record a byte offset (LocToLine's
-		// defined fallback), which preserves the single-relation case.
-		r.AddAdvice(&storepb.Advice{
-			Status: r.Level,
-			Code:   code.StatementDisallowTruncate.Int32(),
-			Title:  r.Title,
-			Content: fmt.Sprintf(
-				`TRUNCATE TABLE %q is not allowed: TRUNCATE bypasses triggers. Unlike Oracle/MySQL/MSSQL, PG TRUNCATE is transactional and rolls back cleanly.%s`,
-				name, suffix,
-			),
-			StartPosition: &storepb.Position{Line: r.LocToLine(rv.Loc)},
-		})
 	}
+	return adviceList, nil
 }

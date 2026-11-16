@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -23,6 +24,8 @@ func init() {
 }
 
 // NamingTableNoKeywordAdvisor is the advisor checking for table naming convention without keyword.
+// The judgment lives in omni (oracle/v1review.NamingTableNoKeyword); this
+// adapter renders the findings as advice.
 type NamingTableNoKeywordAdvisor struct {
 }
 
@@ -33,57 +36,25 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 
-	rule := NewNamingTableNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// NamingTableNoKeywordRule is the rule implementation for table naming convention without keyword.
-type NamingTableNoKeywordRule struct {
-	BaseRule
-
-	currentDatabase string
-}
-
-// NewNamingTableNoKeywordRule creates a new NamingTableNoKeywordRule.
-func NewNamingTableNoKeywordRule(level storepb.Advice_Status, title string, currentDatabase string) *NamingTableNoKeywordRule {
-	return &NamingTableNoKeywordRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingTableNoKeywordRule) Name() string {
-	return "naming.table-no-keyword"
-}
-
-// OnStatement checks table names in omni DDL statements.
-func (r *NamingTableNoKeywordRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkTableName(lastObjectName(n.Name), n.Loc)
-	case *ast.AlterTableStmt:
-		for _, cmd := range alterTableCmds(n) {
-			if cmd.Action == ast.AT_RENAME && cmd.NewName != "" {
-				r.checkTableName(cmd.NewName, cmd.Loc)
-			}
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	default:
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.NamingTableNoKeyword([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NameIsKeywordIdentifier.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
-
-func (r *NamingTableNoKeywordRule) checkTableName(tableName string, loc ast.Loc) {
-	if tableName != "" && plsqlparser.IsOracleKeyword(tableName) {
-		r.AddAdvice(
-			r.level,
-			code.NameIsKeywordIdentifier.Int32(),
-			fmt.Sprintf("Table name %q is a keyword identifier and should be avoided.", tableName),
-			base.ConvertANTLRLineToPosition(r.locLine(loc)),
-		)
-	}
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

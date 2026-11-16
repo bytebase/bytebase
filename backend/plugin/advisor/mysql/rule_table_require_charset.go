@@ -3,14 +3,16 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,6 +24,7 @@ func init() {
 }
 
 // TableRequireCharsetAdvisor is the advisor checking for require charset.
+// The judgment lives in omni (mysql/v1review.TableRequireCharset).
 type TableRequireCharsetAdvisor struct {
 }
 
@@ -31,55 +34,25 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		return nil, err
 	}
 
-	rule := &tableRequireCharsetRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableRequireCharsetRule struct {
-	BaseRule
-}
-
-func (*tableRequireCharsetRule) Name() string {
-	return "TableRequireCharsetRule"
-}
-
-func (r *tableRequireCharsetRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.CreateTableStmt)
-	if !ok {
-		return
-	}
-	r.checkCreateTable(n)
-}
-
-func (r *tableRequireCharsetRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	if tableName == "" {
-		return
-	}
-
-	hasCharset := false
-	for _, opt := range n.Options {
-		if opt != nil && (strings.EqualFold(opt.Name, "CHARSET") || strings.EqualFold(opt.Name, "CHARACTER SET") || strings.EqualFold(opt.Name, "DEFAULT CHARSET") || strings.EqualFold(opt.Name, "DEFAULT CHARACTER SET")) {
-			hasCharset = true
-			break
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.TableRequireCharset([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NoCharset.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Table %s does not have a character set specified", f.Name),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, v1review.Finding{}))),
+			})
 		}
 	}
-	if !hasCharset {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          code.NoCharset.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Table %s does not have a character set specified", tableName),
-			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-		})
-	}
+	return adviceList, nil
 }

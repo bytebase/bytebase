@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,7 @@ func init() {
 }
 
 // ColumnDisallowChangingAdvisor is the advisor checking for disallow CHANGE COLUMN statement.
+// The judgment lives in omni (tidb/v1review.ColumnDisallowChange).
 type ColumnDisallowChangingAdvisor struct {
 }
 
@@ -36,29 +38,18 @@ func (*ColumnDisallowChangingAdvisor) Check(_ context.Context, checkCtx advisor.
 		return nil, err
 	}
 	title := checkCtx.Rule.Type.String()
+
 	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		alter, ok := ostmt.Node.(*ast.AlterTableStmt)
-		if !ok {
-			continue
-		}
-		// Single-advice-per-statement contract: pingcap-tidb's Visitor
-		// broke after the first match; preserve via firstAlterCommandMatching
-		// (the helper returns the first index satisfying the matcher).
-		// Mysql analog emits per-cmd without breaking — cardinality
-		// divergence preserved on the tidb side per invariant #7.
-		if firstAlterCommandMatching(alter, func(cmd *ast.AlterTableCmd) bool {
-			return cmd.Type == ast.ATChangeColumn
-		}) >= 0 {
+	for _, stmt := range stmts {
+		for _, f := range tidbv1review.ColumnDisallowChange([]ast.Node{stmt.Node}) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
 				Code:          code.UseChangeColumnStatement.Int32(),
 				Title:         title,
-				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", ostmt.TrimmedText()),
-				StartPosition: base.ConvertANTLRLineToPosition(ostmt.AbsoluteLine(alter.Loc.Start)),
+				Content:       fmt.Sprintf("\"%s\" contains CHANGE COLUMN statement", stmt.TrimmedText()),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
 			})
 		}
 	}
-
 	return adviceList, nil
 }

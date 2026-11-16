@@ -4,13 +4,17 @@ package oracle
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -22,6 +26,8 @@ func init() {
 }
 
 // ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
+// The judgment lives in omni (oracle/v1review.ColumnComment); this adapter
+// passes the payload and renders the findings as advice.
 type ColumnCommentConventionAdvisor struct {
 }
 
@@ -30,101 +36,60 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 	if err != nil {
 		return nil, err
 	}
-	commentPayload := checkCtx.Rule.GetCommentConventionPayload()
-
-	rule := NewColumnCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnCommentConventionRule is the rule implementation for column comment convention.
-type ColumnCommentConventionRule struct {
-	BaseRule
-
-	currentDatabase string
-	payload         *storepb.SQLReviewRule_CommentConventionRulePayload
-
-	columnNames   []string
-	columnComment map[string]string
-	columnLine    map[string]int
-}
-
-// NewColumnCommentConventionRule creates a new ColumnCommentConventionRule.
-func NewColumnCommentConventionRule(level storepb.Advice_Status, title string, currentDatabase string, payload *storepb.SQLReviewRule_CommentConventionRulePayload) *ColumnCommentConventionRule {
-	return &ColumnCommentConventionRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		payload:         payload,
-		columnNames:     []string{},
-		columnComment:   make(map[string]string),
-		columnLine:      make(map[string]int),
-	}
-}
-
-// Name returns the rule name.
-func (*ColumnCommentConventionRule) Name() string {
-	return "column.comment-convention"
-}
-
-// OnStatement records column definitions and COMMENT ON COLUMN statements from omni.
-func (r *ColumnCommentConventionRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		for _, col := range columnDefs(n.Columns) {
-			columnName := fmt.Sprintf("%s.%s", tableName, col.Name)
-			r.columnNames = append(r.columnNames, columnName)
-			r.columnLine[columnName] = r.locLine(col.Loc)
-		}
-	case *ast.AlterTableStmt:
-		tableName := objectName(n.Name, r.currentDatabase)
-		for _, cmd := range alterTableCmds(n) {
-			if cmd.Action != ast.AT_ADD_COLUMN {
-				continue
-			}
-			for _, col := range append(columnDefs(cmd.ColumnDefs), cmd.ColumnDef) {
-				if col == nil {
-					continue
-				}
-				columnName := fmt.Sprintf("%s.%s", tableName, col.Name)
-				r.columnNames = append(r.columnNames, columnName)
-				r.columnLine[columnName] = r.locLine(col.Loc)
-			}
-		}
-	case *ast.CommentStmt:
-		if n.ObjectType != ast.OBJECT_TABLE || n.Column == "" {
-			return
-		}
-		columnName := fmt.Sprintf("%s.%s", objectName(n.Object, r.currentDatabase), n.Column)
-		r.columnComment[columnName] = n.Comment
-	default:
-	}
-}
-
-// GetAdviceList returns the advice list.
-// We override this to perform final checks after all statements have been processed.
-func (r *ColumnCommentConventionRule) GetAdviceList() ([]*storepb.Advice, error) {
-	for _, columnName := range r.columnNames {
-		comment, ok := r.columnComment[columnName]
-		if !ok || comment == "" {
-			if r.payload.Required {
-				r.AddAdvice(
-					r.level,
-					code.CommentEmpty.Int32(),
-					fmt.Sprintf("Comment is required for column %s", normalizeIdentifierName(columnName)),
-					base.ConvertANTLRLineToPosition(r.columnLine[columnName]),
-				)
-			}
-		} else {
-			if r.payload.MaxLength > 0 && int32(len(comment)) > r.payload.MaxLength {
-				r.AddAdvice(
-					r.level,
-					code.CommentTooLong.Int32(),
-					fmt.Sprintf("Column %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(columnName), r.payload.MaxLength),
-					base.ConvertANTLRLineToPosition(r.columnLine[columnName]),
-				)
-			}
+	payload := checkCtx.Rule.GetCommentConventionPayload()
+	// Without a payload every column is a finding, so commentMaxLength panics
+	// on the first column, as V1 did.
+	required, maxLength := true, -1
+	if payload != nil {
+		required, maxLength = payload.Required, int(payload.MaxLength)
+		if maxLength <= 0 {
+			maxLength = math.MaxInt
 		}
 	}
-	return r.BaseRule.GetAdviceList()
+
+	stmts, nodes := parsedNodes(checkCtx.ParsedStatements)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range oraclev1review.ColumnComment(nodes, checkCtx.CurrentDatabase, required, maxLength) {
+		limit := commentMaxLength(payload)
+		name := normalizeIdentifierName(f.Table + "." + f.Name)
+		adviceCode, content := code.CommentEmpty, fmt.Sprintf("Comment is required for column %s", name)
+		if f.Code == v1review.ColumnCommentTooLong {
+			adviceCode, content = code.CommentTooLong, fmt.Sprintf("Column %s comment is too long. The length of comment should be within %d characters", name, limit)
+		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       content,
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+		})
+	}
+	return adviceList, nil
+}
+
+// commentMaxLength reads the payload's limit without a nil check, so a
+// missing payload panics where V1's did.
+func commentMaxLength(payload *storepb.SQLReviewRule_CommentConventionRulePayload) int32 {
+	return payload.MaxLength
+}
+
+// parsedNodes returns the statements that carry an omni node and their nodes,
+// index for index, for a rule that judges the statements together.
+func parsedNodes(parsed []base.ParsedStatement) ([]base.ParsedStatement, []ast.Node) {
+	var stmts []base.ParsedStatement
+	var nodes []ast.Node
+	for _, stmt := range parsed {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		stmts = append(stmts, stmt)
+		nodes = append(nodes, node)
+	}
+	return stmts, nodes
 }

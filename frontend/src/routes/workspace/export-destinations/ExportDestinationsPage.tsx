@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import sharePointIcon from "@/assets/export/sharepoint.svg";
 import { FeatureAttention } from "@/components/FeatureAttention";
+import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,7 +68,12 @@ export function ExportDestinationsPage() {
   return (
     <WorkspacePageLayout>
       <WorkspacePageInfo
-        description={t("settings.export-destinations.description")}
+        description={
+          <>
+            {t("settings.export-destinations.description")}{" "}
+            <LearnMoreLink href="https://docs.bytebase.com/security/database-permission/export/sharepoint?source=console" />
+          </>
+        }
       />
       <FeatureAttention feature={PlanFeature.FEATURE_SHAREPOINT_EXPORT} />
       {initialized && (

@@ -25,3 +25,30 @@
         line: 2
         column: 0
       endposition: null
+- statement: |-
+    INSERT ALL
+      INTO t VALUES (1)
+      INTO u (a) VALUES (2)
+    SELECT 1 FROM dual;
+  want:
+    - status: 2
+      code: 1107
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+      content: INSERT statement should specify column name.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    -- load the catalog
+    INSERT INTO tech_book
+    SELECT * FROM staging_book
+  want:
+    - status: 2
+      code: 1107
+      title: STATEMENT_INSERT_MUST_SPECIFY_COLUMN
+      content: INSERT statement should specify column name.
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

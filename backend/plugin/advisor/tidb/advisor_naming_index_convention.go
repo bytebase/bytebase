@@ -2,13 +2,17 @@ package tidb
 
 import (
 	"context"
-	"strings"
+	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -20,148 +24,99 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
 }
 
-// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
+// NamingIndexConventionAdvisor is the advisor checking for index naming
+// convention. The judgment lives in omni (tidb/v1review.NamingIndex); this
+// adapter validates the template's tokens, converts the rule's payload into
+// the omni config, and renders the findings as advice.
 type NamingIndexConventionAdvisor struct {
 }
 
 // Check checks for index naming convention.
 func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
-	// Capture originalMetadata in a local so the collector closure can read
-	// it without runNamingConventionRule needing advisor.Context in its
-	// callback signature — the FK rule doesn't need metadata, so keeping
-	// the helper signature uniform is cleaner than threading a Context arg.
-	originalMetadata := checkCtx.OriginalMetadata
-	return runNamingConventionRule(checkCtx, namingRuleConfig{
-		mismatchCode:       code.NamingIndexConventionMismatch,
-		typeNoun:           "Index",
-		internalErrorTitle: "Internal error for index naming convention rule",
-	}, func(ostmt Stmt) []*indexMetaData {
-		switch n := ostmt.Node.(type) {
-		case *ast.CreateTableStmt:
-			return collectIndexCreateTable(ostmt, n)
-		case *ast.AlterTableStmt:
-			return collectIndexAlterTable(ostmt, n, originalMetadata)
-		case *ast.CreateIndexStmt:
-			return collectIndexCreateIndex(ostmt, n)
-		}
-		return nil
-	})
-}
+	stmts, err := getTiDBNodes(checkCtx)
+	if err != nil {
+		return nil, err
+	}
 
-func collectIndexCreateTable(ostmt Stmt, n *ast.CreateTableStmt) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
 	}
-	tableName := n.Table.Name
-	var res []*indexMetaData
-	for _, constraint := range n.Constraints {
-		if constraint == nil || constraint.Type != ast.ConstrIndex {
-			continue
-		}
-		columnList := constraint.Columns
-		if len(columnList) == 0 {
-			columnList = indexColumns(constraint.IndexColumns)
-		}
-		metaData := map[string]string{
-			advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-			advisor.TableNameTemplateToken:  tableName,
-		}
-		res = append(res, &indexMetaData{
-			indexName: constraint.Name,
-			tableName: tableName,
-			metaData:  metaData,
-			line:      ostmt.AbsoluteLine(constraint.Loc.Start),
-		})
+	namingPayload := checkCtx.Rule.GetNamingPayload()
+	if namingPayload == nil {
+		return nil, errors.New("naming_payload is required for this rule")
 	}
-	return res
-}
+	templateList, _ := advisor.ParseTemplateTokens(namingPayload.Format)
+	for _, key := range templateList {
+		if _, ok := advisor.TemplateNamingTokens[checkCtx.Rule.Type][key]; !ok {
+			return nil, errors.Errorf("invalid template %s for rule %s", key, checkCtx.Rule.Type)
+		}
+	}
 
-func collectIndexAlterTable(ostmt Stmt, n *ast.AlterTableStmt, originalMetadata *model.DatabaseMetadata) []*indexMetaData {
-	if n.Table == nil {
-		return nil
+	maxLength := int(namingPayload.MaxLength)
+	if maxLength == 0 {
+		maxLength = advisor.DefaultNameLengthLimit
 	}
-	tableName := n.Table.Name
-	stmtLine := ostmt.FirstTokenLine()
-	var res []*indexMetaData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
-			continue
-		}
-		switch cmd.Type {
-		// ATAddIndex (omni) and ATAddConstraint (omni) are split where pingcap
-		// collapsed both ALTER TABLE ADD INDEX and ALTER TABLE ADD CONSTRAINT
-		// INDEX into AlterTableAddConstraint. Mirror the mysql omni branching
-		// to cover both syntactic forms.
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint == nil || cmd.Constraint.Type != ast.ConstrIndex {
+	cfg := v1review.TemplateConfig{Format: namingPayload.Format, MaxLength: maxLength}
+
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings := tidbv1review.NamingIndex([]ast.Node{stmt.Node}, cfg, renameIndexSchema(stmt.Node, checkCtx.OriginalMetadata))
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.PatternInvalid:
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   "Internal error for index naming convention rule",
+					Content: fmt.Sprintf("%q meet internal error %q", stmt.TrimmedText(), f.Detail),
+				})
+				continue
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
 				continue
 			}
-			columnList := cmd.Constraint.Columns
-			if len(columnList) == 0 {
-				columnList = indexColumns(cmd.Constraint.IndexColumns)
-			}
-			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-				advisor.TableNameTemplateToken:  tableName,
-			}
-			res = append(res, &indexMetaData{
-				indexName: cmd.Constraint.Name,
-				tableName: tableName,
-				metaData:  metaData,
-				line:      stmtLine,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingIndexConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(keyFindingLine(stmt, f)),
 			})
-		case ast.ATRenameIndex:
-			schema := originalMetadata.GetSchemaMetadata("")
-			if schema == nil {
-				continue
-			}
-			index := schema.GetIndex(cmd.Name)
-			if index == nil {
-				continue
-			}
-			if index.GetProto().GetUnique() {
-				// Unique index naming convention is handled by
-				// advisor_naming_unique_key_convention.go.
-				continue
-			}
-			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(index.GetProto().GetExpressions(), "_"),
-				advisor.TableNameTemplateToken:  tableName,
-			}
-			res = append(res, &indexMetaData{
-				indexName: cmd.NewName,
-				tableName: tableName,
-				metaData:  metaData,
-				line:      stmtLine,
-			})
-		default:
 		}
 	}
-	return res
+	return adviceList, nil
 }
 
-func collectIndexCreateIndex(ostmt Stmt, n *ast.CreateIndexStmt) []*indexMetaData {
-	// Preserve pingcap behavior: only exclude unique indexes. Fulltext/spatial
-	// CREATE INDEX statements were checked by the pingcap-typed advisor and
-	// remain checked here. The mysql omni rule additionally excludes Fulltext
-	// and Spatial; aligning tidb with mysql on that is a separate behavior
-	// change, deferred from this AST migration.
-	if n.Unique {
-		return nil
+// renameIndexSchema returns the pre-change schema for the index and unique
+// key naming rules, read only for a statement that renames an index. Reading
+// it lazily keeps V1's nil-metadata behavior: such a statement panics, which
+// advisor.Check reports as the rule's error, and a review without one is
+// judged in full.
+func renameIndexSchema(node ast.Node, metadata *model.DatabaseMetadata) v1review.Schema {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok || alter.Table == nil {
+		return v1review.Schema{}
 	}
-	if n.Table == nil {
-		return nil
+	for _, cmd := range alter.Commands {
+		if cmd != nil && cmd.Type == ast.ATRenameIndex {
+			return v1review.Schema{Metadata: metadata.GetProto(), ObjectCaseSensitive: metadata.GetIsObjectCaseSensitive()}
+		}
 	}
-	tableName := n.Table.Name
-	columnList := indexColumns(n.Columns)
-	metaData := map[string]string{
-		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-		advisor.TableNameTemplateToken:  tableName,
+	return v1review.Schema{}
+}
+
+// keyFindingLine is the line of an index or unique key naming finding: the
+// constraint's for a CREATE TABLE one, and the statement's first token for
+// the others, which carry no range.
+func keyFindingLine(stmt Stmt, f v1review.Finding) int {
+	if f.Start != 0 || f.End != 0 {
+		return stmt.AbsoluteLine(f.Start)
 	}
-	return []*indexMetaData{{
-		indexName: n.IndexName,
-		tableName: tableName,
-		metaData:  metaData,
-		line:      ostmt.FirstTokenLine(),
-	}}
+	return stmt.FirstTokenLine()
 }

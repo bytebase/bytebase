@@ -3,16 +3,13 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/bytebase/omni/tidb/ast"
-	"github.com/pkg/errors"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 var (
@@ -23,7 +20,11 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_INDEX_PRIMARY_KEY_TYPE_ALLOWLIST, &IndexPrimaryKeyTypeAllowlistAdvisor{})
 }
 
-// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary key type allowlist.
+// IndexPrimaryKeyTypeAllowlistAdvisor is the advisor checking for primary
+// key type allowlist. The judgment lives in omni
+// (tidb/v1review.IndexPrimaryKeyTypeAllowlist); this adapter passes the
+// allowlist, the script and the pre-change schema and renders the findings
+// as advice.
 type IndexPrimaryKeyTypeAllowlistAdvisor struct {
 }
 
@@ -39,141 +40,21 @@ func (*IndexPrimaryKeyTypeAllowlistAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, err
 	}
 	stringArrayPayload := checkCtx.Rule.GetStringArrayPayload()
-	allowlist := make(map[string]bool)
-	for _, tp := range stringArrayPayload.List {
-		allowlist[strings.ToLower(tp)] = true
+	findings, err := tidbv1review.IndexPrimaryKeyTypeAllowlist(scriptNodes(stmts), stringArrayPayload.List, schemaOf(checkCtx.OriginalMetadata))
+	if err != nil {
+		readMissingSchema(checkCtx.OriginalMetadata, err)
+		return nil, err
 	}
-	checker := &indexPrimaryKeyTypeAllowlistChecker{
-		level:            level,
-		title:            checkCtx.Rule.Type.String(),
-		allowlist:        allowlist,
-		originalMetadata: checkCtx.OriginalMetadata,
-		tablesNewColumns: make(tableNewColumn),
-	}
-
-	for _, ostmt := range stmts {
-		checker.checkStmt(ostmt)
-	}
-
-	return checker.adviceList, nil
-}
-
-type indexPrimaryKeyTypeAllowlistChecker struct {
-	adviceList       []*storepb.Advice
-	level            storepb.Advice_Status
-	title            string
-	allowlist        map[string]bool
-	originalMetadata *model.DatabaseMetadata
-	tablesNewColumns tableNewColumn
-}
-
-func (c *indexPrimaryKeyTypeAllowlistChecker) checkStmt(ostmt Stmt) {
-	cb := indexFamilyCallbacks{
-		onColumn:       c.addNewColumn,
-		onConstraint:   c.addConstraint,
-		onChangeColumn: c.changeColumn,
-	}
-	var pkDataList []pkData
-	switch n := ostmt.Node.(type) {
-	case *ast.CreateTableStmt:
-		pkDataList = collectIndexFamilyCreateTable(ostmt, n, cb)
-	case *ast.AlterTableStmt:
-		pkDataList = collectIndexFamilyAlterTable(ostmt, n, cb)
-	default:
-		return
-	}
-
-	for _, pd := range pkDataList {
-		c.adviceList = append(c.adviceList, &storepb.Advice{
-			Status:        c.level,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range findings {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
 			Code:          code.IndexPKType.Int32(),
-			Title:         c.title,
-			Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", pd.column, pd.table, pd.columnType),
-			StartPosition: base.ConvertANTLRLineToPosition(pd.line),
+			Title:         title,
+			Content:       fmt.Sprintf("The column `%s` in table `%s` is one of the primary key, but its type \"%s\" is not in allowlist", f.Name, f.Table, f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(findingLine(stmts[f.Statement], f)),
 		})
 	}
-}
-
-func (c *indexPrimaryKeyTypeAllowlistChecker) addNewColumn(tableName string, line int, colDef *ast.ColumnDef) []pkData {
-	var pkDataList []pkData
-	for _, constraint := range colDef.Constraints {
-		if constraint != nil && constraint.Type == ast.ColConstrPrimaryKey {
-			tp := dataTypeNameCompact(colDef.TypeName)
-			if _, exists := c.allowlist[tp]; !exists {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     colDef.Name,
-					columnType: tp,
-					line:       line,
-				})
-			}
-		}
-	}
-	c.tablesNewColumns.set(tableName, colDef.Name, colDef)
-	return pkDataList
-}
-
-func (c *indexPrimaryKeyTypeAllowlistChecker) changeColumn(tableName, oldColumnName string, line int, newColumnDef *ast.ColumnDef) []pkData {
-	var pkDataList []pkData
-	c.tablesNewColumns.delete(tableName, oldColumnName)
-	for _, constraint := range newColumnDef.Constraints {
-		if constraint != nil && constraint.Type == ast.ColConstrPrimaryKey {
-			tp := dataTypeNameCompact(newColumnDef.TypeName)
-			if _, exists := c.allowlist[tp]; !exists {
-				pkDataList = append(pkDataList, pkData{
-					table:      tableName,
-					column:     newColumnDef.Name,
-					columnType: tp,
-					line:       line,
-				})
-			}
-		}
-	}
-	c.tablesNewColumns.set(tableName, newColumnDef.Name, newColumnDef)
-	return pkDataList
-}
-
-func (c *indexPrimaryKeyTypeAllowlistChecker) addConstraint(tableName string, line int, constraint *ast.Constraint) []pkData {
-	var pkDataList []pkData
-	if constraint.Type != ast.ConstrPrimaryKey {
-		return pkDataList
-	}
-	for _, columnName := range constraint.Columns {
-		columnType, err := c.getPKColumnType(tableName, columnName)
-		if err != nil {
-			continue
-		}
-		if _, exists := c.allowlist[columnType]; !exists {
-			pkDataList = append(pkDataList, pkData{
-				table:      tableName,
-				column:     columnName,
-				columnType: columnType,
-				line:       line,
-			})
-		}
-	}
-	return pkDataList
-}
-
-// getPKColumnType returns the rendered type for tableName.columnName,
-// preferring the column we observed in this check pass and falling back
-// to the catalog. Always returns lowercase to match advice fixture rendering
-// and the case-insensitive allowlist comparison.
-func (c *indexPrimaryKeyTypeAllowlistChecker) getPKColumnType(tableName, columnName string) (string, error) {
-	if colDef, ok := c.tablesNewColumns.get(tableName, columnName); ok {
-		return dataTypeNameCompact(colDef.TypeName), nil
-	}
-	schema := c.originalMetadata.GetSchemaMetadata("")
-	if schema == nil {
-		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
-	}
-	table := schema.GetTable(tableName)
-	if table == nil {
-		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
-	}
-	column := table.GetColumn(columnName)
-	if column == nil {
-		return "", errors.Errorf(errCannotFindColumnTypeFmt, tableName, columnName)
-	}
-	return strings.ToLower(column.GetProto().Type), nil
+	return adviceList, nil
 }

@@ -5,10 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/pg/ast"
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -19,8 +23,25 @@ func init() {
 	advisor.Register(storepb.Engine_POSTGRES, storepb.SQLReviewRule_SCHEMA_BACKWARD_COMPATIBILITY, &CompatibilityAdvisor{})
 }
 
-// CompatibilityAdvisor is the advisor checking for schema backward compatibility.
+// CompatibilityAdvisor is the advisor checking for schema backward
+// compatibility. The judgment lives in omni
+// (pg/v1review.SchemaBackwardCompatibility); this adapter renders the
+// findings as advice.
 type CompatibilityAdvisor struct {
+}
+
+// compatibilityCodes maps each omni finding to the advice code V1 reported.
+var compatibilityCodes = map[v1review.Code]advisorcode.Code{
+	v1review.IncompatibleDropDatabase:  advisorcode.CompatibilityDropDatabase,
+	v1review.IncompatibleDropTable:     advisorcode.CompatibilityDropTable,
+	v1review.IncompatibleRenameTable:   advisorcode.CompatibilityRenameTable,
+	v1review.IncompatibleRenameColumn:  advisorcode.CompatibilityRenameColumn,
+	v1review.IncompatibleDropColumn:    advisorcode.CompatibilityDropColumn,
+	v1review.IncompatibleAlterColumn:   advisorcode.CompatibilityAlterColumn,
+	v1review.IncompatibleAddPrimaryKey: advisorcode.CompatibilityAddPrimaryKey,
+	v1review.IncompatibleAddUniqueKey:  advisorcode.CompatibilityAddUniqueKey,
+	v1review.IncompatibleAddForeignKey: advisorcode.CompatibilityAddForeignKey,
+	v1review.IncompatibleAddCheck:      advisorcode.CompatibilityAddCheck,
 }
 
 // Check checks schema backward compatibility.
@@ -30,197 +51,38 @@ func (*CompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.Context) 
 		return nil, err
 	}
 
-	rule := &compatibilityRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	// The rule judges a statement against the ones before it, so it takes
+	// them all at once and names each finding's statement by index.
+	var nodes []ast.Node
+	var stmts []base.ParsedStatement
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := pgparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type compatibilityRule struct {
-	BaseRule
-
-	lastCreateTable string
-}
-
-func (*compatibilityRule) Name() string {
-	return "migration_compatibility"
-}
-
-func (r *compatibilityRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
-	case *ast.DropdbStmt:
-		r.handleDropdbStmt()
-	case *ast.DropStmt:
-		r.handleDropStmt(n)
-	case *ast.RenameStmt:
-		r.handleRenameStmt(n)
-	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	case *ast.IndexStmt:
-		r.handleIndexStmt(n)
-	default:
-	}
-}
-
-func (r *compatibilityRule) handleCreateStmt(n *ast.CreateStmt) {
-	if n.Relation != nil {
-		r.lastCreateTable = rangeVarTableName(n.Relation)
-	}
-}
-
-func (r *compatibilityRule) handleDropdbStmt() {
-	stmtText := r.TrimmedStmtText()
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    advisorcode.CompatibilityDropDatabase.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
-}
-
-func (r *compatibilityRule) handleDropStmt(n *ast.DropStmt) {
-	removeType := ast.ObjectType(n.RemoveType)
-	// Flag DROP TABLE and DROP MATERIALIZED VIEW (data loss risk).
-	// Skip non-materialized DROP VIEW -- views hold no data.
-	if removeType == ast.OBJECT_TABLE || removeType == ast.OBJECT_MATVIEW {
-		stmtText := r.TrimmedStmtText()
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    advisorcode.CompatibilityDropTable.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.SchemaBackwardCompatibility(nodes) {
+		adviceCode, ok := compatibilityCodes[f.Code]
+		if !ok {
+			continue
+		}
+		stmt := stmts[f.Statement]
+		rule := &BaseRule{StmtText: stmt.Text}
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        level,
+			Code:          adviceCode.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, rule.TrimmedStmtText()),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(rule.ContentStartLine())),
 		})
 	}
-}
-
-func (r *compatibilityRule) handleRenameStmt(n *ast.RenameStmt) {
-	code := advisorcode.Ok
-
-	switch n.RenameType {
-	case ast.OBJECT_COLUMN:
-		// RENAME COLUMN - check if not on last created table
-		if n.Relation != nil {
-			tableName := rangeVarTableName(n.Relation)
-			if r.lastCreateTable != tableName {
-				code = advisorcode.CompatibilityRenameColumn
-			}
-		}
-	default:
-		// All non-column renames (TABLE, INDEX, CONSTRAINT, etc.) are potentially incompatible.
-		code = advisorcode.CompatibilityRenameTable
-	}
-
-	if code != advisorcode.Ok {
-		stmtText := r.TrimmedStmtText()
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
-			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
-				Column: 0,
-			},
-		})
-	}
-}
-
-func (r *compatibilityRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	if n.Relation == nil {
-		return
-	}
-	tableName := rangeVarTableName(n.Relation)
-
-	// Skip if this is the table we just created
-	if r.lastCreateTable == tableName {
-		return
-	}
-
-	for _, cmd := range alterTableCmds(n) {
-		code := advisorcode.Ok
-
-		switch ast.AlterTableType(cmd.Subtype) {
-		case ast.AT_DropColumn:
-			code = advisorcode.CompatibilityDropColumn
-		case ast.AT_AlterColumnType:
-			code = advisorcode.CompatibilityAlterColumn
-		case ast.AT_AddConstraint:
-			constraint, ok := cmd.Def.(*ast.Constraint)
-			if ok {
-				switch constraint.Contype {
-				case ast.CONSTR_PRIMARY:
-					code = advisorcode.CompatibilityAddPrimaryKey
-				case ast.CONSTR_UNIQUE:
-					code = advisorcode.CompatibilityAddUniqueKey
-				case ast.CONSTR_FOREIGN:
-					code = advisorcode.CompatibilityAddForeignKey
-				case ast.CONSTR_CHECK:
-					if !constraint.SkipValidation {
-						code = advisorcode.CompatibilityAddCheck
-					}
-				default:
-				}
-			}
-		default:
-		}
-
-		if code != advisorcode.Ok {
-			stmtText := r.TrimmedStmtText()
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-			return
-		}
-	}
-}
-
-func (r *compatibilityRule) handleIndexStmt(n *ast.IndexStmt) {
-	// Check if this is CREATE UNIQUE INDEX
-	if !n.Unique {
-		return
-	}
-
-	// Get table name
-	if n.Relation == nil {
-		return
-	}
-	tableName := rangeVarTableName(n.Relation)
-
-	// Skip if this is the table we just created
-	if r.lastCreateTable == tableName {
-		return
-	}
-
-	stmtText := r.TrimmedStmtText()
-	r.AddAdvice(&storepb.Advice{
-		Status:  r.Level,
-		Code:    advisorcode.CompatibilityAddUniqueKey.Int32(),
-		Title:   r.Title,
-		Content: fmt.Sprintf(`"%s" may cause incompatibility with the existing data and code`, stmtText),
-		StartPosition: &storepb.Position{
-			Line:   r.ContentStartLine(),
-			Column: 0,
-		},
-	})
+	return adviceList, nil
 }

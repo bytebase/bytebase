@@ -2,18 +2,15 @@ package pg
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strings"
 
+	pgv1review "github.com/bytebase/omni/pg/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -25,6 +22,10 @@ func init() {
 }
 
 // InsertRowLimitAdvisor is the advisor checking for to limit INSERT rows.
+// omni (pg/v1review.StatementInsertRowLimitProbes) picks the INSERTs whose
+// rows the database must estimate; this adapter EXPLAINs them under the
+// session settings before them, and omni (StatementInsertRowLimit) judges
+// every INSERT.
 type InsertRowLimitAdvisor struct {
 }
 
@@ -38,119 +39,48 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	if numberPayload == nil {
 		return nil, errors.New("number_payload is required for this rule")
 	}
-
-	if int(numberPayload.Number) <= 0 {
+	maxRow := int(numberPayload.Number)
+	if maxRow <= 0 {
 		return nil, nil
 	}
 
-	rule := &insertRowLimitRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maxRow:     int(numberPayload.Number),
-		driver:     checkCtx.Driver,
-		ctx:        ctx,
-		TenantMode: checkCtx.TenantMode,
+	title := checkCtx.Rule.Type.String()
+	var explains advisor.ExplainBudget
+	l := newLiveStatements(checkCtx.ParsedStatements)
+	probes := make(map[int]v1review.Probe)
+	if checkCtx.Driver != nil {
+		l.probeEach(pgv1review.StatementInsertRowLimitProbes(l.nodes), func(i int, settings []string) {
+			if !explains.Spend(&storepb.Position{Line: l.startLine(i) + int32(l.stmts[i].BaseLine())}) {
+				return
+			}
+			probes[i] = explainRows(ctx, checkCtx.Driver, checkCtx.TenantMode, settings, l.probeText(i), getInsertedRows)
+		})
 	}
 
-	adviceList := RunRules(checkCtx.ParsedStatements, []Rule{rule})
-	return rule.explains.AppendSkippedAdvice(adviceList, rule.Title, advisorcode.InsertTooManyRows), nil
-}
-
-type insertRowLimitRule struct {
-	BaseRule
-
-	maxRow     int
-	driver     *sql.DB
-	ctx        context.Context
-	explains   advisor.ExplainBudget
-	settings   sessionSettings
-	TenantMode bool
-}
-
-func (*insertRowLimitRule) Name() string {
-	return string(storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT)
-}
-
-func (r *insertRowLimitRule) OnStatement(node ast.Node) {
-	r.settings.add(node, r.TrimmedStmtText())
-	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
-	switch n := node.(type) {
-	case *ast.InsertStmt:
-		r.checkInsert(n, text)
-	default:
-	}
-}
-
-func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt, text string) {
-	code := advisorcode.Ok
-	rows := int64(0)
-	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
-
-	// Count VALUES rows if this is INSERT ... VALUES.
-	if sel, ok := ins.SelectStmt.(*ast.SelectStmt); ok && sel.ValuesLists != nil {
-		rowCount := len(sel.ValuesLists.Items)
-		if rowCount > r.maxRow {
-			code = advisorcode.InsertTooManyRows
-			rows = int64(rowCount)
+	var adviceList []*storepb.Advice
+	for _, f := range pgv1review.StatementInsertRowLimit(l.nodes, probes, maxRow) {
+		text := l.probeText(f.Statement)
+		adviceCode, content := advisorcode.InsertTooManyRows, ""
+		switch f.Code {
+		case v1review.DryRunFailed:
+			content = fmt.Sprintf("\"%s\" dry runs failed: %s", text, f.Value)
+		case v1review.RowCountFailed:
+			adviceCode, content = advisorcode.Internal, fmt.Sprintf("failed to get row count for \"%s\": %s", text, f.Value)
+		case v1review.RowLimitExceeded:
+			content = fmt.Sprintf("The statement \"%s\" inserts %s rows. The count exceeds %d.", text, f.Value, maxRow)
+		default:
+			continue
 		}
-	} else if ins.SelectStmt != nil && r.driver != nil {
-		// For INSERT ... SELECT, use EXPLAIN.
-		if !r.explains.Spend(&storepb.Position{Line: r.ContentStartLine() + int32(r.BaseLine)}) {
-			return
-		}
-
-		res, err := advisor.Query(r.ctx, advisor.QueryContext{
-			TenantMode:    r.TenantMode,
-			PreExecutions: r.settings.statements(),
-		}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
-
-		if err != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    advisorcode.InsertTooManyRows.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("\"%s\" dry runs failed: %s", statementText, err.Error()),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-			return
-		}
-
-		rowCount, err := getInsertedRows(res)
-		if err != nil {
-			r.AddAdvice(&storepb.Advice{
-				Status:  r.Level,
-				Code:    advisorcode.Internal.Int32(),
-				Title:   r.Title,
-				Content: fmt.Sprintf("failed to get row count for \"%s\": %s", statementText, err.Error()),
-				StartPosition: &storepb.Position{
-					Line:   r.ContentStartLine(),
-					Column: 0,
-				},
-			})
-			return
-		}
-
-		if rowCount > int64(r.maxRow) {
-			code = advisorcode.InsertTooManyRows
-			rows = rowCount
-		}
-	}
-
-	if code != advisorcode.Ok {
-		r.AddAdvice(&storepb.Advice{
-			Status:  r.Level,
-			Code:    code.Int32(),
-			Title:   r.Title,
-			Content: fmt.Sprintf("The statement \"%s\" inserts %d rows. The count exceeds %d.", statementText, rows, r.maxRow),
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Code:    adviceCode.Int32(),
+			Title:   title,
+			Content: content,
 			StartPosition: &storepb.Position{
-				Line:   r.ContentStartLine(),
+				Line:   l.startLine(f.Statement) + int32(l.stmts[f.Statement].BaseLine()),
 				Column: 0,
 			},
 		})
 	}
+	return explains.AppendSkippedAdvice(adviceList, title, advisorcode.InsertTooManyRows), nil
 }

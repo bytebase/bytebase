@@ -10,6 +10,7 @@ import type {
 import {
   DataSource_AuthenticationType,
   DataSourceType,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
@@ -149,6 +150,7 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
     state: instance?.state ?? State.ACTIVE,
     title: instance?.title ?? i18n.t("instance.new-instance"),
     engine: instance?.engine ?? Engine.MYSQL,
+    vendor: instance?.vendor ?? Vendor.VENDOR_UNSPECIFIED,
     externalLink: instance?.externalLink ?? "",
     environment: instance?.environment,
     activation: instance

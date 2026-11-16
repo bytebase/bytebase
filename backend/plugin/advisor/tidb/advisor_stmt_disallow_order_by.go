@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,6 +22,8 @@ func init() {
 }
 
 // DisallowOrderByAdvisor is the advisor checking for no ORDER BY clause in DELETE/UPDATE statements.
+// The judgment lives in omni (tidb/v1review.StatementDisallowOrderBy); this
+// adapter renders its findings as advice.
 type DisallowOrderByAdvisor struct {
 }
 
@@ -36,31 +39,22 @@ func (*DisallowOrderByAdvisor) Check(_ context.Context, checkCtx advisor.Context
 		return nil, err
 	}
 
+	title := checkCtx.Rule.Type.String()
 	var adviceList []*storepb.Advice
+	codes := map[string]advisorcode.Code{
+		"UPDATE": advisorcode.UpdateUseOrderBy,
+		"DELETE": advisorcode.DeleteUseOrderBy,
+	}
 	for _, ostmt := range stmts {
-		code := advisorcode.Ok
-		switch n := ostmt.Node.(type) {
-		case *ast.UpdateStmt:
-			if len(n.OrderBy) > 0 {
-				code = advisorcode.UpdateUseOrderBy
-			}
-		case *ast.DeleteStmt:
-			if len(n.OrderBy) > 0 {
-				code = advisorcode.DeleteUseOrderBy
-			}
-		default:
-		}
-
-		if code != advisorcode.Ok {
+		for _, f := range tidbv1review.StatementDisallowOrderBy([]ast.Node{ostmt.Node}) {
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:        level,
-				Code:          code.Int32(),
-				Title:         checkCtx.Rule.Type.String(),
+				Code:          codes[f.Name].Int32(),
+				Title:         title,
 				Content:       fmt.Sprintf("ORDER BY clause is forbidden in DELETE and UPDATE statements, but \"%s\" uses", ostmt.TrimmedText()),
 				StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			})
 		}
 	}
-
 	return adviceList, nil
 }

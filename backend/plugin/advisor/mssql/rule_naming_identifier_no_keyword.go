@@ -3,9 +3,9 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -21,7 +21,11 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_NAMING_IDENTIFIER_NO_KEYWORD, &NamingIdentifierNoKeywordAdvisor{})
 }
 
-// NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier naming convention without keyword.
+// NamingIdentifierNoKeywordAdvisor is the advisor checking for identifier
+// naming convention without keyword. The judgment lives in omni
+// (mssql/v1review.NamingIdentifierNoKeyword); this adapter renders the
+// findings as advice, each on the line where the statement text first holds
+// the finding's search text.
 type NamingIdentifierNoKeywordAdvisor struct {
 }
 
@@ -32,54 +36,26 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 
-	rule := &namingIdentifierNoKeywordRule{
-		BaseRule: BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingIdentifierNoKeywordRule struct {
-	BaseRule
-}
-
-func (*namingIdentifierNoKeywordRule) Name() string {
-	return "NamingIdentifierNoKeywordRule"
-}
-
-func (r *namingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
-	ast.Inspect(node, func(n ast.Node) bool {
-		var name string
-		switch v := n.(type) {
-		case *ast.ColumnDef:
-			name = v.Name
-		case *ast.ConstraintDef:
-			name = v.Name
-		case *ast.CreateSchemaStmt:
-			name = v.Name
-		case *ast.CreateDatabaseStmt:
-			name = v.Name
-		case *ast.CreateIndexStmt:
-			name = v.Name
-		case *ast.CreateTableStmt:
-			if v.Name != nil {
-				name = v.Name.Object
-			}
-		default:
-			return true
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-		if name == "" {
-			return true
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-		lower := strings.ToLower(name)
-		if tsqlparser.IsTSQLReservedKeyword(lower, false) {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		text := &BaseRule{StmtText: stmt.Text}
+		for _, f := range mssqlv1review.NamingIdentifierNoKeyword([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NameIsKeywordIdentifier.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", lower),
-				StartPosition: &storepb.Position{Line: r.FindLineByName(name)},
+				Title:         title,
+				Content:       fmt.Sprintf("Identifier [%s] is a keyword identifier and should be avoided.", f.Name),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + text.FindLineByName(f.Search)},
 			})
 		}
-		return true
-	})
+	}
+	return adviceList, nil
 }

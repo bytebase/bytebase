@@ -3,9 +3,10 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/bytebase/omni/tidb/ast"
+	tidbv1review "github.com/bytebase/omni/tidb/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, storepb.SQLReviewRule_NAMING_COLUMN_AUTO_INCREMENT, &NamingAutoIncrementColumnAdvisor{})
 }
 
-// NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment naming convention.
+// NamingAutoIncrementColumnAdvisor is the advisor checking for auto-increment
+// naming convention. The judgment lives in omni
+// (tidb/v1review.NamingAutoIncrementColumn); this adapter converts the rule's
+// payload into the omni config and renders the findings as advice.
 type NamingAutoIncrementColumnAdvisor struct {
 }
 
@@ -41,45 +45,41 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 	if namingPayload == nil {
 		return nil, errors.New("naming_payload is required for this rule")
 	}
-	format, err := regexp.Compile(namingPayload.Format)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
-	}
+
 	maxLength := int(namingPayload.MaxLength)
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
-	title := checkCtx.Rule.Type.String()
-
-	var adviceList []*storepb.Advice
-	for _, ostmt := range stmts {
-		cols := collectColumnViolations(ostmt, func(col *ast.ColumnDef) bool {
-			return col != nil && col.AutoIncrement
-		})
-		// Each AUTO_INCREMENT column may produce TWO advices (format
-		// mismatch + length overflow). Pingcap-typed predecessor emitted
-		// both independently per column — preserve.
-		for _, col := range cols {
-			if !format.MatchString(col.column) {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", col.table, col.column, format),
-					StartPosition: base.ConvertANTLRLineToPosition(col.line),
-				})
-			}
-			if maxLength > 0 && len(col.column) > maxLength {
-				adviceList = append(adviceList, &storepb.Advice{
-					Status:        level,
-					Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
-					Title:         title,
-					Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", col.table, col.column, maxLength),
-					StartPosition: base.ConvertANTLRLineToPosition(col.line),
-				})
-			}
-		}
+	cfg := v1review.NamingConfig{Pattern: namingPayload.Format, MaxLength: maxLength}
+	if _, err := cfg.Compile(); err != nil {
+		return nil, errors.Wrapf(err, "failed to compile regex format %q", namingPayload.Format)
 	}
 
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range stmts {
+		findings, err := tidbv1review.NamingAutoIncrementColumn([]ast.Node{stmt.Node}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range findings {
+			var content string
+			switch f.Code {
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", f.Table, f.Name, namingPayload.Format)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", f.Table, f.Name, maxLength)
+			default:
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.AbsoluteLine(f.Start)),
+			})
+		}
+	}
 	return adviceList, nil
 }

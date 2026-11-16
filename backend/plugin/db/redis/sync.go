@@ -8,6 +8,7 @@ import (
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -79,7 +80,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]int, error) {
 		return dbsFromKeyspace, nil
 	}
 
-	// Cloud vendors may have disabled this command. The default database is 0.
+	// Neither source could list the databases. Every Redis has database 0.
 	if failopenFromConfig || failopenFromKeyspace {
 		return []int{0}, nil
 	}
@@ -89,19 +90,27 @@ func (d *Driver) getDatabases(ctx context.Context) ([]int, error) {
 
 func (d *Driver) getDatabaseCountFromConfig(ctx context.Context) ([]int, bool, error) {
 	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
+	return databasesFromConfigReply(val, err)
+}
+
+// databasesFromConfigReply reads the reply to CONFIG GET databases. The bool
+// reports that the server cannot tell the count, so another source decides.
+func databasesFromConfigReply(val map[string]string, err error) ([]int, bool, error) {
 	if err != nil {
-		// Cloud vendors may have disabled this command.
-		if strings.Contains(err.Error(), "unknown command") {
+		if isCommandUnavailable(err) {
 			return nil, true, nil
 		}
 		return nil, false, err
 	}
-	if _, ok := val["databases"]; !ok {
-		return nil, false, errors.New("The returned values of 'CONFIG GET databases' dont't have the 'databases' KEY")
+	raw, ok := val["databases"]
+	if !ok {
+		// Redis Enterprise and Redis Cloud answer CONFIG GET for a subset of
+		// settings and send an empty reply, not an error, for the rest.
+		return nil, true, nil
 	}
-	count, err := strconv.Atoi(val["databases"])
+	count, err := strconv.Atoi(raw)
 	if err != nil {
-		return nil, false, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
+		return nil, false, errors.Wrapf(err, "failed to convert to int from %v", raw)
 	}
 	var databases []int
 	for i := 0; i < count; i++ {
@@ -110,11 +119,16 @@ func (d *Driver) getDatabaseCountFromConfig(ctx context.Context) ([]int, bool, e
 	return databases, false, nil
 }
 
+// isCommandUnavailable reports whether the server refused the command itself:
+// a cloud vendor removed it, or the user's ACL excludes it.
+func isCommandUnavailable(err error) bool {
+	return strings.Contains(err.Error(), "unknown command") || redis.HasErrorPrefix(err, "NOPERM")
+}
+
 func (d *Driver) getDatabaseNumberFromKeyspace(ctx context.Context) ([]int, bool, error) {
 	val, err := d.rdb.Info(ctx, "keyspace").Result()
 	if err != nil {
-		// Cloud vendors may have disabled this command.
-		if strings.Contains(err.Error(), "unknown command") {
+		if isCommandUnavailable(err) {
 			return nil, true, nil
 		}
 		return nil, false, err

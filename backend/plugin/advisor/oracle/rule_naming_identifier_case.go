@@ -4,14 +4,16 @@ package oracle
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
+	"github.com/bytebase/omni/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -23,6 +25,9 @@ func init() {
 }
 
 // NamingIdentifierCaseAdvisor is the advisor checking for identifier case.
+// The judgment lives in omni (oracle/v1review.NamingIdentifierCase); this
+// adapter converts the rule's payload into the omni config and renders the
+// findings as advice.
 type NamingIdentifierCaseAdvisor struct {
 }
 
@@ -33,57 +38,31 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		return nil, err
 	}
 	namingCasePayload := checkCtx.Rule.GetNamingCasePayload()
+	cfg := v1review.CaseConfig{Upper: namingCasePayload.Upper}
 
-	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// NamingIdentifierCaseRule is the rule implementation for identifier case.
-type NamingIdentifierCaseRule struct {
-	BaseRule
-
-	currentDatabase string
-	upper           bool
-}
-
-// NewNamingIdentifierCaseRule creates a new NamingIdentifierCaseRule.
-func NewNamingIdentifierCaseRule(level storepb.Advice_Status, title string, currentDatabase string, upper bool) *NamingIdentifierCaseRule {
-	return &NamingIdentifierCaseRule{
-		BaseRule:        NewBaseRule(level, title, 0),
-		currentDatabase: currentDatabase,
-		upper:           upper,
-	}
-}
-
-// Name returns the rule name.
-func (*NamingIdentifierCaseRule) Name() string {
-	return "naming.identifier-case"
-}
-
-// OnStatement checks identifier case from the omni AST.
-func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
-	for _, ident := range identifiers(node) {
-		if r.upper {
-			if ident.name != strings.ToUpper(ident.name) {
-				r.AddAdvice(
-					r.level,
-					code.NamingCaseMismatch.Int32(),
-					fmt.Sprintf("Identifier %q should be upper case", ident.name),
-					base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
-				)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.NamingIdentifierCase([]ast.Node{node}, cfg) {
+			content := fmt.Sprintf("Identifier %q should be lower case", f.Name)
+			if cfg.Upper {
+				content = fmt.Sprintf("Identifier %q should be upper case", f.Name)
 			}
-		} else if ident.name != strings.ToLower(ident.name) {
-			r.AddAdvice(
-				r.level,
-				code.NamingCaseMismatch.Int32(),
-				fmt.Sprintf("Identifier %q should be lower case", ident.name),
-				base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
-			)
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.NamingCaseMismatch.Int32(),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
 		}
 	}
+	return adviceList, nil
 }
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

@@ -49,7 +49,7 @@ func validateCheckFlags(w *world.World) func(*cobra.Command, []string) error {
 func runCheck(w *world.World) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		defer func() {
-			output.WriteOutput(w)
+			output.WriteOutput(w, cmd.OutOrStdout())
 		}()
 		platform := w.Platform
 		w.Logger.Info("running on platform", "platform", platform.String())

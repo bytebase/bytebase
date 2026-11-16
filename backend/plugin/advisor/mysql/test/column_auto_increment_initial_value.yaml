@@ -26,3 +26,39 @@
         line: 4
         column: 0
       endposition: null
+- statement: CREATE TABLE db.t(a INT) ENGINE = InnoDB auto_increment 5;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 5, which doesn't equal 20
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      ADD COLUMN b INT,
+      AUTO_INCREMENT = 99;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 99, which doesn't equal 20
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(a INT) AUTO_INCREMENT = 20;
+    ALTER TABLE t AUTO_INCREMENT = 0, ENGINE = InnoDB;
+  want:
+    - status: 2
+      code: 416
+      title: COLUMN_AUTO_INCREMENT_INITIAL_VALUE
+      content: The initial auto-increment value in table `t` is 0, which doesn't equal 20
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN ALTER TABLE t AUTO_INCREMENT = 5; END;

@@ -3,13 +3,15 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -20,47 +22,38 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_SYSTEM_PROCEDURE_DISALLOW_CREATE, &ProcedureDisallowCreateAdvisor{})
 }
 
-// ProcedureDisallowCreateAdvisor is the advisor checking for disallow create procedure.
+// ProcedureDisallowCreateAdvisor is the advisor checking for disallow creating procedure. The judgment
+// lives in omni (mysql/v1review.SystemProcedureDisallowCreate); this adapter renders the findings as
+// advice.
 type ProcedureDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow create procedure.
+// Check checks for disallow creating procedure.
 func (*ProcedureDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
 	if err != nil {
 		return nil, err
 	}
 
-	rule := &procedureDisallowCreateRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range mysqlv1review.SystemProcedureDisallowCreate([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          advisorcode.DisallowCreateProcedure.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", strings.TrimSpace(stmt.Text)),
+				StartPosition: findingPositionBaseLineTwice(stmt, f),
+			})
+		}
 	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type procedureDisallowCreateRule struct {
-	BaseRule
-}
-
-func (*procedureDisallowCreateRule) Name() string {
-	return "ProcedureDisallowCreateRule"
-}
-
-func (r *procedureDisallowCreateRule) OnStatement(node ast.Node) {
-	n, ok := node.(*ast.CreateFunctionStmt)
-	if !ok || !n.IsProcedure {
-		return
-	}
-	if n.Name != nil {
-		r.AddAdvice(&storepb.Advice{
-			Status:        r.Level,
-			Code:          advisorcode.DisallowCreateProcedure.Int32(),
-			Title:         r.Title,
-			Content:       fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
-		})
-	}
+	return adviceList, nil
 }

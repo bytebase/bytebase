@@ -1,0 +1,106 @@
+[
+  {
+    "name": "github-one-environment",
+    "params": {
+      "provider": "github",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:3.24.0",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": ["instances/pg-prod/databases/shop_prod"],
+      "environments": ["prod"],
+      "folder": "migrations"
+    }
+  },
+  {
+    "name": "github-three-environments",
+    "params": {
+      "provider": "github",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:3.24.0",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": [
+        "instances/pg-test/databases/shop_test",
+        "instances/pg-staging/databases/shop_staging",
+        "instances/pg-prod/databases/shop_prod"
+      ],
+      "environments": ["test", "staging", "prod"],
+      "folder": "migrations"
+    }
+  },
+  {
+    "name": "github-database-group",
+    "params": {
+      "provider": "github",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:cloud",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": ["projects/shop/databaseGroups/all-shops"],
+      "environments": ["test", "prod"],
+      "folder": "db/migrations"
+    }
+  },
+  {
+    "name": "gitlab-two-environments",
+    "params": {
+      "provider": "gitlab",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:3.24.0",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": [
+        "instances/pg-test/databases/shop_test",
+        "instances/pg-prod/databases/shop_prod"
+      ],
+      "environments": ["test", "prod"],
+      "folder": "migrations"
+    }
+  },
+  {
+    "name": "gitlab-database-group",
+    "params": {
+      "provider": "gitlab",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": ["projects/shop/databaseGroups/all-shops"],
+      "environments": ["prod"],
+      "folder": "db/migrations"
+    }
+  },
+  {
+    "name": "github-quoted-targets",
+    "params": {
+      "provider": "github",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:3.24.0",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": [
+        "instances/sql-prod/databases/Shop Orders",
+        "instances/sql-prod/databases/o'brien"
+      ],
+      "environments": ["prod"],
+      "folder": "migrations"
+    }
+  },
+  {
+    "name": "gitlab-quoted-targets",
+    "params": {
+      "provider": "gitlab",
+      "bytebaseUrl": "https://bytebase.example.com",
+      "actionImage": "bytebase/bytebase-action:3.24.0",
+      "workloadIdentityEmail": "deploy-ci@shop.workload.bytebase.com",
+      "projectId": "shop",
+      "targets": [
+        "instances/sql-prod/databases/Shop Orders",
+        "instances/sql-prod/databases/cost$center"
+      ],
+      "environments": ["prod"],
+      "folder": "migrations"
+    }
+  }
+]

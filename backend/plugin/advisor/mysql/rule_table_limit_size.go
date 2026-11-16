@@ -4,20 +4,26 @@ import (
 	"context"
 	"fmt"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 func init() {
 	advisor.Register(storepb.Engine_MYSQL, storepb.SQLReviewRule_TABLE_LIMIT_SIZE, &MaximumTableSizeAdvisor{})
 }
 
+// MaximumTableSizeAdvisor checks the row count of the tables a change alters,
+// truncates or drops. The judgment lives in omni
+// (mysql/v1review.TableLimitSize); this adapter passes the synced snapshot
+// and renders the findings as advice.
 type MaximumTableSizeAdvisor struct {
 }
 
@@ -25,7 +31,7 @@ var (
 	_ advisor.Advisor = &MaximumTableSizeAdvisor{}
 )
 
-// If table size > xx bytes, then warning/error.
+// Check checks the row count of the tables the statements change.
 func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	numberPayload := checkCtx.Rule.GetNumberPayload()
 	if numberPayload == nil {
@@ -37,91 +43,34 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, err
 	}
 
-	rule := &tableLimitSizeRule{
-		BaseRule: BaseRule{
-			Level: status,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		maxRows:    int(numberPayload.Number),
-		dbMetadata: checkCtx.DBSchema,
-	}
-
-	RunRules(checkCtx.ParsedStatements, []Rule{rule})
-
-	// Generate advice based on collected table information.
-	rule.generateAdvice()
-
-	return rule.GetAdviceList(), nil
-}
-
-type tableLimitSizeRule struct {
-	BaseRule
-	affectedTabNames []string
-	maxRows          int
-	dbMetadata       *metadatapb.DatabaseSchemaMetadata
-}
-
-func (*tableLimitSizeRule) Name() string {
-	return "TableLimitSizeRule"
-}
-
-func (r *tableLimitSizeRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	case *ast.TruncateStmt:
-		r.checkTruncate(n)
-	case *ast.DropTableStmt:
-		r.checkDropTable(n)
-	default:
-	}
-}
-
-func (r *tableLimitSizeRule) checkAlterTable(n *ast.AlterTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	r.affectedTabNames = append(r.affectedTabNames, n.Table.Name)
-}
-
-func (r *tableLimitSizeRule) checkTruncate(n *ast.TruncateStmt) {
-	for _, ref := range n.Tables {
-		if ref != nil {
-			r.affectedTabNames = append(r.affectedTabNames, ref.Name)
+	var nodes []ast.Node
+	var stmts []base.ParsedStatement
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	}
-}
-
-func (r *tableLimitSizeRule) checkDropTable(n *ast.DropTableStmt) {
-	for _, ref := range n.Tables {
-		if ref != nil {
-			r.affectedTabNames = append(r.affectedTabNames, ref.Name)
+		node, ok := mysqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
+		nodes = append(nodes, node)
+		stmts = append(stmts, stmt)
 	}
-}
 
-func (r *tableLimitSizeRule) generateAdvice() {
-	if r.dbMetadata != nil && len(r.dbMetadata.Schemas) != 0 {
-		for _, tabName := range r.affectedTabNames {
-			tableRows := getTabRowsByName(tabName, r.dbMetadata.Schemas[0].Tables)
-			if tableRows >= int64(r.maxRows) {
-				r.AddAdvice(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.TableExceedLimitSize.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
-					StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
-				})
-			}
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, f := range mysqlv1review.TableLimitSize(nodes, checkCtx.DBSchema, int(numberPayload.Number)) {
+		if f.Code != v1review.TableTooLarge {
+			continue
 		}
+		stmt := stmts[f.Statement]
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:        status,
+			Code:          code.TableExceedLimitSize.Int32(),
+			Title:         title,
+			Content:       fmt.Sprintf("Apply DDL on large table '%s' ( %s rows ) will lock table for a long time", f.Name, f.Value),
+			StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, v1review.Finding{}))),
+		})
 	}
-}
-
-func getTabRowsByName(targetTabName string, tables []*metadatapb.TableMetadata) int64 {
-	for _, table := range tables {
-		if table.Name == targetTabName {
-			return table.RowCount
-		}
-	}
-	return 0
+	return adviceList, nil
 }

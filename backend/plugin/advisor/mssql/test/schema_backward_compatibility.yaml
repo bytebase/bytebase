@@ -152,3 +152,121 @@
         line: 1
         column: 0
       endposition: null
+- statement: |-
+    ALTER TABLE MyTable
+        ADD CONSTRAINT MyUnique UNIQUE (MyColumnOne);
+    ALTER TABLE MyTable
+        WITH NOCHECK
+        ADD CONSTRAINT MyForeignKey FOREIGN KEY (MyColumnOne) REFERENCES MyTableTwo(MyColumnTwo);
+    ALTER TABLE MyTable
+        ALTER COLUMN MyColumnOne BIGINT;
+    ALTER TABLE MyTable WITH NOCHECK ADD CONSTRAINT MyUnique UNIQUE (MyColumnOne);
+  want:
+    - status: 2
+      code: 107
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Add UNIQUE KEY may cause incompatibility with the existing data and code
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 108
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Add FOREIGN KEY WITH NO CHECK may cause incompatibility with the existing data and code
+      startposition:
+        line: 5
+        column: 0
+      endposition: null
+    - status: 2
+      code: 111
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Alter COLUMN mycolumnone may cause incompatibility with the existing data and code
+      startposition:
+        line: 7
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE MyTable(Id INT);
+    DROP TABLE MyTable;
+    DROP TABLE MyTable;
+    DROP TABLE master.dbo.MYTABLE;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop table master.dbo.MyTable may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop table master.dbo.MYTABLE may cause incompatibility with the existing data and code
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE master.dbo.T1(Id INT);
+    ALTER TABLE T1 DROP COLUMN Id;
+    ALTER TABLE t1 DROP COLUMN Id;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop column id may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE SCHEMA Sales;
+    DROP SCHEMA sales;
+    DROP SCHEMA Other;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop schema master.other may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    EXEC dbo.sp_rename 'a', 'b';
+    EXEC sp_rename @old, 'b';
+    EXEC SP_RENAME 'a', 'b';
+  want:
+    - status: 2
+      code: 102
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: sp_rename may cause incompatibility with the existing data and code, and break scripts and stored procedures.
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    -- leading comment
+
+    DROP TABLE A;
+    GO
+    DROP DATABASE B;
+  want:
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop table master.dbo.A may cause incompatibility with the existing data and code
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+    - status: 2
+      code: 112
+      title: SCHEMA_BACKWARD_COMPATIBILITY
+      content: Drop database b may cause incompatibility with the existing data and code
+      startposition:
+        line: 5
+        column: 0
+      endposition: null

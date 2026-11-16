@@ -6,12 +6,15 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/oceanbase/ast"
+	oceanbasev1review "github.com/bytebase/omni/oceanbase/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -23,15 +26,10 @@ func init() {
 	advisor.Register(storepb.Engine_OCEANBASE, storepb.SQLReviewRule_NAMING_INDEX_IDX, &NamingIndexConventionAdvisor{})
 }
 
-// indexMetaData is the metadata for index.
-type indexMetaData struct {
-	indexName string
-	tableName string
-	metaData  map[string]string
-	line      int
-}
-
-// NamingIndexConventionAdvisor is the advisor checking for index naming convention.
+// NamingIndexConventionAdvisor is the advisor checking for index naming
+// convention. The judgment lives in omni (oceanbase/v1review.NamingIndex); this
+// adapter checks the template's tokens, converts the rule's payload into the omni
+// config, hands over the pre-change schema and renders the findings as advice.
 type NamingIndexConventionAdvisor struct {
 }
 
@@ -60,183 +58,62 @@ func (*NamingIndexConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 	if maxLength == 0 {
 		maxLength = advisor.DefaultNameLengthLimit
 	}
+	cfg := v1review.TemplateConfig{Format: format, MaxLength: maxLength}
 
-	rule := &namingIndexRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-		format:           format,
-		maxLength:        maxLength,
-		templateList:     templateList,
-		originalMetadata: checkCtx.OriginalMetadata,
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type namingIndexRule struct {
-	BaseRule
-	format           string
-	maxLength        int
-	templateList     []string
-	originalMetadata *model.DatabaseMetadata
-}
-
-func (*namingIndexRule) Name() string {
-	return "NamingIndexConventionRule"
-}
-
-func (r *namingIndexRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.CreateTableStmt:
-		r.checkCreateTable(n)
-	case *ast.AlterTableStmt:
-		r.checkAlterTable(n)
-	case *ast.CreateIndexStmt:
-		r.checkCreateIndex(n)
-	default:
-	}
-}
-
-func (r *namingIndexRule) checkCreateTable(n *ast.CreateTableStmt) {
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	var indexDataList []*indexMetaData
-	for _, constraint := range n.Constraints {
-		if constraint == nil {
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
 			continue
 		}
-		if metaData := r.handleConstraint(tableName, constraint, r.BaseLine+int(r.LocToLine(constraint.Loc))); metaData != nil {
-			indexDataList = append(indexDataList, metaData)
-		}
-	}
-	r.handleIndexList(indexDataList)
-}
-
-func (r *namingIndexRule) checkAlterTable(n *ast.AlterTableStmt) {
-	tableName := ""
-	if n.Table != nil {
-		tableName = n.Table.Name
-	}
-	var indexDataList []*indexMetaData
-	for _, cmd := range n.Commands {
-		if cmd == nil {
+		node, ok := oceanbaseparser.GetNode(stmt.AST)
+		if !ok {
 			continue
 		}
-		switch cmd.Type {
-		case ast.ATAddConstraint, ast.ATAddIndex:
-			if cmd.Constraint != nil {
-				if metaData := r.handleConstraint(tableName, cmd.Constraint, r.BaseLine+int(r.LocToLine(n.Loc))); metaData != nil {
-					indexDataList = append(indexDataList, metaData)
-				}
-			}
-		case ast.ATRenameIndex:
-			oldIndexName := cmd.Name
-			newIndexName := cmd.NewName
-			indexState := r.originalMetadata.GetSchemaMetadata("").GetTable(tableName).GetIndex(oldIndexName)
-			if indexState == nil {
+		for _, f := range oceanbasev1review.NamingIndex([]ast.Node{node}, cfg, renameIndexSchema(node, checkCtx.OriginalMetadata)) {
+			var content string
+			switch f.Code {
+			case v1review.PatternInvalid:
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Code:    code.Internal.Int32(),
+					Title:   "Internal error for unique key naming convention rule",
+					Content: fmt.Sprintf("%q meet internal error %q", strings.TrimRight(strings.TrimSpace(stmt.Text), ";"), f.Detail),
+				})
+				continue
+			case v1review.NameMismatch:
+				content = fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", f.Table, f.Pattern, f.Name)
+			case v1review.NameTooLong:
+				content = fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", f.Name, f.Table, maxLength)
+			default:
 				continue
 			}
-			if indexState.GetProto().GetUnique() {
-				// Unique index naming convention should in rule_naming_unique_key_convention.go
-				continue
-			}
-			metaData := map[string]string{
-				advisor.ColumnListTemplateToken: strings.Join(indexState.GetProto().GetExpressions(), "_"),
-				advisor.TableNameTemplateToken:  tableName,
-			}
-			indexData := &indexMetaData{
-				indexName: newIndexName,
-				tableName: tableName,
-				metaData:  metaData,
-				line:      r.BaseLine + int(r.LocToLine(n.Loc)),
-			}
-			indexDataList = append(indexDataList, indexData)
-		default:
-		}
-	}
-	r.handleIndexList(indexDataList)
-}
-
-func (r *namingIndexRule) checkCreateIndex(n *ast.CreateIndexStmt) {
-	// Unique, fulltext, spatial index naming convention should be in other rules.
-	if n.Unique || n.Fulltext || n.Spatial {
-		return
-	}
-	if n.Table == nil {
-		return
-	}
-	tableName := n.Table.Name
-	columnList := indexColumns(n.Columns)
-	metaData := map[string]string{
-		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-		advisor.TableNameTemplateToken:  tableName,
-	}
-	indexDataList := []*indexMetaData{
-		{
-			indexName: n.IndexName,
-			tableName: tableName,
-			metaData:  metaData,
-			line:      r.BaseLine + int(r.LocToLine(n.Loc)),
-		},
-	}
-	r.handleIndexList(indexDataList)
-}
-
-func (r *namingIndexRule) handleIndexList(indexDataList []*indexMetaData) {
-	for _, indexData := range indexDataList {
-		regex, err := getTemplateRegexp(r.format, r.templateList, indexData.metaData)
-		if err != nil {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.Internal.Int32(),
-				Title:   "Internal error for unique key naming convention rule",
-				Content: fmt.Sprintf("%q meet internal error %q", r.TrimmedStmtText(), err.Error()),
-			})
-			continue
-		}
-		if !regex.MatchString(indexData.indexName) {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.NamingIndexConventionMismatch.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
-				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
-			})
-		}
-		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:        r.Level,
-				Code:          code.NamingIndexConventionMismatch.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
-				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
+				Title:         title,
+				Content:       content,
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
 			})
 		}
 	}
+	return adviceList, nil
 }
 
-func (*namingIndexRule) handleConstraint(tableName string, constraint *ast.Constraint, line int) *indexMetaData {
-	// We only focus on normal index.
-	if constraint.Type != ast.ConstrIndex {
-		return nil
+// renameIndexSchema returns the pre-change schema for a statement that renames
+// an index, the only one whose judgment reads it. The metadata is not checked
+// for nil: the V1 rules dereferenced it at each RENAME INDEX, so a nil
+// OriginalMetadata panics on these statements alone and advisor.Check reports
+// the panic as the rule's error.
+func renameIndexSchema(node ast.Node, original *model.DatabaseMetadata) v1review.Schema {
+	alter, ok := node.(*ast.AlterTableStmt)
+	if !ok {
+		return v1review.Schema{}
 	}
-	indexName := constraint.Name
-	columnList := constraint.Columns
-	if len(columnList) == 0 {
-		columnList = indexColumns(constraint.IndexColumns)
+	for _, cmd := range alter.Commands {
+		if cmd != nil && cmd.Type == ast.ATRenameIndex {
+			return v1review.Schema{Metadata: original.GetProto(), ObjectCaseSensitive: original.GetIsObjectCaseSensitive()}
+		}
 	}
-	metaData := map[string]string{
-		advisor.ColumnListTemplateToken: strings.Join(columnList, "_"),
-		advisor.TableNameTemplateToken:  tableName,
-	}
-	return &indexMetaData{
-		indexName: indexName,
-		tableName: tableName,
-		metaData:  metaData,
-		line:      line,
-	}
+	return v1review.Schema{}
 }

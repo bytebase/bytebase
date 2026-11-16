@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	mysqlv1review "github.com/bytebase/omni/mysql/v1review"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 var (
@@ -22,6 +24,8 @@ func init() {
 }
 
 // NoSelectAllAdvisor is the advisor checking for no "select *".
+// The judgment lives in omni (mysql/v1review.StatementSelectNoSelectAll); this
+// adapter renders its findings as advice.
 type NoSelectAllAdvisor struct {
 }
 
@@ -32,74 +36,25 @@ func (*NoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		return nil, err
 	}
 
-	rule := &noSelectAllRule{
-		BaseRule: BaseRule{
-			Level: level,
-			Title: checkCtx.Rule.Type.String(),
-		},
-	}
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type noSelectAllRule struct {
-	BaseRule
-}
-
-func (*noSelectAllRule) Name() string {
-	return "NoSelectAllRule"
-}
-
-func (r *noSelectAllRule) OnStatement(node ast.Node) {
-	text := strings.TrimSpace(r.StmtText)
-	ast.Inspect(node, func(n ast.Node) bool {
-		sel, ok := n.(*ast.SelectStmt)
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := mysqlparser.GetNode(stmt.AST)
 		if !ok {
-			return true
+			continue
 		}
-		// Only check TargetList on leaf SelectStmt (not UNION nodes).
-		if sel.SetOp != ast.SetOpNone {
-			return true
+		for _, f := range mysqlv1review.StatementSelectNoSelectAll([]ast.Node{node}) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.StatementSelectAll.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("\"%s\" uses SELECT all", strings.TrimSpace(stmt.Text)),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + int(findingLine(stmt.Text, f))),
+			})
 		}
-		for _, target := range sel.TargetList {
-			if r.isStarTarget(target) {
-				r.AddAdviceAbsolute(&storepb.Advice{
-					Status:        r.Level,
-					Code:          code.StatementSelectAll.Int32(),
-					Title:         r.Title,
-					Content:       fmt.Sprintf("\"%s\" uses SELECT all", text),
-					StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.findStarLine(target))),
-				})
-			}
-		}
-		// Recurse into children (CTEs, subqueries in FROM, etc.) via Inspect.
-		return true
-	})
-}
-
-func (*noSelectAllRule) isStarTarget(expr ast.ExprNode) bool {
-	switch e := expr.(type) {
-	case *ast.StarExpr:
-		return true
-	case *ast.ResTarget:
-		if _, ok := e.Val.(*ast.StarExpr); ok {
-			return true
-		}
-	default:
 	}
-	return false
-}
-
-func (r *noSelectAllRule) findStarLine(expr ast.ExprNode) int32 {
-	switch e := expr.(type) {
-	case *ast.StarExpr:
-		return r.LocToLine(e.Loc)
-	case *ast.ResTarget:
-		if star, ok := e.Val.(*ast.StarExpr); ok {
-			return r.LocToLine(star.Loc)
-		}
-		return r.LocToLine(e.Loc)
-	default:
-		return r.ContentStartLine()
-	}
+	return adviceList, nil
 }

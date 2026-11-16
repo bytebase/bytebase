@@ -169,3 +169,16 @@
 # Test: ALTER TABLE DROP PARTITION is not truncate partition
 - statement: ALTER TABLE sales DROP PARTITION p_2024_q4;
   changeType: 1
+- statement: |-
+    ALTER TABLE "Sales"
+      TRUNCATE PARTITION FOR (100);
+  want:
+    - status: 2
+      code: 257
+      title: STATEMENT_DISALLOW_TRUNCATE
+      content: 'ALTER TABLE "\"Sales\"" TRUNCATE PARTITION "FOR(100)" is not allowed: partition truncate shares the implicit-commit gap of TRUNCATE TABLE on Oracle. Prior-backup treats this as DDL and does not produce row-level snapshots.'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: TRUNCATE CLUSTER personnel;

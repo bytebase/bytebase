@@ -225,3 +225,49 @@
         line: 3
         column: 0
       endposition: null
+- statement: |-
+    CREATE TABLE db.t(
+      a INT COMMENT '',
+      b INT COMMENT 'ééééééé',
+      c INT COMMENT 'exactly10!'
+    );
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`a` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1301
+      title: COLUMN_COMMENT
+      content: The length of column `t`.`b` comment should be within 10 characters
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE t
+      CHANGE COLUMN a b INT,
+      RENAME COLUMN c TO d,
+      ADD COLUMN (e INT COMMENT 'e', f INT);
+  want:
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`b` requires comments
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+    - status: 2
+      code: 1032
+      title: COLUMN_COMMENT
+      content: Column `t`.`f` requires comments
+      startposition:
+        line: 4
+        column: 0
+      endposition: null
+- statement: CREATE PROCEDURE p() BEGIN CREATE TABLE t(a INT); END;

@@ -44,3 +44,77 @@
         line: 1
         column: 0
       endposition: null
+- statement: CREATE TABLE book(a int, id int AUTO_INCREMENT)
+  changeType: 1
+- statement: |-
+    CREATE TABLE test.book(
+      name int,
+      a int AUTO_INCREMENT)
+  changeType: 1
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 3
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book
+      ADD COLUMN (a int AUTO_INCREMENT, b int),
+      MODIFY COLUMN c int AUTO_INCREMENT
+  changeType: 1
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`tech_book`.`a` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`tech_book`.`c` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE tech_book RENAME COLUMN id TO a
+  changeType: 1
+- statement: CREATE TABLE book(a bigint PRIMARY KEY AUTO_RANDOM)
+  changeType: 1
+- statement: CREATE TABLE book(`数数数数数数数数数数数数数数数数数数数数数数` int AUTO_INCREMENT)
+  changeType: 1
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, its length should be within 64 characters'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book(`数数数数数数数数数数数数数数数数数数数数数` int AUTO_INCREMENT)
+  changeType: 1
+  want:
+    - status: 2
+      code: 307
+      title: NAMING_COLUMN_AUTO_INCREMENT
+      content: '`book`.`数数数数数数数数数数数数数数数数数数数数数` mismatches auto_increment column naming convention, naming format should be "^id$"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: EXPLAIN ALTER TABLE tech_book ADD COLUMN a int AUTO_INCREMENT
+  changeType: 1

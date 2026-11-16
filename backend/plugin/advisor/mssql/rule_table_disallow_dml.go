@@ -5,11 +5,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/mssql/ast"
+	mssqlv1review "github.com/bytebase/omni/mssql/v1review"
+	"github.com/bytebase/omni/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 var (
@@ -20,7 +23,10 @@ func init() {
 	advisor.Register(storepb.Engine_MSSQL, storepb.SQLReviewRule_TABLE_DISALLOW_DML, &TableDisallowDMLAdvisor{})
 }
 
-// TableDisallowDMLAdvisor is the advisor checking for disallow DML on specific tables.
+// TableDisallowDMLAdvisor is the advisor checking for disallow DML on
+// specific tables. The judgment lives in omni
+// (mssql/v1review.TableDisallowDML); this adapter renders the findings as
+// advice.
 type TableDisallowDMLAdvisor struct {
 }
 
@@ -34,70 +40,28 @@ func (*TableDisallowDMLAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		return nil, errors.New("string_array_payload is required for table disallow DML rule")
 	}
 
-	rule := &tableDisallowDMLRule{
-		BaseRule:     BaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
-		disallowList: stringArrayPayload.List,
-	}
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule}), nil
-}
-
-type tableDisallowDMLRule struct {
-	BaseRule
-	disallowList []string
-}
-
-func (*tableDisallowDMLRule) Name() string {
-	return "TableDisallowDMLRule"
-}
-
-func (r *tableDisallowDMLRule) OnStatement(node ast.Node) {
-	var tableName string
-	var loc ast.Loc
-
-	switch n := node.(type) {
-	case *ast.InsertStmt:
-		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
-			loc = n.Loc
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
 		}
-	case *ast.UpdateStmt:
-		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
-			loc = n.Loc
+		node, ok := tsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
 		}
-	case *ast.DeleteStmt:
-		if ref, ok := n.Relation.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
-			loc = n.Loc
-		}
-	case *ast.MergeStmt:
-		if ref, ok := n.Target.(*ast.TableRef); ok {
-			tableName = normalizeTableRef(ref, "", "")
-			loc = n.Loc
-		}
-	case *ast.SelectStmt:
-		if n.IntoTable != nil {
-			tableName = normalizeTableRef(n.IntoTable, "", "")
-			loc = n.Loc
-		}
-	default:
-		return
-	}
-
-	if tableName == "" {
-		return
-	}
-
-	for _, disallow := range r.disallowList {
-		if tableName == disallow {
-			r.AddAdvice(&storepb.Advice{
-				Status:        r.Level,
+		for _, f := range mssqlv1review.TableDisallowDML([]ast.Node{node}, stringArrayPayload.List) {
+			if f.Code != v1review.TableDisallowed {
+				continue
+			}
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
 				Code:          code.TableDisallowDML.Int32(),
-				Title:         r.Title,
-				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
-				StartPosition: &storepb.Position{Line: r.LocToLine(loc)},
+				Title:         title,
+				Content:       fmt.Sprintf("DML is disallowed on table %s.", f.Name),
+				StartPosition: &storepb.Position{Line: int32(stmt.BaseLine()) + findingLine(stmt.Text, f)},
 			})
-			return
 		}
 	}
+	return adviceList, nil
 }

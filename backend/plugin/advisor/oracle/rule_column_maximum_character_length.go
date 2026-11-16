@@ -6,12 +6,14 @@ import (
 	"fmt"
 
 	"github.com/bytebase/omni/oracle/ast"
+	oraclev1review "github.com/bytebase/omni/oracle/v1review"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 var (
@@ -23,6 +25,8 @@ func init() {
 }
 
 // ColumnMaximumCharacterLengthAdvisor is the advisor checking for maximum character length.
+// The judgment lives in omni (oracle/v1review.ColumnMaximumCharacterLength);
+// this adapter passes the limit and renders the findings as advice.
 type ColumnMaximumCharacterLengthAdvisor struct {
 }
 
@@ -37,59 +41,30 @@ func (*ColumnMaximumCharacterLengthAdvisor) Check(_ context.Context, checkCtx ad
 		return nil, errors.New("number_payload is required for this rule")
 	}
 
-	if int(numberPayload.Number) <= 0 {
+	maximum := int(numberPayload.Number)
+	if maximum <= 0 {
 		return nil, nil
 	}
 
-	rule := NewColumnMaximumCharacterLengthRule(level, checkCtx.Rule.Type.String(), int(numberPayload.Number))
-
-	return RunRules(checkCtx.ParsedStatements, []Rule{rule})
-}
-
-// ColumnMaximumCharacterLengthRule is the rule implementation for maximum character length.
-type ColumnMaximumCharacterLengthRule struct {
-	BaseRule
-
-	maximum int
-}
-
-// NewColumnMaximumCharacterLengthRule creates a new ColumnMaximumCharacterLengthRule.
-func NewColumnMaximumCharacterLengthRule(level storepb.Advice_Status, title string, maximum int) *ColumnMaximumCharacterLengthRule {
-	return &ColumnMaximumCharacterLengthRule{
-		BaseRule: NewBaseRule(level, title, 0),
-		maximum:  maximum,
+	title := checkCtx.Rule.Type.String()
+	var adviceList []*storepb.Advice
+	for _, stmt := range checkCtx.ParsedStatements {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, f := range oraclev1review.ColumnMaximumCharacterLength([]ast.Node{node}, maximum) {
+			adviceList = append(adviceList, &storepb.Advice{
+				Status:        level,
+				Code:          code.CharLengthExceedsLimit.Int32(),
+				Title:         title,
+				Content:       fmt.Sprintf("The maximum character length is %d.", maximum),
+				StartPosition: base.ConvertANTLRLineToPosition(stmt.BaseLine() + findingLine(stmt.Text, f)),
+			})
+		}
 	}
+	return adviceList, nil
 }
-
-// Name returns the rule name.
-func (*ColumnMaximumCharacterLengthRule) Name() string {
-	return "column.maximum-character-length"
-}
-
-// OnStatement checks CHAR/CHARACTER type modifiers in the omni AST.
-func (r *ColumnMaximumCharacterLengthRule) OnStatement(node ast.Node) {
-	walk(node, func(n ast.Node) {
-		col, ok := n.(*ast.ColumnDef)
-		if !ok || col.TypeName == nil {
-			return
-		}
-		typeName := typeName(col.TypeName)
-		if typeName != "CHAR" && typeName != "CHARACTER" {
-			return
-		}
-		length, ok := firstTypeModInt(col.TypeName)
-		if !ok || length <= r.maximum {
-			return
-		}
-		r.AddAdvice(
-			r.level,
-			code.CharLengthExceedsLimit.Int32(),
-			fmt.Sprintf("The maximum character length is %d.", r.maximum),
-			base.ConvertANTLRLineToPosition(r.locLine(col.TypeName.Loc)),
-		)
-	})
-}
-
-// OnEnter is called when the parser enters a rule context.
-
-// OnExit is called when the parser exits a rule context.

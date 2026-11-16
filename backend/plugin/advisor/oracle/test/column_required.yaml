@@ -43,3 +43,40 @@
         line: 2
         column: 0
       endposition: null
+- statement: CREATE TABLE book(id int, created_ts int, updated_ts int, creator_id int, updater_id int)
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "id", "updated_ts", "updater_id"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: CREATE TABLE book AS SELECT * FROM tech_book
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "BOOK" requires columns: "created_ts", "creator_id", "id", "updated_ts", "updater_id"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    ALTER TABLE tech_book DROP COLUMN "id";
+
+    ALTER TABLE tech_book RENAME COLUMN "updated_ts" TO "updated_ts";
+    ALTER TABLE tech_book DROP COLUMN id;
+  changeType: 1
+  want:
+    - status: 2
+      code: 401
+      title: COLUMN_REQUIRED
+      content: 'Table "TECH_BOOK" requires columns: "id"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

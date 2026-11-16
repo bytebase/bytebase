@@ -14,3 +14,49 @@
         line: 4
         column: 0
       endposition: null
+- statement: CREATE TABLE t(a json, b Binary_Float, c dbo.JSON);
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Column type BINARY_FLOAT is disallowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Column type JSON is disallowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Column type JSON is disallowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT CAST(x AS JSON) FROM t;
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Column type JSON is disallowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: ALTER TABLE t ADD g JSON NULL;
+  want:
+    - status: 2
+      code: 411
+      title: COLUMN_TYPE_DISALLOW_LIST
+      content: Column type JSON is disallowed
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

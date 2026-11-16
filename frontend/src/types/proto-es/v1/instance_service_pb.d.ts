@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, EmptySchema, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Status } from "../google/rpc/status_pb";
 import type { Engine, State } from "./common_pb";
 import type { InstanceRole } from "./instance_role_service_pb";
 
@@ -601,6 +602,416 @@ export declare type UpdateDataSourceRequest = Message<"bytebase.v1.UpdateDataSou
 export declare const UpdateDataSourceRequestSchema: GenMessage<UpdateDataSourceRequest>;
 
 /**
+ * @generated from message bytebase.v1.DiscoverNeonBranchesRequest
+ */
+export declare type DiscoverNeonBranchesRequest = Message<"bytebase.v1.DiscoverNeonBranchesRequest"> & {
+  /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, branches are discovered for the
+   * workspace collection.
+   *
+   * @generated from field: optional string parent = 1;
+   */
+  parent?: string | undefined;
+
+  /**
+   * Used only during this request and never persisted.
+   *
+   * @generated from field: string api_key = 2;
+   */
+  apiKey: string;
+
+  /**
+   * Neon project filter. Required for project-scoped Neon keys.
+   *
+   * @generated from field: string project_id = 3;
+   */
+  projectId: string;
+
+  /**
+   * Defaults to 50. Values above 100 are capped; negative values are invalid.
+   *
+   * @generated from field: int32 page_size = 4;
+   */
+  pageSize: number;
+
+  /**
+   * Opaque continuation token containing no credentials. The destination and
+   * project filter must match the original request; page size may change.
+   *
+   * @generated from field: string page_token = 5;
+   */
+  pageToken: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DiscoverNeonBranchesRequest.
+ * Use `create(DiscoverNeonBranchesRequestSchema)` to create a new message.
+ */
+export declare const DiscoverNeonBranchesRequestSchema: GenMessage<DiscoverNeonBranchesRequest>;
+
+/**
+ * @generated from message bytebase.v1.DiscoverNeonBranchesResponse
+ */
+export declare type DiscoverNeonBranchesResponse = Message<"bytebase.v1.DiscoverNeonBranchesResponse"> & {
+  /**
+   * @generated from field: repeated bytebase.v1.NeonBranch branches = 1;
+   */
+  branches: NeonBranch[];
+
+  /**
+   * Only an empty token indicates completion; a page may contain zero branches.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+
+  /**
+   * Projects that could not be enumerated must not be interpreted as empty.
+   *
+   * @generated from field: repeated bytebase.v1.NeonProjectDiscoveryFailure failures = 3;
+   */
+  failures: NeonProjectDiscoveryFailure[];
+};
+
+/**
+ * Describes the message bytebase.v1.DiscoverNeonBranchesResponse.
+ * Use `create(DiscoverNeonBranchesResponseSchema)` to create a new message.
+ */
+export declare const DiscoverNeonBranchesResponseSchema: GenMessage<DiscoverNeonBranchesResponse>;
+
+/**
+ * @generated from message bytebase.v1.NeonBranch
+ */
+export declare type NeonBranch = Message<"bytebase.v1.NeonBranch"> & {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId: string;
+
+  /**
+   * @generated from field: string project_title = 2;
+   */
+  projectTitle: string;
+
+  /**
+   * @generated from field: string branch_id = 3;
+   */
+  branchId: string;
+
+  /**
+   * @generated from field: string branch_title = 4;
+   */
+  branchTitle: string;
+
+  /**
+   * @generated from field: repeated bytebase.v1.NeonDatabase databases = 5;
+   */
+  databases: NeonDatabase[];
+
+  /**
+   * @generated from field: repeated string roles = 6;
+   */
+  roles: string[];
+
+  /**
+   * Absent when inspection succeeded and a direct read-write endpoint exists.
+   * Successful discovery does not establish database access or privileges.
+   *
+   * @generated from field: google.rpc.Status discovery_error = 7;
+   */
+  discoveryError?: Status | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.NeonBranch.
+ * Use `create(NeonBranchSchema)` to create a new message.
+ */
+export declare const NeonBranchSchema: GenMessage<NeonBranch>;
+
+/**
+ * @generated from message bytebase.v1.NeonDatabase
+ */
+export declare type NeonDatabase = Message<"bytebase.v1.NeonDatabase"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string owner = 2;
+   */
+  owner: string;
+};
+
+/**
+ * Describes the message bytebase.v1.NeonDatabase.
+ * Use `create(NeonDatabaseSchema)` to create a new message.
+ */
+export declare const NeonDatabaseSchema: GenMessage<NeonDatabase>;
+
+/**
+ * @generated from message bytebase.v1.NeonProjectDiscoveryFailure
+ */
+export declare type NeonProjectDiscoveryFailure = Message<"bytebase.v1.NeonProjectDiscoveryFailure"> & {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId: string;
+
+  /**
+   * @generated from field: google.rpc.Status status = 2;
+   */
+  status?: Status | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.NeonProjectDiscoveryFailure.
+ * Use `create(NeonProjectDiscoveryFailureSchema)` to create a new message.
+ */
+export declare const NeonProjectDiscoveryFailureSchema: GenMessage<NeonProjectDiscoveryFailure>;
+
+/**
+ * @generated from message bytebase.v1.ImportInstancesRequest
+ */
+export declare type ImportInstancesRequest = Message<"bytebase.v1.ImportInstancesRequest"> & {
+  /**
+   * The parent, which owns this collection of instances.
+   * Format: projects/{project}. If omitted, every entry is created in the
+   * workspace collection; otherwise, every entry is created in this project
+   * collection.
+   *
+   * @generated from field: optional string parent = 1;
+   */
+  parent?: string | undefined;
+
+  /**
+   * Control-plane credential. Required, used only during this request, and
+   * never persisted.
+   *
+   * @generated from oneof bytebase.v1.ImportInstancesRequest.credential
+   */
+  credential: {
+    /**
+     * @generated from field: bytebase.v1.NeonCredential neon_credential = 2;
+     */
+    value: NeonCredential;
+    case: "neonCredential";
+  } | { case: undefined; value?: undefined };
+
+  /**
+   * Between 1 and 20 entries. Every entry's source must belong to the
+   * credential. Duplicate target IDs or sources are rejected before any
+   * creation. Successful entries are not rolled back.
+   *
+   * @generated from field: repeated bytebase.v1.InstanceImport imports = 3;
+   */
+  imports: InstanceImport[];
+};
+
+/**
+ * Describes the message bytebase.v1.ImportInstancesRequest.
+ * Use `create(ImportInstancesRequestSchema)` to create a new message.
+ */
+export declare const ImportInstancesRequestSchema: GenMessage<ImportInstancesRequest>;
+
+/**
+ * @generated from message bytebase.v1.NeonCredential
+ */
+export declare type NeonCredential = Message<"bytebase.v1.NeonCredential"> & {
+  /**
+   * @generated from field: string api_key = 1;
+   */
+  apiKey: string;
+};
+
+/**
+ * Describes the message bytebase.v1.NeonCredential.
+ * Use `create(NeonCredentialSchema)` to create a new message.
+ */
+export declare const NeonCredentialSchema: GenMessage<NeonCredential>;
+
+/**
+ * @generated from message bytebase.v1.InstanceImport
+ */
+export declare type InstanceImport = Message<"bytebase.v1.InstanceImport"> & {
+  /**
+   * Bytebase instance resource ID. Uniqueness does not provide idempotency.
+   *
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId: string;
+
+  /**
+   * The instance to register, with the same meaning as in CreateInstance.
+   * The source determines engine, vendor, and data_sources, which must be
+   * unset. The workspace license determines activation, so a supplied value
+   * is ignored.
+   *
+   * @generated from field: bytebase.v1.Instance instance = 2;
+   */
+  instance?: Instance | undefined;
+
+  /**
+   * Existing database user for the instance's ADMIN data source. The server
+   * derives the host and port from the source.
+   *
+   * @generated from field: string username = 3;
+   */
+  username: string;
+
+  /**
+   * Initial connection target, independent of instance.sync_databases.
+   *
+   * @generated from field: string connection_database = 4;
+   */
+  connectionDatabase: string;
+
+  /**
+   * Omit to let the vendor supply the password. A supplied empty value is invalid.
+   *
+   * @generated from field: optional string password = 5;
+   */
+  password?: string | undefined;
+
+  /**
+   * Required. The vendor resource this instance connects to.
+   *
+   * @generated from oneof bytebase.v1.InstanceImport.source
+   */
+  source: {
+    /**
+     * @generated from field: bytebase.v1.NeonBranchSource neon_branch = 20;
+     */
+    value: NeonBranchSource;
+    case: "neonBranch";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.InstanceImport.
+ * Use `create(InstanceImportSchema)` to create a new message.
+ */
+export declare const InstanceImportSchema: GenMessage<InstanceImport>;
+
+/**
+ * @generated from message bytebase.v1.NeonBranchSource
+ */
+export declare type NeonBranchSource = Message<"bytebase.v1.NeonBranchSource"> & {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId: string;
+
+  /**
+   * @generated from field: string branch_id = 2;
+   */
+  branchId: string;
+};
+
+/**
+ * Describes the message bytebase.v1.NeonBranchSource.
+ * Use `create(NeonBranchSourceSchema)` to create a new message.
+ */
+export declare const NeonBranchSourceSchema: GenMessage<NeonBranchSource>;
+
+/**
+ * @generated from message bytebase.v1.ImportInstancesResponse
+ */
+export declare type ImportInstancesResponse = Message<"bytebase.v1.ImportInstancesResponse"> & {
+  /**
+   * Exactly one result per entry, in request order.
+   *
+   * @generated from field: repeated bytebase.v1.InstanceImportResult results = 1;
+   */
+  results: InstanceImportResult[];
+};
+
+/**
+ * Describes the message bytebase.v1.ImportInstancesResponse.
+ * Use `create(ImportInstancesResponseSchema)` to create a new message.
+ */
+export declare const ImportInstancesResponseSchema: GenMessage<ImportInstancesResponse>;
+
+/**
+ * @generated from message bytebase.v1.InstanceImportResult
+ */
+export declare type InstanceImportResult = Message<"bytebase.v1.InstanceImportResult"> & {
+  /**
+   * @generated from oneof bytebase.v1.InstanceImportResult.outcome
+   */
+  outcome: {
+    /**
+     * Confirms registration, not synchronization.
+     *
+     * @generated from field: bytebase.v1.Instance imported = 1;
+     */
+    value: Instance;
+    case: "imported";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.InstanceImportFailure failure = 2;
+     */
+    value: InstanceImportFailure;
+    case: "failure";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.InstanceImportResult.
+ * Use `create(InstanceImportResultSchema)` to create a new message.
+ */
+export declare const InstanceImportResultSchema: GenMessage<InstanceImportResult>;
+
+/**
+ * @generated from message bytebase.v1.InstanceImportFailure
+ */
+export declare type InstanceImportFailure = Message<"bytebase.v1.InstanceImportFailure"> & {
+  /**
+   * @generated from field: google.rpc.Status status = 1;
+   */
+  status?: Status | undefined;
+
+  /**
+   * Always populated. Unknown outcomes must be reconciled before retrying.
+   *
+   * @generated from field: bytebase.v1.InstanceImportFailure.CreationOutcome creation_outcome = 2;
+   */
+  creationOutcome: InstanceImportFailure_CreationOutcome;
+};
+
+/**
+ * Describes the message bytebase.v1.InstanceImportFailure.
+ * Use `create(InstanceImportFailureSchema)` to create a new message.
+ */
+export declare const InstanceImportFailureSchema: GenMessage<InstanceImportFailure>;
+
+/**
+ * @generated from enum bytebase.v1.InstanceImportFailure.CreationOutcome
+ */
+export enum InstanceImportFailure_CreationOutcome {
+  /**
+   * @generated from enum value: CREATION_OUTCOME_UNSPECIFIED = 0;
+   */
+  CREATION_OUTCOME_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: NOT_CREATED = 1;
+   */
+  NOT_CREATED = 1,
+
+  /**
+   * @generated from enum value: UNKNOWN = 2;
+   */
+  UNKNOWN = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.InstanceImportFailure.CreationOutcome.
+ */
+export declare const InstanceImportFailure_CreationOutcomeSchema: GenEnum<InstanceImportFailure_CreationOutcome>;
+
+/**
  * @generated from message bytebase.v1.SyncDatabases
  */
 export declare type SyncDatabases = Message<"bytebase.v1.SyncDatabases"> & {
@@ -721,6 +1132,13 @@ export declare type Instance = Message<"bytebase.v1.Instance"> & {
    * @generated from field: map<string, string> labels = 16;
    */
   labels: { [key: string]: string };
+
+  /**
+   * Database service variant. Unspecified retains generic connection behavior.
+   *
+   * @generated from field: bytebase.v1.Vendor vendor = 17;
+   */
+  vendor: Vendor;
 };
 
 /**
@@ -1751,6 +2169,28 @@ export declare type KerberosConfig = Message<"bytebase.v1.KerberosConfig"> & {
 export declare const KerberosConfigSchema: GenMessage<KerberosConfig>;
 
 /**
+ * Database service variant, independent of engine and registration method.
+ *
+ * @generated from enum bytebase.v1.Vendor
+ */
+export enum Vendor {
+  /**
+   * @generated from enum value: VENDOR_UNSPECIFIED = 0;
+   */
+  VENDOR_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: NEON = 1;
+   */
+  NEON = 1,
+}
+
+/**
+ * Describes the enum bytebase.v1.Vendor.
+ */
+export declare const VendorSchema: GenEnum<Vendor>;
+
+/**
  * @generated from enum bytebase.v1.DataSourceType
  */
 export enum DataSourceType {
@@ -1819,6 +2259,30 @@ export declare const InstanceService: GenService<{
     methodKind: "unary";
     input: typeof CreateInstanceRequestSchema;
     output: typeof InstanceSchema;
+  },
+  /**
+   * Discovers Neon branches without persisting the management API key.
+   * Permissions required: bb.instances.create
+   *
+   * @generated from rpc bytebase.v1.InstanceService.DiscoverNeonBranches
+   */
+  discoverNeonBranches: {
+    methodKind: "unary";
+    input: typeof DiscoverNeonBranchesRequestSchema;
+    output: typeof DiscoverNeonBranchesResponseSchema;
+  },
+  /**
+   * Registers instances resolved from a vendor's control plane. Synchronous;
+   * entries succeed or fail independently and successes are not rolled back.
+   * Registration does not wait for instance synchronization.
+   * Permissions required: bb.instances.create
+   *
+   * @generated from rpc bytebase.v1.InstanceService.ImportInstances
+   */
+  importInstances: {
+    methodKind: "unary";
+    input: typeof ImportInstancesRequestSchema;
+    output: typeof ImportInstancesResponseSchema;
   },
   /**
    * Prepares a Sample Project Instance for a project.

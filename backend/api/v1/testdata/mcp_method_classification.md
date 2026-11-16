@@ -16,12 +16,12 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 70 | served to a read-only session and above |
+| READ | 72 | served to a read-only session and above |
 | WRITE | 46 | served to a read-write session only |
 | EXCLUDED | 72 | served by no ceiling this phase ships |
 | FORBIDDEN | 32 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **220** | |
+| **total** | **222** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -88,7 +88,9 @@ served by no ceiling.
 | InstanceService/BatchUpdateInstances | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/CreateInstance | WRITE | — | bb.instances.create |
 | InstanceService/DeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.delete |
+| InstanceService/DiscoverNeonBranches | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
 | InstanceService/GetInstance | READ | — | bb.instances.get |
+| InstanceService/ImportInstances | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
 | InstanceService/ListInstanceDatabase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.get |
 | InstanceService/ListInstances | READ | — | bb.instances.list |
 | InstanceService/PrepareSampleProjectInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
@@ -233,8 +235,8 @@ served by no ceiling.
 | UserService/UpdateUser | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | WorkloadIdentityService/CreateWorkloadIdentity | WRITE | — | bb.workloadIdentities.create |
 | WorkloadIdentityService/DeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.delete |
-| WorkloadIdentityService/GetWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.get |
-| WorkloadIdentityService/ListWorkloadIdentities | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.list |
+| WorkloadIdentityService/GetWorkloadIdentity | READ | — | bb.workloadIdentities.get |
+| WorkloadIdentityService/ListWorkloadIdentities | READ | — | bb.workloadIdentities.list |
 | WorkloadIdentityService/UndeleteWorkloadIdentity | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workloadIdentities.undelete |
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |
