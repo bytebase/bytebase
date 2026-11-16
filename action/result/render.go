@@ -66,6 +66,23 @@ func (r *Result) Failures() []string {
 	return lines
 }
 
+// Warnings returns what a passing job should still draw attention to: a
+// target stage the rollout does not have.
+func (r *Result) Warnings() []string {
+	if r.Outcome != StageNotFound {
+		return nil
+	}
+	line := fmt.Sprintf("the rollout has no stage for %s, so this job deployed nothing", r.TargetStage)
+	if len(r.Stages) == 0 {
+		return []string{line + "; it has no stages"}
+	}
+	environments := make([]string, 0, len(r.Stages))
+	for _, stage := range r.Stages {
+		environments = append(environments, stage.Environment)
+	}
+	return []string{line + "; its stages are " + strings.Join(environments, ", ")}
+}
+
 // RenderText renders the result for a job log. fold may be nil. The answer
 // comes first and the rollout's URL last, since most readers never need it.
 func RenderText(r *Result, fold Folder) string {

@@ -219,6 +219,25 @@ func TestFailures(t *testing.T) {
 	}, result.Failures())
 }
 
+func TestWarningsNameAMissingTargetStage(t *testing.T) {
+	result := &Result{
+		Outcome:     StageNotFound,
+		TargetStage: "environments/prod",
+		Stages:      []*Stage{{Environment: "environments/test"}, {Environment: "environments/staging"}},
+	}
+	require.Equal(t, []string{
+		"the rollout has no stage for environments/prod, so this job deployed nothing; its stages are environments/test, environments/staging",
+	}, result.Warnings())
+	require.Empty(t, result.Failures(), "a missing stage does not fail the job")
+
+	result.Stages = nil
+	require.Equal(t, []string{
+		"the rollout has no stage for environments/prod, so this job deployed nothing; it has no stages",
+	}, result.Warnings())
+
+	require.Empty(t, sampleResult().Warnings())
+}
+
 func TestTaskNoteDistinguishesMissingRowsFromZero(t *testing.T) {
 	reported := &Task{Status: "DONE", Attempt: 1, AffectedRows: rows(0), Files: []*File{{}}}
 	missing := &Task{Status: "DONE", Attempt: 1, Files: []*File{{}}}

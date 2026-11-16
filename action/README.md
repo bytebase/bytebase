@@ -123,7 +123,7 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
 
--   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion.
+-   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion. When the rollout has no stage for it, the command deploys nothing and passes, so that the jobs for later environments still run.
     -   Format: `environments/{environment}`
     -   Example: `environments/prod`
 
@@ -137,7 +137,7 @@ When `rollout` stops waiting, it reports how the rollout stands. The report is w
 
 -   **Job log**: a block with one line per database, the files it ran, the statements that changed rows, and for a failure the statement and the database's error. A listed statement is cut to one line of 100 characters; a failed statement and its error are cut to 30 lines of 200 characters.
 -   **`--output` file**: the same result under the `result` key. Per file it keeps the first 100 commands and any that failed; `commandCount` says how many ran, and the counts and totals cover all of them.
--   **GitHub**: the block as the step summary, and an error annotation for each failed database.
+-   **GitHub**: the block as the step summary, an error annotation for each failed database, and a warning annotation when the rollout has no stage for `--target-stage`.
 -   **GitLab**: `bytebase_annotations.json`, an [annotations report](https://docs.gitlab.com/ci/yaml/artifacts_reports/#artifactsreportsannotations) that links the job page to the rollout.
 
 `result.outcome` says how the run ended:
@@ -148,7 +148,7 @@ When `rollout` stops waiting, it reports how the rollout stands. The report is w
 | `FAILED` | A task failed | 1 |
 | `CANCELED` | A task was canceled | 1 |
 | `NOT_WAITED` | No `--target-stage` was given, so the rollout was created and nothing was awaited | 0 |
-| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed | 0 |
+| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed. A rollout has a stage for each environment that holds a target database | 0 |
 | `INTERRUPTED` | The action stopped before the stage finished, so the state is not final | 1 |
 
 The result details one stage: the target stage, or an earlier stage when the rollout stopped there. Other stages carry task counts only.
