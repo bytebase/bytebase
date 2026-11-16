@@ -1722,6 +1722,44 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 	a.Contains(actionResult.Stdout, "duplicate key")
 }
 
+func TestActionRolloutCommand_FailsWithoutAStageForTheTarget(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startProject(ctx, t)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
+
+	testDataDir := t.TempDir()
+	a.NoError(os.WriteFile(filepath.Join(testDataDir, "00001_create_account.sql"),
+		[]byte("CREATE TABLE account (id INT PRIMARY KEY);"), 0644))
+	outputFile := filepath.Join(t.TempDir(), "rollout-output.json")
+
+	// The database is in prod, so the rollout has no test stage.
+	actionResult, err := executeActionCommand(ctx,
+		"rollout",
+		"--url", ctl.rootURL,
+		"--service-account", "demo@example.com",
+		"--service-account-secret", "1024bytebase",
+		"--project", ctl.project.Name,
+		"--targets", database.Name,
+		"--file-pattern", filepath.Join(testDataDir, "*.sql"),
+		"--target-stage", "environments/test",
+		"--output", outputFile,
+	)
+	a.Error(err, "a job that deployed nothing must not pass")
+	var rolloutErr *command.RolloutError
+	a.ErrorAs(err, &rolloutErr)
+	a.Equal("the rollout has no stage for environments/test, so nothing was deployed; its stages are environments/prod", err.Error())
+
+	rolloutResult, tasks := readRolloutResult(t, outputFile)
+	a.Equal(result.StageNotFound, rolloutResult.Outcome)
+	a.Empty(tasks)
+	a.Len(rolloutResult.Stages, 1)
+	a.Equal(map[string]int{"NOT_STARTED": 1}, rolloutResult.Stages[0].TaskCounts, "no task was run")
+
+	a.Contains(actionResult.Stdout, "This job deployed nothing: the rollout has no stage for environments/test.")
+}
+
 func TestActionRolloutCommand_ReportsRejectedCommit(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

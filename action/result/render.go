@@ -43,8 +43,12 @@ func (r *Result) Headline() string {
 	}
 }
 
-// Failures returns one line per failed or canceled task, failed first.
+// Failures returns the lines that say why the job fails: one per failed or
+// canceled task, failed first, or the one that names a missing target stage.
 func (r *Result) Failures() []string {
+	if r.Outcome == StageNotFound {
+		return []string{r.missingStage()}
+	}
 	var lines []string
 	for _, task := range r.orderedTasks() {
 		switch task.Status {
@@ -64,6 +68,18 @@ func (r *Result) Failures() []string {
 		}
 	}
 	return lines
+}
+
+func (r *Result) missingStage() string {
+	line := fmt.Sprintf("the rollout has no stage for %s, so nothing was deployed", r.TargetStage)
+	if len(r.Stages) == 0 {
+		return line + "; it has no stages"
+	}
+	environments := make([]string, 0, len(r.Stages))
+	for _, stage := range r.Stages {
+		environments = append(environments, stage.Environment)
+	}
+	return line + "; its stages are " + strings.Join(environments, ", ")
 }
 
 // RenderText renders the result for a job log. fold may be nil. The answer

@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/action/args"
 	"github.com/bytebase/bytebase/action/command/output"
+	"github.com/bytebase/bytebase/action/result"
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -47,24 +48,46 @@ func rolloutPreRun(_ *world.World) func(*cobra.Command, []string) error {
 	}
 }
 
-// RolloutError is a rollout that stopped on failed or canceled tasks. Its
-// message names them, so a job needs no stack trace after it.
+// RolloutError is a rollout that did not deploy its target stage: tasks failed
+// or were canceled, or the rollout has no such stage. Its message names the
+// cause, so a job needs no stack trace after it.
 type RolloutError struct {
-	failures []string
+	message string
 }
 
 func (e *RolloutError) Error() string {
-	message := "rollout stopped: " + e.failures[0]
-	if rest := len(e.failures) - 1; rest > 0 {
-		message += fmt.Sprintf(" (and %d more)", rest)
-	}
-	return message
+	return e.message
 }
 
 var (
 	errFailedTasks   = errors.New("found failed tasks. view on Bytebase")
 	errCanceledTasks = errors.New("found canceled tasks. view on Bytebase")
+	errStageNotFound = errors.New("the rollout has no stage for the target stage, so nothing was deployed")
 )
+
+// rolloutError replaces err with one that names the cause, when the result
+// has it.
+func rolloutError(err error, r *result.Result) error {
+	if r == nil {
+		return err
+	}
+	failures := r.Failures()
+	if len(failures) == 0 {
+		return err
+	}
+	switch {
+	case errors.Is(err, errStageNotFound):
+		return &RolloutError{message: failures[0]}
+	case errors.Is(err, errFailedTasks), errors.Is(err, errCanceledTasks):
+		message := "rollout stopped: " + failures[0]
+		if rest := len(failures) - 1; rest > 0 {
+			message += fmt.Sprintf(" (and %d more)", rest)
+		}
+		return &RolloutError{message: message}
+	default:
+		return err
+	}
+}
 
 func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 	return func(command *cobra.Command, _ []string) (err error) {
@@ -81,12 +104,7 @@ func runRollout(w *world.World) func(command *cobra.Command, _ []string) error {
 			w.Result = collectResult(ctx, w, client)
 			client.close()
 			output.WriteOutput(w, command.OutOrStdout())
-			if w.Result == nil || (!errors.Is(err, errFailedTasks) && !errors.Is(err, errCanceledTasks)) {
-				return
-			}
-			if failures := w.Result.Failures(); len(failures) > 0 {
-				err = &RolloutError{failures: failures}
-			}
+			err = rolloutError(err, w.Result)
 		}()
 		if err := client.signIn(ctx); err != nil {
 			return err
@@ -207,21 +225,11 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 				}
 			}
 		}))
-	if len(rollout.Stages) == 0 {
-		w.Logger.Info("no stages in the rollout. exiting...")
-		return nil
-	}
-
-	targetStageFound := false
-	for _, stage := range rollout.GetStages() {
-		if stage.Environment == w.TargetStage {
-			targetStageFound = true
-			break
-		}
-	}
-	if !targetStageFound {
-		w.Logger.Info("the target stage is not found in the rollout. exiting...", "targetStage", w.TargetStage)
-		return nil
+	// A job that passed here would report a deploy that never happened.
+	if !slices.ContainsFunc(rollout.GetStages(), func(stage *v1pb.Stage) bool {
+		return stage.Environment == w.TargetStage
+	}) {
+		return errStageNotFound
 	}
 
 	for i := range rollout.Stages {

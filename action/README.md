@@ -123,7 +123,7 @@ These flags are specific to the `check` subcommand (`bytebase-action check`).
 
 These flags are specific to the `rollout` subcommand (`bytebase-action rollout`).
 
--   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion.
+-   **`--target-stage`**: The target stage up to which the rollout should proceed. If not specified, the rollout will be created but will not wait for completion. The command fails when the rollout has no stage for it.
     -   Format: `environments/{environment}`
     -   Example: `environments/prod`
 
@@ -148,7 +148,7 @@ When `rollout` stops waiting, it reports how the rollout stands. The report is w
 | `FAILED` | A task failed | 1 |
 | `CANCELED` | A task was canceled | 1 |
 | `NOT_WAITED` | No `--target-stage` was given, so the rollout was created and nothing was awaited | 0 |
-| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed | 0 |
+| `STAGE_NOT_FOUND` | The rollout has no stage for `--target-stage`, so nothing was deployed. A rollout has a stage for each environment that holds a target database | 1 |
 | `INTERRUPTED` | The action stopped before the stage finished, so the state is not final | 1 |
 
 The result details one stage: the target stage, or an earlier stage when the rollout stopped there. Other stages carry task counts only.
