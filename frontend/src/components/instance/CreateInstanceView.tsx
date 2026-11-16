@@ -17,6 +17,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FormField, ResponsiveFormLayout } from "@/components/ui/form";
 import { RadioGroup } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { useAgentStore } from "@/modules/agent/store/agent";
@@ -318,38 +319,58 @@ function CreateInstanceFormInner({
               className="w-full max-w-5xl flex flex-col gap-4"
             >
               {isNeon && (
-                <>
-                  {showNeonImport && <NeonStepIndicator step={0} />}
-                  <div className="flex flex-col gap-1">
-                    <h1
-                      data-step-heading
-                      tabIndex={-1}
-                      className="text-lg font-semibold leading-7 text-main focus:outline-hidden"
-                    >
-                      {t("instance.neon.title")}
-                    </h1>
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5 text-control-light">
-                      <span className="inline-flex items-center gap-1.5">
-                        <EngineIcon
-                          engine={Engine.POSTGRES}
-                          className="size-4 shrink-0"
-                        />
-                        {t("instance.neon.entry.summary")}
-                      </span>
-                      {!pickerOpen && (
-                        <Button
-                          appearance="link"
-                          size="sm"
-                          className="h-auto p-0 text-sm"
-                          disabled={neonBusy || state.isRequesting}
-                          onClick={() => setPickerOpen(true)}
-                        >
-                          {t("instance.neon.entry.change")}
-                        </Button>
+                <div className="flex flex-col gap-1.5">
+                  <h1
+                    data-step-heading
+                    tabIndex={-1}
+                    className="text-lg font-semibold leading-7 text-balance text-main focus:outline-hidden"
+                  >
+                    {t("instance.neon.title")}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm leading-5 text-control-light">
+                    <span className="inline-flex items-center gap-1.5">
+                      <EngineIcon
+                        engine={Engine.POSTGRES}
+                        className="size-4 shrink-0"
+                      />
+                      {t("instance.neon.entry.summary")}
+                    </span>
+                    {!pickerOpen && (
+                      <Button
+                        appearance="link"
+                        size="sm"
+                        className="relative h-auto p-0 text-sm after:absolute after:-inset-x-2 after:-inset-y-2 after:content-['']"
+                        disabled={neonBusy || state.isRequesting}
+                        onClick={() => setPickerOpen(true)}
+                      >
+                        {t("instance.neon.entry.change")}
+                      </Button>
+                    )}
+                    <span aria-hidden="true" className="text-control-border">
+                      ·
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-main">
+                      {parent ? (
+                        <Folder className="size-3.5 shrink-0 text-control-light" />
+                      ) : (
+                        <Building2 className="size-3.5 shrink-0 text-control-light" />
                       )}
-                    </p>
+                      <span className="font-medium">
+                        {t("instance.neon.destination.adding", {
+                          destination: neonDestinationLabel(t, parent, project),
+                        })}
+                      </span>
+                    </span>
                   </div>
-                </>
+                  <p className="max-w-2xl text-xs leading-4 text-pretty text-control-light">
+                    {parent
+                      ? t("instance.neon.destination.project-help", {
+                          project: project?.title || parent,
+                        })
+                      : t("instance.neon.destination.workspace-help")}{" "}
+                    {t("instance.neon.destination.neon-project-note")}
+                  </p>
+                </div>
               )}
               <div hidden={isNeon && !pickerOpen}>
                 <InstanceFormBody
@@ -359,28 +380,6 @@ function CreateInstanceFormInner({
               </div>
               {isNeon && (
                 <>
-                  <div className="flex items-start gap-3 rounded-sm border border-block-border p-3">
-                    {parent ? (
-                      <Folder className="mt-0.5 size-4 shrink-0 text-control-light" />
-                    ) : (
-                      <Building2 className="mt-0.5 size-4 shrink-0 text-control-light" />
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-main">
-                        {t("instance.neon.destination.adding", {
-                          destination: neonDestinationLabel(t, parent, project),
-                        })}
-                      </div>
-                      <p className="max-w-3xl text-xs leading-4 text-control-light">
-                        {parent
-                          ? t("instance.neon.destination.project-help", {
-                              project: project?.title || parent,
-                            })
-                          : t("instance.neon.destination.workspace-help")}{" "}
-                        {t("instance.neon.destination.neon-project-note")}
-                      </p>
-                    </div>
-                  </div>
                   {neonCapacity === 0 && (
                     <NeonWarning
                       title={t("instance.neon.limit-reached.title")}
@@ -398,7 +397,7 @@ function CreateInstanceFormInner({
                       onValueChange={(value) =>
                         setMethod(value === "manual" ? "manual" : "discover")
                       }
-                      className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
+                      className="grid w-full max-w-3xl grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
                     >
                       <ChoiceCard
                         value="discover"
@@ -412,6 +411,12 @@ function CreateInstanceFormInner({
                       />
                     </RadioGroup>
                   </FormField>
+                  {showNeonImport && (
+                    <>
+                      <Separator />
+                      <NeonStepIndicator step={0} />
+                    </>
+                  )}
                 </>
               )}
             </div>

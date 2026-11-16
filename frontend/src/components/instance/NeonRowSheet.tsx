@@ -7,10 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormError,
   FormField,
+  FormFieldGroup,
   FormLabel,
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetBody,
@@ -217,7 +219,13 @@ function RowForm({
   const passwordMissing = draft.passwordSource === "typed" && !draft.password;
 
   return (
-    <>
+    <form
+      className="flex min-h-0 flex-1 flex-col"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
       <SheetHeader>
         <SheetTitle className="truncate">
           {draft.title || branch.branchTitle}
@@ -234,13 +242,13 @@ function RowForm({
         <ResponsiveFormLayout
           layout="vertical"
           density="compact"
-          className="flex flex-col gap-8"
+          className="flex flex-col gap-6"
         >
           <section className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-main">
               {t("instance.neon.sheet.identity")}
             </h3>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <FormFieldGroup density="compact">
               <FormField
                 title={
                   <FormLabel htmlFor={`${id}-title`}>
@@ -252,6 +260,7 @@ function RowForm({
                   id={`${id}-title`}
                   value={draft.title}
                   maxLength={200}
+                  autoComplete="off"
                   aria-invalid={!!titleError || undefined}
                   aria-describedby={
                     titleError ? `${id}-title-error` : undefined
@@ -279,6 +288,7 @@ function RowForm({
                   id={`${id}-id`}
                   value={draft.instanceId}
                   className="font-mono"
+                  autoComplete="off"
                   spellCheck={false}
                   aria-invalid={!!idError || undefined}
                   aria-describedby={idError ? `${id}-id-error` : undefined}
@@ -310,14 +320,16 @@ function RowForm({
                   }
                 />
               </FormField>
-            </div>
+            </FormFieldGroup>
           </section>
+
+          <Separator />
 
           <section className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-main">
               {t("instance.neon.sheet.connection")}
             </h3>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <FormFieldGroup density="compact">
               <FormField
                 title={
                   <FormLabel htmlFor={`${id}-role`}>
@@ -345,7 +357,7 @@ function RowForm({
                 ) : (
                   <p
                     id={`${id}-role-note`}
-                    className="text-xs leading-4 text-control-light"
+                    className="text-xs leading-4 text-pretty text-control-light"
                   >
                     {owner && owner === draft.role
                       ? t("instance.neon.sheet.role-prefilled", {
@@ -387,6 +399,7 @@ function RowForm({
                 {draft.passwordSource === "typed" && (
                   <SecretInput
                     isCreating
+                    autoComplete="off"
                     value={draft.password}
                     aria-label={t("instance.neon.password-for", {
                       role: draft.role,
@@ -408,7 +421,7 @@ function RowForm({
                 ) : (
                   <p
                     id={`${id}-password-note`}
-                    className="text-xs leading-4 text-control-light"
+                    className="text-xs leading-4 text-pretty text-control-light"
                   >
                     {draft.passwordSource === "typed"
                       ? t("instance.neon.sheet.password-typed-hint")
@@ -436,16 +449,18 @@ function RowForm({
                   }
                 />
               </FormField>
-            </div>
+            </FormFieldGroup>
           </section>
+
+          <Separator />
 
           <section className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-main">
               {t("instance.neon.sheet.sync")}
             </h3>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <FormFieldGroup density="compact">
               <FormField title={t("instance.sync-databases.sync-all")}>
-                <div className="flex h-9 items-center">
+                <div className="flex items-center py-0.5">
                   <Switch
                     aria-label={t("instance.sync-databases.sync-all")}
                     checked={effective.syncAll}
@@ -457,12 +472,12 @@ function RowForm({
                 {!effective.syncAll && (
                   <fieldset
                     aria-label={t("instance.neon.sheet.databases-legend")}
-                    className="flex flex-col gap-2 border-l-2 border-block-border pl-3"
+                    className="flex flex-col gap-1.5 border-l-2 border-block-border pl-3"
                   >
                     {branch.databases.map((database) => (
                       <label
                         key={database.name}
-                        className="flex cursor-pointer items-center gap-2 text-sm text-main"
+                        className="flex cursor-pointer items-center gap-2 py-0.5 text-sm text-main select-none"
                       >
                         <Checkbox
                           aria-label={database.name}
@@ -485,7 +500,7 @@ function RowForm({
                     ))}
                   </fieldset>
                 )}
-                <p className="text-xs leading-4 text-control-light">
+                <p className="text-xs leading-4 tabular-nums text-control-light">
                   {effective.syncAll
                     ? t("instance.neon.sheet.scope-all")
                     : draft.databases.length > 0
@@ -522,7 +537,7 @@ function RowForm({
                   />
                   <p
                     id={`${id}-interval-note`}
-                    className="text-xs leading-4 text-control-light"
+                    className="text-xs leading-4 text-pretty text-control-light"
                   >
                     {effective.syncSeconds > 0
                       ? t("instance.neon.sheet.interval-on")
@@ -530,13 +545,14 @@ function RowForm({
                   </p>
                 </FormField>
               )}
-            </div>
+            </FormFieldGroup>
           </section>
         </ResponsiveFormLayout>
       </SheetBody>
       <SheetFooter>
         {shared && hasOverride(draft) && (
           <Button
+            type="button"
             appearance="outline"
             onClick={() =>
               onChange((row) => ({
@@ -550,8 +566,8 @@ function RowForm({
             {t("instance.neon.sheet.reset")}
           </Button>
         )}
-        <Button onClick={onClose}>{t("common.done")}</Button>
+        <Button type="submit">{t("common.done")}</Button>
       </SheetFooter>
-    </>
+    </form>
   );
 }

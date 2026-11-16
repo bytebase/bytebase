@@ -136,7 +136,9 @@ export function NeonImportStep({
   };
   const batchTone = (index: number) => {
     const states = batchStates(index);
-    if (states.includes("awaiting")) return "bg-accent/40 animate-pulse";
+    if (states.includes("awaiting")) {
+      return "bg-accent/40 motion-safe:animate-pulse";
+    }
     if (states.every((state) => state === "unsent")) {
       return "bg-control-bg-hover";
     }
@@ -254,13 +256,7 @@ export function NeonImportStep({
           />
         );
       case "done":
-        return (
-          <Alert
-            variant="info"
-            title={t("instance.neon.import.banner.done-title")}
-            description={t("instance.neon.import.banner.done-body")}
-          />
-        );
+        return null;
     }
   })();
 
@@ -269,7 +265,7 @@ export function NeonImportStep({
       <h1
         data-step-heading
         tabIndex={-1}
-        className="text-lg font-semibold leading-7 text-main focus:outline-hidden"
+        className="text-lg font-semibold leading-7 text-balance tabular-nums text-main focus:outline-hidden"
       >
         {title}
       </h1>
@@ -282,14 +278,14 @@ export function NeonImportStep({
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <div
             role="status"
-            className="text-base font-semibold leading-6 text-main"
+            className="text-base font-semibold leading-6 tabular-nums text-main"
           >
             {t("instance.neon.import.progress", {
               processed: summary.processed,
               total: summary.total,
             })}
           </div>
-          <div className="text-xs leading-4 text-control-light">
+          <div className="text-xs leading-4 tabular-nums text-control-light">
             {activeBatch >= 0
               ? t("instance.neon.import.progress-batch", {
                   index: activeBatch + 1,
@@ -316,7 +312,7 @@ export function NeonImportStep({
               />
             ))}
           </div>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs leading-4 text-control-light">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs leading-4 tabular-nums text-control-light">
             {run.batches.map((batch, index) => (
               <li key={index} className="whitespace-nowrap">
                 {t("instance.neon.import.batch-label", {
@@ -379,7 +375,7 @@ export function NeonImportStep({
                 onClick={onCheck}
               >
                 {checking ? (
-                  <LoaderCircle className="size-3.5 animate-spin" />
+                  <LoaderCircle className="size-3.5 motion-safe:animate-spin" />
                 ) : (
                   <ListChecks className="size-3.5" />
                 )}
@@ -468,6 +464,7 @@ export function NeonImportStep({
                   ? "outline"
                   : "solid"
               }
+              className="tabular-nums"
               disabled={retryable.length === 0 || running || checking}
               onClick={onRetryFailed}
             >
@@ -517,7 +514,7 @@ export function NeonImportStep({
         <Group
           badge={
             <Badge variant="secondary">
-              <LoaderCircle className="size-3 animate-spin" />
+              <LoaderCircle className="size-3 motion-safe:animate-spin" />
               {t("instance.neon.import.state.awaiting")}
             </Badge>
           }
@@ -558,6 +555,7 @@ export function NeonImportStep({
             !running && (
               <Button
                 size="sm"
+                className="tabular-nums"
                 appearance={unknown.length > 0 ? "outline" : "solid"}
                 disabled={checking}
                 onClick={onContinue}
@@ -690,7 +688,7 @@ export function NeonImportStep({
               <Button
                 appearance="link"
                 size="xs"
-                className="h-auto p-0"
+                className="relative h-auto p-0 tabular-nums after:absolute after:-inset-x-2 after:-inset-y-2 after:content-['']"
                 onClick={() => setShowAllCreated((shown) => !shown)}
               >
                 {showAllCreated
@@ -725,7 +723,7 @@ function Count({
     >
       <span className={cn("size-2 rounded-full", tone)} aria-hidden="true" />
       <dt>{label}</dt>
-      <dd className="font-medium">{count}</dd>
+      <dd className="font-medium tabular-nums">{count}</dd>
     </div>
   );
 }
@@ -751,9 +749,11 @@ function Group({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             {badge}
-            <h2 className="text-sm font-semibold text-main">{heading}</h2>
+            <h2 className="text-sm font-semibold tabular-nums text-main">
+              {heading}
+            </h2>
           </div>
-          <p className="mt-1 max-w-3xl text-xs leading-4 text-control">
+          <p className="mt-1 max-w-3xl text-xs leading-4 text-pretty text-control">
             {description}
           </p>
         </div>
@@ -896,6 +896,7 @@ function FailedEntry({
             <SecretInput
               id={id}
               isCreating
+              autoComplete="off"
               className="w-56"
               disabled={disabled}
               value={draft.passwordSource === "typed" ? draft.password : ""}
@@ -980,6 +981,7 @@ function FailedEntry({
               id={id}
               size="sm"
               className="w-full font-mono sm:w-96"
+              autoComplete="off"
               spellCheck={false}
               disabled={disabled}
               value={draft.instanceId}

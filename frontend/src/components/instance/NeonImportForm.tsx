@@ -1,6 +1,12 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import type { TFunction } from "i18next";
-import { ArrowRight, Building2, Folder, KeyRound } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Folder,
+  KeyRound,
+  LoaderCircle,
+} from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -122,17 +128,45 @@ export function neonDestinationLabel(
     : t("instance.neon.destination.workspace");
 }
 
-// Seconds left until a deadline, re-rendering once a second while it is ahead.
+// Seconds left until a deadline, re-rendering once a second while it is ahead
+// and the tab is visible.
 function useSecondsUntil(deadline: number | undefined): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (deadline === undefined || deadline <= Date.now()) return;
     setNow(Date.now());
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-      if (Date.now() >= deadline) window.clearInterval(timer);
-    }, 1000);
-    return () => window.clearInterval(timer);
+    let timer: number | undefined;
+    const start = () => {
+      if (timer !== undefined || document.hidden || Date.now() >= deadline) {
+        return;
+      }
+      timer = window.setInterval(() => {
+        setNow(Date.now());
+        if (Date.now() >= deadline && timer !== undefined) {
+          window.clearInterval(timer);
+          timer = undefined;
+        }
+      }, 1000);
+    };
+    const stop = () => {
+      if (timer === undefined) return;
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        setNow(Date.now());
+        start();
+      }
+    };
+    start();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [deadline]);
   return deadline === undefined
     ? 0
@@ -750,12 +784,12 @@ export function NeonImportForm({
         {t("instance.neon.context.destination")}
         <span className="font-medium text-main">{destination}</span>
       </span>
-      {!finished && (
-        <span className="inline-flex items-center gap-1.5">
-          <KeyRound className="size-3.5 shrink-0" />
-          {t("instance.neon.context.key")}
-        </span>
-      )}
+      <span className="inline-flex items-center gap-1.5">
+        <KeyRound className="size-3.5 shrink-0" />
+        {finished
+          ? t("instance.neon.context.key-discarded")
+          : t("instance.neon.context.key")}
+      </span>
     </div>
   );
 
@@ -766,11 +800,11 @@ export function NeonImportForm({
         <h1
           data-step-heading
           tabIndex={-1}
-          className="text-lg font-semibold leading-7 text-main focus:outline-hidden"
+          className="text-lg font-semibold leading-7 text-balance text-main focus:outline-hidden"
         >
           {title}
         </h1>
-        <p className="max-w-3xl text-sm leading-5 text-control-light">
+        <p className="max-w-2xl text-sm leading-5 text-pretty text-control-light">
           {description}
         </p>
       </div>
@@ -779,43 +813,16 @@ export function NeonImportForm({
   );
 
   const footerNote = (text: string, tone = "text-control-light") => (
-    <span className={`text-xs leading-4 ${tone}`}>{text}</span>
+    <span className={`text-xs leading-4 tabular-nums ${tone}`}>{text}</span>
   );
   const footer = ((): ReactNode => {
     switch (step) {
       case 0:
-        return (
-          <StickyActionFooter
-            left={
-              <Button
-                appearance="outline"
-                disabled={connecting}
-                onClick={() =>
-                  selected.length > 0 ? setConfirm({ kind: "leave" }) : close()
-                }
-              >
-                {t("common.cancel")}
-              </Button>
-            }
-            right={
-              <Button
-                disabled={connecting || connectRetryIn > 0 || capacity === 0}
-                onClick={() => void connect()}
-              >
-                {connecting
-                  ? t("instance.neon.connect.finding")
-                  : connectRetryIn > 0
-                    ? t("instance.neon.connect.retry-in", {
-                        time: formatCountdown(connectRetryIn),
-                      })
-                    : t("instance.neon.connect.find")}
-              </Button>
-            }
-          />
-        );
+        return null;
       case 1:
         return (
           <StickyActionFooter
+            contentClassName="max-w-5xl"
             left={
               <Button appearance="outline" onClick={() => setStep(0)}>
                 {t("common.back")}
@@ -849,6 +856,7 @@ export function NeonImportForm({
                         .join(" · ")
                     )}
                 <Button
+                  className="tabular-nums"
                   disabled={selected.length === 0 || overLimit > 0}
                   onClick={() => setStep(2)}
                 >
@@ -866,6 +874,7 @@ export function NeonImportForm({
       case 2:
         return (
           <StickyActionFooter
+            contentClassName="max-w-5xl"
             left={
               <Button appearance="outline" onClick={() => setStep(1)}>
                 {t("common.back")}
@@ -891,6 +900,7 @@ export function NeonImportForm({
                         `${instances(selected.length)} · ${environmentSummary()}`
                       )}
                 <Button
+                  className="tabular-nums"
                   disabled={
                     selected.length === 0 ||
                     needCount > 0 ||
@@ -908,6 +918,7 @@ export function NeonImportForm({
       default:
         return activity === "auto" ? (
           <StickyActionFooter
+            contentClassName="max-w-5xl"
             left={
               <Button
                 variant="destructive"
@@ -921,6 +932,7 @@ export function NeonImportForm({
           />
         ) : (
           <StickyActionFooter
+            contentClassName="max-w-5xl"
             right={
               <>
                 {unresolved > 0 &&
@@ -979,6 +991,40 @@ export function NeonImportForm({
               failure={connectFailure}
               retryAt={connectRetryIn > 0 ? connectRetryAt : undefined}
               destination={destination}
+              actions={
+                <>
+                  <Button
+                    type="button"
+                    appearance="outline"
+                    disabled={connecting}
+                    onClick={() =>
+                      selected.length > 0
+                        ? setConfirm({ kind: "leave" })
+                        : close()
+                    }
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="tabular-nums"
+                    disabled={
+                      connecting || connectRetryIn > 0 || capacity === 0
+                    }
+                  >
+                    {connecting && (
+                      <LoaderCircle className="size-4 motion-safe:animate-spin" />
+                    )}
+                    {connecting
+                      ? t("instance.neon.connect.finding")
+                      : connectRetryIn > 0
+                        ? t("instance.neon.connect.retry-in", {
+                            time: formatCountdown(connectRetryIn),
+                          })
+                        : t("instance.neon.connect.find")}
+                  </Button>
+                </>
+              }
               onApiKeyChange={(value) => {
                 setApiKey(value);
                 if (

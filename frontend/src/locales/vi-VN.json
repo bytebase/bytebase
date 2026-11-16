@@ -1768,7 +1768,6 @@
           "use-shared": "Dùng cài đặt chung",
           "use-shared-setting": "Dùng cài đặt chung"
         },
-        "check-hint": "Đánh dấu các hàng để thay đổi nhiều hàng cùng lúc.",
         "description": "Mỗi nhánh một phiên bản. Đặt phần dùng chung một lần, rồi sửa các hàng khác biệt.",
         "differ_one": "{{count}} hàng được đặt khác.",
         "differ_other": "{{count}} hàng được đặt khác.",
@@ -1853,9 +1852,8 @@
       },
       "connect": {
         "api-key": "Khóa API",
-        "api-key-help": "Tạo khóa trong bảng điều khiển Neon, mục API keys: trong Account settings cho khóa cá nhân, hoặc trong Organization settings cho khóa của tổ chức hay khóa giới hạn theo dự án.",
-        "credentials-saved-body": "Với mỗi phiên bản bạn thêm, Bytebase lưu vai trò kết nối cùng mật khẩu và dùng chúng để đồng bộ schema, truy vấn và di trú.",
-        "credentials-saved-title": "Thông tin xác thực cơ sở dữ liệu được lưu",
+        "api-key-help": "Khóa cá nhân, tổ chức hoặc theo dự án từ cài đặt khóa API của Neon.",
+        "credentials-saved-body": "Mỗi phiên bản được nhập sẽ lưu vai trò kết nối và mật khẩu để đồng bộ lược đồ, truy vấn và di chuyển.",
         "error": {
           "key-empty": "Hãy nhập khóa API Neon.",
           "key-invalid": "Neon từ chối khóa API này. Khóa có thể bị nhập sai, bị thu hồi hoặc đã hết hạn. Hãy kiểm tra khóa trong bảng điều khiển Neon rồi nhập lại.",
@@ -1874,18 +1872,17 @@
         },
         "find": "Tìm nhánh",
         "finding": "Đang kết nối Neon…",
-        "not-saved-body": "Khóa chỉ được giữ trong bộ nhớ của tab này khi thiết lập đang mở, để Bytebase liệt kê nhánh và đọc mật khẩu của vai trò. Đóng thiết lập sẽ hủy khóa.",
-        "not-saved-title": "Khóa API không được lưu",
+        "not-saved-body": "Khóa API chỉ được giữ trong bộ nhớ của tab này khi mở thiết lập và không bao giờ được lưu.",
         "project-id": "ID dự án Neon",
-        "project-id-help": "Bắt buộc với khóa giới hạn theo dự án. Giới hạn việc tìm kiếm trong dự án Neon đó.",
+        "project-id-help": "Bắt buộc đối với khóa theo dự án; giới hạn tìm kiếm trong dự án Neon đó.",
         "retry-in": "Thử lại sau {{time}}",
-        "section": "Khóa API Neon",
         "try-again": "Thử lại"
       },
       "context": {
         "destination": "Đích:",
         "engine": "PostgreSQL · lưu trữ tại Neon",
-        "key": "Khóa API chỉ giữ trong bộ nhớ, không được lưu"
+        "key": "Khóa API chỉ giữ trong bộ nhớ, không được lưu",
+        "key-discarded": "Đã hủy khóa API Neon"
       },
       "count": {
         "branches_one": "{{count}} nhánh",
@@ -1907,18 +1904,18 @@
       },
       "destination": {
         "adding": "Thêm vào {{destination}}",
-        "neon-project-note": "Dự án Neon không liên quan đến dự án Bytebase: có thể thêm nhánh từ bất kỳ dự án Neon nào vào đây.",
+        "neon-project-note": "Dự án Neon tách biệt với dự án Bytebase.",
         "project": "Dự án Bytebase · {{project}}",
-        "project-help": "Các nhánh được thêm vào {{project}}, và mọi cơ sở dữ liệu của chúng đều thuộc dự án Bytebase này.",
+        "project-help": "Các nhánh và cơ sở dữ liệu của chúng thuộc về {{project}}.",
         "project-instances": "các phiên bản dự án trong {{project}}",
         "workspace": "Không gian làm việc",
-        "workspace-help": "Các nhánh được thêm làm phiên bản của không gian làm việc; cơ sở dữ liệu của chúng có thể được gán cho bất kỳ dự án Bytebase nào.",
+        "workspace-help": "Các nhánh được thêm làm phiên bản của không gian làm việc; cơ sở dữ liệu có thể gán cho bất kỳ dự án Bytebase nào.",
         "workspace-instances": "các phiên bản của không gian làm việc"
       },
       "edit-settings": "Chỉnh sửa cài đặt",
       "entry": {
         "change": "Thay đổi",
-        "summary": "Loại cơ sở dữ liệu PostgreSQL, được lưu trữ tại Neon."
+        "summary": "PostgreSQL · lưu trữ tại Neon"
       },
       "import": {
         "and-more": "và {{count}} mục khác",
@@ -1928,8 +1925,6 @@
           "retrying": "Đang thử lại. Kết quả sẽ về khi yêu cầu trả về."
         },
         "banner": {
-          "done-body": "Mọi nhánh đã chọn đều được đăng ký thành phiên bản. Khóa API Neon đã bị hủy.",
-          "done-title": "Không còn gì cần xử lý",
           "finished-body_one": "Đã xác nhận {{count}} mục chưa được tạo. Hãy sửa bên dưới và thử lại khi sẵn sàng.",
           "finished-body_other": "Đã xác nhận {{count}} mục chưa được tạo. Hãy sửa bên dưới và thử lại khi sẵn sàng.",
           "finished-title": "Mọi lô đã trả về",
@@ -2083,9 +2078,9 @@
       },
       "method": {
         "discover": "Tìm nhánh bằng khóa API Neon",
-        "discover-help": "Liệt kê các nhánh mà khóa nhìn thấy, chọn những nhánh bạn muốn và thêm cùng lúc. Dùng khi có nhiều hơn một nhánh.",
+        "discover-help": "Liệt kê các nhánh hiển thị, chọn những nhánh cần thiết và nhập cùng lúc.",
         "manual": "Nhập thông tin kết nối",
-        "manual-help": "Thêm một phiên bản từ máy chủ, vai trò và mật khẩu. Không cần khóa API.",
+        "manual-help": "Kết nối một nhánh bằng máy chủ, vai trò và mật khẩu. Không cần khóa API.",
         "title": "Phương thức thiết lập"
       },
       "neon-project": "Dự án Neon",
@@ -2427,6 +2422,7 @@
     },
     "vendor": {
       "generic": "Tự quản lý / khác",
+      "generic-description": "Bất kỳ máy chủ PostgreSQL hoặc dịch vụ được quản lý nào kết nối qua máy chủ và cổng.",
       "neon": "Neon",
       "neon-description": "PostgreSQL không máy chủ có nhánh. Thêm nhiều nhánh bằng khóa API Neon, hoặc một nhánh từ thông tin kết nối.",
       "self": "Được lưu trữ tại"

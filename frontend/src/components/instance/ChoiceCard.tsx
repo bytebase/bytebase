@@ -17,7 +17,7 @@ export function ChoiceCard({
     <RadioGroupItem
       {...props}
       className={cn(
-        "items-start rounded-sm border border-control-border p-3 transition-colors hover:bg-control-bg has-[[data-checked]]:border-accent has-[[data-checked]]:bg-accent/5",
+        "items-start rounded-sm border border-control-border p-3 select-none transition-colors duration-150 ease-out hover:bg-control-bg has-[[data-checked]]:border-accent has-[[data-checked]]:bg-accent/5",
         className
       )}
       radioClassName="mt-0.5"
@@ -25,7 +25,7 @@ export function ChoiceCard({
     >
       <span className="flex flex-col gap-1">
         <span className="font-medium text-main">{title}</span>
-        <span className="text-xs leading-4 text-control-light">
+        <span className="text-xs leading-4 text-pretty text-control-light">
           {description}
         </span>
       </span>

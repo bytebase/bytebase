@@ -32,10 +32,13 @@ function renderStep(props: Partial<Parameters<typeof NeonConnectStep>[0]> = {}) 
   return handlers;
 }
 
-test("masks the API key behind a reveal control and says what is saved", () => {
+test("masks the API key behind a reveal control, suppresses password managers, and says what is saved", () => {
   renderStep();
   const key = screen.getByLabelText("instance.neon.connect.api-key");
   expect(key).toHaveAttribute("type", "password");
+  expect(key).toHaveAttribute("autocomplete", "off");
+  expect(key).toHaveAttribute("data-1p-ignore");
+  expect(key).toHaveAttribute("data-lpignore", "true");
   fireEvent.click(
     screen.getByRole("button", { name: "common.toggle-password-visibility" })
   );

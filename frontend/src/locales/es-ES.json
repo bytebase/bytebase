@@ -1768,7 +1768,6 @@
           "use-shared": "Usar ajustes compartidos",
           "use-shared-setting": "Usar el ajuste compartido"
         },
-        "check-hint": "Marca filas para cambiar varias a la vez.",
         "description": "Una instancia por rama. Define una vez lo que comparten y luego cambia las filas que difieren.",
         "differ_one": "{{count}} fila con otro valor.",
         "differ_other": "{{count}} filas con otro valor.",
@@ -1853,9 +1852,8 @@
       },
       "connect": {
         "api-key": "Clave de API",
-        "api-key-help": "Crea una en la consola de Neon, en API keys: en Account settings para una clave personal, o en Organization settings para una clave de organización o limitada a un proyecto.",
-        "credentials-saved-body": "Por cada instancia que añadas, Bytebase almacena el rol de conexión y su contraseña, y los usa para la sincronización de esquemas, las consultas y las migraciones.",
-        "credentials-saved-title": "Las credenciales de la base de datos se guardan",
+        "api-key-help": "Clave personal, de organización o de proyecto desde la configuración de claves de API de Neon.",
+        "credentials-saved-body": "Cada instancia importada guarda su rol de conexión y contraseña para la sincronización de esquemas, consultas y migraciones.",
         "error": {
           "key-empty": "Introduce una clave de API de Neon.",
           "key-invalid": "Neon rechazó esta clave de API. Puede estar mal escrita, revocada o caducada. Comprueba la clave en la consola de Neon e introdúcela de nuevo.",
@@ -1874,18 +1872,17 @@
         },
         "find": "Buscar ramas",
         "finding": "Contactando con Neon…",
-        "not-saved-body": "Se conserva en memoria en esta pestaña solo mientras la configuración está abierta, para que Bytebase pueda listar ramas y leer contraseñas de roles. Al cerrar la configuración se descarta.",
-        "not-saved-title": "La clave de API no se guarda",
+        "not-saved-body": "La clave de API solo permanece en la memoria de esta pestaña mientras la configuración está abierta y nunca se guarda.",
         "project-id": "ID del proyecto de Neon",
-        "project-id-help": "Obligatorio para una clave limitada a un proyecto. Limita el descubrimiento a ese proyecto de Neon.",
+        "project-id-help": "Obligatorio para una clave de proyecto; limita el descubrimiento a ese proyecto de Neon.",
         "retry-in": "Reintentar en {{time}}",
-        "section": "Clave de API de Neon",
         "try-again": "Reintentar"
       },
       "context": {
         "destination": "Destino:",
         "engine": "PostgreSQL · alojado en Neon",
-        "key": "La clave de API se mantiene en memoria, no se guarda"
+        "key": "La clave de API se mantiene en memoria, no se guarda",
+        "key-discarded": "Clave de API de Neon descartada"
       },
       "count": {
         "branches_one": "{{count}} rama",
@@ -1907,18 +1904,18 @@
       },
       "destination": {
         "adding": "Se añadirán a {{destination}}",
-        "neon-project-note": "Un proyecto de Neon no tiene relación con un proyecto de Bytebase: aquí se pueden añadir ramas de cualquier proyecto de Neon.",
+        "neon-project-note": "Los proyectos de Neon son independientes de los proyectos de Bytebase.",
         "project": "Proyecto de Bytebase · {{project}}",
-        "project-help": "Las ramas se añaden a {{project}}, y todas sus bases de datos pertenecen a este proyecto de Bytebase.",
+        "project-help": "Las ramas y sus bases de datos pertenecen a {{project}}.",
         "project-instances": "las instancias de proyecto de {{project}}",
         "workspace": "Espacio de trabajo",
-        "workspace-help": "Las ramas se añaden como instancias del espacio de trabajo; sus bases de datos pueden asignarse a cualquier proyecto de Bytebase.",
+        "workspace-help": "Las ramas se añaden como instancias del espacio de trabajo; las bases de datos pueden asignarse a cualquier proyecto de Bytebase.",
         "workspace-instances": "las instancias del espacio de trabajo"
       },
       "edit-settings": "Editar ajustes",
       "entry": {
         "change": "Cambiar",
-        "summary": "Tipo de base de datos PostgreSQL, alojado en Neon."
+        "summary": "PostgreSQL · alojado en Neon"
       },
       "import": {
         "and-more": "y {{count}} más",
@@ -1928,8 +1925,6 @@
           "retrying": "Reintentando. El resultado llega cuando vuelve la solicitud."
         },
         "banner": {
-          "done-body": "Cada rama seleccionada está registrada como instancia. La clave de API de Neon se ha descartado.",
-          "done-title": "No queda nada por resolver",
           "finished-body_one": "Se confirmó que {{count}} entrada no se creó. Corrígela abajo y reintenta cuando quieras.",
           "finished-body_other": "Se confirmó que {{count}} entradas no se crearon. Corrígelas abajo y reintenta cuando quieras.",
           "finished-title": "Todos los lotes volvieron",
@@ -2083,9 +2078,9 @@
       },
       "method": {
         "discover": "Descubrir ramas con una clave de API de Neon",
-        "discover-help": "Lista las ramas que la clave puede ver, elige las que quieras y añádelas juntas. Úsalo para más de una rama.",
+        "discover-help": "Lista las ramas visibles, elige las que necesites e impórtalas juntas.",
         "manual": "Introducir datos de conexión",
-        "manual-help": "Añade una instancia con su host, rol y contraseña. No se necesita clave de API.",
+        "manual-help": "Conecta una rama con su host, rol y contraseña. No requiere clave de API.",
         "title": "Método de configuración"
       },
       "neon-project": "Proyecto de Neon",
@@ -2427,6 +2422,7 @@
     },
     "vendor": {
       "generic": "Autogestionado / otro",
+      "generic-description": "Cualquier servidor PostgreSQL o servicio administrado conectado por host y puerto.",
       "neon": "Neon",
       "neon-description": "PostgreSQL sin servidor con ramas. Añade muchas con una clave de API de Neon o una con sus datos de conexión.",
       "self": "Alojado en"

@@ -243,11 +243,15 @@ test.each([
 });
 
 test("offers no shared value once settings are frozen for import", () => {
+  onClose.mockClear();
   render(<Harness shared={null} initial={{ environment: "environments/prod" }} />);
   expect(screen.getByLabelText("common.environment")).toHaveTextContent("Prod");
   expect(
     screen.queryByRole("button", { name: "instance.neon.sheet.reset" })
   ).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "common.done" }));
-  expect(onClose).toHaveBeenCalled();
+  const form = screen
+    .getByLabelText("instance.instance-name")
+    .closest("form") as HTMLFormElement;
+  fireEvent.submit(form);
+  expect(onClose).toHaveBeenCalledOnce();
 });

@@ -337,6 +337,10 @@ test("imports 45 selections with one confirmation as batches of 20, 20, and 5", 
     instance: { syncInterval: { seconds: 3600n } },
   });
   expect(mocks.refresh).toHaveBeenCalled();
+  expect(
+    screen.getByText("instance.neon.context.key-discarded")
+  ).toBeVisible();
+  expect(document.querySelector('[role="alert"]')).toBeNull();
   // Nothing is left to lose, so leaving no longer warns and setup just closes.
   await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
   expect(vi.mocked(useUnsavedChangesGuard)).toHaveBeenLastCalledWith(false);

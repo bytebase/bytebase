@@ -737,7 +737,15 @@ test("Neon reveals both setup methods as peers and keeps a separate draft for ea
     name: /instance.neon.method.discover/,
   });
   expect(discovery).toHaveAttribute("aria-checked", "true");
-  expect(view.getByTestId("neon-steps")).toBeInTheDocument();
+  const methodGroup = view.getByRole("radiogroup", {
+    name: "instance.neon.method.title",
+  });
+  const steps = view.getByTestId("neon-steps");
+  expect(steps).toBeInTheDocument();
+  expect(
+    methodGroup.compareDocumentPosition(steps) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
   fireEvent.change(view.getByLabelText("discovery draft"), {
     target: { value: "retained key" },
   });

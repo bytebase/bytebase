@@ -1768,7 +1768,6 @@
           "use-shared": "Use shared settings",
           "use-shared-setting": "Use shared setting"
         },
-        "check-hint": "Check rows to change several at once.",
         "description": "One instance per branch. Set what they share once, then change the rows that differ.",
         "differ_one": "{{count}} row set differently.",
         "differ_other": "{{count}} rows set differently.",
@@ -1853,9 +1852,8 @@
       },
       "connect": {
         "api-key": "API key",
-        "api-key-help": "Create one in the Neon console under API keys: in Account settings for a personal key, or in Organization settings for an organization or project-scoped key.",
-        "credentials-saved-body": "For each instance you add, Bytebase stores the connection role and its password, and uses them for schema sync, queries, and migrations.",
-        "credentials-saved-title": "Database credentials are saved",
+        "api-key-help": "Personal, organization, or project-scoped key from Neon API keys settings.",
+        "credentials-saved-body": "Each imported instance saves its connection role and password for schema sync, queries, and migrations.",
         "error": {
           "key-empty": "Enter a Neon API key.",
           "key-invalid": "Neon rejected this API key. It may be mistyped, revoked, or expired. Check the key in the Neon console, then enter it again.",
@@ -1874,18 +1872,17 @@
         },
         "find": "Find branches",
         "finding": "Contacting Neon…",
-        "not-saved-body": "Kept in memory in this tab only while setup is open, so Bytebase can list branches and read role passwords. Closing setup discards it.",
-        "not-saved-title": "The API key is not saved",
+        "not-saved-body": "The API key stays in this tab’s memory only while setup is open and is never saved.",
         "project-id": "Neon project ID",
-        "project-id-help": "Required for a project-scoped key. Limits discovery to that Neon project.",
+        "project-id-help": "Required for a project-scoped key; limits discovery to that Neon project.",
         "retry-in": "Try again in {{time}}",
-        "section": "Neon API key",
         "try-again": "Try again"
       },
       "context": {
         "destination": "Destination:",
         "engine": "PostgreSQL · hosted on Neon",
-        "key": "API key held in memory, not saved"
+        "key": "API key held in memory, not saved",
+        "key-discarded": "Neon API key discarded"
       },
       "count": {
         "branches_one": "{{count}} branch",
@@ -1907,18 +1904,18 @@
       },
       "destination": {
         "adding": "Adding to {{destination}}",
-        "neon-project-note": "A Neon project is unrelated to a Bytebase project: branches from any Neon project can be added here.",
+        "neon-project-note": "Neon projects are separate from Bytebase projects.",
         "project": "Bytebase project · {{project}}",
-        "project-help": "Branches are added to {{project}}, and all of their databases belong to this Bytebase project.",
+        "project-help": "Branches and their databases belong to {{project}}.",
         "project-instances": "project instances in {{project}}",
         "workspace": "Workspace",
-        "workspace-help": "Branches are added as workspace instances; their databases can be assigned to any Bytebase project.",
+        "workspace-help": "Branches are added as workspace instances; databases can be assigned to any Bytebase project.",
         "workspace-instances": "workspace instances"
       },
       "edit-settings": "Edit settings",
       "entry": {
         "change": "Change",
-        "summary": "Database type PostgreSQL, hosted on Neon."
+        "summary": "PostgreSQL · hosted on Neon"
       },
       "import": {
         "and-more": "and {{count}} more",
@@ -1928,8 +1925,6 @@
           "retrying": "Retrying. The result arrives when the request returns."
         },
         "banner": {
-          "done-body": "Every selected branch is registered as an instance. The Neon API key has been discarded.",
-          "done-title": "Nothing left to resolve",
           "finished-body_one": "{{count}} entry was confirmed not created. Fix it below and retry when ready.",
           "finished-body_other": "{{count}} entries were confirmed not created. Fix them below and retry when ready.",
           "finished-title": "Every batch returned",
@@ -2083,9 +2078,9 @@
       },
       "method": {
         "discover": "Discover branches with a Neon API key",
-        "discover-help": "List the branches the key can see, choose the ones you want, and add them together. Use this for more than one branch.",
+        "discover-help": "List visible branches, select the ones you need, and import them together.",
         "manual": "Enter connection details",
-        "manual-help": "Add one instance from its host, role, and password. No API key needed.",
+        "manual-help": "Connect one branch with its host, role, and password. No API key needed.",
         "title": "Setup method"
       },
       "neon-project": "Neon project",
@@ -2427,6 +2422,7 @@
     },
     "vendor": {
       "generic": "Self-managed / other",
+      "generic-description": "Any PostgreSQL server or managed service connected by host and port.",
       "neon": "Neon",
       "neon-description": "Serverless PostgreSQL with branches. Add many with a Neon API key, or one from its connection details.",
       "self": "Hosted on"

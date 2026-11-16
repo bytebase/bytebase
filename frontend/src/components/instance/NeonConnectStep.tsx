@@ -1,5 +1,5 @@
-import { Database, KeyRound } from "lucide-react";
-import { useId } from "react";
+import { KeyRound } from "lucide-react";
+import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { SecretInput } from "@/components/SecretInput";
 import { Alert } from "@/components/ui/alert";
@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import {
   FormError,
   FormField,
+  FormFieldGroup,
   FormLabel,
-  FormSection,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { NeonWarning } from "./NeonWarning";
 import { formatClock, type NeonRequestFailure } from "./neon-import";
 
@@ -23,6 +24,7 @@ export function NeonConnectStep({
   failure,
   retryAt,
   destination,
+  actions,
   onApiKeyChange,
   onProjectIdChange,
   onSubmit,
@@ -34,6 +36,7 @@ export function NeonConnectStep({
   // When Neon allows the next request, while that is still ahead.
   retryAt?: number;
   destination: string;
+  actions?: ReactNode;
   onApiKeyChange: (value: string) => void;
   onProjectIdChange: (value: string) => void;
   onSubmit: () => void;
@@ -61,144 +64,132 @@ export function NeonConnectStep({
           : "";
 
   return (
-    <FormSection
-      layout="stacked"
-      padding="none"
-      title={t("instance.neon.connect.section")}
+    <form
+      className="flex w-full max-w-xl flex-col gap-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
     >
-      <div className="flex flex-col gap-4">
-        <form
-          className="grid grid-cols-1 gap-6 md:grid-cols-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSubmit();
-          }}
+      {actions === undefined && (
+        <Button type="submit" hidden tabIndex={-1} aria-hidden="true" />
+      )}
+      <FormFieldGroup density="compact">
+        <FormField
+          layout="vertical"
+          title={
+            <FormLabel htmlFor={keyId}>
+              {t("instance.neon.connect.api-key")}
+            </FormLabel>
+          }
+          description={t("instance.neon.connect.api-key-help")}
         >
-          {/* Lets Enter in either field submit; the visible button is in the
-              page footer. */}
-          <Button type="submit" hidden tabIndex={-1} aria-hidden="true" />
-          <FormField
-            layout="vertical"
-            title={
-              <FormLabel htmlFor={keyId}>
-                {t("instance.neon.connect.api-key")}
-              </FormLabel>
-            }
-            description={t("instance.neon.connect.api-key-help")}
-          >
-            <SecretInput
-              id={keyId}
-              isCreating
-              value={apiKey}
-              disabled={busy}
-              placeholder="napi_…"
-              aria-invalid={!!keyError || undefined}
-              aria-describedby={keyError ? keyErrorId : undefined}
-              onValueChange={onApiKeyChange}
-            />
-            {keyError && <FormError id={keyErrorId}>{keyError}</FormError>}
-          </FormField>
-          <FormField
-            layout="vertical"
-            title={
-              <FormLabel htmlFor={projectIdId}>
-                {t("instance.neon.connect.project-id")}{" "}
-                <span className="font-normal text-control-light">
-                  {t("instance.neon.optional")}
-                </span>
-              </FormLabel>
-            }
-            description={t("instance.neon.connect.project-id-help")}
-          >
-            <Input
-              id={projectIdId}
-              value={projectId}
-              disabled={busy}
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="autumn-disk-48433112"
-              aria-invalid={!!projectError || undefined}
-              aria-describedby={projectError ? projectErrorId : undefined}
-              onChange={(event) => onProjectIdChange(event.target.value)}
-            />
-            {projectError && (
-              <FormError id={projectErrorId}>{projectError}</FormError>
-            )}
-          </FormField>
-        </form>
+          <SecretInput
+            id={keyId}
+            isCreating
+            autoComplete="off"
+            value={apiKey}
+            disabled={busy}
+            placeholder="napi_…"
+            aria-invalid={!!keyError || undefined}
+            aria-describedby={keyError ? keyErrorId : undefined}
+            onValueChange={onApiKeyChange}
+          />
+          {keyError && <FormError id={keyErrorId}>{keyError}</FormError>}
+        </FormField>
+        <FormField
+          layout="vertical"
+          title={
+            <FormLabel htmlFor={projectIdId}>
+              {t("instance.neon.connect.project-id")}{" "}
+              <span className="font-normal text-control-light">
+                {t("instance.neon.optional")}
+              </span>
+            </FormLabel>
+          }
+          description={t("instance.neon.connect.project-id-help")}
+        >
+          <Input
+            id={projectIdId}
+            value={projectId}
+            disabled={busy}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="autumn-disk-48433112"
+            aria-invalid={!!projectError || undefined}
+            aria-describedby={projectError ? projectErrorId : undefined}
+            onChange={(event) => onProjectIdChange(event.target.value)}
+          />
+          {projectError && (
+            <FormError id={projectErrorId}>{projectError}</FormError>
+          )}
+        </FormField>
+      </FormFieldGroup>
 
-        {failure?.kind === "rate-limited" && (
-          <NeonWarning
-            title={t("instance.neon.connect.error.rate-limited-title")}
-            description={
-              retryAt !== undefined
-                ? t("instance.neon.connect.error.rate-limited-wait", {
-                    time: formatClock(new Date(retryAt)),
-                  })
-                : t("instance.neon.connect.error.rate-limited-now")
-            }
-          />
-        )}
-        {failure?.kind === "unavailable" && (
-          <NeonWarning
-            title={t("instance.neon.connect.error.unavailable-title")}
-            description={t("instance.neon.connect.error.unavailable-body")}
+      {failure?.kind === "rate-limited" && (
+        <NeonWarning
+          title={t("instance.neon.connect.error.rate-limited-title")}
+          description={
+            retryAt !== undefined
+              ? t("instance.neon.connect.error.rate-limited-wait", {
+                  time: formatClock(new Date(retryAt)),
+                })
+              : t("instance.neon.connect.error.rate-limited-now")
+          }
+        />
+      )}
+      {failure?.kind === "unavailable" && (
+        <NeonWarning
+          title={t("instance.neon.connect.error.unavailable-title")}
+          description={t("instance.neon.connect.error.unavailable-body")}
+        >
+          <Button
+            type="button"
+            appearance="outline"
+            size="sm"
+            className="mt-2"
+            disabled={busy}
+            onClick={onSubmit}
           >
-            <Button
-              appearance="outline"
-              size="sm"
-              className="mt-2"
-              disabled={busy}
-              onClick={onSubmit}
-            >
-              {t("instance.neon.connect.try-again")}
-            </Button>
-          </NeonWarning>
-        )}
-        {failure?.kind === "permission-denied" && (
-          <Alert
-            variant="error"
-            title={t("instance.neon.connect.error.permission-title")}
-            description={t("instance.neon.connect.error.permission-body", {
-              destination,
-            })}
-          />
-        )}
-        {(failure?.kind === "other" || failure?.kind === "token-invalid") && (
-          <Alert
-            variant="error"
-            title={t("instance.neon.connect.error.other-title")}
-            description={
-              failure.message || t("instance.neon.connect.error.other-body")
-            }
-          />
-        )}
+            {t("instance.neon.connect.try-again")}
+          </Button>
+        </NeonWarning>
+      )}
+      {failure?.kind === "permission-denied" && (
+        <Alert
+          variant="error"
+          title={t("instance.neon.connect.error.permission-title")}
+          description={t("instance.neon.connect.error.permission-body", {
+            destination,
+          })}
+        />
+      )}
+      {(failure?.kind === "other" || failure?.kind === "token-invalid") && (
+        <Alert
+          variant="error"
+          title={t("instance.neon.connect.error.other-title")}
+          description={
+            failure.message || t("instance.neon.connect.error.other-body")
+          }
+        />
+      )}
 
-        <div className="grid grid-cols-1 rounded-sm border border-block-border sm:grid-cols-2">
-          <div className="flex gap-3 border-b border-block-border p-3 sm:border-r sm:border-b-0">
-            <KeyRound className="mt-0.5 size-4 shrink-0 text-control-light" />
-            <div>
-              <div className="text-sm font-medium text-main">
-                {t("instance.neon.connect.not-saved-title")}
-              </div>
-              <p className="text-xs leading-4 text-control-light">
-                {t("instance.neon.connect.not-saved-body")}
-              </p>
-            </div>
+      <p className="flex items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
+        <KeyRound className="mt-0.5 size-3.5 shrink-0" />
+        <span>
+          <span>{t("instance.neon.connect.not-saved-body")}</span>{" "}
+          <span>{t("instance.neon.connect.credentials-saved-body")}</span>
+        </span>
+      </p>
+
+      {actions !== undefined && (
+        <>
+          <Separator />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {actions}
           </div>
-          <div className="flex gap-3 p-3">
-            <Database className="mt-0.5 size-4 shrink-0 text-control-light" />
-            <div>
-              <div className="text-sm font-medium text-main">
-                {t("instance.neon.connect.credentials-saved-title")}
-              </div>
-              <p className="text-xs leading-4 text-control-light">
-                {t("instance.neon.connect.credentials-saved-body")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </FormSection>
+        </>
+      )}
+    </form>
   );
 }

@@ -145,6 +145,11 @@ test("filters by name once everything is loaded", async () => {
 test("select-all acts on loaded, available branches only", () => {
   const drafts = rows();
   const { onSelect } = renderStep({ drafts });
+  expect(
+    screen.getByRole("columnheader", {
+      name: /instance\.neon\.select\.col\.branch/,
+    })
+  ).toBeVisible();
   fireEvent.click(
     screen.getByRole("checkbox", {
       name: 'instance.neon.select.select-all{"count":3}',

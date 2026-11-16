@@ -235,7 +235,7 @@ export function NeonSelectStep({
             {
               value: "loaded",
               label: (
-                <span className="px-2 text-xs font-medium">
+                <span className="px-2 text-xs font-medium tabular-nums">
                   {t("instance.neon.select.view-loaded", {
                     count: drafts.length,
                   })}
@@ -245,7 +245,7 @@ export function NeonSelectStep({
             {
               value: "selected",
               label: (
-                <span className="px-2 text-xs font-medium">
+                <span className="px-2 text-xs font-medium tabular-nums">
                   {t("instance.neon.select.view-selected", {
                     count: selectedCount,
                   })}
@@ -286,11 +286,11 @@ export function NeonSelectStep({
 
       <div
         role="status"
-        className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-4 text-control-light"
+        className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs leading-4 tabular-nums text-control-light"
       >
         {!status.started ? (
           <span className="inline-flex items-center gap-1.5">
-            <LoaderCircle className="size-4 animate-spin" />
+            <LoaderCircle className="size-4 motion-safe:animate-spin" />
             {t("instance.neon.select.status.listing")}
           </span>
         ) : status.complete ? (
@@ -373,9 +373,12 @@ export function NeonSelectStep({
                 )}
               </TableHead>
               <TableHead>
-                {status.started
-                  ? selectAllLabel
-                  : t("instance.neon.select.col.branch")}
+                <span>{t("instance.neon.select.col.branch")}</span>
+                {status.started && (
+                  <span className="ml-2 text-xs font-normal tabular-nums text-control-light">
+                    {selectAllLabel}
+                  </span>
+                )}
               </TableHead>
               <TableHead className="hidden md:table-cell">
                 {t("instance.neon.select.col.databases")}
@@ -447,7 +450,7 @@ export function NeonSelectStep({
                         onClick={() => onRetryProject(failure.projectId)}
                       >
                         {failure.retrying ? (
-                          <LoaderCircle className="size-3.5 animate-spin" />
+                          <LoaderCircle className="size-3.5 motion-safe:animate-spin" />
                         ) : (
                           <RotateCw className="size-3.5" />
                         )}
@@ -503,7 +506,7 @@ export function NeonSelectStep({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="h-auto min-w-0 items-start px-0 text-left text-sm whitespace-normal hover:bg-transparent"
+                        className="relative h-auto min-w-0 items-start px-0 text-left text-sm whitespace-normal hover:bg-transparent after:absolute after:-inset-y-2 after:inset-x-0 after:content-['']"
                         aria-expanded={!closed}
                         onClick={() => toggleCollapsed(group.projectId)}
                       >
@@ -522,7 +525,7 @@ export function NeonSelectStep({
                       <span className="hidden font-mono text-xs text-control-light sm:inline">
                         {group.projectId}
                       </span>
-                      <span className="ml-auto text-xs text-control-light">
+                      <span className="ml-auto text-xs tabular-nums text-control-light">
                         {t("instance.neon.select.group-summary", {
                           selected: totals?.selected ?? selected,
                           count: totals?.loaded ?? group.rows.length,
@@ -680,9 +683,8 @@ export function NeonSelectStep({
                         query: filter,
                       })}
                       <Button
-                        appearance="link"
+                        appearance="outline"
                         size="sm"
-                        className="h-auto p-0"
                         onClick={() => setFilter("")}
                       >
                         {t("instance.neon.select.clear-filter")}
@@ -709,7 +711,7 @@ export function NeonSelectStep({
               onClick={onLoadMore}
             >
               {status.loading && (
-                <LoaderCircle className="size-3.5 animate-spin" />
+                <LoaderCircle className="size-3.5 motion-safe:animate-spin" />
               )}
               {status.loading
                 ? t("instance.neon.select.loading")
@@ -754,7 +756,7 @@ export function NeonSelectStep({
         )}
       </div>
 
-      <p className="flex items-start gap-1.5 text-xs leading-4 text-control-light">
+      <p className="flex items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
         <Info className="mt-px size-3.5 shrink-0" />
         <span>{t("instance.neon.select.live-note")}</span>
       </p>

@@ -1768,7 +1768,6 @@
           "use-shared": "共通設定を使用",
           "use-shared-setting": "共通設定を使用"
         },
-        "check-hint": "行にチェックを入れると、まとめて変更できます。",
         "description": "ブランチごとに 1 つのインスタンスです。共通の設定を一度行い、異なる行だけ変更します。",
         "differ_one": "{{count}} 行が個別に設定されています。",
         "differ_other": "{{count}} 行が個別に設定されています。",
@@ -1853,9 +1852,8 @@
       },
       "connect": {
         "api-key": "API キー",
-        "api-key-help": "Neon コンソールの API keys で作成します。個人キーは Account settings、組織キーまたはプロジェクト限定キーは Organization settings にあります。",
-        "credentials-saved-body": "追加するインスタンスごとに、Bytebase は接続ロールとそのパスワードを保存し、スキーマ同期、クエリ、マイグレーションに使用します。",
-        "credentials-saved-title": "データベースの認証情報は保存されます",
+        "api-key-help": "Neon の API キー設定で作成した個人、組織、またはプロジェクトスコープのキー。",
+        "credentials-saved-body": "インポートされた各インスタンスは、スキーマ同期、クエリ、マイグレーションのために接続ロールとパスワードを保存します。",
         "error": {
           "key-empty": "Neon API キーを入力してください。",
           "key-invalid": "Neon がこの API キーを拒否しました。入力ミス、失効、または期限切れの可能性があります。Neon コンソールでキーを確認してから、もう一度入力してください。",
@@ -1874,18 +1872,17 @@
         },
         "find": "ブランチを検索",
         "finding": "Neon に接続中…",
-        "not-saved-body": "セットアップを開いている間だけこのタブのメモリに保持され、Bytebase がブランチの一覧取得とロールのパスワードの読み取りに使用します。セットアップを閉じると破棄されます。",
-        "not-saved-title": "API キーは保存されません",
+        "not-saved-body": "API キーはセットアップを開いている間のみこのタブのメモリに保持され、保存されません。",
         "project-id": "Neon プロジェクト ID",
-        "project-id-help": "プロジェクトスコープのキーでは必須です。検出対象はその Neon プロジェクトに限定されます。",
+        "project-id-help": "プロジェクトスコープのキーでは必須です。検出範囲をその Neon プロジェクトに限定します。",
         "retry-in": "{{time}} 後に再試行",
-        "section": "Neon API キー",
         "try-again": "再試行"
       },
       "context": {
         "destination": "追加先:",
         "engine": "PostgreSQL · Neon でホスト",
-        "key": "API キーはメモリ上にのみ保持され、保存されません"
+        "key": "API キーはメモリ上にのみ保持され、保存されません",
+        "key-discarded": "Neon API キーは破棄されました"
       },
       "count": {
         "branches_one": "{{count}} 件のブランチ",
@@ -1907,18 +1904,18 @@
       },
       "destination": {
         "adding": "{{destination}} に追加します",
-        "neon-project-note": "Neon プロジェクトは Bytebase プロジェクトとは無関係です。どの Neon プロジェクトのブランチもここに追加できます。",
+        "neon-project-note": "Neon プロジェクトは Bytebase プロジェクトとは独立しています。",
         "project": "Bytebase プロジェクト · {{project}}",
-        "project-help": "ブランチは {{project}} に追加され、そのデータベースはすべてこの Bytebase プロジェクトに属します。",
+        "project-help": "ブランチとそのすべてのデータベースは {{project}} に属します。",
         "project-instances": "{{project}} のプロジェクトインスタンス",
         "workspace": "ワークスペース",
-        "workspace-help": "ブランチはワークスペースインスタンスとして追加され、そのデータベースは任意の Bytebase プロジェクトに割り当てられます。",
+        "workspace-help": "ブランチはワークスペースインスタンスとして追加され、データベースは任意の Bytebase プロジェクトに割り当てられます。",
         "workspace-instances": "ワークスペースインスタンス"
       },
       "edit-settings": "設定を編集",
       "entry": {
         "change": "変更",
-        "summary": "データベースの種類は PostgreSQL、ホスティング先は Neon です。"
+        "summary": "PostgreSQL · Neon でホスト"
       },
       "import": {
         "and-more": "ほか {{count}} 件",
@@ -1928,8 +1925,6 @@
           "retrying": "再試行中です。リクエストが返ると結果が届きます。"
         },
         "banner": {
-          "done-body": "選択したすべてのブランチがインスタンスとして登録されました。Neon API キーは破棄されました。",
-          "done-title": "対応が必要なものはありません",
           "finished-body_one": "{{count}} 件のエントリは作成されていないことが確認されました。下で修正し、準備ができたら再試行してください。",
           "finished-body_other": "{{count}} 件のエントリは作成されていないことが確認されました。下で修正し、準備ができたら再試行してください。",
           "finished-title": "すべてのバッチが返りました",
@@ -2083,9 +2078,9 @@
       },
       "method": {
         "discover": "Neon API キーでブランチを検出",
-        "discover-help": "キーで参照できるブランチを一覧表示し、必要なものを選んでまとめて追加します。複数のブランチを追加する場合に使用します。",
+        "discover-help": "参照可能なブランチを一覧表示し、必要なものを選択してまとめてインポートします。",
         "manual": "接続情報を入力",
-        "manual-help": "ホスト、ロール、パスワードからインスタンスを 1 つ追加します。API キーは不要です。",
+        "manual-help": "ホスト、ロール、パスワードで単一のブランチを接続します。API キーは不要です。",
         "title": "セットアップ方法"
       },
       "neon-project": "Neon プロジェクト",
@@ -2427,6 +2422,7 @@
     },
     "vendor": {
       "generic": "セルフマネージド / その他",
+      "generic-description": "ホストとポートで接続する任意の PostgreSQL サーバーまたはマネージドサービス。",
       "neon": "Neon",
       "neon-description": "ブランチを備えたサーバーレス PostgreSQL。Neon API キーで複数のブランチを追加するか、接続情報から 1 つ追加します。",
       "self": "ホスティング先"

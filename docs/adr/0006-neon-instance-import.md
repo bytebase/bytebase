@@ -93,7 +93,7 @@ Follow the [frontend UX contract](../agents/frontend-ux.md). Setup is a full-pag
 
 The destination is the instance collection setup was opened from: the workspace instance list or one Bytebase project. Setup states it on the first screen, keeps it visible on every later step, and offers no control to change it. Wherever the two could be confused, text says **Neon project** or **Bytebase project**, never a bare "project".
 
-Discovery is a four-step wizard with the shared step indicator and a stable footer: **Connect → Select branches → Configure → Import**. After Connect, the engine, vendor, and method controls collapse into a one-line summary. **Back** returns through earlier steps and preserves selections and settings, and leaving setup with selections or settings warns first. Secrets stay in memory, never in URLs or browser storage.
+Discovery is a four-step wizard with the shared step indicator (**Connect → Select branches → Configure → Import**), inline actions beneath the Connect fields, and a stable footer across the table and import steps. On the first screen, the step indicator sits below **Setup method** so switching methods does not shift the page heading or method choice. After Connect, the engine, vendor, and method controls collapse into a one-line summary. **Back** returns through earlier steps and preserves selections and settings, and leaving setup with selections or settings warns first. Secrets stay in memory, never in URLs or browser storage.
 
 ### Connect
 

@@ -1768,7 +1768,6 @@
           "use-shared": "使用共享设置",
           "use-shared-setting": "使用共享设置"
         },
-        "check-hint": "勾选多行可批量修改。",
         "description": "每个分支对应一个实例。先统一设置共用项，再修改有差异的行。",
         "differ_one": "{{count}} 行另有设置。",
         "differ_other": "{{count}} 行另有设置。",
@@ -1853,9 +1852,8 @@
       },
       "connect": {
         "api-key": "API 密钥",
-        "api-key-help": "在 Neon 控制台的“API keys”中创建：个人密钥位于“Account settings”，组织密钥或项目范围密钥位于“Organization settings”。",
-        "credentials-saved-body": "对于添加的每个实例，Bytebase 会保存连接角色及其密码，并用于 Schema 同步、查询和变更。",
-        "credentials-saved-title": "数据库凭据会被保存",
+        "api-key-help": "支持在 Neon 控制台创建的个人、组织或项目级 API 密钥。",
+        "credentials-saved-body": "导入的每个实例会保存连接角色与密码，用于 Schema 同步、查询和变更。",
         "error": {
           "key-empty": "请输入 Neon API 密钥。",
           "key-invalid": "Neon 拒绝了此 API 密钥。密钥可能输入有误、已被撤销或已过期。请在 Neon 控制台确认后重新输入。",
@@ -1874,18 +1872,17 @@
         },
         "find": "查找分支",
         "finding": "正在连接 Neon…",
-        "not-saved-body": "仅在设置打开期间保留在此标签页的内存中，供 Bytebase 列出分支并读取角色密码。关闭设置后即被丢弃。",
-        "not-saved-title": "API 密钥不会被保存",
+        "not-saved-body": "API 密钥仅在设置打开期间保留在此标签页内存中，关闭即丢弃，不会保存。",
         "project-id": "Neon 项目 ID",
-        "project-id-help": "项目级密钥必须填写。发现范围将限定在该 Neon 项目。",
+        "project-id-help": "项目级密钥必填；仅发现该 Neon 项目中的分支。",
         "retry-in": "{{time}} 后重试",
-        "section": "Neon API 密钥",
         "try-again": "重试"
       },
       "context": {
         "destination": "目标：",
         "engine": "PostgreSQL · 托管于 Neon",
-        "key": "API 密钥仅保存在内存中，不会存储"
+        "key": "API 密钥仅保存在内存中，不会存储",
+        "key-discarded": "Neon API 密钥已丢弃"
       },
       "count": {
         "branches_one": "{{count}} 个分支",
@@ -1907,18 +1904,18 @@
       },
       "destination": {
         "adding": "添加到 {{destination}}",
-        "neon-project-note": "Neon 项目与 Bytebase 项目无关：任何 Neon 项目的分支都可以添加到这里。",
+        "neon-project-note": "Neon 项目与 Bytebase 项目相互独立。",
         "project": "Bytebase 项目 · {{project}}",
-        "project-help": "分支会添加到 {{project}}，它们的所有数据库都属于此 Bytebase 项目。",
+        "project-help": "分支及其所有数据库将归属 {{project}}。",
         "project-instances": "{{project}} 中的项目实例",
         "workspace": "工作空间",
-        "workspace-help": "分支会添加为工作空间实例；它们的数据库可以分配给任意 Bytebase 项目。",
+        "workspace-help": "分支将添加为工作空间实例，数据库可分配给任意 Bytebase 项目。",
         "workspace-instances": "工作空间实例"
       },
       "edit-settings": "编辑设置",
       "entry": {
         "change": "更改",
-        "summary": "数据库类型为 PostgreSQL，托管于 Neon。"
+        "summary": "PostgreSQL · 托管于 Neon"
       },
       "import": {
         "and-more": "以及另外 {{count}} 个",
@@ -1928,8 +1925,6 @@
           "retrying": "正在重试。请求返回时会给出结果。"
         },
         "banner": {
-          "done-body": "每个选择的分支都已注册为实例。Neon API 密钥已被丢弃。",
-          "done-title": "没有需要处理的条目了",
           "finished-body_one": "已确认 {{count}} 个条目未创建。请在下方修正，准备好后重试。",
           "finished-body_other": "已确认 {{count}} 个条目未创建。请在下方修正，准备好后重试。",
           "finished-title": "所有批次均已返回",
@@ -2083,9 +2078,9 @@
       },
       "method": {
         "discover": "使用 Neon API 密钥发现分支",
-        "discover-help": "列出密钥可见的分支，选择需要的分支并一起添加。适用于添加多个分支。",
+        "discover-help": "列出密钥可见的分支，按需选择并批量导入。",
         "manual": "填写连接信息",
-        "manual-help": "通过主机、角色和密码添加单个实例。无需 API 密钥。",
+        "manual-help": "通过主机、角色和密码连接单个分支，无需 API 密钥。",
         "title": "设置方式"
       },
       "neon-project": "Neon 项目",
@@ -2427,6 +2422,7 @@
     },
     "vendor": {
       "generic": "自托管 / 其他",
+      "generic-description": "通过主机和端口连接的任意 PostgreSQL 服务器或托管服务。",
       "neon": "Neon",
       "neon-description": "带分支的无服务器 PostgreSQL。可用 Neon API 密钥批量添加分支，或通过连接信息添加单个分支。",
       "self": "托管于"

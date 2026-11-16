@@ -157,12 +157,12 @@ export function NeonConfigureStep({
 
   const differHint = (setting: NeonSharedKey, fallback: ReactNode) =>
     overrides[setting] > 0 ? (
-      <span className="inline-flex flex-wrap items-center gap-x-1">
+      <span className="inline-flex flex-wrap items-center gap-x-1 tabular-nums">
         {t("instance.neon.configure.differ", { count: overrides[setting] })}
         <Button
           appearance="link"
           size="xs"
-          className="h-auto p-0"
+          className="relative h-auto p-0 after:absolute after:-inset-x-2 after:-bottom-2 after:top-0 after:content-['']"
           onClick={() => onResetOverride(setting)}
         >
           {t("common.reset")}
@@ -296,7 +296,7 @@ export function NeonConfigureStep({
               layout="vertical"
               title={t("instance.neon.configure.schedule")}
             >
-              <p className="text-sm leading-5 text-control">
+              <p className="flex min-h-9 items-center text-xs leading-4 text-pretty text-control">
                 {schedule === "off"
                   ? t("instance.neon.sync.unscheduled-help")
                   : t("instance.neon.sync.default-help")}
@@ -317,7 +317,7 @@ export function NeonConfigureStep({
                 value={Math.min(drafts.length, capacity)}
                 max={Math.max(capacity, 1)}
                 label={
-                  <span className="text-sm text-main">
+                  <span className="text-sm tabular-nums text-main">
                     {t("instance.neon.configure.limit.usage", {
                       count: drafts.length,
                       capacity,
@@ -328,7 +328,7 @@ export function NeonConfigureStep({
             )}
             <p
               className={cn(
-                "text-xs leading-4",
+                "text-xs leading-4 tabular-nums",
                 over > 0 ? "text-error" : "text-control-light"
               )}
             >
@@ -368,7 +368,7 @@ export function NeonConfigureStep({
               {
                 value: "all",
                 label: (
-                  <span className="px-2 text-xs font-medium">
+                  <span className="px-2 text-xs font-medium tabular-nums">
                     {t("instance.neon.configure.tab-all", {
                       count: drafts.length,
                     })}
@@ -378,7 +378,7 @@ export function NeonConfigureStep({
               {
                 value: "needs",
                 label: (
-                  <span className="px-2 text-xs font-medium">
+                  <span className="px-2 text-xs font-medium tabular-nums">
                     {t("instance.neon.configure.tab-needs", {
                       count: needs.size,
                     })}
@@ -388,7 +388,7 @@ export function NeonConfigureStep({
               {
                 value: "changed",
                 label: (
-                  <span className="px-2 text-xs font-medium">
+                  <span className="px-2 text-xs font-medium tabular-nums">
                     {t("instance.neon.configure.tab-changed", {
                       count: changedCount,
                     })}
@@ -397,9 +397,6 @@ export function NeonConfigureStep({
               },
             ]}
           />
-          <span className="text-xs text-control-light">
-            {t("instance.neon.configure.check-hint")}
-          </span>
         </div>
         <div className="overflow-x-auto rounded-sm border border-block-border">
           <Table>
@@ -422,7 +419,7 @@ export function NeonConfigureStep({
                   <span className="whitespace-nowrap">
                     {t("instance.neon.sheet.role")}
                   </span>{" "}
-                  <span className="font-normal whitespace-nowrap">
+                  <span className="text-xs font-normal whitespace-nowrap text-control-light">
                     {t("instance.neon.configure.role-note")}
                   </span>
                 </TableHead>
@@ -462,7 +459,7 @@ export function NeonConfigureStep({
                         <span className="hidden font-mono text-xs text-control-light sm:inline">
                           {group.projectId}
                         </span>
-                        <span className="ml-auto text-xs text-control-light">
+                        <span className="ml-auto text-xs tabular-nums text-control-light">
                           {t("instance.neon.count.instances", {
                             count: group.rows.length,
                           })}
@@ -625,6 +622,7 @@ export function NeonConfigureStep({
                           <Button
                             appearance="secondary"
                             size="sm"
+                            className="relative after:absolute after:-inset-2 after:content-['']"
                             aria-label={t(
                               "instance.neon.configure.edit-label",
                               { name: draft.title }
@@ -651,9 +649,8 @@ export function NeonConfigureStep({
                     : t("instance.neon.configure.empty")}
                   {tab !== "all" && (
                     <Button
-                      appearance="link"
+                      appearance="outline"
                       size="sm"
-                      className="h-auto p-0"
                       onClick={() => setTab("all")}
                     >
                       {t("instance.neon.configure.show-all")}
@@ -845,7 +842,7 @@ function NeedsPanel({
         tabIndex={-1}
         role="status"
         className={cn(
-          "flex items-center gap-2 px-4 py-2 text-sm font-medium focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset",
+          "flex items-center gap-2 px-4 py-2 text-sm font-medium tabular-nums focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset",
           !empty && "border-b",
           complete
             ? "border-block-border text-control"
@@ -936,6 +933,7 @@ function NeedsPanel({
                 <SecretInput
                   id={inputId}
                   isCreating
+                  autoComplete="off"
                   className="w-56"
                   value={draft.password}
                   onValueChange={(password) =>
@@ -945,7 +943,7 @@ function NeedsPanel({
                 <Button
                   appearance="link"
                   size="xs"
-                  className="h-auto self-start p-0"
+                  className="relative h-auto self-start p-0 after:absolute after:-inset-x-2 after:-bottom-2 after:top-0 after:content-['']"
                   onClick={() =>
                     onDraftsChange([key], (row) => ({
                       ...row,

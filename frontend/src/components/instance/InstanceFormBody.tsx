@@ -37,7 +37,6 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -82,6 +81,7 @@ import {
   urlfy,
 } from "@/utils";
 import { normalizeAuthenticationType } from "./authentication";
+import { ChoiceCard } from "./ChoiceCard";
 import {
   type DataSourceEditState,
   type EditDataSource,
@@ -1338,7 +1338,6 @@ export function InstanceFormBody({
   };
 
   const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
-  const vendorHintId = useId();
   const changeVendor = (vendor: Vendor) => {
     if (isCreating) {
       vendorDrafts.current.set(basicInfo.vendor, ctx.dataSourceEditState);
@@ -1394,10 +1393,8 @@ export function InstanceFormBody({
       )}
       {isCreating && basicInfo.engine === Engine.POSTGRES && (
         <FormField title={t("instance.vendor.self")}>
-          <SegmentedControl
-            appearance="soft"
-            ariaLabel={t("instance.vendor.self")}
-            aria-describedby={isNeon ? vendorHintId : undefined}
+          <RadioGroup
+            aria-label={t("instance.vendor.self")}
             value={isNeon ? "neon" : "generic"}
             disabled={!allowEdit || disabled}
             onValueChange={(value) =>
@@ -1405,19 +1402,19 @@ export function InstanceFormBody({
                 value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
               )
             }
-            options={[
-              { value: "generic", label: t("instance.vendor.generic") },
-              { value: "neon", label: t("instance.vendor.neon") },
-            ]}
-          />
-          {isNeon && (
-            <p
-              id={vendorHintId}
-              className="text-xs leading-4 text-control-light"
-            >
-              {t("instance.vendor.neon-description")}
-            </p>
-          )}
+            className="grid w-full max-w-3xl grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
+          >
+            <ChoiceCard
+              value="generic"
+              title={t("instance.vendor.generic")}
+              description={t("instance.vendor.generic-description")}
+            />
+            <ChoiceCard
+              value="neon"
+              title={t("instance.vendor.neon")}
+              description={t("instance.vendor.neon-description")}
+            />
+          </RadioGroup>
         </FormField>
       )}
     </>
