@@ -2268,7 +2268,7 @@
       "overridden_other": "{{reviewer}} の P0 の検出事項 {{count}} 件が変更されずに解決されました",
       "ready-to-deploy": "すべて通過しました。デプロイできます。",
       "reviewer-failed": "{{reviewer}} を実行できませんでした",
-      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-findings": "{{reviewer}}：<findings />",
       "reviewer-not-run": "{{reviewer}} は未実行です",
       "reviewer-outdated": "{{reviewer}} の実行後に SQL が変更されました",
       "reviewer-running": "{{reviewer}} を実行中",

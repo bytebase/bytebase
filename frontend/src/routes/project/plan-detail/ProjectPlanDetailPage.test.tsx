@@ -141,7 +141,7 @@ vi.mock("./utils/phaseSummary", () => ({
   buildChangesSummary: () => "",
   buildDeploySummary: () => "",
   buildReviewSummary: () => "",
-  buildReviewSummaryV2: () => "review summary v2",
+  buildReviewSummaryV2: () => ["review summary v2"],
 }));
 
 vi.mock("./hooks/usePlanReviewState", () => ({

@@ -30,7 +30,6 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,7 +48,6 @@ import { getTimeForPbTimestampProtoEs } from "@/types";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import {
   type IssueComment,
-  IssueComment_ReviewMetadata_Priority,
   ReviewRun_State,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -79,14 +77,15 @@ import {
   findingTitle,
   rowNeedsAttention,
 } from "../../utils/planGates";
-import { openFindingsLabel, reviewerLabel } from "../../utils/reviewLabels";
+import { reviewerLabel } from "../../utils/reviewLabels";
 import { aiReviewEnabled } from "../../utils/reviewRun";
 import { reviewScope } from "../../utils/reviewScope";
+import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
 import {
-  priorityStyle,
-  ReviewerIcon,
-  reviewerName,
-} from "../threads/ReviewResult";
+  FINDING_PRIORITIES,
+  findingPriorityStyle,
+  PriorityCount,
+} from "./PriorityCounts";
 
 // How many P0s resolved without a change a hover names before it counts the
 // rest.
@@ -599,14 +598,6 @@ function ConclusionIcon({ row }: { row: AutomatedReviewRow }) {
   }
 }
 
-const PRIORITY: Record<FindingPriority, IssueComment_ReviewMetadata_Priority> =
-  {
-    p0: IssueComment_ReviewMetadata_Priority.P0,
-    p1: IssueComment_ReviewMetadata_Priority.P1,
-    p2: IssueComment_ReviewMetadata_Priority.P2,
-  };
-const PRIORITIES: readonly FindingPriority[] = ["p0", "p1", "p2"];
-
 // A count of findings that opens them in the statement editor, with what
 // they are and where the click goes on hover.
 function FindingCount({
@@ -736,9 +727,9 @@ function ConclusionText({
     if (findings.open > 0) {
       counts.push(
         <span className="flex items-center gap-x-3" key="open">
-          {PRIORITIES.filter((priority) => findings[priority] > 0).map(
+          {FINDING_PRIORITIES.filter((priority) => findings[priority] > 0).map(
             (priority) => (
-              <PriorityCount
+              <PriorityCountLink
                 count={findings[priority]}
                 key={priority}
                 onClick={() => onOpen(priority)}
@@ -842,7 +833,7 @@ function ConclusionText({
       if (!isReview) {
         parts.push(
           <span className="font-medium text-main" key="errors">
-            {openFindingsLabel(t, row)}
+            {t("plan.automated-review.n-errors", { count: row.findings.open })}
           </span>
         );
         if (row.warnings) {
@@ -876,7 +867,7 @@ function ConclusionText({
 
 // The priority badge each finding carries, then how many are open. Only the
 // count underlines on hover: a link's underline would run through the badge.
-function PriorityCount({
+function PriorityCountLink({
   priority,
   count,
   onClick,
@@ -886,10 +877,10 @@ function PriorityCount({
   onClick: () => void;
 }) {
   const { t } = useTranslation();
-  const style = priorityStyle(t, PRIORITY[priority]);
+  const style = findingPriorityStyle(t, priority);
   return (
     <FindingCount
-      className="group gap-x-1 hover:no-underline"
+      className="group hover:no-underline"
       hint={style?.description}
       label={t("plan.findings.n-priority", {
         count,
@@ -897,10 +888,11 @@ function PriorityCount({
       })}
       onClick={onClick}
     >
-      <Badge variant={style?.variant}>{priority.toUpperCase()}</Badge>
-      <span className="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline">
-        {count}
-      </span>
+      <PriorityCount
+        count={count}
+        countClassName="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline"
+        priority={priority}
+      />
     </FindingCount>
   );
 }

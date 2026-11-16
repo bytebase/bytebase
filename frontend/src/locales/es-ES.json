@@ -2268,7 +2268,7 @@
       "overridden_other": "{{count}} hallazgos P0 de {{reviewer}} se resolvieron sin cambios",
       "ready-to-deploy": "Todo superado; listo para desplegar.",
       "reviewer-failed": "{{reviewer}} no se pudo ejecutar",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} aún no se ha ejecutado",
       "reviewer-outdated": "El SQL cambió después de ejecutar {{reviewer}}",
       "reviewer-running": "{{reviewer}} en ejecución",
