@@ -2268,7 +2268,7 @@
       "overridden_other": "{{reviewer}} 中有 {{count}} 个 P0 问题未修改就被解决",
       "ready-to-deploy": "全部通过，可以部署。",
       "reviewer-failed": "{{reviewer}} 无法运行",
-      "reviewer-findings": "{{reviewer}}：{{findings}}",
+      "reviewer-findings": "{{reviewer}}：<findings />",
       "reviewer-not-run": "{{reviewer}} 尚未运行",
       "reviewer-outdated": "{{reviewer}} 运行后 SQL 已变更",
       "reviewer-running": "{{reviewer}} 运行中",

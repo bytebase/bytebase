@@ -1,6 +1,6 @@
 import { Check, Code2, Loader2, MessageSquareMore, Rocket } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
@@ -33,6 +33,7 @@ import {
   VIEWER_DOCK_MIN_WIDTH,
 } from "./components/release/ReleaseFileViewer";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { ReviewGateLabel } from "./components/review/ReviewGateLabel";
 import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
@@ -54,6 +55,7 @@ import {
   buildReviewSummaryV2,
 } from "./utils/phaseSummary";
 import { rowNeedsAttention } from "./utils/planGates";
+import type { ReviewSummaryPart } from "./utils/reviewLabels";
 import { isReleaseBackedPlan } from "./utils/spec";
 
 type PhaseStatus = "completed" | "closed" | "active" | "future";
@@ -456,14 +458,18 @@ function PlanPhaseRail({
     !!reviewState &&
     (reviewState.rows.some(rowNeedsAttention) ||
       reviewState.openDiscussions > 0);
-  const reviewSummary = reviewState
-    ? buildReviewSummaryV2(
-        page.issue,
-        t,
-        reviewState.rows,
-        reviewState.openDiscussions
-      )
-    : buildReviewSummary(page.issue, t, unresolvedThreads);
+  let reviewSummary: ReactNode;
+  if (reviewState) {
+    const parts = buildReviewSummaryV2(
+      page.issue,
+      t,
+      reviewState.rows,
+      reviewState.openDiscussions
+    );
+    if (parts.length > 0) reviewSummary = <ReviewSummary parts={parts} />;
+  } else {
+    reviewSummary = buildReviewSummary(page.issue, t, unresolvedThreads);
+  }
 
   let deployFuture: ReactNode;
   // A closed issue waits on nothing, so Deploy describes the phase instead.
@@ -556,6 +562,17 @@ function PlanPhaseRail({
   );
 }
 
+// The collapsed Review summary on one line of text, with a reviewer's open
+// findings drawn by priority.
+function ReviewSummary({ parts }: { parts: readonly ReviewSummaryPart[] }) {
+  return parts.map((part, index) => (
+    <Fragment key={typeof part === "string" ? part : part.reviewer}>
+      {index > 0 && " · "}
+      {typeof part === "string" ? part : <ReviewGateLabel row={part} />}
+    </Fragment>
+  ));
+}
+
 function PhaseSection({
   attention = false,
   badge,
@@ -584,7 +601,7 @@ function PhaseSection({
   expanded: boolean;
   keepChildrenMounted?: boolean;
   status: PhaseStatus;
-  summary?: string;
+  summary?: ReactNode;
   children: ReactNode;
   onToggle: () => void;
   onSelect: () => void;

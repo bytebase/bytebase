@@ -2268,7 +2268,7 @@
       "overridden_other": "{{count}} P0 findings in {{reviewer}} were resolved without a change",
       "ready-to-deploy": "Everything passed; ready to deploy.",
       "reviewer-failed": "{{reviewer}} couldn't run",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} has not run",
       "reviewer-outdated": "SQL changed after {{reviewer}} ran",
       "reviewer-running": "{{reviewer}} is running",

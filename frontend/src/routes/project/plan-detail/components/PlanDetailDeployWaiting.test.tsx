@@ -1,5 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   IssueComment_ThreadState,
@@ -32,6 +33,20 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
+  Trans: ({
+    components,
+    i18nKey,
+    values,
+  }: {
+    components: Record<string, ReactNode>;
+    i18nKey: string;
+    values: Record<string, unknown>;
+  }) => (
+    <span>
+      {`${i18nKey}:${JSON.stringify(values)}`}
+      {Object.values(components)}
+    </span>
+  ),
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) =>
       options ? `${key}:${JSON.stringify(options)}` : key,
@@ -146,6 +161,11 @@ describe("PlanDetailDeployWaiting", () => {
         'plan.deploy-waiting.approval-from:{"role":"title(roles/workspaceDBA)"}'
       )
     ).toBeDefined();
+    // The review's open findings keep the badge they carry in Automated
+    // review, with the count outside it.
+    const counts = screen.getByTestId("priority-counts");
+    expect(counts.textContent).toBe("P12");
+    expect(screen.getByText("P1").className).toContain("text-warning");
     const shows = screen.getAllByText("plan.deploy-waiting.show");
     expect(shows).toHaveLength(3);
 

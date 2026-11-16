@@ -2268,7 +2268,7 @@
       "overridden_other": "{{count}} phát hiện P0 trong {{reviewer}} đã được giải quyết mà không sửa",
       "ready-to-deploy": "Mọi thứ đã đạt; sẵn sàng triển khai.",
       "reviewer-failed": "{{reviewer}} không thể chạy",
-      "reviewer-findings": "{{reviewer}}: {{findings}}",
+      "reviewer-findings": "{{reviewer}}: <findings />",
       "reviewer-not-run": "{{reviewer}} chưa chạy",
       "reviewer-outdated": "SQL đã thay đổi sau khi {{reviewer}} chạy",
       "reviewer-running": "{{reviewer}} đang chạy",

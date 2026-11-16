@@ -16,7 +16,7 @@ import {
   buildReviewSummaryV2,
   isRolloutExpected,
 } from "./phaseSummary";
-import { emptyFindings, reviewRow } from "./planGates";
+import { type AutomatedReviewRow, emptyFindings, reviewRow } from "./planGates";
 
 const templates: Record<string, string> = {
   "common.and": "and",
@@ -405,9 +405,23 @@ describe("SQL Review V2 summaries", () => {
         [{ ...resolvedReview, conclusion: "resolved" }],
         0
       )
-    ).toBe(
-      "Approved by alex, dana · SQL review: 2 resolved, 1 P0 resolved without a change"
-    );
+    ).toEqual([
+      "Approved by alex, dana",
+      "SQL review: 2 resolved, 1 P0 resolved without a change",
+    ]);
+  });
+
+  test("hands over a reviewer with open findings for the page to draw", () => {
+    const issue = { draft: true, approvers: [] } as unknown as Issue;
+    const openReview: AutomatedReviewRow = {
+      reviewer: "review",
+      conclusion: "open",
+      findings: { ...emptyFindings(), open: 3, p0: 1, p1: 2 },
+      holdsRollout: true,
+    };
+    expect(buildReviewSummaryV2(issue, t, [openReview], 0)).toEqual([
+      openReview,
+    ]);
   });
 
   test("says no approval is required and counts open discussions", () => {
@@ -416,9 +430,10 @@ describe("SQL Review V2 summaries", () => {
       approvalStatus: ApprovalStatus.SKIPPED,
       approvers: [],
     } as unknown as Issue;
-    expect(buildReviewSummaryV2(issue, t, [], 2)).toBe(
-      "No approval required · 2 open discussions"
-    );
+    expect(buildReviewSummaryV2(issue, t, [], 2)).toEqual([
+      "No approval required",
+      "2 open discussions",
+    ]);
   });
 
   test("leaves the checks out of the Changes summary on request", () => {
