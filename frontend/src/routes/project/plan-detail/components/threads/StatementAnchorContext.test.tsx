@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Plan_ChangeDatabaseConfigSchema, Plan_SpecSchema, PlanSchema } from "@/types/proto-es/v1/plan_service_pb";
@@ -186,8 +186,11 @@ describe("StatementAnchorContext", () => {
   test.each([
     { start: 1, end: 1, displayed: [1], selected: [1], lines: "1-1" },
     { start: 2, end: 2, displayed: [1, 2], selected: [2], lines: "2-2" },
-    { start: 4, end: 5, displayed: [2, 3, 4, 5], selected: [4, 5], lines: "4-5" },
-  ])("adds at most two preceding lines to lines $lines without expanding the anchor", async ({start, end, displayed, selected, lines}) => {
+    { start: 5, end: 5, displayed: [3, 4, 5], selected: [5], lines: "5-5" },
+    { start: 4, end: 5, displayed: [3, 4, 5], selected: [4, 5], lines: "4-5" },
+    { start: 3, end: 5, displayed: [3, 4, 5], selected: [3, 4, 5], lines: "3-5" },
+    { start: 2, end: 5, displayed: [2, 3, 4, 5], selected: [2, 3, 4, 5], lines: "2-5" },
+  ])("fills lines $lines to three with the lines before them, without expanding the anchor", async ({start, end, displayed, selected, lines}) => {
     const { container, bar } = renderAnchor({ anchor: anchor(start, end), placement: current(start + 5, end + 5) });
     const numbers = (selector: string) => Array.from(container.querySelectorAll(selector)).map((el) => Number(el.getAttribute("data-line-number")));
     expect(numbers("[data-line-number]")).toEqual(displayed);
@@ -290,16 +293,57 @@ describe("StatementAnchorContext", () => {
     const { container } = renderAnchor({ anchor: anchor(4, 5), placement: current(10, 11) });
     expect(container.querySelector("pre")?.className.split(" ")).toContain("bg-control-bg");
     const rows = Array.from(container.querySelectorAll("[data-line-number]"));
-    expect(rows.map((row) => Number(row.getAttribute("data-line-number")))).toEqual([2, 3, 4, 5]);
+    expect(rows.map((row) => Number(row.getAttribute("data-line-number")))).toEqual([3, 4, 5]);
     for (const row of rows) {
       expect(row.className).not.toMatch(/\bbg-/);
       const marked = row.querySelector("[data-testid='excerpt-range-marker']") !== null;
       expect(marked).toBe(row.getAttribute("data-selected") === "true");
-      expect(row.className).toContain("pl-9");
-      expect(row.className).toContain("sm:pl-10");
     }
     await waitFor(() => expect(container.querySelector("code span")).not.toBeNull());
     expect(container.querySelector("pre")?.className).not.toContain("opacity");
+  });
+
+  test("keeps the line number and the range bar in a gutter that stays put while the code scrolls", () => {
+    const { container } = renderAnchor({ anchor: anchor(4, 5), placement: current(10, 11) });
+    const rows = Array.from(container.querySelectorAll("[data-line-number]"));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const gutter = row.querySelector("[data-testid='excerpt-gutter']");
+      const classes = gutter?.className.split(" ") ?? [];
+      // Opaque on the excerpt's ground, so the code passes under it unseen.
+      expect(classes).toEqual(expect.arrayContaining(["sticky", "left-0", "bg-control-bg", "pl-9", "sm:pl-10"]));
+      expect(gutter?.textContent).toBe(row.getAttribute("data-line-number"));
+      // As wide as the last line's number, so a one-digit number starts on
+      // the comment's text column.
+      expect((gutter as HTMLElement).style.width).toBe("1ch");
+      expect(gutter?.contains(row.querySelector("code"))).toBe(false);
+      const marker = row.querySelector("[data-testid='excerpt-range-marker']");
+      if (marker) expect(gutter?.contains(marker)).toBe(true);
+    }
+  });
+
+  test("marks the excerpt as scrolled only while its code is scrolled sideways", () => {
+    const { container } = renderAnchor({ anchor: anchor(4, 5), placement: current(10, 11) });
+    const pre = container.querySelector("pre") as HTMLPreElement;
+    expect(pre.hasAttribute("data-scrolled")).toBe(false);
+    pre.scrollLeft = 24;
+    fireEvent.scroll(pre);
+    expect(pre.hasAttribute("data-scrolled")).toBe(true);
+    pre.scrollLeft = 0;
+    fireEvent.scroll(pre);
+    expect(pre.hasAttribute("data-scrolled")).toBe(false);
+  });
+
+  test("carries the gutter's hairline through the excerpt's padding on the first and last rows only", () => {
+    const { container } = renderAnchor({ anchor: anchor(3, 5), placement: current(9, 11) });
+    const gutters = Array.from(container.querySelectorAll("[data-testid='excerpt-gutter']"));
+    const classes = gutters.map((gutter) => gutter.className.split(" "));
+    expect(classes.map((list) => list.includes("after:-top-2"))).toEqual([true, false, false]);
+    expect(classes.map((list) => list.includes("after:-bottom-2"))).toEqual([false, false, true]);
+    expect(classes.map((list) => list.includes("after:top-0"))).toEqual([false, true, true]);
+    expect(classes.map((list) => list.includes("after:bottom-0"))).toEqual([true, true, false]);
+    // The padding the hairline reaches through.
+    expect(container.querySelector("pre")?.className.split(" ")).toContain("py-2");
   });
 
   test.each([
