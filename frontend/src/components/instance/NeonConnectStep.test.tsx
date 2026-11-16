@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import { NeonConnectStep } from "./NeonConnectStep";
 
 const t = (key: string, values?: Record<string, unknown>) =>
@@ -115,4 +116,26 @@ test("names the destination when Bytebase denies adding instances", () => {
       'instance.neon.connect.error.permission-body{"destination":"Workspace"}'
     )
   ).toBeVisible();
+});
+
+test("inherits horizontal form rail and spans full container width inside ResponsiveFormLayout", () => {
+  const { container } = render(
+    <ResponsiveFormLayout layout="horizontal" density="compact">
+      <NeonConnectStep
+        apiKey="napi_example"
+        projectId=""
+        busy={false}
+        destination="Workspace"
+        onApiKeyChange={vi.fn()}
+        onProjectIdChange={vi.fn()}
+        onSubmit={vi.fn()}
+      />
+    </ResponsiveFormLayout>
+  );
+  const form = container.querySelector("form");
+  expect(form).toHaveClass("w-full");
+  expect(form).not.toHaveClass("max-w-xl");
+  expect(
+    container.querySelectorAll('[data-slot="form-field-control"]')
+  ).toHaveLength(2);
 });

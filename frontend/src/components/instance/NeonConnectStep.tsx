@@ -65,7 +65,7 @@ export function NeonConnectStep({
 
   return (
     <form
-      className="flex w-full max-w-xl flex-col gap-4"
+      className="flex w-full flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
@@ -76,7 +76,6 @@ export function NeonConnectStep({
       )}
       <FormFieldGroup density="compact">
         <FormField
-          layout="vertical"
           title={
             <FormLabel htmlFor={keyId}>
               {t("instance.neon.connect.api-key")}
@@ -98,9 +97,8 @@ export function NeonConnectStep({
           {keyError && <FormError id={keyErrorId}>{keyError}</FormError>}
         </FormField>
         <FormField
-          layout="vertical"
           title={
-            <FormLabel htmlFor={projectIdId}>
+            <FormLabel htmlFor={projectIdId} className="flex-wrap">
               {t("instance.neon.connect.project-id")}{" "}
               <span className="font-normal text-control-light">
                 {t("instance.neon.optional")}
@@ -174,8 +172,8 @@ export function NeonConnectStep({
         />
       )}
 
-      <p className="flex items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
-        <KeyRound className="mt-0.5 size-3.5 shrink-0" />
+      <p className="flex max-w-3xl items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
+        <KeyRound className="mt-px size-3.5 shrink-0" />
         <span>
           <span>{t("instance.neon.connect.not-saved-body")}</span>{" "}
           <span>{t("instance.neon.connect.credentials-saved-body")}</span>

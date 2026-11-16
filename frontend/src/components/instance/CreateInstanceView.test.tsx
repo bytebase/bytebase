@@ -146,19 +146,36 @@ vi.mock("@/modules/agent/logic/instanceConnectionHelp", () => ({
 }));
 
 vi.mock("@/components/instance", () => ({
-  InfoPanel: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+  InfoPanel: ({
+    children,
+    mode,
+    visible,
+  }: {
+    children: React.ReactNode;
+    mode?: string;
+    visible?: boolean;
+  }) => (
+    <div data-testid={`info-panel-${mode}`} data-visible={String(!!visible)}>
+      {children}
+    </div>
   ),
   InfoPanelContent: () => <div />,
   InstanceFormBody: ({
     hideEngine,
+    onOpenInfoPanel,
     onAskAgent,
   }: {
     hideEngine?: boolean;
+    onOpenInfoPanel?: (section: string) => void;
     onAskAgent?: () => void;
   }) => (
     <div data-testid="instance-form-body">
       {hideEngine && <input aria-label="manual draft" defaultValue="" />}
+      {hideEngine && onOpenInfoPanel && (
+        <button type="button" onClick={() => onOpenInfoPanel("host")}>
+          open host info
+        </button>
+      )}
       {onAskAgent && (
         <button type="button" onClick={() => onAskAgent()}>
           instance.ask-agent
@@ -293,6 +310,7 @@ describe("CreateInstanceView", () => {
     const scroller = container
       .querySelector("[data-testid='instance-form-body']")
       ?.closest(".overflow-auto");
+    expect(scroller).toHaveClass("scrollbar-gutter-stable");
     expect(scroller?.firstElementChild).toHaveClass("mx-auto");
     expect(scroller?.firstElementChild).toHaveClass("max-w-4xl");
     expect(scroller?.firstElementChild).toHaveClass("px-4");
@@ -876,5 +894,30 @@ test("disables switching methods while either one is submitting", () => {
   const manual = render(<CreateInstanceView {...props} />);
   for (const radio of manual.getAllByRole("radio"))
     expect(radio).toHaveAttribute("aria-disabled", "true");
+  cleanup();
+});
+
+test("closes an open manual-mode InfoPanel when switching back to Neon API key setup", () => {
+  neon();
+  const view = render(<CreateInstanceView {...props} />);
+  fireEvent.click(
+    view.getByRole("radio", { name: /instance.neon.method.manual/ })
+  );
+  fireEvent.click(view.getByText("open host info"));
+  expect(view.getByTestId("info-panel-overlay")).toHaveAttribute(
+    "data-visible",
+    "true"
+  );
+  fireEvent.click(
+    view.getByRole("radio", { name: /instance.neon.method.discover/ })
+  );
+  expect(view.getByTestId("info-panel-overlay")).toHaveAttribute(
+    "data-visible",
+    "false"
+  );
+  expect(view.getByTestId("info-panel-docked")).toHaveAttribute(
+    "data-visible",
+    "false"
+  );
   cleanup();
 });

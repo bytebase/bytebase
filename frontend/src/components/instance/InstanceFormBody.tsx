@@ -729,7 +729,7 @@ function NeonConnectionStringField({
   return (
     <FormField
       title={
-        <FormLabel htmlFor={id}>
+        <FormLabel htmlFor={id} className="flex-wrap">
           {t("instance.neon.manual.connection-string")}{" "}
           <span className="font-normal text-control-light">
             {t("instance.neon.optional")}

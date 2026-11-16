@@ -978,7 +978,7 @@ export function NeonImportForm({
   return (
     <div hidden={!active} data-testid="neon-import" className="w-full">
       <ResponsiveFormLayout
-        layout="vertical"
+        layout={step === 0 ? "inherit" : "vertical"}
         density="compact"
         className="flex flex-col gap-4 text-sm text-control"
       >

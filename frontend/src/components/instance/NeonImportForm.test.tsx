@@ -14,6 +14,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import {
   DiscoverNeonBranchesResponseSchema,
@@ -799,4 +800,15 @@ test("Back preserves selections and settings", async () => {
     await screen.findByText("instance.neon.leave.body")
   ).toBeVisible();
   expect(onDismiss).not.toHaveBeenCalled();
+});
+
+test("inherits horizontal field layout on Connect when nested inside a horizontal form", () => {
+  const { container } = render(
+    <ResponsiveFormLayout layout="horizontal" density="compact">
+      <NeonImportForm onDismiss={onDismiss} onDirtyChange={onDirtyChange} />
+    </ResponsiveFormLayout>
+  );
+  expect(
+    container.querySelectorAll('[data-slot="form-field-control"]')
+  ).toHaveLength(2);
 });

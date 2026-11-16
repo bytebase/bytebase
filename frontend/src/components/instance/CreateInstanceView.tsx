@@ -180,6 +180,11 @@ function CreateInstanceFormInner({
   const [activeInfoSection, setActiveInfoSection] = useState<
     InfoSection | undefined
   >();
+  useEffect(() => {
+    if (showNeonImport) {
+      setActiveInfoSection(undefined);
+    }
+  }, [showNeonImport]);
   const layoutRef = useRef<HTMLDivElement>(null);
   const [layoutWidth, setLayoutWidth] = useState(0);
 
@@ -284,7 +289,10 @@ function CreateInstanceFormInner({
     >
       <div className="min-w-0 min-h-0 flex-1 flex flex-col">
         {/* Body */}
-        <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto">
+        <div
+          ref={scrollRef}
+          className="flex-1 min-h-0 overflow-auto scrollbar-gutter-stable"
+        >
           <ResponsiveFormLayout
             density="compact"
             className={cn(
