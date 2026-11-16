@@ -1722,7 +1722,7 @@ func TestActionRolloutCommand_ReportsFailedStatement(t *testing.T) {
 	a.Contains(actionResult.Stdout, "duplicate key")
 }
 
-func TestActionRolloutCommand_FailsWithoutAStageForTheTarget(t *testing.T) {
+func TestActionRolloutCommand_PassesWithoutAStageForTheTarget(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -1746,13 +1746,11 @@ func TestActionRolloutCommand_FailsWithoutAStageForTheTarget(t *testing.T) {
 		"--target-stage", "environments/test",
 		"--output", outputFile,
 	)
-	a.Error(err, "a job that deployed nothing must not pass")
-	var rolloutErr *command.RolloutError
-	a.ErrorAs(err, &rolloutErr)
-	a.Equal("the rollout has no stage for environments/test, so nothing was deployed; its stages are environments/prod", err.Error())
+	a.NoError(err, "the jobs for later environments must still run")
 
 	rolloutResult, tasks := readRolloutResult(t, outputFile)
 	a.Equal(result.StageNotFound, rolloutResult.Outcome)
+	a.Equal([]string{"the rollout has no stage for environments/test, so this job deployed nothing; its stages are environments/prod"}, rolloutResult.Warnings())
 	a.Empty(tasks)
 	a.Len(rolloutResult.Stages, 1)
 	a.Equal(map[string]int{"NOT_STARTED": 1}, rolloutResult.Stages[0].TaskCounts, "no task was run")

@@ -304,7 +304,7 @@ func TestWriteResultBlock(t *testing.T) {
 		require.Equal(t, "::error::instances/prod/databases/crm failed at migrations/0004_add_risk_score.sql: syntax error", lines[len(lines)-1])
 	})
 
-	t.Run("github annotates a missing target stage", func(t *testing.T) {
+	t.Run("github warns about a missing target stage", func(t *testing.T) {
 		w := world.NewWorld()
 		w.Platform = world.GitHub
 		w.Result = &result.Result{
@@ -316,7 +316,8 @@ func TestWriteResultBlock(t *testing.T) {
 		writeResultBlock(w, &out)
 
 		lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-		require.Equal(t, "::error::the rollout has no stage for environments/prod, so nothing was deployed; its stages are environments/test", lines[len(lines)-1])
+		require.Equal(t, "::warning::the rollout has no stage for environments/prod, so this job deployed nothing; its stages are environments/test", lines[len(lines)-1])
+		require.NotContains(t, out.String(), "::error::")
 	})
 }
 
