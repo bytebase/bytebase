@@ -244,7 +244,7 @@ A workload identity needs the CI job's ID token:
         env:
           BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
         steps:
-          - uses: actions/checkout@v4
+          - uses: actions/checkout@v7
           - run: bytebase-action check --url=https://bytebase.example.com --project=projects/example --targets=instances/example/databases/example --file-pattern="migrations/*.sql"
     ```
 
