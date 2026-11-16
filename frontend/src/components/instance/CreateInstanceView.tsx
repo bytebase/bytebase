@@ -18,6 +18,7 @@ import { FormField, ResponsiveFormLayout } from "@/components/ui/form";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { cn } from "@/lib/utils";
 import { openAgentWithPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { useAgentStore } from "@/modules/agent/store/agent";
 import { pushNotification } from "@/stores";
@@ -130,6 +131,7 @@ function CreateInstanceFormInner({
   const isNeon =
     basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
   const showNeonImport = isNeon && method === "discover";
+  const isNeonWideStep = showNeonImport && neonStep > 0;
   const neonCapacity = remainingInstanceCapacity({
     instanceCountLimit: useAppStore((state) => state.instanceCountLimit()),
     totalInstanceCount: useAppStore((state) => state.totalInstanceCount()),
@@ -285,44 +287,43 @@ function CreateInstanceFormInner({
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto">
           <ResponsiveFormLayout
             density="compact"
-            className="px-4 sm:px-6 py-4 gap-y-4 flex flex-col"
+            className={cn(
+              "mx-auto flex w-full flex-col gap-y-4 px-4 py-4 sm:px-6",
+              isNeonWideStep ? "max-w-5xl" : "max-w-4xl"
+            )}
           >
-            {canPrepareSampleProjectInstance &&
-              !(showNeonImport && neonStep > 0) && (
-                <Alert
-                  className="w-full max-w-5xl"
-                  title={t("instance.sample-project-instance-title")}
-                  description={
-                    isSaaSMode
-                      ? t("instance.sample-project-instance-description")
-                      : t(
-                          "instance.sample-project-instance-description-self-host"
-                        )
+            {canPrepareSampleProjectInstance && !isNeonWideStep && (
+              <Alert
+                className="w-full"
+                title={t("instance.sample-project-instance-title")}
+                description={
+                  isSaaSMode
+                    ? t("instance.sample-project-instance-description")
+                    : t(
+                        "instance.sample-project-instance-description-self-host"
+                      )
+                }
+              >
+                <Button
+                  appearance="outline"
+                  size="sm"
+                  className="mt-3 bg-background"
+                  disabled={
+                    isPreparingSampleProjectInstance ||
+                    neonBusy ||
+                    state.isRequesting
                   }
+                  onClick={handlePrepareSampleProjectInstance}
                 >
-                  <Button
-                    appearance="outline"
-                    size="sm"
-                    className="mt-3 bg-background"
-                    disabled={
-                      isPreparingSampleProjectInstance ||
-                      neonBusy ||
-                      state.isRequesting
-                    }
-                    onClick={handlePrepareSampleProjectInstance}
-                  >
-                    {isPreparingSampleProjectInstance
-                      ? t("instance.preparing-sample-instance")
-                      : isSaaSMode
-                        ? t("instance.use-sample-instance")
-                        : t("instance.use-sample-instance-self-host")}
-                  </Button>
-                </Alert>
-              )}
-            <div
-              hidden={showNeonImport && neonStep > 0}
-              className="w-full max-w-5xl flex flex-col gap-4"
-            >
+                  {isPreparingSampleProjectInstance
+                    ? t("instance.preparing-sample-instance")
+                    : isSaaSMode
+                      ? t("instance.use-sample-instance")
+                      : t("instance.use-sample-instance-self-host")}
+                </Button>
+              </Alert>
+            )}
+            <div hidden={isNeonWideStep} className="flex w-full flex-col gap-4">
               <InstanceFormBody
                 engineOnly
                 disabled={neonBusy || state.isRequesting}
@@ -426,10 +427,14 @@ function CreateInstanceFormInner({
           </ResponsiveFormLayout>
         </div>
 
-        <div ref={setActionBarSlot} className="relative" />
+        <div
+          ref={setActionBarSlot}
+          className="relative mx-auto w-full max-w-5xl"
+        />
         <div ref={setFooterSlot} />
         {!showNeonImport && (
           <InstanceFormButtons
+            contentClassName="mx-auto w-full max-w-4xl"
             onCreated={onCreated}
             onAskAgent={handleAskAgent}
           />

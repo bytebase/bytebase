@@ -166,11 +166,18 @@ vi.mock("@/components/instance", () => ({
       )}
     </div>
   ),
-  InstanceFormButtons: ({ className }: { className?: string }) => (
+  InstanceFormButtons: ({
+    className,
+    contentClassName,
+  }: {
+    className?: string;
+    contentClassName?: string;
+  }) => (
     <div>
       <button
         type="button"
         data-testid="instance-form-buttons"
+        data-content-class={contentClassName}
         className={className}
         disabled={mocks.instanceFormContext.state.isRequesting}
       >
@@ -286,6 +293,8 @@ describe("CreateInstanceView", () => {
     const scroller = container
       .querySelector("[data-testid='instance-form-body']")
       ?.closest(".overflow-auto");
+    expect(scroller?.firstElementChild).toHaveClass("mx-auto");
+    expect(scroller?.firstElementChild).toHaveClass("max-w-4xl");
     expect(scroller?.firstElementChild).toHaveClass("px-4");
     expect(scroller?.firstElementChild).toHaveClass("sm:px-6");
 
@@ -294,6 +303,10 @@ describe("CreateInstanceView", () => {
     );
     expect(buttons).not.toHaveClass("px-4");
     expect(buttons).not.toHaveClass("sm:px-6");
+    expect(buttons).toHaveAttribute(
+      "data-content-class",
+      "mx-auto w-full max-w-4xl"
+    );
 
     act(() => {
       root.unmount();
@@ -771,17 +784,23 @@ test("Neon reveals both setup methods as peers and keeps a separate draft for ea
 test("collapses the engine, hosting, and method controls after Connect", () => {
   neon();
   const view = render(<CreateInstanceView {...props} />);
+  const scroller = view.container.querySelector(
+    ".overflow-auto"
+  ) as HTMLElement;
+  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-4xl");
   const engine = view.getAllByTestId("instance-form-body")[0];
   expect(engine).toBeVisible();
   expect(
     view.getByRole("radiogroup", { name: "instance.neon.method.title" })
   ).toBeVisible();
   fireEvent.click(view.getByText("mock discovered"));
+  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-5xl");
   expect(engine).not.toBeVisible();
   expect(
     view.queryByRole("radiogroup", { name: "instance.neon.method.title" })
   ).toBeNull();
   fireEvent.click(view.getByText("mock back to connect"));
+  expect(scroller.firstElementChild).toHaveClass("mx-auto", "max-w-4xl");
   expect(engine).toBeVisible();
   expect(
     view.getByRole("radiogroup", { name: "instance.neon.method.title" })

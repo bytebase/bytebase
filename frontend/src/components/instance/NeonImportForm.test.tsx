@@ -777,7 +777,13 @@ test("Back preserves selections and settings", async () => {
   mount();
   await connect();
   selectAll();
+  expect(
+    document.querySelector('[data-slot="sticky-action-footer-content"]')
+  ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   fireEvent.click(button(/select.configure.*"count":2/));
+  expect(
+    document.querySelector('[data-slot="sticky-action-footer-content"]')
+  ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   fireEvent.click(button("common.back"));
   fireEvent.click(button("common.back"));
   expect(screen.getByLabelText("instance.neon.connect.api-key")).toHaveValue(

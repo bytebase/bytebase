@@ -822,7 +822,7 @@ export function NeonImportForm({
       case 1:
         return (
           <StickyActionFooter
-            contentClassName="max-w-5xl"
+            contentClassName="mx-auto w-full max-w-5xl"
             left={
               <Button appearance="outline" onClick={() => setStep(0)}>
                 {t("common.back")}
@@ -874,7 +874,7 @@ export function NeonImportForm({
       case 2:
         return (
           <StickyActionFooter
-            contentClassName="max-w-5xl"
+            contentClassName="mx-auto w-full max-w-5xl"
             left={
               <Button appearance="outline" onClick={() => setStep(1)}>
                 {t("common.back")}
@@ -918,7 +918,7 @@ export function NeonImportForm({
       default:
         return activity === "auto" ? (
           <StickyActionFooter
-            contentClassName="max-w-5xl"
+            contentClassName="mx-auto w-full max-w-5xl"
             left={
               <Button
                 variant="destructive"
@@ -932,7 +932,7 @@ export function NeonImportForm({
           />
         ) : (
           <StickyActionFooter
-            contentClassName="max-w-5xl"
+            contentClassName="mx-auto w-full max-w-5xl"
             right={
               <>
                 {unresolved > 0 &&
@@ -983,7 +983,7 @@ export function NeonImportForm({
         className="flex flex-col gap-4 text-sm text-control"
       >
         {step === 0 && (
-          <div className="w-full max-w-5xl">
+          <div className="w-full">
             <NeonConnectStep
               apiKey={apiKey}
               projectId={projectId}

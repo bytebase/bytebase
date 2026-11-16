@@ -15,6 +15,7 @@ import {
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
 import { AgentHelpButton } from "@/modules/agent/components/AgentHelpButton";
 import { buildInstanceConnectionHelpPrompt } from "@/modules/agent/logic/instanceConnectionHelp";
 import { pushNotification } from "@/stores";
@@ -63,6 +64,7 @@ interface InstanceFormButtonsProps {
   onUpdated?: (instance: Instance) => void;
   onAskAgent?: (prompt?: string) => void;
   className?: string;
+  contentClassName?: string;
 }
 
 type ConnectionFailureDialogState = {
@@ -100,6 +102,7 @@ export function InstanceFormButtons({
   onUpdated,
   onAskAgent,
   className,
+  contentClassName,
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
 
@@ -578,38 +581,40 @@ export function InstanceFormButtons({
   };
 
   const testConnectionFeedback = testConnectionFailure && (
-    <div className="border-t border-block-border px-4 py-3 sm:px-6">
-      <ConnectionRecovery
-        category={testConnectionFailure.failureCategory}
-        className="max-w-3xl"
-      />
-      <p
-        className="mt-2 whitespace-pre-wrap break-all text-sm text-error"
-        data-agent-sensitive
-      >
-        {testConnectionFailure.message}
-      </p>
-      {onAskAgent && (
-        <AgentHelpButton
-          size="md"
-          className="mt-3"
-          onClick={() =>
-            askAgentAboutFailure(
-              "connection test",
-              testConnectionFailure.failureCategory,
-              undefined,
-              testConnectionFailure.message
-            )
-          }
+    <div className="border-t border-block-border bg-background py-3">
+      <div className={cn("px-4 sm:px-6", contentClassName)}>
+        <ConnectionRecovery
+          category={testConnectionFailure.failureCategory}
+          className="max-w-3xl"
+        />
+        <p
+          className="mt-2 whitespace-pre-wrap break-all text-sm text-error"
+          data-agent-sensitive
         >
-          {t("instance.ask-agent-about-error")}
-        </AgentHelpButton>
-      )}
+          {testConnectionFailure.message}
+        </p>
+        {onAskAgent && (
+          <AgentHelpButton
+            size="md"
+            className="mt-3"
+            onClick={() =>
+              askAgentAboutFailure(
+                "connection test",
+                testConnectionFailure.failureCategory,
+                undefined,
+                testConnectionFailure.message
+              )
+            }
+          >
+            {t("instance.ask-agent-about-error")}
+          </AgentHelpButton>
+        )}
+      </div>
     </div>
   );
 
   const createFailureFeedback = createFailure && (
-    <div className="px-4 py-3 sm:px-6">
+    <div className={cn("px-4 py-3 sm:px-6", contentClassName)}>
       <Alert
         variant="error"
         title={t("instance.create-failed")}
@@ -701,6 +706,7 @@ export function InstanceFormButtons({
         {testConnectionFeedback}
         <StickyActionFooter
           className={className}
+          contentClassName={contentClassName}
           left={
             <>
               {allowCancel && (
@@ -762,6 +768,7 @@ export function InstanceFormButtons({
       {testConnectionFeedback}
       <StickyActionFooter
         className={className}
+        contentClassName={contentClassName}
         left={
           <Button
             appearance="outline"
