@@ -75,7 +75,6 @@ import {
   type FindingGroup,
   type FindingPriority,
   findingTitle,
-  rowNeedsAttention,
 } from "../../utils/planGates";
 import { reviewerLabel } from "../../utils/reviewLabels";
 import { aiReviewEnabled } from "../../utils/reviewRun";
@@ -116,10 +115,6 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
   const rerun = useReviewRerun();
   const { rows } = state;
-  const attention = rows.filter(rowNeedsAttention).length;
-  // A review that is off checked nothing, so it is neither counted nor
-  // summed up as needing no attention.
-  const reviewed = rows.filter((row) => row.conclusion !== "off");
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
   const requestRerunChecks = () => void runChecks();
@@ -199,19 +194,6 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
         <h4 className="text-sm font-medium text-main">
           {t("plan.automated-review.self")}
         </h4>
-        {(attention > 0 || reviewed.length === rows.length) && (
-          <span
-            className="text-sm text-control-light"
-            data-testid="automated-review-summary"
-          >
-            {attention > 0
-              ? t("plan.automated-review.needs-attention", {
-                  count: attention,
-                  total: reviewed.length,
-                })
-              : t("plan.automated-review.nothing-needs-attention")}
-          </span>
-        )}
         <div className="flex-1" />
         <Button
           appearance="link"
