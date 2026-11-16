@@ -1,14 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  Info,
-  Lock,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ExternalLink, Info, Lock, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -1375,7 +1368,12 @@ export function InstanceFormBody({
               <EngineIcon engine={basicInfo.engine} className="size-4" />
               {engineNameV1(basicInfo.engine)}
             </span>
-            {isEngineSelectorCollapsed ? <ChevronRight /> : <ChevronDown />}
+            <ChevronDown
+              className={cn(
+                "size-4 shrink-0 text-control-light transition-transform duration-150 ease-out motion-reduce:transition-none",
+                !isEngineSelectorCollapsed && "rotate-180"
+              )}
+            />
           </Button>
           <div
             hidden={isEngineSelectorCollapsed}
@@ -1402,7 +1400,7 @@ export function InstanceFormBody({
                 value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
               )
             }
-            className="grid w-full max-w-3xl grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
+            className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
           >
             <ChoiceCard
               value="generic"

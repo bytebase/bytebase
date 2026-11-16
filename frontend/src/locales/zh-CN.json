@@ -1913,10 +1913,6 @@
         "workspace-instances": "工作空间实例"
       },
       "edit-settings": "编辑设置",
-      "entry": {
-        "change": "更改",
-        "summary": "PostgreSQL · 托管于 Neon"
-      },
       "import": {
         "and-more": "以及另外 {{count}} 个",
         "awaiting": {
@@ -2421,10 +2417,10 @@
       "tls-source-conflict": "请选择 PEM 内容或文件路径，不可同时使用。"
     },
     "vendor": {
-      "generic": "自托管 / 其他",
-      "generic-description": "通过主机和端口连接的任意 PostgreSQL 服务器或托管服务。",
+      "generic": "任意主机或云服务",
+      "generic-description": "AWS RDS、Cloud SQL、Supabase 或自建实例，通过主机和端口连接。",
       "neon": "Neon",
-      "neon-description": "带分支的无服务器 PostgreSQL。可用 Neon API 密钥批量添加分支，或通过连接信息添加单个分支。",
+      "neon-description": "可用 Neon API 密钥批量导入分支，或通过连接信息连接单个分支。",
       "self": "托管于"
     },
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"

@@ -89,7 +89,7 @@ The API key stays in browser memory while batches or explicit failure retries re
 
 ## Setup UI
 
-Follow the [frontend UX contract](../agents/frontend-ux.md). Setup is a full-page flow on the existing create-instance route. Neon is not a database type. The engine picker is unchanged, and choosing PostgreSQL reveals a **Hosted on** choice: **Self-managed or another provider**, the default, shows the existing connection form, and **Neon** reveals a **Setup method** choice. **Discover branches with a Neon API key** is the default method; **Enter connection details** adds one instance. Both methods stay visible as peer choices on the first screen. Switching methods makes no request, is disabled while either is submitting, and preserves a separate draft for each.
+Follow the [frontend UX contract](../agents/frontend-ux.md). Setup is a full-page flow on the existing create-instance route. Neon is not a database type. The engine picker is unchanged, and choosing PostgreSQL reveals a **Hosted on** choice: **Any host or cloud**, the default, shows the existing connection form, and **Neon** reveals a **Setup method** choice. **Discover branches with a Neon API key** is the default method; **Enter connection details** adds one instance. Both methods stay visible as peer choices on the first screen. Switching methods makes no request, is disabled while either is submitting, and preserves a separate draft for each.
 
 The destination is the instance collection setup was opened from: the workspace instance list or one Bytebase project. Setup states it on the first screen, keeps it visible on every later step, and offers no control to change it. Wherever the two could be confused, text says **Neon project** or **Bytebase project**, never a bare "project".
 

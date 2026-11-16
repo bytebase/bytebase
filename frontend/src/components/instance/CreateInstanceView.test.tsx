@@ -771,13 +771,18 @@ test("Neon reveals both setup methods as peers and keeps a separate draft for ea
 test("collapses the engine, hosting, and method controls after Connect", () => {
   neon();
   const view = render(<CreateInstanceView {...props} />);
-  expect(view.getByText("instance.neon.entry.summary")).toBeVisible();
+  const engine = view.getAllByTestId("instance-form-body")[0];
+  expect(engine).toBeVisible();
+  expect(
+    view.getByRole("radiogroup", { name: "instance.neon.method.title" })
+  ).toBeVisible();
   fireEvent.click(view.getByText("mock discovered"));
+  expect(engine).not.toBeVisible();
   expect(
     view.queryByRole("radiogroup", { name: "instance.neon.method.title" })
   ).toBeNull();
-  expect(view.getByText("instance.neon.entry.summary")).not.toBeVisible();
   fireEvent.click(view.getByText("mock back to connect"));
+  expect(engine).toBeVisible();
   expect(
     view.getByRole("radiogroup", { name: "instance.neon.method.title" })
   ).toBeVisible();
@@ -813,14 +818,10 @@ test("warns on the Neon entry screen, for either method, when no instance can be
   cleanup();
 });
 
-test("keeps the engine and hosting pickers behind Change once Neon is chosen", () => {
+test("keeps the engine and hosting pickers visible on Connect when Neon is chosen", () => {
   neon();
   const view = render(<CreateInstanceView {...props} />);
   const engine = view.getAllByTestId("instance-form-body")[0];
-  expect(engine).not.toBeVisible();
-  fireEvent.click(
-    view.getByRole("button", { name: "instance.neon.entry.change" })
-  );
   expect(engine).toBeVisible();
   cleanup();
 });

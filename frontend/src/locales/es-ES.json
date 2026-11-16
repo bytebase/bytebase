@@ -1913,10 +1913,6 @@
         "workspace-instances": "las instancias del espacio de trabajo"
       },
       "edit-settings": "Editar ajustes",
-      "entry": {
-        "change": "Cambiar",
-        "summary": "PostgreSQL · alojado en Neon"
-      },
       "import": {
         "and-more": "y {{count}} más",
         "awaiting": {
@@ -2421,10 +2417,10 @@
       "tls-source-conflict": "Usa contenido PEM o una ruta de archivo, pero no ambos."
     },
     "vendor": {
-      "generic": "Autogestionado / otro",
-      "generic-description": "Cualquier servidor PostgreSQL o servicio administrado conectado por host y puerto.",
+      "generic": "Cualquier host o nube",
+      "generic-description": "AWS RDS, Cloud SQL, Supabase o autogestionado mediante host y puerto.",
       "neon": "Neon",
-      "neon-description": "PostgreSQL sin servidor con ramas. Añade muchas con una clave de API de Neon o una con sus datos de conexión.",
+      "neon-description": "Importa ramas con una clave de API de Neon o conecta una rama directamente.",
       "self": "Alojado en"
     },
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"

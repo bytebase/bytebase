@@ -1913,10 +1913,6 @@
         "workspace-instances": "các phiên bản của không gian làm việc"
       },
       "edit-settings": "Chỉnh sửa cài đặt",
-      "entry": {
-        "change": "Thay đổi",
-        "summary": "PostgreSQL · lưu trữ tại Neon"
-      },
       "import": {
         "and-more": "và {{count}} mục khác",
         "awaiting": {
@@ -2421,10 +2417,10 @@
       "tls-source-conflict": "Sử dụng nội dung PEM hoặc đường dẫn tệp, không dùng cả hai."
     },
     "vendor": {
-      "generic": "Tự quản lý / khác",
-      "generic-description": "Bất kỳ máy chủ PostgreSQL hoặc dịch vụ được quản lý nào kết nối qua máy chủ và cổng.",
+      "generic": "Bất kỳ máy chủ hoặc đám mây nào",
+      "generic-description": "AWS RDS, Cloud SQL, Supabase hoặc tự quản lý qua máy chủ và cổng.",
       "neon": "Neon",
-      "neon-description": "PostgreSQL không máy chủ có nhánh. Thêm nhiều nhánh bằng khóa API Neon, hoặc một nhánh từ thông tin kết nối.",
+      "neon-description": "Nhập hàng loạt nhánh bằng khóa API Neon hoặc kết nối trực tiếp một nhánh.",
       "self": "Được lưu trữ tại"
     },
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"

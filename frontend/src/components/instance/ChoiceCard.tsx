@@ -17,7 +17,7 @@ export function ChoiceCard({
     <RadioGroupItem
       {...props}
       className={cn(
-        "items-start rounded-sm border border-control-border p-3 select-none transition-colors duration-150 ease-out hover:bg-control-bg has-[[data-checked]]:border-accent has-[[data-checked]]:bg-accent/5",
+        "items-start rounded-sm border border-control-border px-3 py-2.5 select-none transition-[color,background-color,border-color,transform] duration-150 ease-out motion-reduce:transition-none has-[>[role=radio]:not([data-checked]):not([data-disabled])]:hover:border-accent/50 has-[>[role=radio]:not([data-checked]):not([data-disabled])]:hover:bg-control-bg has-[>[role=radio]:not([data-disabled])]:active:scale-[0.99] motion-reduce:active:scale-100 has-[[data-checked]]:border-accent has-[[data-checked]]:bg-accent/5 has-[>[data-disabled]]:opacity-60",
         className
       )}
       radioClassName="mt-0.5"

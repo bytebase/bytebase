@@ -1913,10 +1913,6 @@
         "workspace-instances": "workspace instances"
       },
       "edit-settings": "Edit settings",
-      "entry": {
-        "change": "Change",
-        "summary": "PostgreSQL · hosted on Neon"
-      },
       "import": {
         "and-more": "and {{count}} more",
         "awaiting": {
@@ -2421,10 +2417,10 @@
       "tls-source-conflict": "Use either PEM content or a file path, not both."
     },
     "vendor": {
-      "generic": "Self-managed / other",
-      "generic-description": "Any PostgreSQL server or managed service connected by host and port.",
+      "generic": "Any host or cloud",
+      "generic-description": "AWS RDS, Cloud SQL, Supabase, or self-hosted via host and port.",
       "neon": "Neon",
-      "neon-description": "Serverless PostgreSQL with branches. Add many with a Neon API key, or one from its connection details.",
+      "neon-description": "Import branches with a Neon API key, or connect one branch directly.",
       "self": "Hosted on"
     },
     "your-snowflake-account-locator": "Your Snowflake account locator"

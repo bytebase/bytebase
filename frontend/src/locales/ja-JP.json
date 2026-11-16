@@ -1913,10 +1913,6 @@
         "workspace-instances": "ワークスペースインスタンス"
       },
       "edit-settings": "設定を編集",
-      "entry": {
-        "change": "変更",
-        "summary": "PostgreSQL · Neon でホスト"
-      },
       "import": {
         "and-more": "ほか {{count}} 件",
         "awaiting": {
@@ -2421,10 +2417,10 @@
       "tls-source-conflict": "PEM の内容またはファイルパスのいずれか一方を使用してください。"
     },
     "vendor": {
-      "generic": "セルフマネージド / その他",
-      "generic-description": "ホストとポートで接続する任意の PostgreSQL サーバーまたはマネージドサービス。",
+      "generic": "任意のホストまたはクラウド",
+      "generic-description": "AWS RDS、Cloud SQL、Supabase、またはセルフホスト（ホストとポートで接続）。",
       "neon": "Neon",
-      "neon-description": "ブランチを備えたサーバーレス PostgreSQL。Neon API キーで複数のブランチを追加するか、接続情報から 1 つ追加します。",
+      "neon-description": "Neon API キーでブランチを一括インポートするか、1 つのブランチに直接接続します。",
       "self": "ホスティング先"
     },
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
