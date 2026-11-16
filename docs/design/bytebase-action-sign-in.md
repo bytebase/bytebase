@@ -183,7 +183,7 @@ jobs:
       BYTEBASE_URL: https://bytebase.example.com
       BYTEBASE_WORKLOAD_IDENTITY: ci@workload.bytebase.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: SQL Review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
