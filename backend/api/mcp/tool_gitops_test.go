@@ -73,8 +73,9 @@ func newGitOpsMock() *gitopsMock {
 			Name:  common.FormatWorkloadIdentityEmail(gitopsEmail),
 			Email: gitopsEmail,
 			WorkloadIdentityConfig: &v1pb.WorkloadIdentityConfig{
-				ProviderType:   v1pb.WorkloadIdentityConfig_GITHUB,
-				SubjectPattern: "repo:example-org/shop:*",
+				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "repo:example-org/shop:*",
 			},
 		},
 		databases:    databases,
@@ -344,6 +345,11 @@ func TestGitOpsWorkflowRefuses(t *testing.T) {
 			name: "an identity for another OIDC provider",
 			mock: func(m *gitopsMock) { m.identity.WorkloadIdentityConfig.ProviderType = v1pb.WorkloadIdentityConfig_OIDC },
 			code: "UNSUPPORTED_PROVIDER", contains: "is for OIDC",
+		},
+		{
+			name: "an identity for another audience",
+			mock: func(m *gitopsMock) { m.identity.WorkloadIdentityConfig.AllowedAudiences = []string{"sts.example.com"} },
+			code: "UNSUPPORTED_AUDIENCE", contains: `admits the audiences "sts.example.com", and the workflow files sign in with the audience "bytebase"`,
 		},
 		{
 			name:  "a group that does not exist",

@@ -276,6 +276,14 @@ func (s *Server) readGitOpsIdentity(ctx context.Context, email, project string) 
 			Suggestion: "use a workload identity for GitHub Actions or GitLab CI, or create one with administer_workspace",
 		}
 	}
+	// The jobs request this audience, and sign-in matches it exactly.
+	if !slices.Contains(config.GetAllowedAudiences(), identityAudience) {
+		return nil, &toolError{
+			Code:       "UNSUPPORTED_AUDIENCE",
+			Message:    fmt.Sprintf("the workload identity %q admits the audiences %s, and the workflow files sign in with the audience %q", email, quoteAll(config.GetAllowedAudiences()), identityAudience),
+			Suggestion: fmt.Sprintf("add %q to its audiences signed in to the Bytebase console, or use another: %s", identityAudience, findIdentitySuggestion),
+		}
+	}
 
 	policy, why := s.readIamPolicy(ctx, project)
 	if why != "" {

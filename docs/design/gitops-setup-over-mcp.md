@@ -93,6 +93,7 @@ It refuses, each with a next step:
 | `INVALID_IDENTITY` | No identity, one that cannot be read, or a deleted one |
 | `EXTERNAL_URL_NOT_SET` | The workspace has no External URL |
 | `UNSUPPORTED_PROVIDER` | The identity is not for GitHub Actions or GitLab CI |
+| `UNSUPPORTED_AUDIENCE` | The identity does not admit the audience `bytebase`, which the jobs request |
 | `INVALID_TARGETS` | Not one group or a list of databases, a target outside the project, or one that cannot be read |
 | `NO_DEPLOY_TARGET` | No picked database has an environment |
 | `INVALID_FOLDER` | The folder fails the page's rule (`isValidMigrationFolder`) |
