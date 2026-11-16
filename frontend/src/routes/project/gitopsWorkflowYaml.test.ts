@@ -1,5 +1,6 @@
 import { load } from "js-yaml";
 import { describe, expect, test } from "vitest";
+import cases from "./gitops-workflow-cases/cases.json";
 import {
   bytebaseActionImage,
   EXTERNAL_URL_PLACEHOLDER,
@@ -53,7 +54,7 @@ type Job = {
   env?: Record<string, string>;
   permissions?: Record<string, string>;
   id_tokens?: Record<string, { aud: string }>;
-  steps?: { run?: string }[];
+  steps?: { uses?: string; run?: string }[];
   script?: string[];
 };
 type Workflow = {
@@ -134,6 +135,43 @@ describe("generateWorkflowFiles", () => {
     expect(review.content).toContain(
       "--targets=projects/shop/databaseGroups/all-shops \\"
     );
+  });
+
+  test("a database name the shell would split is quoted on GitHub", () => {
+    const files = generateWorkflowFiles({
+      ...workflow,
+      targets: [
+        "instances/sql-prod/databases/Shop Orders",
+        "instances/sql-prod/databases/o'brien",
+      ],
+    });
+    for (const file of files) {
+      expect(file.content).toContain(
+        "--targets='instances/sql-prod/databases/Shop Orders,instances/sql-prod/databases/o'\\''brien' \\"
+      );
+    }
+  });
+
+  test("a database name GitLab would split or expand stays whole", () => {
+    const targets = [
+      "instances/sql-prod/databases/Shop Orders",
+      "instances/sql-prod/databases/cost$center",
+    ];
+    const [file] = generateWorkflowFiles({
+      ...workflow,
+      provider: "gitlab",
+      targets,
+    });
+    const parsed = load(file.content) as { variables: Record<string, string> };
+    expect(parsed.variables.BYTEBASE_TARGETS).toBe(
+      targets.join(",").replace("$", "$$$$")
+    );
+    const jobs = parsedGitlabJobs(file.content);
+    for (const name of ["bytebase-sql-review", "bytebase-create-rollout"]) {
+      expect(jobs[name].script?.join("\n")).toContain(
+        '--targets="$BYTEBASE_TARGETS"'
+      );
+    }
   });
 
   test("GitLab gives one file with every job", () => {
@@ -226,6 +264,19 @@ describe("sign-in in the generated files", () => {
     }
   );
 
+  test("every GitHub job that checks out the repository may read it", () => {
+    const jobs = generateWorkflowFiles(workflow).flatMap((file) =>
+      Object.values(parse(file.content).jobs)
+    );
+    expect(jobs).toHaveLength(5);
+    for (const job of jobs) {
+      expect(
+        job.steps?.some((step) => step.uses === "actions/checkout@v4")
+      ).toBe(true);
+      expect(job.permissions?.contents).toBe("read");
+    }
+  });
+
   test("every GitHub job names the identity and may request an ID token", () => {
     const jobs = generateWorkflowFiles(workflow).flatMap((file) => {
       const parsed = parse(file.content);
@@ -252,5 +303,18 @@ describe("sign-in in the generated files", () => {
     for (const job of jobs) {
       expect(job.id_tokens).toEqual({ BYTEBASE_ID_TOKEN: { aud: "bytebase" } });
     }
+  });
+});
+
+// The Go generator behind the get_gitops_workflow MCP tool renders the same
+// cases against the same expected files (backend/api/mcp/gitops_workflow_test.go).
+describe("the cases shared with the MCP tool", () => {
+  test.each(cases)("$name", async ({ name, params }) => {
+    const rendered = generateWorkflowFiles(params as WorkflowParams)
+      .map((file) => `=== ${file.path} ===\n${file.content}`)
+      .join("");
+    await expect(rendered).toMatchFileSnapshot(
+      `./gitops-workflow-cases/${name}.txt`
+    );
   });
 });

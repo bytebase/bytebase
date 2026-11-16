@@ -32,7 +32,8 @@ jobs:
         run: |
           files=$(git diff --name-only --no-renames HEAD^1 HEAD)
           changed() { grep -qE "$1" <<<"$files" && echo true || echo false; }
-          go=$(changed '^(backend/|action/|proto/.*\.go$|go\.(mod|sum)$|\.golangci\.yaml$|\.github/workflows/ci\.yml$)')
+          # backend/api/mcp renders these frontend cases too.
+          go=$(changed '^(backend/|action/|proto/.*\.go$|go\.(mod|sum)$|\.golangci\.yaml$|frontend/src/routes/project/gitops-workflow-cases/|\.github/workflows/ci\.yml$)')
           # The frontend gate's `prepare` script also reads these backend files.
           frontend=$(changed '^(frontend/|backend/enterprise/plan\.yaml$|backend/common/permission/permission\.yaml$|backend/api/mcp/gen/openapi\.yaml$|scripts/check_link_test\.go$|\.github/workflows/ci\.yml$)')
           proto=$(changed '^(proto/|\.github/workflows/ci\.yml$)')

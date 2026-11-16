@@ -1,0 +1,84 @@
+=== .github/workflows/bytebase-review.yml ===
+name: Bytebase SQL review
+on:
+  pull_request:
+    paths: ["migrations/*.sql"]
+jobs:
+  sql-review:
+    # Reviews pull requests into the default branch, the branch that deploys.
+    if: github.base_ref == github.event.repository.default_branch
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    container:
+      image: bytebase/bytebase-action:3.24.0
+    env:
+      BYTEBASE_URL: "https://bytebase.example.com"
+      BYTEBASE_WORKLOAD_IDENTITY: deploy-ci@shop.workload.bytebase.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: SQL review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bytebase-action check \
+            --url=$BYTEBASE_URL \
+            --project=projects/shop \
+            --targets=instances/pg-prod/databases/shop_prod \
+            --file-pattern=migrations/*.sql
+=== .github/workflows/bytebase-deploy.yml ===
+name: Bytebase deploy
+on:
+  push:
+    paths: ["migrations/*.sql"]
+env:
+  BYTEBASE_URL: "https://bytebase.example.com"
+  BYTEBASE_WORKLOAD_IDENTITY: deploy-ci@shop.workload.bytebase.com
+  BYTEBASE_PROJECT: projects/shop
+jobs:
+  create-rollout:
+    # Deploys what is merged into the default branch.
+    if: github.ref_name == github.event.repository.default_branch
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    container:
+      image: bytebase/bytebase-action:3.24.0
+    outputs:
+      bytebase-plan: ${{ steps.set-output.outputs.plan }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create rollout
+        run: |
+          bytebase-action rollout \
+            --url=$BYTEBASE_URL \
+            --project=$BYTEBASE_PROJECT \
+            --targets=instances/pg-prod/databases/shop_prod \
+            --file-pattern=migrations/*.sql \
+            --output=${{ runner.temp }}/bytebase-metadata.json
+      - name: Set output
+        id: set-output
+        run: |
+          PLAN=$(jq -r .plan ${{ runner.temp }}/bytebase-metadata.json)
+          echo "plan=$PLAN" >> $GITHUB_OUTPUT
+  deploy-to-prod:
+    needs: [create-rollout]
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    environment: prod
+    container:
+      image: bytebase/bytebase-action:3.24.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to prod
+        run: |
+          bytebase-action rollout \
+            --url=$BYTEBASE_URL \
+            --project=$BYTEBASE_PROJECT \
+            --target-stage=environments/prod \
+            --plan=${{ needs.create-rollout.outputs.bytebase-plan }}

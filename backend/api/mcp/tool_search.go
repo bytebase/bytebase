@@ -197,7 +197,7 @@ func endpointNote(ep *EndpointInfo) string {
 			"The pattern admits every job in the repository, which the GitOps workflows need: their checks run on pull requests and their deploys in " +
 			"environments, and the workflow's triggers decide which branch deploys; say so when the user asked for one branch. " +
 			"A workflow signs in with the identity's email. Patterns for a branch, an environment or every repository of an owner, other providers " +
-			"and other roles are set up in the console. call_api is refused for every workload identity."
+			"and other roles are set up in the console. call_api is refused for every workload identity write."
 	case v1connect.ProjectServiceSetIamPolicyProcedure:
 		return "A project's IAM policy changes over MCP only when administer_workspace grants a workload identity it creates the GitOps Service Agent role, " +
 			"after the user confirms. call_api is refused; change other members, roles and conditions signed in to the Bytebase console."

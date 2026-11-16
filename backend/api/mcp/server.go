@@ -310,6 +310,7 @@ func (s *Server) registerTools() {
 	s.registerCallTool()
 	s.registerQueryTool()
 	s.registerSchemaTool()
+	s.registerGitOpsWorkflowTool()
 	s.registerChangeTool()
 	s.registerDecideIssueTool()
 	s.registerSetJustInTimeAccessTool()

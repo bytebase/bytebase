@@ -163,7 +163,7 @@ func (s *Server) administerIdentity(ctx context.Context, req *mcp.CallToolReques
 		return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: membersLink}, nil
 	}
 	gitopsLink := s.consoleLink(ctx, project+"/gitops")
-	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY, which the GitOps page's workflows use. %s\nGitOps: %s\nWorkload identities: %s",
+	text := fmt.Sprintf("Created: workload identity %q in project %q, with the %s role there. A workflow signs in with that email as BYTEBASE_WORKLOAD_IDENTITY: get the workflow files with get_gitops_workflow, or on the GitOps page. %s\nGitOps: %s\nWorkload identities: %s",
 		change.email, change.projectID, identityRoleTitle, identityConsoleOnly, gitopsLink, link)
 	return textResult(text), &AdministerWorkspaceOutput{OperationID: input.OperationID, Changed: true, Message: text, Link: gitopsLink}, nil
 }
@@ -205,12 +205,8 @@ func (s *Server) grantIdentityRole(ctx context.Context, c *identityCreation) (st
 
 // readIamPolicy reads the project's IAM policy, or says why it could not.
 func (s *Server) readIamPolicy(ctx context.Context, project string) (*v1pb.IamPolicy, string) {
-	resp, err := s.apiRequest(ctx, v1connect.ProjectServiceGetIamPolicyProcedure, map[string]any{"resource": project})
-	if why := refusal(resp, err); why != "" {
-		return nil, why
-	}
 	policy := &v1pb.IamPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(resp.Body, policy); err != nil {
+	if err := s.readAPI(ctx, v1connect.ProjectServiceGetIamPolicyProcedure, map[string]any{"resource": project}, policy); err != nil {
 		return nil, err.Error()
 	}
 	return policy, ""
