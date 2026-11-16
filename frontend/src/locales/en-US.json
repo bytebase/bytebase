@@ -2215,7 +2215,6 @@
       "needs-attention": "Needs attention: {{count}} of {{total}}",
       "no-findings": "No findings",
       "not-run": "Not run yet",
-      "nothing-needs-attention": "Nothing needs attention",
       "off": "off",
       "off-for-project": "Off for this project",
       "opens-in-sql": "Click to step through them in the SQL.",

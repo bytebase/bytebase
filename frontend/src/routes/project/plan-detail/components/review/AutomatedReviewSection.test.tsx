@@ -445,9 +445,6 @@ describe("AutomatedReviewSection", () => {
       row("review", "open", findings({ open: 3, p0: 1, p1: 2 })),
       row("policy", "passed", undefined, { targets: 2 }),
     ]);
-    expect(
-      screen.getByText("plan.automated-review.needs-attention:1")
-    ).toBeDefined();
     const review = screen.getByTestId("automated-review-review");
     expect(review.textContent).toContain("sql-review.reviewer");
     const p0 = screen.getByRole("button", {
@@ -537,7 +534,7 @@ describe("AutomatedReviewSection", () => {
     expect(screen.queryByText(/plan.findings.n-overridden/)).toBeNull();
   });
 
-  test("calls out a P0 resolved without a change and counts it as needing attention", () => {
+  test("calls out a P0 resolved without a change", () => {
     mocks.comments = [
       finding("null-3", 3, {
         ruleType: ReviewRuleType.REQUIRE_IS_NULL,
@@ -546,9 +543,6 @@ describe("AutomatedReviewSection", () => {
       }),
     ];
     renderSection([row("review", "resolved", findings({ overridden: 1 }))]);
-    expect(
-      screen.getByText("plan.automated-review.needs-attention:1")
-    ).toBeDefined();
     const overridden = screen.getByRole("button", {
       name: "plan.findings.n-overridden:1",
     });
@@ -630,24 +624,6 @@ describe("AutomatedReviewSection", () => {
       screen.queryByRole("button", { name: /plan.automated-review.rerun/ })
     ).toBeNull();
     expect(screen.queryByRole("button", { name: /common.run/ })).toBeNull();
-    expect(screen.queryByTestId("automated-review-summary")).toBeNull();
-  });
-
-  test("an off review beside passing checks is not summed up as needing nothing", () => {
-    const { unmount } = renderSection([
-      row("review", "off", undefined, { holdsRollout: false }),
-      row("policy", "passed", undefined, { targets: 1 }),
-    ]);
-    expect(screen.queryByTestId("automated-review-summary")).toBeNull();
-    unmount();
-
-    renderSection([
-      row("review", "off", undefined, { holdsRollout: false }),
-      row("policy", "open", findings({ open: 1, p0: 1 }), { targets: 1 }),
-    ]);
-    expect(screen.getByTestId("automated-review-summary").textContent).toBe(
-      "plan.automated-review.needs-attention:1"
-    );
   });
 
   test("Run, Retry, and Rerun start the review with one call", async () => {

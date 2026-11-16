@@ -2215,7 +2215,6 @@
       "needs-attention": "{{count}} de {{total}} requieren atención",
       "no-findings": "Sin hallazgos",
       "not-run": "Aún no se ha ejecutado",
-      "nothing-needs-attention": "Nada requiere atención",
       "off": "desactivada",
       "off-for-project": "Desactivada en este proyecto",
       "opens-in-sql": "Haz clic para recorrerlos en el SQL.",

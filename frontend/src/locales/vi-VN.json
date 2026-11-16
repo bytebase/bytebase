@@ -2215,7 +2215,6 @@
       "needs-attention": "{{count}}/{{total}} cần xử lý",
       "no-findings": "Không có phát hiện",
       "not-run": "Chưa chạy",
-      "nothing-needs-attention": "Không có mục nào cần xử lý",
       "off": "đã tắt",
       "off-for-project": "Đã tắt cho dự án này",
       "opens-in-sql": "Nhấp để xem lần lượt trong SQL.",
