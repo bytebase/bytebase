@@ -108,14 +108,19 @@ describe("MarkdownEditor", () => {
   });
 
   test.each([{ untrusted: false }, { untrusted: true }])(
-    "links a bare host written without a scheme (untrusted: $untrusted)",
+    "links URLs, www. hosts, and emails, but not bare hosts (untrusted: $untrusted)",
     ({ untrusted }) => {
+      const content = [
+        "https://example.com/a?b=1 http://localhost:8080/x",
+        "see www.example.com/docs, (www.example.dev) and **www.example**.",
+        "mail user@example.com",
+        "example.com users.id public.users.id products.name o.id = u.id",
+        'WWW.Example.com x.www.example.com "www.example.com" www.',
+        "ftp://example.com/x //example.com/x",
+        "`www.example.com` `https://example.com`",
+      ].join("\n\n");
       const { container, render, unmount } = renderIntoContainer(
-        <MarkdownEditor
-          content="see www.example.com/docs and example.com"
-          mode="preview"
-          untrusted={untrusted}
-        />
+        <MarkdownEditor content={content} mode="preview" untrusted={untrusted} />
       );
 
       render();
@@ -125,8 +130,12 @@ describe("MarkdownEditor", () => {
         link.getAttribute("href"),
       ]);
       expect(links).toEqual([
+        ["https://example.com/a?b=1", "https://example.com/a?b=1"],
+        ["http://localhost:8080/x", "http://localhost:8080/x"],
         ["www.example.com/docs", "http://www.example.com/docs"],
-        ["example.com", "http://example.com"],
+        ["www.example.dev", "http://www.example.dev"],
+        ["www.example", "http://www.example"],
+        ["user@example.com", "mailto:user@example.com"],
       ]);
 
       unmount();
