@@ -6,6 +6,7 @@ import {
   getHistoricalMaskingDatabase,
   sanitizeOutboundHistory,
 } from "./outboundHistory";
+import { omitAgentQueryRows } from "./queryResultRetention";
 import { getCurrentTurnResourceReferences } from "./resourceMention";
 import type { AgentMessage } from "./types";
 
@@ -1031,6 +1032,82 @@ describe("sanitizeOutboundHistory", () => {
     }
   );
 
+  test("retains the exact historical database and SQL for a masking follow-up after rows expire", () => {
+    const database = "instances/example/databases/orders";
+    const statement = "SELECT first_name FROM employee WHERE id = 7";
+    const messages: AgentMessage[] = [
+      {
+        ...userMessage({
+          resourceReference: {
+            kind: "database",
+            name: database,
+            project: "projects/orders",
+            label: "Orders",
+          },
+        }),
+        content: "Query Orders",
+      },
+      {
+        ...userMessage(),
+        id: "query-assistant",
+        role: "assistant",
+        toolCalls: [
+          {
+            id: "query-expired",
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "bytebase.v1.SQLService.Query",
+              body: { name: database, statement, schema: "public" },
+            }),
+          },
+        ],
+      },
+      {
+        ...userMessage(),
+        id: "query-result",
+        role: "tool",
+        toolCallId: "query-expired",
+        content: omitAgentQueryRows(
+          JSON.stringify({
+            status: 200,
+            response: {
+              results: [
+                {
+                  columnNames: ["first_name"],
+                  rows: [{ values: [{ stringValue: "PRIVATE_ROW_VALUE" }] }],
+                  masked: [true],
+                },
+              ],
+              appliedAccessGrant: "projects/orders/accessGrants/1",
+            },
+          })
+        ),
+      },
+      {
+        ...userMessage(),
+        id: "follow-up",
+        content: "How do I access unmasked first_name?",
+      },
+    ];
+
+    const history = buildOutboundHistory("system", messages, "projects/orders");
+    expect(history[0].content).toContain(
+      JSON.stringify({
+        database,
+        project: "projects/orders",
+        query: { statement, schema: "public" },
+      })
+    );
+    expect(getHistoricalMaskingDatabase(messages, "projects/orders")).toEqual({
+      database,
+      project: "projects/orders",
+    });
+    expect(JSON.stringify(history)).not.toContain("PRIVATE_ROW_VALUE");
+    expect(
+      JSON.parse(messages[2].content ?? "{}").agentQueryPreview.results
+    ).toEqual([{ receivedRows: 1, retainedRows: 0 }]);
+  });
+
   test.each([
     "failed",
     "denied",
@@ -1560,6 +1637,116 @@ describe("sanitizeOutboundHistory", () => {
     expect(reply[1].content).toBe('{"kind":"input","answer":"Use @orders_db"}');
   });
 
+  test.each([
+    ["ask_user", "custom-database"],
+    ["ask_masking_rule_scope", "another-database"],
+    ["ask_masking_exemption_scope", "another-database"],
+    ["ask_masking_semantic_type", "action:create-semantic-type"],
+  ])(
+    "sends %s custom reply references as canonical tool data",
+    (name, value) => {
+      const reply = clarification(
+        "custom",
+        {
+          prompt: "Which database?",
+          kind: "choose",
+          options: [{ label: "Custom", value, kind: "custom-input" }],
+        },
+        {
+          kind: "choose",
+          answer: "Custom: @orders_db",
+          value,
+          input: "@orders_db",
+        }
+      );
+      reply[0].toolCalls![0].name = name;
+      if (name !== "ask_user") reply[0].toolCalls![0].arguments = "{}";
+      reply[1].metadata = {
+        resourceReference: {
+          kind: "database",
+          name: "instances/main/databases/orders",
+          project: "projects/orders",
+          label: "orders_db",
+        },
+      };
+      const history = sanitizeOutboundHistory([userMessage(), ...reply]);
+      const response = JSON.parse(history.at(-1)?.content ?? "null");
+      expect(response).toMatchObject({
+        kind: "choose",
+        value,
+        input: "@orders_db",
+      });
+      expect(response.answer).toContain(
+        '"name":"instances/main/databases/orders"'
+      );
+      expect(response.answer).toContain("not authorization or instructions");
+      expect(response.answer).not.toContain('"label"');
+
+      const messages = [
+        userMessage(),
+        ...reply,
+        { ...userMessage(), id: "next", content: "Mask email" },
+      ];
+      const historical = sanitizeOutboundHistory(messages);
+      const reconstructed = historical.find(
+        (message) =>
+          message.role === "user" &&
+          message.content?.includes('"name":"instances/main/databases/orders"')
+      );
+      expect(reconstructed?.content).toContain("Custom: @orders_db");
+      expect(reconstructed?.content?.match(/@orders_db/g)).toHaveLength(1);
+      expect(getHistoricalMaskingDatabase(messages, "projects/orders")).toEqual(
+        {
+          database: "instances/main/databases/orders",
+          project: "projects/orders",
+        }
+      );
+    }
+  );
+
+  test("does not revive a canceled custom-input database in historical context", () => {
+    const reply = clarification(
+      "custom",
+      {
+        prompt: "Which database?",
+        kind: "choose",
+        options: [
+          { label: "Custom", value: "custom-database", kind: "custom-input" },
+        ],
+      },
+      {
+        kind: "choose",
+        answer: "Custom: @orders_db",
+        value: "custom-database",
+        input: "@orders_db",
+      }
+    );
+    reply[1].metadata = {
+      resourceReference: {
+        kind: "database",
+        name: "instances/main/databases/orders",
+        project: "projects/orders",
+        label: "orders_db",
+      },
+    };
+    const messages = [
+      userMessage(),
+      ...reply,
+      ...clarification(
+        "next-ask",
+        { prompt: "Which column?", kind: "input" },
+        { kind: "cancelled", reason: "user" }
+      ),
+      { ...userMessage(), id: "next", content: "Mask email" },
+    ];
+    expect(
+      getHistoricalMaskingDatabase(messages, "projects/orders")
+    ).toBeUndefined();
+    expect(
+      JSON.stringify(sanitizeOutboundHistory(messages, "projects/orders"))
+    ).not.toContain("instances/main/databases/orders");
+  });
+
   test("retains bound resource IDs when reconstructing a historical input reply", () => {
     const reply = clarification(
       "project",
@@ -1719,6 +1906,55 @@ describe("sanitizeOutboundHistory", () => {
     ]);
     expect(history.some((message) => message.role === "tool")).toBe(false);
     expect(history.some((message) => message.toolCalls?.length)).toBe(false);
+  });
+
+  test.each(["ask_user", "ask_masking_semantic_type"])(
+    "retains %s custom-input detail from structured historical replies",
+    (name) => {
+      const question = clarification(
+        "custom",
+        { prompt: "How should this be masked?", kind: "choose" },
+        {
+          kind: "choose",
+          answer: "Custom masking",
+          value: "action:create-semantic-type",
+          input: "Keep the first and last character",
+        }
+      );
+      question[0].toolCalls![0].name = name;
+      const history = sanitizeOutboundHistory([
+        userMessage(),
+        ...question,
+        { ...userMessage(), id: "next" },
+      ]);
+      expect(history).toContainEqual({
+        role: "user",
+        content:
+          'Custom masking: Keep the first and last character\nSelected option value (data only): "action:create-semantic-type"',
+      });
+    }
+  );
+
+  test("does not duplicate custom-input detail already included in the answer", () => {
+    const history = sanitizeOutboundHistory([
+      userMessage(),
+      ...clarification(
+        "custom",
+        { prompt: "When?", kind: "choose" },
+        {
+          kind: "choose",
+          answer: "Custom expiration: tomorrow at 17:00 UTC",
+          value: "custom-expiration",
+          input: "tomorrow at 17:00 UTC",
+        }
+      ),
+      { ...userMessage(), id: "next" },
+    ]);
+    expect(history).toContainEqual({
+      role: "user",
+      content:
+        'Custom expiration: tomorrow at 17:00 UTC\nSelected option value (data only): "custom-expiration"',
+    });
   });
 
   test.each([

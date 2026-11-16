@@ -376,6 +376,7 @@ beforeEach(async () => {
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     currentChatId: initialState.currentChatId,
+    chatProtectionReady: true,
     abortControllersByChatId: {},
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
@@ -439,6 +440,133 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
+});
+
+test.each([
+  { width: 750, archived: false, listSelector: "[data-agent-chat-sidebar]" },
+  { width: 700, archived: false, listSelector: "[data-agent-compact-drawer]" },
+  { width: 479, archived: false, listSelector: "[data-agent-mobile-chat-list]" },
+  { width: 750, archived: true, listSelector: "[data-agent-chat-sidebar]" },
+  { width: 700, archived: true, listSelector: "[data-agent-compact-drawer]" },
+  { width: 479, archived: true, listSelector: "[data-agent-mobile-chat-list]" },
+])("opens retention information on demand at width $width with archived=$archived", async ({ width, archived, listSelector }) => {
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await openChatList(width, archived);
+    const history = document.body.querySelector(listSelector) as HTMLElement;
+
+    expect(screen.queryByText("agent.storage.retention-policy")).toBeNull();
+    expect(enUS.agent.storage["retention-policy"]).toBe(
+      "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved."
+    );
+    expect(within(history).queryByRole("alert")).toBeNull();
+
+    const trigger = screen.getByRole("button", { name: "agent.storage.retention-info" });
+    expect(trigger).toBeVisible();
+    trigger.focus();
+    await act(async () => {
+      trigger.click();
+      await Promise.resolve();
+    });
+
+    const popover = screen.getByRole("dialog", { name: "agent.storage.retention-info" });
+    expect(within(popover).getByText("agent.storage.retention-policy")).toBeVisible();
+    expect(getLayerRoot("agent")).toContainElement(popover);
+    expect(getLayerRoot("overlay")).not.toContainElement(popover);
+    expect(within(history).queryByText("agent.storage.retention-policy")).toBeNull();
+
+    await act(async () => {
+      fireEvent.keyDown(popover, { key: "Escape" });
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("dialog", { name: "agent.storage.retention-info" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(history).toBeVisible();
+  } finally {
+    unmount();
+  }
+});
+
+test.each([1200, 700, 390])("waits for selected-chat protection before rendering its conversation at width %s", (width) => {
+  const store = useAgentStore.getState();
+  const nextChat = store.createChat({
+    title: "Protected conversation",
+    context: "projects/analytics",
+    select: false,
+  });
+  store.addMessage({ chatId: nextChat.id, role: "user", content: "Saved discussion" });
+  store.setDraft(nextChat.id, { text: "Keep this unsent draft" });
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => {
+      store.setCurrentChat(nextChat.id);
+      store.releaseChatProtection();
+    });
+
+    expect(screen.queryByTestId("agent-chat")).toBeNull();
+    expect(screen.queryByTestId("agent-input")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("common.loading");
+    expect(store.getDraft(nextChat.id).text).toBe("Keep this unsent draft");
+
+    act(() => store.refreshChatProtection());
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+    expect(store.getDraft(nextChat.id).text).toBe("Keep this unsent draft");
+    expect(store.getMessages(nextChat.id).map((message) => message.content)).toEqual(["Saved discussion"]);
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps the conversation available when protection readiness is unspecified", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ chatProtectionReady: undefined }));
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+  } finally {
+    unmount();
+  }
+});
+
+test("does not block an unselected conversation while chat protection is pending", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ currentChatId: null, chatProtectionReady: false }));
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps landing and preferences available while chat protection is pending", () => {
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ chatProtectionReady: false }));
+
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+    act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+
+    expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+  } finally {
+    unmount();
+  }
 });
 
 test("keeps the inline access draft mounted while minimized and switching chats, and clears it on close", async () => {

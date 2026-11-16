@@ -318,10 +318,78 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  test.each(["error", "idle"] as const)("leaves managed interrupted work in %s state to its message-level Retry", (status) => {
-    const { container, onEndRun, onResume } = setup({ ...chat, runId: "run-1", status, interrupted: true, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } });
+  test("leaves idle managed interrupted work to its message-level Retry", () => {
+    const { container, onEndRun, onResume } = setup({ ...chat, runId: "run-1", status: "idle", interrupted: true, runBudget: { ...chat.runBudget!, totalTokensUsed: 100 } });
     expect(container).toBeEmptyDOMElement();
     expect(onEndRun).not.toHaveBeenCalled();
+    expect(onResume).not.toHaveBeenCalled();
+  });
+
+  test.each([41266, 80000, 110000].flatMap((totalTokensUsed) => [
+    { totalTokensUsed, checkpoint: undefined },
+    { totalTokensUsed, checkpoint: { ...checkpoint, suspension: "awaiting-user" as const, startupComplete: false } },
+  ]))("offers only End run for failed managed work at $totalTokensUsed tokens with checkpoint $checkpoint", async ({ totalTokensUsed, checkpoint: runCheckpoint }) => {
+    const { onEndRun, onResume, onIncreaseLimit } = setup({
+      ...chat, runId: "run-1", status: "error", interrupted: true, runCheckpoint,
+      runBudget: { ...chat.runBudget!, limit: 100000, totalTokensUsed },
+    }, false, { canResume: false });
+    expect(screen.getByRole("status")).toHaveTextContent("Interrupted");
+    expect(screen.getByText(`${totalTokensUsed.toLocaleString("en-US")} / 100,000 tokens`)).toBeVisible();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
+    expect(onEndRun).toHaveBeenCalledOnce();
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    { runId: undefined },
+    { runId: "another-run" },
+    { archived: true },
+    { interrupted: true, interruptionReason: "user" as const },
+  ])("does not add failed-run controls for inactive or mismatched work %j", (state) => {
+    const { container } = setup({
+      ...chat, runId: "run-1", status: "error",
+      runBudget: { ...chat.runBudget!, totalTokensUsed: 100 }, ...state,
+    });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test("hides failed-run recovery for a remote owner", () => {
+    const { container } = setup({ ...chat, runId: "run-1", status: "error" }, false, { remoteBusy: true });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test("keeps failed-run End run disabled during persistence and reports its failure", async () => {
+    const { onEndRun, onResume, onIncreaseLimit } = setup({
+      ...chat, runId: "run-1", status: "error", runBudget: { ...chat.runBudget!, totalTokensUsed: 100 },
+    });
+    let fail!: (reason: Error) => void;
+    onEndRun.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { fail = reject; }));
+    fireEvent.click(screen.getByRole("button", { name: "End run" }));
+    expect(screen.getByRole("button", { name: "End run" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "End run" }));
+    expect(onEndRun).toHaveBeenCalledOnce();
+    await act(async () => fail(new Error("Run could not be saved")));
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't update this run. Try again.");
+    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+  });
+
+  test("hides an open limit editor after failure without hiding End run errors", async () => {
+    const managed = { ...chat, runId: "run-1" };
+    const { rerender, onEndRun, onResume, onIncreaseLimit } = setup(managed);
+    await openIncrease();
+    rerender(<AgentTokenBudgetStatus chat={{ ...managed, status: "error" }} onEndRun={onEndRun} onResume={onResume} onIncreaseLimit={onIncreaseLimit} />);
+    expect(screen.queryByRole("spinbutton")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
+    onEndRun.mockRejectedValueOnce(new Error("Run could not be saved"));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't update this run. Try again.");
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
     expect(onResume).not.toHaveBeenCalled();
   });
 

@@ -111,6 +111,8 @@
       "project-heading": "询问此项目",
       "resource-unavailable": "此资源不可引用。"
     },
+    "custom-input-label": "详情",
+    "custom-input-placeholder": "输入内容",
     "database-reference-unavailable": "此数据库已不可用，或你没有访问权限。",
     "delete-all-chats": "删除所有对话",
     "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
@@ -186,6 +188,7 @@
       "ask-agent-short": "询问 Agent",
       "exemption-scope": {
         "another-database": "其他数据库",
+        "database-placeholder": "输入数据库名称",
         "only-database": "仅 {{database}}",
         "project": "此项目中的所有数据库",
         "question": "此脱敏豁免应适用于哪些数据库？"
@@ -198,6 +201,7 @@
       "semantic-type-choice": {
         "create": "创建自定义脱敏类型…",
         "create-description": "按所需脱敏配置准备新的语义类型。",
+        "create-placeholder": "描述希望如何对数据进行脱敏",
         "question": "应使用哪种语义类型对这些列进行脱敏？"
       },
       "unmask-method": {
@@ -299,7 +303,11 @@
     "project-reference-unavailable": "此项目已不可用，或你没有访问权限。",
     "provider-attempt-limit": "此轮运行已达到 AI 服务请求次数上限，因此我已停止发送新的 AI 请求。之前的操作可能已经完成；请先检查其状态，再让我重试。",
     "query-result": {
+      "omitted-rows": "行预览已过期。共收到 {{received}} 行。",
+      "preview-expired": "行预览已过期；查询详情和执行结果仍保留。",
+      "preview-partial": "仅保留了部分行预览。",
       "returned-rows": "返回行数：{{count}}",
+      "sampled-rows": "预览保留了收到的 {{received}} 行中的 {{retained}} 行。",
       "showing-columns": "显示 {{total}} 列中的 {{shown}} 列",
       "showing-results": "显示 {{total}} 个结果集中的 {{shown}} 个",
       "showing-rows": "显示返回的 {{total}} 行中的 {{shown}} 行"
@@ -374,6 +382,13 @@
       "unsaved-only": "仅应用到未保存的草稿"
     },
     "stop": "停止",
+    "storage": {
+      "retention-info": "聊天历史保留",
+      "retention-policy": "需要释放本地存储空间时，较早完成的聊天将被自动删除。进行中的聊天和草稿会被保留。",
+      "retry": "重试",
+      "save-failed": "无法保存 Agent 历史记录。请重试。",
+      "title": "Agent 历史记录存储"
+    },
     "token-budget": {
       "action-failed": "无法更新此轮运行，请重试。",
       "apply": "应用",

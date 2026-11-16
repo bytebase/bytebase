@@ -9,6 +9,7 @@ import {
   EllipsisVertical,
   Folder,
   FolderOpen,
+  Info,
   LoaderCircle,
   MessageSquare,
   Minus,
@@ -140,6 +141,7 @@ import {
   AgentPopover,
   AgentPopoverContent,
   AgentPopoverTitle,
+  AgentPopoverTrigger,
 } from "./ui/AgentPopover";
 import { AgentTooltip } from "./ui/AgentTooltip";
 import {
@@ -222,6 +224,9 @@ export function AgentWindow() {
   const orderedChats = useAgentStore(selectOrderedChats);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const chatProtectionReady = useAgentStore(
+    (s) => s.chatProtectionReady !== false
+  );
   const queuedChatId = useAgentStore((s) =>
     s.currentChatId && s.queuedUserMessagesByChatId[s.currentChatId]
       ? s.currentChatId
@@ -1989,6 +1994,15 @@ export function AgentWindow() {
         onStart={startContextualChat}
         onContinue={continueCurrentChat}
       />
+    ) : currentChat && !chatProtectionReady ? (
+      <div
+        role="status"
+        aria-busy="true"
+        className="flex min-h-0 flex-1 items-center justify-center gap-2 p-4 text-sm text-control-light"
+      >
+        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+        {t("common.loading")}
+      </div>
     ) : (
       <>
         <AgentChat
@@ -2027,6 +2041,39 @@ export function AgentWindow() {
         )}
       </>
     );
+
+  const renderHistoryRetentionInfo = () => (
+    <AgentPopover>
+      <AgentTooltip content={t("agent.storage.retention-info")}>
+        <AgentPopoverTrigger
+          render={
+            <Button
+              appearance="secondary"
+              size="xs"
+              data-agent-window-action
+              className="shrink-0 text-control-light hover:bg-control-bg-hover"
+              aria-label={t("agent.storage.retention-info")}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Info className="size-3.5" aria-hidden="true" />
+            </Button>
+          }
+        />
+      </AgentTooltip>
+      <AgentPopoverContent
+        side="bottom"
+        align="start"
+        className="w-64 max-w-[var(--available-width)] p-3"
+      >
+        <AgentPopoverTitle className="sr-only">
+          {t("agent.storage.retention-info")}
+        </AgentPopoverTitle>
+        <p className="text-xs text-control-light">
+          {t("agent.storage.retention-policy")}
+        </p>
+      </AgentPopoverContent>
+    </AgentPopover>
+  );
 
   const renderRail = () => (
     <nav
@@ -2304,8 +2351,12 @@ export function AgentWindow() {
                     ? t("agent.archived-only-chats")
                     : t("agent.assistant-title")}
               </h2>
+              {!preferencesOpen &&
+                isMobileWindow &&
+                mobileScreen !== "conversation" &&
+                renderHistoryRetentionInfo()}
             </div>
-            <div className="flex items-center gap-x-1">
+            <div className="flex shrink-0 items-center gap-x-1">
               {!preferencesOpen &&
                 isMobileWindow &&
                 mobileScreen === "chats" && (
@@ -2576,18 +2627,21 @@ export function AgentWindow() {
                           {/* Sidebar header */}
                           <div className="border-b border-block-border px-3 py-3">
                             <div className="flex items-center justify-between gap-x-2">
-                              <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
-                                {showArchivedOnly
-                                  ? t("agent.archived-only-chats")
-                                  : t("agent.chat-list-label")}
-                              </h2>
+                              <div className="flex min-w-0 items-center gap-x-1">
+                                <h2 className="truncate text-xs font-semibold uppercase text-control-light">
+                                  {showArchivedOnly
+                                    ? t("agent.archived-only-chats")
+                                    : t("agent.chat-list-label")}
+                                </h2>
+                                {renderHistoryRetentionInfo()}
+                              </div>
                               {isCompactWindow ? (
                                 <AgentDialogClose
                                   render={
                                     <Button
                                       appearance="secondary"
                                       size="xs"
-                                      className="text-control-light hover:bg-control-bg-hover"
+                                      className="shrink-0 text-control-light hover:bg-control-bg-hover"
                                       aria-label={t("agent.close")}
                                     >
                                       &#10005;
@@ -2596,7 +2650,7 @@ export function AgentWindow() {
                                 />
                               ) : (
                                 <div
-                                  className="flex items-center gap-x-1"
+                                  className="flex shrink-0 items-center gap-x-1"
                                   data-agent-chat-sidebar-actions
                                 >
                                   {!showArchivedOnly && (

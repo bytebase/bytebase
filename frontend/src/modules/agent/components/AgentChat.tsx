@@ -864,6 +864,7 @@ export function AgentChat({
   const currentChat = useAgentStore(selectCurrentChat);
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
+  const storagePressure = useAgentStore((state) => state.storagePressure);
   const chatRequiresAIConfiguration = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
@@ -952,6 +953,7 @@ export function AgentChat({
     loading ||
     currentChat?.status === "awaiting_user" ||
     currentChat?.archived ||
+    Boolean(storagePressure) ||
     Boolean(queuedUserMessage);
   const canRetryError =
     currentChat?.status === "error" &&

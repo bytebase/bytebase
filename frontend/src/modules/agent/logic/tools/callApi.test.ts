@@ -121,6 +121,72 @@ describe("callApi", () => {
     expect(mocks.fetch).not.toHaveBeenCalled();
   });
 
+  test("bounds direct and approved canonical Query results before either caller receives them", async () => {
+    const response = {
+      results: [
+        {
+          columnNames: ["payload"],
+          rows: [{ values: [{ stringValue: "x".repeat(70_000) }] }],
+        },
+      ],
+      appliedAccessGrant: "projects/example/accessGrants/123",
+    };
+    mocks.fetch.mockImplementation(async () =>
+      createResponse({ status: 200, body: response })
+    );
+    const args = {
+      operationId: "SQLService/Query",
+      body: { statement: "SELECT payload FROM records" },
+    };
+
+    const direct = await callApi(args);
+    const prepared = await prepareApiCall(args);
+    expect(prepared.kind).toBe("prepared");
+    if (prepared.kind !== "prepared") return;
+    const approved = await dispatchPreparedApiCall(prepared.call);
+
+    expect(approved).toBe(direct);
+    expect(JSON.parse(direct)).toEqual({
+      status: 200,
+      response: {
+        ...response,
+        results: [{ columnNames: ["payload"], rows: [] }],
+      },
+      agentQueryPreview: {
+        version: 1,
+        level: "sampled",
+        results: [{ receivedRows: 1, retainedRows: 0 }],
+      },
+    });
+  });
+
+  test.each([
+    ["bytebase.v1.SQLService.Export", "/bytebase.v1.SQLService/Export"],
+    [
+      "bytebase.v1.SQLService.AdminExecute",
+      "/bytebase.v1.SQLService/AdminExecute",
+    ],
+    ["bytebase.v1.OtherService.Query", "/bytebase.v1.OtherService/Query"],
+  ])("does not reduce non-Query result %s", async (operationId, path) => {
+    const response = {
+      results: [
+        {
+          columnNames: ["payload"],
+          rows: [{ values: [{ stringValue: "x".repeat(70_000) }] }],
+        },
+      ],
+    };
+    mocks.fetch.mockResolvedValue(
+      createResponse({ status: 200, body: response })
+    );
+    const result = await dispatchPreparedApiCall({
+      operationId,
+      path,
+      body: "{}",
+    });
+    expect(result).toBe(JSON.stringify({ status: 200, response }));
+  });
+
   test.each(["SQLService/Query", "bytebase.v1.SQLService.Query"])(
     "defaults %s to 100 rows without rewriting SQL or mutating arguments",
     async (operationId) => {

@@ -66,12 +66,19 @@ function TokenBudgetStatus({
   const hasUnreportedUsage = projection?.hasUnreportedUsage ?? false;
   if (!budget || remoteBusy) return null;
   const paused = chat.runCheckpoint?.suspension === "token-limit";
+  const failedRun =
+    !paused &&
+    chat.status === "error" &&
+    !chat.archived &&
+    chat.interruptionReason !== "user" &&
+    Boolean(chat.runId) &&
+    chat.runId === budget.runId;
   const showRetry = paused && state !== "exhausted";
   const active = chat.status === "running" || chat.status === "awaiting_user";
   const showThreshold = !paused && active && state !== "normal";
   const showPartialUsage =
     hasUnreportedUsage && (active || chat.status === "error");
-  if (!paused && !showThreshold && !showPartialUsage) return null;
+  if (!paused && !failedRun && !showThreshold && !showPartialUsage) return null;
   const minimum = Math.max(budget.limit, budget.totalTokensUsed);
   const minimumLimit = formatTokenLimit(
     minimum < Number.MAX_SAFE_INTEGER ? minimum + 1 : Number.MAX_SAFE_INTEGER
@@ -90,11 +97,13 @@ function TokenBudgetStatus({
     ? showRetry
       ? t("agent.interrupted")
       : t("agent.token-budget.paused")
-    : active && state === "exhausted"
-      ? t("agent.token-budget.reached")
-      : active && state === "warning"
-        ? t("agent.token-budget.warning")
-        : t("agent.token-budget.partial");
+    : failedRun
+      ? t("agent.interrupted")
+      : active && state === "exhausted"
+        ? t("agent.token-budget.reached")
+        : active && state === "warning"
+          ? t("agent.token-budget.warning")
+          : t("agent.token-budget.partial");
   const used =
     hasUnreportedUsage && budget
       ? t("agent.token-usage.at-least", {
@@ -143,7 +152,7 @@ function TokenBudgetStatus({
             </span>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            {(canIncrease || open) && (
+            {!failedRun && (canIncrease || open) && (
               <AgentPopover
                 open={open}
                 onOpenChange={(nextOpen) => {
@@ -255,7 +264,7 @@ function TokenBudgetStatus({
                 {t("agent.retry-last-chat-turn")}
               </Button>
             )}
-            {paused && (
+            {(paused || failedRun) && (
               <Button
                 size="sm"
                 appearance="secondary"
@@ -267,10 +276,10 @@ function TokenBudgetStatus({
             )}
           </div>
         </div>
-        {hasUnreportedUsage && (paused || showThreshold) && (
+        {hasUnreportedUsage && (paused || failedRun || showThreshold) && (
           <span>{t("agent.token-budget.partial")}</span>
         )}
-        {failed && !open && (
+        {failed && (!open || failedRun) && (
           <FormError>{t("agent.token-budget.action-failed")}</FormError>
         )}
       </div>

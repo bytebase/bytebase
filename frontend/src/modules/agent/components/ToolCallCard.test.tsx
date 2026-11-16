@@ -9,7 +9,13 @@ import { ToolCallCard } from "./ToolCallCard";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) =>
+      key === "agent.query-result.sampled-rows" ||
+      key === "agent.query-result.omitted-rows"
+        ? `${key} ${JSON.stringify(options)}`
+        : key,
+  }),
 }));
 
 vi.mock("@tanstack/react-virtual", () => ({
@@ -63,6 +69,94 @@ const renderCard = (operationId: string, result: string) => {
 };
 
 describe("ToolCallCard", () => {
+  test.each(["sampled", "omitted"])(
+    "labels %s row previews without an empty-success message",
+    (level) => {
+      const result = JSON.stringify({
+        status: 200,
+        response: { results: [{ columnNames: ["payload"], rows: [] }] },
+        agentQueryPreview: {
+          version: 1,
+          level,
+          results: [{ receivedRows: 50, retainedRows: 0 }],
+        },
+      });
+      const { container, unmount } = renderCard("SQLService/Query", result);
+
+      expect(container.textContent).toContain(
+        level === "sampled"
+          ? 'agent.query-result.sampled-rows {"retained":0,"received":50}'
+          : 'agent.query-result.omitted-rows {"received":50}'
+      );
+      expect(container.textContent).not.toContain("common.no-data");
+      act(() => (container.querySelector("button") as HTMLElement).click());
+      expect(container.textContent).toContain(
+        `agent.query-result.preview-${level === "omitted" ? "expired" : "partial"}`
+      );
+      expect(container.querySelector("pre:last-of-type")).toHaveTextContent(
+        '"receivedRows": 50'
+      );
+      act(() =>
+        (container.querySelectorAll('[role="radio"]')[1] as HTMLElement).click()
+      );
+      expect(container.textContent).not.toContain("common.no-data");
+      unmount();
+    }
+  );
+
+  test("distinguishes retained and displayed row counts for a partial sample", () => {
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        results: [
+          {
+            columnNames: ["id"],
+            rows: Array.from({ length: 101 }, (_, value) => ({
+              values: [{ int32Value: value }],
+            })),
+          },
+        ],
+      },
+      agentQueryPreview: {
+        version: 1,
+        level: "sampled",
+        results: [{ receivedRows: 200, retainedRows: 101 }],
+      },
+    });
+    const { container, unmount } = renderCard("SQLService/Query", result);
+    expect(container.textContent).toContain(
+      'agent.query-result.sampled-rows {"retained":101,"received":200}'
+    );
+    expect(container.textContent).toContain("agent.query-result.showing-rows");
+    unmount();
+  });
+
+  test("labels expired rows beyond the displayed result sets in raw details", () => {
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        results: Array.from({ length: 4 }, () => ({
+          columnNames: ["value"],
+          rows: [],
+        })),
+      },
+      agentQueryPreview: {
+        version: 1,
+        level: "omitted",
+        results: [
+          { receivedRows: 0, retainedRows: 0 },
+          { receivedRows: 0, retainedRows: 0 },
+          { receivedRows: 0, retainedRows: 0 },
+          { receivedRows: 50, retainedRows: 0 },
+        ],
+      },
+    });
+    const { container, unmount } = renderCard("SQLService/Query", result);
+    act(() => (container.querySelector("button") as HTMLElement).click());
+    expect(container.textContent).toContain("agent.query-result.preview-expired");
+    unmount();
+  });
+
   test("marks a rejected skill load as failed rather than showing a success check", () => {
     const container = document.createElement("div");
     const root = createRoot(container);

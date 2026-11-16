@@ -316,7 +316,15 @@ export const getHumanInputResourceReferenceMap = (
   messages: AgentMessage[]
 ): Map<AgentMessage, AgentResourceReference[]> => {
   const referencesByMessage = new Map<AgentMessage, AgentResourceReference[]>();
-  const pendingInputs = new Set<string>();
+  const pendingInputs = new Map<
+    string,
+    { kind: "input" } | { kind: "choose"; customValues: Set<string> }
+  >();
+  const runtimeCustomChoices = new Map([
+    ["ask_masking_rule_scope", "another-database"],
+    ["ask_masking_exemption_scope", "another-database"],
+    ["ask_masking_semantic_type", "action:create-semantic-type"],
+  ]);
   const seenToolCallIds = new Set<string>();
   let hasUserTurn = false;
 
@@ -335,15 +343,69 @@ export const getHumanInputResourceReferenceMap = (
           continue;
         }
         seenToolCallIds.add(toolCall.id);
-        if (toolCall.name !== "ask_user") continue;
         try {
           const args = JSON.parse(toolCall.arguments);
-          if (
-            typeof args?.prompt === "string" &&
-            args.prompt.trim() &&
-            (args.kind === undefined || args.kind === "input")
-          ) {
-            pendingInputs.add(toolCall.id);
+          if (!args || typeof args !== "object" || Array.isArray(args))
+            continue;
+          const runtimeValue = runtimeCustomChoices.get(toolCall.name);
+          if (runtimeValue) {
+            const allowedKeys =
+              toolCall.name === "ask_masking_semantic_type"
+                ? []
+                : ["project", "database"];
+            if (
+              Object.keys(args).some(
+                (key) =>
+                  !allowedKeys.includes(key) || typeof args[key] !== "string"
+              )
+            )
+              continue;
+            pendingInputs.set(toolCall.id, {
+              kind: "choose",
+              customValues: new Set([runtimeValue]),
+            });
+            continue;
+          }
+          if (toolCall.name !== "ask_user") continue;
+          if (typeof args?.prompt === "string" && args.prompt.trim()) {
+            if (args.kind === undefined || args.kind === "input") {
+              pendingInputs.set(toolCall.id, { kind: "input" });
+            } else if (
+              args.kind === "choose" &&
+              (args.resourceKind == null || args.resourceKind === "none") &&
+              Array.isArray(args.options)
+            ) {
+              const options: { value: string; kind: unknown }[] =
+                args.options.flatMap((option: unknown) => {
+                  if (
+                    !option ||
+                    typeof option !== "object" ||
+                    !("value" in option) ||
+                    typeof option.value !== "string" ||
+                    !option.value.trim()
+                  )
+                    return [];
+                  return [
+                    {
+                      value: option.value.trim(),
+                      kind: "kind" in option ? option.kind : undefined,
+                    },
+                  ];
+                });
+              if (
+                new Set(options.map((option) => option.value)).size !==
+                options.length
+              )
+                continue;
+              pendingInputs.set(toolCall.id, {
+                kind: "choose",
+                customValues: new Set(
+                  options
+                    .filter((option) => option.kind === "custom-input")
+                    .map((option) => option.value)
+                ),
+              });
+            }
           }
         } catch {
           continue;
@@ -351,18 +413,27 @@ export const getHumanInputResourceReferenceMap = (
       }
       continue;
     } else if (message.role === "tool") {
-      if (!message.toolCallId || !pendingInputs.delete(message.toolCallId)) {
-        continue;
-      }
+      const pending = message.toolCallId
+        ? pendingInputs.get(message.toolCallId)
+        : undefined;
+      if (!message.toolCallId || !pending) continue;
+      pendingInputs.delete(message.toolCallId);
       try {
         const response = JSON.parse(message.content ?? "null");
         if (
-          response?.kind !== "input" ||
+          response?.kind !== pending.kind ||
           typeof response.answer !== "string" ||
           !response.answer.trim()
         ) {
           continue;
         }
+        if (
+          pending.kind === "choose" &&
+          (typeof response.input !== "string" ||
+            !response.input.trim() ||
+            !pending.customValues.has(response.value))
+        )
+          continue;
       } catch {
         continue;
       }

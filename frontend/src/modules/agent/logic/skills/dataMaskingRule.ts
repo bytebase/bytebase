@@ -7,7 +7,7 @@ export const guidance = `## Global Masking Rules
 
 ${maskingRuleScopeInstruction}
 
-For a previous-database choice, revalidate exact identity, ownership, and permissions without repeating the picker. Only an unresolved specific/another database needs a separate ask_user(kind="choose", resourceKind="database") with verified canonical names in its verified project; never mix scope intents into it. Workspace-level configuration can still require project/database CEL constraints. Workspace-wide setup does not require selecting a project/database merely to explain it.
+For a previous-database choice, revalidate exact identity, ownership, and permissions without repeating the picker. Reuse another-database response.input to resolve its name against fresh accessible databases in the verified project. Only a missing or ambiguous identity needs a separate ask_user(kind="choose", resourceKind="database") with verified canonical names; never mix scope intents into it. Workspace-level configuration can still require project/database CEL constraints. Workspace-wide setup does not require selecting a project/database merely to explain it.
 
 ${maskingDraftSetupInstruction}
 

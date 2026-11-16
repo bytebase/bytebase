@@ -7,7 +7,7 @@ import type {
   AgentDiagnosticCapability,
   AgentRunBindings,
 } from "../logic/types";
-import type { AgentState } from "./agent";
+import type { AgentState, PersistedAgentState } from "./agent";
 import {
   AGENT_STATE_KEY,
   AGENT_WINDOW_KEY,
@@ -21,6 +21,8 @@ import {
   useAgentStore,
 } from "./agent";
 import { getAgentPreferencesKey } from "./preferences";
+import * as stateStorage from "./stateStorage";
+import { estimateAgentStorageBytes } from "./storageBudget";
 
 const sqlFixIdentity = vi.hoisted(() => ({
   workspace: "workspaces/alpha",
@@ -660,6 +662,299 @@ describe("durable run recovery", () => {
     const reload = createAgentStore();
     s(reload).setWorkspaceName(workspaceName);
     expect(s(reload).getChat("later-old-tab")).toBeNull();
+  });
+  test("refuses new work after a successful save above the aggregate admission budget", async () => {
+    const { store, chat } = await create();
+    const otherKey = "bb-agent-state-v3.other-member";
+    const other = "x".repeat(1024 * 1024 + 1);
+    mockStorage.setItem(otherKey, other);
+    const draft = { text: "Keep this draft" };
+    s(store).setDraft(chat.id, draft);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+    expect(s(store).storagePressure).toMatchObject({
+      reason: "budget",
+      phase: "admission",
+      limitBytes: 2 * 1024 * 1024,
+    });
+    expect(s(store).getDraft(chat.id)).toEqual(draft);
+    expect(mockStorage.getItem(otherKey)).toBe(other);
+    mockStorage.removeItem(otherKey);
+    expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+    expect(s(store).storagePressure).toBeUndefined();
+  });
+  test("clears storage feedback when the account changes", async () => {
+    const { store } = await create();
+    mockStorage.setItem("bb-agent-state-v3.other", "x".repeat(1024 * 1024 + 1));
+    expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+    s(store).setWorkspaceName(workspaceName, "another@example.com");
+    expect(s(store).storagePressure).toBeUndefined();
+    await s(store).flushRunPersistence();
+  });
+  test("keeps unknown retention versions protected through hydration and saving", async () => {
+    const { store, chat } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const raw = JSON.parse(mockStorage.getItem(key)!);
+    const content = JSON.stringify({
+      status: 200,
+      response: {
+        results: [
+          {
+            columnNames: ["value"],
+            rows: [{ values: [{ stringValue: "x".repeat(80_000) }] }],
+          },
+        ],
+      },
+    });
+    const marker = { version: 2, level: "preserve" };
+    raw.messagesByChatId[chat.id].push(
+      {
+        id: "call",
+        chatId: chat.id,
+        role: "assistant",
+        createdTs: 1,
+        toolCalls: [
+          {
+            id: "query-unknown",
+            name: "call_api",
+            arguments: JSON.stringify({ operationId: "SQLService/Query" }),
+          },
+        ],
+      },
+      {
+        id: "result",
+        chatId: chat.id,
+        role: "tool",
+        createdTs: 2,
+        toolCallId: "query-unknown",
+        content,
+        metadata: { queryResultRetention: marker },
+      }
+    );
+    mockStorage.setItem(key, JSON.stringify(raw));
+    s(store).loadState();
+    expect(
+      s(store)
+        .getMessages(chat.id)
+        .find((message) => message.id === "result")?.metadata
+        ?.queryResultRetention
+    ).toEqual(marker);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(
+      s(store)
+        .getMessages(chat.id)
+        .find((message) => message.id === "result")?.content
+    ).toBe(content);
+  });
+  test("a stale busy owner and idle follower cannot resurrect omitted Query rows", async () => {
+    const { store: owner, chat } = await create();
+    const addQuery = (
+      store: StoreApi<AgentState>,
+      chatId: string,
+      id: string
+    ) => {
+      s(store).addMessage({
+        chatId,
+        role: "assistant",
+        toolCalls: [
+          {
+            id,
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "SQLService/Query",
+              body: {
+                name: "instances/example/databases/sample",
+                statement: "SELECT first_name FROM employee",
+              },
+            }),
+          },
+        ],
+      });
+      return s(store).addMessage({
+        chatId,
+        role: "tool",
+        toolCallId: id,
+        content: JSON.stringify({
+          status: 200,
+          response: {
+            results: [
+              {
+                columnNames: ["first_name"],
+                rows: [{ values: [{ stringValue: "x".repeat(60_000) }] }],
+              },
+            ],
+          },
+        }),
+      })!;
+    };
+    const first = addQuery(owner, chat.id, "query-0");
+    for (let i = 1; i < 8; i++) addQuery(owner, chat.id, `query-${i}`);
+    s(owner).setAbortController(chat.id, new AbortController());
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    const other = s(follower).createChat();
+    addQuery(follower, other.id, "query-8");
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    expect(
+      JSON.parse(
+        s(owner)
+          .getMessages(chat.id)
+          .find((message) => message.id === first.id)!.content!
+      ).response.results[0].rows
+    ).toHaveLength(1);
+    s(owner).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Finished",
+    });
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const expired = s(owner)
+      .getMessages(chat.id)
+      .find((message) => message.id === first.id)!;
+    expect(expired.metadata?.queryResultRetention).toEqual({
+      version: 1,
+      level: "omitted",
+    });
+    expect(JSON.parse(expired.content!).agentQueryPreview.results[0]).toEqual({
+      receivedRows: 1,
+      retainedRows: 0,
+    });
+    expect(JSON.parse(expired.content!).response.results[0].rows).toEqual([]);
+    s(follower).renameChat(other.id, "Renamed after expiry");
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName(workspaceName);
+    expect(
+      s(reloaded)
+        .getMessages(chat.id)
+        .find((message) => message.id === first.id)?.metadata
+        ?.queryResultRetention?.level
+    ).toBe("omitted");
+    s(owner).setAbortController(chat.id, null);
+    await s(owner).flushRunPersistence();
+  });
+  test("retains in-memory rows and stored bytes when both quota writes fail, then retries saving only", async () => {
+    const { store, chat } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const before = mockStorage.getItem(key);
+    s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      toolCalls: [
+        {
+          id: "query-full",
+          name: "call_api",
+          arguments: JSON.stringify({
+            operationId: "SQLService/Query",
+            body: {
+              name: "instances/example/databases/sample",
+              statement: "SELECT first_name FROM employee",
+            },
+          }),
+        },
+      ],
+    });
+    const content = JSON.stringify({
+      status: 200,
+      response: {
+        appliedAccessGrant: "projects/sample/accessGrants/7",
+        results: [
+          {
+            columnNames: ["first_name"],
+            rows: [{ values: [{ stringValue: "x".repeat(60_000) }] }],
+          },
+        ],
+      },
+    });
+    const result = s(store).addMessage({
+      chatId: chat.id,
+      role: "tool",
+      toolCallId: "query-full",
+      content,
+    })!;
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new DOMException(
+        "Other app data exhausted quota",
+        "QuotaExceededError"
+      );
+    });
+    try {
+      expect(await s(store).flushRunPersistence()).toBe(false);
+      expect(write).toHaveBeenCalledTimes(2);
+      expect(mockStorage.getItem(key)).toBe(before);
+      expect(
+        s(store)
+          .getMessages(chat.id)
+          .find((message) => message.id === result.id)?.content
+      ).toBe(content);
+      expect(
+        s(store)
+          .getMessages(chat.id)
+          .find((message) => message.id === result.id)?.metadata
+          ?.queryResultRetention
+      ).toBeUndefined();
+      write.mockRestore();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      expect(
+        s(store)
+          .getMessages(chat.id)
+          .filter((message) => message.id === result.id)
+      ).toHaveLength(1);
+      const saved = stateStorage.parseAgentStoredState(
+        mockStorage.getItem(key)!
+      ) as {
+        messagesByChatId: Record<string, { id: string; content: string }[]>;
+      };
+      const savedResult = saved.messagesByChatId[chat.id].find(
+        (message) => message.id === result.id
+      )!;
+      expect(JSON.parse(savedResult.content).response.appliedAccessGrant).toBe(
+        "projects/sample/accessGrants/7"
+      );
+      expect(s(store).storagePressure).toBeUndefined();
+    } finally {
+      write.mockRestore();
+    }
+  });
+  test("serializes two scopes at the shared ceiling without reading their contents", async () => {
+    const encode = vi
+      .spyOn(stateStorage, "encodeAgentStoredState")
+      .mockImplementation((json) => json);
+    const one = await create();
+    const two = createAgentStore();
+    s(two).setWorkspaceName("workspaces/other");
+    const secondChat = s(two).createChat();
+    expect(await s(two).flushRunPersistence()).toBe(true);
+    s(one.store).addMessage({
+      chatId: one.chat.id,
+      role: "user",
+      content: "a".repeat(850_000),
+    });
+    s(two).addMessage({
+      chatId: secondChat.id,
+      role: "user",
+      content: "b".repeat(850_000),
+    });
+    try {
+      const results = await Promise.all([
+        s(one.store).flushRunPersistence(),
+        s(two).flushRunPersistence(),
+      ]);
+      expect(results.filter(Boolean)).toHaveLength(1);
+      expect(estimateAgentStorageBytes(mockStorage)).toBeLessThanOrEqual(
+        3 * 1024 * 1024
+      );
+      const failed = results[0] ? two : one.store;
+      expect(s(failed).storagePressure?.reason).toBe("budget");
+      expect(
+        s(failed)
+          .getMessages(results[0] ? secondChat.id : one.chat.id)
+          .at(-1)?.content?.length
+      ).toBe(850_000);
+    } finally {
+      encode.mockRestore();
+    }
   });
   test.each([
     { name: "workspace-only", key: `${AGENT_STATE_KEY}.recovery` },
@@ -1341,6 +1636,213 @@ describe("durable run recovery", () => {
     expect(s(store).getChat(chat.id)?.runBudget).toEqual(budget);
     expect(s(store).getMessages(chat.id)).toHaveLength(count);
     expect(s(store).getChat(chat.id)?.interruptionReason).toBe("unexpected");
+  });
+  test("retains the actual storage failure until run persistence recovers", async () => {
+    const { store } = await restoredWorkingRun();
+    const failure = new DOMException(
+      "Browser storage is full",
+      "QuotaExceededError"
+    );
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw failure;
+    });
+    try {
+      expect(await s(store).flushRunPersistence()).toBe(false);
+      expect(s(store).getRunPersistenceError()).toBe(failure);
+      expect(await s(store).flushRunPersistence()).toBe(false);
+      expect(s(store).getRunPersistenceError()).toBe(failure);
+      write.mockRestore();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      expect(s(store).getRunPersistenceError()).toBeUndefined();
+    } finally {
+      write.mockRestore();
+    }
+  });
+  test("saves quota-exceeding history losslessly and rebases another tab after reload", async () => {
+    const { store, chat } = await create();
+    const history = s(store).addMessage({
+      chatId: chat.id,
+      role: "tool",
+      toolCallId: "query-result",
+      content: JSON.stringify({
+        results: Array.from({ length: 1000 }, (_, index) => ({
+          id: index,
+          name: "Example name",
+          email: "member@example.com",
+        })),
+      }),
+    })!;
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const key = getAgentStateKey(workspaceName);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    const capacity = mockStorage.getItem(key)!.length + 100;
+    const setItem = mockStorage.setItem.bind(mockStorage);
+    const write = vi
+      .spyOn(mockStorage, "setItem")
+      .mockImplementation((name, value) => {
+        if (name === key && value.length > capacity)
+          throw new DOMException(
+            "Storage quota exceeded",
+            "QuotaExceededError"
+          );
+        setItem(name, value);
+      });
+    try {
+      const latest = s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "How can I access the unmasked name?",
+      })!;
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      expect(mockStorage.getItem(key)!.length).toBeLessThan(capacity);
+      s(follower).renameChat(chat.id, "Unmask names");
+      expect(await s(follower).flushRunPersistence()).toBe(true);
+      const parse = vi
+        .spyOn(stateStorage, "parseAgentStoredState")
+        .mockImplementation(JSON.parse);
+      const persist = vi
+        .spyOn(stateStorage, "writeAgentStoredState")
+        .mockImplementation((storage, name, value) => {
+          storage.setItem(name, value);
+          return value;
+        });
+      try {
+        const olderReader = createAgentStore();
+        s(olderReader).setWorkspaceName(workspaceName);
+        expect(
+          s(olderReader)
+            .getMessages(chat.id)
+            .map(({ id }) => id)
+        ).toEqual(
+          s(store)
+            .getMessages(chat.id)
+            .map(({ id }) => id)
+        );
+        s(olderReader).renameChat(chat.id, "Request unmask");
+        expect(await s(olderReader).flushRunPersistence()).toBe(true);
+      } finally {
+        parse.mockRestore();
+        persist.mockRestore();
+      }
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(await s(reloaded).flushRunPersistence()).toBe(true);
+      expect(s(reloaded).getMessages(chat.id)).toEqual([
+        expect.anything(),
+        history,
+        latest,
+      ]);
+      expect(s(reloaded).getChat(chat.id)?.title).toBe("Request unmask");
+      expect(s(store).getMessages(chat.id)).toEqual(
+        s(reloaded).getMessages(chat.id)
+      );
+      await withAgentRunLease(key, chat.id, async () => {
+        const runId = await s(reloaded).beginChatRun(
+          chat.id,
+          latest.id,
+          bindings
+        );
+        expect(runId).toBeTruthy();
+        expect(
+          await s(reloaded).reserveChatRunAttempt(chat.id, runId!)
+        ).toMatchObject({ kind: "allowed", ordinal: 1 });
+      });
+      expect(
+        s(reloaded)
+          .getMessages(chat.id)
+          .find((message) => message.id === history.id)
+      ).toEqual(history);
+    } finally {
+      write.mockRestore();
+    }
+  });
+  test.each(["initial", "reload"])(
+    "does not overwrite unreadable history after %s hydration",
+    async (hydrate) => {
+      const { store, chat } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const saved = JSON.parse(mockStorage.getItem(key)!);
+      saved.messagesByChatId[chat.id][0].content =
+        "[bb-agent-compressed-content-v1]";
+      saved.messagesByChatId[chat.id][0].metadata = {
+        agentCompressedContent: { version: 1, value: "" },
+      };
+      const unreadable = JSON.stringify(saved);
+      mockStorage.setItem(key, unreadable);
+      const reader = hydrate === "initial" ? createAgentStore() : store;
+      if (hydrate === "initial") s(reader).setWorkspaceName(workspaceName);
+      else s(reader).loadState();
+      s(reader).createChat();
+      expect(await s(reader).flushRunPersistence()).toBe(false);
+      expect(mockStorage.getItem(key)).toBe(unreadable);
+    }
+  );
+  test("preserves pending approval and run accounting when history needs compression", async () => {
+    const { store, chat, runId } = await restoredPendingApproval();
+    const key = getAgentStateKey(workspaceName);
+    const pendingAsk = s(store).getPendingAsk(chat.id)!;
+    await withAgentRunLease(key, chat.id, async () => {
+      expect(await s(store).recoverPendingAsk(chat.id, runId)).toBe(true);
+      s(store).setChatStatus(chat.id, "running");
+      const reserved = await s(store).reserveChatRunAttempt(chat.id, runId);
+      if (reserved.kind !== "allowed") throw new Error("Expected allowance");
+      await s(store).recordChatModelAttempt(chat.id, {
+        ...reserved,
+        runId,
+        outcome: "response",
+        usage: {
+          purpose: "agent",
+          toolNames: ["ask_user"],
+          totalTokens: 41_266,
+        },
+      });
+      s(store).awaitUser(chat.id, pendingAsk);
+    });
+    const other = s(store).createChat({ select: false });
+    s(store).addMessage({
+      chatId: other.id,
+      role: "assistant",
+      content: "Stored history ".repeat(3000),
+    });
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const before = s(store).getChat(chat.id)!;
+    const messages = s(store).getMessages(chat.id);
+    const ask = s(store).getPendingAsk(chat.id);
+    const capacity = mockStorage.getItem(key)!.length + 100;
+    const setItem = mockStorage.setItem.bind(mockStorage);
+    const write = vi
+      .spyOn(mockStorage, "setItem")
+      .mockImplementation((name, value) => {
+        if (name === key && value.length > capacity)
+          throw new DOMException(
+            "Storage quota exceeded",
+            "QuotaExceededError"
+          );
+        setItem(name, value);
+      });
+    try {
+      s(store).addMessage({
+        chatId: other.id,
+        role: "assistant",
+        content: "Additional stored history ".repeat(100),
+      });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      expect(s(reloaded).getPendingAsk(chat.id)).toEqual(ask);
+      expect(s(reloaded).getMessages(chat.id)).toEqual(messages);
+      expect(s(reloaded).getChat(chat.id)).toMatchObject({
+        runId,
+        status: "awaiting_user",
+        runBudget: before.runBudget,
+        modelAttempts: before.modelAttempts,
+        runCheckpoint: before.runCheckpoint,
+      });
+    } finally {
+      write.mockRestore();
+    }
   });
   test.each(["paused", "error", "idle", "completed"] as const)(
     "clears abandoned %s ownership without changing the saved outcome",
@@ -5197,6 +5699,124 @@ describe("useAgentStore (Zustand)", () => {
     });
   });
 
+  test("preserves custom-input option metadata after rehydration", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chatId = s(store).currentChatId!;
+    const options = [
+      { label: "In one hour", value: "one-hour" },
+      {
+        label: "Custom",
+        value: "custom-expiration",
+        kind: "custom-input" as const,
+        placeholder: "Date, time, and timezone",
+      },
+    ];
+    s(store).awaitUser(chatId, {
+      toolCallId: "expiry",
+      kind: "choose",
+      prompt: "When?",
+      options,
+    });
+    const restored = createAgentStore();
+    s(restored).setWorkspaceName("workspaces/acme");
+    expect(s(restored).getPendingAsk(chatId)?.options).toEqual(options);
+    expect(s(restored).getPendingAsk(chatId)?.options?.[0]).not.toHaveProperty(
+      "kind"
+    );
+  });
+
+  test.each(["workspaces/acme", "projects/orders"])(
+    "preserves verified pending resource project after rehydration in %s",
+    (context) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/acme");
+      const chat = s(store).createChat({ context });
+      s(store).awaitUser(chat.id, {
+        toolCallId: "scope",
+        kind: "choose",
+        prompt: "Which database?",
+        resourceProject: "projects/orders",
+        options: [
+          {
+            label: "Another database",
+            value: "another-database",
+            kind: "custom-input",
+          },
+        ],
+      });
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName("workspaces/acme");
+      expect(s(restored).getPendingAsk(chat.id)?.resourceProject).toBe(
+        "projects/orders"
+      );
+    }
+  );
+
+  test.each([
+    { context: "workspaces/acme", resourceProject: "projects/-" },
+    { context: "workspaces/acme", resourceProject: "orders" },
+    { context: "workspaces/acme", resourceProject: "projects/orders/extra" },
+    { context: "workspaces/acme", resourceProject: "projects/space id" },
+    { context: "workspaces/acme", resourceProject: null },
+    { context: "projects/other", resourceProject: "projects/orders" },
+  ])(
+    "discards invalid or mismatched pending resource project %j",
+    ({ context, resourceProject }) => {
+      localStorage.setItem(
+        getAgentStateKey("workspaces/acme"),
+        JSON.stringify({
+          currentChatId: "scope-chat",
+          chats: [{ id: "scope-chat", context, status: "awaiting_user" }],
+          pendingAskByChatId: {
+            "scope-chat": {
+              toolCallId: "scope",
+              kind: "input",
+              prompt: "Which database?",
+              resourceProject,
+            },
+          },
+        })
+      );
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName("workspaces/acme");
+      expect(s(restored).getPendingAsk("scope-chat")).not.toHaveProperty(
+        "resourceProject"
+      );
+    }
+  );
+
+  test.each([
+    { kind: "custom" },
+    { kind: 1 },
+    { placeholder: "Enter details" },
+    { kind: "custom-input", placeholder: 1 },
+  ])("discards malformed persisted custom-input options %j", (metadata) => {
+    localStorage.setItem(
+      getAgentStateKey("workspaces/acme"),
+      JSON.stringify({
+        currentChatId: "chat-expiry",
+        chats: [{ id: "chat-expiry", status: "awaiting_user" }],
+        pendingAskByChatId: {
+          "chat-expiry": {
+            toolCallId: "expiry",
+            kind: "choose",
+            prompt: "When?",
+            options: [
+              { label: "In one hour", value: "one-hour" },
+              { label: "Custom", value: "custom-expiration", ...metadata },
+            ],
+          },
+        },
+      })
+    );
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    expect(s(store).getPendingAsk("chat-expiry")?.options).toEqual([
+      { label: "In one hour", value: "one-hour" },
+    ]);
+  });
+
   test("answerPendingAsk appends a synthetic tool result and clears pending state", () => {
     const store = createAgentStore();
     const chatId = s(store).currentChatId!;
@@ -5362,6 +5982,68 @@ describe("useAgentStore (Zustand)", () => {
     });
     expect(s(store).getPendingAsk(chatId)).toBeNull();
   });
+
+  test("answerPendingAsk normalizes custom-input details into one choice response", () => {
+    const store = createAgentStore();
+    const chatId = s(store).currentChatId!;
+    s(store).awaitUser(chatId, {
+      toolCallId: "expiry",
+      prompt: "When?",
+      kind: "choose",
+      options: [
+        {
+          label: "Custom expiration",
+          value: "custom-expiration",
+          kind: "custom-input",
+        },
+      ],
+    });
+    const message = s(store).answerPendingAsk(chatId, {
+      kind: "choose",
+      answer: "Custom expiration",
+      value: "custom-expiration",
+      input: "  tomorrow at 17:00 UTC  ",
+    });
+    expect(JSON.parse(message?.content ?? "{}")).toEqual({
+      kind: "choose",
+      answer: "Custom expiration: tomorrow at 17:00 UTC",
+      value: "custom-expiration",
+      input: "tomorrow at 17:00 UTC",
+    });
+    expect(s(store).getPendingAsk(chatId)).toBeNull();
+    expect(s(store).getMessages(chatId)).toHaveLength(1);
+  });
+
+  test.each([
+    { value: "custom-expiration", input: undefined },
+    { value: "custom-expiration", input: "   " },
+    { value: "one-hour", input: "tomorrow" },
+    { value: "unknown", input: undefined },
+  ])(
+    "answerPendingAsk rejects invalid custom-input submission %j",
+    (response) => {
+      const store = createAgentStore();
+      const chatId = s(store).currentChatId!;
+      s(store).awaitUser(chatId, {
+        toolCallId: "expiry",
+        prompt: "When?",
+        kind: "choose",
+        options: [
+          { label: "In one hour", value: "one-hour" },
+          { label: "Custom", value: "custom-expiration", kind: "custom-input" },
+        ],
+      });
+      expect(
+        s(store).answerPendingAsk(chatId, {
+          kind: "choose",
+          answer: "Custom",
+          ...response,
+        })
+      ).toBeNull();
+      expect(s(store).getPendingAsk(chatId)?.toolCallId).toBe("expiry");
+      expect(s(store).getMessages(chatId)).toHaveLength(0);
+    }
+  );
 
   test("migrates persisted chats without archived state", () => {
     localStorage.setItem(
@@ -7156,5 +7838,628 @@ describe("cross-tab Agent browser events", () => {
       s(writer).getMessages(chatId)
     );
     expect(s(useAgentStore).getChat(chatId)?.totalTokensUsed).toBe(17);
+  });
+});
+
+describe("automatic history cleanup integration", () => {
+  type Request = {
+    name: string;
+    mode: LockMode;
+    action: (lock: Lock | null) => unknown;
+    resolve: (value: unknown) => void;
+    reject: (reason: unknown) => void;
+    signal?: AbortSignal;
+    onAbort?: () => void;
+  };
+
+  const createLockManager = () => {
+    const held: Request[] = [];
+    const pending: Request[] = [];
+    const checkpoints: {
+      name: string;
+      entered: () => void;
+      resume: () => void;
+      released: Promise<void>;
+    }[] = [];
+    const suspended = new Set<() => void>();
+    const canGrant = (request: Request) =>
+      !held.some(
+        (lock) =>
+          lock.name === request.name &&
+          (lock.mode === "exclusive" || request.mode === "exclusive")
+      );
+    const drain = () => {
+      for (const request of [...pending]) {
+        const index = pending.indexOf(request);
+        if (
+          pending.slice(0, index).some((item) => item.name === request.name) ||
+          !canGrant(request)
+        )
+          continue;
+        pending.splice(index, 1);
+        if (request.onAbort)
+          request.signal?.removeEventListener("abort", request.onAbort);
+        held.push(request);
+        const finish = () => {
+          held.splice(held.indexOf(request), 1);
+          queueMicrotask(drain);
+        };
+        Promise.resolve()
+          .then(async () => {
+            const index = checkpoints.findIndex(
+              (checkpoint) =>
+                checkpoint.name === request.name && request.mode === "exclusive"
+            );
+            if (index >= 0) {
+              const checkpoint = checkpoints.splice(index, 1)[0];
+              checkpoint.entered();
+              await checkpoint.released;
+              suspended.delete(checkpoint.resume);
+            }
+            return request.action({ name: request.name, mode: request.mode });
+          })
+          .then(
+            (value) => {
+              finish();
+              request.resolve(value);
+            },
+            (error) => {
+              finish();
+              request.reject(error);
+            }
+          );
+      }
+    };
+    return {
+      pauseNextExclusive: (name: string) => {
+        let entered!: () => void;
+        let resume!: () => void;
+        const reached = new Promise<void>((resolve) => {
+          entered = resolve;
+        });
+        const released = new Promise<void>((resolve) => {
+          resume = resolve;
+        });
+        checkpoints.push({ name, entered, resume, released });
+        suspended.add(resume);
+        return { reached, resume };
+      },
+      resumeAll: () => {
+        for (const resume of suspended) resume();
+        suspended.clear();
+        checkpoints.length = 0;
+      },
+      request: (
+        name: string,
+        options: LockOptions,
+        action: (lock: Lock | null) => unknown
+      ) =>
+        new Promise((resolve, reject) => {
+          if (options.signal?.aborted) {
+            reject(options.signal.reason);
+            return;
+          }
+          const request: Request = {
+            name,
+            mode: options.mode ?? "exclusive",
+            action,
+            resolve,
+            reject,
+            signal: options.signal,
+          };
+          if (
+            options.ifAvailable &&
+            (!canGrant(request) || pending.some((item) => item.name === name))
+          ) {
+            Promise.resolve()
+              .then(() => action(null))
+              .then(resolve, reject);
+            return;
+          }
+          request.onAbort = () => {
+            const index = pending.indexOf(request);
+            if (index < 0) return;
+            pending.splice(index, 1);
+            reject(options.signal?.reason);
+            queueMicrotask(drain);
+          };
+          options.signal?.addEventListener("abort", request.onAbort, {
+            once: true,
+          });
+          pending.push(request);
+          queueMicrotask(drain);
+        }),
+      query: async () => ({
+        held: held.map(({ name, mode }) => ({ name, mode, clientId: "test" })),
+        pending: pending.map(({ name, mode }) => ({
+          name,
+          mode,
+          clientId: "test",
+        })),
+      }),
+    };
+  };
+
+  const workspaceName = "workspaces/history-cleanup";
+  const stores: StoreApi<AgentState>[] = [];
+  let locks: ReturnType<typeof createLockManager>;
+  let cleanupTriggerBytes: number;
+  let cleanupTargetBytes: number;
+
+  beforeEach(async () => {
+    stores.length = 0;
+    vi.stubGlobal("sessionStorage", createMockStorage());
+    locks = createLockManager();
+    vi.stubGlobal("navigator", { locks });
+    vi.spyOn(stateStorage, "encodeAgentStoredState").mockImplementation(
+      (json) => json
+    );
+    let timestamp = 1_000;
+    vi.spyOn(Date, "now").mockImplementation(() => ++timestamp);
+    const budget = await import("./storageBudget");
+    cleanupTriggerBytes = budget.AGENT_STORAGE_CLEANUP_TRIGGER_BYTES;
+    cleanupTargetBytes = budget.AGENT_STORAGE_CLEANUP_TARGET_BYTES;
+  });
+
+  afterEach(async () => {
+    locks.resumeAll();
+    await Promise.all(stores.map((store) => s(store).flushRunPersistence()));
+    for (const store of stores) store.getState().setWorkspaceName(undefined);
+    await vi.waitFor(async () => {
+      const snapshot = await locks.query();
+      const scope = JSON.stringify(getAgentStateKey(workspaceName));
+      expect(snapshot.held.filter((lock) => lock.name.includes(scope))).toEqual(
+        []
+      );
+      expect(
+        snapshot.pending.filter((lock) => lock.name.includes(scope))
+      ).toEqual([]);
+    });
+    vi.restoreAllMocks();
+  });
+
+  const create = () => {
+    const store = createAgentStore();
+    stores.push(store);
+    s(store).setWorkspaceName(workspaceName);
+    return store;
+  };
+
+  const addHistory = (store: StoreApi<AgentState>, contentSize: number) => {
+    const chat = s(store).createChat({
+      title: "Completed history",
+      select: false,
+    });
+    s(store).addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "h".repeat(contentSize),
+    });
+    return chat;
+  };
+
+  const persisted = () =>
+    stateStorage.parseAgentStoredState(
+      mockStorage.getItem(getAgentStateKey(workspaceName))!
+    ) as import("./agent").PersistedAgentState;
+
+  test("retains more than fifty small completed chats below the size trigger", async () => {
+    const store = create();
+    s(store).createChat({ title: "Current chat" });
+    const history = Array.from({ length: 75 }, () => addHistory(store, 10));
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(estimateAgentStorageBytes(mockStorage)).toBeLessThan(
+      cleanupTriggerBytes
+    );
+    expect(persisted().chats.map((chat) => chat.id)).toEqual(
+      expect.arrayContaining(history.map((chat) => chat.id))
+    );
+  });
+
+  test("proactively removes oldest completed history to the size target without clearing the current draft", async () => {
+    const store = create();
+    const current = s(store).createChat({ title: "Current chat" });
+    s(store).setDraft(current.id, { text: "Keep composing" });
+    const history = Array.from({ length: 3 }, () => addHistory(store, 360_000));
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(s(store).getChat(history[0].id)).toBeNull();
+    expect(s(store).getChat(history[1].id)).not.toBeNull();
+    expect(s(store).getChat(history[2].id)).not.toBeNull();
+    expect(persisted().chats.map((chat) => chat.id)).not.toContain(
+      history[0].id
+    );
+    expect(estimateAgentStorageBytes(mockStorage)).toBeLessThanOrEqual(
+      cleanupTargetBytes
+    );
+    expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+    expect(s(store).getDraft(current.id).text).toBe("Keep composing");
+    expect(s(store).storagePressure).toBeUndefined();
+  });
+
+  test("compresses an oversized raw history below the target before evicting a conversation", async () => {
+    const store = create();
+    s(store).createChat({ title: "Current chat" });
+    const history = addHistory(store, 1);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const raw = persisted();
+    const content = "h".repeat(950_000);
+    raw.messagesByChatId[history.id][0].content = content;
+    const key = getAgentStateKey(workspaceName);
+    mockStorage.setItem(key, JSON.stringify(raw));
+    expect(estimateAgentStorageBytes(mockStorage)).toBeGreaterThan(
+      cleanupTriggerBytes
+    );
+    vi.mocked(stateStorage.encodeAgentStoredState).mockRestore();
+
+    s(store).loadState();
+    expect(await s(store).flushRunPersistence()).toBe(true);
+
+    expect(stateStorage.isCompressedAgentState(mockStorage.getItem(key))).toBe(
+      true
+    );
+    expect(estimateAgentStorageBytes(mockStorage)).toBeLessThanOrEqual(
+      cleanupTargetBytes
+    );
+    expect(s(store).getChat(history.id)).not.toBeNull();
+    expect(persisted().messagesByChatId[history.id][0].content).toBe(content);
+  });
+
+  test("preserves a completed chat open in another tab while cleaning an unselected chat", async () => {
+    const owner = create();
+    const current = s(owner).createChat({ title: "Current chat" });
+    const openHistory = addHistory(owner, 480_000);
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const follower = create();
+    s(follower).setCurrentChat(openHistory.id);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    const deletable = addHistory(owner, 480_000);
+
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    expect(s(owner).getChat(openHistory.id)).not.toBeNull();
+    expect(s(owner).getChat(deletable.id)).toBeNull();
+    expect(persisted().chats.map((chat) => chat.id)).toContain(openHistory.id);
+    expect(persisted().chats.map((chat) => chat.id)).not.toContain(
+      deletable.id
+    );
+    expect(s(owner).currentChatId).toBe(current.id);
+    expect(s(follower).currentChatId).toBe(openHistory.id);
+  });
+
+  test("rechecks the locked size before a second tab commits a stale cleanup plan", async () => {
+    const owner = create();
+    s(owner).createChat({ title: "Current chat" });
+    const first = addHistory(owner, 360_000);
+    const second = addHistory(owner, 360_000);
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const follower = create();
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    const lockName = (id: string) =>
+      `bb-agent-chat-protection:${JSON.stringify(getAgentStateKey(workspaceName))}:${JSON.stringify(id)}`;
+    const ownerCommit = locks.pauseNextExclusive(lockName(first.id));
+    const followerCommit = locks.pauseNextExclusive(lockName(second.id));
+    const third = addHistory(owner, 360_000);
+    const ownerFlush = s(owner).flushRunPersistence();
+    await ownerCommit.reached;
+    const followerFlush = s(follower).flushRunPersistence();
+    await followerCommit.reached;
+
+    ownerCommit.resume();
+    expect(await ownerFlush).toBe(true);
+    expect(estimateAgentStorageBytes(mockStorage)).toBeLessThanOrEqual(
+      cleanupTargetBytes
+    );
+    followerCommit.resume();
+    expect(await followerFlush).toBe(true);
+
+    expect(persisted().chats.map((chat) => chat.id)).not.toContain(first.id);
+    expect(persisted().chats.map((chat) => chat.id)).toEqual(
+      expect.arrayContaining([second.id, third.id])
+    );
+    expect(s(follower).getChat(second.id)).not.toBeNull();
+  });
+
+  test("keeps dirty outcomes and drafts protected after pagehide while another tab cleans", async () => {
+    const owner = create();
+    const current = s(owner).createChat({ title: "Owner current chat" });
+    const dirty = addHistory(owner, 360_000);
+    const drafted = addHistory(owner, 180_000);
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const follower = create();
+    s(follower).createChat({ title: "Follower current chat" });
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    const originalWrite = mockStorage.setItem.bind(mockStorage);
+    const write = vi
+      .spyOn(mockStorage, "setItem")
+      .mockImplementation((key, value) => {
+        if (value.includes("unsaved-completed-operation"))
+          throw new DOMException("Browser quota is full", "QuotaExceededError");
+        originalWrite(key, value);
+      });
+    const outcome = s(owner).addMessage({
+      chatId: dirty.id,
+      role: "tool",
+      toolCallId: "unsaved-completed-operation",
+      content: "The operation completed before saving failed.",
+    })!;
+    s(owner).setDraft(drafted.id, { text: "Keep this background draft" });
+    expect(await s(owner).flushRunPersistence()).toBe(false);
+
+    s(owner).releaseChatProtection();
+    await vi.waitFor(async () => {
+      const claims = (await locks.query()).held.filter(
+        (lock) => lock.mode === "shared"
+      );
+      for (const chat of [dirty, drafted])
+        expect(
+          claims.some((lock) => lock.name.endsWith(JSON.stringify(chat.id)))
+        ).toBe(true);
+      expect(
+        claims.some((lock) => lock.name.endsWith(JSON.stringify(current.id)))
+      ).toBe(false);
+    });
+    const deletable = addHistory(follower, 480_000);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+
+    expect(persisted().chats.map((chat) => chat.id)).toEqual(
+      expect.arrayContaining([dirty.id, drafted.id])
+    );
+    expect(persisted().chats.map((chat) => chat.id)).not.toContain(
+      deletable.id
+    );
+    expect(
+      s(owner)
+        .getMessages(dirty.id)
+        .find((message) => message.id === outcome.id)?.content
+    ).toBe(outcome.content);
+    expect(s(owner).getDraft(drafted.id).text).toBe(
+      "Keep this background draft"
+    );
+    expect(
+      persisted().messagesByChatId[dirty.id].some(
+        (message) => message.id === outcome.id
+      )
+    ).toBe(false);
+    write.mockRestore();
+    s(owner).refreshChatProtection();
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    expect(
+      persisted().messagesByChatId[dirty.id].filter(
+        (message) => message.id === outcome.id
+      )
+    ).toHaveLength(1);
+  });
+
+  test.each([
+    { name: "text", draft: { text: "Unsent question" } },
+    {
+      name: "project",
+      draft: {
+        text: "",
+        project: { name: "projects/example", title: "Example" },
+      },
+    },
+    {
+      name: "resource",
+      draft: {
+        text: "",
+        resource: {
+          kind: "project" as const,
+          name: "projects/example",
+          project: "projects/example",
+          label: "Example",
+        },
+      },
+    },
+    {
+      name: "mentions",
+      draft: {
+        text: "@Example",
+        mentions: [
+          {
+            resource: {
+              kind: "project" as const,
+              name: "projects/example",
+              project: "projects/example",
+              label: "Example",
+            },
+            range: { start: 0, end: 8 },
+          },
+        ],
+      },
+    },
+  ])(
+    "preserves every non-current $name draft instead of deleting its history",
+    async ({ draft }) => {
+      const store = create();
+      s(store).createChat({ title: "Current chat" });
+      const history = Array.from({ length: 3 }, () =>
+        addHistory(store, 360_000)
+      );
+      for (const chat of history) s(store).setDraft(chat.id, draft);
+      const drafts = history.map((chat) => s(store).getDraft(chat.id));
+
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+      for (const [index, chat] of history.entries()) {
+        expect(s(store).getChat(chat.id)).not.toBeNull();
+        expect(s(store).getDraft(chat.id)).toEqual(drafts[index]);
+        expect(persisted().chats.map((item) => item.id)).toContain(chat.id);
+      }
+      expect(s(store).storagePressure?.phase).toBe("admission");
+    }
+  );
+
+  test("recovers a native quota failure below the app budget by removing completed history", async () => {
+    const store = create();
+    const current = s(store).createChat({ title: "Current chat" });
+    const history = addHistory(store, 180_000);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const originalWrite = mockStorage.setItem.bind(mockStorage);
+    let quotaFailures = 0;
+    vi.spyOn(mockStorage, "setItem").mockImplementation((key, value) => {
+      if (estimateAgentStorageBytes(mockStorage, { key, value }) > 500_000) {
+        quotaFailures++;
+        throw new DOMException("Browser quota is full", "QuotaExceededError");
+      }
+      originalWrite(key, value);
+    });
+    const outcome = s(store).addMessage({
+      chatId: current.id,
+      role: "tool",
+      toolCallId: "completed-operation",
+      content: "o".repeat(100_000),
+    })!;
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(quotaFailures).toBeGreaterThan(0);
+    expect(s(store).getChat(history.id)).toBeNull();
+    expect(
+      persisted().messagesByChatId[current.id].filter(
+        (message) => message.id === outcome.id
+      )
+    ).toHaveLength(1);
+    expect(
+      s(store)
+        .getMessages(current.id)
+        .find((message) => message.id === outcome.id)?.content
+    ).toBe(outcome.content);
+    expect(estimateAgentStorageBytes(mockStorage)).toBeLessThanOrEqual(500_000);
+    expect(s(store).storagePressure).toBeUndefined();
+  });
+
+  test("does not publish failed automatic deletions and retries saving the returned outcome without losing the draft", async () => {
+    const store = create();
+    const current = s(store).createChat({ title: "Current chat" });
+    const history = addHistory(store, 1200);
+    s(store).setDraft(current.id, { text: "Keep composing" });
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const key = getAgentStateKey(workspaceName);
+    const before = mockStorage.getItem(key);
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("Browser quota is full", "QuotaExceededError");
+    });
+    const outcome = s(store).addMessage({
+      chatId: current.id,
+      role: "tool",
+      toolCallId: "completed-operation",
+      content: "Already returned",
+    })!;
+
+    expect(await s(store).flushRunPersistence()).toBe(false);
+    expect(s(store).getChat(history.id)).not.toBeNull();
+    expect(mockStorage.getItem(key)).toBe(before);
+    expect(s(store).getDraft(current.id).text).toBe("Keep composing");
+    expect(s(store).storagePressure?.reason).toBe("quota");
+    write.mockRestore();
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(s(store).getChat(history.id)).not.toBeNull();
+    expect(
+      persisted().messagesByChatId[current.id].filter(
+        (message) => message.id === outcome.id
+      )
+    ).toEqual([outcome]);
+    expect(s(store).getDraft(current.id).text).toBe("Keep composing");
+    expect(s(store).storagePressure).toBeUndefined();
+  });
+
+  test("automatically saves an already-returned outcome with an atomic batch when one history deletion is insufficient", async () => {
+    const store = create();
+    const current = s(store).createChat({ title: "Current chat" });
+    const history = Array.from({ length: 3 }, () => addHistory(store, 1200));
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const key = getAgentStateKey(workspaceName);
+    const before = mockStorage.getItem(key)!;
+    const originalWrite = mockStorage.setItem.bind(mockStorage);
+    let failedDeletion = false;
+    vi.spyOn(mockStorage, "setItem").mockImplementation((name, value) => {
+      if (name === key && value.length > before.length + 100) {
+        const candidate = JSON.parse(value) as PersistedAgentState;
+        if (!candidate.chats.some((chat) => chat.id === history[0].id)) {
+          failedDeletion = true;
+          expect(s(store).getChat(history[0].id)).not.toBeNull();
+          expect(mockStorage.getItem(key)).toBe(before);
+        }
+        throw new DOMException("Browser quota is full", "QuotaExceededError");
+      }
+      originalWrite(name, value);
+    });
+    const outcome = s(store).addMessage({
+      chatId: current.id,
+      role: "tool",
+      toolCallId: "completed-operation",
+      content: "o".repeat(3600),
+    })!;
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(failedDeletion).toBe(true);
+    expect(
+      history.filter((chat) => !s(store).getChat(chat.id)).length
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      persisted().messagesByChatId[current.id].filter(
+        (message) => message.id === outcome.id
+      )
+    ).toEqual([outcome]);
+    expect(mockStorage.getItem(key)!.length).toBeLessThanOrEqual(
+      before.length + 100
+    );
+    expect(s(store).storagePressure).toBeUndefined();
+  });
+
+  test("does not delete current-scope history when foreign scopes alone exceed admission", async () => {
+    const store = create();
+    s(store).createChat({ title: "Current chat" });
+    const history = addHistory(store, 10_000);
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const otherKey = "bb-agent-state-v3.foreign-scope";
+    const foreign = "x".repeat(1_050_000);
+    mockStorage.setItem(otherKey, foreign);
+
+    expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+    expect(s(store).getChat(history.id)).not.toBeNull();
+    expect(persisted().chats.map((chat) => chat.id)).toContain(history.id);
+    expect(mockStorage.getItem(otherKey)).toBe(foreign);
+    expect(s(store).storagePressure).toMatchObject({
+      reason: "budget",
+      phase: "admission",
+    });
+  });
+
+  test("pauses admission rather than deleting a large current conversation", async () => {
+    const store = create();
+    const current = s(store).createChat({ title: "Current conversation" });
+    const message = s(store).addMessage({
+      chatId: current.id,
+      role: "user",
+      content: "c".repeat(1_050_000),
+    })!;
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+    expect(s(store).getChat(current.id)).not.toBeNull();
+    expect(persisted().messagesByChatId[current.id][0].id).toBe(message.id);
+    expect(s(store).storagePressure).toMatchObject({
+      reason: "budget",
+      phase: "admission",
+    });
+  });
+
+  test("pauses admission when only an active background run could free enough space", async () => {
+    const store = create();
+    s(store).createChat({ title: "Current conversation" });
+    const active = addHistory(store, 1_050_000);
+    s(store).setChatStatus(active.id, "running");
+
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+    expect(s(store).getChat(active.id)?.status).toBe("running");
+    expect(persisted().chats.map((chat) => chat.id)).toContain(active.id);
+    expect(s(store).storagePressure).toMatchObject({
+      reason: "budget",
+      phase: "admission",
+    });
   });
 });

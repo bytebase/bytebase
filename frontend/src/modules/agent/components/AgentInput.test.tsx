@@ -16,6 +16,7 @@ import type { AgentCallbacks, AgentLoopOptions } from "../logic/agentLoop";
 import type { createToolExecutor } from "../logic/tools";
 import type { AgentPendingAsk, ToolExecutor } from "../logic/types";
 import { withAgentRunLease } from "../logic/runOwnership";
+import { boundAgentQueryResult } from "../logic/queryResultRetention";
 import { createAgentStore, getAgentStateKey, selectError, useAgentStore } from "../store/agent";
 import {
   AgentDialog,
@@ -312,6 +313,7 @@ beforeEach(async () => {
     minimized: initialState.minimized,
     abortControllersByChatId: {},
     remoteBusyChatIds: {},
+    storagePressure: undefined,
     sqlFixSourcesByChatId: {},
     sqlFixDraftsById: {},
     preferences: {
@@ -449,6 +451,88 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  test("retries storage saving without replaying a returned operation or clearing the composer draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Update the project title" });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "completed-write", content: '{"status":200,"response":{"title":"Updated"}}' });
+    store.setChatStatus(chat.id, "error", { lastError: "QuotaExceededError: Browser storage is full" });
+    store.setDraft(chat.id, { text: "Keep my next question" });
+    const flushRunPersistence = store.flushRunPersistence;
+    const flush = vi.fn(async () => true);
+    useAgentStore.setState({ flushRunPersistence: flush, storagePressure: { reason: "quota", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    const messages = store.getMessages(chat.id);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      const status = view.container.querySelector("[data-agent-storage-status]");
+      expect(status).not.toBeNull();
+      expect(status?.closest("[data-agent-composer]")).toBeNull();
+      expect(view.container.querySelector("textarea")).not.toHaveAttribute("aria-invalid");
+      expect(screen.queryByRole("button", { name: "agent.storage.manage-history" })).toBeNull();
+      await act(async () => screen.getByRole("button", { name: "agent.storage.retry" }).click());
+      expect(flush).toHaveBeenCalledOnce();
+      expect(store.getMessages(chat.id)).toEqual(messages);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(selectError(useAgentStore.getState())).toContain("QuotaExceededError");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.aiChat).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ flushRunPersistence, storagePressure: undefined });
+    }
+  });
+
+  test("clears storage status on an identity change without changing the prior account draft", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.renameChat(chat.id, "Current account history");
+    store.setDraft(chat.id, { text: "Keep this account's draft" });
+    useAgentStore.setState({ storagePressure: { reason: "budget", phase: "admission", bytes: 2 * 1024 * 1024 + 1, limitBytes: 2 * 1024 * 1024 } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      expect(screen.getByRole("region", { name: "agent.storage.title" })).toBeVisible();
+      expect(screen.queryByRole("button", { name: "agent.storage.manage-history" })).toBeNull();
+      act(() => useAgentStore.setState({ userEmail: "other@example.com", storagePressure: undefined }));
+      expect(screen.queryByRole("region", { name: "agent.storage.title" })).toBeNull();
+      act(() => useAgentStore.setState({ userEmail: "agent@example.com" }));
+      expect(screen.queryByRole("region", { name: "agent.storage.title" })).toBeNull();
+      expect(store.getDraft(chat.id).text).toBe("Keep this account's draft");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ storagePressure: undefined });
+    }
+  });
+
+  test("blocks explicit API Allow when storage admission fails without consuming its approval", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.awaitUser(chat.id, { kind: "confirm", toolCallId: "admission-write", prompt: "Update the project?", apiPermission: { actionId: "admission-action", operationId: "bytebase.v1.ProjectService.UpdateProject" } });
+    mocks.getPendingApiCallPreview.mockReturnValue({ operationId: "bytebase.v1.ProjectService.UpdateProject", body: "{}", expiresAt: Date.now() + 300_000 });
+    const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+    const admission = vi.fn(async () => false);
+    useAgentStore.setState({ checkAgentStorageAdmission: admission });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => screen.getByRole("button", { name: "agent.api-permission-allow" }).click());
+      expect(admission).toHaveBeenCalledOnce();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getPendingAsk(chat.id)?.apiPermission?.actionId).toBe("admission-action");
+      expect(store.getChat(chat.id)?.status).toBe("awaiting_user");
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ checkAgentStorageAdmission });
+    }
+  });
+
   const openRunLimitIncrease = async (container: HTMLElement, limit: number) => {
     const increase = [...container.querySelectorAll("button")].find(button => button.textContent === "agent.token-budget.increase");
     expect(increase).toBeDefined();
@@ -526,6 +610,86 @@ describe("AgentInput", () => {
     return { store, chat };
   };
 
+  test.each([true, false])("checks storage at the managed=%s model and tool boundary before more work", async (managed) => {
+    if (managed) enableRunRecovery();
+    const store = useAgentStore.getState();
+    const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+    const admission = vi.fn(async () => true);
+    useAgentStore.setState({ checkAgentStorageAdmission: admission });
+    let allowed: boolean | undefined;
+    let boundaryAvailable = false;
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, _callbacks, _signal, options) => {
+      admission.mockResolvedValue(false);
+      const boundary = managed ? options.beforeToolExecution : options.onCheckpoint;
+      boundaryAvailable = typeof boundary === "function";
+      allowed = boundary ? await boundary({ phase: "working" }) : undefined;
+      return { kind: "completed", success: false, totalTokensUsed: 0 };
+    });
+    const chat = store.createChat({ context: "projects/orders" });
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect orders", page: { path: "/demo", title: "Demo" } });
+    if (managed) expect(await store.flushRunPersistence()).toBe(true);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => {
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(store.getChat(chat.id)?.status).toBe("idle");
+      }); });
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      expect(boundaryAvailable).toBe(true);
+      expect(allowed).toBe(false);
+      expect(admission).toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.aiChat).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ checkAgentStorageAdmission });
+    }
+  });
+
+  test("checks storage before executing a reference preflight", async () => {
+    const store = useAgentStore.getState();
+    const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+    const admission = vi.fn(async () => false);
+    useAgentStore.setState({ checkAgentStorageAdmission: admission });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+    const chat = store.createChat({ context: "projects/orders" });
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect billing", resourceReference: { kind: "project", name: "projects/billing", project: "projects/billing", label: "Billing" }, page: { path: "/demo", title: "Demo" } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+      expect(admission).toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ checkAgentStorageAdmission });
+    }
+  });
+
+  test.each(["workspace-recent", "project-open-recent", "workspace-attention", "project-open-blockers"] as const)("checks storage before the %s read-only shortcut", async (starterId) => {
+    const store = useAgentStore.getState();
+    const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+    const admission = vi.fn(async () => false);
+    useAgentStore.setState({ checkAgentStorageAdmission: admission });
+    const chat = store.createChat({ context: starterId.startsWith("workspace") ? "workspaces/demo" : "projects/orders" });
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect recent work", starterId, page: { path: "/demo", title: "Demo" } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+      expect(admission).toHaveBeenCalledOnce();
+      expect(mocks.getRecentActivity).not.toHaveBeenCalled();
+      expect(mocks.getWorkspaceAttention).not.toHaveBeenCalled();
+      expect(mocks.getProjectAttention).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ checkAgentStorageAdmission });
+    }
+  });
+
   test("does not show a continuation failure on an empty landing composer", () => {
     useAgentStore.getState().clearCurrentChat();
     const view = renderIntoContainer(<AgentInput />);
@@ -572,6 +736,39 @@ describe("AgentInput", () => {
       expect(store.getDraft(chat.id).text).toBe("Keep my next question");
       expect(mocks.runAgentLoop).not.toHaveBeenCalled();
       expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("can end an unrecoverable run below its token limit without replaying work", async () => {
+    const { store, chat } = await seedUnrecoverableRun("incomplete");
+    const runId = store.getChat(chat.id)!.runId!;
+    await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, async () => {
+      await store.reserveChatRunAttempt(chat.id, runId);
+      await store.recordChatModelAttempt(chat.id, {
+        runId, attemptId: `${runId}:1`, ordinal: 1, outcome: "response",
+        usage: { purpose: "agent", toolNames: ["ask_masking_exemption_scope"], totalTokens: 41_266 },
+      });
+    });
+    store.setChatStatus(chat.id, "error", { lastError: "Couldn't update this run. Try again." });
+    const history = store.getMessages(chat.id);
+    const budget = store.getChat(chat.id)?.runBudget;
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    try {
+      await act(async () => { retryActionRef.current?.(); });
+      expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+      await act(async () => { screen.getByRole("button", { name: "agent.token-budget.end-run" }).click(); });
+      expect(store.getChat(chat.id)).toMatchObject({ status: "idle", runId: null, totalTokensUsed: 41_266, runBudget: budget });
+      expect(store.getChat(chat.id)?.runCheckpoint).toBeUndefined();
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+      expect(view.container.querySelector<HTMLButtonElement>("[data-agent-send]")).toBeEnabled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
     } finally {
       view.unmount();
     }
@@ -1633,6 +1830,71 @@ describe("AgentInput", () => {
     }
   });
 
+  test("explains a failed question checkpoint and retries only after storage recovers", async () => {
+    enableRunRecovery();
+    const store = useAgentStore.getState();
+    const page = { path: "/projects/orders", title: "Orders" };
+    const chat = store.createChat({ context: "projects/orders", page });
+    const ask: AgentPendingAsk = {
+      kind: "choose", toolCallId: "exemption-scope", prompt: "Which databases?",
+      options: [{ value: "project", label: "All databases in this project" }],
+    };
+    let write: ReturnType<typeof vi.spyOn> | undefined;
+    mocks.runAgentLoop.mockImplementationOnce(async (_history, _tools, _executor, callbacks) => {
+      callbacks.onAssistantMessage({ role: "assistant", toolCalls: [{ id: ask.toolCallId, name: "ask_masking_exemption_scope", arguments: "{}" }] });
+      write = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+        throw new DOMException("Browser storage is full", "QuotaExceededError");
+      });
+      return { kind: "awaiting_user", ask, totalTokensUsed: 0 };
+    }).mockResolvedValueOnce({ kind: "awaiting_user", ask, totalTokensUsed: 0 });
+    store.queueUserMessage({ chatId: chat.id, text: "Let me access unmasked email.", page });
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+      expect(store.getChat(chat.id)?.lastError).toContain("QuotaExceededError: Browser storage is full");
+      const runId = store.getChat(chat.id)?.runId;
+      await act(async () => { retryActionRef.current?.(); });
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      expect(store.getChat(chat.id)?.lastError).toContain("QuotaExceededError: Browser storage is full");
+      write?.mockRestore();
+      await act(async () => screen.getByRole("button", { name: "agent.storage.retry" }).click());
+      expect(useAgentStore.getState().storagePressure).toBeUndefined();
+      expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      await act(async () => {
+        retryActionRef.current?.();
+        await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("awaiting_user"));
+      });
+      expect(store.getChat(chat.id)?.runId).toBe(runId);
+      expect(store.getPendingAsk(chat.id)).toMatchObject(ask);
+      expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+      expect(store.getMessages(chat.id).filter(message => message.role === "user")).toHaveLength(1);
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      write?.mockRestore();
+      view.unmount();
+    }
+  });
+
+  test("retains the cause of an unexpected managed run failure", async () => {
+    enableRunRecovery();
+    mocks.runAgentLoop.mockRejectedValueOnce(new Error("Unexpected run state"));
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect orders.", page: { path: "/demo", title: "Demo" } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+      expect(store.getChat(chat.id)?.lastError).toContain("Error: Unexpected run state");
+      expect(store.getChat(chat.id)?.runId).toBeTruthy();
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each(["continue", "pause"] as const)("shows a recoverable error when %s cannot persist and keeps the known transcript", async failurePoint => {
     enableRunRecovery();
     const store = useAgentStore.getState();
@@ -2075,6 +2337,117 @@ describe("AgentInput", () => {
     }
   });
 
+  test.each(["project", "workspace-mention", "workspace-scope"] as const)("binds a database mention in a custom choice reply (%s)", async (scope) => {
+    const databaseName = "instances/prod/databases/orders";
+    mocks.executeTool.mockResolvedValue({
+      kind: "tool_result",
+      result: JSON.stringify({ project: "projects/orders", database: { status: "available", name: databaseName, state: "ACTIVE" } }),
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: scope === "project" ? "projects/orders" : "workspaces/demo" });
+    store.setDraft(chat.id, { text: "Unsent next question" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help me mask email in Order service", ...(scope === "workspace-mention" ? { metadata: { resourceReference: { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Order service" } } } : {}) });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "ask-scope", name: "ask_masking_rule_scope", arguments: '{"project":"projects/orders"}' }] });
+    store.awaitUser(chat.id, {
+      toolCallId: "ask-scope", kind: "choose", prompt: "Which databases?",
+      ...(scope === "workspace-scope" ? { resourceProject: "projects/orders" } : {}),
+      options: [
+        { label: "All project databases", value: "projects/orders" },
+        { label: "Another database", value: "another-database", kind: "custom-input" },
+      ],
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      act(() => view.container.querySelectorAll<HTMLElement>('[role="radio"]')[1].click());
+      let textarea = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" });
+      expect(textarea.closest("[data-agent-composer]")).not.toBeNull();
+      await act(async () => {
+        setTextareaValue(textarea, "Use @");
+        textarea.setSelectionRange(5, 5);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+      await act(async () => document.querySelector<HTMLButtonElement>('[data-agent-resource-category="database"]')?.click());
+      await vi.waitFor(() => expect(document.querySelector(`[data-agent-resource-database="${databaseName}"]`)).not.toBeNull());
+      expect(mocks.searchAgentDatabases).toHaveBeenCalledWith("projects/orders", "", "", expect.any(AbortSignal));
+      await act(async () => document.querySelector<HTMLButtonElement>(`[data-agent-resource-database="${databaseName}"]`)?.click());
+      expect(textarea.value).toBe("Use @orders (prod) ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")?.textContent).toBe("@orders (prod)");
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+      act(() => view.container.querySelectorAll<HTMLElement>('[role="radio"]')[0].click());
+      expect(view.container.querySelector("[data-agent-composer]")).toBeNull();
+      act(() => view.container.querySelectorAll<HTMLElement>('[role="radio"]')[1].click());
+      textarea = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" });
+      expect(textarea.value).toBe("Use @orders (prod) ");
+      expect(view.container.querySelector("[data-agent-inline-mention]")).not.toBeNull();
+      const reply = view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!;
+      await act(async () => {
+        setTextareaValue(textarea, "Use @orders (prod) @unknown");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(reply).toBeDisabled();
+      await act(async () => {
+        setTextareaValue(textarea, "Use @orders (prod) ");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      await act(async () => {
+        reply.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      const response = store.getMessages(chat.id).find((message) => message.toolCallId === "ask-scope");
+      expect(JSON.parse(response?.content ?? "{}")).toEqual({ kind: "choose", answer: "Another database: Use @orders (prod)", value: "another-database", input: "Use @orders (prod)" });
+      expect(response?.metadata?.resourceReference).toEqual({ kind: "database", name: databaseName, project: "projects/orders", label: "orders (prod)" });
+      expect(mocks.createToolExecutor).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ referencedDatabase: databaseName, referencedProject: "projects/orders" }));
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("does not submit another custom choice's resource mention", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    const options = [
+      { label: "First", value: "first", kind: "custom-input" as const },
+      { label: "Second", value: "second", kind: "custom-input" as const },
+    ];
+    store.addMessage({ chatId: chat.id, role: "user", content: "Choose a value" });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "custom", name: "ask_user", arguments: JSON.stringify({ kind: "choose", prompt: "Which value?", options }) }] });
+    store.awaitUser(chat.id, { toolCallId: "custom", kind: "choose", prompt: "Which value?", options });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      act(() => view.container.querySelectorAll<HTMLElement>('[role="radio"]')[0].click());
+      const textarea = screen.getByRole<HTMLTextAreaElement>("textbox");
+      await act(async () => {
+        setTextareaValue(textarea, "@");
+        textarea.setSelectionRange(1, 1);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      expect(document.querySelector("[data-agent-resource-picker]")).not.toBeNull();
+      await act(async () => document.querySelector<HTMLButtonElement>('[data-agent-resource-category="database"]')?.click());
+      await vi.waitFor(() => expect(document.querySelector('[data-agent-resource-database="instances/prod/databases/orders"]')).not.toBeNull());
+      await act(async () => document.querySelector<HTMLButtonElement>('[data-agent-resource-database="instances/prod/databases/orders"]')?.click());
+      act(() => view.container.querySelectorAll<HTMLElement>('[role="radio"]')[1].click());
+      expect(view.container.querySelector("[data-agent-inline-mention]")).toBeNull();
+      act(() => fireEvent.change(screen.getByRole("textbox"), { target: { value: "Plain second value" } }));
+      await act(async () => {
+        view.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      const response = store.getMessages(chat.id).find((message) => message.toolCallId === "custom");
+      expect(JSON.parse(response?.content ?? "{}")).toMatchObject({ value: "second", input: "Plain second value" });
+      expect(response?.metadata?.resourceReference).toBeUndefined();
+      expect(response?.metadata?.resourceReferences).toBeUndefined();
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each([false, true])("prefills a verified database as a bound mention and revalidates it only after Reply (referenced project: %s)", async (referencedProject) => {
     const databaseName = "instances/prod/databases/orders";
     const project = referencedProject ? "projects/billing" : "projects/orders";
@@ -2360,6 +2733,172 @@ describe("AgentInput", () => {
     });
     expect(store.getDraft(chat.id).text).toBe("Keep my draft");
     view.unmount();
+  });
+
+  test("collects custom choice details inline and sends them with one Reply", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Keep my draft" });
+    store.awaitUser(chat.id, {
+      toolCallId: "delivery",
+      kind: "choose",
+      prompt: "Which delivery method?",
+      options: [
+        { label: "Default", value: "default" },
+        { label: "Another destination", value: "destination", kind: "custom-input", placeholder: "Enter a destination" },
+        { label: "Another schedule", value: "schedule", kind: "custom-input" },
+      ],
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const reply = () => [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply");
+      const choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+      expect(view.container.querySelector("textarea")).toBeNull();
+      act(() => choices[1].click());
+      const details = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" });
+      expect(view.container.querySelector("[data-agent-input-placeholder]")?.textContent).toContain("Enter a destination");
+      expect(details.closest("label")).toBeNull();
+      expect(document.activeElement).toBe(details);
+      const expectNeutralDetails = () => {
+        expect(details.hasAttribute("required")).toBe(false);
+        expect(details.hasAttribute("aria-invalid")).toBe(false);
+        expect(details.hasAttribute("aria-describedby")).toBe(false);
+        expect(screen.queryByRole("alert")).toBeNull();
+        expect(screen.queryByText("agent.custom-input-required")).toBeNull();
+      };
+      expectNeutralDetails();
+      expect(reply()?.disabled).toBe(true);
+      act(() => fireEvent.blur(details));
+      expectNeutralDetails();
+      act(() => fireEvent.change(details, { target: { value: "   " } }));
+      expect(reply()?.disabled).toBe(true);
+      expectNeutralDetails();
+      act(() => fireEvent.keyDown(details, { key: "Enter" }));
+      expectNeutralDetails();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getMessages(chat.id).some((message) => message.toolCallId === "delivery")).toBe(false);
+      act(() => fireEvent.change(details, { target: { value: "  audit@example.com  " } }));
+      expect(reply()?.disabled).toBe(false);
+      expectNeutralDetails();
+      act(() => fireEvent.change(details, { target: { value: "" } }));
+      expect(reply()?.disabled).toBe(true);
+      act(() => fireEvent.keyDown(details, { key: "Enter" }));
+      expectNeutralDetails();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(store.getPendingAsk(chat.id)?.toolCallId).toBe("delivery");
+      expect(store.getMessages(chat.id).some((message) => message.toolCallId === "delivery")).toBe(false);
+      act(() => fireEvent.change(details, { target: { value: "  audit@example.com  " } }));
+      expectNeutralDetails();
+      act(() => choices[2].click());
+      const schedule = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" });
+      expect(schedule.value).toBe("");
+      expect(view.container.querySelector("[data-agent-input-placeholder]")?.textContent).toContain("agent.custom-input-placeholder");
+      act(() => fireEvent.change(schedule, { target: { value: "Every Monday" } }));
+      act(() => choices[0].click());
+      expect(view.container.querySelector("textarea")).toBeNull();
+      expect(reply()?.disabled).toBe(false);
+      act(() => choices[1].click());
+      expect(screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" }).value).toBe("  audit@example.com  ");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      await act(async () => {
+        reply()?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "delivery")?.content ?? "{}")).toEqual({
+        kind: "choose", answer: "Another destination: audit@example.com", value: "destination", input: "audit@example.com",
+      });
+      expect(store.getDraft(chat.id).text).toBe("Keep my draft");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("does not attach inactive custom details to an ordinary choice", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.awaitUser(chat.id, {
+      toolCallId: "method", kind: "choose", prompt: "Which method?",
+      options: [
+        { label: "Standard", value: "standard" },
+        { label: "Other", value: "other", kind: "custom-input" },
+      ],
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      const choices = view.container.querySelectorAll<HTMLElement>('[role="radio"]');
+      act(() => choices[1].click());
+      act(() => fireEvent.change(screen.getByRole("textbox"), { target: { value: "Unused custom details" } }));
+      act(() => choices[0].click());
+      await act(async () => {
+        [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.reply")?.click();
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "method")?.content ?? "{}")).toEqual({ kind: "choose", answer: "Standard", value: "standard" });
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([true, false])("custom choice input honors sendWithEnter=%s without sending during composition", async (sendWithEnter) => {
+    const store = useAgentStore.getState();
+    useAgentStore.setState({ preferences: { ...store.preferences, sendWithEnter } });
+    const chat = store.createChat({ context: "projects/orders" });
+    store.awaitUser(chat.id, {
+      toolCallId: "custom", kind: "choose", prompt: "Which value?",
+      options: [{ label: "Other", value: "other", kind: "custom-input" }],
+    });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+      const details = screen.getByRole("textbox");
+      act(() => fireEvent.change(details, { target: { value: "A custom value" } }));
+      act(() => fireEvent.keyDown(details, { key: "Enter", isComposing: true, ctrlKey: !sendWithEnter }));
+      act(() => fireEvent.keyDown(details, { key: "Enter", shiftKey: true }));
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.keyDown(details, { key: "Enter", ctrlKey: !sendWithEnter });
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      expect(JSON.parse(store.getMessages(chat.id).find((message) => message.toolCallId === "custom")?.content ?? "{}").input).toBe("A custom value");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each(["question", "chat", "account"] as const)("does not reuse custom details after the %s changes", (change) => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    const ask: AgentPendingAsk = {
+      toolCallId: "custom", kind: "choose", prompt: "Which value?",
+      options: [{ label: "Other", value: "other", kind: "custom-input" }],
+    };
+    store.awaitUser(chat.id, ask);
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+      act(() => fireEvent.change(screen.getByRole("textbox"), { target: { value: "Private old details" } }));
+      act(() => {
+        if (change === "question") store.awaitUser(chat.id, { ...ask, toolCallId: "next" });
+        if (change === "chat") {
+          const other = store.createChat({ context: "projects/billing" });
+          store.awaitUser(other.id, ask);
+        }
+        if (change === "account") useAgentStore.setState({ userEmail: "another@example.com" });
+      });
+      expect(view.container.querySelector("textarea")).toBeNull();
+      act(() => view.container.querySelector<HTMLElement>('[role="radio"]')?.click());
+      expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe("");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
   });
 
   test("replaces exemption scope choices with separate unselected expiration choices after Reply", async () => {
@@ -5349,7 +5888,7 @@ describe("AgentInput", () => {
         ...draft,
         reason: "Request temporary query access to app.",
       });
-      expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(args, result);
+      expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(args, boundAgentQueryResult(result));
     } finally {
       view.unmount();
     }
@@ -5456,7 +5995,7 @@ describe("AgentInput", () => {
     } else {
       expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
         args,
-        result
+        boundAgentQueryResult(result)
       );
     }
     expect(
@@ -5574,7 +6113,7 @@ describe("AgentInput", () => {
     ).toEqual({ ...draft, reason: "Request temporary query access to app." });
     expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
       args,
-      result
+      boundAgentQueryResult(result)
     );
     view.unmount();
   });

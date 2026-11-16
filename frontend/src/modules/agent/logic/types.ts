@@ -92,6 +92,14 @@ export type AgentAttemptReservation =
   | { kind: "superseded" }
   | { kind: "storage-unavailable" };
 
+export interface AgentStoragePressure {
+  reason: "budget" | "quota" | "unavailable";
+  phase: "admission" | "saving";
+  bytes: number;
+  limitBytes: number;
+  otherScopeBytes?: number;
+}
+
 export interface AgentChatSnapshot {
   path: string;
   title: string;
@@ -187,6 +195,7 @@ export interface AgentDraft {
 }
 
 export interface AgentMessageMetadata {
+  queryResultRetention?: { version: 1; level: "omitted" };
   runPreflight?: true;
   route?: string;
   pending?: boolean;
@@ -258,12 +267,15 @@ export interface AgentAskUserOption {
   label: string;
   value: string;
   description?: string;
+  kind?: "custom-input";
+  placeholder?: string;
 }
 
 export interface AgentPendingAsk {
   toolCallId: string;
   prompt: string;
   kind: AgentAskUserKind;
+  resourceProject?: string;
   apiPermission?: {
     actionId: string;
     operationId: string;
@@ -289,6 +301,7 @@ export type AgentAskUserResponse =
       kind: "choose";
       answer: string;
       value: string;
+      input?: string;
     };
 
 export type ToolExecutionResult =

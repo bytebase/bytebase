@@ -303,6 +303,7 @@ beforeEach(async () => {
     workspaceName: "workspaces/demo",
     userEmail: "member@example.com",
     abortControllersByChatId: {},
+    storagePressure: undefined,
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
     sqlFixSourcesByChatId: {},
@@ -741,6 +742,25 @@ describe("AgentChat", () => {
       expect(onRetry).toHaveBeenCalledOnce();
     } finally {
       unmount();
+    }
+  });
+
+  test.each(["budget", "quota", "unavailable"] as const)("hides execution Retry during %s storage pressure without hiding the diagnostic error", (reason) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" });
+    store.finishChatRun(chat.id, { status: "error", lastError: "QuotaExceededError: Result not saved" });
+    useAgentStore.setState({ storagePressure: { reason, phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onRetry={onRetry} />);
+    render();
+    try {
+      expect(container.querySelector("[data-agent-error-summary]")).not.toBeNull();
+      expect(container.querySelector("[data-agent-retry]")).toBeNull();
+      expect(onRetry).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+      useAgentStore.setState({ storagePressure: undefined });
     }
   });
 

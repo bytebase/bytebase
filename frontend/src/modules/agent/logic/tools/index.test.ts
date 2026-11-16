@@ -4403,6 +4403,7 @@ describe("agent tools ask_user", () => {
             toolCallId: "scope",
             kind: "choose",
             prompt: "Which databases should this exemption cover?",
+            resourceProject: "projects/sample",
             options: [
               {
                 label: "Only orders (Production)",
@@ -4412,7 +4413,12 @@ describe("agent tools ask_user", () => {
                 label: "All databases in this project",
                 value: "projects/sample",
               },
-              { label: "Another database", value: "another-database" },
+              {
+                label: "Another database",
+                value: "another-database",
+                kind: "custom-input",
+                placeholder: "Enter a database name",
+              },
             ],
           },
         }
@@ -5240,6 +5246,191 @@ describe("agent tools ask_user", () => {
         ],
       },
     });
+  });
+
+  test("preserves custom-input option metadata", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    const option = {
+      label: " Custom date and time ",
+      value: " custom-expiration ",
+      kind: "custom-input",
+      placeholder: " Enter a date, time, and timezone ",
+    };
+    expect(
+      await executeTool(
+        "ask_user",
+        {
+          prompt: "When should access expire?",
+          kind: "choose",
+          options: [option],
+        },
+        "custom-expiration"
+      )
+    ).toMatchObject({
+      kind: "ask_user",
+      ask: {
+        options: [
+          {
+            label: "Custom date and time",
+            value: "custom-expiration",
+            kind: "custom-input",
+            placeholder: "Enter a date, time, and timezone",
+          },
+        ],
+      },
+    });
+    expect(
+      getToolDefinitions().find((tool) => tool.name === "ask_user")
+        ?.parametersSchema
+    ).toMatchObject({
+      properties: {
+        options: {
+          items: {
+            properties: {
+              kind: { enum: ["custom-input"] },
+              placeholder: { type: "string" },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  test.each([
+    { kind: "custom" },
+    { kind: 1 },
+    { placeholder: "Enter details" },
+    { kind: "custom-input", placeholder: 1 },
+  ])("rejects malformed custom-input option metadata %j", async (metadata) => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    await expect(
+      executeTool(
+        "ask_user",
+        {
+          prompt: "When should access expire?",
+          kind: "choose",
+          options: [
+            { label: "Custom", value: "custom-expiration", ...metadata },
+          ],
+        },
+        "custom-expiration"
+      )
+    ).rejects.toThrow("custom-input");
+  });
+
+  test("omits nullable custom-input metadata on ordinary choices", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    const result = await executeTool(
+      "ask_user",
+      {
+        prompt: "When?",
+        kind: "choose",
+        options: [
+          {
+            label: "One hour",
+            value: "one-hour",
+            kind: null,
+            placeholder: null,
+          },
+        ],
+      },
+      "expiry"
+    );
+    expect(result).toEqual({
+      kind: "ask_user",
+      ask: {
+        toolCallId: "expiry",
+        kind: "choose",
+        prompt: "When?",
+        options: [{ label: "One hour", value: "one-hour" }],
+      },
+    });
+    if (result.kind !== "ask_user")
+      throw new Error("Expected pending question");
+    expect(result.ask.options?.[0]).not.toHaveProperty("kind");
+    expect(result.ask.options?.[0]).not.toHaveProperty("placeholder");
+  });
+
+  test.each(["ask_masking_rule_scope", "ask_masking_exemption_scope"])(
+    "%s binds the verified project to workspace-chat resource input",
+    async (name) => {
+      const executeTool = createToolExecutor({} as AppRouterInstance, {
+        context: "workspaces/example",
+        workspaceName: "workspaces/example",
+      });
+      expect(
+        await executeTool(name, { project: "projects/sample" }, "scope")
+      ).toMatchObject({
+        kind: "ask_user",
+        ask: { resourceProject: "projects/sample" },
+      });
+    }
+  );
+
+  test("omits resource project metadata until a rule scope project is resolved", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "workspaces/example",
+      workspaceName: "workspaces/example",
+    });
+    const result = await executeTool("ask_masking_rule_scope", {}, "scope");
+    expect(result.kind).toBe("ask_user");
+    if (result.kind !== "ask_user")
+      throw new Error("Expected pending question");
+    expect(result.ask).not.toHaveProperty("resourceProject");
+  });
+
+  test("does not accept model-provided resource project metadata", async () => {
+    const executeTool = createToolExecutor({} as AppRouterInstance);
+    const result = await executeTool(
+      "ask_user",
+      {
+        prompt: "Which database?",
+        kind: "input",
+        resourceProject: "projects/forged",
+      },
+      "database"
+    );
+    expect(result.kind).toBe("ask_user");
+    if (result.kind !== "ask_user")
+      throw new Error("Expected pending question");
+    expect(result.ask).not.toHaveProperty("resourceProject");
+    expect(
+      getToolDefinitions().find((tool) => tool.name === "ask_user")
+        ?.parametersSchema.properties
+    ).not.toHaveProperty("resourceProject");
+  });
+
+  test("rejects custom-input metadata in verified database choices", async () => {
+    resourceChoiceApi.validate.mockResolvedValue([
+      {
+        label: "orders (Production)",
+        value: "instances/prod/databases/orders",
+      },
+    ]);
+    const executeTool = createToolExecutor({} as AppRouterInstance, {
+      context: "projects/sample",
+      workspaceName: "workspaces/example",
+    });
+    await expect(
+      executeTool(
+        "ask_user",
+        {
+          prompt: "Which database?",
+          kind: "choose",
+          resourceKind: "database",
+          options: [
+            {
+              label: "Orders",
+              value: "instances/prod/databases/orders",
+              kind: "custom-input",
+              placeholder: "Enter another database",
+            },
+          ],
+        },
+        "database"
+      )
+    ).rejects.toThrow("custom-input");
+    expect(resourceChoiceApi.validate).not.toHaveBeenCalled();
   });
 
   test("requests corrected choices when choose options are missing", async () => {

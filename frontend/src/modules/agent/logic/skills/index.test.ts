@@ -328,7 +328,7 @@ describe("getSkill", () => {
     );
   });
 
-  test("offers expiration choices before asking for a custom date and reuses confirmed expiry", () => {
+  test("offers expiration choices and reuses confirmed expiry", () => {
     const guidance = getSkill({ name: "data-masking", section: "exemption" });
 
     expect(guidance).toContain('ask_user(kind="choose", resourceKind="none")');
@@ -344,7 +344,6 @@ describe("getSkill", () => {
     expect(guidance).toContain(
       "If the member selects the custom date/time option"
     );
-    expect(guidance).toContain('ask_user(kind="input", resourceKind="none")');
     expect(guidance).toContain("Reuse an already explicit expiration");
     expect(guidance).toContain("fresh currentTime");
   });

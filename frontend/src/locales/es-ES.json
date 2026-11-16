@@ -111,6 +111,8 @@
       "project-heading": "Preguntar sobre este proyecto",
       "resource-unavailable": "Este recurso no está disponible para referenciarlo."
     },
+    "custom-input-label": "Detalles",
+    "custom-input-placeholder": "Introduce un valor",
     "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
     "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
@@ -186,6 +188,7 @@
       "ask-agent-short": "Preguntar al agente",
       "exemption-scope": {
         "another-database": "Otra base de datos",
+        "database-placeholder": "Introduce el nombre de la base de datos",
         "only-database": "Solo {{database}}",
         "project": "Todas las bases de datos de este proyecto",
         "question": "¿Qué bases de datos debe cubrir esta exención?"
@@ -198,6 +201,7 @@
       "semantic-type-choice": {
         "create": "Crear un tipo de enmascaramiento personalizado…",
         "create-description": "Preparar un nuevo tipo semántico con su configuración de enmascaramiento.",
+        "create-placeholder": "Describe cómo deben enmascararse los valores",
         "question": "¿Qué tipo semántico debe enmascarar estas columnas?"
       },
       "unmask-method": {
@@ -299,7 +303,11 @@
     "project-reference-unavailable": "Este proyecto ya no está disponible o no tienes acceso a él.",
     "provider-attempt-limit": "Me detuve antes de enviar otra solicitud de IA porque esta ejecución alcanzó su límite de intentos con el proveedor. Es posible que las acciones anteriores ya se hayan completado; compruebe su estado antes de pedirme que vuelva a intentarlo.",
     "query-result": {
+      "omitted-rows": "La vista previa de filas ha caducado. Se recibieron {{received}} filas.",
+      "preview-expired": "Las vistas previas de filas han caducado; se conservan los detalles y resultados de la consulta.",
+      "preview-partial": "Solo se conserva una vista previa parcial de las filas.",
       "returned-rows": "Filas devueltas: {{count}}",
+      "sampled-rows": "La vista previa conserva {{retained}} de las {{received}} filas recibidas.",
       "showing-columns": "Mostrando {{shown}} de {{total}} columnas",
       "showing-results": "Mostrando {{shown}} de {{total}} conjuntos de resultados",
       "showing-rows": "Mostrando {{shown}} de {{total}} filas devueltas"
@@ -374,6 +382,13 @@
       "unsaved-only": "Solo en el borrador sin guardar"
     },
     "stop": "Detener",
+    "storage": {
+      "retention-info": "Conservación del historial de chats",
+      "retention-policy": "Los chats completados más antiguos se eliminan automáticamente cuando es necesario para liberar almacenamiento local. Los chats activos y los borradores se conservan.",
+      "retry": "Reintentar",
+      "save-failed": "No se pudo guardar el historial de Agent. Vuelve a intentarlo.",
+      "title": "Almacenamiento del historial de Agent"
+    },
     "token-budget": {
       "action-failed": "No se pudo actualizar esta ejecución. Inténtelo de nuevo.",
       "apply": "Aplicar",

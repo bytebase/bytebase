@@ -9,6 +9,7 @@ import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_p
 import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { QueryRequestSchema } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { boundAgentQueryResult } from "../queryResultRetention";
 import type { PropertyInfo, SchemaInfo } from "./gen/openapi-index";
 import { getEndpointPath, getRequestSchema, getSchema } from "./searchApi";
 
@@ -339,7 +340,11 @@ export async function dispatchPreparedApiCall(
       }
     }
 
-    return JSON.stringify(result);
+    const raw = JSON.stringify(result);
+    return call.operationId === "bytebase.v1.SQLService.Query" &&
+      call.path === "/bytebase.v1.SQLService/Query"
+      ? boundAgentQueryResult(raw)
+      : raw;
   } catch (err) {
     return JSON.stringify({
       error: `Failed to call ${call.operationId}: ${err instanceof Error ? err.message : String(err)}`,

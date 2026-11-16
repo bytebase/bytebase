@@ -4,6 +4,7 @@ import {
   supportsAgentRunRecovery,
   withAgentPersistenceLock,
   withAgentRunLease,
+  withAgentStorageBudgetLock,
 } from "./runOwnership";
 
 const deferred = () => {
@@ -48,6 +49,37 @@ beforeEach(() => vi.stubGlobal("navigator", { locks: fakeLocks() }));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Agent execution leases", () => {
+  test("serializes aggregate storage writes across scopes without permitting inverse locks", async () => {
+    const release = deferred();
+    const events: string[] = [];
+    const held = navigator.locks.request(
+      "bb-agent-storage-budget-v1",
+      { mode: "exclusive" },
+      () => release.promise
+    );
+    let inverseScope: Promise<number> | undefined;
+    let inverseLease: ReturnType<typeof withAgentRunLease> | undefined;
+    const first = withAgentPersistenceLock("one", () =>
+      withAgentStorageBudgetLock(() => {
+        events.push("one");
+        inverseScope = withAgentPersistenceLock("two", () => 1);
+        inverseLease = withAgentRunLease("two", "chat", async () => 1);
+      })
+    );
+    await Promise.resolve();
+    const second = withAgentPersistenceLock("two", () =>
+      withAgentStorageBudgetLock(() => {
+        events.push("two");
+      })
+    );
+    await Promise.resolve();
+    expect(events).toEqual([]);
+    release.resolve();
+    await Promise.all([held, first, second]);
+    expect(events).toEqual(["one", "two"]);
+    await expect(inverseScope).rejects.toThrow();
+    expect(await inverseLease).toEqual({ acquired: false });
+  });
   test.each([undefined, {}, { locks: {} }, { locks: { request: true } }])(
     "fails closed without a callable lock API: %j",
     async (navigator) => {

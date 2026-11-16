@@ -111,6 +111,8 @@
       "project-heading": "Hỏi về dự án này",
       "resource-unavailable": "Không thể tham chiếu tài nguyên này."
     },
+    "custom-input-label": "Chi tiết",
+    "custom-input-placeholder": "Nhập giá trị",
     "database-reference-unavailable": "Cơ sở dữ liệu này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
     "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
@@ -186,6 +188,7 @@
       "ask-agent-short": "Hỏi Agent",
       "exemption-scope": {
         "another-database": "Cơ sở dữ liệu khác",
+        "database-placeholder": "Nhập tên cơ sở dữ liệu",
         "only-database": "Chỉ {{database}}",
         "project": "Tất cả cơ sở dữ liệu trong dự án này",
         "question": "Miễn trừ này áp dụng cho những cơ sở dữ liệu nào?"
@@ -198,6 +201,7 @@
       "semantic-type-choice": {
         "create": "Tạo kiểu che dữ liệu tùy chỉnh…",
         "create-description": "Chuẩn bị kiểu ngữ nghĩa mới với cấu hình che dữ liệu của bạn.",
+        "create-placeholder": "Mô tả cách che các giá trị",
         "question": "Kiểu ngữ nghĩa nào sẽ che dữ liệu cho các cột này?"
       },
       "unmask-method": {
@@ -299,7 +303,11 @@
     "project-reference-unavailable": "Dự án này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "provider-attempt-limit": "Tôi đã dừng trước khi gửi thêm yêu cầu AI vì lượt chạy này đã đạt giới hạn số lần thử với nhà cung cấp. Các thao tác trước đó có thể đã hoàn tất; hãy kiểm tra trạng thái trước khi yêu cầu tôi thử lại.",
     "query-result": {
+      "omitted-rows": "Bản xem trước hàng đã hết hạn. Đã nhận {{received}} hàng.",
+      "preview-expired": "Bản xem trước hàng đã hết hạn; chi tiết truy vấn và kết quả thực thi vẫn được giữ lại.",
+      "preview-partial": "Chỉ giữ lại một phần bản xem trước hàng.",
       "returned-rows": "Số hàng trả về: {{count}}",
+      "sampled-rows": "Bản xem trước giữ lại {{retained}} trong {{received}} hàng đã nhận.",
       "showing-columns": "Hiển thị {{shown}} trong {{total}} cột",
       "showing-results": "Hiển thị {{shown}} trong {{total}} bộ kết quả",
       "showing-rows": "Hiển thị {{shown}} trong {{total}} hàng trả về"
@@ -374,6 +382,13 @@
       "unsaved-only": "Chỉ áp dụng vào bản nháp chưa lưu"
     },
     "stop": "Dừng",
+    "storage": {
+      "retention-info": "Lưu giữ lịch sử trò chuyện",
+      "retention-policy": "Các cuộc trò chuyện đã hoàn tất cũ hơn sẽ tự động bị xóa khi cần giải phóng bộ nhớ cục bộ. Các cuộc trò chuyện đang hoạt động và bản nháp được giữ lại.",
+      "retry": "Thử lại",
+      "save-failed": "Không thể lưu lịch sử Agent. Hãy thử lại.",
+      "title": "Bộ nhớ lịch sử Agent"
+    },
     "token-budget": {
       "action-failed": "Không thể cập nhật lượt chạy này. Vui lòng thử lại.",
       "apply": "Áp dụng",

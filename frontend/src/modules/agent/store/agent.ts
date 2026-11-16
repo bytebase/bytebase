@@ -6,6 +6,12 @@ import {
   getNameParentTokens,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
+import {
+  createAgentChatProtection,
+  getProtectedAgentChatIds,
+  supportsAgentChatProtection,
+  withAgentChatEvictionLease,
+} from "../logic/chatProtection";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import type {
   AgentExpressionDraftMode,
@@ -13,6 +19,7 @@ import type {
 } from "../logic/expressionDraft";
 import { normalizeAgentHandoff } from "../logic/handoff";
 import type { LandingStarterId } from "../logic/landingStarters";
+import { omitAgentQueryRows } from "../logic/queryResultRetention";
 import {
   formatResourceMention,
   getCurrentTurnResourceReferences,
@@ -31,6 +38,9 @@ import {
 import {
   hasAgentRunLease,
   supportsAgentRunRecovery,
+  withAgentPersistenceLock,
+  withAgentRunLease,
+  withAgentStorageBudgetLock,
 } from "../logic/runOwnership";
 import {
   type AgentSqlFixDraft,
@@ -71,10 +81,15 @@ import type {
   AgentRunBindings,
   AgentRunCheckpoint,
   AgentRunMode,
+  AgentStoragePressure,
   Message,
   ToolCall,
 } from "../logic/types";
 import { getDefaultAgentWindowState } from "../window";
+import {
+  getAgentHistoryEvictionCandidates,
+  removeAgentHistoryChats,
+} from "./historyRetention";
 import {
   type AgentPreferences,
   DEFAULT_AGENT_PREFERENCES,
@@ -82,6 +97,23 @@ import {
   normalizeAgentPreferences,
 } from "./preferences";
 import { createAgentRunPersistence } from "./runPersistence";
+import {
+  encodeAgentStoredState,
+  isAgentStorageQuotaError,
+  parseAgentStoredState,
+} from "./stateStorage";
+import {
+  AGENT_STORAGE_ADMISSION_BYTES,
+  AGENT_STORAGE_CLEANUP_TARGET_BYTES,
+  AGENT_STORAGE_CLEANUP_TRIGGER_BYTES,
+  AGENT_STORAGE_LIMIT_BYTES,
+  AgentStorageFullError,
+  estimateAgentStorageBytes,
+} from "./storageBudget";
+import {
+  omitAgentQuerySamples,
+  retainAgentQuerySamples,
+} from "./storageRetention";
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_RUN_STATE_KEY = "bb-agent-state-v3";
@@ -116,7 +148,7 @@ export const getAgentStateKey = (workspaceName: string, userEmail: string) =>
 export const getAgentWindowKey = (workspaceName: string) =>
   getWorkspaceStorageKey(AGENT_WINDOW_KEY, workspaceName) ?? AGENT_WINDOW_KEY;
 
-interface PersistedAgentState {
+export interface PersistedAgentState {
   currentChatId: string | null;
   chats: AgentChat[];
   messagesByChatId: Record<string, AgentMessage[]>;
@@ -426,7 +458,15 @@ const normalizeMessage = (
       message.role === "tool"
         ? message.role
         : "user",
-    content: typeof message.content === "string" ? message.content : undefined,
+    content:
+      typeof message.content === "string"
+        ? metadata?.queryResultRetention &&
+          isRecord(metadata.queryResultRetention) &&
+          metadata.queryResultRetention.version === 1 &&
+          metadata.queryResultRetention.level === "omitted"
+          ? omitAgentQueryRows(message.content)
+          : message.content
+        : undefined,
     toolCalls: Array.isArray(message.toolCalls)
       ? (message.toolCalls as ToolCall[])
       : undefined,
@@ -497,6 +537,14 @@ const normalizePendingAsk = (
           if (!label || !value) {
             return null;
           }
+          const customInput = candidate.kind === "custom-input";
+          if (
+            (candidate.kind != null && !customInput) ||
+            (candidate.placeholder != null &&
+              (!customInput || typeof candidate.placeholder !== "string"))
+          ) {
+            return null;
+          }
           return {
             label,
             value,
@@ -505,6 +553,12 @@ const normalizePendingAsk = (
               candidate.description.trim()
                 ? candidate.description.trim()
                 : undefined,
+            ...(customInput ? { kind: "custom-input" as const } : {}),
+            ...(customInput &&
+            typeof candidate.placeholder === "string" &&
+            candidate.placeholder.trim()
+              ? { placeholder: candidate.placeholder.trim() }
+              : {}),
           };
         })
         .filter(
@@ -527,11 +581,19 @@ const normalizePendingAsk = (
     defaultResource.name === pendingAsk.defaultValue &&
     (!context?.startsWith(projectNamePrefix) ||
       defaultResource.project === context);
+  const resourceProject =
+    typeof pendingAsk.resourceProject === "string" &&
+    /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(pendingAsk.resourceProject) &&
+    (!context?.startsWith(projectNamePrefix) ||
+      pendingAsk.resourceProject === context)
+      ? pendingAsk.resourceProject
+      : undefined;
 
   return {
     toolCallId: pendingAsk.toolCallId,
     prompt: pendingAsk.prompt,
     kind,
+    ...(resourceProject ? { resourceProject } : {}),
     ...(kind === "confirm" &&
     isRecord(pendingAsk.apiPermission) &&
     typeof pendingAsk.apiPermission.actionId === "string" &&
@@ -921,6 +983,10 @@ export interface AgentState {
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
   queuedUserMessageInFlightByChatId: Record<string, boolean>;
   remoteBusyChatIds: Record<string, boolean>;
+  chatProtectionReady: boolean;
+  refreshChatProtection: () => void;
+  releaseChatProtection: () => void;
+  storagePressure?: AgentStoragePressure;
   expressionDraftTargetsByChatId: Record<
     string,
     RegisteredExpressionDraftTarget
@@ -1070,6 +1136,8 @@ export interface AgentState {
   increaseRunTokenLimit: (chatId: string, limit: number) => Promise<boolean>;
   endPausedRun: (chatId: string) => Promise<boolean>;
   flushRunPersistence: () => Promise<boolean>;
+  checkAgentStorageAdmission: () => Promise<boolean>;
+  getRunPersistenceError: () => unknown;
   canUseAgentExecution: () => boolean;
   finishChatRun: (
     chatId: string,
@@ -1295,17 +1363,12 @@ const readPersistedState = (
   const saved = storage?.getItem(key);
   if (!saved) return null;
   try {
-    return normalizePersistedState(JSON.parse(saved));
+    return normalizePersistedState(parseAgentStoredState(saved));
   } catch {
     if (!key.startsWith(`${AGENT_RUN_STATE_KEY}.`)) storage?.removeItem(key);
     return null;
   }
 };
-
-const getPersistedState = (storage: Storage | null, key: string) =>
-  ensureCurrentChat(
-    readPersistedState(storage, key) ?? createEmptyPersistedState()
-  );
 
 const selectPersistedChats = (
   state: PersistedAgentState,
@@ -1681,6 +1744,7 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
         maskingRuleDraftHandoff: _ruleReceipt,
         maskingExemptionDraftHandoff: _exemptionReceipt,
         semanticTypeDraftHandoff: _typeReceipt,
+        queryResultRetention: _queryRetention,
         ...metadata
       } = message.metadata;
       return { ...message, metadata };
@@ -1801,8 +1865,40 @@ const rebasePersistedChanges = (
         message,
       ])
     );
+    const previousMessages = new Map(
+      (base.messagesByChatId[id] ?? []).map((message) => [message.id, message])
+    );
     result.messagesByChatId[id] = (source.messagesByChatId[id] ?? []).map(
-      (message) => mergeDraftHandoffs(message, otherMessages.get(message.id))
+      (message) => {
+        const merged = mergeDraftHandoffs(
+          message,
+          otherMessages.get(message.id)
+        );
+        const omitted = [
+          message,
+          otherMessages.get(message.id),
+          previousMessages.get(message.id),
+        ].some(
+          (item) =>
+            item?.metadata?.queryResultRetention?.version === 1 &&
+            item.metadata.queryResultRetention.level === "omitted"
+        );
+        return omitted
+          ? {
+              ...merged,
+              content: merged.content
+                ? omitAgentQueryRows(merged.content)
+                : merged.content,
+              metadata: {
+                ...merged.metadata,
+                queryResultRetention: {
+                  version: 1 as const,
+                  level: "omitted" as const,
+                },
+              },
+            }
+          : merged;
+      }
     );
     if (source.activeChatIds?.includes(id)) result.activeChatIds.push(id);
     if (source.pendingAskByChatId[id])
@@ -1840,14 +1936,20 @@ export const createAgentStore = () => {
     string,
     ReturnType<typeof createAgentRunPersistence>
   >();
+  const automaticCleanups = new Map<string, Promise<boolean>>();
+  const omitQuerySamplesForScope = new Set<string>();
+  let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+  let protectionSuspended = false;
   const getWriter = (key: string) => {
     let writer = writersByScope.get(key);
     if (!writer) {
-      writer = createAgentRunPersistence(key, () => {
-        const state = pendingStatesByScope.get(key);
-        if (!state || !synchronizeState(state, true, true))
-          throw new Error("Agent persistence unavailable");
-      });
+      writer = createAgentRunPersistence(key, () =>
+        withAgentStorageBudgetLock(() => {
+          const state = pendingStatesByScope.get(key);
+          if (!state || !synchronizeState(state, true, true))
+            throw new Error("Agent persistence unavailable");
+        })
+      );
       writersByScope.set(key, writer);
     }
     return writer;
@@ -1999,6 +2101,15 @@ export const createAgentStore = () => {
         queuedUserMessagesByChatId: initial.queuedUserMessagesByChatId,
         queuedUserMessageInFlightByChatId: {},
         remoteBusyChatIds: {},
+        chatProtectionReady: true,
+        refreshChatProtection: () => {
+          protectionSuspended = false;
+          refreshChatProtection();
+        },
+        releaseChatProtection: () => {
+          protectionSuspended = true;
+          refreshChatProtection();
+        },
         expressionDraftTargetsByChatId: {},
         sqlFixSourcesByChatId: {},
         sqlFixDraftsById: {},
@@ -3111,7 +3222,7 @@ export const createAgentStore = () => {
             !canOwnRun(get(), chatId)
           )
             return { kind: "superseded" };
-          if (!(await get().flushRunPersistence()))
+          if (!(await get().checkAgentStorageAdmission()))
             return { kind: "storage-unavailable" };
           const latest = _getChat(chatId);
           if (
@@ -3257,12 +3368,81 @@ export const createAgentStore = () => {
             state.workspaceName && state.userEmail
               ? getAgentStateKey(state.workspaceName, state.userEmail)
               : null;
-          if (!key || !getSafeStorage()) return false;
+          if (!key) return false;
+          if (!getSafeStorage()) {
+            updateStoragePressure(
+              key,
+              new Error("Browser storage is unavailable"),
+              "saving"
+            );
+            return false;
+          }
           if (!supportsAgentRunRecovery()) return synchronizeState(state, true);
           pendingStatesByScope.set(key, state);
           const writer = getWriter(key);
           writer.schedule();
-          return writer.flush();
+          let saved = await writer.flush();
+          if (!saved) updateStoragePressure(key, writer.getError(), "saving");
+          if (
+            currentScopeKey(get()) === key &&
+            (saved || writer.getError() instanceof AgentStorageFullError)
+          ) {
+            const cleaned = await automaticallyRetainHistory(key, !saved);
+            if (!saved && cleaned) {
+              pendingStatesByScope.set(key, get());
+              writer.schedule();
+              saved = await writer.flush();
+              if (!saved)
+                updateStoragePressure(key, writer.getError(), "saving");
+            }
+          }
+          return saved;
+        },
+
+        checkAgentStorageAdmission: async () => {
+          const key = currentScopeKey(get());
+          if (!key || !(await get().flushRunPersistence())) return false;
+          const check = () => {
+            if (currentScopeKey(get()) !== key) return false;
+            try {
+              const storage = getSafeStorage();
+              if (!storage) throw new Error("Browser storage is unavailable");
+              const bytes = estimateAgentStorageBytes(storage);
+              if (bytes > AGENT_STORAGE_ADMISSION_BYTES) {
+                updateStoragePressure(
+                  key,
+                  new AgentStorageFullError(
+                    "budget",
+                    bytes,
+                    AGENT_STORAGE_ADMISSION_BYTES
+                  ),
+                  "admission"
+                );
+                return false;
+              }
+              clearStoragePressure(key);
+              return true;
+            } catch (error) {
+              updateStoragePressure(key, error, "admission");
+              return false;
+            }
+          };
+          try {
+            return supportsAgentRunRecovery()
+              ? await withAgentStorageBudgetLock(check)
+              : check();
+          } catch (error) {
+            updateStoragePressure(key, error, "admission");
+            return false;
+          }
+        },
+
+        getRunPersistenceError: () => {
+          const key = currentScopeKey(get());
+          const error = key ? writersByScope.get(key)?.getError() : undefined;
+          return error instanceof AgentStorageFullError && error.cause
+            ? error.cause
+            : error;
         },
 
         canUseAgentExecution: () => {
@@ -3464,12 +3644,31 @@ export const createAgentStore = () => {
           get().syncState();
           if (get().remoteBusyChatIds[chatId]) return null;
           const pendingAsk = get().getPendingAsk(chatId);
-          if (!pendingAsk) return null;
+          if (!pendingAsk || pendingAsk.kind !== response.kind) return null;
+          let normalizedResponse = response;
+          if (response.kind === "choose") {
+            const option = pendingAsk.options?.find(
+              (candidate) => candidate.value === response.value
+            );
+            if (!option) return null;
+            if (option.kind === "custom-input") {
+              if (typeof response.input !== "string" || !response.input.trim())
+                return null;
+              const input = response.input.trim();
+              normalizedResponse = {
+                ...response,
+                answer: `${option.label}: ${input}`,
+                input,
+              };
+            } else if (response.input !== undefined) {
+              return null;
+            }
+          }
           const toolMessage = get().addMessage({
             chatId,
             role: "tool",
             toolCallId: pendingAsk.toolCallId,
-            content: JSON.stringify(response),
+            content: JSON.stringify(normalizedResponse),
             metadata,
           });
           get().clearPendingAsk(chatId);
@@ -3580,6 +3779,7 @@ export const createAgentStore = () => {
               draft.sqlFixDraftsById = {};
               draft.preferences = { ...DEFAULT_AGENT_PREFERENCES };
               draft.preferencesStorageError = false;
+              draft.storagePressure = undefined;
             });
             return false;
           }
@@ -3625,9 +3825,10 @@ export const createAgentStore = () => {
             : existingV3
               ? v3Key
               : stateKey;
+          const loadedState = readPersistedState(storage, sourceKey);
           const persistedState = restoreDraftShadow(
             stateKey,
-            getPersistedState(storage, sourceKey)
+            ensureCurrentChat(loadedState ?? createEmptyPersistedState())
           );
           if (supportsAgentRunRecovery() && !serialized) {
             for (const chat of persistedState.chats) {
@@ -3649,15 +3850,23 @@ export const createAgentStore = () => {
           );
           snapshotsByScope.set(
             stateKey,
-            serialized ? persistedState : createEmptyPersistedState()
+            serialized && loadedState
+              ? persistedState
+              : createEmptyPersistedState()
           );
-          storageSnapshotsByScope.set(
-            stateKey,
-            serialized ? persistedState : createEmptyPersistedState()
-          );
-          if (serialized) lastSerializedByScope.set(stateKey, serialized);
+          storageSnapshotsByScope.delete(stateKey);
+          lastSerializedByScope.delete(stateKey);
+          // Unreadable history must be reparsed, not cached as an empty baseline.
+          if (!serialized || loadedState) {
+            storageSnapshotsByScope.set(
+              stateKey,
+              serialized ? persistedState : createEmptyPersistedState()
+            );
+            if (serialized) lastSerializedByScope.set(stateKey, serialized);
+          }
           set((draft) => {
             draft.workspaceName = workspaceName;
+            draft.storagePressure = undefined;
             draft.userEmail = nextUserEmail;
             draft.chats = persistedState.chats;
             draft.messagesByChatId = persistedState.messagesByChatId;
@@ -3771,11 +3980,18 @@ export const createAgentStore = () => {
               ? getAgentStateKey(workspaceName, userEmail)
               : null;
           if (!key) return;
-          const state = getPersistedState(storage, key);
+          const loadedState = readPersistedState(storage, key);
+          const state = ensureCurrentChat(
+            loadedState ?? createEmptyPersistedState()
+          );
           snapshotsByScope.set(key, state);
-          storageSnapshotsByScope.set(key, state);
           const serialized = storage?.getItem(key);
-          if (serialized) lastSerializedByScope.set(key, serialized);
+          storageSnapshotsByScope.delete(key);
+          lastSerializedByScope.delete(key);
+          if (!serialized || loadedState) {
+            storageSnapshotsByScope.set(key, state);
+            if (serialized) lastSerializedByScope.set(key, serialized);
+          }
           set((draft) => {
             draft.chats = state.chats;
             draft.messagesByChatId = state.messagesByChatId;
@@ -3791,6 +4007,439 @@ export const createAgentStore = () => {
     })
   );
 
+  const clearStoragePressure = (key: string) => {
+    if (
+      currentScopeKey(store.getState()) === key &&
+      store.getState().storagePressure
+    ) {
+      store.setState((draft) => {
+        draft.storagePressure = undefined;
+      });
+    }
+  };
+
+  const updateStoragePressure = (
+    key: string,
+    error: unknown,
+    phase: AgentStoragePressure["phase"]
+  ) => {
+    if (currentScopeKey(store.getState()) !== key) return;
+    let bytes = error instanceof AgentStorageFullError ? error.bytes : 0;
+    let otherScopeBytes = 0;
+    try {
+      const storage = getSafeStorage();
+      if (storage) {
+        bytes ||= estimateAgentStorageBytes(storage);
+        const value = storage.getItem(key);
+        otherScopeBytes =
+          estimateAgentStorageBytes(storage) -
+          (value === null ? 0 : 2 * (key.length + value.length));
+      }
+    } catch {
+      /* Storage may also be unreadable. Keep the original failure. */
+    }
+    store.setState((draft) => {
+      draft.storagePressure = {
+        reason:
+          error instanceof AgentStorageFullError
+            ? error.reason
+            : isAgentStorageQuotaError(error)
+              ? "quota"
+              : "unavailable",
+        phase,
+        bytes,
+        limitBytes:
+          error instanceof AgentStorageFullError
+            ? error.limitBytes
+            : AGENT_STORAGE_LIMIT_BYTES,
+        otherScopeBytes: Math.max(0, otherScopeBytes),
+      };
+    });
+  };
+
+  const isCleanupProtected = (state: AgentState, chatId: string): boolean => {
+    const chat = state.chats.find((chat) => chat.id === chatId);
+    if (!chat) return true;
+    const draft = state.draftsByChatId[chatId];
+    if (
+      state.currentChatId === chatId &&
+      draft &&
+      (draft.text || draft.project || draft.resource || draft.mentions?.length)
+    )
+      return true;
+    if (
+      chat.runId ||
+      chat.runCheckpoint ||
+      chat.status === "running" ||
+      chat.status === "paused" ||
+      chat.status === "awaiting_user" ||
+      state.abortControllersByChatId[chatId] ||
+      state.pendingAskByChatId[chatId] ||
+      state.queuedUserMessagesByChatId[chatId] ||
+      state.queuedUserMessageInFlightByChatId[chatId] ||
+      state.remoteBusyChatIds[chatId]
+    )
+      return true;
+    const key = currentScopeKey(state);
+    const saved = new Map(
+      (key
+        ? (storageSnapshotsByScope.get(key)?.messagesByChatId[chatId] ?? [])
+        : []
+      ).map((message) => [message.id, message])
+    );
+    return (state.messagesByChatId[chatId] ?? []).some(
+      (message) =>
+        message.role === "tool" &&
+        !samePersistedValue(message, saved.get(message.id))
+    );
+  };
+
+  const getLocallyProtectedChats = (state: AgentState) => {
+    const ids = new Set(Object.keys(state.expressionDraftTargetsByChatId));
+    for (const draft of Object.values(state.sqlFixDraftsById))
+      ids.add(draft.chatId);
+    const key = currentScopeKey(state);
+    const saved = key ? storageSnapshotsByScope.get(key) : undefined;
+    for (const chat of state.chats) {
+      if (
+        isCleanupProtected(state, chat.id) ||
+        !samePersistedValue(
+          state.messagesByChatId[chat.id] ?? [],
+          saved?.messagesByChatId[chat.id] ?? []
+        )
+      )
+        ids.add(chat.id);
+    }
+    return ids;
+  };
+
+  const chatProtection = createAgentChatProtection(() => {
+    const state = store.getState();
+    const key = currentScopeKey(state);
+    if (
+      !protectionSuspended &&
+      !state.chatProtectionReady &&
+      key &&
+      state.currentChatId &&
+      chatProtection.isReady(key, state.currentChatId)
+    )
+      state.syncState();
+    refreshChatProtection();
+  });
+  const refreshChatProtection = () => {
+    const state = store.getState();
+    const key = currentScopeKey(state);
+    const protectedIds = new Set<string>();
+    if (key) {
+      for (const id of getLocallyProtectedChats(state)) protectedIds.add(id);
+      if (!protectionSuspended && state.currentChatId)
+        protectedIds.add(state.currentChatId);
+      for (const [id, draft] of Object.entries(state.draftsByChatId)) {
+        if (
+          draft.text ||
+          draft.project ||
+          draft.resource ||
+          draft.mentions?.length
+        )
+          protectedIds.add(id);
+      }
+    }
+    chatProtection.update(key, [...protectedIds]);
+    const ready =
+      !key ||
+      !state.currentChatId ||
+      (!protectionSuspended &&
+        chatProtection.isReady(key, state.currentChatId));
+    if (store.getState().chatProtectionReady !== ready)
+      store.setState({ chatProtectionReady: ready });
+  };
+
+  const scheduleAutomaticCleanup = (key: string) => {
+    if (
+      !supportsAgentChatProtection() ||
+      automaticCleanups.has(key) ||
+      cleanupTimer !== undefined
+    )
+      return;
+    // Cleanup acquires execution leases before persistence, outside the writer.
+    cleanupTimer = setTimeout(() => {
+      cleanupTimer = undefined;
+      const pressure = store.getState().storagePressure;
+      void automaticallyRetainHistory(
+        key,
+        pressure?.phase === "saving" &&
+          (pressure.reason === "budget" || pressure.reason === "quota")
+      );
+    }, 0);
+  };
+
+  const commitAutomaticCleanup = async (
+    key: string,
+    ids: string[],
+    quotaFailure: boolean
+  ): Promise<{ saved: boolean; blocked?: string }> => {
+    const ordered = [...ids].sort((a, b) => a.localeCompare(b));
+    const withLeases = async (
+      index: number,
+      execution: boolean
+    ): Promise<{ saved: boolean; blocked?: string }> => {
+      if (index < ordered.length) {
+        const id = ordered[index];
+        const result = execution
+          ? await withAgentRunLease(key, id, () => withLeases(index + 1, true))
+          : await withAgentChatEvictionLease(key, id, () =>
+              withLeases(index + 1, false)
+            );
+        return result.acquired && result.value
+          ? result.value
+          : { saved: false, blocked: id };
+      }
+      if (!execution) return withLeases(0, true);
+      return withAgentPersistenceLock(key, () =>
+        withAgentStorageBudgetLock(() => {
+          if (currentScopeKey(store.getState()) !== key)
+            return { saved: false };
+          store.getState().syncState();
+          const state = store.getState();
+          if (quotaFailure) {
+            try {
+              if (synchronizeState(state, true, true)) quotaFailure = false;
+            } catch (error) {
+              if (!(error instanceof AgentStorageFullError)) throw error;
+              quotaFailure = error.reason === "quota";
+            }
+          }
+          const allowed = new Set(
+            getAgentHistoryEvictionCandidates(
+              persistedSnapshot(state),
+              getLocallyProtectedChats(state)
+            )
+          );
+          const blocked = ordered.find((id) => !allowed.has(id));
+          if (blocked) return { saved: false, blocked };
+          const storage = getSafeStorage();
+          if (!storage) return { saved: false };
+          const snapshot = omitAgentQuerySamples(persistedSnapshot(state));
+          const previous = storage.getItem(key);
+          const bytesAfter = (count: number) =>
+            estimateAgentStorageBytes(storage, {
+              key,
+              value: encodeAgentStoredState(
+                JSON.stringify(
+                  removeAgentHistoryChats(
+                    snapshot,
+                    new Set(ids.slice(0, count))
+                  )
+                ),
+                previous,
+                true
+              ),
+            });
+          if (
+            !quotaFailure &&
+            bytesAfter(0) <= AGENT_STORAGE_CLEANUP_TARGET_BYTES
+          )
+            return { saved: true };
+          if (bytesAfter(ids.length) > AGENT_STORAGE_ADMISSION_BYTES)
+            return { saved: false };
+          let count = ids.length;
+          if (!quotaFailure) {
+            let low = 1;
+            while (low < count) {
+              const middle = Math.floor((low + count) / 2);
+              if (bytesAfter(middle) <= AGENT_STORAGE_CLEANUP_TARGET_BYTES)
+                count = middle;
+              else low = middle + 1;
+            }
+          }
+          const candidate = {
+            ...state,
+            ...removeAgentHistoryChats(snapshot, new Set(ids.slice(0, count))),
+          };
+          const saved = synchronizeState(candidate, true, true);
+          if (saved) pendingStatesByScope.set(key, store.getState());
+          return { saved };
+        })
+      );
+    };
+    return withLeases(0, false);
+  };
+
+  const automaticallyRetainHistory = (
+    key: string,
+    failedSave = false
+  ): Promise<boolean> => {
+    const pending = automaticCleanups.get(key);
+    if (pending) return pending;
+    if (!supportsAgentChatProtection()) return Promise.resolve(false);
+    const cleanup = Promise.resolve()
+      .then(async () => {
+        if (currentScopeKey(store.getState()) !== key) return false;
+        const storage = getSafeStorage();
+        if (!storage) return false;
+        let quotaFailure =
+          failedSave && store.getState().storagePressure?.reason === "quota";
+        if (
+          !failedSave &&
+          estimateAgentStorageBytes(storage) <
+            AGENT_STORAGE_CLEANUP_TRIGGER_BYTES
+        )
+          return false;
+        omitQuerySamplesForScope.add(key);
+        try {
+          // Discard reproducible Query previews before any completed conversation.
+          try {
+            await withAgentPersistenceLock(key, () =>
+              withAgentStorageBudgetLock(() => {
+                if (currentScopeKey(store.getState()) !== key) return false;
+                return synchronizeState(store.getState(), true, true);
+              })
+            );
+            quotaFailure = false;
+          } catch (error) {
+            if (!(error instanceof AgentStorageFullError)) return false;
+            quotaFailure = error.reason === "quota";
+          }
+          const blocked = new Set<string>();
+          let minimumCount = quotaFailure ? 1 : 0;
+          for (;;) {
+            if (currentScopeKey(store.getState()) !== key) return false;
+            store.getState().syncState();
+            const state = store.getState();
+            const protectedIds = await getProtectedAgentChatIds(key);
+            for (const id of getLocallyProtectedChats(state))
+              protectedIds.add(id);
+            for (const id of blocked) protectedIds.add(id);
+            const snapshot = omitAgentQuerySamples(persistedSnapshot(state));
+            const ids = getAgentHistoryEvictionCandidates(
+              snapshot,
+              protectedIds
+            );
+            const previous = storage.getItem(key);
+            const bytesAfter = (count: number) => {
+              const candidate = removeAgentHistoryChats(
+                snapshot,
+                new Set(ids.slice(0, count))
+              );
+              return estimateAgentStorageBytes(storage, {
+                key,
+                value: encodeAgentStoredState(
+                  JSON.stringify(candidate),
+                  previous,
+                  true
+                ),
+              });
+            };
+            if (
+              !quotaFailure &&
+              bytesAfter(0) <= AGENT_STORAGE_CLEANUP_TARGET_BYTES
+            )
+              return true;
+            if (
+              !ids.length ||
+              bytesAfter(ids.length) > AGENT_STORAGE_ADMISSION_BYTES
+            )
+              return !failedSave;
+            let low = Math.min(minimumCount, ids.length);
+            let high = ids.length;
+            while (low < high) {
+              const middle = Math.floor((low + high) / 2);
+              if (bytesAfter(middle) <= AGENT_STORAGE_CLEANUP_TARGET_BYTES)
+                high = middle;
+              else low = middle + 1;
+            }
+            const count = Math.max(1, low);
+            try {
+              const result = await commitAutomaticCleanup(
+                key,
+                ids.slice(0, count),
+                quotaFailure
+              );
+              if (result.saved) return true;
+              if (!result.blocked) return false;
+              blocked.add(result.blocked);
+              minimumCount = quotaFailure ? 1 : 0;
+            } catch (error) {
+              if (
+                !(error instanceof AgentStorageFullError) ||
+                count >= ids.length
+              )
+                return false;
+              quotaFailure = error.reason === "quota";
+              minimumCount = count + 1;
+            }
+          }
+        } finally {
+          omitQuerySamplesForScope.delete(key);
+        }
+      })
+      .catch(() => false)
+      .finally(() => automaticCleanups.delete(key));
+    automaticCleanups.set(key, cleanup);
+    return cleanup;
+  };
+
+  const writeRetainedState = (
+    storage: Storage,
+    key: string,
+    state: PersistedAgentState,
+    previous: string | null
+  ) => {
+    let retained = omitQuerySamplesForScope.has(key)
+      ? omitAgentQuerySamples(state)
+      : retainAgentQuerySamples(state);
+    const encode = (compress = false) =>
+      key.startsWith(`${AGENT_RUN_STATE_KEY}.`)
+        ? encodeAgentStoredState(JSON.stringify(retained), previous, compress)
+        : JSON.stringify(retained);
+    let serialized = encode(omitQuerySamplesForScope.has(key));
+    let bytes = estimateAgentStorageBytes(storage, { key, value: serialized });
+    const oldBytes = estimateAgentStorageBytes(storage);
+    if (bytes > AGENT_STORAGE_ADMISSION_BYTES) {
+      retained = omitAgentQuerySamples(retained);
+      serialized = encode(true);
+      bytes = estimateAgentStorageBytes(storage, { key, value: serialized });
+    }
+    const enforceBudget = () => {
+      // Existing large histories must permit incremental, strictly shrinking cleanup.
+      if (bytes > AGENT_STORAGE_LIMIT_BYTES && bytes >= oldBytes) {
+        throw new AgentStorageFullError("budget", bytes);
+      }
+    };
+    enforceBudget();
+    try {
+      if (serialized !== previous) storage.setItem(key, serialized);
+    } catch (error) {
+      if (!isAgentStorageQuotaError(error)) throw error;
+      retained = omitAgentQuerySamples(retained);
+      const reduced = encode(true);
+      if (reduced === serialized || reduced.length >= serialized.length) {
+        throw new AgentStorageFullError(
+          "quota",
+          bytes,
+          AGENT_STORAGE_LIMIT_BYTES,
+          error
+        );
+      }
+      serialized = reduced;
+      bytes = estimateAgentStorageBytes(storage, { key, value: serialized });
+      enforceBudget();
+      try {
+        storage.setItem(key, serialized);
+      } catch (retryError) {
+        if (isAgentStorageQuotaError(retryError))
+          throw new AgentStorageFullError(
+            "quota",
+            bytes,
+            AGENT_STORAGE_LIMIT_BYTES,
+            retryError
+          );
+        throw retryError;
+      }
+    }
+    return { retained, serialized, bytes };
+  };
+
   const synchronizeState = (
     state: AgentState,
     persist: boolean,
@@ -3804,6 +4453,12 @@ export const createAgentStore = () => {
         ? getAgentStateKey(workspaceName, userEmail)
         : null;
     if (!storage || !key) {
+      if (key && persist)
+        updateStoragePressure(
+          key,
+          new Error("Browser storage is unavailable"),
+          "saving"
+        );
       return false;
     }
     if (persist && supportsAgentRunRecovery() && !underLock) {
@@ -3819,16 +4474,20 @@ export const createAgentStore = () => {
       )
         return false;
       saved = storage.getItem(key);
-    } catch {
+    } catch (error) {
+      if (persist) updateStoragePressure(key, error, "saving");
+      if (underLock) throw error;
       return false;
     }
     let remote = storageSnapshotsByScope.get(key);
     if (!remote || saved !== lastSerializedByScope.get(key)) {
       try {
         remote = saved
-          ? normalizePersistedState(JSON.parse(saved), false)
+          ? normalizePersistedState(parseAgentStoredState(saved), false)
           : createEmptyPersistedState();
-      } catch {
+      } catch (error) {
+        if (persist) updateStoragePressure(key, error, "saving");
+        if (underLock) throw error;
         return false;
       }
     }
@@ -3870,18 +4529,31 @@ export const createAgentStore = () => {
         })
         .map((chat) => chat.id)
     );
-    const merged = rebasePersistedChanges(
+    let merged = rebasePersistedChanges(
       base,
       local,
       remote,
       locallyBusy,
       state.remoteBusyChatIds
     );
-    const serialized = persist ? JSON.stringify(merged) : saved;
-    if (persist && serialized !== saved) {
+    let serialized = saved;
+    if (persist) {
       try {
-        storage.setItem(key, serialized!);
-      } catch {
+        const written = writeRetainedState(storage, key, merged, saved);
+        merged = written.retained;
+        serialized = written.serialized;
+        if (written.bytes >= AGENT_STORAGE_CLEANUP_TRIGGER_BYTES)
+          scheduleAutomaticCleanup(key);
+        if (
+          state.storagePressure?.phase !== "admission" ||
+          written.bytes <= AGENT_STORAGE_ADMISSION_BYTES
+        )
+          clearStoragePressure(key);
+      } catch (error) {
+        updateStoragePressure(key, error, "saving");
+        if (error instanceof AgentStorageFullError)
+          scheduleAutomaticCleanup(key);
+        if (underLock) throw error;
         return false;
       }
     }
@@ -3955,10 +4627,31 @@ export const createAgentStore = () => {
     } finally {
       applyingSnapshot = false;
     }
+    refreshChatProtection();
     return true;
   };
 
   store.subscribe((state, previousState) => {
+    if (
+      state.workspaceName !== previousState.workspaceName ||
+      state.userEmail !== previousState.userEmail ||
+      state.currentChatId !== previousState.currentChatId ||
+      state.chats !== previousState.chats ||
+      state.messagesByChatId !== previousState.messagesByChatId ||
+      state.draftsByChatId !== previousState.draftsByChatId ||
+      state.pendingAskByChatId !== previousState.pendingAskByChatId ||
+      state.abortControllersByChatId !==
+        previousState.abortControllersByChatId ||
+      state.queuedUserMessagesByChatId !==
+        previousState.queuedUserMessagesByChatId ||
+      state.queuedUserMessageInFlightByChatId !==
+        previousState.queuedUserMessageInFlightByChatId ||
+      state.remoteBusyChatIds !== previousState.remoteBusyChatIds ||
+      state.sqlFixDraftsById !== previousState.sqlFixDraftsById ||
+      state.expressionDraftTargetsByChatId !==
+        previousState.expressionDraftTargetsByChatId
+    )
+      refreshChatProtection();
     if (applyingSnapshot) return;
     const nonDraftStateChanged =
       state.workspaceName !== previousState.workspaceName ||
@@ -3985,6 +4678,8 @@ export const createAgentStore = () => {
       synchronizeState(state, true);
     }
   });
+
+  refreshChatProtection();
 
   return store;
 };
@@ -4017,7 +4712,13 @@ if (typeof window !== "undefined") {
       useAgentStore.getState().syncPreferences();
     }
   });
-  window.addEventListener("focus", () => useAgentStore.getState().syncState());
+  window.addEventListener("focus", () => {
+    useAgentStore.getState().refreshChatProtection();
+    useAgentStore.getState().syncState();
+  });
+  window.addEventListener("pageshow", () =>
+    useAgentStore.getState().refreshChatProtection()
+  );
   window.addEventListener("pagehide", () => {
     useAgentStore.getState().syncState();
     const state = useAgentStore.getState();
@@ -4038,5 +4739,6 @@ if (typeof window !== "undefined") {
       if (controller) state.setAbortController(chat.id, null);
     }
     useAgentStore.getState().saveState();
+    useAgentStore.getState().releaseChatProtection();
   });
 }
