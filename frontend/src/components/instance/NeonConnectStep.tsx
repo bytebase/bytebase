@@ -1,5 +1,5 @@
 import { KeyRound } from "lucide-react";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { SecretInput } from "@/components/SecretInput";
 import { Alert } from "@/components/ui/alert";
@@ -11,7 +11,6 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { NeonWarning } from "./NeonWarning";
 import { formatClock, type NeonRequestFailure } from "./neon-import";
 
@@ -24,7 +23,6 @@ export function NeonConnectStep({
   failure,
   retryAt,
   destination,
-  actions,
   onApiKeyChange,
   onProjectIdChange,
   onSubmit,
@@ -36,7 +34,6 @@ export function NeonConnectStep({
   // When Neon allows the next request, while that is still ahead.
   retryAt?: number;
   destination: string;
-  actions?: ReactNode;
   onApiKeyChange: (value: string) => void;
   onProjectIdChange: (value: string) => void;
   onSubmit: () => void;
@@ -71,9 +68,8 @@ export function NeonConnectStep({
         onSubmit();
       }}
     >
-      {actions === undefined && (
-        <Button type="submit" hidden tabIndex={-1} aria-hidden="true" />
-      )}
+      {/* Lets Enter in either field submit; the visible button is in the page footer. */}
+      <Button type="submit" hidden tabIndex={-1} aria-hidden="true" />
       <FormFieldGroup density="compact">
         <FormField
           title={
@@ -179,15 +175,6 @@ export function NeonConnectStep({
           <span>{t("instance.neon.connect.credentials-saved-body")}</span>
         </span>
       </p>
-
-      {actions !== undefined && (
-        <>
-          <Separator />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {actions}
-          </div>
-        </>
-      )}
     </form>
   );
 }

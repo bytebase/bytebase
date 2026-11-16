@@ -266,6 +266,15 @@ test("does not start discovery when the workspace cannot add an instance", () =>
   Object.assign(mocks.license, { instanceCountLimit: 10, totalInstanceCount: 10 });
   mount();
   expect(button("instance.neon.connect.find")).toBeDisabled();
+  fireEvent.change(screen.getByLabelText("instance.neon.connect.api-key"), {
+    target: { value: "napi_example" },
+  });
+  const form = screen
+    .getByLabelText("instance.neon.connect.api-key")
+    .closest("form");
+  expect(form).not.toBeNull();
+  fireEvent.submit(form as HTMLFormElement);
+  expect(mocks.discover).not.toHaveBeenCalled();
 });
 
 test("disables Find branches until a rate limit's retry delay passes", async () => {
@@ -776,6 +785,9 @@ test("closes the stop confirmation when the last batch returns first", async () 
 test("Back preserves selections and settings", async () => {
   mocks.discover.mockResolvedValue(page(branches(2)));
   mount();
+  expect(
+    document.querySelector('[data-slot="sticky-action-footer-content"]')
+  ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
   await connect();
   selectAll();
   expect(
@@ -787,6 +799,9 @@ test("Back preserves selections and settings", async () => {
   ).toHaveClass("mx-auto", "w-full", "max-w-5xl");
   fireEvent.click(button("common.back"));
   fireEvent.click(button("common.back"));
+  expect(
+    document.querySelector('[data-slot="sticky-action-footer-content"]')
+  ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
   expect(screen.getByLabelText("instance.neon.connect.api-key")).toHaveValue(
     "napi_example"
   );
@@ -800,6 +815,31 @@ test("Back preserves selections and settings", async () => {
     await screen.findByText("instance.neon.leave.body")
   ).toBeVisible();
   expect(onDismiss).not.toHaveBeenCalled();
+});
+
+test("portals Step 0 StickyActionFooter into footerContainer when provided", () => {
+  const footerSlot = document.createElement("div");
+  document.body.appendChild(footerSlot);
+  try {
+    const view = mount({ footerContainer: footerSlot });
+    expect(
+      view.container.querySelector('[data-slot="sticky-action-footer"]')
+    ).toBeNull();
+    expect(
+      footerSlot.querySelector('[data-slot="sticky-action-footer-content"]')
+    ).toHaveClass("mx-auto", "w-full", "max-w-4xl");
+    expect(
+      within(footerSlot).getByRole("button", { name: "common.cancel" })
+    ).toBeVisible();
+    expect(
+      within(footerSlot).getByRole("button", {
+        name: "instance.neon.connect.find",
+      })
+    ).toBeVisible();
+    view.unmount();
+  } finally {
+    footerSlot.remove();
+  }
 });
 
 test("inherits horizontal field layout on Connect when nested inside a horizontal form", () => {

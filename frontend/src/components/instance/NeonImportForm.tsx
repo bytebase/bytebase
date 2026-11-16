@@ -464,7 +464,7 @@ export function NeonImportForm({
   };
 
   const connect = async () => {
-    if (connecting || connectRetryIn > 0) return;
+    if (connecting || connectRetryIn > 0 || capacity === 0) return;
     if (!apiKey.trim()) {
       setConnectFailure({ kind: "key-empty" });
       return;
@@ -818,7 +818,42 @@ export function NeonImportForm({
   const footer = ((): ReactNode => {
     switch (step) {
       case 0:
-        return null;
+        return (
+          <StickyActionFooter
+            contentClassName="mx-auto w-full max-w-4xl"
+            left={
+              <Button
+                type="button"
+                appearance="outline"
+                disabled={connecting}
+                onClick={() =>
+                  selected.length > 0 ? setConfirm({ kind: "leave" }) : close()
+                }
+              >
+                {t("common.cancel")}
+              </Button>
+            }
+            right={
+              <Button
+                type="button"
+                className="tabular-nums"
+                disabled={connecting || connectRetryIn > 0 || capacity === 0}
+                onClick={() => void connect()}
+              >
+                {connecting && (
+                  <LoaderCircle className="size-4 motion-safe:animate-spin" />
+                )}
+                {connecting
+                  ? t("instance.neon.connect.finding")
+                  : connectRetryIn > 0
+                    ? t("instance.neon.connect.retry-in", {
+                        time: formatCountdown(connectRetryIn),
+                      })
+                    : t("instance.neon.connect.find")}
+              </Button>
+            }
+          />
+        );
       case 1:
         return (
           <StickyActionFooter
@@ -991,40 +1026,6 @@ export function NeonImportForm({
               failure={connectFailure}
               retryAt={connectRetryIn > 0 ? connectRetryAt : undefined}
               destination={destination}
-              actions={
-                <>
-                  <Button
-                    type="button"
-                    appearance="outline"
-                    disabled={connecting}
-                    onClick={() =>
-                      selected.length > 0
-                        ? setConfirm({ kind: "leave" })
-                        : close()
-                    }
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="tabular-nums"
-                    disabled={
-                      connecting || connectRetryIn > 0 || capacity === 0
-                    }
-                  >
-                    {connecting && (
-                      <LoaderCircle className="size-4 motion-safe:animate-spin" />
-                    )}
-                    {connecting
-                      ? t("instance.neon.connect.finding")
-                      : connectRetryIn > 0
-                        ? t("instance.neon.connect.retry-in", {
-                            time: formatCountdown(connectRetryIn),
-                          })
-                        : t("instance.neon.connect.find")}
-                  </Button>
-                </>
-              }
               onApiKeyChange={(value) => {
                 setApiKey(value);
                 if (
