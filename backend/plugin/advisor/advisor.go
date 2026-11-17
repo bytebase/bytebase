@@ -61,6 +61,10 @@ type Context struct {
 	// Used for size limit checks without needing the full statement text.
 	StatementsTotalSize int
 	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
+	// The probe's role switch belongs to the driver, which reads its own connection
+	// context, so a caller that opens the driver for a review must pass this same value to
+	// it (db.ConnectionContext.TenantMode); this field only decides whether a rule probes
+	// as the owner or trusts the synced schema's owner.
 	TenantMode bool
 
 	// SQL review level fields.

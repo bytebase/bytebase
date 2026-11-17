@@ -10,9 +10,11 @@ import (
 
 var _ db.Prober = (*Driver)(nil)
 
-// Probe runs a live review rule's probe. In tenant mode it reads the database
-// owner and sets the session role to it first, so the probe plans the statement
-// as the migration will run it.
+// Probe runs a live review rule's probe. When the connection was opened in
+// tenant mode it reads the database owner and sets the session role to it first,
+// so the probe plans the statement as the migration will run it. The mode comes
+// from the driver's connection context, which a caller that opens a driver for a
+// review must set.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
 	if d.connectionCtx.TenantMode {
 		owner, err := d.GetCurrentDatabaseOwner(ctx)

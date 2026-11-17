@@ -851,7 +851,11 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 	}
 
 	dbMetadataProto := dbMetadata.GetProto()
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		// A live rule's probe switches to the database owner inside the driver, so the
+		// driver, not only the advisor context, must know the project is in tenant mode.
+		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
+	})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 	}
