@@ -2526,6 +2526,18 @@
         "resolve": "解決",
         "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
+        "targets": {
+          "clear-search": "検索をクリア",
+          "list-label": "データベース",
+          "more-environments": "+{{n}}",
+          "n-databases_one": "{{count}} 件のデータベース",
+          "n-databases_other": "{{count}} 件のデータベース",
+          "n-of-m-databases_one": "{{total}} 件中 {{count}} 件のデータベース",
+          "n-of-m-databases_other": "{{total}} 件中 {{count}} 件のデータベース",
+          "no-match": "「{{query}}」に一致するデータベースはありません",
+          "open-group": "グループを開く",
+          "search-placeholder": "データベースを検索"
+        },
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
         "walker": {

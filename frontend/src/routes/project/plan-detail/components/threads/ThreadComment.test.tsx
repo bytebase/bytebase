@@ -31,6 +31,7 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
+  usePlanFeature: () => false,
   useUserByIdentifier: (principal: string | undefined) =>
     principal
       ? {
@@ -40,6 +41,20 @@ vi.mock("@/hooks/useAppState", () => ({
         }
       : undefined,
 }));
+
+vi.mock("@/stores/app", () => {
+  const state = {
+    batchGetOrFetchDatabases: vi.fn(async () => []),
+    databasesByName: {},
+    dbGroupsByName: {},
+    dbGroupViewByName: {},
+    environmentList: [],
+  };
+  const useAppStore = (selector: (s: typeof state) => unknown) =>
+    selector(state);
+  useAppStore.getState = () => state;
+  return { useAppStore };
+});
 
 vi.mock("../PlanTargetDisplay", () => ({
   PlanTargetDisplay: ({ target }: { target: string }) => (

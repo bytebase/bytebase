@@ -74,6 +74,7 @@ vi.mock("@/components/UserAvatar", () => ({ UserAvatar: () => null }));
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => ({ email: "me@example.com", title: "Me" }),
+  usePlanFeature: () => false,
 }));
 
 vi.mock("@/hooks/usePrincipal", () => ({
@@ -89,7 +90,12 @@ vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 
 vi.mock("@/stores/app", () => {
   const state = {
+    batchGetOrFetchDatabases: vi.fn(async () => []),
     batchGetOrFetchUsers: vi.fn(async () => undefined),
+    databasesByName: {},
+    dbGroupsByName: {},
+    dbGroupViewByName: {},
+    environmentList: [],
     fetchIssueCommentTimeline: mocks.fetchIssueCommentTimeline,
     getIssueComments: () => mocks.comments,
     projectsByName: {},

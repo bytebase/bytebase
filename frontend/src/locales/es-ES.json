@@ -2526,6 +2526,18 @@
         "resolve": "Resolver",
         "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
+        "targets": {
+          "clear-search": "Borrar búsqueda",
+          "list-label": "Bases de datos",
+          "more-environments": "+{{n}}",
+          "n-databases_one": "{{count}} base de datos",
+          "n-databases_other": "{{count}} bases de datos",
+          "n-of-m-databases_one": "{{count}} de {{total}} bases de datos",
+          "n-of-m-databases_other": "{{count}} de {{total}} bases de datos",
+          "no-match": "Ninguna base de datos coincide con «{{query}}»",
+          "open-group": "Abrir grupo",
+          "search-placeholder": "Buscar bases de datos"
+        },
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
         "walker": {
