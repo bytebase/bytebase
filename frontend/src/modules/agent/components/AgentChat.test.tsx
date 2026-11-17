@@ -303,6 +303,7 @@ beforeEach(async () => {
     workspaceName: "workspaces/demo",
     userEmail: "member@example.com",
     abortControllersByChatId: {},
+    storagePressure: undefined,
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
     sqlFixSourcesByChatId: {},
@@ -520,7 +521,7 @@ describe("AgentChat", () => {
     }
   });
 
-  test.each(["running", "awaiting_user", "queued"] as const)(
+  test.each(["running", "awaiting_user", "queued", "remote", "controller", "pending answer", "queue in flight"] as const)(
     "disables user-message resend while the chat is %s",
     (state) => {
       const store = useAgentStore.getState();
@@ -533,6 +534,13 @@ describe("AgentChat", () => {
       if (state === "queued") {
         store.queueUserMessage({ chatId: chat.id, text: "Queued request", page: { path: "/demo", title: "Demo" } });
       }
+      if (state === "remote") useAgentStore.setState({ remoteBusyChatIds: { [chat.id]: true } });
+      if (state === "controller") store.setAbortController(chat.id, new AbortController());
+      if (state === "pending answer") {
+        store.awaitUser(chat.id, { toolCallId: "question", kind: "input", prompt: "Which database?" });
+        useAgentStore.setState((current) => ({ chats: current.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, status: "error", lastError: "Saving the question failed" } : candidate) }));
+      }
+      if (state === "queue in flight") useAgentStore.setState({ queuedUserMessageInFlightByChatId: { [chat.id]: true } });
       const onResend = vi.fn();
       const { container, render, unmount } = renderIntoContainer(
         <AgentChat onResend={onResend} />
@@ -551,6 +559,30 @@ describe("AgentChat", () => {
       }
     }
   );
+
+  test.each(
+    (["idle", "error", "paused"] as const).flatMap((status) =>
+      ([undefined, "budget", "quota", "unavailable"] as const).map((reason) => ({ status, reason }))
+    )
+  )("allows Resend for $status with storage pressure $reason", ({ status, reason }) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    const message = store.addMessage({ chatId: chat.id, role: "user", content: "Original request" })!;
+    store.setChatStatus(chat.id, status, { lastError: status === "error" ? "The previous request failed" : null });
+    useAgentStore.setState({ storagePressure: reason ? { reason, phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } : undefined });
+    const onResend = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onResend={onResend} />);
+    render();
+    try {
+      const resend = container.querySelector<HTMLButtonElement>('button[aria-label="agent.resend-message"]');
+      expect(resend).toBeEnabled();
+      act(() => resend?.click());
+      expect(onResend).toHaveBeenCalledExactlyOnceWith(message.id);
+    } finally {
+      unmount();
+      useAgentStore.setState({ storagePressure: undefined });
+    }
+  });
 
   test("hides resend and follow-up actions in archived transcripts while keeping Copy", async () => {
     const store = useAgentStore.getState();
@@ -741,6 +773,130 @@ describe("AgentChat", () => {
       expect(onRetry).toHaveBeenCalledOnce();
     } finally {
       unmount();
+    }
+  });
+
+  test.each(["budget", "quota", "unavailable"] as const)("shows one %s storage failure in the transcript while preserving its diagnostic error", (reason) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" });
+    store.finishChatRun(chat.id, { status: "error", lastError: "QuotaExceededError: Result not saved" });
+    useAgentStore.setState({ storagePressure: { reason, phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    const onRetry = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onRetry={onRetry} />);
+    render();
+    try {
+      const storage = container.querySelector("[data-agent-storage-status]");
+      expect(storage).not.toBeNull();
+      expect(container.querySelectorAll('[role="alert"]')).toHaveLength(1);
+      expect(storage).toHaveTextContent(reason === "unavailable" ? "agent.storage.save-failed" : "agent.storage.full");
+      expect(container.querySelector("[data-agent-error-summary]")).toBeNull();
+      expect(container.querySelector("[data-agent-retry]")).toBeNull();
+      act(() => container.querySelector<HTMLButtonElement>("[data-agent-error-details]")?.click());
+      expect(storage).toHaveTextContent("QuotaExceededError: Result not saved");
+      expect(store.getChat(chat.id)?.lastError).toBe("QuotaExceededError: Result not saved");
+      expect(onRetry).not.toHaveBeenCalled();
+    } finally {
+      unmount();
+      useAgentStore.setState({ storagePressure: undefined });
+    }
+  });
+
+  test("retries transcript save failures through the store instead of retrying execution", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Keep this question" });
+    const retrySaving = vi.fn(async () => true);
+    const onRetry = vi.fn();
+    useAgentStore.setState({ flushRunPersistence: retrySaving, storagePressure: { reason: "unavailable", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onRetry={onRetry} />);
+    render();
+    try {
+      await act(async () => within(container).getByRole("button", { name: "agent.storage.retry" }).click());
+      expect(retrySaving).toHaveBeenCalledOnce();
+      expect(onRetry).not.toHaveBeenCalled();
+      expect(container).toHaveTextContent("Keep this question");
+    } finally {
+      unmount();
+      useAgentStore.setState({ flushRunPersistence: store.flushRunPersistence, storagePressure: undefined });
+    }
+  });
+
+  test("reveals a new transcript storage failure without forcing scroll for pressure updates", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    for (let index = 0; index < 12; index++) {
+      store.addMessage({ chatId: chat.id, role: "user", content: `Earlier question ${index}` });
+      store.addMessage({ chatId: chat.id, role: "assistant", content: `Earlier answer ${index}` });
+    }
+    const messageCount = store.getMessages(chat.id).length;
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      const transcript = container.querySelector<HTMLDivElement>("[data-agent-chat-scroll-area]")!;
+      Object.defineProperty(transcript, "scrollHeight", { value: 1400 });
+      transcript.scrollTop = 100;
+      const pressure = { reason: "budget" as const, phase: "admission" as const, bytes: 3 * 1024 * 1024, limitBytes: 2 * 1024 * 1024 };
+      act(() => useAgentStore.setState({ storagePressure: pressure }));
+      expect(useAgentStore.getState().getMessages(chat.id)).toHaveLength(messageCount);
+      expect(container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+      expect(transcript.scrollTop).toBe(1400);
+
+      transcript.scrollTop = 250;
+      act(() => useAgentStore.setState({ storagePressure: { ...pressure, bytes: pressure.bytes + 1024 } }));
+      expect(transcript.scrollTop).toBe(250);
+    } finally {
+      unmount();
+      useAgentStore.setState({ storagePressure: undefined });
+    }
+  });
+
+  test("delegates confirmed transcript storage recovery to the supplied action", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Keep this question" });
+    useAgentStore.setState({ storagePressure: { reason: "budget", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    const onFreeSpaceAndRetry = vi.fn(async () => true);
+    const { container, render, unmount } = renderIntoContainer(<AgentChat onFreeSpaceAndRetry={onFreeSpaceAndRetry} />);
+    document.body.appendChild(container);
+    render();
+    try {
+      await act(async () => within(container).getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+      const dialog = await within(document.body).findByRole("dialog", { name: "agent.storage.free-title" });
+      expect(onFreeSpaceAndRetry).not.toHaveBeenCalled();
+      await act(async () => within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+      expect(onFreeSpaceAndRetry).toHaveBeenCalledOnce();
+      expect(container.querySelectorAll("[data-agent-storage-status]")).toHaveLength(1);
+    } finally {
+      unmount();
+      container.remove();
+      useAgentStore.setState({ storagePressure: undefined });
+    }
+  });
+
+  test.each(["workspace", "user", "chat"] as const)("resets storage diagnostic disclosure after the current %s changes", (scope) => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.finishChatRun(chat.id, { status: "error", lastError: "Storage diagnostic" });
+    const pressure = { reason: "unavailable" as const, phase: "saving" as const, bytes: 1024, limitBytes: 3 * 1024 * 1024 };
+    useAgentStore.setState({ storagePressure: pressure });
+    const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+    render();
+    try {
+      act(() => container.querySelector<HTMLButtonElement>("[data-agent-error-details]")?.click());
+      expect(container.querySelector("[data-agent-error-details]")).toHaveAttribute("aria-expanded", "true");
+      act(() => {
+        if (scope === "workspace") useAgentStore.setState({ workspaceName: "workspaces/another" });
+        else if (scope === "user") useAgentStore.setState({ userEmail: "another@example.com" });
+        else store.createChat({ title: "Another chat" });
+        useAgentStore.setState({ storagePressure: pressure });
+      });
+      expect(container.querySelectorAll("[data-agent-storage-status]")).toHaveLength(1);
+      if (scope === "chat") expect(container).not.toHaveTextContent("Storage diagnostic");
+      else expect(container.querySelector("[data-agent-error-details]")).toHaveAttribute("aria-expanded", "false");
+    } finally {
+      unmount();
+      useAgentStore.setState({ storagePressure: undefined });
     }
   });
 
@@ -2755,8 +2911,9 @@ describe("AgentChat", () => {
         );
         render();
         try {
-          const result = container.querySelector("[data-agent-interruption-status]");
-          expect(result?.textContent).toContain("agent.request-stopped-by-user");
+          const result = container.querySelector(status === "error" ? '[role="alert"]' : "[data-agent-interruption-status]");
+          expect(result?.textContent).toContain(status === "error" ? "Request stopped" : "agent.request-stopped-by-user");
+          expect(container.querySelector("[data-agent-interruption-status]") === null).toBe(status === "error");
           const retry = Array.from(result?.querySelectorAll("button") ?? []).find(
             (button) => button.textContent === "agent.retry-last-chat-turn"
           );
@@ -2814,7 +2971,7 @@ describe("AgentChat", () => {
       );
       render();
       try {
-        expect(container.querySelector("[data-agent-interruption-status]")).not.toBeNull();
+        expect(container.querySelector("[data-agent-interruption-status]") === null).toBe(state === "token limit");
         expect(container.textContent).not.toContain("agent.retry-last-chat-turn");
         expect(onRetry).not.toHaveBeenCalled();
       } finally {

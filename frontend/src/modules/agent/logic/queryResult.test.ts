@@ -10,6 +10,39 @@ const plainRows = (rows: QueryRow[]) =>
   rows.map((row) => row.values.map(extractSQLRowValuePlain));
 
 describe("parseAgentQueryResult", () => {
+  test.each(["sampled", "omitted"])(
+    "uses received counts instead of fabricating an empty result for %s rows",
+    (level) => {
+      const preview = parseAgentQueryResult(
+        JSON.stringify({
+          status: 200,
+          response: {
+            results: [
+              { statement: "SET search_path TO public" },
+              { columnNames: ["value"], rows: [] },
+            ],
+          },
+          agentQueryPreview: {
+            version: 1,
+            level,
+            results: [
+              { receivedRows: 0, retainedRows: 0 },
+              { receivedRows: 50, retainedRows: 0 },
+            ],
+          },
+        })
+      );
+
+      expect(preview?.resultSets[0]).toMatchObject({
+        returnedRowCount: 50,
+        retainedRowCount: 0,
+        displayedRowCount: 0,
+        rowsTruncated: true,
+        previewLevel: level,
+      });
+    }
+  );
+
   test("returns row values, including masked strings and nulls, from a successful query", () => {
     const preview = parseAgentQueryResult(
       apiResult([
@@ -163,6 +196,15 @@ describe("parseAgentQueryResult", () => {
     JSON.stringify({ status: 200, response: {} }),
     JSON.stringify({ status: 200, response: { results: "not an array" } }),
     JSON.stringify({ status: 200, response: { results: [{ rows: {} }] } }),
+    JSON.stringify({
+      status: 200,
+      response: { results: [{ columnNames: ["name"], rows: [] }] },
+      agentQueryPreview: {
+        version: 2,
+        level: "omitted",
+        results: [{ receivedRows: 50, retainedRows: 0 }],
+      },
+    }),
   ])("ignores malformed or unsuccessful API results: %s", (raw) => {
     expect(parseAgentQueryResult(raw)).toBeUndefined();
   });

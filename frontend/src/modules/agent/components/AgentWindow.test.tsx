@@ -1,6 +1,6 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { act, cloneElement, useState } from "react";
+import { act, cloneElement, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
@@ -20,6 +20,8 @@ import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  freeSpaceAndRetryActionRef: undefined as { current: (() => Promise<boolean>) | null } | undefined,
+  inputUnmounted: vi.fn(),
   accessGrantDrawerOnClose: undefined as (() => void) | undefined,
   routeName: "project.plan.detail",
   activeSQLTheme: undefined as SQLEditorTheme | undefined,
@@ -196,8 +198,10 @@ vi.mock("./AgentChat", () => ({
     onSelectSuggestion,
     onContinueAction,
     onOpenAccessGrantDraft,
+    onFreeSpaceAndRetry,
   }: {
     contextLabel?: string;
+    onFreeSpaceAndRetry?: () => Promise<boolean>;
     onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
     onSelectSuggestion?: (starterId: "project-open-blockers") => void;
     onContinueAction?: (
@@ -205,8 +209,11 @@ vi.mock("./AgentChat", () => ({
       prompt: string,
       references: { kind: "project"; name: string; project: string; label: string }[]
     ) => void;
-  }) => (
-    <div data-testid="agent-chat" data-context-label={contextLabel}>
+  }) => {
+    const [storageRecoveryResult, setStorageRecoveryResult] = useState<boolean>();
+    return (
+    <div data-testid="agent-chat" data-context-label={contextLabel} data-storage-recovery-result={storageRecoveryResult}>
+      <button type="button" data-testid="agent-free-storage" disabled={!onFreeSpaceAndRetry} onClick={async () => setStorageRecoveryResult(await onFreeSpaceAndRetry?.() ?? false)} />
       <button type="button" data-testid="open-access-draft" onClick={() => {
         onOpenAccessGrantDraft?.({ project: "projects/orders", sourceDatabase: "instances/prod/databases/orders", targets: ["instances/prod/databases/orders"], statement: "SELECT 1", schema: "", container: "", unmask: true, reason: "Investigate missing order" });
       }} />
@@ -248,11 +255,17 @@ vi.mock("./AgentChat", () => ({
         }
       />
     </div>
-  ),
+    );
+  },
 }));
 
 vi.mock("./AgentInput", () => ({
-  AgentInput: () => <div data-testid="agent-input" />,
+  AgentInput: ({ freeSpaceAndRetryActionRef }: { freeSpaceAndRetryActionRef?: { current: (() => Promise<boolean>) | null } }) => {
+    mocks.freeSpaceAndRetryActionRef = freeSpaceAndRetryActionRef;
+    const [answer, setAnswer] = useState("");
+    useEffect(() => () => mocks.inputUnmounted(), []);
+    return <div data-testid="agent-input"><input aria-label="Mock pending answer" value={answer} onChange={(event) => setAnswer(event.target.value)} /></div>;
+  },
 }));
 
 let AgentWindow: typeof import("./AgentWindow").AgentWindow;
@@ -339,6 +352,8 @@ const selectChatMenuAction = async (chatId: string, selector: string) => {
 };
 
 beforeEach(async () => {
+  mocks.freeSpaceAndRetryActionRef = undefined;
+  mocks.inputUnmounted.mockClear();
   vi.stubGlobal("localStorage", createMockStorage());
   vi.stubGlobal(
     "ResizeObserver",
@@ -376,6 +391,7 @@ beforeEach(async () => {
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     currentChatId: initialState.currentChatId,
+    chatProtectionReady: true,
     abortControllersByChatId: {},
     queuedUserMessagesByChatId: {},
     queuedUserMessageInFlightByChatId: {},
@@ -439,6 +455,166 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   document.body.innerHTML = "";
+});
+
+test.each([
+  { width: 750, archived: false, listSelector: "[data-agent-chat-sidebar]" },
+  { width: 700, archived: false, listSelector: "[data-agent-compact-drawer]" },
+  { width: 479, archived: false, listSelector: "[data-agent-mobile-chat-list]" },
+  { width: 750, archived: true, listSelector: "[data-agent-chat-sidebar]" },
+  { width: 700, archived: true, listSelector: "[data-agent-compact-drawer]" },
+  { width: 479, archived: true, listSelector: "[data-agent-mobile-chat-list]" },
+])("opens retention information on demand at width $width with archived=$archived", async ({ width, archived, listSelector }) => {
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    await openChatList(width, archived);
+    const history = document.body.querySelector(listSelector) as HTMLElement;
+
+    expect(screen.queryByText("agent.storage.retention-policy")).toBeNull();
+    expect(enUS.agent.storage["retention-policy"]).toBe(
+      "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved."
+    );
+    expect(within(history).queryByRole("alert")).toBeNull();
+
+    const trigger = screen.getByRole("button", { name: "agent.storage.retention-info" });
+    expect(trigger).toBeVisible();
+    trigger.focus();
+    await act(async () => {
+      trigger.click();
+      await Promise.resolve();
+    });
+
+    const popover = screen.getByRole("dialog", { name: "agent.storage.retention-info" });
+    expect(within(popover).getByText("agent.storage.retention-policy")).toBeVisible();
+    expect(getLayerRoot("agent")).toContainElement(popover);
+    expect(getLayerRoot("overlay")).not.toContainElement(popover);
+    expect(within(history).queryByText("agent.storage.retention-policy")).toBeNull();
+
+    await act(async () => {
+      fireEvent.keyDown(popover, { key: "Escape" });
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("dialog", { name: "agent.storage.retention-info" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect(history).toBeVisible();
+  } finally {
+    unmount();
+  }
+});
+
+test.each([1200, 700, 390])("waits for selected-chat protection before rendering its conversation at width %s", (width) => {
+  const store = useAgentStore.getState();
+  const nextChat = store.createChat({
+    title: "Protected conversation",
+    context: "projects/analytics",
+    select: false,
+  });
+  store.addMessage({ chatId: nextChat.id, role: "user", content: "Saved discussion" });
+  store.setDraft(nextChat.id, { text: "Keep this unsent draft" });
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => {
+      store.setCurrentChat(nextChat.id);
+      store.releaseChatProtection();
+    });
+
+    expect(screen.queryByTestId("agent-chat")).toBeNull();
+    expect(screen.queryByTestId("agent-input")).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("common.loading");
+    expect(store.getDraft(nextChat.id).text).toBe("Keep this unsent draft");
+
+    act(() => store.refreshChatProtection());
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+    expect(store.getDraft(nextChat.id).text).toBe("Keep this unsent draft");
+    expect(store.getMessages(nextChat.id).map((message) => message.content)).toEqual(["Saved discussion"]);
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps the conversation available when protection readiness is unspecified", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ chatProtectionReady: undefined }));
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+  } finally {
+    unmount();
+  }
+});
+
+test.each([1200, 390])("preserves the mounted conversation while its protection is temporarily released at width %s", async (width) => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({ title: "Current question", context: mocks.workspace.name });
+  await act(async () => store.refreshChatProtection());
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    const conversation = screen.getByTestId("agent-chat");
+    const input = screen.getByTestId("agent-input");
+    act(() => fireEvent.change(screen.getByRole("textbox", { name: "Mock pending answer" }), { target: { value: "Keep this custom answer" } }));
+
+    act(() => store.releaseChatProtection());
+
+    expect(screen.getByTestId("agent-chat")).toBe(conversation);
+    expect(screen.getByTestId("agent-input")).toBe(input);
+    expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+    expect(input).not.toBeVisible();
+    expect(input.closest("[inert]")).not.toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("common.loading");
+
+    act(() => store.refreshChatProtection());
+
+    expect(screen.getByTestId("agent-input")).toBe(input);
+    expect(screen.getByRole("textbox", { name: "Mock pending answer" })).toHaveValue("Keep this custom answer");
+    expect(input).toBeVisible();
+    expect(input.closest("[inert]")).toBeNull();
+    expect(store.getChat(chat.id)).not.toBeNull();
+  } finally {
+    unmount();
+  }
+});
+
+test("does not block an unselected conversation while chat protection is pending", () => {
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ currentChatId: null, chatProtectionReady: false }));
+
+    expect(screen.getByTestId("agent-chat")).toBeVisible();
+    expect(screen.getByTestId("agent-input")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+  } finally {
+    unmount();
+  }
+});
+
+test("keeps landing and preferences available while chat protection is pending", () => {
+  mocks.pageResource = { kind: "project", name: "projects/orders", project: "projects/orders" };
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    act(() => useAgentStore.setState({ chatProtectionReady: false }));
+
+    expect(document.body.querySelector("[data-agent-contextual-start]")).toBeVisible();
+    expect(screen.queryByText("common.loading")).toBeNull();
+    act(() => screen.getByRole("button", { name: "agent.preferences.title" }).click());
+
+    expect(screen.getByRole("region", { name: "agent.preferences.title" })).toBeVisible();
+  } finally {
+    unmount();
+  }
 });
 
 test("keeps the inline access draft mounted while minimized and switching chats, and clears it on close", async () => {
@@ -776,6 +952,121 @@ test("shows an empty start on general pages without discarding the previous disc
 });
 
 describe("AgentWindow", () => {
+  test("does not offer execution recovery when the archived chat has no input handler", () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ title: "Archived question", context: mocks.workspace.name });
+    store.archiveChat(chat.id);
+    store.setCurrentChat(chat.id);
+    const view = renderIntoContainer(<AgentWindow />);
+    view.render();
+    try {
+      expect(screen.queryByTestId("agent-input")).toBeNull();
+      expect(screen.getByTestId("agent-free-storage")).toBeDisabled();
+    } finally { view.unmount(); }
+  });
+
+  test("delegates transcript storage recovery to the input handler and preserves its boolean result", async () => {
+    const store = useAgentStore.getState();
+    store.createChat({ title: "Current question", context: mocks.workspace.name });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+    try {
+      const recover = screen.getByTestId("agent-free-storage");
+      await act(async () => recover.click());
+      expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "false");
+      expect(mocks.freeSpaceAndRetryActionRef).toBeDefined();
+      const recovery = vi.fn(async () => true);
+      mocks.freeSpaceAndRetryActionRef!.current = recovery;
+      await act(async () => recover.click());
+      expect(recovery).toHaveBeenCalledOnce();
+      expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "true");
+      recovery.mockResolvedValueOnce(false);
+      await act(async () => recover.click());
+      expect(recovery).toHaveBeenCalledTimes(2);
+      expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "false");
+    } finally {
+      unmount();
+    }
+  });
+
+  test("preserves the input through real history reclamation and protection reacquisition", async () => {
+    const held = new Set<{ name: string; mode: LockMode }>();
+    const waiters = new Set<() => void>();
+    let releaseCleanup!: () => void;
+    const cleanup = new Promise<void>((resolve) => { releaseCleanup = resolve; });
+    let enterCleanup!: () => void;
+    const enteredCleanup = new Promise<void>((resolve) => { enterCleanup = resolve; });
+    let pauseCleanup = true;
+    const locks = {
+      request: async <T,>(name: string, options: LockOptions, action: (lock: Lock | null) => T | PromiseLike<T>): Promise<T> => {
+        const mode = options.mode ?? "exclusive";
+        const unavailable = () => [...held].some((lock) => lock.name === name && (mode === "exclusive" || lock.mode === "exclusive"));
+        await Promise.resolve();
+        while (unavailable()) {
+          if (options.ifAvailable) return await action(null);
+          if (options.signal?.aborted) throw options.signal.reason;
+          await new Promise<void>((resolve) => waiters.add(resolve));
+        }
+        if (options.signal?.aborted) throw options.signal.reason;
+        const lock = { name, mode };
+        held.add(lock);
+        try {
+          if (pauseCleanup && mode === "exclusive" && name.startsWith("bb-agent-chat-protection:")) {
+            pauseCleanup = false;
+            enterCleanup();
+            await cleanup;
+          }
+          return await action(lock);
+        } finally {
+          held.delete(lock);
+          for (const resolve of waiters) resolve();
+          waiters.clear();
+        }
+      },
+      query: async () => ({ held: [...held].map((lock) => ({ ...lock, clientId: "test" })), pending: [] }),
+    };
+    vi.stubGlobal("navigator", { locks });
+    const store = useAgentStore.getState();
+    store.createChat({ title: "Current question", context: mocks.workspace.name });
+    await act(async () => { store.refreshChatProtection(); await store.flushRunPersistence(); });
+    await waitFor(() => expect(useAgentStore.getState().chatProtectionReady).toBe(true));
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      const input = screen.getByTestId("agent-input");
+      act(() => fireEvent.change(screen.getByRole("textbox", { name: "Mock pending answer" }), { target: { value: "Keep this custom answer" } }));
+      const recovery = vi.fn(async () => (await store.freeAgentStorage()) && mocks.inputUnmounted.mock.calls.length === 0);
+      mocks.freeSpaceAndRetryActionRef!.current = recovery;
+
+      await act(async () => {
+        screen.getByTestId("agent-free-storage").click();
+        await enteredCleanup;
+      });
+
+      expect(useAgentStore.getState().chatProtectionReady).toBe(false);
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(input).not.toBeVisible();
+      expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+
+      await act(async () => { releaseCleanup(); await cleanup; });
+      await waitFor(() => expect(useAgentStore.getState().chatProtectionReady).toBe(true));
+      await waitFor(() => expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "true"));
+
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(screen.getByRole("textbox", { name: "Mock pending answer" })).toHaveValue("Keep this custom answer");
+      expect(input).toBeVisible();
+      expect(recovery).toHaveBeenCalledOnce();
+    } finally {
+      releaseCleanup();
+      unmount();
+      await act(async () => {
+        store.releaseChatProtection();
+        vi.unstubAllGlobals();
+        store.refreshChatProtection();
+      });
+    }
+  });
+
   test.each([
     { width: 1200, action: "change" },
     { width: 390, action: "change" },
@@ -3882,12 +4173,9 @@ describe("AgentWindow", () => {
         ).click()
       );
       const confirmation = getLayerRoot("agent").querySelector(
-        "[data-agent-dialog-content]"
+        "[data-agent-delete-all-chats-confirmation]"
       ) as HTMLElement;
-      const confirmButton = Array.from(
-        confirmation.querySelectorAll("button")
-      ).find((button) => button.textContent === "common.confirm");
-      act(() => confirmButton?.click());
+      act(() => within(confirmation).getByRole("button", { name: "common.delete" }).click());
 
       expect(useAgentStore.getState().getChat(archivedChat.id)).toBeNull();
       expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
@@ -3936,6 +4224,11 @@ describe("AgentWindow", () => {
           ) as HTMLElement
         ).click()
       );
+      const bulkConfirmation = getLayerRoot("agent").querySelector(
+        "[data-agent-archive-all-chats-confirmation]"
+      ) as HTMLElement;
+      act(() => within(bulkConfirmation).getByRole("button", { name: "common.archive" }).click());
+      expect(useAgentStore.getState().getChat(firstActiveChatId)?.archived).toBe(true);
       expect(useAgentStore.getState().currentChatId).toBe(archivedChat.id);
     } finally {
       unmount();
@@ -4990,6 +5283,108 @@ describe("AgentWindow", () => {
           '[data-agent-new-chat-for-context="projects/analytics"]'
         )
       ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    { width: 750, action: "archive", archived: false, label: "common.archive" },
+    { width: 1200, action: "archive", archived: false, label: "common.archive" },
+    { width: 750, action: "delete", archived: true, label: "common.delete" },
+    { width: 1200, action: "delete", archived: true, label: "common.delete" },
+  ])("confirms $action all chats in an anchored popover at width $width", async ({ width, action, archived, label }) => {
+    useAgentStore.setState({ size: { width, height: 600 } });
+    const store = useAgentStore.getState();
+    const activeChatId = store.currentChatId!;
+    const otherActiveChat = store.createChat({ title: "Other active chat", select: false });
+    const archivedChat = store.createChat({ title: "Archived chat", archived: true, select: false });
+    const otherArchivedChat = store.createChat({ title: "Other archived chat", archived: true, select: false });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      await openChatList(width, archived);
+      const trigger = document.body.querySelector(
+        '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+      ) as HTMLButtonElement;
+      const agentRoot = getLayerRoot("agent");
+      const selector = `[data-agent-${action}-all-chats-confirmation]`;
+      const openConfirmation = async () => {
+        await act(async () => trigger.click());
+        await act(async () => {
+          (agentRoot.querySelector(`[data-agent-${action}-all-chats]`) as HTMLElement).click();
+        });
+        return agentRoot.querySelector(selector) as HTMLElement;
+      };
+      const expectUnchanged = () => {
+        expect(store.getChat(activeChatId)?.archived).toBe(false);
+        expect(store.getChat(otherActiveChat.id)?.archived).toBe(false);
+        expect(store.getChat(archivedChat.id)?.archived).toBe(true);
+        expect(store.getChat(otherArchivedChat.id)?.archived).toBe(true);
+        expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+      };
+
+      let confirmation = await openConfirmation();
+      expectUnchanged();
+      expect(confirmation).toHaveAttribute("role", "dialog");
+      expect(confirmation).toHaveAccessibleName(`agent.${action}-all-chats-confirmation`);
+      expect(agentRoot.querySelector("[data-agent-dialog-content]")).toBeNull();
+      expect(getLayerRoot("overlay").querySelector(selector)).toBeNull();
+      await waitFor(() => expect(confirmation).toContainElement(document.activeElement as HTMLElement));
+      await act(async () => within(confirmation).getByRole("button", { name: "common.cancel" }).click());
+      expect(agentRoot.querySelector(selector)).toBeNull();
+      expectUnchanged();
+      await waitFor(() => expect(trigger).toHaveFocus());
+
+      confirmation = await openConfirmation();
+      await act(async () => fireEvent.keyDown(confirmation, { key: "Escape" }));
+      expect(agentRoot.querySelector(selector)).toBeNull();
+      expectUnchanged();
+
+      confirmation = await openConfirmation();
+      await act(async () => within(confirmation).getByRole("button", { name: label }).click());
+      expect(agentRoot.querySelector(selector)).toBeNull();
+      if (archived) {
+        expect(store.getChat(archivedChat.id)).toBeNull();
+        expect(store.getChat(otherArchivedChat.id)).toBeNull();
+        expect(store.getChat(activeChatId)?.archived).toBe(false);
+        expect(store.getChat(otherActiveChat.id)?.archived).toBe(false);
+        expect(useAgentStore.getState().currentChatId).toBe(activeChatId);
+      } else {
+        expect(store.getChat(activeChatId)?.archived).toBe(true);
+        expect(store.getChat(otherActiveChat.id)?.archived).toBe(true);
+        expect(store.getChat(archivedChat.id)?.archived).toBe(true);
+        expect(store.getChat(otherArchivedChat.id)?.archived).toBe(true);
+      }
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each([
+    { action: "archive", archived: false, label: "common.archive" },
+    { action: "delete", archived: true, label: "common.delete" },
+  ])("disables $action all confirmation if a chat starts running", async ({ action, archived, label }) => {
+    const store = useAgentStore.getState();
+    const activeChatId = store.currentChatId!;
+    const archivedChat = store.createChat({ title: "Archived chat", archived: true, select: false });
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      await openChatList(1200, archived);
+      await act(async () => {
+        (document.body.querySelector('[data-agent-chat-sidebar-actions] [aria-label="common.more"]') as HTMLButtonElement).click();
+      });
+      await act(async () => {
+        (getLayerRoot("agent").querySelector(`[data-agent-${action}-all-chats]`) as HTMLElement).click();
+      });
+      act(() => store.startChatRun(activeChatId, { path: "/projects/orders", title: "Orders" }));
+      const confirmation = getLayerRoot("agent").querySelector(`[data-agent-${action}-all-chats-confirmation]`) as HTMLElement;
+      const confirmButton = within(confirmation).getByRole("button", { name: label });
+      expect(confirmButton).toBeDisabled();
+      act(() => confirmButton.click());
+      expect(store.getChat(activeChatId)?.archived).toBe(false);
+      expect(store.getChat(archivedChat.id)?.archived).toBe(true);
     } finally {
       unmount();
     }

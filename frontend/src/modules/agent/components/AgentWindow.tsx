@@ -9,6 +9,7 @@ import {
   EllipsisVertical,
   Folder,
   FolderOpen,
+  Info,
   LoaderCircle,
   MessageSquare,
   Minus,
@@ -140,6 +141,7 @@ import {
   AgentPopover,
   AgentPopoverContent,
   AgentPopoverTitle,
+  AgentPopoverTrigger,
 } from "./ui/AgentPopover";
 import { AgentTooltip } from "./ui/AgentTooltip";
 import {
@@ -222,6 +224,9 @@ export function AgentWindow() {
   const orderedChats = useAgentStore(selectOrderedChats);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const chatProtectionReady = useAgentStore(
+    (s) => s.chatProtectionReady !== false
+  );
   const queuedChatId = useAgentStore((s) =>
     s.currentChatId && s.queuedUserMessagesByChatId[s.currentChatId]
       ? s.currentChatId
@@ -230,6 +235,24 @@ export function AgentWindow() {
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const storedWorkspaceName = useAgentStore((s) => s.workspaceName);
   const storedUserEmail = useAgentStore((s) => s.userEmail);
+  const conversationIdentity = JSON.stringify([
+    storedWorkspaceName,
+    storedUserEmail,
+    currentChatId,
+  ]);
+  const protectedConversationRef = useRef<string | null>(null);
+  const waitingForChatProtection = Boolean(currentChat && !chatProtectionReady);
+  // Reclamation releases protection without discarding pending answers or recovery callbacks.
+  const keepConversationMounted =
+    !waitingForChatProtection ||
+    protectedConversationRef.current === conversationIdentity;
+  useLayoutEffect(() => {
+    if (chatProtectionReady) {
+      protectedConversationRef.current = conversationIdentity;
+    } else if (protectedConversationRef.current !== conversationIdentity) {
+      protectedConversationRef.current = null;
+    }
+  }, [chatProtectionReady, conversationIdentity]);
   const openingBehavior = useAgentStore((s) => s.preferences.openingBehavior);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
@@ -458,10 +481,6 @@ export function AgentWindow() {
   const [pendingDeleteChatId, setPendingDeleteChatId] = useState<string | null>(
     null
   );
-  const [
-    isDeleteAllArchivedChatsDialogOpen,
-    setIsDeleteAllArchivedChatsDialogOpen,
-  ] = useState(false);
   const [renamingTitle, setRenamingTitle] = useState("");
 
   useEffect(() => {
@@ -1257,7 +1276,6 @@ export function AgentWindow() {
     );
     const deletedCount = store.deleteAllArchivedChats();
     if (deletedCount === 0) return;
-    setIsDeleteAllArchivedChatsDialogOpen(false);
     if (currentChatWasArchived) {
       cancelRenameChat();
       ensureCurrentChatMatchesDisplayedMode({ allowCreateWhenEmpty: false });
@@ -1286,6 +1304,11 @@ export function AgentWindow() {
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const retryLastTurnRef = useRef<(() => void) | null>(null);
   const retryLastTurn = useCallback(() => retryLastTurnRef.current?.(), []);
+  const freeSpaceAndRetryRef = useRef<(() => Promise<boolean>) | null>(null);
+  const freeSpaceAndRetry = useCallback(
+    () => freeSpaceAndRetryRef.current?.() ?? Promise.resolve(false),
+    []
+  );
   const resendMessageRef = useRef<((messageId: string) => void) | null>(null);
   const resendMessage = useCallback(
     (messageId: string) => resendMessageRef.current?.(messageId),
@@ -1991,42 +2014,102 @@ export function AgentWindow() {
       />
     ) : (
       <>
-        <AgentChat
-          onOpenAccessGrantDraft={openAccessGrantDraft}
-          className="min-h-0 flex-1"
-          contextLabel={
-            currentChat?.context
-              ? getContextLabel(currentChat.context)
-              : workspace?.title || t("agent.context-workspace")
-          }
-          onRetry={retryLastTurn}
-          onResend={resendMessage}
-          onSelectSuggestion={selectEmptyChatSuggestion}
-          onContinueAction={continueResponseAction}
-        />
-        {currentChat?.archived ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-block-border p-3">
-            <p role="status" className="text-sm text-control-light">
-              {t("agent.chat-archived-notice")}
-            </p>
-            <Button
-              appearance="secondary"
-              size="sm"
-              onClick={restoreCurrentChat}
-            >
-              <Undo2 className="size-4" aria-hidden="true" />
-              {t("agent.unarchive-chat")}
-            </Button>
+        {waitingForChatProtection && (
+          <div
+            role="status"
+            aria-busy="true"
+            className="flex min-h-0 flex-1 items-center justify-center gap-2 p-4 text-sm text-control-light"
+          >
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+            {t("common.loading")}
           </div>
-        ) : (
-          <AgentInput
-            retryActionRef={retryLastTurnRef}
-            resendActionRef={resendMessageRef}
-            focusActionRef={focusInputRef}
-          />
+        )}
+        {keepConversationMounted && (
+          <div
+            hidden={waitingForChatProtection}
+            inert={waitingForChatProtection}
+            className={cn(
+              "min-h-0 flex-1 flex-col",
+              waitingForChatProtection ? "hidden" : "flex"
+            )}
+          >
+            <AgentChat
+              onOpenAccessGrantDraft={openAccessGrantDraft}
+              className="min-h-0 flex-1"
+              contextLabel={
+                currentChat?.context
+                  ? getContextLabel(currentChat.context)
+                  : workspace?.title || t("agent.context-workspace")
+              }
+              onRetry={retryLastTurn}
+              onFreeSpaceAndRetry={
+                currentChat && !currentChat.archived
+                  ? freeSpaceAndRetry
+                  : undefined
+              }
+              onResend={resendMessage}
+              onSelectSuggestion={selectEmptyChatSuggestion}
+              onContinueAction={continueResponseAction}
+            />
+            {currentChat?.archived ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-block-border p-3">
+                <p role="status" className="text-sm text-control-light">
+                  {t("agent.chat-archived-notice")}
+                </p>
+                <Button
+                  appearance="secondary"
+                  size="sm"
+                  onClick={restoreCurrentChat}
+                >
+                  <Undo2 className="size-4" aria-hidden="true" />
+                  {t("agent.unarchive-chat")}
+                </Button>
+              </div>
+            ) : (
+              <AgentInput
+                retryActionRef={retryLastTurnRef}
+                freeSpaceAndRetryActionRef={freeSpaceAndRetryRef}
+                resendActionRef={resendMessageRef}
+                focusActionRef={focusInputRef}
+              />
+            )}
+          </div>
         )}
       </>
     );
+
+  const renderHistoryRetentionInfo = () => (
+    <AgentPopover>
+      <AgentTooltip content={t("agent.storage.retention-info")}>
+        <AgentPopoverTrigger
+          render={
+            <Button
+              appearance="secondary"
+              size="xs"
+              data-agent-window-action
+              className="shrink-0 text-control-light hover:bg-control-bg-hover"
+              aria-label={t("agent.storage.retention-info")}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Info className="size-3.5" aria-hidden="true" />
+            </Button>
+          }
+        />
+      </AgentTooltip>
+      <AgentPopoverContent
+        side="bottom"
+        align="start"
+        className="w-64 max-w-[var(--available-width)] p-3"
+      >
+        <AgentPopoverTitle className="sr-only">
+          {t("agent.storage.retention-info")}
+        </AgentPopoverTitle>
+        <p className="text-xs text-control-light">
+          {t("agent.storage.retention-policy")}
+        </p>
+      </AgentPopoverContent>
+    </AgentPopover>
+  );
 
   const renderRail = () => (
     <nav
@@ -2164,36 +2247,6 @@ export function AgentWindow() {
       style={windowStyle}
     >
       <AgentDialog
-        open={isDeleteAllArchivedChatsDialogOpen}
-        onOpenChange={setIsDeleteAllArchivedChatsDialogOpen}
-      >
-        <AgentDialogContent className="max-w-sm p-6">
-          <AgentDialogTitle className="sr-only">
-            {t("common.confirm")}
-          </AgentDialogTitle>
-          <AgentDialogDescription>
-            {t("agent.delete-all-chats-confirmation")}
-          </AgentDialogDescription>
-          <div className="mt-6 flex justify-end gap-x-2">
-            <AgentDialogClose
-              render={
-                <Button appearance="outline" type="button">
-                  {t("common.cancel")}
-                </Button>
-              }
-            />
-            <AgentDialogClose
-              render={
-                <Button type="button" variant="destructive">
-                  {t("common.confirm")}
-                </Button>
-              }
-              onClick={deleteAllArchivedChats}
-            />
-          </div>
-        </AgentDialogContent>
-      </AgentDialog>
-      <AgentDialog
         open={pendingDeleteChatId !== null}
         onOpenChange={(open) => {
           if (!open) setPendingDeleteChatId(null);
@@ -2304,8 +2357,12 @@ export function AgentWindow() {
                     ? t("agent.archived-only-chats")
                     : t("agent.assistant-title")}
               </h2>
+              {!preferencesOpen &&
+                isMobileWindow &&
+                mobileScreen !== "conversation" &&
+                renderHistoryRetentionInfo()}
             </div>
-            <div className="flex items-center gap-x-1">
+            <div className="flex shrink-0 items-center gap-x-1">
               {!preferencesOpen &&
                 isMobileWindow &&
                 mobileScreen === "chats" && (
@@ -2576,18 +2633,21 @@ export function AgentWindow() {
                           {/* Sidebar header */}
                           <div className="border-b border-block-border px-3 py-3">
                             <div className="flex items-center justify-between gap-x-2">
-                              <h2 className="text-xs font-semibold uppercase tracking-wide text-control-light">
-                                {showArchivedOnly
-                                  ? t("agent.archived-only-chats")
-                                  : t("agent.chat-list-label")}
-                              </h2>
+                              <div className="flex min-w-0 items-center gap-x-1">
+                                <h2 className="truncate text-xs font-semibold uppercase text-control-light">
+                                  {showArchivedOnly
+                                    ? t("agent.archived-only-chats")
+                                    : t("agent.chat-list-label")}
+                                </h2>
+                                {renderHistoryRetentionInfo()}
+                              </div>
                               {isCompactWindow ? (
                                 <AgentDialogClose
                                   render={
                                     <Button
                                       appearance="secondary"
                                       size="xs"
-                                      className="text-control-light hover:bg-control-bg-hover"
+                                      className="shrink-0 text-control-light hover:bg-control-bg-hover"
                                       aria-label={t("agent.close")}
                                     >
                                       &#10005;
@@ -2596,7 +2656,7 @@ export function AgentWindow() {
                                 />
                               ) : (
                                 <div
-                                  className="flex items-center gap-x-1"
+                                  className="flex shrink-0 items-center gap-x-1"
                                   data-agent-chat-sidebar-actions
                                 >
                                   {!showArchivedOnly && (
@@ -2615,63 +2675,25 @@ export function AgentWindow() {
                                       </Button>
                                     </AgentTooltip>
                                   )}
-                                  <AgentDropdownMenu>
-                                    <AgentTooltip content={t("common.more")}>
-                                      <AgentDropdownMenuTrigger
-                                        className="inline-flex size-6 items-center justify-center rounded-xs text-control-light outline-hidden hover:bg-control-bg-hover focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
-                                        aria-label={t("common.more")}
-                                        onClick={(event) =>
-                                          event.stopPropagation()
-                                        }
-                                      >
-                                        <EllipsisVertical
-                                          className="size-3.5"
-                                          aria-hidden="true"
-                                        />
-                                      </AgentDropdownMenuTrigger>
-                                    </AgentTooltip>
-                                    <AgentDropdownMenuContent>
-                                      {showArchivedOnly ? (
-                                        <>
-                                          <AgentDropdownMenuItem
-                                            data-agent-unarchive-all-chats
-                                            disabled={isUnarchiveAllDisabled}
-                                            onClick={(event) => {
-                                              event.stopPropagation();
-                                              unarchiveAllChats();
-                                            }}
-                                          >
-                                            {t("agent.unarchive-all-chats")}
-                                          </AgentDropdownMenuItem>
-                                          <AgentDropdownMenuItem
-                                            data-agent-delete-all-chats
-                                            className="text-error data-highlighted:bg-error/10"
-                                            disabled={isDeleteAllDisabled}
-                                            onClick={(event) => {
-                                              event.stopPropagation();
-                                              setIsDeleteAllArchivedChatsDialogOpen(
-                                                true
-                                              );
-                                            }}
-                                          >
-                                            {t("agent.delete-all-chats")}
-                                          </AgentDropdownMenuItem>
-                                        </>
-                                      ) : (
-                                        <AgentDropdownMenuItem
-                                          data-agent-archive-all-chats
-                                          className="text-error data-highlighted:bg-error/10"
-                                          disabled={isArchiveAllDisabled}
-                                          onClick={(event) => {
-                                            event.stopPropagation();
-                                            archiveAllChats();
-                                          }}
-                                        >
-                                          {t("agent.archive-all-chats")}
-                                        </AgentDropdownMenuItem>
-                                      )}
-                                    </AgentDropdownMenuContent>
-                                  </AgentDropdownMenu>
+                                  <ChatListMenu
+                                    key={
+                                      showArchivedOnly ? "archived" : "active"
+                                    }
+                                    archived={showArchivedOnly}
+                                    chatCount={
+                                      showArchivedOnly
+                                        ? archivedChats.length
+                                        : activeChats.length
+                                    }
+                                    disabled={
+                                      showArchivedOnly
+                                        ? isDeleteAllDisabled
+                                        : isArchiveAllDisabled
+                                    }
+                                    onArchiveAll={archiveAllChats}
+                                    onUnarchiveAll={unarchiveAllChats}
+                                    onDeleteAll={deleteAllArchivedChats}
+                                  />
                                 </div>
                               )}
                             </div>
@@ -2881,6 +2903,135 @@ function CompactDrawerModal({
         {children}
       </BaseDialog.Popup>
     </BaseDialog.Portal>
+  );
+}
+
+function ChatListMenu({
+  archived,
+  chatCount,
+  disabled,
+  onArchiveAll,
+  onUnarchiveAll,
+  onDeleteAll,
+}: Readonly<{
+  archived: boolean;
+  chatCount: number;
+  disabled: boolean;
+  onArchiveAll: () => void;
+  onUnarchiveAll: () => void;
+  onDeleteAll: () => void;
+}>) {
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    "archive" | "delete" | null
+  >(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const skipMenuFinalFocusRef = useRef(false);
+
+  return (
+    <>
+      <AgentDropdownMenu
+        open={menuOpen}
+        onOpenChange={(open) => {
+          if (open) skipMenuFinalFocusRef.current = false;
+          setMenuOpen(open);
+        }}
+      >
+        <AgentTooltip content={t("common.more")}>
+          <AgentDropdownMenuTrigger
+            ref={triggerRef}
+            className="inline-flex size-6 items-center justify-center rounded-xs text-control-light outline-hidden hover:bg-control-bg-hover focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50"
+            aria-label={t("common.more")}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <EllipsisVertical className="size-3.5" aria-hidden="true" />
+          </AgentDropdownMenuTrigger>
+        </AgentTooltip>
+        <AgentDropdownMenuContent
+          finalFocus={() =>
+            skipMenuFinalFocusRef.current ? false : triggerRef.current
+          }
+        >
+          {archived && (
+            <AgentDropdownMenuItem
+              data-agent-unarchive-all-chats
+              disabled={disabled}
+              onClick={(event) => {
+                event.stopPropagation();
+                onUnarchiveAll();
+              }}
+            >
+              {t("agent.unarchive-all-chats")}
+            </AgentDropdownMenuItem>
+          )}
+          <AgentDropdownMenuItem
+            data-agent-archive-all-chats={archived ? undefined : true}
+            data-agent-delete-all-chats={archived ? true : undefined}
+            className="text-error data-highlighted:bg-error/10"
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              skipMenuFinalFocusRef.current = true;
+              setMenuOpen(false);
+              setPendingAction(archived ? "delete" : "archive");
+            }}
+          >
+            {archived
+              ? t("agent.delete-all-chats")
+              : t("agent.archive-all-chats")}
+          </AgentDropdownMenuItem>
+        </AgentDropdownMenuContent>
+      </AgentDropdownMenu>
+      <AgentPopover
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+      >
+        <AgentPopoverContent
+          anchor={triggerRef}
+          finalFocus={triggerRef}
+          side="bottom"
+          align="end"
+          className="w-64 p-3"
+          data-agent-archive-all-chats-confirmation={
+            pendingAction === "archive" || undefined
+          }
+          data-agent-delete-all-chats-confirmation={
+            pendingAction === "delete" || undefined
+          }
+          onClick={(event) => event.stopPropagation()}
+        >
+          <AgentPopoverTitle className="mb-3 font-normal">
+            {archived
+              ? t("agent.delete-all-chats-confirmation", { count: chatCount })
+              : t("agent.archive-all-chats-confirmation", { count: chatCount })}
+          </AgentPopoverTitle>
+          <div className="flex justify-end gap-2">
+            <Button
+              appearance="outline"
+              size="sm"
+              onClick={() => setPendingAction(null)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              size="sm"
+              variant={archived ? "destructive" : "default"}
+              disabled={disabled}
+              onClick={() => {
+                setPendingAction(null);
+                if (archived) onDeleteAll();
+                else onArchiveAll();
+              }}
+            >
+              {archived ? t("common.delete") : t("common.archive")}
+            </Button>
+          </div>
+        </AgentPopoverContent>
+      </AgentPopover>
+    </>
   );
 }
 

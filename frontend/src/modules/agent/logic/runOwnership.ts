@@ -6,6 +6,7 @@ export interface AgentRunLease {
 const requestedLeases = new Set<string>();
 const heldLeases = new Set<string>();
 let persistenceDepth = 0;
+let storageBudgetDepth = 0;
 
 const executionKey = (scopeKey: string, chatId: string): string =>
   `bb-agent-run:${JSON.stringify([scopeKey, chatId])}`;
@@ -25,6 +26,7 @@ export const withAgentRunLease = async <T>(
   if (
     !supportsAgentRunRecovery() ||
     persistenceDepth > 0 ||
+    storageBudgetDepth > 0 ||
     requestedLeases.has(key)
   ) {
     return { acquired: false };
@@ -39,7 +41,7 @@ export const withAgentRunLease = async <T>(
         let active = true;
         const lease: AgentRunLease = {
           async run(nested) {
-            if (!active || persistenceDepth > 0) {
+            if (!active || persistenceDepth > 0 || storageBudgetDepth > 0) {
               throw new Error("Agent execution lease is not available");
             }
             return nested();
@@ -67,15 +69,39 @@ export const withAgentPersistenceLock = async <T>(
   if (!supportsAgentRunRecovery()) {
     throw new Error("Agent recovery requires Web Locks");
   }
+  if (storageBudgetDepth > 0) {
+    throw new Error("Agent storage accounting cannot acquire a scope lock");
+  }
   return navigator.locks.request(
     `bb-agent-persistence:${JSON.stringify(scopeKey)}`,
     { mode: "exclusive" },
-    async () => {
+    () => {
       persistenceDepth++;
       try {
-        return await action();
+        return action();
       } finally {
         persistenceDepth--;
+      }
+    }
+  );
+};
+
+// Acquire after the scope lock. Accounting and replacement stay synchronous and acquire no locks.
+export const withAgentStorageBudgetLock = async <T>(
+  action: () => T & (T extends PromiseLike<unknown> ? never : unknown)
+): Promise<T> => {
+  if (!supportsAgentRunRecovery()) {
+    throw new Error("Agent storage accounting requires Web Locks");
+  }
+  return navigator.locks.request(
+    "bb-agent-storage-budget-v1",
+    { mode: "exclusive" },
+    () => {
+      storageBudgetDepth++;
+      try {
+        return action();
+      } finally {
+        storageBudgetDepth--;
       }
     }
   );

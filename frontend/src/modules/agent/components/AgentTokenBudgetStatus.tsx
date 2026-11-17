@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { getRunTokenBudget } from "../logic/tokenBudget";
 import { formatTokenLimit, parseTokenLimit } from "../logic/tokenLimit";
 import type { AgentChat } from "../logic/types";
+import { AgentErrorDetails } from "./AgentErrorDetails";
 import {
   AgentPopover,
   AgentPopoverContent,
@@ -30,6 +31,7 @@ interface AgentTokenBudgetStatusProps {
   remoteBusy?: boolean;
   canResume?: boolean;
   pendingAttemptId?: string;
+  error?: string | null;
 }
 
 export function AgentTokenBudgetStatus(props: AgentTokenBudgetStatusProps) {
@@ -50,6 +52,7 @@ function TokenBudgetStatus({
   remoteBusy = false,
   canResume = true,
   pendingAttemptId,
+  error,
 }: AgentTokenBudgetStatusProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -69,9 +72,7 @@ function TokenBudgetStatus({
   const showRetry = paused && state !== "exhausted";
   const active = chat.status === "running" || chat.status === "awaiting_user";
   const showThreshold = !paused && active && state !== "normal";
-  const showPartialUsage =
-    hasUnreportedUsage && (active || chat.status === "error");
-  if (!paused && !showThreshold && !showPartialUsage) return null;
+  if (!paused && !showThreshold) return null;
   const minimum = Math.max(budget.limit, budget.totalTokensUsed);
   const minimumLimit = formatTokenLimit(
     minimum < Number.MAX_SAFE_INTEGER ? minimum + 1 : Number.MAX_SAFE_INTEGER
@@ -87,9 +88,7 @@ function TokenBudgetStatus({
   const canIncrease = (paused && state === "exhausted") || showThreshold;
   const increaseAndResume = paused && canResume;
   const title = paused
-    ? showRetry
-      ? t("agent.interrupted")
-      : t("agent.token-budget.paused")
+    ? t("agent.token-budget.paused")
     : active && state === "exhausted"
       ? t("agent.token-budget.reached")
       : active && state === "warning"
@@ -267,6 +266,7 @@ function TokenBudgetStatus({
             )}
           </div>
         </div>
+        <AgentErrorDetails error={error} />
         {hasUnreportedUsage && (paused || showThreshold) && (
           <span>{t("agent.token-budget.partial")}</span>
         )}

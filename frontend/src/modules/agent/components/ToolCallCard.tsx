@@ -137,7 +137,7 @@ function AgentQueryResultTable({
         }}
         className="max-h-80"
       />
-      {rows.length === 0 && (
+      {rows.length === 0 && resultSet.returnedRowCount === 0 && (
         <div className="px-2 py-3 text-center text-control-light">
           {t("common.no-data")}
         </div>
@@ -188,7 +188,7 @@ function AgentQueryResultVertical({
           />
         )}
       />
-      {resultSet.rows.length === 0 && (
+      {resultSet.rows.length === 0 && resultSet.returnedRowCount === 0 && (
         <div className="px-2 py-3 text-center text-control-light">
           {t("common.no-data")}
         </div>
@@ -217,14 +217,32 @@ function QueryResultPreview({ preview }: { preview: AgentQueryResultPreview }) {
                 {t("agent.result")}
                 {preview.totalResultSets > 1 ? ` #${resultIndex + 1}` : ""}
               </span>
-              {resultSet.rowsTruncated
-                ? t("agent.query-result.showing-rows", {
-                    shown: resultSet.displayedRowCount,
-                    total: resultSet.returnedRowCount,
+              {resultSet.previewLevel === "omitted" &&
+              resultSet.returnedRowCount > 0
+                ? t("agent.query-result.omitted-rows", {
+                    received: resultSet.returnedRowCount,
                   })
-                : t("agent.query-result.returned-rows", {
-                    count: resultSet.returnedRowCount,
-                  })}
+                : resultSet.previewLevel === "sampled" &&
+                    resultSet.retainedRowCount < resultSet.returnedRowCount
+                  ? t("agent.query-result.sampled-rows", {
+                      retained: resultSet.retainedRowCount,
+                      received: resultSet.returnedRowCount,
+                    })
+                  : resultSet.rowsTruncated
+                    ? t("agent.query-result.showing-rows", {
+                        shown: resultSet.displayedRowCount,
+                        total: resultSet.returnedRowCount,
+                      })
+                    : t("agent.query-result.returned-rows", {
+                        count: resultSet.returnedRowCount,
+                      })}
+              {resultSet.previewLevel === "sampled" &&
+                resultSet.retainedRowCount < resultSet.returnedRowCount &&
+                resultSet.displayedRowCount < resultSet.retainedRowCount &&
+                t("agent.query-result.showing-rows", {
+                  shown: resultSet.displayedRowCount,
+                  total: resultSet.returnedRowCount,
+                })}
               {resultSet.columnsTruncated &&
                 t("agent.query-result.showing-columns", {
                   shown: resultSet.displayedColumnCount,
@@ -671,6 +689,14 @@ export function ToolCallCard({ toolCall, result, hasRecoveryDraft }: Props) {
         {resultText && (
           <>
             <div className="text-control-light">{t("agent.result")}</div>
+            {queryPreview?.previewLevel &&
+              queryPreview.rowsPartiallyRetained && (
+                <div className="text-control-light">
+                  {queryPreview.previewLevel === "omitted"
+                    ? t("agent.query-result.preview-expired")
+                    : t("agent.query-result.preview-partial")}
+                </div>
+              )}
             <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap break-all text-control">
               {formatJson(resultText)}
             </pre>

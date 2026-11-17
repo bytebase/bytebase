@@ -44,6 +44,7 @@
     "api-permission-request": "AI アシスタントによるこの API リクエストの実行を許可しますか？",
     "api-permission-title": "実行の許可を求める",
     "archive-all-chats": "すべてのチャットをアーカイブ",
+    "archive-all-chats-confirmation": "すべてのチャット（{{count}}件）をアーカイブしますか？",
     "archive-chat": "チャットをアーカイブ",
     "archive-chat-confirmation": "このチャットをアーカイブしますか？",
     "archived-only-chats": "アーカイブ済みのチャットを表示",
@@ -111,9 +112,11 @@
       "project-heading": "このプロジェクトについて質問する",
       "resource-unavailable": "このリソースは参照できません。"
     },
+    "custom-input-label": "詳細",
+    "custom-input-placeholder": "値を入力",
     "database-reference-unavailable": "このデータベースは利用できないか、アクセス権がありません。",
     "delete-all-chats": "すべてのチャットを削除",
-    "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
+    "delete-all-chats-confirmation": "アーカイブ済みのチャット（{{count}}件）をすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
     "diagnostic-help": {
@@ -186,6 +189,7 @@
       "ask-agent-short": "Agent に質問",
       "exemption-scope": {
         "another-database": "別のデータベース",
+        "database-placeholder": "データベース名を入力",
         "only-database": "{{database}} のみ",
         "project": "このプロジェクトのすべてのデータベース",
         "question": "このマスキング免除をどのデータベースに適用しますか？"
@@ -198,6 +202,7 @@
       "semantic-type-choice": {
         "create": "カスタムマスキングタイプを作成…",
         "create-description": "指定したマスキング設定で新しいセマンティックタイプを準備します。",
+        "create-placeholder": "希望するマスキング方法を入力",
         "question": "これらの列に使用するセマンティックタイプを選択してください。"
       },
       "unmask-method": {
@@ -299,7 +304,11 @@
     "project-reference-unavailable": "このプロジェクトは利用できないか、アクセス権がありません。",
     "provider-attempt-limit": "この実行が AI プロバイダーへのリクエスト試行回数の上限に達したため、新たな AI リクエストを送信する前に停止しました。以前の操作はすでに完了している可能性があります。再試行を依頼する前に、その状態を確認してください。",
     "query-result": {
+      "omitted-rows": "行プレビューの有効期限が切れました。{{received}} 行を受信しました。",
+      "preview-expired": "行プレビューの有効期限が切れました。クエリの詳細と実行結果は保持されています。",
+      "preview-partial": "行プレビューは一部のみ保持されています。",
       "returned-rows": "返された行数: {{count}}",
+      "sampled-rows": "受信した {{received}} 行のうち {{retained}} 行をプレビューに保持しています。",
       "showing-columns": "{{total}} 列中 {{shown}} 列を表示",
       "showing-results": "{{total}} 件の結果セット中 {{shown}} 件を表示",
       "showing-rows": "返された {{total}} 行中 {{shown}} 行を表示"
@@ -374,6 +383,17 @@
       "unsaved-only": "未保存の下書きにのみ適用"
     },
     "stop": "停止",
+    "storage": {
+      "free-and-retry": "空き容量を確保して再試行",
+      "free-failed": "十分な空き容量を確保できませんでした。他の Agent タブを閉じるか、進行中の実行を終了してから再試行してください。",
+      "free-title": "他の保存済み Agent チャットを削除しますか？",
+      "full": "Agent 履歴のストレージがいっぱいです。",
+      "retention-info": "チャット履歴の保持",
+      "retention-policy": "ローカルストレージの空き容量が必要になると、完了した古いチャットが自動的に削除されます。進行中のチャットと下書きは保持されます。",
+      "retry": "再試行",
+      "save-failed": "Agent の履歴を保存できませんでした。再試行してください。",
+      "title": "Agent 履歴のストレージ"
+    },
     "token-budget": {
       "action-failed": "この実行を更新できませんでした。もう一度お試しください。",
       "apply": "適用",

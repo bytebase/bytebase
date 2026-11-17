@@ -3,6 +3,7 @@ import { buildOutboundHistory } from "./outboundHistory";
 import {
   getAgentRunClarificationBindings,
   getAgentRunContinuation,
+  getAgentRunStartup,
 } from "./runCheckpoint";
 import type {
   AgentChat,
@@ -78,6 +79,185 @@ const messages: AgentMessage[] = [
     metadata: { runId: "run-1", runPreflight: true },
   },
 ];
+
+describe("getAgentRunStartup", () => {
+  const startup = (): AgentChat => ({
+    ...chat,
+    status: "error",
+    runBudget: {
+      ...chat.runBudget!,
+      totalTokensUsed: 0,
+      providerAttemptCount: 0,
+      revision: 0,
+    },
+    runCheckpoint: {
+      ...checkpoint,
+      startupComplete: false,
+      throughMessageId: "user-1",
+      maskingSections: [],
+    },
+    lastRunUsage: { runId: "run-1", calls: [] },
+  });
+  const transcript = () => messages.slice(0, 3);
+
+  test("recognizes a never-started run without enabling normal continuation or changing its allowance", () => {
+    const value = startup();
+    const before = structuredClone(value);
+    expect(getAgentRunStartup(value, transcript())).toEqual(
+      value.runCheckpoint
+    );
+    expect(getAgentRunContinuation(value, transcript())).toBeUndefined();
+    expect(value).toEqual(before);
+  });
+
+  test.each([
+    { archived: true },
+    { runId: "another-run" },
+    { runBudget: undefined },
+    { runBudget: { ...startup().runBudget!, runId: "another-run" } },
+    { runBudget: { ...startup().runBudget!, providerAttemptCount: 1 } },
+    { runBudget: { ...startup().runBudget!, totalTokensUsed: 1 } },
+    { runBudget: { ...startup().runBudget!, hasUnreportedUsage: true } },
+    {
+      modelAttempts: [
+        {
+          attemptId: "run-1:1",
+          runId: "run-1",
+          ordinal: 1,
+          outcome: "error" as const,
+        },
+      ],
+    },
+    {
+      lastRunUsage: {
+        runId: "run-1",
+        calls: [{ purpose: "agent" as const, toolNames: [], totalTokens: 1 }],
+      },
+    },
+  ])("refuses retired, reserved, or executed run state %j", (change) => {
+    expect(
+      getAgentRunStartup({ ...startup(), ...change }, transcript())
+    ).toBeUndefined();
+  });
+
+  test.each([
+    { startupComplete: true },
+    { startupComplete: undefined },
+    { throughMessageId: "older-answer" },
+    { rootUserMessageId: "missing" },
+    { suspension: "awaiting-user" },
+    { suspension: "token-limit" },
+    { phase: "finalizing", finalizationText: "Already answered" },
+    { finalizationText: "Recorded outcome" },
+    { referencePreflightPending: true },
+    { bindings: { ...checkpoint.bindings, page: null } },
+  ])("refuses invalid startup checkpoint %j", (change) => {
+    expect(
+      getAgentRunStartup(
+        {
+          ...startup(),
+          runCheckpoint: {
+            ...startup().runCheckpoint!,
+            ...change,
+          } as AgentRunCheckpoint,
+        },
+        transcript()
+      )
+    ).toBeUndefined();
+  });
+
+  test.each(["assistant", "tool", "user"] as const)(
+    "refuses a later %s record",
+    (role) => {
+      expect(
+        getAgentRunStartup(startup(), [
+          ...transcript(),
+          message("later", role, "Recorded progress"),
+        ])
+      ).toBeUndefined();
+    }
+  );
+
+  test("refuses ambiguous anchors, pending work, or current-run records before the root", () => {
+    const rows = transcript();
+    expect(
+      getAgentRunStartup(startup(), [...rows, rows.at(-1)!])
+    ).toBeUndefined();
+    expect(
+      getAgentRunStartup(
+        startup(),
+        rows.map((row) =>
+          row.id === "user-1" ? { ...row, chatId: "other-chat" } : row
+        )
+      )
+    ).toBeUndefined();
+    expect(
+      getAgentRunStartup(
+        startup(),
+        rows.map((row) =>
+          row.id === "user-1"
+            ? { ...row, metadata: { runId: "other-run" } }
+            : row
+        )
+      )
+    ).toBeUndefined();
+    expect(
+      getAgentRunStartup(
+        startup(),
+        rows.map((row) =>
+          row.id === "user-1"
+            ? { ...row, metadata: { runId: "run-1", pending: true } }
+            : row
+        )
+      )
+    ).toBeUndefined();
+    expect(
+      getAgentRunStartup(
+        startup(),
+        rows.map((row) =>
+          row.id === "older-answer"
+            ? { ...row, metadata: { runId: "run-1" } }
+            : row
+        )
+      )
+    ).toBeUndefined();
+  });
+
+  test("validates diagnostic scope while preserving earlier completed accounting", () => {
+    const resource = {
+      kind: "database" as const,
+      name: "instances/example/databases/sample",
+      project: "projects/example",
+      label: "Sample",
+    };
+    const capability = { kind: "diagnostic" as const, resource };
+    const value = {
+      ...startup(),
+      capability,
+      modelAttempts: [
+        {
+          attemptId: "older-run:1",
+          runId: "older-run",
+          ordinal: 1,
+          outcome: "response" as const,
+          usage: { purpose: "agent" as const, toolNames: [], totalTokens: 10 },
+        },
+      ],
+      lastRunUsage: {
+        runId: "older-run",
+        calls: [{ purpose: "agent" as const, toolNames: [], totalTokens: 10 }],
+      },
+      runCheckpoint: {
+        ...startup().runCheckpoint!,
+        bindings: { ...checkpoint.bindings, capability },
+      },
+    };
+    expect(getAgentRunStartup(value, transcript())).toBeDefined();
+    expect(
+      getAgentRunStartup({ ...value, capability: undefined }, transcript())
+    ).toBeUndefined();
+  });
+});
 
 describe("getAgentRunContinuation", () => {
   test("returns validated bindings and the complete canonical transcript", () => {

@@ -133,7 +133,7 @@ export async function getMaskingSemanticTypeChoices(
     setting.value.value.value.types
   );
   const seen = new Set<string>();
-  const choices = types.map((type) => {
+  const choices: AgentAskUserOption[] = types.map((type) => {
     if (!type.id || seen.has(type.id))
       throw new Error("The semantic type IDs are invalid or ambiguous.");
     seen.add(type.id);
@@ -147,6 +147,10 @@ export async function getMaskingSemanticTypeChoices(
     choices.push({
       label: i18n.t("agent.masking.semantic-type-choice.create"),
       value: "action:create-semantic-type",
+      kind: "custom-input",
+      placeholder: i18n.t(
+        "agent.masking.semantic-type-choice.create-placeholder"
+      ),
       description: i18n.t(
         "agent.masking.semantic-type-choice.create-description"
       ),
@@ -211,6 +215,8 @@ export async function getMaskingScopeChoices(
     choices.push({
       label: i18n.t("agent.masking.exemption-scope.another-database"),
       value: "another-database",
+      kind: "custom-input",
+      placeholder: i18n.t("agent.masking.exemption-scope.database-placeholder"),
     });
   if (context.kind === "rule") {
     choices.push({
@@ -224,6 +230,8 @@ export async function getMaskingScopeChoices(
       choices.push({
         label: i18n.t("agent.masking.rule-scope.choose-project"),
         value: "choose-project",
+        kind: "custom-input",
+        placeholder: i18n.t("agent.resource-picker.search-projects"),
       });
   }
   if (!choices.length)

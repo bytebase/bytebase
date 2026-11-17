@@ -260,6 +260,16 @@ describe("getSkill", () => {
     expect(guidance).toContain("all available semantic types");
     expect(guidance).toContain("Do not rank, filter, or deduplicate");
     expect(guidance).toContain("ask_masking_rule_scope");
+    expect(guidance).toContain(
+      "choose-project collects its project candidate inline in response.input"
+    );
+    expect(guidance).toContain(
+      "call ask_masking_rule_scope again with the verified canonical project"
+    );
+    expect(guidance).toContain("only when that input is missing or ambiguous");
+    expect(guidance).toContain(
+      "a scope selection is not approval to write or save"
+    );
     expect(guidance).not.toContain(
       'scope with ask_user(kind="choose", resourceKind="none")'
     );
@@ -328,7 +338,7 @@ describe("getSkill", () => {
     );
   });
 
-  test("offers expiration choices before asking for a custom date and reuses confirmed expiry", () => {
+  test("offers expiration choices and reuses confirmed expiry", () => {
     const guidance = getSkill({ name: "data-masking", section: "exemption" });
 
     expect(guidance).toContain('ask_user(kind="choose", resourceKind="none")');
@@ -344,7 +354,6 @@ describe("getSkill", () => {
     expect(guidance).toContain(
       "If the member selects the custom date/time option"
     );
-    expect(guidance).toContain('ask_user(kind="input", resourceKind="none")');
     expect(guidance).toContain("Reuse an already explicit expiration");
     expect(guidance).toContain("fresh currentTime");
   });

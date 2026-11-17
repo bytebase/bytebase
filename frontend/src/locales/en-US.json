@@ -44,6 +44,7 @@
     "api-permission-request": "Allow the agent to run this API request?",
     "api-permission-title": "Request permission",
     "archive-all-chats": "Archive all chats",
+    "archive-all-chats-confirmation": "Archive all chats ({{count}})?",
     "archive-chat": "Archive chat",
     "archive-chat-confirmation": "Archive this chat?",
     "archived-only-chats": "View archived chats",
@@ -111,9 +112,11 @@
       "project-heading": "Ask about this project",
       "resource-unavailable": "This resource is not available to reference."
     },
+    "custom-input-label": "Details",
+    "custom-input-placeholder": "Enter a value",
     "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
-    "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
+    "delete-all-chats-confirmation": "Delete all archived chats ({{count}})? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
     "diagnostic-help": {
@@ -186,6 +189,7 @@
       "ask-agent-short": "Ask Agent",
       "exemption-scope": {
         "another-database": "Another database",
+        "database-placeholder": "Enter a database name",
         "only-database": "Only {{database}}",
         "project": "All databases in this project",
         "question": "Which databases should this exemption cover?"
@@ -198,6 +202,7 @@
       "semantic-type-choice": {
         "create": "Create a custom masking type…",
         "create-description": "Prepare a new semantic type with your masking settings.",
+        "create-placeholder": "Describe how values should be masked",
         "question": "Which semantic type should mask these columns?"
       },
       "unmask-method": {
@@ -299,7 +304,11 @@
     "project-reference-unavailable": "This project is no longer available or you do not have access to it.",
     "provider-attempt-limit": "I stopped before making another AI request because this run reached its provider attempt limit. Earlier actions may already have completed; check their status before asking me to retry.",
     "query-result": {
+      "omitted-rows": "Row preview expired. {{received}} rows were received.",
+      "preview-expired": "Row previews have expired; query details and outcomes are preserved.",
+      "preview-partial": "Only a partial row preview is retained.",
       "returned-rows": "Rows returned: {{count}}",
+      "sampled-rows": "Preview retained {{retained}} of {{received}} received rows.",
       "showing-columns": "Showing {{shown}} of {{total}} columns",
       "showing-results": "Showing {{shown}} of {{total}} result sets",
       "showing-rows": "Showing {{shown}} of {{total}} returned rows"
@@ -374,6 +383,17 @@
       "unsaved-only": "Unsaved draft only"
     },
     "stop": "Stop",
+    "storage": {
+      "free-and-retry": "Free space and retry",
+      "free-failed": "Could not free enough space. Close other Agent tabs or end active runs, then try again.",
+      "free-title": "Remove other saved Agent chats?",
+      "full": "Agent history storage is full.",
+      "retention-info": "Chat history retention",
+      "retention-policy": "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved.",
+      "retry": "Retry",
+      "save-failed": "Couldn't save Agent history. Try again.",
+      "title": "Agent history storage"
+    },
     "token-budget": {
       "action-failed": "Couldn't update this run. Try again.",
       "apply": "Apply",

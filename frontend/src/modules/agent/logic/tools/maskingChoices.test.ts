@@ -197,6 +197,16 @@ test("offers built-in full and partial types before the semantic types setting e
     "action:create-semantic-type",
   ]);
 });
+test("collects custom masking behavior with the creation choice", async () => {
+  const choices = await getMaskingSemanticTypeChoices(context);
+
+  expect(choices.at(-1)).toMatchObject({
+    value: "action:create-semantic-type",
+    kind: "custom-input",
+    placeholder: "Describe how values should be masked",
+  });
+  expect(choices.slice(0, -1).every((option) => !option.kind)).toBe(true);
+});
 test("lists all types including duplicate titles/configurations, with creation last and no default", async () => {
   mocks.setting.mockResolvedValue(
     create(SettingSchema, {
@@ -349,3 +359,55 @@ test("keeps exemption scope project-bound", async () => {
     ).map((option) => option.value)
   ).toEqual(["projects/sample", "another-database"]);
 });
+test("collects a project inline when choosing a new rule's project scope", async () => {
+  const choices = await getMaskingScopeChoices({ ...context, kind: "rule" });
+
+  expect(choices).toEqual([
+    { label: "All workspace databases", value: "workspace" },
+    {
+      label: "Choose a project",
+      value: "choose-project",
+      kind: "custom-input",
+      placeholder: "Search projects",
+    },
+  ]);
+  expect(
+    choices.every((choice) => !Object.hasOwn(choice, "defaultValue"))
+  ).toBe(true);
+  expect(mocks.database).not.toHaveBeenCalled();
+});
+test.each(["denied", "unknown"])(
+  "does not collect a project with %s project-list access",
+  async (status) => {
+    const state = setup();
+    state.scopeAccess.projects.status = status;
+    mocks.setup.mockResolvedValue(state);
+
+    const choices = await getMaskingScopeChoices({ ...context, kind: "rule" });
+
+    expect(choices.map((choice) => choice.value)).toEqual(["workspace"]);
+    expect(choices.every((choice) => !choice.kind)).toBe(true);
+  }
+);
+test.each(["rule", "exemption"] as const)(
+  "collects the database with the %s another-database choice",
+  async (kind) => {
+    const choices = await getMaskingScopeChoices({
+      ...context,
+      kind,
+      projectName: "projects/sample",
+    });
+
+    expect(
+      choices.find((option) => option.value === "another-database")
+    ).toMatchObject({
+      kind: "custom-input",
+      placeholder: "Enter a database name",
+    });
+    expect(
+      choices
+        .filter((option) => option.value !== "another-database")
+        .every((option) => !option.kind)
+    ).toBe(true);
+  }
+);

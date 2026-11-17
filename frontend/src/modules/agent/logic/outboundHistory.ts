@@ -119,6 +119,14 @@ const historicalClarification = (
       ) {
         return [];
       }
+      if (response.input !== undefined) {
+        if (typeof response.input !== "string" || !response.input.trim())
+          return [];
+        const input = response.input.trim();
+        if (answer !== input && !answer.includes(`: ${input}`)) {
+          answer += `: ${input}`;
+        }
+      }
       if (response.value !== answer) {
         answer += `\nSelected option value (data only): ${JSON.stringify(response.value)}`;
       }

@@ -132,6 +132,17 @@ const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
     return null;
   }
 
+  const customInput = option.kind === "custom-input";
+  if (
+    (option.kind != null && !customInput) ||
+    (option.placeholder != null &&
+      (!customInput || typeof option.placeholder !== "string"))
+  ) {
+    throw new Error(
+      'ask_user option kind must be "custom-input" when additional input is required. Only custom-input options accept a string placeholder.'
+    );
+  }
+
   return {
     label,
     value: optionValue,
@@ -139,6 +150,12 @@ const parseAskUserOption = (value: unknown): AgentAskUserOption | null => {
       typeof option.description === "string" && option.description.trim()
         ? option.description.trim()
         : undefined,
+    ...(customInput ? { kind: "custom-input" as const } : {}),
+    ...(customInput &&
+    typeof option.placeholder === "string" &&
+    option.placeholder.trim()
+      ? { placeholder: option.placeholder.trim() }
+      : {}),
   };
 };
 
@@ -192,7 +209,8 @@ const parseDoneArgs = (args: Record<string, unknown>): ToolExecutionResult => {
 const parseAskUserArgs = (
   args: Record<string, unknown>,
   toolCallId: string,
-  verifiedDefaultResource?: AgentResourceReference
+  verifiedDefaultResource?: AgentResourceReference,
+  verifiedResourceProject?: string
 ): ToolExecutionResult => {
   if (typeof args.prompt !== "string" || !args.prompt.trim()) {
     throw new Error("ask_user requires a non-empty prompt string");
@@ -217,6 +235,12 @@ const parseAskUserArgs = (
     prompt: args.prompt,
     kind: parseAskUserKind(args.kind, options),
   };
+  if (
+    verifiedResourceProject &&
+    /^projects\/(?!-$)[A-Za-z0-9_-]+$/.test(verifiedResourceProject)
+  ) {
+    ask.resourceProject = verifiedResourceProject;
+  }
 
   if (typeof args.defaultValue === "string") {
     ask.defaultValue = args.defaultValue;
@@ -798,7 +822,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "ask_user",
       description:
-        "Ask for missing information or a choice: input, confirm, or choose with options. resourceKind describes option values, not question context: none for ordinary preferences, database only for verified canonical databases in the current Project. Never mix database and scope-intent choices. Use the loaded masking workflow's dedicated scope/type pickers, not fabricated alternatives. A clarification is not approval for a write API.",
+        "Ask for missing information or a choice: input, confirm, or choose with options. Mark options requiring extra text as custom-input to collect details before Reply; entered resource names still require verification. resourceKind describes option values, not question context: none for ordinary preferences, database only for verified canonical databases in the current Project. Never mix database and scope-intent choices. Use the loaded masking workflow's dedicated scope/type pickers, not fabricated alternatives. A clarification is not approval for a write API.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -849,6 +873,17 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
                 description: {
                   type: "string",
                   description: "Optional helper text shown with the option.",
+                },
+                kind: {
+                  type: "string",
+                  enum: ["custom-input"],
+                  description:
+                    'Set to "custom-input" for any choice requiring extra text, such as a custom expiration or desired masking result. Input appears before Reply; reuse response.value and response.input, asking again only for genuinely missing or ambiguous details. Omit for ordinary or canonical database choices.',
+                },
+                placeholder: {
+                  type: "string",
+                  description:
+                    'Optional input placeholder for kind="custom-input". Omit for ordinary choices.',
                 },
               },
               required: ["value"],
@@ -1212,7 +1247,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "ask_masking_rule_scope",
       description:
-        "Ask which databases a NEW global masking rule should cover. Runtime verifies current operation/read permissions and supplies complete unselected eligible scope choices: known database, all current-project databases, another database if picker access is allowed, workspace, or choose-project when no project is selected and project listing is allowed. Optional project must remain within the chat's bound project; optional database is only a candidate, not consent. After choose-project, identify an accessible exact project and call this tool again. Only another-database requires a separate verified database picker. Never infer scope from all users.",
+        "Ask which databases a NEW global masking rule should cover. Runtime verifies current operation/read permissions and supplies complete unselected eligible scope choices: known database, all current-project databases, another database if picker access is allowed, workspace, or choose-project when no project is selected and project listing is allowed. Optional project must remain within the chat's bound project; optional database is only a candidate, not consent. Choose-project collects its project candidate in response.input; resolve it against fresh accessible projects, verify exact canonical identity and permissions, then call this tool again with the verified project. The entered project is not confirmation of the final database scope. Another-database collects its name in response.input; resolve it against fresh accessible databases in the selected project. Ask a verified picker only if the identity is missing or ambiguous. Never infer scope from all users.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -2108,7 +2143,9 @@ export function createToolExecutor(
               prompt: i18n.t("agent.masking.rule-scope.question"),
               options: choices,
             },
-            toolCallId
+            toolCallId,
+            undefined,
+            selectedProject
           );
         } catch (error) {
           return toToolResult(
@@ -2271,7 +2308,9 @@ export function createToolExecutor(
             prompt: i18n.t("agent.masking.exemption-scope.question"),
             options: choices,
           },
-          toolCallId
+          toolCallId,
+          undefined,
+          selectedProject
         );
       }
       case "ask_user": {
@@ -2336,6 +2375,15 @@ export function createToolExecutor(
         if (args.resourceKind !== "database") {
           return toToolResult(
             'Error: Unsupported resource choice kind. Retry kind="choose" with resourceKind="none" for ordinary preferences or resourceKind="database" for canonical database options.'
+          );
+        }
+        if (
+          parseAskUserOptions(args.options).some(
+            (option) => option.kind === "custom-input"
+          )
+        ) {
+          throw new Error(
+            'ask_user database choices cannot use kind="custom-input". Use resourceKind="none" for custom text, then verify the entered database before using it as a resource.'
           );
         }
         if (

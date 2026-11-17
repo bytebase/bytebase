@@ -6,6 +6,7 @@ import {
   AIChatResponse_StopReason,
 } from "@/types/proto-es/v1/ai_service_pb";
 import { runAgentLoop } from "./agentLoop";
+import { dispatchPreparedApiCall } from "./tools/callApi";
 import type {
   AgentModelAttempt,
   ToolExecutionResult,
@@ -37,6 +38,97 @@ describe("runAgentLoop", () => {
   beforeEach(() => {
     vi.mocked(aiServiceClientConnect.chat).mockReset();
     preferenceDefaults.tokenLimitPerRun = 100_000;
+  });
+
+  test("passes the bounded Query envelope to both saved tool messages and active model history", async () => {
+    const args = JSON.stringify({
+      operationId: "bytebase.v1.SQLService.Query",
+      body: {
+        name: "instances/example/databases/app",
+        statement: "SELECT payload FROM records",
+      },
+    });
+    vi.mocked(aiServiceClientConnect.chat)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [{ id: "query-bounded", name: "call_api", arguments: args }],
+      } as never)
+      .mockResolvedValueOnce({
+        content: "",
+        toolCalls: [
+          {
+            id: "done",
+            name: "done",
+            arguments: JSON.stringify({
+              text: "One received row; its preview was too large.",
+              success: true,
+            }),
+          },
+        ],
+      } as never);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        status: 200,
+        json: async () => ({
+          results: [
+            {
+              columnNames: ["payload"],
+              rows: [{ values: [{ stringValue: "x".repeat(70_000) }] }],
+            },
+          ],
+        }),
+      })
+    );
+    const saved: { toolCallId: string; result: string }[] = [];
+    try {
+      const outcome = await runAgentLoop(
+        [{ role: "user", content: "Query payload" }],
+        [
+          { name: "call_api", description: "Call API", parametersSchema: {} },
+          { name: "done", description: "Done", parametersSchema: {} },
+        ],
+        async (name) =>
+          name === "done"
+            ? {
+                kind: "done",
+                text: "One received row; its preview was too large.",
+                success: true,
+              }
+            : {
+                kind: "tool_result",
+                result: await dispatchPreparedApiCall({
+                  operationId: "bytebase.v1.SQLService.Query",
+                  path: "/bytebase.v1.SQLService/Query",
+                  body: JSON.stringify(JSON.parse(args).body),
+                }),
+              },
+        {
+          onToolResult: (toolCallId, result) => {
+            saved.push({ toolCallId, result });
+          },
+        }
+      );
+
+      expect(outcome.kind).toBe("completed");
+      const savedQuery = saved.find(
+        (message) => message.toolCallId === "query-bounded"
+      );
+      expect(savedQuery).toBeDefined();
+      const parsed = JSON.parse(savedQuery?.result ?? "{}");
+      expect(parsed.response.results[0].rows).toEqual([]);
+      expect(parsed.agentQueryPreview.results).toEqual([
+        { receivedRows: 1, retainedRows: 0 },
+      ]);
+      const nextRequest = vi.mocked(aiServiceClientConnect.chat).mock
+        .calls[1][0];
+      const modelQuery = nextRequest.messages?.find(
+        (message) => message.toolCallId === "query-bounded"
+      );
+      expect(modelQuery?.content).toBe(savedQuery?.result);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   test("settles a whole tool group before pausing without fabricating an answer", async () => {
