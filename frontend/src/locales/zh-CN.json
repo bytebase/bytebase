@@ -2070,7 +2070,7 @@
         "connection-string-help": "从 Neon 控制台粘贴，即可填充主机、角色、密码和数据库。字符串不会被保存。",
         "connection-string-invalid": "这不是 PostgreSQL 连接字符串。连接字符串以 postgresql:// 开头，并包含角色、主机和数据库。",
         "connection-string-pooled": "字段已填充，但此字符串指向连接池端点（-pooler）。请从 Neon 复制直连连接字符串，或从下方主机中删除 -pooler。",
-        "tls-note": "Neon 强制要求 TLS，因此必须启用 TLS 并验证证书。请使用直连端点主机。连接池主机（包含 -pooler）无法用于 Schema 同步和变更。"
+        "tls-note": "Neon 强制要求 TLS，默认开启证书验证。请使用直连端点而非 -pooler 主机，事务级连接池不会保留查询与变更所需的会话状态。"
       },
       "method": {
         "discover": "使用 Neon API 密钥发现分支",

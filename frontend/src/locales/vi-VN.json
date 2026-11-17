@@ -2070,7 +2070,7 @@
         "connection-string-help": "Dán từ bảng điều khiển Neon để điền máy chủ, vai trò, mật khẩu và cơ sở dữ liệu. Chuỗi không được lưu.",
         "connection-string-invalid": "Đây không phải chuỗi kết nối PostgreSQL. Chuỗi bắt đầu bằng postgresql:// và chứa vai trò, máy chủ và cơ sở dữ liệu.",
         "connection-string-pooled": "Các trường đã được điền, nhưng chuỗi này trỏ tới endpoint dùng pool (-pooler). Hãy sao chép chuỗi kết nối trực tiếp từ Neon, hoặc xóa -pooler khỏi máy chủ bên dưới.",
-        "tls-note": "Bắt buộc dùng TLS có xác minh chứng chỉ vì Neon yêu cầu. Hãy dùng máy chủ endpoint trực tiếp. Máy chủ dùng pool (chứa -pooler) không dùng được cho đồng bộ schema và di trú."
+        "tls-note": "Neon yêu cầu TLS và mặc định bật xác minh chứng chỉ. Hãy dùng endpoint trực tiếp thay vì máy chủ -pooler, vì cơ chế gộp kết nối theo giao dịch không giữ trạng thái phiên cần cho truy vấn và di trú."
       },
       "method": {
         "discover": "Tìm nhánh bằng khóa API Neon",

@@ -892,3 +892,71 @@ test("editing a Neon instance shows its connection settings without the hosting 
   );
   expect(screen.getByText("instance.neon.manual.tls-note")).toBeVisible();
 });
+
+test("Neon TLS mode omits Disabled and allows toggling certificate verification off", async () => {
+  mocks.hasSSL = true;
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const NeonWithOptions = () => {
+      context = useInstanceFormContext();
+      return (
+        <>
+          <InstanceFormBody />
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            optionsOnly
+            onDataSourceChange={(updated) =>
+              context.setDataSourceEditState((previous) => ({
+                ...previous,
+                dataSources: previous.dataSources.map((source) =>
+                  source.id === updated.id ? updated : source
+                ),
+              }))
+            }
+          />
+        </>
+      );
+    };
+    render(
+      <InstanceFormProvider>
+        <NeonWithOptions />
+      </InstanceFormProvider>
+    );
+    act(() =>
+      context.setBasicInfo((previous) => ({
+        ...previous,
+        engine: Engine.POSTGRES,
+      }))
+    );
+    fireEvent.click(hosting(/^instance.vendor.neon/));
+
+    const posture = screen.getByRole("combobox", {
+      name: "data-source.ssl.posture.self",
+    });
+    expect(posture).toHaveTextContent("data-source.ssl.posture.tls");
+    fireEvent.click(posture);
+    expect(
+      await screen.findByRole("option", { name: "data-source.ssl.posture.tls" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", {
+        name: "data-source.ssl.posture.mutual-tls",
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "data-source.ssl.posture.disabled" })
+    ).not.toBeInTheDocument();
+
+    const verifySwitch = screen.getByRole("switch", {
+      name: "data-source.ssl.verify-certificate",
+    });
+    expect(verifySwitch).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(verifySwitch);
+    expect(context.adminDataSource.useSsl).toBe(true);
+    expect(context.adminDataSource.verifyTlsCertificate).toBe(false);
+  } finally {
+    mocks.hasSSL = false;
+  }
+});

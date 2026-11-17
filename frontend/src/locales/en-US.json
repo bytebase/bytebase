@@ -2070,7 +2070,7 @@
         "connection-string-help": "Paste it from the Neon console to fill the host, role, password, and database. It is not stored.",
         "connection-string-invalid": "This is not a PostgreSQL connection string. It starts with postgresql:// and names a role, a host, and a database.",
         "connection-string-pooled": "The fields are filled, but this string points to a pooled endpoint (-pooler). Copy the direct connection string from Neon, or remove -pooler from the host below.",
-        "tls-note": "TLS with certificate verification is required, as Neon enforces it. Use the direct endpoint host. A pooled host (containing -pooler) cannot be used for schema sync and migrations."
+        "tls-note": "Neon requires TLS, with certificate verification on by default. Use the direct endpoint rather than a -pooler host, as transaction pooling drops session state needed by queries and migrations."
       },
       "method": {
         "discover": "Discover branches with a Neon API key",

@@ -2070,7 +2070,7 @@
         "connection-string-help": "Pégala desde la consola de Neon para rellenar el host, el rol, la contraseña y la base de datos. No se almacena.",
         "connection-string-invalid": "Esto no es una cadena de conexión de PostgreSQL. Empieza por postgresql:// e indica un rol, un host y una base de datos.",
         "connection-string-pooled": "Los campos se rellenaron, pero esta cadena apunta a un endpoint con pool (-pooler). Copia la cadena de conexión directa desde Neon o quita -pooler del host de abajo.",
-        "tls-note": "Se requiere TLS con verificación del certificado, ya que Neon lo exige. Usa el host del endpoint directo. Un host con pool (que contiene -pooler) no sirve para la sincronización de esquemas ni las migraciones."
+        "tls-note": "Neon exige TLS y la verificación del certificado está activada de forma predeterminada. Usa el endpoint directo en lugar de un host -pooler, ya que el pool por transacción descarta el estado de sesión necesario para consultas y migraciones."
       },
       "method": {
         "discover": "Descubrir ramas con una clave de API de Neon",

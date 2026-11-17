@@ -27,8 +27,16 @@ func TestNeonVendorConversion(t *testing.T) {
 	require.Equal(t, storepb.Vendor_NEON, stored.Metadata.Vendor)
 	require.Equal(t, v1pb.Vendor_NEON, convertToV1Instance(stored, false).Vendor)
 	instance.DataSources[0].VerifyTlsCertificate = false
+	stored, err = convertToStoreInstance("neon", instance)
+	require.NoError(t, err)
+	require.False(t, convertToV1Instance(stored, false).DataSources[0].VerifyTlsCertificate)
+	instance.DataSources[0].UseSsl = false
 	_, err = convertToStoreInstance("neon", instance)
-	require.Error(t, err)
+	require.ErrorContains(t, err, "Neon requires TLS")
+	instance.DataSources[0].UseSsl = true
+	instance.DataSources[0].Host = "ep-test-pooler.neon.tech"
+	_, err = convertToStoreInstance("neon", instance)
+	require.ErrorContains(t, err, "Neon requires a direct endpoint")
 	instance.DataSources = nil
 	instance.Engine = v1pb.Engine_MYSQL
 	_, err = convertToStoreInstance("neon", instance)

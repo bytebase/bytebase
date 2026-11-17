@@ -141,7 +141,7 @@ A pause, a stop, and a finished run with failures each state what happened above
 
 ### Manual entry and editing
 
-Manual entry is the existing PostgreSQL connection form with vendor type Neon and no step indicator. Its Neon defaults are required TLS with certificate verification and port 5432. An optional field accepts a Neon connection string. When one is pasted, or typed and the field is left, it fills the host, role, password, and database and is not stored. A pooled endpoint host is a validation error that asks for the direct endpoint, shown on the host field and beside the connection string that carried it.
+Manual entry is the existing PostgreSQL connection form with vendor type Neon and no step indicator. Neon requires TLS and defaults to certificate verification enabled and port 5432; the TLS mode selector omits Disabled while allowing certificate verification to be turned off. An optional field accepts a Neon connection string. When one is pasted, or typed and the field is left, it fills the host, role, password, and database and is not stored. A pooled endpoint host is a validation error that asks for the direct endpoint, shown on the host field and beside the connection string that carried it.
 
 Editing an existing Neon instance opens its connection settings directly. It does not reopen the API-key wizard or rerun import.
 ## Import and synchronization

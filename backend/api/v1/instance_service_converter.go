@@ -798,8 +798,8 @@ func validateInstanceVendor(instance *storepb.Instance) error {
 			return errors.New("Neon requires PostgreSQL")
 		}
 		for _, ds := range instance.DataSources {
-			if !ds.UseSsl || !ds.VerifyTlsCertificate {
-				return errors.New("Neon requires TLS with certificate verification")
+			if !ds.UseSsl {
+				return errors.New("Neon requires TLS")
 			}
 			if strings.Contains(strings.Split(ds.Host, ".")[0], "-pooler") {
 				return errors.New("Neon requires a direct endpoint")
