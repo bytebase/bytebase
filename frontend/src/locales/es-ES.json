@@ -2418,7 +2418,7 @@
     },
     "vendor": {
       "generic": "Cualquier host o nube",
-      "generic-description": "AWS RDS, Cloud SQL, Supabase o autogestionado mediante host y puerto.",
+      "generic-description": "Conecta una instancia mediante host y puerto, IAM en la nube o un túnel SSH.",
       "neon": "Neon",
       "neon-description": "Importa ramas con una clave de API de Neon o conecta una rama directamente.",
       "self": "Alojado en"

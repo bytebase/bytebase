@@ -2418,7 +2418,7 @@
     },
     "vendor": {
       "generic": "任意主机或云服务",
-      "generic-description": "AWS RDS、Cloud SQL、Supabase 或自建实例，通过主机和端口连接。",
+      "generic-description": "通过主机和端口、云 IAM 或 SSH 隧道连接单个实例。",
       "neon": "Neon",
       "neon-description": "可用 Neon API 密钥批量导入分支，或通过连接信息连接单个分支。",
       "self": "托管于"

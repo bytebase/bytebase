@@ -2418,7 +2418,7 @@
     },
     "vendor": {
       "generic": "Bất kỳ máy chủ hoặc đám mây nào",
-      "generic-description": "AWS RDS, Cloud SQL, Supabase hoặc tự quản lý qua máy chủ và cổng.",
+      "generic-description": "Kết nối một phiên bản qua máy chủ và cổng, IAM đám mây hoặc đường hầm SSH.",
       "neon": "Neon",
       "neon-description": "Nhập hàng loạt nhánh bằng khóa API Neon hoặc kết nối trực tiếp một nhánh.",
       "self": "Được lưu trữ tại"

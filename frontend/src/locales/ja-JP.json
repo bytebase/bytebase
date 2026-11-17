@@ -2418,7 +2418,7 @@
     },
     "vendor": {
       "generic": "任意のホストまたはクラウド",
-      "generic-description": "AWS RDS、Cloud SQL、Supabase、またはセルフホスト（ホストとポートで接続）。",
+      "generic-description": "ホストとポート、クラウド IAM、または SSH トンネルを使用して 1 つのインスタンスに接続します。",
       "neon": "Neon",
       "neon-description": "Neon API キーでブランチを一括インポートするか、1 つのブランチに直接接続します。",
       "self": "ホスティング先"

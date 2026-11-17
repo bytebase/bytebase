@@ -2418,7 +2418,7 @@
     },
     "vendor": {
       "generic": "Any host or cloud",
-      "generic-description": "AWS RDS, Cloud SQL, Supabase, or self-hosted via host and port.",
+      "generic-description": "Connect one instance with host and port, cloud IAM, or an SSH tunnel.",
       "neon": "Neon",
       "neon-description": "Import branches with a Neon API key, or connect one branch directly.",
       "self": "Hosted on"
