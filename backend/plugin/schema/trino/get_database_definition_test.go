@@ -37,7 +37,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "testschema";
+
+CREATE TABLE IF NOT EXISTS "testschema"."testtable" (
     "id" bigint NOT NULL,
     "name" varchar
 );
@@ -52,7 +54,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 				Name:    "empty_table",
 				Columns: []*metadatapb.ColumnMetadata{},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "testschema";
+
+CREATE TABLE IF NOT EXISTS "testschema"."empty_table" (
 
 );
 
@@ -72,7 +76,9 @@ func TestGetDatabaseDefinition(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "test_schema";
+
+CREATE TABLE IF NOT EXISTS "test_schema"."test.table" (
     "id-field" bigint NOT NULL
 );
 
@@ -126,7 +132,9 @@ func TestWriteCreateTable(t *testing.T) {
 					},
 				},
 			},
-			expected: `CREATE TABLE IF NOT EXISTS "schema"."table" (
+			expected: `CREATE SCHEMA IF NOT EXISTS "schema";
+
+CREATE TABLE IF NOT EXISTS "schema"."table" (
     "col1" integer NOT NULL
 );
 

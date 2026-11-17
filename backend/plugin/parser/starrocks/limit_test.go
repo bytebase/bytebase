@@ -67,7 +67,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		}, {
 			stmt:  "WITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count;",
 			count: 10,
-			want:  "WITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count LIMIT 10;",
+			want:  "SELECT * FROM (WITH RECURSIVE cte_count (n) AS ( SELECT 1 UNION ALL SELECT n + 1 FROM cte_count WHERE n < 3 ) SELECT n FROM cte_count) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT firstName FROM employees EXCEPT SELECT contactFirstName FROM customers;",
@@ -164,7 +164,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		{
 			stmt:  "SELECT * FROM t # hash comment",
 			count: 10,
-			want:  "SELECT * FROM t LIMIT 10 # hash comment",
+			want:  "SELECT * FROM (SELECT * FROM t # hash comment) result LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT * FROM t;\n",

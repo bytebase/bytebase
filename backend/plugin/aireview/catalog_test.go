@@ -580,7 +580,7 @@ func TestCatalogMarksACommentThatRepeatsAName(t *testing.T) {
 		want   []string
 	}{
 		{engine: storepb.Engine_POSTGRES, object: "orders", want: []string{`COMMENT ON TABLE "public"."orders" IS 'orders';`, `COMMENT ON INDEX "public"."idx_orders" IS 'id';`}},
-		{engine: storepb.Engine_MYSQL, object: "orders", want: []string{"COMMENT='orders'", "COMMENT ON INDEX idx_orders: id"}},
+		{engine: storepb.Engine_MYSQL, object: "orders", want: []string{"COMMENT='orders'", "COMMENT 'id'"}},
 		{engine: storepb.Engine_SNOWFLAKE, object: "orders", want: []string{"COMMENT: orders", "COMMENT ON INDEX idx_orders: id"}},
 		{engine: storepb.Engine_POSTGRES, object: "block_drop", want: []string{"COMMENT: sql_drop"}},
 	}
