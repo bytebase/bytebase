@@ -22,7 +22,7 @@ func originalSchema(m *model.DatabaseMetadata) v1review.Schema {
 	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
 }
 
-// getExplainSQL returns the query whose result getExplainPlan reads.
+// getExplainSQL returns the query whose JSON plan getAffectedRows and getInsertedRows read.
 func getExplainSQL(statement string) string {
 	return fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", statement)
 }
