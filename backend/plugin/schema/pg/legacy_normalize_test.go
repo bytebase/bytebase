@@ -316,7 +316,8 @@ func TestGetMultiFileDatabaseDefinition_LegacyIndexExpressionsParse(t *testing.T
 					Expressions: []string{"payload ->> 'k'::text"}, // legacy
 				}},
 				Partitions: []*metadatapb.TablePartitionMetadata{{
-					Name: "t_p1",
+					Name:       "t_p1",
+					Expression: "RANGE (a)",
 					Indexes: []*metadatapb.IndexMetadata{{
 						Name:        "t_p1_legacy_idx",
 						Type:        "btree",

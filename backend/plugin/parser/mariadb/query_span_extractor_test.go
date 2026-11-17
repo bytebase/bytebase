@@ -689,7 +689,7 @@ func TestQuerySpanScenarioBatch1_ExpressionCoverage(t *testing.T) {
 		span, err := resolveQuerySpan(
 			context.Background(),
 			gCtx,
-			"SELECT product_info->'$.id' AS id FROM products",
+			"SELECT JSON_EXTRACT(product_info, '$.id') AS id FROM products",
 			"db",
 			false,
 		)
