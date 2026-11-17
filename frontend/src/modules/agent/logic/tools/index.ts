@@ -1032,7 +1032,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "prepare_access_grant_draft",
       description:
-        "Prepare a local unsaved, self-only JIT Access Grant request for an exact user-confirmed query. Freshly verifies eligibility and target ownership; never executes SQL or submits a request. Explicit Unmask applies to the entire query result. Finish with done; runtime attaches the member-clicked draft action. Reason and finite expiration are reviewed in the existing request form.",
+        'Prepare a local unsaved, self-only JIT Access Grant request for an exact user-confirmed query, only after the member requests an Access Grant or chooses JIT. A denied query alone is not opt-in; explain the denial, verify eligibility, and wait for the member to confirm through ask_user(kind="confirm") before starting the normal just-in-time skill. Freshly verifies eligibility and target ownership; never executes SQL or submits a request. Explicit Unmask applies to the entire query result. Finish with done; runtime attaches the member-clicked draft action. Reason and finite expiration are reviewed in the existing request form.',
       parametersSchema: {
         type: "object",
         properties: {

@@ -796,6 +796,10 @@ describe("JIT tools", () => {
 
   test("offers typed overview and draft tools in normal chats", () => {
     const definitions = getToolDefinitions();
+    expect(
+      definitions.find(({ name }) => name === "prepare_access_grant_draft")
+        ?.description
+    ).toContain("A denied query alone is not opt-in");
     expect(definitions.map(({ name }) => name)).toEqual(
       expect.arrayContaining([
         "get_just_in_time_overview",

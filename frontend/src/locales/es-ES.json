@@ -389,7 +389,7 @@
       "free-title": "¿Eliminar otros chats guardados de Agent?",
       "full": "El almacenamiento del historial de Agent está lleno.",
       "retention-info": "Conservación del historial de chats",
-      "retention-policy": "Los chats completados más antiguos se eliminan automáticamente cuando es necesario para liberar almacenamiento local. Los chats activos y los borradores se conservan.",
+      "retention-policy": "Primero se eliminan las vistas previas de los resultados de las consultas. Si se necesita más espacio, se eliminan los chats completados más antiguos, estén archivados o no. Se conservan los chats abiertos, las ejecuciones sin finalizar y los borradores.",
       "retry": "Reintentar",
       "save-failed": "No se pudo guardar el historial de Agent. Vuelve a intentarlo.",
       "title": "Almacenamiento del historial de Agent"

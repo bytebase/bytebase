@@ -43,7 +43,7 @@ const mocks = vi.hoisted(() => ({
   ),
   runAgentLoop: vi.fn(),
   isAgentAIConfigurationError: vi.fn(() => false),
-  buildOutboundHistory: vi.fn(() => []),
+  buildOutboundHistory: vi.fn<typeof import("../logic/outboundHistory").buildOutboundHistory>(() => []),
   buildSystemPrompt: vi.fn(() => "system"),
   executeTool: vi.fn(),
   createToolExecutor: vi.fn(() => mocks.executeTool),
@@ -289,7 +289,8 @@ vi.mock("../logic/tools/pendingApiCall", () => ({
   resolvePendingApiCall: mocks.resolvePendingApiCall,
 }));
 
-vi.mock("../logic/deniedQueryAccess", () => ({
+vi.mock("../logic/deniedQueryAccess", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   resolveDeniedQueryAccessDraft: mocks.resolveDeniedQueryAccessDraft,
 }));
 
@@ -6248,7 +6249,7 @@ describe("AgentInput", () => {
   });
 
   test.each(
-    ["prepared", "denied-query"].flatMap((source) =>
+    ["prepared", "prepared-after-denial"].flatMap((source) =>
       [false, true].flatMap((unmask) =>
         [
           { name: "omitted", reason: undefined },
@@ -6296,6 +6297,8 @@ describe("AgentInput", () => {
           if (execution.kind === "tool_result") {
             await callbacks.onToolResult("jit-reason", execution.result);
           }
+          callbacks.onAssistantMessage({ toolCalls: [{ id: "jit-reason-prepared", name: "prepare_access_grant_draft", arguments: "{}" }] });
+          await callbacks.onToolResult("jit-reason-prepared", JSON.stringify({ status: "unsaved", draft }));
         }
         callbacks.onText("Review the request with its default reason.");
         return { kind: "completed", success: true, totalTokensUsed: 0, actions: [] };
@@ -6370,7 +6373,7 @@ describe("AgentInput", () => {
   });
 
   test.each(
-    ["prepared", "denied-query"].flatMap((source) =>
+    ["prepared", "prepared-after-denial"].flatMap((source) =>
       ["open", "draft-issue-comment", "handoff"].map((primary) => ({ source, primary }))
     )
   )(
@@ -6415,6 +6418,8 @@ describe("AgentInput", () => {
           if (execution.kind === "tool_result") {
             await callbacks.onToolResult("jit-priority", execution.result);
           }
+          callbacks.onAssistantMessage({ toolCalls: [{ id: "jit-priority-prepared", name: "prepare_access_grant_draft", arguments: "{}" }] });
+          await callbacks.onToolResult("jit-priority-prepared", JSON.stringify({ status: "unsaved", draft }));
         }
         callbacks.onText("Review the prepared access request first.", target);
         return {
@@ -6722,6 +6727,94 @@ describe("AgentInput", () => {
     }
   });
 
+  test.each([false, true].flatMap((managed) => [false, true].map((confirmed) => ({ managed, confirmed }))))(
+    "waits for denied-query confirmation before the normal JIT skill, managed=$managed confirmed=$confirmed",
+    async ({ managed, confirmed }) => {
+      if (managed) enableRunRecovery();
+      const { buildOutboundHistory } = await vi.importActual<typeof import("../logic/outboundHistory")>("../logic/outboundHistory");
+      mocks.buildOutboundHistory.mockImplementation(buildOutboundHistory);
+      const database = "instances/prod/databases/app";
+      const statement = "SELECT id FROM orders WHERE id = 42;";
+      const query = { operationId: "SQLService/Query", body: { name: database, statement } };
+      const denied = JSON.stringify({ status: 200, response: { results: [{ error: "Permission denied", permissionDenied: { requiredPermissions: ["bb.sql.select"], resources: [database] } }] } });
+      const ask: AgentPendingAsk = {
+        kind: "confirm",
+        toolCallId: "request-query-access",
+        prompt: "The query failed because you lack bb.sql.select on app. You can request temporary access. Would you like to request it for this query?",
+        confirmLabel: "Request temporary access",
+        cancelLabel: "Not now",
+      };
+      const draft = { kind: "accessGrant", project: "projects/orders", sourceDatabase: database, targets: [database], statement, unmask: false };
+      mocks.executeTool.mockImplementation(async (name) => {
+        if (name === "call_api") return { kind: "tool_result", result: denied };
+        if (name === "ask_user") return { kind: "ask_user", ask };
+        if (name === "prepare_access_grant_draft") return { kind: "tool_result", result: JSON.stringify({ status: "unsaved", draft }) };
+        return { kind: "tool_result", result: JSON.stringify({ justInTime: { eligible: true } }) };
+      });
+      let invocation = 0;
+      mocks.runAgentLoop.mockImplementation(async (history: ReturnType<typeof buildOutboundHistory>, _tools, execute, callbacks, _signal, options) => {
+        invocation++;
+        if (managed) {
+          const reservation = await options.reserveProviderAttempt();
+          expect(reservation.kind).toBe("allowed");
+          await options.onAttemptSettled({ attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 10 } });
+        }
+        const call = async (name: string, args: Record<string, unknown>, id: string) => {
+          callbacks.onAssistantMessage({ toolCalls: [{ id, name, arguments: JSON.stringify(args) }] });
+          const result = await execute(name, args, id);
+          if (result.kind === "tool_result") await callbacks.onToolResult(id, result.result);
+          return result;
+        };
+        if (invocation === 1) {
+          await call("call_api", query, "denied-query");
+          await call("get_just_in_time_overview", { database }, "jit-eligibility");
+          const result = await call("ask_user", { kind: ask.kind, prompt: ask.prompt, confirmLabel: ask.confirmLabel, cancelLabel: ask.cancelLabel }, ask.toolCallId);
+          if (result.kind !== "ask_user") throw new Error("Expected access confirmation");
+          return { kind: "awaiting_user", ask: result.ask, totalTokensUsed: 10 };
+        }
+        expect(JSON.stringify(history)).toContain(statement);
+        expect(JSON.stringify(history)).toContain(database);
+        const response = history.findLast((message) => message.role === "tool" && message.toolCallId === ask.toolCallId);
+        expect(JSON.parse(response?.content ?? "null")).toMatchObject({ kind: "confirm", confirmed });
+        if (confirmed) {
+          await call("get_skill", { name: "just-in-time" }, "jit-skill");
+          await call("get_just_in_time_overview", { database }, "fresh-jit-eligibility");
+          await call("prepare_access_grant_draft", { project: draft.project, database, statement, unmask: false }, "confirmed-jit-draft");
+        }
+        callbacks.onText(confirmed ? "Review the access request draft." : "No access request was prepared.");
+        return { kind: "completed", success: confirmed, actions: [], totalTokensUsed: 10 };
+      });
+      const store = useAgentStore.getState();
+      const page = { path: "/projects/orders", title: "Orders" };
+      const chat = store.createChat({ context: "projects/orders", page });
+      store.queueUserMessage({ chatId: chat.id, text: "Query the order with ID 42.", page });
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("awaiting_user")); });
+        expect(store.getPendingAsk(chat.id)).toMatchObject(ask);
+        expect(view.container).toHaveTextContent(ask.prompt);
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(mocks.executeTool.mock.calls.map(([name]) => name)).not.toContain("get_skill");
+        expect(mocks.executeTool.mock.calls.map(([name]) => name)).not.toContain("prepare_access_grant_draft");
+        expect(store.getMessages(chat.id).some((message) => message.metadata?.accessRequestDraft)).toBe(false);
+        expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
+        const label = confirmed ? ask.confirmLabel : ask.cancelLabel;
+        const button = [...view.container.querySelectorAll("button")].find((item) => item.textContent === label);
+        expect(button).toBeDefined();
+        await act(async () => { button?.click(); await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
+        expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+        expect(mocks.executeTool.mock.calls.filter(([name]) => name === "call_api")).toHaveLength(1);
+        expect(mocks.executeTool.mock.calls.filter(([name]) => name === "prepare_access_grant_draft")).toHaveLength(confirmed ? 1 : 0);
+        expect(store.getPendingAsk(chat.id)).toBeNull();
+        const answer = store.getMessages(chat.id).find((message) => message.content === (confirmed ? "Review the access request draft." : "No access request was prepared."));
+        expect(answer?.metadata?.accessRequestDraft).toEqual(confirmed ? { ...draft, reason: "Request temporary query access to app." } : undefined);
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
   test.each([
     { name: "an unsuccessful completion", success: false, denied: true, prepared: false },
     { name: "a successful completion", success: true, denied: true, prepared: false },
@@ -6765,7 +6858,7 @@ describe("AgentInput", () => {
     mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
     mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(denied ? draft : undefined);
     mocks.runAgentLoop.mockImplementation(
-      async (_history, _tools, executeTool, callbacks) => {
+      async (_history, _tools, executeTool, callbacks, _signal, options) => {
         callbacks.onAssistantMessage({
           role: "assistant",
           toolCalls: [
@@ -6778,8 +6871,9 @@ describe("AgentInput", () => {
         });
         const execution = await executeTool("call_api", args, "query-1");
         if (execution.kind === "tool_result") {
-          callbacks.onToolResult("query-1", execution.result);
+          await callbacks.onToolResult("query-1", execution.result);
         }
+        expect(options.resolveRequestContext().systemGuidance.includes("Request temporary access")).toBe(denied);
         if (prepared) {
           callbacks.onAssistantMessage({
             toolCalls: [{ id: "prepared-jit", name: "prepare_access_grant_draft", arguments: "{}" }],
@@ -6835,14 +6929,15 @@ describe("AgentInput", () => {
     ).toEqual(
       prepared && success
         ? preparedDraft
-        : denied
-          ? { ...draft, reason: prepared ? preparedDraft.reason : "Request temporary query access to app." }
+        : denied && prepared
+          ? { ...draft, reason: preparedDraft.reason }
           : undefined
     );
+    expect(useAgentStore.getState().getPendingAsk(chat.id)).toBeNull();
     view.unmount();
   });
 
-  test.each([false, true])("offers an Access Grant draft when an approved Query is denied and completion success is %s", async (success) => {
+  test.each([false, true])("does not auto-prepare access when an approved Query is denied and completion success is %s", async (success) => {
     const store = useAgentStore.getState();
     const chatId = store.currentChatId!;
     const args = {
@@ -6938,7 +7033,7 @@ describe("AgentInput", () => {
         .getMessages(chatId)
         .find((message) => message.content === "The API denied the query.")
         ?.metadata?.accessRequestDraft
-    ).toEqual({ ...draft, reason: "Request temporary query access to app." });
+    ).toBeUndefined();
     expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
       args,
       boundAgentQueryResult(result)
@@ -11876,11 +11971,13 @@ describe("AgentInput", () => {
     expect(inputFooter).toBeInstanceOf(HTMLDivElement);
     expect(inputFooter?.textContent).toContain("Tokens used: 5,678");
     expect(container.textContent).toContain("Continue?");
-    expect(
-      [...container.querySelectorAll("button")].find(
-        (button) => button.textContent === "agent.confirm"
-      )?.classList.contains("h-9")
-    ).toBe(true);
+    for (const label of ["agent.confirm", "agent.cancel"]) {
+      const button = [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === label
+      );
+      expect(button).toHaveClass("h-7", "px-2", "text-xs");
+      expect(button).not.toHaveClass("h-9");
+    }
 
     unmount();
   });

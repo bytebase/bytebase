@@ -1163,8 +1163,8 @@ export function AgentChat({
                   <Button
                     key={starterId}
                     appearance="secondary"
-                    size="md"
-                    className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
+                    size="sm"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
                     onClick={() => onSelectSuggestion?.(starterId)}
                     data-agent-empty-suggestion
                     data-starter-id={starterId}
@@ -1172,7 +1172,10 @@ export function AgentChat({
                     <span className="min-w-0 flex-1 break-words">
                       {t(`agent.landing-starters.${starterId}`)}
                     </span>
-                    <ArrowUpRight className="shrink-0" aria-hidden="true" />
+                    <ArrowUpRight
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   </Button>
                 ))}
               </div>
@@ -1506,8 +1509,8 @@ export function AgentChat({
                           key={action.prompt}
                           type="button"
                           appearance="secondary"
-                          size="md"
-                          className="h-auto max-w-full justify-start bg-control-bg px-3 py-2 text-left whitespace-normal text-main hover:bg-control-bg-hover"
+                          size="sm"
+                          className="h-auto max-w-full justify-start bg-control-bg py-1.5 text-left whitespace-normal text-main hover:bg-control-bg-hover"
                           data-agent-action-continue
                           disabled={
                             !onContinueAction ||

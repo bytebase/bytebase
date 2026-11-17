@@ -474,7 +474,7 @@ test.each([
 
     expect(screen.queryByText("agent.storage.retention-policy")).toBeNull();
     expect(enUS.agent.storage["retention-policy"]).toBe(
-      "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved."
+      "Query-result previews are cleared first. If more space is needed, older completed chats, archived or not, are removed. Open chats, unfinished runs, and drafts are kept."
     );
     expect(within(history).queryByRole("alert")).toBeNull();
 
@@ -5328,6 +5328,7 @@ describe("AgentWindow", () => {
       expectUnchanged();
       expect(confirmation).toHaveAttribute("role", "dialog");
       expect(confirmation).toHaveAccessibleName(`agent.${action}-all-chats-confirmation`);
+      expect(within(confirmation).getByRole("button", { name: label })).toHaveClass("bg-error");
       expect(agentRoot.querySelector("[data-agent-dialog-content]")).toBeNull();
       expect(getLayerRoot("overlay").querySelector(selector)).toBeNull();
       await waitFor(() => expect(confirmation).toContainElement(document.activeElement as HTMLElement));
@@ -5929,6 +5930,21 @@ describe("AgentWindow", () => {
     }
   });
 
+  test("marks single-chat Archive as a destructive menu action", async () => {
+    const chatId = useAgentStore.getState().currentChatId!;
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      await openChatMenu(chatId);
+      expect(getLayerRoot("agent").querySelector("[data-agent-archive-chat]")).toHaveClass(
+        "text-error",
+        "data-highlighted:bg-error/10"
+      );
+    } finally {
+      unmount();
+    }
+  });
+
   test.each([1200, 700, 390])(
     "confirms archiving the chosen chat from its Agent menu at width %s",
     async (width) => {
@@ -5971,6 +5987,7 @@ describe("AgentWindow", () => {
         ) as HTMLElement;
         expect(confirmation).toHaveAttribute("role", "dialog");
         expect(confirmation.textContent).toContain("agent.archive-chat-confirmation");
+        expect(within(confirmation).getByRole("button", { name: "common.archive" })).toHaveClass("bg-error");
         expect(
           getLayerRoot("overlay").querySelector(
             "[data-agent-archive-chat-confirmation]"

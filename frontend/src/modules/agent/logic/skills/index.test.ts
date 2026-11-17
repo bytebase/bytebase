@@ -155,6 +155,25 @@ describe("resolveSkill", () => {
 });
 
 describe("getSkill", () => {
+  test.each(["query", "just-in-time"])(
+    "%s waits for chat confirmation before starting denied-query recovery",
+    (name) => {
+      const guidance = getSkill({ name });
+      expect(guidance).toContain("Request temporary access");
+      expect(guidance).toContain('ask_user(kind="confirm"');
+      expect(guidance).toContain("Wait for response.confirmed");
+      expect(guidance).toContain(
+        "Do not prepare_access_grant_draft before confirmation"
+      );
+      expect(guidance).toContain(
+        'load get_skill(name="just-in-time") and follow its normal workflow'
+      );
+      expect(guidance).toContain("explicitly requested an Access Grant");
+      expect(guidance).toContain("Network errors, invalid SQL");
+      expect(guidance).toContain("If declined, stop");
+    }
+  );
+
   test("requires member-selected future expiration instead of a fixed date", () => {
     const guidance = getSkill({ name: "grant-permission" });
     expect(guidance).toContain("explicitly selected by the member");

@@ -41,7 +41,10 @@ import {
   getCurrentChatContext,
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
-import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import {
+  extractDeniedQueryAccessRequest,
+  resolveDeniedQueryAccessDraft,
+} from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
@@ -96,6 +99,7 @@ import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
 } from "../logic/skills";
+import { queryAccessRecoveryInstruction } from "../logic/skills/query";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -1510,7 +1514,20 @@ export function AgentInput({
         }),
         systemGuidance: capability
           ? ""
-          : getMaskingSkillGuidance([...maskingSections]),
+          : [
+              getMaskingSkillGuidance([...maskingSections]),
+              getCurrentTurnQueryCalls(
+                useAgentStore.getState().getMessages(chatId)
+              ).some(
+                ({ args, result }) =>
+                  result !== undefined &&
+                  extractDeniedQueryAccessRequest(args, result)
+              )
+                ? queryAccessRecoveryInstruction
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
       });
       const tools = resolveRequestContext().tools;
       const executor = createToolExecutor(router, {
@@ -2289,7 +2306,14 @@ export function AgentInput({
                   ? await resolveDeniedQueryAccessDraft(
                       queryCalls[0].args,
                       queryCalls[0].result
-                    ).catch(() => undefined)
+                    )
+                      .then((draft) =>
+                        preparedAccessRequestDraft ||
+                        draft?.kind === "requestRole"
+                          ? draft
+                          : undefined
+                      )
+                      .catch(() => undefined)
                   : undefined
               : undefined,
             preparedAccessRequestDraft
@@ -4103,7 +4127,7 @@ export function AgentInput({
           <div className="flex flex-wrap gap-x-2 gap-y-2">
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
               disabled={
                 isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
@@ -4114,7 +4138,7 @@ export function AgentInput({
             </Button>
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={() => submitConfirmation(false)}

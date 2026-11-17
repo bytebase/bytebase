@@ -389,7 +389,7 @@
       "free-title": "删除其他已保存的 Agent 聊天？",
       "full": "Agent 历史记录存储空间已满。",
       "retention-info": "聊天历史保留",
-      "retention-policy": "需要释放本地存储空间时，较早完成的聊天将被自动删除。进行中的聊天和草稿会被保留。",
+      "retention-policy": "优先清理查询结果预览。如果仍需释放空间，则删除较早完成的聊天，无论是否已归档。已打开的聊天、未完成的运行和草稿会被保留。",
       "retry": "重试",
       "save-failed": "无法保存 Agent 历史记录。请重试。",
       "title": "Agent 历史记录存储"

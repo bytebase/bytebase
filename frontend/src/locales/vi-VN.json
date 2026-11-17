@@ -389,7 +389,7 @@
       "free-title": "Xóa các cuộc trò chuyện Agent đã lưu khác?",
       "full": "Bộ nhớ lịch sử Agent đã đầy.",
       "retention-info": "Lưu giữ lịch sử trò chuyện",
-      "retention-policy": "Các cuộc trò chuyện đã hoàn tất cũ hơn sẽ tự động bị xóa khi cần giải phóng bộ nhớ cục bộ. Các cuộc trò chuyện đang hoạt động và bản nháp được giữ lại.",
+      "retention-policy": "Bản xem trước kết quả truy vấn được xóa trước. Nếu cần thêm dung lượng, các cuộc trò chuyện đã hoàn tất cũ nhất sẽ bị xóa, dù đã lưu trữ hay chưa. Các cuộc trò chuyện đang mở, lượt chạy chưa hoàn tất và bản nháp được giữ lại.",
       "retry": "Thử lại",
       "save-failed": "Không thể lưu lịch sử Agent. Hãy thử lại.",
       "title": "Bộ nhớ lịch sử Agent"

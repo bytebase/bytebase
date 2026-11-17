@@ -3018,7 +3018,7 @@ function ChatListMenu({
             </Button>
             <Button
               size="sm"
-              variant={archived ? "destructive" : "default"}
+              variant="destructive"
               disabled={disabled}
               onClick={() => {
                 setPendingAction(null);
@@ -3131,6 +3131,7 @@ function ChatRowMenu({
           ) : (
             <AgentDropdownMenuItem
               data-agent-archive-chat
+              className="text-error data-highlighted:bg-error/10"
               onClick={(event) => {
                 event.stopPropagation();
                 skipMenuFinalFocusRef.current = true;
@@ -3167,6 +3168,7 @@ function ChatRowMenu({
             </Button>
             <Button
               size="sm"
+              variant="destructive"
               onClick={() => {
                 setArchiveOpen(false);
                 onArchive();

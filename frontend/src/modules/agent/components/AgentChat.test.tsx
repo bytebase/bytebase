@@ -1366,6 +1366,8 @@ describe("AgentChat", () => {
     expectCompactPrimaryAction(button, "agent.access-grant-draft.open");
     expect(button).toHaveClass("-ml-2");
     expect(mocks.prepareAgentDeniedQueryRequestRoute).not.toHaveBeenCalled();
+    expect(mocks.validateDeniedQueryRequestDraft).not.toHaveBeenCalled();
+    expect(onOpenAccessGrantDraft).not.toHaveBeenCalled();
     await act(async () => button?.click());
     expect(mocks.validateDeniedQueryRequestDraft).toHaveBeenCalledWith(draft);
     expect(onOpenAccessGrantDraft).toHaveBeenCalledWith({
@@ -2298,6 +2300,10 @@ describe("AgentChat", () => {
       "How should I validate it?",
       "What are the rollback options?",
     ]);
+    for (const choice of choices) {
+      expect(choice).toHaveClass("h-auto", "px-2", "py-1.5", "text-xs", "whitespace-normal");
+      expect(choice).not.toHaveClass("py-2", "text-sm");
+    }
     act(() => choices[1]?.click());
     expect(onContinueAction).toHaveBeenCalledWith(
       chat.id,
@@ -2686,6 +2692,11 @@ describe("AgentChat", () => {
       "project-propose-change",
       "project-next",
     ]);
+    for (const button of container.querySelectorAll("[data-agent-empty-suggestion]")) {
+      expect(button).toHaveClass("h-auto", "px-2", "py-1.5", "text-xs", "whitespace-normal");
+      expect(button).not.toHaveClass("py-2", "text-sm");
+      expect(button.querySelector("svg")).toHaveClass("size-4");
+    }
 
     act(() => {
       (container.querySelector('[data-starter-id="project-open-blockers"]') as HTMLButtonElement).click();
