@@ -1383,7 +1383,6 @@ export function InstanceFormBody({
                 </span>
               </>
             }
-            defaultCollapsed
             disabled={!allowEdit || disabled}
             onValueChange={(value) =>
               changeVendor(

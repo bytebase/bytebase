@@ -717,14 +717,12 @@ const selectHosting = (name: RegExp) => {
 test("PostgreSQL reveals where it is hosted, with self-managed as the default", () => {
   mountCreate(Engine.POSTGRES);
   const toggle = hostingToggle();
-  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
   expect(toggle).toHaveTextContent("instance.vendor.generic");
   expect(
-    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
-  ).not.toBeInTheDocument();
+    screen.getByRole("radiogroup", { name: "instance.vendor.self" })
+  ).toBeVisible();
 
-  fireEvent.click(toggle);
-  expect(toggle).toHaveAttribute("aria-expanded", "true");
   const generic = hosting(/^instance.vendor.generic/);
   const neon = hosting(/^instance.vendor.neon/);
   expect(generic).toHaveAttribute("aria-checked", "true");
@@ -738,6 +736,9 @@ test("PostgreSQL reveals where it is hosted, with self-managed as the default", 
   expect(context.basicInfo.engine).toBe(Engine.POSTGRES);
   expect(toggle).toHaveAttribute("aria-expanded", "false");
   expect(toggle).toHaveTextContent("instance.vendor.neon");
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
 });
 
 test("does not ask where other engines are hosted", () => {

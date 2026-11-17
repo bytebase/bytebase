@@ -412,7 +412,7 @@ export function NeonConfigureStep({
                   />
                 </TableHead>
                 <TableHead>{t("common.instance")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
+                <TableHead className="hidden whitespace-nowrap sm:table-cell">
                   {t("common.environment")}
                 </TableHead>
                 <TableHead className="hidden md:table-cell">
@@ -423,7 +423,7 @@ export function NeonConfigureStep({
                     {t("instance.neon.configure.role-note")}
                   </span>
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">
+                <TableHead className="hidden whitespace-nowrap lg:table-cell">
                   {t("instance.neon.sheet.sync")}
                 </TableHead>
                 <TableHead className="w-10">

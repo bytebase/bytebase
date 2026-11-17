@@ -340,3 +340,26 @@ test("restarts discovery on request", () => {
   );
   expect(onRestart).toHaveBeenCalledOnce();
 });
+
+test("keeps trailing column headers and available status on a single line while allowing unavailable reasons to wrap", () => {
+  renderStep();
+  for (const key of [
+    "instance.neon.select.col.databases",
+    "instance.neon.select.col.roles",
+    "common.status",
+  ]) {
+    expect(screen.getByRole("columnheader", { name: key })).toHaveClass(
+      "whitespace-nowrap"
+    );
+  }
+  const availableLabels = screen.getAllByText("instance.neon.select.available");
+  expect(availableLabels.length).toBeGreaterThan(0);
+  for (const label of availableLabels) {
+    expect(label).toHaveClass("whitespace-nowrap");
+  }
+  const desktopUnavailableReason = screen
+    .getAllByText(/instance\.neon\.reason\.endpoint-unavailable/)
+    .find((element) => element.classList.contains("w-40"));
+  expect(desktopUnavailableReason).toBeDefined();
+  expect(desktopUnavailableReason).not.toHaveClass("whitespace-nowrap");
+});

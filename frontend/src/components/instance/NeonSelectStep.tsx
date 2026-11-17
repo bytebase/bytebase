@@ -380,13 +380,13 @@ export function NeonSelectStep({
                   </span>
                 )}
               </TableHead>
-              <TableHead className="hidden md:table-cell">
+              <TableHead className="hidden whitespace-nowrap md:table-cell">
                 {t("instance.neon.select.col.databases")}
               </TableHead>
-              <TableHead className="hidden lg:table-cell">
+              <TableHead className="hidden whitespace-nowrap lg:table-cell">
                 {t("instance.neon.select.col.roles")}
               </TableHead>
-              <TableHead className="hidden sm:table-cell">
+              <TableHead className="hidden whitespace-nowrap sm:table-cell">
                 {t("common.status")}
               </TableHead>
             </TableRow>
@@ -645,7 +645,7 @@ export function NeonSelectStep({
                         </TableCell>
                         <TableCell className="hidden align-top sm:table-cell">
                           {available ? (
-                            <span className="text-control-light">
+                            <span className="whitespace-nowrap text-control-light">
                               {t("instance.neon.select.available")}
                             </span>
                           ) : (

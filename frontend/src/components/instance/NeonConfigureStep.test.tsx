@@ -432,3 +432,12 @@ test("opens the row sheet from the instance name", () => {
   fireEvent.click(screen.getByRole("button", { name: "storefront / main" }));
   expect(handlers.onOpenRow).toHaveBeenCalledWith(branchKey(latest[0].branch));
 });
+
+test("keeps Environment and Sync column headers on a single line", () => {
+  render(<Harness initial={fixture().slice(0, 1)} />);
+  for (const key of ["common.environment", "instance.neon.sheet.sync"]) {
+    expect(screen.getByRole("columnheader", { name: key })).toHaveClass(
+      "whitespace-nowrap"
+    );
+  }
+});
