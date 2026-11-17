@@ -1,4 +1,14 @@
 - statement: DELETE FROM tech_book WHERE a > 1
   changeType: 1
+  want:
+    - status: 3
+      code: 1
+      title: STATEMENT_AFFECTED_ROW_LIMIT
+      content: "Rule check failed: POSTGRES: the live connection cannot probe the database, so this rule did not run"
 - statement: UPDATE tech_book SET id = 1
   changeType: 1
+  want:
+    - status: 3
+      code: 1
+      title: STATEMENT_AFFECTED_ROW_LIMIT
+      content: "Rule check failed: POSTGRES: the live connection cannot probe the database, so this rule did not run"

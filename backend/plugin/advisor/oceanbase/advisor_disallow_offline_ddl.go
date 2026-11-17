@@ -26,13 +26,18 @@ func init() {
 // DisallowOfflineDdlAdvisor is the advisor checking for disallow Offline DDL.
 // omni (oceanbase/v1review.StatementDisallowOfflineDDLLookups) names the
 // dropped columns whose EXTRA the database must report; this adapter reads
-// them, and omni (StatementDisallowOfflineDDL) judges every statement.
+// them through the connection's ColumnExtraLookup, and omni
+// (StatementDisallowOfflineDDL) judges every statement.
 type DisallowOfflineDdlAdvisor struct {
 }
 
 // Check checks for disallow Offline DDL.
-func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
+func (*DisallowOfflineDdlAdvisor) Check(ctx context.Context, checkCtx advisor.Context) ([]*storepb.Advice, error) {
 	level, err := advisor.NewStatusBySQLReviewRuleLevel(checkCtx.Rule.Level)
+	if err != nil {
+		return nil, err
+	}
+	lookup, err := advisor.ColumnExtraOf(checkCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,17 +54,9 @@ func (*DisallowOfflineDdlAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		}
 		nodes := []ast.Node{node}
 		extras := make(map[v1review.ColumnRef]string)
-		if checkCtx.Driver != nil {
-			for _, ref := range oceanbasev1review.StatementDisallowOfflineDDLLookups(nodes, checkCtx.CurrentDatabase) {
-				var extra string
-				if err := checkCtx.Driver.QueryRowContext(context.Background(),
-					"SELECT EXTRA FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?",
-					ref.Database,
-					ref.Table,
-					ref.Column,
-				).Scan(&extra); err == nil {
-					extras[ref] = extra
-				}
+		for _, ref := range oceanbasev1review.StatementDisallowOfflineDDLLookups(nodes, checkCtx.CurrentDatabase) {
+			if extra, err := lookup.ColumnExtra(ctx, ref.Database, ref.Table, ref.Column); err == nil {
+				extras[ref] = extra
 			}
 		}
 		for _, f := range oceanbasev1review.StatementDisallowOfflineDDL(nodes, checkCtx.CurrentDatabase, extras) {

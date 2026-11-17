@@ -856,14 +856,13 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 		return storepb.Advice_ERROR, nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database driver"))
 	}
 	defer driver.Close(ctx)
-	connection := driver.GetDB()
 
 	context := advisor.Context{
 		DBSchema:              dbMetadataProto,
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,
 		FinalMetadata:         finalMetadata,
-		Driver:                connection,
+		Prober:                db.ProberOf(driver),
 		CurrentDatabase:       database.DatabaseName,
 		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),
 		ListDatabaseNamesFunc: parsercontext.BuildListDatabaseNamesFunc(s.store),

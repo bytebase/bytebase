@@ -125,14 +125,13 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, err
 	}
 	defer driver.Close(ctx)
-	connection := driver.GetDB()
 
 	adviceList, err := advisor.SQLReviewCheck(ctx, e.sheetManager, statement, reviewConfig.SqlReviewRules, advisor.Context{
 		DBSchema:              dbMetadata.GetProto(),
 		DBType:                instance.Metadata.GetEngine(),
 		OriginalMetadata:      originMetadata,
 		FinalMetadata:         finalMetadata,
-		Driver:                connection,
+		Prober:                db.ProberOf(driver),
 		EnablePriorBackup:     enablePriorBackup,
 		EnableGhost:           enableGhost,
 		TenantMode:            project.Setting.GetPostgresDatabaseTenantMode(),

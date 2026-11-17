@@ -2,7 +2,6 @@ package oceanbase
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	oceanbaseparser "github.com/bytebase/bytebase/backend/plugin/parser/oceanbase"
 )
@@ -62,6 +62,27 @@ func dryRunText(text string) string {
 	return strings.TrimRight(strings.TrimSpace(text), ";") + ";"
 }
 
+// explainRows EXPLAINs the statement text as the row-limit rules do and reads
+// the estimated rows from the plan. The rules ask for it only where they must
+// estimate, so an absent prober is the statement's problem, not the review's.
+func explainRows(ctx context.Context, checkCtx advisor.Context, text string) (v1review.Probe, error) {
+	prober, err := advisor.ProbeFor(checkCtx)
+	if err != nil {
+		return v1review.Probe{}, err
+	}
+	res, err := prober.Probe(ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN format=json %s", text))
+	if err != nil {
+		//nolint:nilerr // a refused statement is the probe finding, reported as advice.
+		return v1review.Probe{Error: err.Error()}, nil
+	}
+	rows, err := estimatedRowsFromPlan(res)
+	if err != nil {
+		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
+		return v1review.Probe{CountError: err.Error()}, nil
+	}
+	return v1review.Probe{Rows: rows}, nil
+}
+
 // nodePosition is the position of an INSERT, UPDATE or DELETE node, as
 // lineOf computes it.
 func nodePosition(stmt base.ParsedStatement, node ast.Node) *storepb.Position {
@@ -76,18 +97,4 @@ func nodePosition(stmt base.ParsedStatement, node ast.Node) *storepb.Position {
 	default:
 	}
 	return base.ConvertANTLRLineToPosition(lineOf(stmt.BaseLine(), stmt.Text, loc))
-}
-
-// explainRows EXPLAINs the statement text as the row-limit rules do and reads
-// the estimated rows from the plan.
-func explainRows(ctx context.Context, driver *sql.DB, text string) v1review.Probe {
-	res, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
-	if err != nil {
-		return v1review.Probe{Error: err.Error()}
-	}
-	rows, err := getEstimatedRowsFromJSON(res)
-	if err != nil {
-		return v1review.Probe{CountError: err.Error()}
-	}
-	return v1review.Probe{Rows: rows}
 }

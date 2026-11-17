@@ -1,4 +1,14 @@
 - statement: INSERT INTO tech_book values(1, 'a')
   changeType: 1
+  want:
+    - status: 3
+      code: 1
+      title: STATEMENT_DML_DRY_RUN
+      content: "Rule check failed: POSTGRES: the live connection cannot probe the database, so this rule did not run"
 - statement: DELETE FROM tech_book
   changeType: 1
+  want:
+    - status: 3
+      code: 1
+      title: STATEMENT_DML_DRY_RUN
+      content: "Rule check failed: POSTGRES: the live connection cannot probe the database, so this rule did not run"

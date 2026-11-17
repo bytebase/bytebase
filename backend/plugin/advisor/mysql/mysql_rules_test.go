@@ -17,6 +17,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -121,6 +125,34 @@ func (r *testMySQLAdvisorExplainResultRows) Next(dest []driver.Value) error {
 	copy(dest, r.rows[r.idx])
 	r.idx++
 	return nil
+}
+
+// testRowEstimator is the seam's RowEstimator over the fake server: it answers
+// what db/mysql.Driver.CountAffectedRows answers, so a rule that still issued
+// its own EXPLAIN or a differently shaped query is caught.
+type testRowEstimator struct {
+	db     *sql.DB
+	prober db.Prober
+}
+
+func (e *testRowEstimator) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return e.prober.Probe(ctx, pCtx, statement)
+}
+
+func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	list, err := mysqlparser.ParseMySQL(statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to parse statement")
+	}
+	if list == nil || len(list.Items) != 1 {
+		return 0, errors.New("expected exactly one statement")
+	}
+	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := mysqldriver.ExplainJSON(ctx, e.db, query)
+	if err != nil {
+		return 0, err
+	}
+	return mysqldriver.EstimateAffectedRows(ctx, e.db, list.Items[0], query, plan)
 }
 
 func TestMySQLRules(t *testing.T) {
@@ -239,7 +271,7 @@ func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, rule
 		},
 	}, advisor.Context{
 		DBType:          engine,
-		Driver:          db,
+		Prober:          &testRowEstimator{db: db, prober: dbutil.NewSQLProber(db)},
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
@@ -378,6 +410,20 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 	}
 }
 
+// TestMySQLRowLimitAdvisorReportsARefusedEstimate covers the seam's one
+// behaviour delta for this rule: the estimate is the driver's, so an EXPLAIN the
+// server refuses is a count error rather than a dry-run failure.
+func TestMySQLRowLimitAdvisorReportsARefusedEstimate(t *testing.T) {
+	db := openTestMySQLAdvisorDB(t, "")
+	testMySQLAdvisorExplainErr = errors.New("Table 'test.tech_book' doesn't exist")
+	defer func() { testMySQLAdvisorExplainErr = nil }()
+
+	adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_WARNING, "UPDATE tech_book SET name = 'xz' WHERE id = 1;")
+	require.Len(t, adviceList, 1)
+	require.Equal(t, code.Internal.Int32(), adviceList[0].Code)
+	require.Contains(t, adviceList[0].Content, `failed to get row count for "UPDATE tech_book SET name = 'xz' WHERE id = 1;"`)
+}
+
 func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T) {
 	t.Run("affected row limit", func(t *testing.T) {
 		db := openTestMySQLAdvisorDB(t, testMySQLSingleTableUpdatePlan)
@@ -480,7 +526,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
@@ -501,7 +547,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
@@ -514,7 +560,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "CREATE TABLE t2 (id INT);\n"+stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)
@@ -526,7 +572,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "SELECT 1;\nINSERT INTO tech_book VALUES (1, 'a');\n"+stmt+"\nDELETE FROM tech_book;", rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
-			Driver:          db,
+			Prober:          dbutil.NewSQLProber(db),
 			NoAppendBuiltin: true,
 		})
 		require.NoError(t, err)

@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 var (
@@ -23,8 +24,8 @@ func init() {
 
 // StatementDMLDryRunAdvisor is the advisor checking for DML dry run. omni
 // (pg/v1review.StatementDMLDryRunProbes) picks the statements to dry-run;
-// this adapter EXPLAINs them under the session settings before them, and
-// omni (StatementDMLDryRun) judges the results.
+// this adapter probes them under the session settings before them, and omni
+// (StatementDMLDryRun) judges the results.
 type StatementDMLDryRunAdvisor struct {
 }
 
@@ -34,9 +35,9 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if err != nil {
 		return nil, err
 	}
-	// Only run EXPLAIN queries if we have a database connection
-	if checkCtx.Driver == nil {
-		return nil, nil
+	prober, err := advisor.ProbeFor(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 	// BYT-8855: Skip DML dry run if there are DDL statements mixed in, because DML
 	// statements often reference objects created by DDL statements, causing false positives.
@@ -52,10 +53,7 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 			return
 		}
 		explained++
-		if _, err := advisor.Query(ctx, advisor.QueryContext{
-			TenantMode:    checkCtx.TenantMode,
-			PreExecutions: settings,
-		}, checkCtx.Driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", l.probeText(i))); err != nil {
+		if _, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, fmt.Sprintf("EXPLAIN %s", l.probeText(i))); err != nil {
 			probes[i] = v1review.Probe{Error: err.Error()}
 		} else {
 			probes[i] = v1review.Probe{}

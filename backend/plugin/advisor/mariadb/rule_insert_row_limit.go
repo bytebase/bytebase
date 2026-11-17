@@ -12,7 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
@@ -27,8 +26,8 @@ func init() {
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit. omni
 // (mariadb/v1review.StatementInsertRowLimitProbes) picks the INSERTs whose rows
-// the database must estimate; this adapter EXPLAINs and estimates them, and
-// omni (StatementInsertRowLimit) judges every INSERT.
+// the database must estimate; this adapter asks the driver for their estimate,
+// and omni (StatementInsertRowLimit) judges every INSERT.
 type InsertRowLimitAdvisor struct {
 }
 
@@ -45,30 +44,20 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	}
 
 	maxRow := int(numberPayload.Number)
-	driver := checkCtx.Driver
 	title := checkCtx.Rule.Type.String()
 	var explains advisor.ExplainBudget
 
 	nodes, stmts := mariadbNodes(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
-	if driver != nil {
-		for _, i := range mariadbv1review.StatementInsertRowLimitProbes(nodes) {
-			if !explains.Spend(statementStartPosition(stmts[i])) {
-				continue
-			}
-			text := dryRunText(stmts[i].Text)
-			plan, err := mysqldriver.ExplainJSON(ctx, driver, text)
-			if err != nil {
-				probes[i] = v1review.Probe{Error: err.Error()}
-				continue
-			}
-			rowCount, err := mysqldriver.EstimateAffectedRowsMariaDB(ctx, driver, nodes[i], text, plan)
-			if err != nil {
-				probes[i] = v1review.Probe{CountError: err.Error()}
-				continue
-			}
-			probes[i] = v1review.Probe{Rows: rowCount}
+	for _, i := range mariadbv1review.StatementInsertRowLimitProbes(nodes) {
+		if !explains.Spend(statementStartPosition(stmts[i])) {
+			continue
 		}
+		probe, err := advisor.Estimate(ctx, checkCtx.DBType, checkCtx.Prober, dryRunText(stmts[i].Text))
+		if err != nil {
+			return nil, err
+		}
+		probes[i] = probe
 	}
 
 	var advice []*storepb.Advice

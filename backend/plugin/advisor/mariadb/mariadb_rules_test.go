@@ -17,6 +17,10 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
+	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -139,6 +143,34 @@ func openTestMariaDBAdvisorDB(t *testing.T, plan string) *sql.DB {
 	return db
 }
 
+// testRowEstimator is the seam's RowEstimator over the fake server: it answers
+// what db/mysql.Driver.CountAffectedRows answers for MariaDB, so a rule that
+// still issued its own EXPLAIN or a differently shaped query is caught.
+type testRowEstimator struct {
+	db     *sql.DB
+	prober db.Prober
+}
+
+func (e *testRowEstimator) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return e.prober.Probe(ctx, pCtx, statement)
+}
+
+func (e *testRowEstimator) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	list, err := mariadbparser.ParseMariaDB(statement)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to parse statement")
+	}
+	if list == nil || len(list.Items) != 1 {
+		return 0, errors.New("expected exactly one statement")
+	}
+	query := mariadbparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := mysqldriver.ExplainJSON(ctx, e.db, query)
+	if err != nil {
+		return 0, err
+	}
+	return mysqldriver.EstimateAffectedRowsMariaDB(ctx, e.db, list.Items[0], query, plan)
+}
+
 func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
 	t.Helper()
 	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{
@@ -150,7 +182,7 @@ func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, rule
 		},
 	}, advisor.Context{
 		DBType:          engine,
-		Driver:          db,
+		Prober:          &testRowEstimator{db: db, prober: dbutil.NewSQLProber(db)},
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
