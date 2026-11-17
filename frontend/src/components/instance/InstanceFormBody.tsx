@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import { ChevronDown, ExternalLink, Info, Lock, Trash2 } from "lucide-react";
+import { ExternalLink, Info, Lock, Server, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import neonIcon from "@/assets/db/neon.svg";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { LabelListEditor } from "@/components/LabelListEditor";
@@ -74,7 +75,7 @@ import {
   urlfy,
 } from "@/utils";
 import { normalizeAuthenticationType } from "./authentication";
-import { ChoiceCard } from "./ChoiceCard";
+import { CollapsibleTilePicker, TileRadioItem } from "./CollapsibleTilePicker";
 import {
   type DataSourceEditState,
   type EditDataSource,
@@ -344,46 +345,27 @@ function BigQueryHostInput({
   );
 }
 
-function InstanceEngineRadioGrid({
-  engine,
-  engineList,
-  onEngineChange,
-  isEngineBeta,
-  disabled,
+function VendorIcon({
+  vendor,
+  className,
 }: {
-  engine: Engine;
-  engineList: Engine[];
-  onEngineChange: (engine: Engine) => void;
-  isEngineBeta: (engine: Engine) => boolean;
-  disabled?: boolean;
+  vendor: Vendor;
+  className?: string;
 }) {
+  if (vendor === Vendor.NEON) {
+    return (
+      <img
+        src={neonIcon}
+        alt=""
+        className={cn("shrink-0 object-contain", className)}
+      />
+    );
+  }
   return (
-    <div className="w-full grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
-      {engineList.map((eng) => (
-        <Button
-          key={eng}
-          type="button"
-          appearance="outline"
-          size="lg"
-          className={cn(
-            "h-auto justify-start rounded-sm px-3 py-2 text-left",
-            eng === engine
-              ? "border-accent bg-accent/5 ring-1 ring-accent"
-              : "hover:border-accent/50 hover:bg-control-bg"
-          )}
-          disabled={disabled}
-          onClick={() => onEngineChange(eng)}
-        >
-          <EngineIcon engine={eng} className="size-5" />
-          <span className="truncate">{engineNameV1(eng)}</span>
-          {isEngineBeta(eng) && (
-            <span className="ml-auto shrink-0 rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
-              Beta
-            </span>
-          )}
-        </Button>
-      ))}
-    </div>
+    <Server
+      aria-hidden="true"
+      className={cn("shrink-0 text-control-light", className)}
+    />
   );
 }
 
@@ -1120,14 +1102,6 @@ export function InstanceFormBody({
     [resetDataSource, setDataSourceEditState, setBasicInfo]
   );
 
-  const handleSelectInstanceEngine = useCallback(
-    (engine: Engine) => {
-      changeInstanceEngine(engine);
-      setIsEngineSelectorCollapsed(true);
-    },
-    [changeInstanceEngine]
-  );
-
   const handleSelectEnvironment = useCallback(
     (name: string | undefined) => {
       setBasicInfo((prev) => ({ ...prev, environment: name }));
@@ -1357,54 +1331,84 @@ export function InstanceFormBody({
     <>
       {isCreating && (
         <FormField title={t("database.engine")}>
-          <Button
-            appearance="outline"
-            className="w-full justify-between"
+          <CollapsibleTilePicker
+            label={t("database.engine")}
+            value={String(basicInfo.engine)}
+            summary={
+              <>
+                <EngineIcon engine={basicInfo.engine} className="size-4" />
+                <span className="truncate">
+                  {engineNameV1(basicInfo.engine)}
+                </span>
+              </>
+            }
+            collapsed={isEngineSelectorCollapsed}
+            onCollapsedChange={setIsEngineSelectorCollapsed}
             disabled={disabled}
-            aria-expanded={!isEngineSelectorCollapsed}
-            onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
+            onValueChange={(value) =>
+              changeInstanceEngine(Number(value) as Engine)
+            }
           >
-            <span className="flex items-center gap-2">
-              <EngineIcon engine={basicInfo.engine} className="size-4" />
-              {engineNameV1(basicInfo.engine)}
-            </span>
-            <ChevronDown
-              className={cn(
-                "size-4 shrink-0 text-control-light transition-transform duration-150 ease-out motion-reduce:transition-none",
-                !isEngineSelectorCollapsed && "rotate-180"
-              )}
-            />
-          </Button>
-          <div
-            hidden={isEngineSelectorCollapsed}
-            inert={isEngineSelectorCollapsed ? true : undefined}
-          >
-            <InstanceEngineRadioGrid
-              engine={basicInfo.engine}
-              engineList={supportedEngineV1List()}
-              onEngineChange={handleSelectInstanceEngine}
-              isEngineBeta={isEngineBeta}
-              disabled={disabled}
-            />
-          </div>
+            {supportedEngineV1List().map((eng) => (
+              <TileRadioItem
+                key={eng}
+                value={String(eng)}
+                icon={<EngineIcon engine={eng} className="size-5" />}
+                badge={
+                  isEngineBeta(eng) ? (
+                    <span className="rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
+                      Beta
+                    </span>
+                  ) : undefined
+                }
+              >
+                {engineNameV1(eng)}
+              </TileRadioItem>
+            ))}
+          </CollapsibleTilePicker>
         </FormField>
       )}
       {isCreating && basicInfo.engine === Engine.POSTGRES && (
         <FormField title={t("instance.vendor.self")}>
-          <RadioGroup
-            aria-label={t("instance.vendor.self")}
+          <CollapsibleTilePicker
+            label={t("instance.vendor.self")}
             value={isNeon ? "neon" : "generic"}
+            summary={
+              <>
+                <VendorIcon vendor={basicInfo.vendor} className="size-4" />
+                <span className="truncate">
+                  {isNeon
+                    ? t("instance.vendor.neon")
+                    : t("instance.vendor.generic")}
+                </span>
+              </>
+            }
+            defaultCollapsed
             disabled={!allowEdit || disabled}
             onValueChange={(value) =>
               changeVendor(
                 value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
               )
             }
-            className="grid w-full grid-cols-1 items-stretch gap-2 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]"
           >
-            <ChoiceCard value="generic" title={t("instance.vendor.generic")} />
-            <ChoiceCard value="neon" title={t("instance.vendor.neon")} />
-          </RadioGroup>
+            <TileRadioItem
+              value="generic"
+              icon={
+                <VendorIcon
+                  vendor={Vendor.VENDOR_UNSPECIFIED}
+                  className="size-5"
+                />
+              }
+            >
+              {t("instance.vendor.generic")}
+            </TileRadioItem>
+            <TileRadioItem
+              value="neon"
+              icon={<VendorIcon vendor={Vendor.NEON} className="size-5" />}
+            >
+              {t("instance.vendor.neon")}
+            </TileRadioItem>
+          </CollapsibleTilePicker>
         </FormField>
       )}
     </>

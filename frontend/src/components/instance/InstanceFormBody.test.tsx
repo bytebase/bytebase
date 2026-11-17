@@ -703,10 +703,28 @@ function mountCreate(engine: Engine) {
   );
   act(() => context.setBasicInfo((previous) => ({ ...previous, engine })));
 }
+const hostingToggle = () =>
+  screen.getByRole("button", { name: /^instance\.vendor\.self/ });
 const hosting = (name: RegExp) => screen.getByRole("radio", { name });
+const selectHosting = (name: RegExp) => {
+  const toggle = hostingToggle();
+  if (toggle.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+  fireEvent.click(hosting(name));
+};
 
 test("PostgreSQL reveals where it is hosted, with self-managed as the default", () => {
   mountCreate(Engine.POSTGRES);
+  const toggle = hostingToggle();
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(toggle).toHaveTextContent("instance.vendor.generic");
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
   const generic = hosting(/^instance.vendor.generic/);
   const neon = hosting(/^instance.vendor.neon/);
   expect(generic).toHaveAttribute("aria-checked", "true");
@@ -714,13 +732,19 @@ test("PostgreSQL reveals where it is hosted, with self-managed as the default", 
   expect(neon.closest("label")).toHaveClass("min-h-9");
   expect(generic.closest("label")?.textContent).toBe("instance.vendor.generic");
   expect(neon.closest("label")?.textContent).toBe("instance.vendor.neon");
+
   fireEvent.click(neon);
   expect(context.basicInfo.vendor).toBe(Vendor.NEON);
   expect(context.basicInfo.engine).toBe(Engine.POSTGRES);
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(toggle).toHaveTextContent("instance.vendor.neon");
 });
 
 test("does not ask where other engines are hosted", () => {
   mountCreate(Engine.MYSQL);
+  expect(
+    screen.queryByRole("button", { name: /^instance\.vendor\.self/ })
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
   ).not.toBeInTheDocument();
@@ -729,7 +753,7 @@ test("does not ask where other engines are hosted", () => {
 test("preserves separate self-managed and Neon manual connection drafts", () => {
   mountCreate(Engine.POSTGRES);
   const genericDraft = context.dataSourceEditState;
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   expect(context.adminDataSource.useSsl).toBe(true);
   expect(context.adminDataSource.verifyTlsCertificate).toBe(true);
   expect(context.adminDataSource.port).toBe("5432");
@@ -742,9 +766,9 @@ test("preserves separate self-managed and Neon manual connection drafts", () => 
       })),
     }))
   );
-  fireEvent.click(hosting(/^instance.vendor.generic/));
+  selectHosting(/^instance.vendor.generic/);
   expect(context.dataSourceEditState).toBe(genericDraft);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   expect(context.adminDataSource.host).toBe("ep-example.neon.tech");
 });
 
@@ -755,7 +779,7 @@ const paste = (field: HTMLElement, text: string) =>
 
 test("a pasted Neon connection string fills the connection fields and is not kept", () => {
   mountCreate(Engine.POSTGRES);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
   paste(field, NEON_STRING);
   expect(context.adminDataSource).toMatchObject({
@@ -776,7 +800,7 @@ test("a pasted Neon connection string fills the connection fields and is not kep
 
 test("a connection string typed by hand is read when the field is left, not per keystroke", () => {
   mountCreate(Engine.POSTGRES);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
   // This prefix already parses, with a one-letter database name.
   const partial = NEON_STRING.slice(0, NEON_STRING.indexOf("/storefront") + 2);
@@ -798,7 +822,7 @@ test("a connection string typed by hand is read when the field is left, not per 
 
 test("text that is not a connection string is reported once the field is left and stays to be corrected", () => {
   mountCreate(Engine.POSTGRES);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
   fireEvent.change(field, { target: { value: "not a connection string" } });
   expect(
@@ -813,7 +837,7 @@ test("text that is not a connection string is reported once the field is left an
 
 test("a pasted pooled connection string says so beside the field until the host is corrected", () => {
   mountCreate(Engine.POSTGRES);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
   paste(
     field,
@@ -841,7 +865,7 @@ test("a pasted pooled connection string says so beside the field until the host 
 
 test("rejects a pooled Neon host and asks for the direct endpoint", () => {
   mountCreate(Engine.POSTGRES);
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  selectHosting(/^instance.vendor.neon/);
   act(() =>
     context.setDataSourceEditState((previous) => ({
       ...previous,
@@ -884,6 +908,9 @@ test("editing a Neon instance shows its connection settings without the hosting 
       <Editor />
     </InstanceFormProvider>
   );
+  expect(
+    screen.queryByRole("button", { name: /^instance\.vendor\.self/ })
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
   ).not.toBeInTheDocument();
@@ -933,7 +960,7 @@ test("Neon TLS mode omits Disabled and allows toggling certificate verification 
         engine: Engine.POSTGRES,
       }))
     );
-    fireEvent.click(hosting(/^instance.vendor.neon/));
+    selectHosting(/^instance.vendor.neon/);
 
     const posture = screen.getByRole("combobox", {
       name: "data-source.ssl.posture.self",
