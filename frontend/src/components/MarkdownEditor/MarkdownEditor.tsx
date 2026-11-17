@@ -12,15 +12,37 @@ import { Textarea } from "@/components/ui/textarea";
 import "./MarkdownEditor.css";
 import { cn } from "@/lib/utils";
 
-// linkify-it leaves fuzzy links off, so a bare host such as www.example.com
-// renders as plain text. Comments and descriptions are written that way, so
-// every renderer here keeps those clickable.
-function linkifyBareHosts(md: MarkdownItInstance): MarkdownItInstance {
-  md.linkify.set({ fuzzyLink: true });
+// Text links as it does on GitHub: an http(s) URL, a www. host, or an email
+// address. A bare host stays text, because a SQL identifier ending in a
+// top-level domain, such as users.id, would otherwise link to that domain.
+function configureAutolinks(md: MarkdownItInstance): MarkdownItInstance {
+  let wwwHost: RegExp | undefined;
+  md.linkify
+    .add("ftp:", null)
+    .add("//", null)
+    .add("www.", {
+      validate: (text, pos, self) => {
+        // linkify-it matches a schema in any case and after any punctuation.
+        // GitHub links www. only in lowercase, and only at the start of the
+        // text or after whitespace or one of *, ~ and (.
+        const start = pos - "www.".length;
+        if (text.slice(start, pos) !== "www.") return 0;
+        if (start > 0 && !/[\s*~(]/.test(text[start - 1])) return 0;
+        wwwHost ??= new RegExp(
+          self.re.get_url_host_port().source + self.re.get_path().source,
+          "iy"
+        );
+        wwwHost.lastIndex = pos;
+        return wwwHost.exec(text)?.[0].length ?? 0;
+      },
+      normalize: (match) => {
+        match.url = `http://${match.url}`;
+      },
+    });
   return md;
 }
 
-const markdown = linkifyBareHosts(
+const markdown = configureAutolinks(
   new MarkdownIt({
     html: true,
     linkify: true,
@@ -34,7 +56,7 @@ const markdown = linkifyBareHosts(
 // that the reader may choose to follow. Without a source, or inside a link
 // where anchors cannot nest, the label stays plain text. The page turns DNS
 // prefetching off in index.html, so no link resolves its host until clicked.
-const untrustedMarkdown = linkifyBareHosts(
+const untrustedMarkdown = configureAutolinks(
   new MarkdownIt({
     html: false,
     linkify: true,
