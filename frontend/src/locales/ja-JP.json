@@ -135,7 +135,12 @@
       "references": "根拠"
     },
     "follow-up": {
-      "ask-next": "次の質問"
+      "ask-next": "次の質問",
+      "query-analysis": "これらの結果を絞り込んだり並べ替えたりするには?",
+      "query-mask": "これらのカラムをマスキングするには?",
+      "query-mask-database": "{{database}} のカラムをマスキングするには?",
+      "query-unmask": "マスキングされていないデータへのアクセスを申請するには?",
+      "query-unmask-database": "{{database}} のマスキングされていないデータへのアクセスを申請するには?"
     },
     "handoff": {
       "open-data-classification": "データ分類の設定を開く",

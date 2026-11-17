@@ -68,6 +68,10 @@ import {
 } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
 import {
+  getCurrentTurnQueryCalls,
+  getQueryResponseActions,
+} from "../logic/queryFollowUps";
+import {
   canAddResourceMention,
   formatResourceMention,
   getCurrentTurnResourceReferences,
@@ -333,48 +337,6 @@ const hasCurrentTurnDatabaseSchemaRead = (
     }
   }
   return schemaRead;
-};
-
-const getCurrentTurnQueryCalls = (
-  messages: AgentMessage[]
-): { args: Record<string, unknown>; result?: string }[] => {
-  const lastUserIndex = messages.findLastIndex(
-    (message) => message.role === "user"
-  );
-  if (lastUserIndex < 0) return [];
-
-  const queryCalls: { args: Record<string, unknown>; result?: string }[] = [];
-  const callsById = new Map<string, (typeof queryCalls)[number]>();
-  for (const message of messages.slice(lastUserIndex + 1)) {
-    if (message.role === "assistant") {
-      for (const call of message.toolCalls ?? []) {
-        if (call.name !== "call_api") continue;
-        let args: Record<string, unknown>;
-        try {
-          const parsed: unknown = JSON.parse(call.arguments);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            continue;
-          }
-          args = parsed as Record<string, unknown>;
-        } catch {
-          continue;
-        }
-        if (
-          args.operationId !== "SQLService/Query" &&
-          args.operationId !== "bytebase.v1.SQLService.Query"
-        ) {
-          continue;
-        }
-        const queryCall: (typeof queryCalls)[number] = { args };
-        queryCalls.push(queryCall);
-        callsById.set(call.id, queryCall);
-      }
-    } else if (message.role === "tool" && message.toolCallId) {
-      const queryCall = callsById.get(message.toolCallId);
-      if (queryCall) queryCall.result = message.content;
-    }
-  }
-  return queryCalls;
 };
 
 // ---------------------------------------------------------------------------
@@ -2375,6 +2337,14 @@ export function AgentInput({
               ...actions.filter((action) => action.kind === "continue"),
             ];
             handoff = undefined;
+          }
+          if (outcome.success && !capability && !accessRequestDraft) {
+            actions = getQueryResponseActions(
+              actions,
+              useAgentStore.getState().getMessages(chatId),
+              references,
+              t
+            );
           }
           useAgentStore.getState().addMessage({
             chatId,

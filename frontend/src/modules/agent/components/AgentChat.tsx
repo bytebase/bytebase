@@ -66,6 +66,7 @@ import {
   PlanDraftStorageError,
   prepareAgentPlanDraftRoute,
 } from "../logic/planDraft";
+import { getQueryResponseActions } from "../logic/queryFollowUps";
 import {
   formatResourceMention,
   isResourceMentionRange,
@@ -900,9 +901,35 @@ export function AgentChat({
   const queuedUserMessage = useAgentStore((s) =>
     s.currentChatId ? s.queuedUserMessagesByChatId[s.currentChatId] : undefined
   );
-  const latestContinuePrompts = messages
-    .at(-1)
-    ?.metadata?.actions?.filter((action) => action.kind === "continue")
+  const responseActionsByMessageId = useMemo(() => {
+    const accepted = new Map<string, AgentResponseAction[]>();
+    let turnMessages: AgentMessage[] = [];
+    for (const message of messages) {
+      if (message.role === "user") turnMessages = [];
+      turnMessages.push(message);
+      if (!message.metadata?.actions) continue;
+      const actions = normalizeAgentResponseActions(message.metadata.actions);
+      // Saved questions must use their own turn, not a later query's evidence.
+      accepted.set(
+        message.id,
+        currentChat?.capability || message.metadata.accessRequestDraft
+          ? actions
+          : getQueryResponseActions(
+              actions,
+              turnMessages,
+              normalizeAgentResourceReferences(
+                message.metadata.resourceReferences,
+                message.metadata.resourceReference
+              ),
+              t
+            )
+      );
+    }
+    return accepted;
+  }, [messages, currentChat?.capability, t]);
+  const latestContinuePrompts = responseActionsByMessageId
+    .get(messages.at(-1)?.id ?? "")
+    ?.filter((action) => action.kind === "continue")
     .map((action) => action.prompt)
     .join("\0");
   const previousFollowUp = useRef<{
@@ -1203,7 +1230,7 @@ export function AgentChat({
           !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
-        const actions = normalizeAgentResponseActions(msg.metadata?.actions);
+        const actions = responseActionsByMessageId.get(msg.id) ?? [];
         const openAction = actions.find((action) => action.kind === "open");
         const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
         const diagnosticIssueRoute =

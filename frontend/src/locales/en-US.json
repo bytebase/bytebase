@@ -135,7 +135,12 @@
       "references": "Evidence"
     },
     "follow-up": {
-      "ask-next": "Ask next"
+      "ask-next": "Ask next",
+      "query-analysis": "How can I filter or sort these results?",
+      "query-mask": "How can I mask these columns?",
+      "query-mask-database": "How can I mask columns in {{database}}?",
+      "query-unmask": "How can I request access to unmasked data?",
+      "query-unmask-database": "How can I request unmasked access to {{database}}?"
     },
     "handoff": {
       "open-data-classification": "Open data classification settings",

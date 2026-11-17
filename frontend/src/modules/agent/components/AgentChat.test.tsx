@@ -2071,6 +2071,169 @@ describe("AgentChat", () => {
     unmount();
   });
 
+  describe("runtime-owned query follow-ups", () => {
+    beforeEach(() => {
+      mocks.useTranslation.mockReturnValue({
+        t: (key: string) => {
+          const prefix = "agent.follow-up.";
+          return key.startsWith(prefix)
+            ? (enUS.agent["follow-up"] as Record<string, string>)[
+                key.slice(prefix.length)
+              ] ?? key
+            : key;
+        },
+        i18n: { language: "en-US" },
+      });
+    });
+
+    const database = "instances/prod/databases/app";
+    const references = [
+      {
+        kind: "database" as const,
+        name: database,
+        project: "projects/sample",
+        label: "app",
+      },
+    ];
+    const expiryQuestion =
+      "When does my masking exemption for private_value in app expire?";
+    const analysisQuestion = enUS.agent["follow-up"]["query-analysis"];
+    const unmaskQuestion = enUS.agent["follow-up"]["query-unmask"];
+    const addQueryTurn = (chatId: string, id: string, masked: boolean) => {
+      const store = useAgentStore.getState();
+      store.addMessage({
+        chatId,
+        role: "user",
+        content: "Query private_value from records.",
+        metadata: { resourceReferences: references },
+      });
+      store.addMessage({
+        chatId,
+        role: "assistant",
+        toolCalls: [
+          {
+            id,
+            name: "call_api",
+            arguments: JSON.stringify({
+              operationId: "SQLService/Query",
+              body: {
+                name: database,
+                statement: "SELECT private_value FROM records LIMIT 1",
+              },
+            }),
+          },
+        ],
+      });
+      store.addMessage({
+        chatId,
+        role: "tool",
+        toolCallId: id,
+        content: JSON.stringify({
+          status: 200,
+          response: {
+            results: [
+              {
+                columnNames: ["private_value"],
+                columnTypeNames: ["text"],
+                rows: [{ values: [{ stringValue: masked ? "******" : "visible" }] }],
+                rowsCount: "1",
+                masked: [masked ? { semanticTypeId: "bb.default" } : {}],
+              },
+            ],
+          },
+        }),
+      });
+      return store.addMessage({
+        chatId,
+        role: "assistant",
+        content: "The query returned one row.",
+        metadata: {
+          resourceReferences: references,
+          actions: [{ kind: "continue", prompt: expiryQuestion }],
+        },
+      })!;
+    };
+
+    test("replaces a saved query's unsupported exemption question without rewriting metadata", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      const answer = addQueryTurn(chat.id, "query-visible", false);
+      const savedMetadata = structuredClone(answer.metadata);
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      render();
+
+      try {
+        const questions = Array.from(
+          container.querySelectorAll("[data-agent-follow-up-question]"),
+          (question) => question.textContent
+        );
+        expect(questions).toEqual([analysisQuestion]);
+        expect(analysisQuestion).toMatch(/\?$/);
+        expect(container.textContent).not.toContain(expiryQuestion);
+        expect(
+          store.getMessages(chat.id).find((message) => message.id === answer.id)
+            ?.metadata
+        ).toEqual(savedMetadata);
+      } finally {
+        unmount();
+      }
+    });
+
+    test("keeps later masking evidence out of an earlier visible query's follow-ups", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      const visibleAnswer = addQueryTurn(chat.id, "query-visible", false);
+      const maskedAnswer = addQueryTurn(chat.id, "query-masked", true);
+      const savedMetadata = [visibleAnswer, maskedAnswer].map((message) =>
+        structuredClone(message.metadata)
+      );
+      const onContinueAction = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onContinueAction={onContinueAction} />
+      );
+      render();
+
+      try {
+        const followUps = container.querySelectorAll("[data-agent-follow-up]");
+        expect(followUps).toHaveLength(2);
+        expect(
+          Array.from(
+            followUps[0]!.querySelectorAll("[data-agent-follow-up-question]"),
+            (question) => question.textContent
+          )
+        ).toEqual([analysisQuestion]);
+        expect(
+          Array.from(
+            followUps[1]!.querySelectorAll("[data-agent-follow-up-question]"),
+            (question) => question.textContent
+          )
+        ).toEqual([analysisQuestion, unmaskQuestion]);
+        expect(unmaskQuestion).toMatch(/\?$/);
+        expect(container.textContent).not.toContain(expiryQuestion);
+        const unmask = Array.from(
+          followUps[1]!.querySelectorAll<HTMLButtonElement>(
+            "[data-agent-action-continue]"
+          )
+        ).find((button) => button.textContent === unmaskQuestion);
+        act(() => unmask?.click());
+        expect(onContinueAction).toHaveBeenCalledWith(
+          chat.id,
+          unmaskQuestion,
+          references
+        );
+        expect(
+          [visibleAnswer, maskedAnswer].map(
+            (answer) =>
+              store.getMessages(chat.id).find((message) => message.id === answer.id)
+                ?.metadata
+          )
+        ).toEqual(savedMetadata);
+      } finally {
+        unmount();
+      }
+    });
+  });
+
   test.each(
     (["issue", "plan"] as const).flatMap((kind) =>
       (["actions", "handoff", "both"] as const).map((format) => ({ kind, format }))

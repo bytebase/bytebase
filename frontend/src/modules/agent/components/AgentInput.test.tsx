@@ -6937,6 +6937,80 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test.each([false, true])("grounds follow-ups in a resumed approved Query, masked=%s", async (masked) => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) => key.startsWith("agent.follow-up.query-")
+        ? enUS.agent["follow-up"][key.slice("agent.follow-up.".length) as keyof typeof enUS.agent["follow-up"]]
+        : key,
+      i18n: { language: "en-US" },
+    });
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const database = "instances/prod/databases/app";
+    const args = {
+      operationId: "SQLService/Query",
+      body: { name: database, statement: "SELECT private_value FROM records" },
+    };
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        appliedAccessGrant: "projects/orders/accessGrants/123",
+        results: [{
+          columnNames: ["private_value"],
+          rows: [{ values: [{ stringValue: masked ? "******" : "Visible" }] }],
+          masked: [masked ? { algorithm: "full-mask" } : {}],
+        }],
+      },
+    });
+    store.addMessage({
+      chatId,
+      role: "user",
+      content: "Query the records table",
+      metadata: { resourceReferences: [{ kind: "database", name: database, project: "projects/orders", label: "app" }] },
+    });
+    store.addMessage({ chatId, role: "assistant", toolCalls: [{ id: "query-1", name: "call_api", arguments: JSON.stringify(args) }] });
+    useAgentStore.setState({
+      chats: store.chats.map((chat) => chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "query-1", prompt: "SQLService/Query", kind: "confirm",
+          apiPermission: { actionId: "action-1", operationId: "SQLService/Query" },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({ operationId: "SQLService/Query", body: JSON.stringify(args.body), expiresAt: Date.now() + 60_000 });
+    mocks.resolvePendingApiCall.mockResolvedValue(result);
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executeTool, callbacks) => {
+      callbacks.onText("The query returned a preview.");
+      return {
+        kind: "completed", success: true, totalTokensUsed: 0,
+        actions: [
+          { kind: "continue", prompt: "When does my masking exemption for private_value in app expire?" },
+          { kind: "continue", prompt: "How can I mask these columns?" },
+        ],
+      };
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      await act(async () => {
+        const allow = [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.api-permission-allow");
+        expect(allow).toBeDefined();
+        allow?.click();
+        await vi.waitFor(() => expect(store.getMessages(chatId).some((message) => message.content === "The query returned a preview.")).toBe(true));
+      });
+      const answer = store.getMessages(chatId).find((message) => message.content === "The query returned a preview.");
+      expect(answer?.metadata?.actions).toEqual([
+        { kind: "continue", prompt: "How can I filter or sort these results?" },
+        ...(masked ? [{ kind: "continue", prompt: "How can I request access to unmasked data?" }] : []),
+      ]);
+      expect(mocks.resolvePendingApiCall).toHaveBeenCalledOnce();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
   test.each([false, true])("does not auto-prepare access when an approved Query is denied and completion success is %s", async (success) => {
     const store = useAgentStore.getState();
     const chatId = store.currentChatId!;

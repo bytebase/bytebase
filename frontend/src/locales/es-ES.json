@@ -135,7 +135,12 @@
       "references": "Evidencia"
     },
     "follow-up": {
-      "ask-next": "Siguiente pregunta"
+      "ask-next": "Siguiente pregunta",
+      "query-analysis": "¿Cómo puedo filtrar u ordenar estos resultados?",
+      "query-mask": "¿Cómo puedo enmascarar estas columnas?",
+      "query-mask-database": "¿Cómo puedo enmascarar columnas en {{database}}?",
+      "query-unmask": "¿Cómo puedo solicitar acceso a datos sin enmascarar?",
+      "query-unmask-database": "¿Cómo puedo solicitar acceso a los datos sin enmascarar de {{database}}?"
     },
     "handoff": {
       "open-data-classification": "Abrir la configuración de clasificación de datos",

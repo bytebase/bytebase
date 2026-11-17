@@ -59,6 +59,19 @@ describe("query skill", () => {
     );
   });
 
+  test("defers query questions to runtime evidence without manufacturing eligibility", () => {
+    const guidance = getSkill({ name: "query" });
+    expect(guidance).toContain(
+      "The runtime owns query-result Continue questions"
+    );
+    expect(guidance).toContain(
+      "Do not fetch an overview merely to make a suggestion appear"
+    );
+    expect(guidance).toContain(
+      "Prepared masking and access-request workflows retain their own follow-ups"
+    );
+  });
+
   test("requires masking reasons instead of inferring masking from row values", () => {
     const guidance = getSkill({ name: "query" });
 
