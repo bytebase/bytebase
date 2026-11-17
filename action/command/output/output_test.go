@@ -303,6 +303,22 @@ func TestWriteResultBlock(t *testing.T) {
 		require.Greater(t, resume, statement, "the statement is printed while commands are stopped")
 		require.Equal(t, "::error::instances/prod/databases/crm failed at migrations/0004_add_risk_score.sql: syntax error", lines[len(lines)-1])
 	})
+
+	t.Run("github warns about a missing target stage", func(t *testing.T) {
+		w := world.NewWorld()
+		w.Platform = world.GitHub
+		w.Result = &result.Result{
+			Outcome:     result.StageNotFound,
+			TargetStage: "environments/prod",
+			Stages:      []*result.Stage{{Environment: "environments/test"}},
+		}
+		var out bytes.Buffer
+		writeResultBlock(w, &out)
+
+		lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+		require.Equal(t, "::warning::the rollout has no stage for environments/prod, so this job deployed nothing; its stages are environments/test", lines[len(lines)-1])
+		require.NotContains(t, out.String(), "::error::")
+	})
 }
 
 func TestWriteGitLabAnnotations(t *testing.T) {

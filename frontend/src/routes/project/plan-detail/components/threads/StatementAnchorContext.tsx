@@ -155,7 +155,10 @@ export function StatementAnchorContext({
   );
 }
 
-const CONTEXT_LINES_BEFORE = 2;
+// A range shorter than this borrows the lines before it, so a single
+// commented line still shows what it belongs to. Lines after the range are
+// never borrowed: the commented lines end the excerpt, right above the comment.
+const MIN_EXCERPT_LINES = 3;
 
 // Sheets are immutable and content-addressed, so each is tokenized once per
 // page however many cards excerpt it, and only through the deepest line a
@@ -199,7 +202,12 @@ function SqlExcerpt({
   statement: string;
   range: LineRange;
 }) {
-  const startLine = Math.max(1, range.startLine - CONTEXT_LINES_BEFORE);
+  const commentedLines = range.endLine - range.startLine + 1;
+  const startLine = Math.max(
+    1,
+    range.startLine - Math.max(0, MIN_EXCERPT_LINES - commentedLines)
+  );
+  const [scrolled, setScrolled] = useState(false);
   const lines = useMemo(
     () => excerptLines(statement, { startLine, endLine: range.endLine }),
     [range.endLine, startLine, statement]
@@ -224,7 +232,13 @@ function SqlExcerpt({
     !dimmed && colorized?.sheetName === sheetName ? colorized.lines : undefined;
   if (lines.length === 0) return null;
   return (
-    <pre className="m-0 overflow-x-auto bg-control-bg font-mono text-sm leading-6">
+    // An overlay scrollbar reserves no space, so the padding keeps it off the
+    // last line.
+    <pre
+      className="group/excerpt m-0 overflow-x-auto bg-control-bg py-2 font-mono text-sm leading-6"
+      data-scrolled={scrolled || undefined}
+      onScroll={(event) => setScrolled(event.currentTarget.scrollLeft > 0)}
+    >
       <div className="w-max min-w-full">
         {lines.map((line, index) => {
           const lineNumber = startLine + index;
@@ -232,27 +246,38 @@ function SqlExcerpt({
             lineNumber >= range.startLine && lineNumber <= range.endLine;
           const html = htmlLines?.[lineNumber - 1];
           return (
-            // The inset lines the numbers up with the comment's text column;
-            // a bar 8px left of the numbers marks the commented lines.
             <div
-              className="relative flex items-start gap-x-3 pr-3 pl-9 sm:pl-10"
+              className="flex items-start pr-3"
               data-line-number={lineNumber}
               data-selected={selected || undefined}
               key={lineNumber}
             >
-              {selected && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-0 left-6.25 w-0.75 bg-control sm:left-7.25"
-                  data-testid="excerpt-range-marker"
-                />
-              )}
+              {/* The gutter stays in place while the code scrolls under it.
+                  Its inset starts the widest number on the comment's text
+                  column; a bar 8px left of it marks the commented lines. */}
               <span
-                className="shrink-0 select-none text-right text-control-placeholder"
-                style={{
-                  width: `${Math.max(2, String(range.endLine).length)}ch`,
-                }}
+                className={cn(
+                  "sticky left-0 box-content shrink-0 select-none bg-control-bg pr-3 pl-9 text-right text-control-placeholder sm:pl-10",
+                  // A hairline separates the gutter from the code, only
+                  // while code is scrolled under it.
+                  "after:pointer-events-none after:absolute after:left-full after:w-px after:bg-control-border after:opacity-0 after:transition-opacity after:duration-150 after:ease-out group-data-scrolled/excerpt:after:opacity-100 motion-reduce:after:transition-none",
+                  // The first and last rows carry the hairline through the
+                  // excerpt's py-2, so it spans the full height.
+                  index === 0 ? "after:-top-2" : "after:top-0",
+                  index === lines.length - 1
+                    ? "after:-bottom-2"
+                    : "after:bottom-0"
+                )}
+                data-testid="excerpt-gutter"
+                style={{ width: `${String(range.endLine).length}ch` }}
               >
+                {selected && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 left-6.25 w-0.75 bg-control sm:left-7.25"
+                    data-testid="excerpt-range-marker"
+                  />
+                )}
                 {lineNumber}
               </span>
               {html === undefined ? (

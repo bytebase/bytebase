@@ -207,20 +207,12 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 				}
 			}
 		}))
-	if len(rollout.Stages) == 0 {
-		w.Logger.Info("no stages in the rollout. exiting...")
-		return nil
-	}
-
-	targetStageFound := false
-	for _, stage := range rollout.GetStages() {
-		if stage.Environment == w.TargetStage {
-			targetStageFound = true
-			break
-		}
-	}
-	if !targetStageFound {
-		w.Logger.Info("the target stage is not found in the rollout. exiting...", "targetStage", w.TargetStage)
+	// No target database is in this environment. The job passes so that the
+	// jobs for later environments still run; the result carries the warning.
+	if !slices.ContainsFunc(rollout.GetStages(), func(stage *v1pb.Stage) bool {
+		return stage.Environment == w.TargetStage
+	}) {
+		w.Logger.Warn("the rollout has no stage for the target stage, nothing to deploy", "targetStage", w.TargetStage)
 		return nil
 	}
 

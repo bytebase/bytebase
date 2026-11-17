@@ -271,7 +271,7 @@ describe("sign-in in the generated files", () => {
     expect(jobs).toHaveLength(5);
     for (const job of jobs) {
       expect(
-        job.steps?.some((step) => step.uses === "actions/checkout@v4")
+        job.steps?.some((step) => step.uses === "actions/checkout@v7")
       ).toBe(true);
       expect(job.permissions?.contents).toBe("read");
     }

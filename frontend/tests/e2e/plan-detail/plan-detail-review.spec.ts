@@ -19,8 +19,9 @@
 //   - A step whose role only a service account holds lists it as the reviewer,
 //     and names it once it approves through the API
 //   - BYT-9746 guard: "(edited)" marker shows in place after an inline edit
-//   - Inline comment threads: seeded thread in editor + timeline, gutter
-//     creation, reply / resolve / reopen, View in Statement (CUJ K)
+//   - Inline comment threads: seeded thread in editor + timeline, a wide
+//     excerpt's pinned gutter, gutter creation, reply / resolve / reopen,
+//     View in Statement (CUJ K)
 //
 //   Rollout-readiness footer + bypass (readinessFooterState.ts)
 //   - Approved/skipped + failed checks → "Bypass and deploy" → confirm sheet →
@@ -694,7 +695,8 @@ test.describe("Inline comment threads (CUJ K)", () => {
       sql: [
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k1_${suffix} TEXT;`,
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k2_${suffix} TEXT;`,
-        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k3_${suffix} TEXT;`,
+        // Wider than any card, so the timeline excerpt scrolls sideways.
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k3_${suffix} TEXT; -- ${"wide ".repeat(60).trimEnd()}`,
         `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k4_${suffix} TEXT;`,
       ].join("\n"),
     });
@@ -741,6 +743,96 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(
       page.locator("#plan-phase-review [data-testid='comment-thread']"),
     ).toHaveCount(1);
+  });
+
+  test("a wide excerpt scrolls its code under line numbers and a range bar that stay put, clear of the scrollbar", async () => {
+    const card = planPage.threadCardIn("review", seededRoot);
+    await card.scrollIntoViewIfNeeded();
+    const excerpt = card.locator("pre");
+    const lastRow = excerpt.locator("[data-line-number='3']");
+    await expect(lastRow).toContainText("e2e_rev_k3_", { timeout: 15_000 });
+    const measure = () =>
+      lastRow.evaluate((row) => {
+        const pre = row.closest("pre") as HTMLElement;
+        const gutter = row.querySelector("[data-testid='excerpt-gutter']") as HTMLElement;
+        const marker = row.querySelector("[data-testid='excerpt-range-marker']") as HTMLElement;
+        const code = row.querySelector("code") as HTMLElement;
+        const box = gutter.getBoundingClientRect();
+        const atGutter = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        const content = pre.getBoundingClientRect().top + pre.clientTop + pre.clientHeight;
+        return {
+          overflow: pre.scrollWidth - pre.clientWidth,
+          gutterLeft: box.left,
+          markerLeft: marker.getBoundingClientRect().left,
+          codeLeft: code.getBoundingClientRect().left,
+          gutterOnTop: atGutter !== null && gutter.contains(atGutter),
+          gutterBackground: getComputedStyle(gutter).backgroundColor,
+          excerptBackground: getComputedStyle(pre).backgroundColor,
+          edgeOpacity: getComputedStyle(gutter, "::after").opacity,
+          clearance: content - row.getBoundingClientRect().bottom,
+        };
+      });
+    // Two commented lines borrow the one line before them.
+    await expect(excerpt.locator("[data-line-number]")).toHaveCount(3);
+    await expect(excerpt.locator("[data-selected]")).toHaveCount(2);
+    const before = await measure();
+    expect(before.overflow).toBeGreaterThan(0);
+    expect(before.edgeOpacity).toBe("0");
+
+    await excerpt.evaluate((pre) => {
+      pre.scrollLeft = pre.scrollWidth;
+    });
+    const after = await measure();
+    expect(after.codeLeft).toBeLessThan(before.codeLeft);
+    expect(after.gutterLeft).toBeCloseTo(before.gutterLeft, 0);
+    expect(after.markerLeft).toBeCloseTo(before.markerLeft, 0);
+    // The gutter paints over the code on the excerpt's own ground, hiding it.
+    expect(after.gutterOnTop).toBe(true);
+    expect(after.gutterBackground).toBe(after.excerptBackground);
+    // A hairline beside the gutter fades in only while code is under it, and
+    // runs the full height of the excerpt, through its padding.
+    await expect.poll(async () => (await measure()).edgeOpacity).toBe("1");
+    const hairline = await excerpt.evaluate((pre) => {
+      const gutters = pre.querySelectorAll("[data-testid='excerpt-gutter']");
+      const first = gutters[0] as HTMLElement;
+      const last = gutters[gutters.length - 1] as HTMLElement;
+      const top = first.getBoundingClientRect().top + Number.parseFloat(getComputedStyle(first, "::after").top);
+      const bottom = last.getBoundingClientRect().bottom - Number.parseFloat(getComputedStyle(last, "::after").bottom);
+      const contentTop = pre.getBoundingClientRect().top + pre.clientTop;
+      return {
+        above: top - contentTop,
+        below: contentTop + pre.clientHeight - bottom,
+        width: getComputedStyle(first, "::after").width,
+      };
+    });
+    expect(hairline.above).toBeCloseTo(0, 0);
+    expect(hairline.below).toBeCloseTo(0, 0);
+    expect(hairline.width).toBe("1px");
+    // An overlay scrollbar reserves no space and covers the bottom 6px of the
+    // excerpt, so the last line must end above that band.
+    expect(after.clearance).toBeGreaterThanOrEqual(6);
+  });
+
+  test("an excerpt's line numbers start on the comment's text column, at desktop and phone widths", async () => {
+    const card = planPage.threadCardIn("review", seededRoot);
+    const gutter = card.locator("[data-line-number='3'] [data-testid='excerpt-gutter']");
+    const numberToTextOffset = async () => {
+      await card.scrollIntoViewIfNeeded();
+      await expect(gutter).toHaveText("3", { timeout: 15_000 });
+      const numberLeft = await gutter.evaluate(
+        (el) => el.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(el).paddingLeft),
+      );
+      const textLeft = (await card.getByText(seededRoot).boundingBox())?.x ?? Number.NaN;
+      return numberLeft - textLeft;
+    };
+    expect(await numberToTextOffset()).toBeCloseTo(0, 0);
+    // Below the sm breakpoint the comment's inset shrinks, and the gutter's with it.
+    await page.setViewportSize({ width: 390, height: 844 });
+    try {
+      expect(await numberToTextOffset()).toBeCloseTo(0, 0);
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
   });
 
   // One journey: create a thread from the gutter, then reply, resolve,

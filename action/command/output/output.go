@@ -55,6 +55,9 @@ func writeResultBlock(w *world.World, out io.Writer) {
 			}
 			_, _ = fmt.Fprintln(out, github.ErrorCommand(failure))
 		}
+		for _, warning := range w.Result.Warnings() {
+			_, _ = fmt.Fprintln(out, github.WarningCommand(warning))
+		}
 	case world.GitLab:
 		_, _ = fmt.Fprint(out, "\n"+result.RenderText(w.Result, gitlab.FoldSection(time.Now())))
 	default:

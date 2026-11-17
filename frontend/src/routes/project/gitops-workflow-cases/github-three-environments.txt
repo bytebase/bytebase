@@ -18,7 +18,7 @@ jobs:
       BYTEBASE_URL: "https://bytebase.example.com"
       BYTEBASE_WORKLOAD_IDENTITY: deploy-ci@shop.workload.bytebase.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: SQL review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,7 @@ jobs:
     outputs:
       bytebase-plan: ${{ steps.set-output.outputs.plan }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Create rollout
         run: |
           bytebase-action rollout \
@@ -74,7 +74,7 @@ jobs:
     container:
       image: bytebase/bytebase-action:3.24.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to test
         run: |
           bytebase-action rollout \
@@ -92,7 +92,7 @@ jobs:
     container:
       image: bytebase/bytebase-action:3.24.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to staging
         run: |
           bytebase-action rollout \
@@ -110,7 +110,7 @@ jobs:
     container:
       image: bytebase/bytebase-action:3.24.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to prod
         run: |
           bytebase-action rollout \

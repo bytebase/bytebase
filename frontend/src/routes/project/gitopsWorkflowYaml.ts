@@ -119,7 +119,7 @@ jobs:
       BYTEBASE_URL: "${p.bytebaseUrl}"
       BYTEBASE_WORKLOAD_IDENTITY: ${p.workloadIdentityEmail}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: SQL review
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
@@ -146,7 +146,7 @@ const githubDeployJob = (
     container:
       image: ${p.actionImage}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Deploy to ${environment}
         run: |
           bytebase-action rollout \\
@@ -187,7 +187,7 @@ jobs:
     outputs:
       bytebase-plan: \${{ steps.set-output.outputs.plan }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Create rollout
         run: |
           bytebase-action rollout \\
