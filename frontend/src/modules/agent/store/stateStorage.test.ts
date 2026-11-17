@@ -113,6 +113,100 @@ describe("agent state storage", () => {
     expect(parseAgentStoredState(json)).toEqual(snapshot);
   });
 
+  it("strictly decodes known encoder markers without changing metadata shape", () => {
+    const source = {
+      messagesByChatId: {
+        "chat-1": [
+          { content },
+          { content, metadata: {} },
+          { content, metadata: { custom: "keep" } },
+        ],
+      },
+    };
+    const encoded = encodeAgentStoredState(JSON.stringify(source), null, true);
+    expect(
+      parseAgentStoredState(encoded, { strictCompressionMarkers: true })
+    ).toEqual(source);
+    expect(
+      parseAgentStoredState(json, { strictCompressionMarkers: true })
+    ).toEqual(snapshot);
+  });
+
+  it.each([
+    {
+      name: "stale marker on plaintext",
+      content: "Updated content",
+      marker: { version: 1, value: LZString.compressToUTF16(content) },
+    },
+    {
+      name: "unknown marker on plaintext",
+      content: "Opaque content",
+      marker: { version: 99, custom: "keep" },
+    },
+    {
+      name: "unknown compressed marker fields",
+      content: PLACEHOLDER,
+      marker: {
+        version: 1,
+        value: LZString.compressToUTF16(content),
+        custom: "keep",
+      },
+    },
+  ])(
+    "strictly rejects $name without changing ordinary hydration",
+    ({ content: originalContent, marker }) => {
+      const serialized = JSON.stringify({
+        messagesByChatId: {
+          "chat-1": [
+            {
+              content: originalContent,
+              metadata: { custom: "keep", agentCompressedContent: marker },
+            },
+          ],
+        },
+      });
+      expect(() =>
+        parseAgentStoredState(serialized, { strictCompressionMarkers: true })
+      ).toThrow("Invalid compressed agent message content.");
+      expect(parseAgentStoredState(serialized)).toEqual({
+        messagesByChatId: {
+          "chat-1": [
+            {
+              content:
+                originalContent === PLACEHOLDER ? content : originalContent,
+              metadata: { custom: "keep" },
+            },
+          ],
+        },
+      });
+    }
+  );
+
+  it.each([
+    { version: 99, value: LZString.compressToUTF16(content) },
+    { version: 1, value: "" },
+    {
+      version: 1,
+      value: LZString.compressToUTF16(content),
+      metadataAbsent: false,
+    },
+    null,
+  ])("strictly rejects invalid v1 marker data: %j", (marker) => {
+    const serialized = JSON.stringify({
+      messagesByChatId: {
+        "chat-1": [
+          {
+            content: PLACEHOLDER,
+            metadata: { agentCompressedContent: marker },
+          },
+        ],
+      },
+    });
+    expect(() =>
+      parseAgentStoredState(serialized, { strictCompressionMarkers: true })
+    ).toThrow("Invalid compressed agent message content.");
+  });
+
   it.each([
     null,
     42,

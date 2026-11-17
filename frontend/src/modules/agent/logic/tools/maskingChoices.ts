@@ -230,6 +230,8 @@ export async function getMaskingScopeChoices(
       choices.push({
         label: i18n.t("agent.masking.rule-scope.choose-project"),
         value: "choose-project",
+        kind: "custom-input",
+        placeholder: i18n.t("agent.resource-picker.search-projects"),
       });
   }
   if (!choices.length)

@@ -44,6 +44,7 @@
     "api-permission-request": "允许 AI 助手执行此 API 请求吗？",
     "api-permission-title": "请求执行许可",
     "archive-all-chats": "归档所有对话",
+    "archive-all-chats-confirmation": "归档所有对话（{{count}} 个）？",
     "archive-chat": "归档对话",
     "archive-chat-confirmation": "归档此对话？",
     "archived-only-chats": "查看已归档对话",
@@ -115,7 +116,7 @@
     "custom-input-placeholder": "输入内容",
     "database-reference-unavailable": "此数据库已不可用，或你没有访问权限。",
     "delete-all-chats": "删除所有对话",
-    "delete-all-chats-confirmation": "确定要删除所有已归档对话吗？此操作无法撤销。",
+    "delete-all-chats-confirmation": "删除所有已归档对话（{{count}} 个）？此操作无法撤销。",
     "delete-chat": "删除对话",
     "delete-chat-confirmation": "确定要删除此对话吗？此操作无法撤销。",
     "diagnostic-help": {
@@ -383,6 +384,10 @@
     },
     "stop": "停止",
     "storage": {
+      "free-and-retry": "释放空间并重试",
+      "free-failed": "无法释放足够的空间。请关闭其他 Agent 标签页或结束正在进行的运行，然后重试。",
+      "free-title": "删除其他已保存的 Agent 聊天？",
+      "full": "Agent 历史记录存储空间已满。",
       "retention-info": "聊天历史保留",
       "retention-policy": "需要释放本地存储空间时，较早完成的聊天将被自动删除。进行中的聊天和草稿会被保留。",
       "retry": "重试",

@@ -34,6 +34,7 @@ import { normalizeAgentResponseActions } from "../logic/responseActions";
 import {
   getAgentRunClarificationBindings,
   getAgentRunContinuation,
+  getAgentRunStartup,
 } from "../logic/runCheckpoint";
 import {
   hasAgentRunLease,
@@ -90,6 +91,11 @@ import {
   getAgentHistoryEvictionCandidates,
   removeAgentHistoryChats,
 } from "./historyRetention";
+import { canRetireLegacyAgentState } from "./legacyStateRetention";
+import {
+  reclaimOtherAgentHistory,
+  withAgentHistoryReclamationLocks,
+} from "./otherHistoryRetention";
 import {
   type AgentPreferences,
   DEFAULT_AGENT_PREFERENCES,
@@ -512,7 +518,8 @@ const normalizeMessage = (
 
 const normalizePendingAsk = (
   raw: unknown,
-  context?: string
+  context?: string,
+  messages: readonly AgentMessage[] = []
 ): AgentPendingAsk | null => {
   const pendingAsk = isRecord(raw) ? raw : {};
   if (
@@ -521,6 +528,55 @@ const normalizePendingAsk = (
   ) {
     return null;
   }
+
+  // Saved runtime questions need an unambiguous origin, not just a matching option value.
+  const legacyProjectInput = (() => {
+    if (
+      pendingAsk.kind !== "choose" ||
+      context?.startsWith(projectNamePrefix)
+    ) {
+      return false;
+    }
+    const userIndex = messages.findLastIndex(
+      (message) => message.role === "user"
+    );
+    if (userIndex < 0) return false;
+    const turn = messages.slice(userIndex + 1);
+    const calls = turn.flatMap((message) =>
+      message.role === "assistant"
+        ? (message.toolCalls ?? []).filter(
+            (call) => isRecord(call) && call.id === pendingAsk.toolCallId
+          )
+        : []
+    );
+    if (
+      calls.length !== 1 ||
+      calls[0].name !== "ask_masking_rule_scope" ||
+      typeof calls[0].arguments !== "string" ||
+      turn.some(
+        (message) =>
+          message.role === "tool" &&
+          message.toolCallId === pendingAsk.toolCallId
+      )
+    ) {
+      return false;
+    }
+    try {
+      const args: unknown = JSON.parse(calls[0].arguments);
+      return (
+        isRecord(args) &&
+        Object.entries(args).every(
+          ([key, value]) =>
+            (key === "project" || key === "database") &&
+            typeof value === "string"
+        ) &&
+        (args.project === undefined ||
+          (typeof args.project === "string" && !args.project.trim()))
+      );
+    } catch {
+      return false;
+    }
+  })();
 
   const options = Array.isArray(pendingAsk.options)
     ? pendingAsk.options
@@ -537,7 +593,11 @@ const normalizePendingAsk = (
           if (!label || !value) {
             return null;
           }
-          const customInput = candidate.kind === "custom-input";
+          const customInput =
+            candidate.kind === "custom-input" ||
+            (legacyProjectInput &&
+              value === "choose-project" &&
+              !Object.hasOwn(candidate, "kind"));
           if (
             (candidate.kind != null && !customInput) ||
             (candidate.placeholder != null &&
@@ -878,7 +938,9 @@ const normalizePersistedState = (
 
     const pendingAsk = normalizePendingAsk(
       rawPendingAskByChatId[chat.id],
-      getCurrentTurnResourceReferences(messages).at(-1)?.project ?? chat.context
+      getCurrentTurnResourceReferences(messages).at(-1)?.project ??
+        chat.context,
+      messages
     );
     if (chat.status === "awaiting_user") {
       if (pendingAsk) {
@@ -1117,6 +1179,7 @@ export interface AgentState {
     bindings: AgentRunBindings
   ) => Promise<string | null>;
   continueChatRun: (chatId: string, runId: string) => Promise<boolean>;
+  retryChatRunStartup: (chatId: string, runId: string) => Promise<boolean>;
   saveChatRunCheckpoint: (
     chatId: string,
     checkpoint: AgentRunCheckpoint
@@ -1137,6 +1200,9 @@ export interface AgentState {
   endPausedRun: (chatId: string) => Promise<boolean>;
   flushRunPersistence: () => Promise<boolean>;
   checkAgentStorageAdmission: () => Promise<boolean>;
+  freeAgentStorage: (options?: {
+    resetCurrentChat?: boolean;
+  }) => Promise<boolean>;
   getRunPersistenceError: () => unknown;
   canUseAgentExecution: () => boolean;
   finishChatRun: (
@@ -1751,7 +1817,9 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
     }),
     pendingAsk: normalizePendingAsk(
       state.pendingAskByChatId[chat.id],
-      getCurrentTurnResourceReferences(messages).at(-1)?.project ?? chat.context
+      getCurrentTurnResourceReferences(messages).at(-1)?.project ??
+        chat.context,
+      messages
     ),
     queuedMessage: state.queuedUserMessagesByChatId[chat.id],
     active: state.activeChatIds?.includes(chat.id) ?? false,
@@ -1940,6 +2008,9 @@ export const createAgentStore = () => {
   const omitQuerySamplesForScope = new Set<string>();
   let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
   let protectionSuspended = false;
+  const reclamationChatIds = new Set<string>();
+  let reclaimingStorage = false;
+  let selectionRevision = 0;
   const getWriter = (key: string) => {
     let writer = writersByScope.get(key);
     if (!writer) {
@@ -3071,6 +3142,8 @@ export const createAgentStore = () => {
             !canOwnRun(get(), chatId)
           )
             return null;
+          const scopeKey = currentScopeKey(get());
+          const previousMessages = get().getMessages(chatId);
           const runId = uuidv4();
           set((state) => {
             const current = state.chats.find(
@@ -3118,7 +3191,85 @@ export const createAgentStore = () => {
             setLastUserInterruptionReason(state.messagesByChatId[chatId] ?? []);
             _touchChatInDraft(state.chats, chatId);
           });
-          return (await get().flushRunPersistence()) ? runId : null;
+          const initial = _getChat(chatId)!;
+          const initialMessages = get().getMessages(chatId);
+          if (await get().flushRunPersistence()) return runId;
+          if (currentScopeKey(get()) !== scopeKey) return null;
+          // Execution cannot start before this initial checkpoint is durable.
+          set((state) => {
+            const current = state.chats.find(
+              (candidate) => candidate.id === chatId
+            );
+            if (
+              !current ||
+              current.runId !== runId ||
+              current.status !== "running" ||
+              current.archived ||
+              state.abortControllersByChatId[chatId] ||
+              state.remoteBusyChatIds[chatId] ||
+              state.pendingAskByChatId[chatId] ||
+              state.queuedUserMessagesByChatId[chatId] ||
+              state.queuedUserMessageInFlightByChatId[chatId] ||
+              current.runBudget?.providerAttemptCount !== 0 ||
+              current.modelAttempts?.some(
+                (attempt) => attempt.runId === runId
+              ) ||
+              !samePersistedValue(
+                current.runCheckpoint,
+                initial.runCheckpoint
+              ) ||
+              !samePersistedValue(current.runBudget, initial.runBudget) ||
+              !samePersistedValue(current.lastRunUsage, initial.lastRunUsage) ||
+              !samePersistedValue(
+                state.messagesByChatId[chatId],
+                initialMessages
+              )
+            )
+              return;
+            current.status = "error";
+            current.runId = null;
+            current.runMode = undefined;
+            current.runCheckpoint = undefined;
+            current.runBudget = chat.runBudget;
+            current.lastRunUsage = chat.lastRunUsage;
+            state.messagesByChatId[chatId] = previousMessages;
+          });
+          return null;
+        },
+
+        retryChatRunStartup: async (chatId, runId) => {
+          get().syncState();
+          const scopeKey = currentScopeKey(get());
+          const canRetry = () => {
+            const state = get();
+            const chat = _getChat(chatId);
+            return Boolean(
+              supportsAgentRunRecovery() &&
+                currentScopeKey(state) === scopeKey &&
+                chat?.runId === runId &&
+                canOwnRun(state, chatId) &&
+                !state.abortControllersByChatId[chatId] &&
+                !state.pendingAskByChatId[chatId] &&
+                !state.queuedUserMessagesByChatId[chatId] &&
+                !state.queuedUserMessageInFlightByChatId[chatId] &&
+                getAgentRunStartup(chat, state.getMessages(chatId))
+            );
+          };
+          if (!canRetry()) return false;
+          set((state) => {
+            const chat = state.chats.find((chat) => chat.id === chatId)!;
+            chat.status = "running";
+            chat.lastError = null;
+            chat.requiresAIConfiguration = false;
+            chat.interrupted = false;
+            chat.interruptionReason = undefined;
+            delete state.remoteBusyChatIds[chatId];
+          });
+          return (
+            (await get().flushRunPersistence()) &&
+            canRetry() &&
+            _getChat(chatId)?.status === "running"
+          );
         },
 
         continueChatRun: async (chatId, runId) => {
@@ -3436,6 +3587,8 @@ export const createAgentStore = () => {
             return false;
           }
         },
+
+        freeAgentStorage: (options) => freeAgentStorage(options),
 
         getRunPersistenceError: () => {
           const key = currentScopeKey(get());
@@ -4144,6 +4297,7 @@ export const createAgentStore = () => {
           protectedIds.add(id);
       }
     }
+    for (const id of reclamationChatIds) protectedIds.delete(id);
     chatProtection.update(key, [...protectedIds]);
     const ready =
       !key ||
@@ -4157,6 +4311,7 @@ export const createAgentStore = () => {
   const scheduleAutomaticCleanup = (key: string) => {
     if (
       !supportsAgentChatProtection() ||
+      reclaimingStorage ||
       automaticCleanups.has(key) ||
       cleanupTimer !== undefined
     )
@@ -4271,6 +4426,7 @@ export const createAgentStore = () => {
   ): Promise<boolean> => {
     const pending = automaticCleanups.get(key);
     if (pending) return pending;
+    if (reclaimingStorage) return Promise.resolve(false);
     if (!supportsAgentChatProtection()) return Promise.resolve(false);
     const cleanup = Promise.resolve()
       .then(async () => {
@@ -4288,18 +4444,35 @@ export const createAgentStore = () => {
         omitQuerySamplesForScope.add(key);
         try {
           // Discard reproducible Query previews before any completed conversation.
-          try {
-            await withAgentPersistenceLock(key, () =>
-              withAgentStorageBudgetLock(() => {
-                if (currentScopeKey(store.getState()) !== key) return false;
-                return synchronizeState(store.getState(), true, true);
-              })
-            );
-            quotaFailure = false;
-          } catch (error) {
-            if (!(error instanceof AgentStorageFullError)) return false;
-            quotaFailure = error.reason === "quota";
+          for (;;) {
+            try {
+              await withAgentPersistenceLock(key, () =>
+                withAgentStorageBudgetLock(() => {
+                  if (currentScopeKey(store.getState()) !== key) return false;
+                  return synchronizeState(store.getState(), true, true);
+                })
+              );
+              quotaFailure = false;
+              break;
+            } catch (error) {
+              if (!(error instanceof AgentStorageFullError)) return false;
+              quotaFailure = error.reason === "quota";
+              const freed = await reclaimOtherAgentHistory(storage, {
+                currentKey: key,
+                userEmail: store.getState().userEmail!,
+                mode: "automatic",
+                isCurrent: () => currentScopeKey(store.getState()) === key,
+                force: true,
+              });
+              if (!freed) break;
+            }
           }
+          await reclaimOtherAgentHistory(storage, {
+            currentKey: key,
+            userEmail: store.getState().userEmail!,
+            mode: "automatic",
+            isCurrent: () => currentScopeKey(store.getState()) === key,
+          });
           const blocked = new Set<string>();
           let minimumCount = quotaFailure ? 1 : 0;
           for (;;) {
@@ -4379,12 +4552,248 @@ export const createAgentStore = () => {
     return cleanup;
   };
 
+  const freeAgentStorage = async (
+    options: { resetCurrentChat?: boolean } = {}
+  ): Promise<boolean> => {
+    const initial = store.getState();
+    const key = currentScopeKey(initial);
+    const chatId = initial.currentChatId;
+    const revision = selectionRevision;
+    const storage = getSafeStorage();
+    if (reclaimingStorage || !key || !storage || !supportsAgentChatProtection())
+      return false;
+    const isCurrent = () => {
+      const state = store.getState();
+      return (
+        selectionRevision === revision &&
+        currentScopeKey(state) === key &&
+        state.currentChatId === chatId
+      );
+    };
+    const isExecuting = (
+      state: AgentState,
+      id: string,
+      ownsReclamationLease = false
+    ) =>
+      Boolean(
+        state.abortControllersByChatId[id] ||
+          state.queuedUserMessagesByChatId[id] ||
+          state.queuedUserMessageInFlightByChatId[id] ||
+          (!ownsReclamationLease && hasAgentRunLease(key, id))
+      );
+    const consent = persistedSnapshot(initial);
+    const consentChats = new Map(consent.chats.map((chat) => [chat.id, chat]));
+    const unchanged = (state: AgentState, id: string) => {
+      const chat = state.chats.find((chat) => chat.id === id);
+      const original = consentChats.get(id);
+      return Boolean(
+        chat &&
+          original &&
+          samePersistedValue(chat, original) &&
+          samePersistedValue(
+            state.messagesByChatId[id],
+            consent.messagesByChatId[id]
+          ) &&
+          samePersistedValue(
+            state.draftsByChatId[id],
+            consent.draftsByChatId[id]
+          ) &&
+          samePersistedValue(
+            state.pendingAskByChatId[id],
+            consent.pendingAskByChatId[id]
+          ) &&
+          samePersistedValue(
+            state.queuedUserMessagesByChatId[id],
+            consent.queuedUserMessagesByChatId[id]
+          )
+      );
+    };
+    reclaimingStorage = true;
+    try {
+      const legacyKey = key.replace(AGENT_RUN_STATE_KEY, AGENT_STATE_KEY);
+      const legacyValue = storage.getItem(legacyKey);
+      await automaticCleanups.get(key);
+      await store.getState().flushRunPersistence();
+      if (!isCurrent()) return false;
+      await reclaimOtherAgentHistory(storage, {
+        currentKey: key,
+        userEmail: initial.userEmail!,
+        mode: "confirmed",
+        isCurrent,
+      });
+      if (!isCurrent()) return false;
+      const state = store.getState();
+      const ids = state.chats.map((chat) => chat.id);
+      if (ids.some((id) => isExecuting(state, id)))
+        return options.resetCurrentChat
+          ? false
+          : store.getState().checkAgentStorageAdmission();
+      if (options.resetCurrentChat && chatId && !unchanged(state, chatId))
+        return false;
+      if (legacyValue) {
+        try {
+          const raw = parseAgentStoredState(legacyValue);
+          const chats = isRecord(raw) ? (raw.chats ?? raw.threads) : undefined;
+          if (Array.isArray(chats))
+            for (const chat of chats)
+              if (
+                isRecord(chat) &&
+                typeof chat.id === "string" &&
+                !ids.includes(chat.id)
+              )
+                ids.push(chat.id);
+        } catch {
+          // Opaque backups still require the scope-level live-lock check.
+        }
+      }
+      for (const id of ids) reclamationChatIds.add(id);
+      refreshChatProtection();
+      let saved = false;
+      await withAgentHistoryReclamationLocks(key, ids, isCurrent, () => {
+        store.getState().syncState();
+        const current = store.getState();
+        if (
+          !isCurrent() ||
+          ids.some((id) => isExecuting(current, id, true)) ||
+          storage.getItem(legacyKey) !== legacyValue
+        )
+          return 0;
+        if (options.resetCurrentChat && chatId && !unchanged(current, chatId))
+          return 0;
+        const removed = new Set(
+          current.chats
+            .filter((chat) => chat.id !== chatId && unchanged(current, chat.id))
+            .map((chat) => chat.id)
+        );
+        let retained = omitAgentQuerySamples(
+          removeAgentHistoryChats(persistedSnapshot(current), removed)
+        );
+        if (options.resetCurrentChat && chatId) {
+          const chat = current.chats.find((item) => item.id === chatId);
+          if (!chat) return 0;
+          const messages = current.messagesByChatId[chatId] ?? [];
+          const root =
+            messages.find(
+              (message) =>
+                message.role === "user" &&
+                message.id === chat.runCheckpoint?.rootUserMessageId
+            ) ?? messages.findLast((message) => message.role === "user");
+          const reset: AgentChat = {
+            ...chat,
+            status: "error",
+            runId: null,
+            runMode: undefined,
+            runCheckpoint: undefined,
+            runBudget: undefined,
+            modelAttempts: undefined,
+            legacyUsage: undefined,
+            lastRunUsage: undefined,
+            totalTokensUsed: 0,
+            hasUnreportedUsage: false,
+            interrupted: false,
+            interruptionReason: undefined,
+            lastError: null,
+          };
+          retained = {
+            ...retained,
+            chats: retained.chats.map((item) =>
+              item.id === chatId ? reset : item
+            ),
+            messagesByChatId: {
+              ...retained.messagesByChatId,
+              [chatId]: root ? [root] : [],
+            },
+            pendingAskByChatId: { ...retained.pendingAskByChatId },
+            queuedUserMessagesByChatId: {
+              ...retained.queuedUserMessagesByChatId,
+            },
+            activeChatIds: retained.activeChatIds?.filter(
+              (id) => id !== chatId
+            ),
+          };
+          delete retained.pendingAskByChatId[chatId];
+          delete retained.queuedUserMessagesByChatId[chatId];
+        }
+        const candidate = {
+          ...current,
+          ...retained,
+          remoteBusyChatIds: Object.fromEntries(
+            Object.entries(current.remoteBusyChatIds).filter(
+              ([id]) => !ids.includes(id)
+            )
+          ),
+        };
+        saved = synchronizeState(candidate, true, true, {
+          resetChatId: options.resetCurrentChat
+            ? (chatId ?? undefined)
+            : undefined,
+        });
+        if (saved) pendingStatesByScope.set(key, store.getState());
+        return saved ? 1 : 0;
+      });
+      if (!isCurrent() || (!saved && options.resetCurrentChat)) return false;
+      return await store.getState().checkAgentStorageAdmission();
+    } catch (error) {
+      updateStoragePressure(key, error, "saving");
+      return false;
+    } finally {
+      reclaimingStorage = false;
+      reclamationChatIds.clear();
+      refreshChatProtection();
+    }
+  };
+
   const writeRetainedState = (
     storage: Storage,
     key: string,
     state: PersistedAgentState,
-    previous: string | null
+    previous: string | null,
+    discardLegacy = false
   ) => {
+    const legacyKey = key.startsWith(`${AGENT_RUN_STATE_KEY}.`)
+      ? key.replace(AGENT_RUN_STATE_KEY, AGENT_STATE_KEY)
+      : null;
+    const legacyValue = legacyKey ? storage.getItem(legacyKey) : null;
+    const legacyBytes =
+      legacyKey && legacyValue
+        ? 2 * (legacyKey.length + legacyValue.length)
+        : 0;
+    let legacyState: unknown;
+    let legacyParsed = false;
+    const containsLegacyState = (candidate: string) => {
+      if (!legacyKey || !legacyValue) return false;
+      try {
+        if (storage.getItem(legacyKey) !== legacyValue) return false;
+        if (!legacyParsed) {
+          legacyParsed = true;
+          legacyState = parseAgentStoredState(legacyValue, {
+            strictCompressionMarkers: true,
+          });
+        }
+        return canRetireLegacyAgentState(
+          legacyState,
+          parseAgentStoredState(candidate, { strictCompressionMarkers: true })
+        );
+      } catch {
+        return false;
+      }
+    };
+    const retireLegacyState = (durable: string | null) => {
+      if (!legacyKey || !durable) return false;
+      try {
+        if (
+          storage.getItem(key) !== durable ||
+          (!discardLegacy && !containsLegacyState(durable)) ||
+          storage.getItem(legacyKey) !== legacyValue ||
+          storage.getItem(key) !== durable
+        )
+          return false;
+        storage.removeItem(legacyKey);
+        return storage.getItem(legacyKey) === null;
+      } catch {
+        return false;
+      }
+    };
     let retained = omitQuerySamplesForScope.has(key)
       ? omitAgentQuerySamples(state)
       : retainAgentQuerySamples(state);
@@ -4401,8 +4810,15 @@ export const createAgentStore = () => {
       bytes = estimateAgentStorageBytes(storage, { key, value: serialized });
     }
     const enforceBudget = () => {
+      // Keep the source until the replacement is durable, but budget only one verified copy.
+      const budgetBytes =
+        legacyBytes > 0 &&
+        bytes > AGENT_STORAGE_LIMIT_BYTES &&
+        (discardLegacy || containsLegacyState(serialized))
+          ? bytes - legacyBytes
+          : bytes;
       // Existing large histories must permit incremental, strictly shrinking cleanup.
-      if (bytes > AGENT_STORAGE_LIMIT_BYTES && bytes >= oldBytes) {
+      if (budgetBytes > AGENT_STORAGE_LIMIT_BYTES && bytes >= oldBytes) {
         throw new AgentStorageFullError("budget", bytes);
       }
     };
@@ -4411,9 +4827,10 @@ export const createAgentStore = () => {
       if (serialized !== previous) storage.setItem(key, serialized);
     } catch (error) {
       if (!isAgentStorageQuotaError(error)) throw error;
+      const retiredLegacy = retireLegacyState(previous);
       retained = omitAgentQuerySamples(retained);
       const reduced = encode(true);
-      if (reduced === serialized || reduced.length >= serialized.length) {
+      if (!retiredLegacy && reduced.length >= serialized.length) {
         throw new AgentStorageFullError(
           "quota",
           bytes,
@@ -4437,13 +4854,17 @@ export const createAgentStore = () => {
         throw retryError;
       }
     }
+    if (discardLegacy || bytes >= AGENT_STORAGE_CLEANUP_TRIGGER_BYTES)
+      retireLegacyState(serialized);
+    bytes = estimateAgentStorageBytes(storage);
     return { retained, serialized, bytes };
   };
 
   const synchronizeState = (
     state: AgentState,
     persist: boolean,
-    underLock = false
+    underLock = false,
+    reclamation?: { resetChatId?: string }
   ): boolean => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
@@ -4536,10 +4957,34 @@ export const createAgentStore = () => {
       locallyBusy,
       state.remoteBusyChatIds
     );
+    if (reclamation?.resetChatId) {
+      const id = reclamation.resetChatId;
+      const chat = local.chats.find((chat) => chat.id === id);
+      if (!chat) return false;
+      merged = {
+        ...merged,
+        chats: merged.chats.map((item) => (item.id === id ? chat : item)),
+        messagesByChatId: {
+          ...merged.messagesByChatId,
+          [id]: local.messagesByChatId[id] ?? [],
+        },
+        pendingAskByChatId: { ...merged.pendingAskByChatId },
+        queuedUserMessagesByChatId: { ...merged.queuedUserMessagesByChatId },
+        activeChatIds: merged.activeChatIds?.filter((chatId) => chatId !== id),
+      };
+      delete merged.pendingAskByChatId[id];
+      delete merged.queuedUserMessagesByChatId[id];
+    }
     let serialized = saved;
     if (persist) {
       try {
-        const written = writeRetainedState(storage, key, merged, saved);
+        const written = writeRetainedState(
+          storage,
+          key,
+          merged,
+          saved,
+          Boolean(reclamation)
+        );
         merged = written.retained;
         serialized = written.serialized;
         if (written.bytes >= AGENT_STORAGE_CLEANUP_TRIGGER_BYTES)
@@ -4632,6 +5077,12 @@ export const createAgentStore = () => {
   };
 
   store.subscribe((state, previousState) => {
+    if (
+      state.workspaceName !== previousState.workspaceName ||
+      state.userEmail !== previousState.userEmail ||
+      state.currentChatId !== previousState.currentChatId
+    )
+      selectionRevision++;
     if (
       state.workspaceName !== previousState.workspaceName ||
       state.userEmail !== previousState.userEmail ||

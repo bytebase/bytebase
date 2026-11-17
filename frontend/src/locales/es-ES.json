@@ -44,6 +44,7 @@
     "api-permission-request": "¿Permitir que el asistente ejecute esta solicitud de API?",
     "api-permission-title": "Solicitar permiso",
     "archive-all-chats": "Archivar todos los chats",
+    "archive-all-chats-confirmation": "¿Archivar todos los chats ({{count}})?",
     "archive-chat": "Archivar chat",
     "archive-chat-confirmation": "¿Archivar este chat?",
     "archived-only-chats": "Ver chats archivados",
@@ -115,7 +116,7 @@
     "custom-input-placeholder": "Introduce un valor",
     "database-reference-unavailable": "Esta base de datos ya no está disponible o no tienes acceso a ella.",
     "delete-all-chats": "Eliminar todos los chats",
-    "delete-all-chats-confirmation": "¿Está seguro de que desea eliminar todos los chats archivados? Esta acción no se puede deshacer.",
+    "delete-all-chats-confirmation": "¿Eliminar todos los chats archivados ({{count}})? Esta acción no se puede deshacer.",
     "delete-chat": "Eliminar chat",
     "delete-chat-confirmation": "¿Está seguro de que desea eliminar este chat? Esta acción no se puede deshacer.",
     "diagnostic-help": {
@@ -383,6 +384,10 @@
     },
     "stop": "Detener",
     "storage": {
+      "free-and-retry": "Liberar espacio y reintentar",
+      "free-failed": "No se pudo liberar suficiente espacio. Cierra otras pestañas de Agent o finaliza las ejecuciones activas y vuelve a intentarlo.",
+      "free-title": "¿Eliminar otros chats guardados de Agent?",
+      "full": "El almacenamiento del historial de Agent está lleno.",
       "retention-info": "Conservación del historial de chats",
       "retention-policy": "Los chats completados más antiguos se eliminan automáticamente cuando es necesario para liberar almacenamiento local. Los chats activos y los borradores se conservan.",
       "retry": "Reintentar",

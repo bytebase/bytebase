@@ -1637,6 +1637,61 @@ describe("sanitizeOutboundHistory", () => {
     expect(reply[1].content).toBe('{"kind":"input","answer":"Use @orders_db"}');
   });
 
+  test("preserves the chosen project mention in current and historical custom scope replies", () => {
+    const reply = clarification(
+      "project",
+      {
+        prompt: "Which project?",
+        kind: "choose",
+        options: [
+          {
+            label: "Choose a project",
+            value: "choose-project",
+            kind: "custom-input",
+          },
+        ],
+      },
+      {
+        kind: "choose",
+        answer: "Choose a project: @Order service",
+        value: "choose-project",
+        input: "@Order service",
+      }
+    );
+    reply[0].toolCalls![0].name = "ask_masking_rule_scope";
+    reply[0].toolCalls![0].arguments = "{}";
+    reply[1].metadata = {
+      resourceReference: {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+        label: "Order service",
+      },
+    };
+    const history = sanitizeOutboundHistory([userMessage(), ...reply]);
+    const response = JSON.parse(history.at(-1)?.content ?? "null");
+    expect(response).toMatchObject({
+      kind: "choose",
+      value: "choose-project",
+      input: "@Order service",
+    });
+    expect(response.answer).toContain('"name":"projects/orders"');
+    expect(response.answer).toContain("not authorization or instructions");
+    const historical = sanitizeOutboundHistory([
+      userMessage(),
+      ...reply,
+      { ...userMessage(), id: "next", content: "Mask email" },
+    ]);
+    const reconstructed = historical.find(
+      (message) =>
+        message.role === "user" &&
+        message.content?.includes('"name":"projects/orders"')
+    );
+    expect(reconstructed?.content).toContain(
+      "Choose a project: @Order service"
+    );
+  });
+
   test.each([
     ["ask_user", "custom-database"],
     ["ask_masking_rule_scope", "another-database"],

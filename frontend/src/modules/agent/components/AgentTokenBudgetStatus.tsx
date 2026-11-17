@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { getRunTokenBudget } from "../logic/tokenBudget";
 import { formatTokenLimit, parseTokenLimit } from "../logic/tokenLimit";
 import type { AgentChat } from "../logic/types";
+import { AgentErrorDetails } from "./AgentErrorDetails";
 import {
   AgentPopover,
   AgentPopoverContent,
@@ -30,6 +31,7 @@ interface AgentTokenBudgetStatusProps {
   remoteBusy?: boolean;
   canResume?: boolean;
   pendingAttemptId?: string;
+  error?: string | null;
 }
 
 export function AgentTokenBudgetStatus(props: AgentTokenBudgetStatusProps) {
@@ -50,6 +52,7 @@ function TokenBudgetStatus({
   remoteBusy = false,
   canResume = true,
   pendingAttemptId,
+  error,
 }: AgentTokenBudgetStatusProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -66,19 +69,10 @@ function TokenBudgetStatus({
   const hasUnreportedUsage = projection?.hasUnreportedUsage ?? false;
   if (!budget || remoteBusy) return null;
   const paused = chat.runCheckpoint?.suspension === "token-limit";
-  const failedRun =
-    !paused &&
-    chat.status === "error" &&
-    !chat.archived &&
-    chat.interruptionReason !== "user" &&
-    Boolean(chat.runId) &&
-    chat.runId === budget.runId;
   const showRetry = paused && state !== "exhausted";
   const active = chat.status === "running" || chat.status === "awaiting_user";
   const showThreshold = !paused && active && state !== "normal";
-  const showPartialUsage =
-    hasUnreportedUsage && (active || chat.status === "error");
-  if (!paused && !failedRun && !showThreshold && !showPartialUsage) return null;
+  if (!paused && !showThreshold) return null;
   const minimum = Math.max(budget.limit, budget.totalTokensUsed);
   const minimumLimit = formatTokenLimit(
     minimum < Number.MAX_SAFE_INTEGER ? minimum + 1 : Number.MAX_SAFE_INTEGER
@@ -94,16 +88,12 @@ function TokenBudgetStatus({
   const canIncrease = (paused && state === "exhausted") || showThreshold;
   const increaseAndResume = paused && canResume;
   const title = paused
-    ? showRetry
-      ? t("agent.interrupted")
-      : t("agent.token-budget.paused")
-    : failedRun
-      ? t("agent.interrupted")
-      : active && state === "exhausted"
-        ? t("agent.token-budget.reached")
-        : active && state === "warning"
-          ? t("agent.token-budget.warning")
-          : t("agent.token-budget.partial");
+    ? t("agent.token-budget.paused")
+    : active && state === "exhausted"
+      ? t("agent.token-budget.reached")
+      : active && state === "warning"
+        ? t("agent.token-budget.warning")
+        : t("agent.token-budget.partial");
   const used =
     hasUnreportedUsage && budget
       ? t("agent.token-usage.at-least", {
@@ -152,7 +142,7 @@ function TokenBudgetStatus({
             </span>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            {!failedRun && (canIncrease || open) && (
+            {(canIncrease || open) && (
               <AgentPopover
                 open={open}
                 onOpenChange={(nextOpen) => {
@@ -264,7 +254,7 @@ function TokenBudgetStatus({
                 {t("agent.retry-last-chat-turn")}
               </Button>
             )}
-            {(paused || failedRun) && (
+            {paused && (
               <Button
                 size="sm"
                 appearance="secondary"
@@ -276,10 +266,11 @@ function TokenBudgetStatus({
             )}
           </div>
         </div>
-        {hasUnreportedUsage && (paused || failedRun || showThreshold) && (
+        <AgentErrorDetails error={error} />
+        {hasUnreportedUsage && (paused || showThreshold) && (
           <span>{t("agent.token-budget.partial")}</span>
         )}
-        {failed && (!open || failedRun) && (
+        {failed && !open && (
           <FormError>{t("agent.token-budget.action-failed")}</FormError>
         )}
       </div>

@@ -44,6 +44,7 @@
     "api-permission-request": "Allow the agent to run this API request?",
     "api-permission-title": "Request permission",
     "archive-all-chats": "Archive all chats",
+    "archive-all-chats-confirmation": "Archive all chats ({{count}})?",
     "archive-chat": "Archive chat",
     "archive-chat-confirmation": "Archive this chat?",
     "archived-only-chats": "View archived chats",
@@ -115,7 +116,7 @@
     "custom-input-placeholder": "Enter a value",
     "database-reference-unavailable": "This database is no longer available or you do not have access to it.",
     "delete-all-chats": "Delete all chats",
-    "delete-all-chats-confirmation": "Are you sure you want to delete all archived chats? This action cannot be undone.",
+    "delete-all-chats-confirmation": "Delete all archived chats ({{count}})? This action cannot be undone.",
     "delete-chat": "Delete chat",
     "delete-chat-confirmation": "Are you sure you want to delete this chat? This action cannot be undone.",
     "diagnostic-help": {
@@ -383,6 +384,10 @@
     },
     "stop": "Stop",
     "storage": {
+      "free-and-retry": "Free space and retry",
+      "free-failed": "Could not free enough space. Close other Agent tabs or end active runs, then try again.",
+      "free-title": "Remove other saved Agent chats?",
+      "full": "Agent history storage is full.",
       "retention-info": "Chat history retention",
       "retention-policy": "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved.",
       "retry": "Retry",

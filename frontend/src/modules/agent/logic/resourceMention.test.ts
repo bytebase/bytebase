@@ -155,6 +155,7 @@ describe("getCurrentTurnResourceReferences", () => {
 
   test.each([
     ["ask_masking_rule_scope", "another-database"],
+    ["ask_masking_rule_scope", "choose-project"],
     ["ask_masking_exemption_scope", "another-database"],
     ["ask_masking_semantic_type", "action:create-semantic-type"],
   ])("uses bound references from %s custom choice %s", (name, value) => {

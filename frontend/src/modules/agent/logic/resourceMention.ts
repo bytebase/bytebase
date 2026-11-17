@@ -320,10 +320,10 @@ export const getHumanInputResourceReferenceMap = (
     string,
     { kind: "input" } | { kind: "choose"; customValues: Set<string> }
   >();
-  const runtimeCustomChoices = new Map([
-    ["ask_masking_rule_scope", "another-database"],
-    ["ask_masking_exemption_scope", "another-database"],
-    ["ask_masking_semantic_type", "action:create-semantic-type"],
+  const runtimeCustomChoices = new Map<string, readonly string[]>([
+    ["ask_masking_rule_scope", ["another-database", "choose-project"]],
+    ["ask_masking_exemption_scope", ["another-database"]],
+    ["ask_masking_semantic_type", ["action:create-semantic-type"]],
   ]);
   const seenToolCallIds = new Set<string>();
   let hasUserTurn = false;
@@ -347,8 +347,8 @@ export const getHumanInputResourceReferenceMap = (
           const args = JSON.parse(toolCall.arguments);
           if (!args || typeof args !== "object" || Array.isArray(args))
             continue;
-          const runtimeValue = runtimeCustomChoices.get(toolCall.name);
-          if (runtimeValue) {
+          const runtimeValues = runtimeCustomChoices.get(toolCall.name);
+          if (runtimeValues) {
             const allowedKeys =
               toolCall.name === "ask_masking_semantic_type"
                 ? []
@@ -362,7 +362,7 @@ export const getHumanInputResourceReferenceMap = (
               continue;
             pendingInputs.set(toolCall.id, {
               kind: "choose",
-              customValues: new Set([runtimeValue]),
+              customValues: new Set(runtimeValues),
             });
             continue;
           }

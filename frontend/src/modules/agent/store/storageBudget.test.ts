@@ -140,6 +140,12 @@ describe("AgentStorageFullError", () => {
       expect(error.reason).toBe(reason);
       expect(error.bytes).toBe(100);
       expect(error.limitBytes).toBe(80);
+      expect(error.message).toContain("100 bytes");
+      if (reason === "budget") expect(error.message).toContain("80 bytes");
+      else {
+        expect(error.message).toContain("browser");
+        expect(error.message).not.toContain("80 bytes");
+      }
     }
   );
 

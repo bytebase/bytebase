@@ -359,6 +359,36 @@ test("keeps exemption scope project-bound", async () => {
     ).map((option) => option.value)
   ).toEqual(["projects/sample", "another-database"]);
 });
+test("collects a project inline when choosing a new rule's project scope", async () => {
+  const choices = await getMaskingScopeChoices({ ...context, kind: "rule" });
+
+  expect(choices).toEqual([
+    { label: "All workspace databases", value: "workspace" },
+    {
+      label: "Choose a project",
+      value: "choose-project",
+      kind: "custom-input",
+      placeholder: "Search projects",
+    },
+  ]);
+  expect(
+    choices.every((choice) => !Object.hasOwn(choice, "defaultValue"))
+  ).toBe(true);
+  expect(mocks.database).not.toHaveBeenCalled();
+});
+test.each(["denied", "unknown"])(
+  "does not collect a project with %s project-list access",
+  async (status) => {
+    const state = setup();
+    state.scopeAccess.projects.status = status;
+    mocks.setup.mockResolvedValue(state);
+
+    const choices = await getMaskingScopeChoices({ ...context, kind: "rule" });
+
+    expect(choices.map((choice) => choice.value)).toEqual(["workspace"]);
+    expect(choices.every((choice) => !choice.kind)).toBe(true);
+  }
+);
 test.each(["rule", "exemption"] as const)(
   "collects the database with the %s another-database choice",
   async (kind) => {

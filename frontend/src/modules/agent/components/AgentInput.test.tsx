@@ -1,5 +1,5 @@
-import { fireEvent, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent, screen, within } from "@testing-library/react";
+import type { ComponentProps, ReactElement } from "react";
 import { act, createRef } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -14,10 +14,13 @@ import type { DomRefSuggestion } from "../dom";
 import type { AgentMaskingPageResource } from "../logic/chatContext";
 import type { AgentCallbacks, AgentLoopOptions } from "../logic/agentLoop";
 import type { createToolExecutor } from "../logic/tools";
-import type { AgentPendingAsk, ToolExecutor } from "../logic/types";
+import type { AgentChat as AgentChatRecord, AgentPendingAsk, ToolExecutor } from "../logic/types";
 import { withAgentRunLease } from "../logic/runOwnership";
+import { getAgentRunStartup } from "../logic/runCheckpoint";
 import { boundAgentQueryResult } from "../logic/queryResultRetention";
 import { createAgentStore, getAgentStateKey, selectError, useAgentStore } from "../store/agent";
+import { AGENT_STORAGE_LIMIT_BYTES, AgentStorageFullError } from "../store/storageBudget";
+import * as storageStatusModule from "./AgentStorageStatus";
 import {
   AgentDialog,
   AgentDialogContent,
@@ -94,6 +97,7 @@ vi.mock("@/api", async (importOriginal) => ({
 }));
 
 let AgentInput: typeof import("./AgentInput").AgentInput;
+let AgentChat: typeof import("./AgentChat").AgentChat;
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -124,6 +128,29 @@ vi.mock("react-i18next", async (importOriginal) => ({
   useTranslation: mocks.useTranslation,
 }));
 
+vi.mock("@tanstack/react-virtual", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-virtual")>()),
+  useVirtualizer: (options: { count: number; estimateSize: (index: number) => number }) => ({
+    getVirtualItems: () => Array.from({ length: options.count }, (_, index) => ({ index, key: index, start: index * options.estimateSize(index) })),
+    getTotalSize: () => options.count * options.estimateSize(0),
+    measureElement: () => undefined,
+    scrollToIndex: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useReactiveRoute", () => ({
+  useReactiveRoute: () => ({ fullPath: mocks.currentPath }),
+}));
+
+vi.mock("@/utils", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/utils")>();
+  return {
+    ...original,
+    extractDatabaseResourceName: (resource: string) => original.extractDatabaseResourceName(resource),
+    hasWorkspacePermissionV2: () => true,
+  };
+});
+
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: {
@@ -135,6 +162,7 @@ vi.mock("@/app/router", async (importOriginal) => ({
       },
     },
     push: mocks.routerPush,
+    resolve: () => ({ href: "/settings/general", fullPath: "/settings/general" }),
   },
 }));
 
@@ -442,6 +470,7 @@ beforeEach(async () => {
   mocks.aiEnabled = undefined;
 
   ({ AgentInput } = await import("./AgentInput"));
+  ({ AgentChat } = await import("./AgentChat"));
 });
 
 afterEach(() => {
@@ -451,18 +480,45 @@ afterEach(() => {
 });
 
 describe("AgentInput", () => {
+  const renderChatWithInput = (inputProps: ComponentProps<typeof AgentInput> = {}) => {
+    const recoveryRef = createRef<(() => Promise<boolean>) | null>();
+    const retryRef = inputProps.retryActionRef ?? createRef<(() => void) | null>();
+    return renderIntoContainer(<>
+      <div data-testid="transcript"><AgentChat onRetry={() => retryRef.current?.()} onFreeSpaceAndRetry={() => recoveryRef.current?.() ?? Promise.resolve(false)} /></div>
+      <div data-testid="composer"><AgentInput {...inputProps} retryActionRef={retryRef} freeSpaceAndRetryActionRef={recoveryRef} /></div>
+    </>);
+  };
+
+  test("shows storage failure only in the transcript, not above the chatbox", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+    store.setChatStatus(chat.id, "error", { lastError: "Agent storage is full" });
+    useAgentStore.setState({ storagePressure: { reason: "budget", phase: "admission", bytes: 2_100_000, limitBytes: 2_000_000 } });
+    const view = renderChatWithInput();
+    view.render();
+    try {
+      const notice = view.container.querySelector("[data-agent-storage-status]");
+      expect(notice).not.toBeNull();
+      expect(screen.getByTestId("transcript")).toContainElement(notice as HTMLElement);
+      expect(within(screen.getByTestId("composer")).queryByRole("alert")).toBeNull();
+      expect(view.container.querySelectorAll("[role=alert]")).toHaveLength(1);
+      expect(within(notice as HTMLElement).getByRole("button", { name: "agent.storage.free-and-retry" })).toBeEnabled();
+    } finally { view.unmount(); }
+  });
+
   test("retries storage saving without replaying a returned operation or clearing the composer draft", async () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat();
     store.addMessage({ chatId: chat.id, role: "user", content: "Update the project title" });
     store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "completed-write", content: '{"status":200,"response":{"title":"Updated"}}' });
-    store.setChatStatus(chat.id, "error", { lastError: "QuotaExceededError: Browser storage is full" });
+    store.setChatStatus(chat.id, "error", { lastError: "SecurityError: Browser storage is unavailable" });
     store.setDraft(chat.id, { text: "Keep my next question" });
     const flushRunPersistence = store.flushRunPersistence;
     const flush = vi.fn(async () => true);
-    useAgentStore.setState({ flushRunPersistence: flush, storagePressure: { reason: "quota", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
+    useAgentStore.setState({ flushRunPersistence: flush, storagePressure: { reason: "unavailable", phase: "saving", bytes: 1024, limitBytes: 3 * 1024 * 1024 } });
     const messages = store.getMessages(chat.id);
-    const view = renderIntoContainer(<AgentInput />);
+    const view = renderChatWithInput();
     view.render();
     try {
       const status = view.container.querySelector("[data-agent-storage-status]");
@@ -474,7 +530,7 @@ describe("AgentInput", () => {
       expect(flush).toHaveBeenCalledOnce();
       expect(store.getMessages(chat.id)).toEqual(messages);
       expect(store.getDraft(chat.id).text).toBe("Keep my next question");
-      expect(selectError(useAgentStore.getState())).toContain("QuotaExceededError");
+      expect(selectError(useAgentStore.getState())).toContain("SecurityError");
       expect(mocks.runAgentLoop).not.toHaveBeenCalled();
       expect(mocks.aiChat).not.toHaveBeenCalled();
       expect(mocks.executeTool).not.toHaveBeenCalled();
@@ -491,15 +547,15 @@ describe("AgentInput", () => {
     store.renameChat(chat.id, "Current account history");
     store.setDraft(chat.id, { text: "Keep this account's draft" });
     useAgentStore.setState({ storagePressure: { reason: "budget", phase: "admission", bytes: 2 * 1024 * 1024 + 1, limitBytes: 2 * 1024 * 1024 } });
-    const view = renderIntoContainer(<AgentInput />);
+    const view = renderChatWithInput();
     view.render();
     try {
-      expect(screen.getByRole("region", { name: "agent.storage.title" })).toBeVisible();
+      expect(screen.getByRole("alert", { name: "agent.storage.title" })).toBeVisible();
       expect(screen.queryByRole("button", { name: "agent.storage.manage-history" })).toBeNull();
       act(() => useAgentStore.setState({ userEmail: "other@example.com", storagePressure: undefined }));
-      expect(screen.queryByRole("region", { name: "agent.storage.title" })).toBeNull();
+      expect(screen.queryByRole("alert", { name: "agent.storage.title" })).toBeNull();
       act(() => useAgentStore.setState({ userEmail: "agent@example.com" }));
-      expect(screen.queryByRole("region", { name: "agent.storage.title" })).toBeNull();
+      expect(screen.queryByRole("alert", { name: "agent.storage.title" })).toBeNull();
       expect(store.getDraft(chat.id).text).toBe("Keep this account's draft");
       expect(mocks.runAgentLoop).not.toHaveBeenCalled();
       expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
@@ -601,14 +657,555 @@ describe("AgentInput", () => {
       store.startChatRun(chat.id, page, { runId: "legacy-run" });
     } else {
       const key = getAgentStateKey(store.workspaceName!, store.userEmail!)!;
-      await withAgentRunLease(key, chat.id, () => store.beginChatRun(chat.id, root.id, {
-        page, context: chat.context, references: [], runMode: "default",
-      }));
+      await withAgentRunLease(key, chat.id, async () => {
+        const runId = await store.beginChatRun(chat.id, root.id, {
+          page, context: chat.context, references: [], runMode: "default",
+        });
+        if (runId) await store.reserveChatRunAttempt(chat.id, runId);
+      });
     }
     store.setDraft(chat.id, { text: "Keep my next question" });
     await store.flushRunPersistence();
     return { store, chat };
   };
+
+  const seedPausedRun = async () => {
+    const { store, chat } = await seedUnrecoverableRun("incomplete");
+    await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, () => store.pauseChatRun(chat.id, { ...store.getChat(chat.id)!.runCheckpoint!, startupComplete: true, suspension: "token-limit" }));
+    return { store, chat };
+  };
+
+  describe("confirmed storage retry", () => {
+    const pressure = { reason: "quota" as const, phase: "saving" as const, bytes: 1024, limitBytes: 3 * 1024 * 1024 };
+    const confirmFreeSpace = async () => {
+      await act(async () => screen.getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+      const dialog = await screen.findByRole("dialog", { name: "agent.storage.free-title" });
+      await act(async () => within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+    };
+
+    const captureStorageRetry = () => {
+      let retry: (() => Promise<boolean>) | undefined;
+      const original = storageStatusModule.AgentStorageStatus;
+      vi.spyOn(storageStatusModule, "AgentStorageStatus").mockImplementation((props) => {
+        retry = props.onFreeSpaceAndRetry;
+        return original(props);
+      });
+      return () => retry!();
+    };
+
+    const seedZeroProgressStartup = async () => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders" });
+      const root = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders", metadata: { resourceReferences: [{ kind: "project", name: "projects/orders", project: "projects/orders", label: "Orders" }] } })!;
+      await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, () => store.beginChatRun(chat.id, root.id, { page: { path: "/demo", title: "Demo" }, references: [{ kind: "project", name: "projects/orders", project: "projects/orders", label: "Orders" }], runMode: "read-only" }));
+      store.setChatStatus(chat.id, "error", { lastError: "Storage admission failed" });
+      await store.flushRunPersistence();
+      return { store, chat };
+    };
+
+    test("retries a repaired zero-progress startup despite stale local continuation failure", async () => {
+      const { store, chat } = await seedZeroProgressStartup();
+      const checkpoint = store.getChat(chat.id)!.runCheckpoint!;
+      useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runCheckpoint: { ...checkpoint, rootUserMessageId: "missing-root" } } : candidate) }));
+      const retryActionRef = createRef<(() => void) | null>();
+      const view = renderIntoContainer(<><AgentChat onRetry={() => retryActionRef.current?.()} /><AgentInput retryActionRef={retryActionRef} /></>);
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: "projects/orders" }) });
+      view.render();
+      try {
+        await act(async () => retryActionRef.current?.());
+        expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
+        act(() => useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runCheckpoint: checkpoint } : candidate) })));
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+        expect(view.container.querySelector("[data-agent-error-summary]")).not.toBeNull();
+        expect(view.container.querySelector("[data-agent-retry]")).not.toBeNull();
+        await act(async () => retryActionRef.current?.());
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+      } finally { view.unmount(); }
+    });
+
+    test("reports failed recovery when storage fills again before startup preflight admission", async () => {
+      const { store, chat } = await seedZeroProgressStartup();
+      const retry = captureStorageRetry();
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(async () => {
+        localStorage.setItem("bb-agent-state-v3.racing-scope", "x".repeat(1_050_000));
+        useAgentStore.setState({ storagePressure: undefined });
+        return true;
+      }) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        let recovered: boolean | undefined;
+        await act(async () => { recovered = await retry(); });
+        expect(recovered).toBe(false);
+        expect(useAgentStore.getState().storagePressure).toMatchObject({ reason: "budget", phase: "admission" });
+        expect(store.getChat(chat.id)?.status).toBe("error");
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+        localStorage.removeItem("bb-agent-state-v3.racing-scope");
+        useAgentStore.setState({ freeAgentStorage });
+      }
+    });
+
+    test("does not report failed startup persistence into a colliding chat after account and workspace change", async () => {
+      const { store, chat } = await seedZeroProgressStartup();
+      const retry = captureStorageRetry();
+      const freeAgentStorage = store.freeAgentStorage;
+      const retryChatRunStartup = store.retryChatRunStartup;
+      let release!: (saved: boolean) => void;
+      const startup = vi.fn(() => new Promise<boolean>((resolve) => { release = resolve; }));
+      useAgentStore.setState({ storagePressure: pressure, retryChatRunStartup: startup, freeAgentStorage: vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined }); return true; }) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        let recovery: Promise<boolean> | undefined;
+        await act(async () => { recovery = retry(); await vi.waitFor(() => expect(startup).toHaveBeenCalledOnce()); });
+        act(() => useAgentStore.setState((state) => ({ workspaceName: "workspaces/other", userEmail: "other@example.com", chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runId: "other-run", runCheckpoint: undefined, runBudget: undefined, lastError: "Other account request failed" } : candidate) })));
+        const other = store.getChat(chat.id);
+        await act(async () => { release(false); await recovery; });
+        expect(store.getChat(chat.id)).toEqual(other);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage, retryChatRunStartup }); }
+    });
+
+    test("restarts a persisted zero-progress startup after admission recovers using its original reference", async () => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const resource = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+      const page = { path: "/demo", title: "Demo" };
+      const chat = store.createChat({ context: resource.name, page });
+      store.setDraft(chat.id, { text: "Keep my next request" });
+      const freeAgentStorage = store.freeAgentStorage;
+      const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+      const admission = vi.fn(async () => false);
+      useAgentStore.setState({ checkAgentStorageAdmission: admission, freeAgentStorage: vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined, checkAgentStorageAdmission }); return true; }) });
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: resource.name }) });
+      store.queueUserMessage({ chatId: chat.id, text: "Inspect orders", page, resourceReferences: [resource] });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+        expect(admission).toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        const root = store.getMessages(chat.id).find((message) => message.role === "user")!;
+        const runId = store.getChat(chat.id)!.runId;
+        const budget = store.getChat(chat.id)!.runBudget;
+        expect(store.getChat(chat.id)?.runCheckpoint?.startupComplete).toBe(false);
+        expect(getAgentRunStartup(store.getChat(chat.id), store.getMessages(chat.id))).toBeDefined();
+        await store.flushRunPersistence();
+        act(() => useAgentStore.setState({ storagePressure: pressure }));
+        await confirmFreeSpace();
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(mocks.runAgentLoop.mock.calls[0][5]).toMatchObject({ runId });
+        expect(mocks.executeTool).toHaveBeenCalledWith("get_project_overview", {}, expect.any(String));
+        expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ referencedProject: resource.name }));
+        expect(store.getMessages(chat.id).filter((message) => message.role === "user").map((message) => message.id)).toEqual([root.id]);
+        expect(store.getChat(chat.id)?.runBudget).toEqual(budget);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next request");
+        expect(store.getChat(chat.id)?.lastError).toBeNull();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage, checkAgentStorageAdmission }); }
+    });
+
+    test.each(["corrupt", "provider-progress"] as const)("does not report a successful retry for %s recovery state", async (kind) => {
+      const { store, chat } = await seedUnrecoverableRun("incomplete");
+      store.setChatStatus(chat.id, "error", { lastError: "AgentStorageFullError: Agent storage is full." });
+      useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, ...(kind === "corrupt" ? { runCheckpoint: { ...candidate.runCheckpoint!, rootUserMessageId: "missing-root" } } : { runBudget: { ...candidate.runBudget!, providerAttemptCount: 1 } }) } : candidate) }));
+      await store.flushRunPersistence();
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined }); return true; }) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await confirmFreeSpace();
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(store.getChat(chat.id)?.lastError).toContain("AgentStorageFullError");
+        expect(screen.queryByRole("button", { name: "agent.token-budget.end-run" })).toBeNull();
+        const notice = screen.getByRole("alert");
+        expect(notice).not.toHaveClass("items-center");
+        const details = within(notice).getByRole("button", { name: "error-page.error-details" });
+        const header = details.parentElement;
+        expect(header).toHaveTextContent("agent.token-budget.continuation-unavailable");
+        await act(async () => details.click());
+        expect(notice).toHaveTextContent("AgentStorageFullError");
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+
+    test("reuses a blocked user's message without duplicating it or clearing the draft", async () => {
+      vi.useFakeTimers();
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const root = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setDraft(chat.id, { text: "Keep my next request" });
+      store.setChatStatus(chat.id, "error", { lastError: "Browser storage is full" });
+      const freeAgentStorage = store.freeAgentStorage;
+      const free = vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined }); return true; });
+      useAgentStore.setState({ freeAgentStorage: free, storagePressure: pressure });
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await act(async () => { await vi.advanceTimersByTimeAsync(250); });
+        expect(useAgentStore.getState().storagePressure).toEqual(pressure);
+        vi.useRealTimers();
+        await confirmFreeSpace();
+        expect(free).toHaveBeenCalledExactlyOnceWith();
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(store.getMessages(chat.id).filter((message) => message.role === "user")).toEqual([root]);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next request");
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+
+    test("resumes a valid saved checkpoint rather than starting another request", async () => {
+      const { store, chat } = await seedUnrecoverableRun("incomplete");
+      await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, async () => {
+        await store.saveChatRunCheckpoint(chat.id, { ...store.getChat(chat.id)!.runCheckpoint!, startupComplete: true });
+        store.interruptChatRun(chat.id);
+      });
+      const runId = store.getChat(chat.id)!.runId;
+      const history = store.getMessages(chat.id);
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined }); return true; }) });
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await confirmFreeSpace();
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(mocks.runAgentLoop.mock.calls[0][5]).toMatchObject({ runId });
+        expect(store.getMessages(chat.id).map(({ id, content }) => ({ id, content }))).toEqual(history.map(({ id, content }) => ({ id, content })));
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+
+    test("restores pending API confirmation without approving or running it", async () => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Update the project" });
+      const ask: AgentPendingAsk = { kind: "confirm", toolCallId: "confirm-write", prompt: "Update the project?", apiPermission: { actionId: "saved-write", operationId: "bytebase.v1.ProjectService.UpdateProject" } };
+      store.awaitUser(chat.id, ask);
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(async () => { useAgentStore.setState({ storagePressure: undefined }); return true; }) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await confirmFreeSpace();
+        expect(store.getPendingAsk(chat.id)).toEqual(ask);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+
+    test("keeps the request blocked when freeing storage fails", async () => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+      store.setChatStatus(chat.id, "error");
+      const history = store.getMessages(chat.id);
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(async () => false) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await confirmFreeSpace();
+        expect(screen.getByRole("dialog", { name: "agent.storage.free-title" })).toHaveTextContent("agent.storage.free-failed");
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+
+    test.each(["controller", "queued", "in-flight"] as const)("does not start work while %s owns the request", async (owner) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+      store.setChatStatus(chat.id, "error");
+      const queued = { id: "queued-recovery", chatId: chat.id, text: "Next request", page: { path: "/demo", title: "Demo" } };
+      const freeAgentStorage = store.freeAgentStorage;
+      const takeQueuedUserMessage = store.takeQueuedUserMessage;
+      const view = renderChatWithInput();
+      view.render();
+      act(() => useAgentStore.setState({
+        freeAgentStorage: vi.fn(async () => true),
+        takeQueuedUserMessage: vi.fn(() => null),
+        ...(owner === "controller" ? { abortControllersByChatId: { [chat.id]: new AbortController() } } : {}),
+        ...(owner === "queued" ? { queuedUserMessagesByChatId: { [chat.id]: queued } } : {}),
+        ...(owner === "in-flight" ? { queuedUserMessageInFlightByChatId: { [chat.id]: true } } : {}),
+      }));
+      act(() => useAgentStore.setState({ storagePressure: pressure }));
+      try {
+        await act(async () => screen.getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+        const dialog = screen.getByRole("dialog", { name: "agent.storage.free-title" });
+        expect(within(dialog).queryByRole("checkbox")).toBeNull();
+        await act(async () => within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" }).click());
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage, takeQueuedUserMessage }); }
+    });
+
+    test.each(["identity", "selection"] as const)("ignores successful async recovery after %s changes", async (change) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+      store.setChatStatus(chat.id, "error");
+      const next = store.createChat({ select: false });
+      let finish!: (saved: boolean) => void;
+      const freeAgentStorage = store.freeAgentStorage;
+      useAgentStore.setState({ storagePressure: pressure, freeAgentStorage: vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; })) });
+      const view = renderChatWithInput();
+      view.render();
+      try {
+        await confirmFreeSpace();
+        act(() => { if (change === "identity") useAgentStore.setState({ userEmail: "other@example.com" }); else store.setCurrentChat(next.id); });
+        await act(async () => { finish(true); });
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(screen.queryByRole("dialog", { name: "agent.storage.free-title" })).toBeNull();
+      } finally { view.unmount(); useAgentStore.setState({ freeAgentStorage }); }
+    });
+  });
+
+  describe("combined current feedback", () => {
+    const rawError = "Connection failed while saving the returned operation";
+    const pressure = { reason: "quota" as const, phase: "saving" as const, bytes: 1024, limitBytes: 3 * 1024 * 1024 };
+    const seedFeedbackRun = (paused = false) => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders" });
+      const root = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setDraft(chat.id, { text: "Keep my next question" });
+      useAgentStore.setState((state) => ({
+        chats: state.chats.map((candidate): AgentChatRecord => candidate.id === chat.id ? {
+          ...candidate,
+          status: paused ? "paused" : "error",
+          runId: "feedback-run",
+          lastError: rawError,
+          runBudget: { version: 1, runId: "feedback-run", limit: 60_000, totalTokensUsed: paused ? 60_000 : 100, hasUnreportedUsage: false, providerAttemptCount: 1, revision: 1 },
+          runCheckpoint: { version: 1, runId: "feedback-run", suspension: paused ? "token-limit" : "interrupted", rootUserMessageId: root.id, throughMessageId: root.id, bindings: { page: { path: "/demo", title: "Demo" }, references: [], runMode: "default" }, maskingSections: [], phase: "working", startupComplete: true },
+        } : candidate),
+      }));
+      return { store, chat };
+    };
+    const renderFeedback = () => {
+      const retryActionRef = createRef<(() => void) | null>();
+      return renderIntoContainer(<><AgentChat onRetry={() => retryActionRef.current?.()} /><AgentInput retryActionRef={retryActionRef} /></>);
+    };
+    const expectOneCurrentFeedback = (container: HTMLElement, text: string) => {
+      const selector = '[role="alert"], [data-agent-storage-status], [data-agent-token-budget]';
+      const surfaces = [...container.querySelectorAll(selector)].filter((surface) => !surface.parentElement?.closest(selector));
+      expect(surfaces).toHaveLength(1);
+      expect(surfaces[0]?.textContent).toContain(text);
+    };
+    const expectNoExecution = () => {
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.aiChat).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+      expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+    };
+
+    test.each([
+      { name: "storage and an ordinary error", paused: false, storage: true, unavailable: false, configuration: false, continuation: false, title: "agent.storage.full" },
+      { name: "storage and a token pause", paused: true, storage: true, unavailable: false, configuration: false, continuation: false, title: "agent.storage.full" },
+      { name: "unavailable execution, storage, and a token pause", paused: true, storage: true, unavailable: true, configuration: false, continuation: false, title: "agent.token-budget.recovery-unavailable" },
+      { name: "AI configuration and a token pause", paused: true, storage: false, unavailable: false, configuration: true, continuation: false, title: "agent.ai-not-configured.title" },
+      { name: "unrecoverable continuation and an ordinary error", paused: false, storage: false, unavailable: false, configuration: false, continuation: true, title: "agent.token-budget.continuation-unavailable" },
+      { name: "a token pause and an ordinary error", paused: true, storage: false, unavailable: false, configuration: false, continuation: false, title: "agent.token-budget.paused" },
+    ])("selects one current feedback for $name without executing or changing history", ({ paused, storage, unavailable, configuration, continuation, title }) => {
+      const { store, chat } = seedFeedbackRun(paused);
+      const canUseAgentExecution = store.canUseAgentExecution;
+      useAgentStore.setState((state) => ({
+        storagePressure: storage ? pressure : undefined,
+        canUseAgentExecution: unavailable ? () => false : canUseAgentExecution,
+        chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, requiresAIConfiguration: configuration, ...(continuation ? { runCheckpoint: undefined } : {}) } : candidate),
+      }));
+      const history = store.getMessages(chat.id);
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, title);
+        expect(view.container.querySelector("[data-agent-error-summary]")).toBeNull();
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getChat(chat.id)?.lastError).toBe(rawError);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+        expectNoExecution();
+        if (!configuration) {
+          const details = view.container.querySelector<HTMLButtonElement>("[data-agent-error-details]");
+          expect(details).not.toBeNull();
+          expect(view.container.textContent).not.toContain(rawError);
+          act(() => details?.click());
+          expect(view.container.textContent).toContain(rawError);
+        }
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ canUseAgentExecution, storagePressure: undefined });
+      }
+    });
+
+    test("reveals the next current feedback as execution, storage, configuration, and token blockers clear", () => {
+      const { store, chat } = seedFeedbackRun(true);
+      const canUseAgentExecution = store.canUseAgentExecution;
+      useAgentStore.setState((state) => ({ canUseAgentExecution: () => false, storagePressure: pressure, chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, requiresAIConfiguration: true } : candidate) }));
+      const history = store.getMessages(chat.id);
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, "agent.token-budget.recovery-unavailable");
+        act(() => useAgentStore.setState({ canUseAgentExecution }));
+        expectOneCurrentFeedback(view.container, "agent.storage.full");
+        act(() => useAgentStore.setState({ storagePressure: undefined }));
+        expectOneCurrentFeedback(view.container, "agent.ai-not-configured.title");
+        act(() => useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, requiresAIConfiguration: false } : candidate) })));
+        expectOneCurrentFeedback(view.container, "agent.token-budget.paused");
+        act(() => useAgentStore.setState((state) => ({ chats: state.chats.map((candidate): AgentChatRecord => candidate.id === chat.id ? { ...candidate, status: "error", runCheckpoint: { ...candidate.runCheckpoint!, suspension: "interrupted" } } : candidate) })));
+        expectOneCurrentFeedback(view.container, rawError);
+        expect(view.container.querySelector("[data-agent-error-summary]")).not.toBeNull();
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+        expectNoExecution();
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ canUseAgentExecution, storagePressure: undefined });
+      }
+    });
+
+    test("keeps a legacy failed turn without a run identifier as an ordinary retryable error", () => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders" });
+      store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+      store.finishChatRun(chat.id, { status: "error", lastError: rawError });
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, rawError);
+        expect(view.container.querySelector("[data-agent-retry]")).not.toBeNull();
+        expect(screen.queryByRole("button", { name: "agent.token-budget.end-run" })).toBeNull();
+        expect(store.getChat(chat.id)?.lastError).toBe(rawError);
+        expectNoExecution();
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test("keeps token recovery after End run fails without changing a valid paused run", async () => {
+      const { store, chat } = seedFeedbackRun(true);
+      await store.flushRunPersistence();
+      const endPausedRun = store.endPausedRun;
+      const end = vi.fn(async () => false);
+      useAgentStore.setState({ endPausedRun: end });
+      const history = store.getMessages(chat.id);
+      const checkpoint = store.getChat(chat.id)?.runCheckpoint;
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, "agent.token-budget.paused");
+        await act(async () => screen.getByRole("button", { name: "agent.token-budget.end-run" }).click());
+        expect(end).toHaveBeenCalledExactlyOnceWith(chat.id);
+        expectOneCurrentFeedback(view.container, "agent.token-budget.paused");
+        expect(view.container.textContent).toContain("agent.token-budget.action-failed");
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+        const tokenStatus = view.container.querySelector<HTMLElement>("[data-agent-token-budget]");
+        expect(tokenStatus).not.toBeNull();
+        expect(tokenStatus && (within(tokenStatus).queryByRole("button", { name: "agent.token-budget.increase" }) ?? within(tokenStatus).queryByRole("button", { name: "agent.retry-last-chat-turn" }))).toBeEnabled();
+        expect(store.getChat(chat.id)?.runCheckpoint).toEqual(checkpoint);
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+        expectNoExecution();
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ endPausedRun });
+      }
+    });
+
+    test("clears stale local continuation feedback after the same run checkpoint is repaired", async () => {
+      const { store, chat } = seedFeedbackRun();
+      const checkpoint = store.getChat(chat.id)!.runCheckpoint!;
+      useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runCheckpoint: { ...checkpoint, startupComplete: false } } : candidate) }));
+      await store.flushRunPersistence();
+      const retryActionRef = createRef<(() => void) | null>();
+      const history = store.getMessages(chat.id);
+      const view = renderIntoContainer(<><AgentChat onRetry={() => retryActionRef.current?.()} /><AgentInput retryActionRef={retryActionRef} /></>);
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, "agent.token-budget.continuation-unavailable");
+        await act(async () => retryActionRef.current?.());
+        expectOneCurrentFeedback(view.container, "agent.token-budget.continuation-unavailable");
+        act(() => useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runCheckpoint: checkpoint } : candidate) })));
+        expectOneCurrentFeedback(view.container, rawError);
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+        expect(view.container.querySelector("[data-agent-error-summary]")).not.toBeNull();
+        expect(store.getChat(chat.id)?.runId).toBe(checkpoint.runId);
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+        expectNoExecution();
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test("does not reveal token or error feedback after dismissing configuration while AI stays disabled", () => {
+      const { store, chat } = seedFeedbackRun(true);
+      mocks.aiEnabled = false;
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, "agent.ai-not-configured.title");
+        act(() => screen.getByRole("button", { name: "common.dismiss" }).click());
+        expect(view.container.querySelector('[role="alert"], [data-agent-token-budget]')).toBeNull();
+        expect(view.container.querySelector<HTMLButtonElement>("[data-agent-send]")).toBeDisabled();
+        expect(store.getChat(chat.id)?.runCheckpoint?.suspension).toBe("token-limit");
+        expectNoExecution();
+      } finally {
+        view.unmount();
+      }
+    });
+
+    test.each([false, true])("does not offer local recovery for a remotely owned paused=%s run", async (paused) => {
+      const { store, chat } = seedFeedbackRun(paused);
+      await store.flushRunPersistence();
+      enableAsynchronousRunRecovery(() => false);
+      useAgentStore.setState({ remoteBusyChatIds: { [chat.id]: true } });
+      const view = renderFeedback();
+      try {
+        view.render();
+        expect(view.container.querySelector('[role="alert"], [data-agent-token-budget]')).toBeNull();
+        expect(view.container.querySelector("[data-agent-retry]")).toBeNull();
+        expect(store.getChat(chat.id)?.lastError).toBe(rawError);
+        expectNoExecution();
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ remoteBusyChatIds: {} });
+      }
+    });
+
+    test("keeps historical interruptions while suppressing the current interrupted turn beneath storage feedback", () => {
+      const { store, chat } = seedFeedbackRun();
+      store.interruptChatRun(chat.id, undefined, "user");
+      store.addMessage({ chatId: chat.id, role: "user", content: "Inspect the next database" });
+      store.interruptChatRun(chat.id, undefined, "unexpected");
+      useAgentStore.setState({ storagePressure: pressure });
+      const history = store.getMessages(chat.id);
+      const view = renderFeedback();
+      try {
+        view.render();
+        expectOneCurrentFeedback(view.container, "agent.storage.full");
+        const interruptions = view.container.querySelectorAll("[data-agent-interruption-status]");
+        expect(interruptions).toHaveLength(1);
+        expect(interruptions[0]?.textContent).toContain("agent.request-stopped-by-user");
+        expect(view.container.textContent).not.toContain("agent.interrupted-retry-hint");
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expectNoExecution();
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ storagePressure: undefined });
+      }
+    });
+  });
 
   test.each([true, false])("checks storage at the managed=%s model and tool boundary before more work", async (managed) => {
     if (managed) enableRunRecovery();
@@ -741,16 +1338,18 @@ describe("AgentInput", () => {
     }
   });
 
-  test("can end an unrecoverable run below its token limit without replaying work", async () => {
+  test.each([0, 41_266])("keeps a failed continuation using %s tokens without offering End run or replaying work", async (totalTokensUsed) => {
     const { store, chat } = await seedUnrecoverableRun("incomplete");
     const runId = store.getChat(chat.id)!.runId!;
-    await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, async () => {
-      await store.reserveChatRunAttempt(chat.id, runId);
-      await store.recordChatModelAttempt(chat.id, {
-        runId, attemptId: `${runId}:1`, ordinal: 1, outcome: "response",
-        usage: { purpose: "agent", toolNames: ["ask_masking_exemption_scope"], totalTokens: 41_266 },
+    if (totalTokensUsed) {
+      await withAgentRunLease(getAgentStateKey(store.workspaceName!, store.userEmail!)!, chat.id, async () => {
+        await store.reserveChatRunAttempt(chat.id, runId);
+        await store.recordChatModelAttempt(chat.id, {
+          runId, attemptId: `${runId}:1`, ordinal: 1, outcome: "response",
+          usage: { purpose: "agent", toolNames: ["ask_masking_exemption_scope"], totalTokens: totalTokensUsed },
+        });
       });
-    });
+    }
     store.setChatStatus(chat.id, "error", { lastError: "Couldn't update this run. Try again." });
     const history = store.getMessages(chat.id);
     const budget = store.getChat(chat.id)?.runBudget;
@@ -758,19 +1357,167 @@ describe("AgentInput", () => {
     const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
     view.render();
     try {
-      await act(async () => { retryActionRef.current?.(); });
+      expect(screen.queryByRole("button", { name: "agent.token-budget.end-run" })).toBeNull();
       expect(view.container.textContent).toContain("agent.token-budget.continuation-unavailable");
-      await act(async () => { screen.getByRole("button", { name: "agent.token-budget.end-run" }).click(); });
-      expect(store.getChat(chat.id)).toMatchObject({ status: "idle", runId: null, totalTokensUsed: 41_266, runBudget: budget });
-      expect(store.getChat(chat.id)?.runCheckpoint).toBeUndefined();
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(store.getChat(chat.id)).toMatchObject({ status: "error", runId, totalTokensUsed, runBudget: budget });
+      expect(store.getChat(chat.id)?.runCheckpoint).toBeDefined();
       expect(store.getMessages(chat.id)).toEqual(history);
       expect(store.getDraft(chat.id).text).toBe("Keep my next question");
-      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
       expect(view.container.querySelector<HTMLButtonElement>("[data-agent-send]")).toBeEnabled();
       expect(mocks.runAgentLoop).not.toHaveBeenCalled();
       expect(mocks.executeTool).not.toHaveBeenCalled();
     } finally {
       view.unmount();
+    }
+  });
+
+  test("keeps network failures in the message error without storage or token notices", async () => {
+    enableRunRecovery();
+    const { runAgentLoop } = await vi.importActual<typeof import("../logic/agentLoop")>("../logic/agentLoop");
+    mocks.runAgentLoop.mockImplementation(runAgentLoop);
+    mocks.aiChat.mockRejectedValue(new TypeError("Failed to fetch"));
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect orders", page: { path: "/demo", title: "Demo" } });
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error"), { timeout: 5000 }); });
+      expect(store.getChat(chat.id)?.lastError).toBe("Failed to fetch");
+      expect(useAgentStore.getState().storagePressure).toBeUndefined();
+      expect(store.getChat(chat.id)?.modelAttempts).toHaveLength(3);
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(view.container.querySelector("[data-agent-storage-status]")).toBeNull();
+      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test("blocks work on the real Agent storage budget without a token notice", async () => {
+    enableRunRecovery();
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    store.setDraft(chat.id, { text: "Keep my next question" });
+    await store.flushRunPersistence();
+    localStorage.setItem("bb-agent-state-v3.foreign-scope", "x".repeat(AGENT_STORAGE_LIMIT_BYTES / 2));
+    store.queueUserMessage({ chatId: chat.id, text: "Inspect orders", page: { path: "/demo", title: "Demo" } });
+    const view = renderChatWithInput();
+    view.render();
+    try {
+      await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("error")); });
+      expect(store.getRunPersistenceError()).toBeInstanceOf(AgentStorageFullError);
+      expect(store.getChat(chat.id)?.lastError).toContain("AgentStorageFullError: Agent storage is full.");
+      expect(useAgentStore.getState().storagePressure?.reason).toBe("budget");
+      expect(view.container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.aiChat).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      localStorage.removeItem("bb-agent-state-v3.foreign-scope");
+      await store.flushRunPersistence();
+    }
+  });
+
+  test("offers End run only after storage recovers and restores storage feedback when ending cannot persist", async () => {
+    const { store, chat } = await seedPausedRun();
+    localStorage.setItem("bb-agent-state-v3.foreign-scope", "x".repeat(AGENT_STORAGE_LIMIT_BYTES / 2));
+    store.setChatStatus(chat.id, "error", { lastError: "Agent storage is full." });
+    const history = store.getMessages(chat.id);
+    expect(await store.flushRunPersistence()).toBe(false);
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderChatWithInput({ retryActionRef });
+    view.render();
+    let write: ReturnType<typeof vi.spyOn> | undefined;
+    try {
+      await act(async () => { retryActionRef.current?.(); });
+      expect(screen.queryByRole("button", { name: "agent.token-budget.end-run" })).toBeNull();
+      expect(view.container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      localStorage.removeItem("bb-agent-state-v3.foreign-scope");
+      await act(async () => { await store.flushRunPersistence(); });
+      expect(view.container.querySelector("[data-agent-storage-status]")).toBeNull();
+      expect(screen.getByRole("button", { name: "agent.token-budget.end-run" })).toBeEnabled();
+      write = vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+        throw new AgentStorageFullError("budget", AGENT_STORAGE_LIMIT_BYTES + 1);
+      });
+      await act(async () => { screen.getByRole("button", { name: "agent.token-budget.end-run" }).click(); });
+      expect(view.container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      write?.mockRestore();
+      localStorage.removeItem("bb-agent-state-v3.foreign-scope");
+      await store.flushRunPersistence();
+    }
+  });
+
+  test.each(["identity", "selection", "run", "remote"] as const)("does not end a stale run when %s changes before acquiring its lease", async (changed) => {
+    const { store, chat } = await seedPausedRun();
+    store.setChatStatus(chat.id, "error", { lastError: "Connection lost" });
+    const other = store.createChat();
+    store.setCurrentChat(chat.id);
+    await store.flushRunPersistence();
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    const endPausedRun = vi.fn(store.endPausedRun);
+    useAgentStore.setState({ endPausedRun });
+    try {
+      await act(async () => { retryActionRef.current?.(); });
+      enableAsynchronousRunRecovery();
+      await act(async () => {
+        screen.getByRole("button", { name: "agent.token-budget.end-run" }).click();
+        if (changed === "identity") useAgentStore.setState({ userEmail: "other@example.com" });
+        else if (changed === "selection") store.setCurrentChat(other.id);
+        else if (changed === "remote") useAgentStore.setState({ remoteBusyChatIds: { [chat.id]: true } });
+        else useAgentStore.setState((state) => ({ chats: state.chats.map((candidate) => candidate.id === chat.id ? { ...candidate, runId: "new-run" } : candidate) }));
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+      expect(endPausedRun).not.toHaveBeenCalled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ endPausedRun: store.endPausedRun });
+    }
+  });
+
+  test("disables duplicate End run actions and keeps failed-action feedback", async () => {
+    const { store, chat } = await seedPausedRun();
+    store.setChatStatus(chat.id, "error", { lastError: "Connection lost" });
+    const retryActionRef = createRef<(() => void) | null>();
+    const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} />);
+    view.render();
+    let release!: (saved: boolean) => void;
+    const endPausedRun = vi.fn(() => new Promise<boolean>((resolve) => { release = resolve; }));
+    useAgentStore.setState({ endPausedRun });
+    const history = store.getMessages(chat.id);
+    try {
+      await act(async () => { retryActionRef.current?.(); });
+      const end = screen.getByRole("button", { name: "agent.token-budget.end-run" });
+      await act(async () => { end.click(); end.click(); });
+      expect(end).toBeDisabled();
+      expect(endPausedRun).toHaveBeenCalledOnce();
+      await act(async () => { release(false); });
+      expect(end).toBeEnabled();
+      expect(view.container.textContent).toContain("agent.token-budget.action-failed");
+      expect(store.getMessages(chat.id)).toEqual(history);
+      expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+      useAgentStore.setState({ endPausedRun: store.endPausedRun });
     }
   });
 
@@ -854,6 +1601,39 @@ describe("AgentInput", () => {
     }
   });
 
+  test("keeps incomplete usage at 24860 of 100000 tokens in details instead of a banner", async () => {
+    enableRunRecovery();
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat();
+    store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" });
+    useAgentStore.setState((state) => ({
+      chats: state.chats.map((candidate): AgentChatRecord => candidate.id === chat.id ? {
+        ...candidate, status: "running", runId: "partial-run", totalTokensUsed: 24_860, hasUnreportedUsage: true,
+        legacyUsage: { totalTokensUsed: 0, hasUnreportedUsage: false },
+        runBudget: { version: 1, runId: "partial-run", limit: 100_000, totalTokensUsed: 24_860, hasUnreportedUsage: true, providerAttemptCount: 2, revision: 2 },
+        modelAttempts: [
+          { attemptId: "partial-run:1", runId: "partial-run", ordinal: 1, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 24_860 } },
+          { attemptId: "partial-run:2", runId: "partial-run", ordinal: 2, outcome: "error" },
+        ],
+      } : candidate),
+      abortControllersByChatId: { [chat.id]: new AbortController() },
+    }));
+    const before = store.getChat(chat.id);
+    const view = renderIntoContainer(<AgentInput />);
+    view.render();
+    try {
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(view.container.textContent).not.toContain("agent.token-budget.partial");
+      await act(async () => screen.getByRole("button", { name: "agent.chat-total-tokens" }).click());
+      const details = document.querySelector("[data-agent-token-usage]");
+      expect(details).toHaveTextContent("agent.token-budget.partial");
+      expect(details).toHaveTextContent("agent.token-usage.at-least");
+      expect(details).toHaveTextContent("100,000");
+      expect(store.getChat(chat.id)).toEqual(before);
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+    } finally { view.unmount(); }
+  });
+
   test("does not report missing usage while its locally owned provider attempt is pending", async () => {
     enableRunRecovery();
     let finish: (() => void) | undefined;
@@ -886,7 +1666,7 @@ describe("AgentInput", () => {
     }
   });
 
-  test("disables budget recovery controls when durable execution becomes unavailable", async () => {
+  test("replaces budget recovery controls when durable execution becomes unavailable", async () => {
     enableRunRecovery();
     mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, _callbacks, _signal, options) => {
       const reservation = await options.reserveProviderAttempt();
@@ -909,11 +1689,9 @@ describe("AgentInput", () => {
       vi.stubGlobal("navigator", { ...navigator, locks: undefined });
       act(() => store.setDraft(chat.id, { text: "Keep this draft." }));
       expect(view.container.textContent).toContain("agent.token-budget.recovery-unavailable");
-      for (const label of ["increase", "end-run"]) {
-        const button = [...view.container.querySelectorAll("button")].find(candidate => candidate.textContent === `agent.token-budget.${label}`);
-        expect(button).toBeDefined();
-        expect(button?.disabled).toBe(true);
-      }
+      expect(view.container.querySelector("[data-agent-token-budget]")).toBeNull();
+      expect(screen.queryByRole("button", { name: "agent.token-budget.increase" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "agent.token-budget.end-run" })).toBeNull();
       expect(view.container.textContent).not.toContain("agent.token-budget.resume");
       expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
     } finally {
@@ -1859,7 +2637,7 @@ describe("AgentInput", () => {
       expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
       expect(store.getChat(chat.id)?.lastError).toContain("QuotaExceededError: Browser storage is full");
       write?.mockRestore();
-      await act(async () => screen.getByRole("button", { name: "agent.storage.retry" }).click());
+      await act(async () => { await store.flushRunPersistence(); });
       expect(useAgentStore.getState().storagePressure).toBeUndefined();
       expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
       expect(mocks.executeTool).not.toHaveBeenCalled();
@@ -2335,6 +3113,56 @@ describe("AgentInput", () => {
     } finally {
       view.unmount();
     }
+  });
+
+  test.each(["typed", "mention"] as const)("collects a project %s immediately after selecting Choose a project", async (inputKind) => {
+    mocks.currentContext = "workspaces/demo";
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: "projects/orders" }) });
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "workspaces/demo" });
+    store.setDraft(chat.id, { text: "Unsent next question" });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Help me mask email" });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "scope-overview", name: "get_masking_overview", arguments: "{}" }] });
+    store.addMessage({ chatId: chat.id, role: "tool", toolCallId: "scope-overview", content: "{}" });
+    store.addMessage({ chatId: chat.id, role: "assistant", toolCalls: [{ id: "project-scope", name: "ask_masking_rule_scope", arguments: "{}" }] });
+    store.awaitUser(chat.id, { toolCallId: "project-scope", kind: "choose", prompt: "Which databases?", options: [
+      { label: "All workspace databases", value: "workspace" },
+      { label: "Choose a project", value: "choose-project", kind: "custom-input" },
+    ] });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      expect(view.container.querySelector("[data-agent-composer]")).toBeNull();
+      act(() => screen.getByRole("radio", { name: "Choose a project" }).click());
+      const textarea = screen.getByRole<HTMLTextAreaElement>("textbox", { name: "agent.custom-input-label" });
+      expect(textarea).toHaveFocus();
+      const reply = view.container.querySelector<HTMLButtonElement>("[data-agent-send]")!;
+      expect(reply).toBeDisabled();
+      await act(async () => {
+        setTextareaValue(textarea, inputKind === "typed" ? "Order service" : "@");
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      if (inputKind === "mention") {
+        await act(async () => document.querySelector<HTMLButtonElement>('[data-agent-resource-category="project"]')?.click());
+        await vi.waitFor(() => expect(document.querySelector('[data-agent-resource-project="projects/orders"]')).not.toBeNull());
+        await act(async () => document.querySelector<HTMLButtonElement>('[data-agent-resource-project="projects/orders"]')?.click());
+        expect(textarea.value).toBe("@Order service ");
+      }
+      expect(reply).toBeEnabled();
+      expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      await act(async () => { reply.click(); await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce()); });
+      const response = store.getMessages(chat.id).find((message) => message.toolCallId === "project-scope");
+      expect(JSON.parse(response?.content ?? "{}")).toEqual({ kind: "choose", value: "choose-project", answer: `Choose a project: ${inputKind === "typed" ? "Order service" : "@Order service"}`, input: inputKind === "typed" ? "Order service" : "@Order service" });
+      expect(response?.metadata?.resourceReference).toEqual(inputKind === "mention" ? { kind: "project", name: "projects/orders", project: "projects/orders", label: "Order service" } : undefined);
+      expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), inputKind === "mention"
+        ? expect.objectContaining({ referencedProject: "projects/orders" })
+        : expect.not.objectContaining({ referencedProject: expect.any(String) }));
+      expect(mocks.executeTool).toHaveBeenCalledWith("get_masking_overview", {}, expect.any(String));
+      expect(store.getChat(chat.id)?.context).toBe("workspaces/demo");
+      expect(store.getDraft(chat.id)).toEqual({ text: "Unsent next question" });
+    } finally { view.unmount(); }
   });
 
   test.each(["project", "workspace-mention", "workspace-scope"] as const)("binds a database mention in a custom choice reply (%s)", async (scope) => {
@@ -7826,6 +8654,249 @@ describe("AgentInput", () => {
     expect(textarea.selectionStart).toBe(12);
     expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ referencedProject: "projects/orders", runMode: "read-only" }));
     view.unmount();
+  });
+
+  describe("Resend admission", () => {
+    test.each(["idle", "error"] as const)("rechecks admission for an %s chat despite prior storage pressure", async (status) => {
+      enableRunRecovery();
+      mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, _callbacks, _signal, options) => {
+        const reservation = await options.reserveProviderAttempt();
+        expect(reservation.kind).toBe("allowed");
+        await options.onAttemptSettled({ attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 0 } });
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const original = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setChatStatus(chat.id, status, { lastError: status === "error" ? "Previous request failed" : null });
+      store.setDraft(chat.id, { text: "Keep my next question" });
+      await store.flushRunPersistence();
+      const checkAgentStorageAdmission = store.checkAgentStorageAdmission;
+      const admission = vi.fn(checkAgentStorageAdmission);
+      useAgentStore.setState({ checkAgentStorageAdmission: admission, storagePressure: { reason: "quota", phase: "saving", bytes: 1024, limitBytes: AGENT_STORAGE_LIMIT_BYTES } });
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(admission).toHaveBeenCalled());
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        expect(useAgentStore.getState().storagePressure).toBeUndefined();
+        expect(store.getMessages(chat.id).filter((message) => message.role === "user")).toHaveLength(2);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ checkAgentStorageAdmission, storagePressure: undefined });
+      }
+    });
+
+    test("reports a current storage admission failure on Resend and runs after storage recovers", async () => {
+      enableRunRecovery();
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const original = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setDraft(chat.id, { text: "Keep my next question" });
+      await store.flushRunPersistence();
+      localStorage.setItem("bb-agent-state-v3.foreign-scope", "x".repeat(AGENT_STORAGE_LIMIT_BYTES / 2));
+      expect(await store.checkAgentStorageAdmission()).toBe(false);
+      const beginChatRun = store.beginChatRun;
+      const begin = vi.fn(beginChatRun);
+      useAgentStore.setState({ beginChatRun: begin });
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderChatWithInput({ resendActionRef });
+      try {
+        view.render();
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(begin).toHaveBeenCalled());
+        });
+        expect(useAgentStore.getState().storagePressure?.reason).toBe("budget");
+        expect(store.getChat(chat.id)?.status).toBe("error");
+        expect(store.getChat(chat.id)?.lastError).toBeTruthy();
+        expect(view.container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.aiChat).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+        localStorage.removeItem("bb-agent-state-v3.foreign-scope");
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        expect(useAgentStore.getState().storagePressure).toBeUndefined();
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      } finally {
+        view.unmount();
+        localStorage.removeItem("bb-agent-state-v3.foreign-scope");
+        useAgentStore.setState({ beginChatRun, storagePressure: undefined });
+        await store.flushRunPersistence();
+      }
+    });
+
+    const prepareManagedResend = async (status: "error" | "paused") => {
+      enableRunRecovery();
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const project = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+      const original = store.addMessage({ chatId: chat.id, role: "user", content: "@Orders Inspect orders", metadata: { resourceReference: project } })!;
+      const latest = store.addMessage({ chatId: chat.id, role: "user", content: "A later request" })!;
+      const key = getAgentStateKey(store.workspaceName!, store.userEmail!)!;
+      const result = await withAgentRunLease(key, chat.id, async () => {
+        const runId = await store.beginChatRun(chat.id, latest.id, { page: { path: "/demo", title: "Demo" }, context: chat.context, references: [], runMode: "default" });
+        expect(runId).toBeTruthy();
+        await store.saveChatRunCheckpoint(chat.id, { ...store.getChat(chat.id)!.runCheckpoint!, startupComplete: true, suspension: status === "paused" ? "token-limit" : "interrupted" });
+        store.setChatStatus(chat.id, status, { lastError: status === "error" ? "Previous request failed" : null });
+        await store.flushRunPersistence();
+        return runId;
+      });
+      expect(result.acquired).toBe(true);
+      store.setDraft(chat.id, { text: "@Orders Keep my next question", mentions: [{ resource: project, range: { start: 0, end: 7 } }] });
+      await store.flushRunPersistence();
+      return { store, chat, original, project, runId: result.value! };
+    };
+
+    test.each(["error", "paused"] as const)("resends an older message from a managed %s run as a new request", async (status) => {
+      const { store, chat, original, project, runId } = await prepareManagedResend(status);
+      mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: JSON.stringify({ project: project.name }) });
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const endPausedRun = store.endPausedRun;
+      const end = vi.fn(endPausedRun);
+      const beginChatRun = store.beginChatRun;
+      const begin = vi.fn(beginChatRun);
+      useAgentStore.setState({ endPausedRun: end, beginChatRun: begin });
+      const history = store.getMessages(chat.id);
+      const draft = store.getDraft(chat.id);
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        expect(end).toHaveBeenCalledExactlyOnceWith(chat.id);
+        expect(mocks.runAgentLoop.mock.calls[0][5].runId).not.toBe(runId);
+        const messages = store.getMessages(chat.id);
+        expect(messages.slice(0, history.length)).toEqual(history);
+        expect(messages[history.length]).toMatchObject({ role: "user", content: original.content, metadata: { resourceReference: project } });
+        expect(messages[history.length].id).not.toBe(original.id);
+        expect(begin).toHaveBeenCalledOnce();
+        expect(begin.mock.calls[0][1]).toBe(messages[history.length].id);
+        expect(store.getDraft(chat.id)).toEqual(draft);
+        expect(mocks.createToolExecutor).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ referencedProject: project.name }));
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ endPausedRun, beginChatRun });
+      }
+    });
+
+    test("reports a failed durable run ending on Resend without starting model or tool work", async () => {
+      const { store, chat, original } = await prepareManagedResend("paused");
+      const history = store.getMessages(chat.id);
+      const endPausedRun = store.endPausedRun;
+      const end = vi.fn(endPausedRun);
+      useAgentStore.setState({ endPausedRun: end });
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderChatWithInput({ resendActionRef });
+      let write: ReturnType<typeof vi.spyOn> | undefined;
+      try {
+        view.render();
+        write = vi.spyOn(localStorage, "setItem").mockImplementation(() => { throw new DOMException("Browser storage is full", "QuotaExceededError"); });
+        act(() => useAgentStore.setState({ storagePressure: { reason: "quota", phase: "saving", bytes: 1024, limitBytes: AGENT_STORAGE_LIMIT_BYTES } }));
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(end).toHaveBeenCalledOnce());
+        });
+        expect(await end.mock.results[0].value).toBe(false);
+        expect(useAgentStore.getState().storagePressure).toBeDefined();
+        expect(store.getChat(chat.id)?.status).toBe("error");
+        expect(store.getChat(chat.id)?.lastError).toContain("QuotaExceededError");
+        expect(view.container.querySelector("[data-agent-storage-status]")).not.toBeNull();
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.aiChat).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+        expect(mocks.resolvePendingApiCall).not.toHaveBeenCalled();
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(store.getDraft(chat.id).text).toBe("@Orders Keep my next question");
+      } finally {
+        view.unmount();
+        write?.mockRestore();
+        useAgentStore.setState({ endPausedRun, storagePressure: undefined });
+        await store.flushRunPersistence();
+      }
+    });
+
+    test("does not Resend while a local execution controller still owns an idle chat", async () => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const original = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setAbortController(chat.id, new AbortController());
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        await act(async () => resendActionRef.current?.(original.id));
+        expect(store.getMessages(chat.id)).toHaveLength(1);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+        store.setAbortController(chat.id, null);
+      }
+    });
+
+    test("does not Resend a run owned by another tab", async () => {
+      const { store, chat, original } = await prepareManagedResend("error");
+      enableAsynchronousRunRecovery(() => false);
+      useAgentStore.setState({ remoteBusyChatIds: { [chat.id]: true } });
+      const history = store.getMessages(chat.id);
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        await act(async () => resendActionRef.current?.(original.id));
+        expect(store.getMessages(chat.id)).toEqual(history);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+      } finally {
+        view.unmount();
+        useAgentStore.setState({ remoteBusyChatIds: {} });
+      }
+    });
+
+    test("keeps no-run Retry and subsequent Resend free of stale continuation warnings", async () => {
+      enableRunRecovery();
+      mocks.runAgentLoop.mockResolvedValue({ kind: "completed", success: true, totalTokensUsed: 0 });
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat();
+      const original = store.addMessage({ chatId: chat.id, role: "user", content: "Inspect orders" })!;
+      store.setChatStatus(chat.id, "error", { lastError: "Previous request failed" });
+      store.setDraft(chat.id, { text: "Keep my next question" });
+      await store.flushRunPersistence();
+      const retryActionRef = createRef<(() => void) | null>();
+      const resendActionRef = createRef<((messageId: string) => void) | null>();
+      const view = renderIntoContainer(<AgentInput retryActionRef={retryActionRef} resendActionRef={resendActionRef} />);
+      try {
+        view.render();
+        await act(async () => retryActionRef.current?.());
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        await act(async () => {
+          resendActionRef.current?.(original.id);
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2));
+          await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+        });
+        expect(view.container.textContent).not.toContain("agent.token-budget.continuation-unavailable");
+        expect(store.getMessages(chat.id)[0]).toMatchObject({ id: original.id, content: original.content });
+        expect(store.getMessages(chat.id).filter((message) => message.role === "user")).toHaveLength(2);
+        expect(store.getDraft(chat.id).text).toBe("Keep my next question");
+      } finally {
+        view.unmount();
+      }
+    });
   });
 
   test.each(["running", "awaiting_user", "archived", "queued"] as const)("does not retry or resend while %s", async (blocked) => {

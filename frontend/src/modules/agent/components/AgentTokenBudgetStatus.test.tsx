@@ -146,10 +146,34 @@ describe("AgentTokenBudgetStatus", () => {
     expect(container.textContent).toBe("");
   });
 
-  test("keeps a genuine earlier missing-usage warning while the next response is pending", () => {
-    setup({ ...chat, runId: "run-1", modelAttempts: [{ attemptId: "run-1:1", runId: "run-1", ordinal: 1, outcome: "error" }], runBudget: { ...chat.runBudget!, totalTokensUsed: 0, providerAttemptCount: 2 } }, false, { pendingAttemptId: "run-1:2" });
-    expect(screen.getByRole("status")).toHaveTextContent("Some token usage was not reported.");
-    expect(screen.getByRole("region")).toHaveTextContent("At least 0 / 1,000 tokens");
+  test("keeps earlier missing usage below the threshold quiet while the next response is pending", () => {
+    const { container } = setup({ ...chat, runId: "run-1", modelAttempts: [{ attemptId: "run-1:1", runId: "run-1", ordinal: 1, outcome: "error" }], runBudget: { ...chat.runBudget!, totalTokensUsed: 0, providerAttemptCount: 2 } }, false, { pendingAttemptId: "run-1:2" });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test.each(["running", "awaiting_user"] as const)("does not show a partial-usage banner below the warning threshold while %s", (status) => {
+    const { container, onIncreaseLimit, onResume, onEndRun } = setup({ ...chat, status, runBudget: { ...chat.runBudget!, limit: 100_000, totalTokensUsed: 24_860, hasUnreportedUsage: true } });
+    expect(container).toBeEmptyDOMElement();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onEndRun).not.toHaveBeenCalled();
+  });
+
+  test.each(["running", "awaiting_user"] as const)("preserves partial accounting when %s reaches the warning threshold", (status) => {
+    setup({ ...chat, status, runBudget: { ...chat.runBudget!, hasUnreportedUsage: true } });
+    expect(screen.getByRole("status")).toHaveTextContent("Approaching this run's token limit.");
+    expect(screen.getByRole("region")).toHaveTextContent("At least 800 / 1,000 tokens");
+    expect(screen.getByRole("region")).toHaveTextContent("Some token usage was not reported.");
+    expect(screen.getByRole("button", { name: "Increase limit" })).toBeEnabled();
+  });
+
+  test("preserves partial accounting and recovery below the threshold for an actual token pause", () => {
+    setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 100, hasUnreportedUsage: true } });
+    expect(screen.getByRole("status")).toHaveTextContent("Run paused at its token limit.");
+    expect(screen.getByRole("region")).toHaveTextContent("At least 100 / 1,000 tokens");
+    expect(screen.getByRole("region")).toHaveTextContent("Some token usage was not reported.");
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
   });
 
   test("offers only Increase limit and End run at the limit", async () => {
@@ -261,10 +285,11 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onResume).toHaveBeenCalledOnce();
   });
 
-  test.each([1100, 1600, 1999])("offers Retry without another increase at %i tokens after the persisted budget becomes eligible", async (totalTokensUsed) => {
+  test.each([1100, 1600, 1999])("keeps an increased-budget run labeled token-paused and offers Retry at %i tokens", async (totalTokensUsed) => {
     const { onResume, onIncreaseLimit } = setup({ ...chat, status: "paused", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, limit: 2000, totalTokensUsed } });
     expect(onResume).not.toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent("Interrupted");
+    expect(screen.getByRole("status")).toHaveTextContent("Run paused at its token limit.");
+    expect(screen.getByRole("status")).not.toHaveTextContent("Interrupted");
     expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
     expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
@@ -312,10 +337,21 @@ describe("AgentTokenBudgetStatus", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  test("does not present a token increase as recovery from a provider error", () => {
-    setup({ ...chat, status: "error", runBudget: { ...chat.runBudget!, totalTokensUsed: 1100, hasUnreportedUsage: true } });
-    expect(screen.getByRole("status")).toHaveTextContent("Some token usage was not reported.");
-    expect(screen.queryByRole("button")).toBeNull();
+  test.each([0, 100, 800, 1100].flatMap((totalTokensUsed) =>
+    (["response", "error"] as const).map((outcome) => ({ totalTokensUsed, outcome }))
+  ))("leaves provider errors at $totalTokensUsed tokens with unreported $outcome usage to message-level recovery", ({ totalTokensUsed, outcome }) => {
+    const { container, onEndRun, onResume, onIncreaseLimit } = setup({
+      ...chat, runId: "run-1", status: "error", lastError: "Connection lost",
+      runBudget: { ...chat.runBudget!, totalTokensUsed, providerAttemptCount: 2 },
+      modelAttempts: [
+        { attemptId: "run-1:1", runId: "run-1", ordinal: 1, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: totalTokensUsed } },
+        { attemptId: "run-1:2", runId: "run-1", ordinal: 2, outcome },
+      ],
+    }, false, { canResume: false });
+    expect(container).toBeEmptyDOMElement();
+    expect(onEndRun).not.toHaveBeenCalled();
+    expect(onResume).not.toHaveBeenCalled();
+    expect(onIncreaseLimit).not.toHaveBeenCalled();
   });
 
   test("leaves idle managed interrupted work to its message-level Retry", () => {
@@ -328,43 +364,20 @@ describe("AgentTokenBudgetStatus", () => {
   test.each([41266, 80000, 110000].flatMap((totalTokensUsed) => [
     { totalTokensUsed, checkpoint: undefined },
     { totalTokensUsed, checkpoint: { ...checkpoint, suspension: "awaiting-user" as const, startupComplete: false } },
-  ]))("offers only End run for failed managed work at $totalTokensUsed tokens with checkpoint $checkpoint", async ({ totalTokensUsed, checkpoint: runCheckpoint }) => {
-    const { onEndRun, onResume, onIncreaseLimit } = setup({
+  ]))("does not render token recovery for failed managed work at $totalTokensUsed tokens with checkpoint $checkpoint", ({ totalTokensUsed, checkpoint: runCheckpoint }) => {
+    const { container, onEndRun, onResume, onIncreaseLimit } = setup({
       ...chat, runId: "run-1", status: "error", interrupted: true, runCheckpoint,
       runBudget: { ...chat.runBudget!, limit: 100000, totalTokensUsed },
     }, false, { canResume: false });
-    expect(screen.getByRole("status")).toHaveTextContent("Interrupted");
-    expect(screen.getByText(`${totalTokensUsed.toLocaleString("en-US")} / 100,000 tokens`)).toBeVisible();
-    expect(screen.getAllByRole("button")).toHaveLength(1);
-    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
-    expect(onEndRun).toHaveBeenCalledOnce();
+    expect(container).toBeEmptyDOMElement();
+    expect(onEndRun).not.toHaveBeenCalled();
     expect(onResume).not.toHaveBeenCalled();
     expect(onIncreaseLimit).not.toHaveBeenCalled();
   });
 
-  test.each([
-    { runId: undefined },
-    { runId: "another-run" },
-    { archived: true },
-    { interrupted: true, interruptionReason: "user" as const },
-  ])("does not add failed-run controls for inactive or mismatched work %j", (state) => {
-    const { container } = setup({
-      ...chat, runId: "run-1", status: "error",
-      runBudget: { ...chat.runBudget!, totalTokensUsed: 100 }, ...state,
-    });
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  test("hides failed-run recovery for a remote owner", () => {
-    const { container } = setup({ ...chat, runId: "run-1", status: "error" }, false, { remoteBusy: true });
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  test("keeps failed-run End run disabled during persistence and reports its failure", async () => {
+  test("keeps token-pause End run disabled during persistence and reports its failure", async () => {
     const { onEndRun, onResume, onIncreaseLimit } = setup({
-      ...chat, runId: "run-1", status: "error", runBudget: { ...chat.runBudget!, totalTokensUsed: 100 },
+      ...chat, runId: "run-1", status: "error", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100 },
     });
     let fail!: (reason: Error) => void;
     onEndRun.mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { fail = reject; }));
@@ -379,16 +392,16 @@ describe("AgentTokenBudgetStatus", () => {
     expect(onIncreaseLimit).not.toHaveBeenCalled();
   });
 
-  test("hides an open limit editor after failure without hiding End run errors", async () => {
+  test("hides an open limit editor after a provider failure", async () => {
     const managed = { ...chat, runId: "run-1" };
     const { rerender, onEndRun, onResume, onIncreaseLimit } = setup(managed);
     await openIncrease();
     rerender(<AgentTokenBudgetStatus chat={{ ...managed, status: "error" }} onEndRun={onEndRun} onResume={onResume} onIncreaseLimit={onIncreaseLimit} />);
     expect(screen.queryByRole("spinbutton")).toBeNull();
     expect(screen.queryByRole("button", { name: "Increase limit" })).toBeNull();
-    onEndRun.mockRejectedValueOnce(new Error("Run could not be saved"));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "End run" })));
-    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't update this run. Try again.");
+    expect(screen.queryByRole("region")).toBeNull();
+    expect(screen.queryByRole("button", { name: "End run" })).toBeNull();
+    expect(onEndRun).not.toHaveBeenCalled();
     expect(onIncreaseLimit).not.toHaveBeenCalled();
     expect(onResume).not.toHaveBeenCalled();
   });
@@ -427,6 +440,15 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Run paused at its token limit.");
     expect(screen.getByRole("button", { name: "Increase limit" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
+    expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
+  });
+
+  test("preserves the partial-usage qualifier for an actual token pause after an error", () => {
+    setup({ ...chat, runId: "run-1", status: "error", runCheckpoint: checkpoint, runBudget: { ...chat.runBudget!, totalTokensUsed: 1100, hasUnreportedUsage: true } });
+    expect(screen.getByRole("status")).toHaveTextContent("Run paused at its token limit.");
+    expect(screen.getByRole("region")).toHaveTextContent("At least 1,100 / 1,000 tokens");
+    expect(screen.getByRole("region")).toHaveTextContent("Some token usage was not reported.");
+    expect(screen.getByRole("button", { name: "Increase limit" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "End run" })).toBeEnabled();
   });
 
@@ -510,9 +532,10 @@ describe("AgentTokenBudgetStatus", () => {
     expect(screen.getByRole("button", { name: "End run" })).toBeDisabled();
   });
 
-  test("uses a lower bound for partial accounting without a precise percentage", () => {
-    setup({ ...chat, runBudget: { ...chat.runBudget!, hasUnreportedUsage: true } });
-    expect(screen.getByRole("region")).toHaveTextContent("At least 800 / 1,000 tokens");
+  test.each([800, 1100])("uses a lower bound for partial accounting without a precise percentage at %i tokens", (totalTokensUsed) => {
+    setup({ ...chat, runBudget: { ...chat.runBudget!, totalTokensUsed, hasUnreportedUsage: true } });
+    expect(screen.getByRole("status")).toHaveTextContent(totalTokensUsed >= 1000 ? "This run's token limit has been reached." : "Approaching this run's token limit.");
+    expect(screen.getByRole("region")).toHaveTextContent(`At least ${totalTokensUsed.toLocaleString("en-US")} / 1,000 tokens`);
     expect(screen.getByRole("region")).toHaveTextContent("Some token usage was not reported.");
     expect(screen.getByRole("region").textContent).not.toContain("%");
   });

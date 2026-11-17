@@ -76,6 +76,8 @@ import {
   normalizeAgentResponseActions,
 } from "../logic/responseActions";
 import { getAgentRunContinuation } from "../logic/runCheckpoint";
+import { getAgentRunFeedback } from "../logic/runFeedback";
+import { supportsAgentRunRecovery } from "../logic/runOwnership";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -89,17 +91,20 @@ import type {
 import {
   selectCurrentChat,
   selectCurrentChatRequiresAIConfiguration,
+  selectCurrentPendingAsk,
   selectError,
   selectLoading,
   selectMessages,
   useAgentStore,
 } from "../store/agent";
 import { AgentAIConfigurationRecovery } from "./AgentAIConfigurationRecovery";
+import { AgentErrorDetails } from "./AgentErrorDetails";
 import {
   AgentPrimaryAction,
   AgentPrimaryActionLink,
 } from "./AgentPrimaryAction";
 import { AgentSqlFixReviewAction } from "./AgentSqlFixReviewAction";
+import { AgentStorageStatus } from "./AgentStorageStatus";
 import { MaskingExemptionDraftButton } from "./MaskingExemptionDraftButton";
 import { MaskingRuleDraftButton } from "./MaskingRuleDraftButton";
 import { SemanticTypeDraftButton } from "./SemanticTypeDraftButton";
@@ -111,6 +116,7 @@ interface AgentChatProps {
   className?: string;
   contextLabel?: string;
   onRetry?: () => void;
+  onFreeSpaceAndRetry?: () => Promise<boolean>;
   onResend?: (messageId: string) => void;
   onSelectSuggestion?: (starterId: LandingStarterId) => void;
   onContinueAction?: (
@@ -848,6 +854,7 @@ export function AgentChat({
   className,
   contextLabel,
   onRetry,
+  onFreeSpaceAndRetry,
   onResend,
   onSelectSuggestion,
   onContinueAction,
@@ -865,10 +872,31 @@ export function AgentChat({
   const loading = useAgentStore(selectLoading);
   const error = useAgentStore(selectError);
   const storagePressure = useAgentStore((state) => state.storagePressure);
+  const storageStatusKey = useAgentStore((state) =>
+    JSON.stringify([state.workspaceName, state.userEmail, state.currentChatId])
+  );
+  const executionAvailable = useAgentStore((state) =>
+    state.canUseAgentExecution()
+  );
+  const remoteBusy = useAgentStore((state) =>
+    Boolean(state.currentChatId && state.remoteBusyChatIds[state.currentChatId])
+  );
   const chatRequiresAIConfiguration = useAgentStore(
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const pendingAsk = useAgentStore(selectCurrentPendingAsk);
+  const hasActiveController = useAgentStore((state) =>
+    Boolean(
+      state.currentChatId && state.abortControllersByChatId[state.currentChatId]
+    )
+  );
+  const queuedMessageInFlight = useAgentStore((state) =>
+    Boolean(
+      state.currentChatId &&
+        state.queuedUserMessageInFlightByChatId[state.currentChatId]
+    )
+  );
   const queuedUserMessage = useAgentStore((s) =>
     s.currentChatId ? s.queuedUserMessagesByChatId[s.currentChatId] : undefined
   );
@@ -887,9 +915,19 @@ export function AgentChat({
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
 
+  const feedback = getAgentRunFeedback({
+    executionAvailable,
+    storageBlocked: Boolean(storagePressure),
+    aiConfigurationRequired: chatRequiresAIConfiguration || aiEnabled === false,
+    recoverySupported: supportsAgentRunRecovery(),
+    remoteBusy,
+    chat: currentChat,
+    messages,
+  });
   const showAIConfigurationRecovery =
-    chatRequiresAIConfiguration ||
-    (aiEnabled === false && !isAIConfigurationRecoveryDismissed);
+    feedback === "ai-configuration" &&
+    (chatRequiresAIConfiguration || !isAIConfigurationRecoveryDismissed);
+  const showStorageError = feedback === "storage";
 
   const displayMessages = useMemo(
     () =>
@@ -949,6 +987,13 @@ export function AgentChat({
   const latestUserMessageId = displayMessages.findLast(
     (message) => message.role === "user"
   )?.id;
+  const isResendBlocked =
+    loading ||
+    hasActiveController ||
+    currentChat?.status === "awaiting_user" ||
+    Boolean(pendingAsk) ||
+    Boolean(queuedUserMessage) ||
+    queuedMessageInFlight;
   const isChatActionBlocked =
     loading ||
     currentChat?.status === "awaiting_user" ||
@@ -1048,7 +1093,13 @@ export function AgentChat({
         ? 0
         : chatContainerRef.current.scrollHeight;
     }
-  }, [currentChatId, currentChat?.interrupted, messages.length, showEmptyChat]);
+  }, [
+    currentChatId,
+    currentChat?.interrupted,
+    messages.length,
+    showEmptyChat,
+    showStorageError,
+  ]);
 
   useEffect(() => {
     const previous = previousFollowUp.current;
@@ -1131,6 +1182,12 @@ export function AgentChat({
       )}
       {displayMessages.map((msg) => {
         const interruption = interruptionByLastMessageId.get(msg.id);
+        const showInterruption =
+          interruption &&
+          (interruption.userMessageId !== latestUserMessageId ||
+            !feedback ||
+            (feedback === "token-budget" &&
+              currentChat?.runCheckpoint?.suspension !== "token-limit"));
         const canRetry =
           interruption &&
           (interruption.reason === "unexpected" ||
@@ -1252,7 +1309,7 @@ export function AgentChat({
                         appearance="secondary"
                         size="xs"
                         aria-label={t("agent.resend-message")}
-                        disabled={isChatActionBlocked}
+                        disabled={isResendBlocked}
                         onClick={() => onResend(msg.id)}
                       >
                         <Repeat2 className="size-3.5" />
@@ -1479,7 +1536,7 @@ export function AgentChat({
                   )}
               </div>
             )}
-            {interruption && (
+            {showInterruption && (
               <div
                 role="status"
                 data-agent-interruption-status
@@ -1523,7 +1580,16 @@ export function AgentChat({
 
       {showAIConfigurationRecovery ? (
         <AgentAIConfigurationRecovery onDismiss={dismiss} />
+      ) : showStorageError ? (
+        <AgentStorageStatus
+          key={storageStatusKey}
+          pressure={storagePressure}
+          error={error}
+          onRetrySaving={() => useAgentStore.getState().flushRunPersistence()}
+          onFreeSpaceAndRetry={onFreeSpaceAndRetry}
+        />
       ) : (
+        feedback === "error" &&
         error && (
           <div
             className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error"
@@ -1546,20 +1612,7 @@ export function AgentChat({
                 </Button>
               )}
             </div>
-            <Collapsible className="mt-1">
-              <CollapsibleTrigger
-                className="w-fit text-xs underline decoration-dotted underline-offset-2"
-                data-agent-error-details
-              >
-                <ChevronRight className="size-3" />
-                {t("error-page.error-details")}
-              </CollapsibleTrigger>
-              <CollapsiblePanel className="pt-1">
-                <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-xs">
-                  {error}
-                </pre>
-              </CollapsiblePanel>
-            </Collapsible>
+            <AgentErrorDetails error={error} />
           </div>
         )
       )}

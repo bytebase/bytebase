@@ -5,6 +5,7 @@ import type { AgentSqlFixSource } from "../logic/sqlFix";
 import type {
   AgentChat,
   AgentDiagnosticCapability,
+  AgentMessage,
   AgentRunBindings,
 } from "../logic/types";
 import type { AgentState, PersistedAgentState } from "./agent";
@@ -881,7 +882,10 @@ describe("durable run recovery", () => {
     });
     try {
       expect(await s(store).flushRunPersistence()).toBe(false);
-      expect(write).toHaveBeenCalledTimes(2);
+      const historyWrites = write.mock.calls.filter(
+        ([writtenKey]) => writtenKey === key
+      );
+      expect(historyWrites).toHaveLength(2);
       expect(mockStorage.getItem(key)).toBe(before);
       expect(
         s(store)
@@ -1225,6 +1229,356 @@ describe("durable run recovery", () => {
           disk.chats.find((entry: AgentChat) => entry.id === chat.id).runBudget
             .providerAttemptCount
         ).toBe(1);
+      }
+    );
+  });
+  test("releases an unstarted run after its first save fails without losing the question or draft", async () => {
+    const { store, chat, root } = await create();
+    s(store).setDraft(chat.id, { text: "Keep composing" });
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const beforeMessages = s(store).getMessages(chat.id);
+    const failure = new DOMException(
+      "Browser quota is full",
+      "QuotaExceededError"
+    );
+    const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+      throw failure;
+    });
+    try {
+      await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        chat.id,
+        async () => {
+          expect(
+            await s(store).beginChatRun(chat.id, root!.id, bindings)
+          ).toBeNull();
+          expect(s(store).getChat(chat.id)).toMatchObject({
+            status: "error",
+            runId: null,
+          });
+          expect(s(store).getChat(chat.id)?.runCheckpoint).toBeUndefined();
+          expect(s(store).getChat(chat.id)?.runBudget).toBeUndefined();
+          expect(s(store).getMessages(chat.id)).toEqual(beforeMessages);
+          expect(s(store).getDraft(chat.id).text).toBe("Keep composing");
+          expect(s(store).storagePressure?.reason).toBe("quota");
+          expect(s(store).getRunPersistenceError()).toBe(failure);
+        }
+      );
+    } finally {
+      write.mockRestore();
+    }
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const persisted = JSON.parse(
+      mockStorage.getItem(getAgentStateKey(workspaceName))!
+    );
+    expect(
+      persisted.chats.find((entry: AgentChat) => entry.id === chat.id).runId
+    ).toBeNull();
+    expect(persisted.messagesByChatId[chat.id]).toEqual(beforeMessages);
+  });
+  describe("startup-only recovery", () => {
+    const prepare = async () => {
+      const { store, chat, root } = await create();
+      s(store).setDraft(chat.id, { text: "Keep composing" });
+      let runId = "";
+      await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        chat.id,
+        async () => {
+          runId = (await s(store).beginChatRun(chat.id, root!.id, bindings))!;
+          expect(runId).toBeTruthy();
+        }
+      );
+      s(store).setChatStatus(chat.id, "error", {
+        lastError: "Startup admission failed",
+      });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      return { store, chat, root: root!, runId };
+    };
+
+    test("durably retries an admission-failed startup with the same run, allowance, question, bindings, and draft", async () => {
+      const { store, chat, runId } = await prepare();
+      const otherKey = "bb-agent-state-v3.other-member";
+      mockStorage.setItem(otherKey, "x".repeat(1_050_000));
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+      mockStorage.removeItem(otherKey);
+      const previous = s(store).getChat(chat.id)!;
+      const messages = s(store).getMessages(chat.id);
+      expect(await s(store).retryChatRunStartup(chat.id, runId)).toBe(false);
+      await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        chat.id,
+        async () => {
+          expect(await s(store).retryChatRunStartup(chat.id, runId)).toBe(true);
+          const current = s(store).getChat(chat.id)!;
+          expect(current).toMatchObject({
+            status: "running",
+            runId,
+            lastError: null,
+            interrupted: false,
+          });
+          expect(current.runBudget).toEqual(previous.runBudget);
+          expect(current.runCheckpoint).toEqual(previous.runCheckpoint);
+          expect(current.lastRunUsage).toEqual(previous.lastRunUsage);
+          expect(s(store).getMessages(chat.id)).toEqual(messages);
+          expect(s(store).getDraft(chat.id).text).toBe("Keep composing");
+          const durable = JSON.parse(
+            mockStorage.getItem(getAgentStateKey(workspaceName))!
+          ) as PersistedAgentState;
+          expect(
+            durable.chats.find((item) => item.id === chat.id)
+          ).toMatchObject({
+            status: "running",
+            runId,
+            runCheckpoint: previous.runCheckpoint,
+            runBudget: previous.runBudget,
+          });
+        }
+      );
+    });
+
+    test.each([
+      "controller",
+      "approval",
+      "queued",
+      "inflight",
+      "provider",
+      "outcome",
+    ] as const)(
+      "refuses startup recovery with %s progress",
+      async (progress) => {
+        const { store, chat, runId } = await prepare();
+        if (progress === "controller")
+          s(store).setAbortController(chat.id, new AbortController());
+        if (progress === "approval")
+          s(store).setPendingAsk(chat.id, {
+            kind: "confirm",
+            toolCallId: "pending-write",
+            prompt: "Approve this exact request?",
+            apiPermission: {
+              actionId: "pending-approval",
+              operationId: "SQLService/Query",
+            },
+          });
+        if (progress === "queued") {
+          s(store).setChatStatus(chat.id, "idle");
+          s(store).queueUserMessage({
+            chatId: chat.id,
+            text: "Queued request",
+            page: bindings.page,
+          });
+        }
+        if (progress === "inflight")
+          store.setState({
+            queuedUserMessageInFlightByChatId: { [chat.id]: true },
+          });
+        if (progress === "provider")
+          store.setState({
+            chats: s(store).chats.map((item) =>
+              item.id === chat.id
+                ? {
+                    ...item,
+                    runBudget: { ...item.runBudget!, providerAttemptCount: 1 },
+                  }
+                : item
+            ),
+          });
+        if (progress === "outcome")
+          s(store).addMessage({
+            chatId: chat.id,
+            role: "tool",
+            toolCallId: "completed-read",
+            content: "Recorded outcome",
+            metadata: { runId },
+          });
+        const messages = s(store).getMessages(chat.id);
+        const pendingAsk = s(store).getPendingAsk(chat.id);
+        await withAgentRunLease(
+          getAgentStateKey(workspaceName),
+          chat.id,
+          async () => {
+            expect(await s(store).retryChatRunStartup(chat.id, runId)).toBe(
+              false
+            );
+          }
+        );
+        expect(s(store).getMessages(chat.id)).toEqual(messages);
+        expect(s(store).getPendingAsk(chat.id)).toEqual(pendingAsk);
+        expect(s(store).getDraft(chat.id).text).toBe("Keep composing");
+      }
+    );
+
+    test("does not authorize startup when its running checkpoint cannot be saved", async () => {
+      const { store, chat, runId } = await prepare();
+      const messages = s(store).getMessages(chat.id);
+      const budget = s(store).getChat(chat.id)?.runBudget;
+      const checkpoint = s(store).getChat(chat.id)?.runCheckpoint;
+      const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+        throw new DOMException("Browser storage is full", "QuotaExceededError");
+      });
+      try {
+        await withAgentRunLease(
+          getAgentStateKey(workspaceName),
+          chat.id,
+          async () => {
+            expect(await s(store).retryChatRunStartup(chat.id, runId)).toBe(
+              false
+            );
+          }
+        );
+        expect(s(store).getMessages(chat.id)).toEqual(messages);
+        expect(s(store).getChat(chat.id)?.runBudget).toEqual(budget);
+        expect(s(store).getChat(chat.id)?.runCheckpoint).toEqual(checkpoint);
+        expect(s(store).getDraft(chat.id).text).toBe("Keep composing");
+        expect(s(store).storagePressure?.reason).toBe("quota");
+      } finally {
+        write.mockRestore();
+      }
+    });
+  });
+  test.each([
+    "checkpoint",
+    "attempt",
+    "controller",
+    "paused",
+    "error",
+    "replacement",
+    "outcome",
+  ] as const)(
+    "does not release run state with %s progress while its first save fails",
+    async (progress) => {
+      const { store, chat, root } = await create();
+      const flush = s(store).flushRunPersistence;
+      let retained: AgentChat | null = null;
+      store.setState({
+        flushRunPersistence: async () => {
+          const current = s(store).getChat(chat.id)!;
+          const changed: AgentChat =
+            progress === "checkpoint"
+              ? {
+                  ...current,
+                  runCheckpoint: {
+                    ...current.runCheckpoint!,
+                    startupComplete: true,
+                  },
+                }
+              : progress === "attempt"
+                ? {
+                    ...current,
+                    runBudget: {
+                      ...current.runBudget!,
+                      providerAttemptCount: 1,
+                    },
+                  }
+                : progress === "paused"
+                  ? {
+                      ...current,
+                      status: "paused",
+                      runCheckpoint: {
+                        ...current.runCheckpoint!,
+                        suspension: "token-limit",
+                      },
+                    }
+                  : progress === "error"
+                    ? {
+                        ...current,
+                        status: "error",
+                        lastError: "A later failure",
+                      }
+                    : progress === "replacement"
+                      ? { ...current, runId: "replacement-run" }
+                      : current;
+          store.setState({
+            chats: s(store).chats.map((entry) =>
+              entry.id === chat.id ? changed : entry
+            ),
+          });
+          if (progress === "controller")
+            s(store).setAbortController(chat.id, new AbortController());
+          if (progress === "outcome")
+            s(store).addMessage({
+              chatId: chat.id,
+              role: "tool",
+              toolCallId: "read",
+              content: "An already returned result",
+            });
+          retained = s(store).getChat(chat.id);
+          return false;
+        },
+      });
+      try {
+        await withAgentRunLease(
+          getAgentStateKey(workspaceName),
+          chat.id,
+          async () => {
+            expect(
+              await s(store).beginChatRun(chat.id, root!.id, bindings)
+            ).toBeNull();
+            expect(s(store).getChat(chat.id)).toEqual(retained);
+            expect(s(store).getChat(chat.id)?.runId).toBeTruthy();
+          }
+        );
+      } finally {
+        store.setState({ flushRunPersistence: flush });
+        s(store).setAbortController(chat.id, null);
+        await s(store).flushRunPersistence();
+      }
+    }
+  );
+  test("retains prior completed accounting when a new run's first save fails", async () => {
+    const { store, chat, root } = await create();
+    await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        const completedRun = (await s(store).beginChatRun(
+          chat.id,
+          root!.id,
+          bindings
+        ))!;
+        const reservation = await s(store).reserveChatRunAttempt(
+          chat.id,
+          completedRun
+        );
+        if (reservation.kind !== "allowed")
+          throw new Error("Expected allowance");
+        await s(store).recordChatModelAttempt(chat.id, {
+          ...reservation,
+          runId: completedRun,
+          outcome: "response",
+          usage: { purpose: "agent", toolNames: [], totalTokens: 7 },
+        });
+        s(store).finishChatRun(chat.id);
+        const next = s(store).addMessage({
+          chatId: chat.id,
+          role: "user",
+          content: "Another question",
+        })!;
+        expect(await s(store).flushRunPersistence()).toBe(true);
+        const previous = s(store).getChat(chat.id)!;
+        const messages = s(store).getMessages(chat.id);
+        const flush = s(store).flushRunPersistence;
+        store.setState({ flushRunPersistence: async () => false });
+        try {
+          expect(
+            await s(store).beginChatRun(chat.id, next.id, bindings)
+          ).toBeNull();
+          expect(s(store).getChat(chat.id)?.runId).toBeNull();
+          expect(s(store).getChat(chat.id)?.runBudget).toEqual(
+            previous.runBudget
+          );
+          expect(s(store).getChat(chat.id)?.lastRunUsage).toEqual(
+            previous.lastRunUsage
+          );
+          expect(s(store).getChat(chat.id)?.modelAttempts).toEqual(
+            previous.modelAttempts
+          );
+          expect(s(store).getChat(chat.id)?.totalTokensUsed).toBe(7);
+          expect(s(store).getMessages(chat.id)).toEqual(messages);
+        } finally {
+          store.setState({ flushRunPersistence: flush });
+          await s(store).flushRunPersistence();
+        }
       }
     );
   });
@@ -1701,7 +2055,7 @@ describe("durable run recovery", () => {
       expect(await s(follower).flushRunPersistence()).toBe(true);
       const parse = vi
         .spyOn(stateStorage, "parseAgentStoredState")
-        .mockImplementation(JSON.parse);
+        .mockImplementation((serialized) => JSON.parse(serialized));
       const persist = vi
         .spyOn(stateStorage, "writeAgentStoredState")
         .mockImplementation((storage, name, value) => {
@@ -5726,6 +6080,185 @@ describe("useAgentStore (Zustand)", () => {
     );
   });
 
+  describe("saved masking project question compatibility", () => {
+    const chatId = "masking-scope-chat";
+    const workspaceName = "workspaces/acme";
+    const question = () => ({
+      currentChatId: chatId,
+      chats: [{ id: chatId, context: workspaceName, status: "awaiting_user" }],
+      messagesByChatId: {
+        [chatId]: [
+          {
+            id: "question",
+            chatId,
+            createdTs: 1,
+            role: "user",
+            content: "Create a masking rule",
+          },
+          {
+            id: "scope-call",
+            chatId,
+            createdTs: 2,
+            role: "assistant",
+            toolCalls: [
+              { id: "scope", name: "ask_masking_rule_scope", arguments: "{}" },
+            ],
+          },
+        ] as AgentMessage[],
+      },
+      pendingAskByChatId: {
+        [chatId]: {
+          kind: "choose",
+          toolCallId: "scope",
+          prompt: "Which scope?",
+          options: [
+            { label: "Workspace", value: "workspace" },
+            { label: "A specific project", value: "choose-project" },
+          ],
+        },
+      },
+    });
+    const restore = (raw: unknown) => {
+      localStorage.setItem(
+        getAgentStateKey(workspaceName),
+        JSON.stringify(raw)
+      );
+      const store = createAgentStore();
+      s(store).setWorkspaceName(workspaceName);
+      return store;
+    };
+
+    test("durably upgrades the original saved project question and accepts its inline response after reload", async () => {
+      const store = restore(question());
+      expect(s(store).getPendingAsk(chatId)).toMatchObject({
+        kind: "choose",
+        options: [
+          { label: "Workspace", value: "workspace" },
+          {
+            label: "A specific project",
+            value: "choose-project",
+            kind: "custom-input",
+          },
+        ],
+      });
+      expect(s(store).getPendingAsk(chatId)?.defaultValue).toBeUndefined();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const durable = JSON.parse(
+        localStorage.getItem(getAgentStateKey(workspaceName))!
+      );
+      expect(durable.pendingAskByChatId[chatId].options[1].kind).toBe(
+        "custom-input"
+      );
+      const reloaded = createAgentStore();
+      s(reloaded).setWorkspaceName(workspaceName);
+      const response = s(reloaded).answerPendingAsk(chatId, {
+        kind: "choose",
+        answer: "A specific project",
+        value: "choose-project",
+        input: "  Example service  ",
+      });
+      expect(JSON.parse(response?.content ?? "null")).toEqual({
+        kind: "choose",
+        answer: "A specific project: Example service",
+        value: "choose-project",
+        input: "Example service",
+      });
+      expect(s(reloaded).getPendingAsk(chatId)).toBeNull();
+      expect(s(reloaded).getChat(chatId)?.context).toBe(workspaceName);
+      expect(s(reloaded).getMessages(chatId)).toHaveLength(3);
+    });
+
+    test.each([
+      "generic",
+      "previous turn",
+      "duplicate origin",
+      "malformed arguments",
+      "array arguments",
+      "unknown arguments",
+      "nonstring argument",
+      "answered",
+      "bound project",
+      "selected project",
+      "no user",
+      "explicit null kind",
+    ] as const)(
+      "does not upgrade an unproven saved project option: %s",
+      (reason) => {
+        const raw = question();
+        const rows = raw.messagesByChatId[chatId];
+        const call = rows[1].toolCalls![0];
+        if (reason === "generic") {
+          call.name = "ask_user";
+          call.arguments = JSON.stringify({
+            kind: "choose",
+            prompt: "Which scope?",
+            options: raw.pendingAskByChatId[chatId].options,
+          });
+        }
+        if (reason === "previous turn") {
+          rows.push({
+            id: "later-question",
+            chatId,
+            createdTs: 3,
+            role: "user",
+            content: "A later request",
+          });
+        }
+        if (reason === "duplicate origin") {
+          rows.push({ ...rows[1], id: "duplicate-call", createdTs: 3 });
+        }
+        if (reason === "malformed arguments") call.arguments = "{";
+        if (reason === "array arguments") call.arguments = "[]";
+        if (reason === "unknown arguments") {
+          call.arguments = JSON.stringify({
+            prompt: "Unrecognized runtime argument",
+          });
+        }
+        if (reason === "nonstring argument") {
+          call.arguments = JSON.stringify({ database: 42 });
+        }
+        if (reason === "answered") {
+          rows.push({
+            id: "scope-reply",
+            chatId,
+            createdTs: 3,
+            role: "tool",
+            toolCallId: "scope",
+            content: JSON.stringify({
+              kind: "choose",
+              answer: "Workspace",
+              value: "workspace",
+            }),
+          });
+        }
+        if (reason === "bound project")
+          raw.chats[0].context = "projects/example";
+        if (reason === "selected project") {
+          call.arguments = JSON.stringify({ project: "projects/example" });
+        }
+        if (reason === "no user") rows.shift();
+        if (reason === "explicit null kind") {
+          Object.assign(raw.pendingAskByChatId[chatId].options[1], {
+            kind: null,
+          });
+        }
+        const store = restore(raw);
+        expect(s(store).getPendingAsk(chatId)?.options?.[1]).not.toHaveProperty(
+          "kind"
+        );
+        expect(
+          s(store).answerPendingAsk(chatId, {
+            kind: "choose",
+            answer: "A specific project",
+            value: "choose-project",
+            input: "Example service",
+          })
+        ).toBeNull();
+        expect(s(store).getPendingAsk(chatId)?.toolCallId).toBe("scope");
+      }
+    );
+  });
+
   test.each(["workspaces/acme", "projects/orders"])(
     "preserves verified pending resource project after rehydration in %s",
     (context) => {
@@ -8106,6 +8639,455 @@ describe("automatic history cleanup integration", () => {
     expect(persisted().messagesByChatId[history.id][0].content).toBe(content);
   });
 
+  describe("legacy backup retirement under storage pressure", () => {
+    const legacyState = (contentSize = 1_100_000): PersistedAgentState => ({
+      currentChatId: "legacy-current",
+      chats: ["legacy-current", "legacy-history"].map((id) => ({
+        id,
+        title: id,
+        createdTs: 1_000,
+        updatedTs: 1_001,
+        status: "idle",
+        archived: false,
+        totalTokensUsed: 0,
+        runId: null,
+      })),
+      messagesByChatId: {
+        "legacy-current": [
+          {
+            id: "current-question",
+            chatId: "legacy-current",
+            createdTs: 1_000,
+            role: "user",
+            content: "Current question",
+          },
+        ],
+        "legacy-history": [
+          {
+            id: "history-question",
+            chatId: "legacy-history",
+            createdTs: 1_000,
+            role: "user",
+            content: "h".repeat(contentSize),
+          },
+        ],
+      },
+      draftsByChatId: { "legacy-current": { text: "Keep composing" } },
+      pendingAskByChatId: {},
+      queuedUserMessagesByChatId: {},
+      activeChatIds: [],
+    });
+    const keys = () => {
+      const current = getAgentStateKey(workspaceName);
+      return {
+        current,
+        legacy: current.replace("bb-agent-state-v3", "bb-agent-state-v2"),
+      };
+    };
+    const restoreEncoder = () =>
+      vi.mocked(stateStorage.encodeAgentStoredState).mockRestore();
+    const savePair = (
+      source: PersistedAgentState,
+      durable = source,
+      sourceKey = keys().legacy
+    ) => {
+      const raw = JSON.stringify(source);
+      expect(2 * (sourceKey.length + raw.length)).toBeGreaterThan(
+        2 * 1024 * 1024
+      );
+      mockStorage.setItem(
+        keys().current,
+        stateStorage.encodeAgentStoredState(JSON.stringify(durable), null, true)
+      );
+      mockStorage.setItem(sourceKey, raw);
+      return raw;
+    };
+    const expectPreservedConversation = (
+      store: StoreApi<AgentState>,
+      contentSize = 1_100_000
+    ) => {
+      expect(s(store).getMessages("legacy-history")[0].content).toBe(
+        "h".repeat(contentSize)
+      );
+      expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+      expect(persisted().messagesByChatId["legacy-history"][0].content).toBe(
+        "h".repeat(contentSize)
+      );
+      expect(persisted().draftsByChatId["legacy-current"].text).toBe(
+        "Keep composing"
+      );
+    };
+
+    test("retires a large inactive same-scope backup after its complete transcript is durable in compressed v3", async () => {
+      restoreEncoder();
+      const source = legacyState();
+      source.chats[1].runBudget = {
+        version: 1,
+        runId: "completed-run",
+        limit: 100_000,
+        totalTokensUsed: 0,
+        hasUnreportedUsage: false,
+        providerAttemptCount: 0,
+        revision: 1,
+      };
+      savePair(source);
+      const store = create();
+
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+      expect(mockStorage.getItem(keys().legacy)).toBeNull();
+      expect(
+        stateStorage.isCompressedAgentState(mockStorage.getItem(keys().current))
+      ).toBe(true);
+      expect(s(store).storagePressure).toBeUndefined();
+      expectPreservedConversation(store);
+    });
+
+    test("finishes a fresh v2 migration above the hard limit before retiring its source and reopening admission", async () => {
+      restoreEncoder();
+      const source = JSON.stringify(legacyState(1_600_000));
+      mockStorage.setItem(keys().legacy, source);
+      expect(estimateAgentStorageBytes(mockStorage)).toBeGreaterThan(
+        3 * 1024 * 1024
+      );
+      expect(mockStorage.getItem(keys().current)).toBeNull();
+      const store = create();
+
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+      expect(mockStorage.getItem(keys().legacy)).toBeNull();
+      expect(
+        stateStorage.isCompressedAgentState(mockStorage.getItem(keys().current))
+      ).toBe(true);
+      expect(s(store).storagePressure).toBeUndefined();
+      expectPreservedConversation(store, 1_600_000);
+    });
+
+    test("retires a migrated Query backup after omitting reproducible rows while preserving SQL and column metadata", async () => {
+      restoreEncoder();
+      const source = legacyState();
+      const statement = "SELECT given_name FROM example_table";
+      const call = {
+        id: "completed-query",
+        name: "call_api",
+        arguments: JSON.stringify({
+          operationId: "SQLService/Query",
+          body: {
+            name: "instances/example/databases/example",
+            statement,
+          },
+        }),
+      };
+      source.messagesByChatId["legacy-history"] = [
+        {
+          id: "query-request",
+          chatId: "legacy-history",
+          createdTs: 1_000,
+          role: "assistant",
+          toolCalls: [call],
+        },
+        {
+          id: "query-result",
+          chatId: "legacy-history",
+          createdTs: 1_001,
+          role: "tool",
+          toolCallId: call.id,
+          content: JSON.stringify({
+            status: 200,
+            response: {
+              results: [
+                {
+                  columnNames: ["given_name"],
+                  columnTypeNames: ["TEXT"],
+                  statement,
+                  maskingReasons: [{ reason: "policy" }],
+                  rows: Array.from({ length: 3_000 }, () => ({
+                    values: [{ stringValue: "masked_value".repeat(60) }],
+                  })),
+                },
+              ],
+            },
+          }),
+        },
+      ];
+      mockStorage.setItem(keys().legacy, JSON.stringify(source));
+      expect(estimateAgentStorageBytes(mockStorage)).toBeGreaterThan(
+        3 * 1024 * 1024
+      );
+      const store = create();
+
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+      expect(mockStorage.getItem(keys().legacy)).toBeNull();
+      const messages = persisted().messagesByChatId["legacy-history"];
+      expect(messages[0].toolCalls).toEqual([call]);
+      const result = JSON.parse(messages[1].content!);
+      expect(result.agentQueryPreview).toMatchObject({
+        version: 1,
+        level: "omitted",
+      });
+      expect(result.response.results[0]).toMatchObject({
+        columnNames: ["given_name"],
+        columnTypeNames: ["TEXT"],
+        statement,
+        maskingReasons: [{ reason: "policy" }],
+        rows: [],
+      });
+      expect(s(store).getMessages("legacy-history")[0].toolCalls).toEqual([
+        call,
+      ]);
+      expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+      expect(persisted().draftsByChatId["legacy-current"].text).toBe(
+        "Keep composing"
+      );
+      expect(s(store).storagePressure).toBeUndefined();
+    });
+
+    test.each([
+      "source-only data",
+      "unreadable",
+      "active",
+      "foreign key",
+    ] as const)("preserves a large legacy backup with %s", async (reason) => {
+      restoreEncoder();
+      const durable = legacyState();
+      const source = structuredClone(durable);
+      const sourceKey =
+        reason === "foreign key"
+          ? getScopedAgentStateKey(workspaceName, "other@example.com")!.replace(
+              "bb-agent-state-v3",
+              "bb-agent-state-v2"
+            )
+          : keys().legacy;
+      if (reason === "source-only data")
+        Object.assign(source, {
+          futureState: { note: "Only the legacy source contains this data" },
+        });
+      if (reason === "active") {
+        source.chats[1].status = "running";
+        durable.chats[1].status = "running";
+        source.activeChatIds = ["legacy-history"];
+        durable.activeChatIds = ["legacy-history"];
+      }
+      let raw = savePair(source, durable, sourceKey);
+      if (reason === "unreadable") {
+        raw = "{".repeat(1_100_000);
+        mockStorage.setItem(sourceKey, raw);
+      }
+      const store = create();
+
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+      expect(mockStorage.getItem(sourceKey)).toBe(raw);
+      expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+    });
+
+    test.each([
+      "unknown marker on raw text",
+      "unknown field on compressed content",
+    ] as const)(
+      "preserves a legacy source with %s before decoding can erase it",
+      async (reason) => {
+        restoreEncoder();
+        const durable = legacyState();
+        const source = structuredClone(durable);
+        if (reason === "unknown marker on raw text") {
+          Object.assign(durable.messagesByChatId["legacy-history"][0], {
+            metadata: { retained: "Shared metadata" },
+          });
+          Object.assign(source.messagesByChatId["legacy-history"][0], {
+            metadata: {
+              retained: "Shared metadata",
+              agentCompressedContent: {
+                version: 99,
+                custom: "source-only data",
+              },
+            },
+          });
+        } else {
+          const encoded = JSON.parse(
+            stateStorage.encodeAgentStoredState(
+              JSON.stringify(source),
+              null,
+              true
+            )
+          ) as PersistedAgentState;
+          const compressed = encoded.messagesByChatId["legacy-history"][0];
+          const metadata = compressed.metadata as unknown as {
+            agentCompressedContent: Record<string, unknown>;
+          };
+          expect(metadata.agentCompressedContent.version).toBe(1);
+          metadata.agentCompressedContent.custom = "source-only data";
+          source.messagesByChatId["legacy-history"][0] = compressed;
+          const padding = {
+            id: "raw-legacy-message",
+            chatId: "legacy-history",
+            createdTs: 1_002,
+            role: "user" as const,
+            content: "p".repeat(1_100_000),
+          };
+          source.messagesByChatId["legacy-history"].push(padding);
+          durable.messagesByChatId["legacy-history"].push(
+            structuredClone(padding)
+          );
+        }
+        const raw = savePair(source, durable);
+        const store = create();
+
+        expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+        expect(mockStorage.getItem(keys().legacy)).toBe(raw);
+        expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+      }
+    );
+
+    test("preserves the only legacy copy when the first durable v3 write fails", async () => {
+      restoreEncoder();
+      const source = JSON.stringify(legacyState());
+      mockStorage.setItem(keys().legacy, source);
+      const originalWrite = mockStorage.setItem.bind(mockStorage);
+      const write = vi
+        .spyOn(mockStorage, "setItem")
+        .mockImplementation((key, value) => {
+          if (key === keys().current)
+            throw new DOMException(
+              "Browser quota is full",
+              "QuotaExceededError"
+            );
+          originalWrite(key, value);
+        });
+      const store = create();
+      try {
+        expect(await s(store).flushRunPersistence()).toBe(false);
+        expect(mockStorage.getItem(keys().legacy)).toBe(source);
+        expect(mockStorage.getItem(keys().current)).toBeNull();
+        expect(s(store).getMessages("legacy-history")[0].content).toBe(
+          "h".repeat(1_100_000)
+        );
+        expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+      } finally {
+        write.mockRestore();
+      }
+    });
+
+    test("keeps a source changed by another client during the durable v3 write", async () => {
+      restoreEncoder();
+      const source = legacyState();
+      savePair(source);
+      const changed = structuredClone(source);
+      changed.messagesByChatId["legacy-history"].push({
+        id: "late-legacy-message",
+        chatId: "legacy-history",
+        createdTs: 1_002,
+        role: "assistant",
+        content: "A response written by another client",
+      });
+      const changedRaw = JSON.stringify(changed);
+      const store = create();
+      s(store).addMessage({
+        chatId: "legacy-current",
+        role: "user",
+        content: "A new current question",
+      });
+      const originalWrite = mockStorage.setItem.bind(mockStorage);
+      let sourceChanged = false;
+      const write = vi
+        .spyOn(mockStorage, "setItem")
+        .mockImplementation((key, value) => {
+          originalWrite(key, value);
+          if (key === keys().current && !sourceChanged) {
+            sourceChanged = true;
+            originalWrite(keys().legacy, changedRaw);
+          }
+        });
+      try {
+        expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+        expect(sourceChanged).toBe(true);
+        expect(mockStorage.getItem(keys().legacy)).toBe(changedRaw);
+        expect(
+          persisted().messagesByChatId["legacy-history"].some(
+            (message) => message.id === "late-legacy-message"
+          )
+        ).toBe(false);
+        expect(s(store).getDraft("legacy-current").text).toBe("Keep composing");
+      } finally {
+        write.mockRestore();
+      }
+    });
+
+    test("retries a native-quota v3 write after retiring its already-durable legacy backup", async () => {
+      restoreEncoder();
+      savePair(legacyState());
+      expect(
+        stateStorage.isCompressedAgentState(mockStorage.getItem(keys().current))
+      ).toBe(true);
+      const originalWrite = mockStorage.setItem.bind(mockStorage);
+      let quotaFailures = 0;
+      const write = vi
+        .spyOn(mockStorage, "setItem")
+        .mockImplementation((key, value) => {
+          if (
+            key === keys().current &&
+            mockStorage.getItem(keys().legacy) !== null
+          ) {
+            quotaFailures++;
+            throw new DOMException(
+              "Browser quota is full",
+              "QuotaExceededError"
+            );
+          }
+          originalWrite(key, value);
+        });
+      const store = create();
+      const message = s(store).addMessage({
+        chatId: "legacy-current",
+        role: "user",
+        content: "A new current question",
+      })!;
+      try {
+        expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+        expect(quotaFailures).toBeGreaterThan(0);
+        expect(mockStorage.getItem(keys().legacy)).toBeNull();
+        expect(
+          persisted().messagesByChatId["legacy-current"].some(
+            (item) => item.id === message.id
+          )
+        ).toBe(true);
+        expect(s(store).storagePressure).toBeUndefined();
+        expectPreservedConversation(store);
+      } finally {
+        write.mockRestore();
+      }
+    });
+
+    test("preserves both durable transcript and legacy source when retiring the backup cannot remove its key", async () => {
+      restoreEncoder();
+      const source = savePair(legacyState());
+      const originalRemove = mockStorage.removeItem.bind(mockStorage);
+      const remove = vi
+        .spyOn(mockStorage, "removeItem")
+        .mockImplementation((key) => {
+          if (key === keys().legacy)
+            throw new Error("Storage removal is unavailable");
+          originalRemove(key);
+        });
+      const store = create();
+      const message = s(store).addMessage({
+        chatId: "legacy-current",
+        role: "user",
+        content: "A new current question",
+      })!;
+      try {
+        expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+        expect(remove).toHaveBeenCalledWith(keys().legacy);
+        expect(mockStorage.getItem(keys().legacy)).toBe(source);
+        expect(
+          persisted().messagesByChatId["legacy-current"].some(
+            (item) => item.id === message.id
+          )
+        ).toBe(true);
+        expectPreservedConversation(store);
+      } finally {
+        remove.mockRestore();
+      }
+    });
+  });
+
   test("preserves a completed chat open in another tab while cleaning an unselected chat", async () => {
     const owner = create();
     const current = s(owner).createChat({ title: "Current chat" });
@@ -8460,6 +9442,480 @@ describe("automatic history cleanup integration", () => {
     expect(s(store).storagePressure).toMatchObject({
       reason: "budget",
       phase: "admission",
+    });
+  });
+
+  describe("confirmed storage recovery", () => {
+    const saveOtherHistory = (
+      otherWorkspace: string,
+      userEmail = TEST_USER_EMAIL
+    ) => {
+      const key = getScopedAgentStateKey(otherWorkspace, userEmail)!;
+      const state: PersistedAgentState = {
+        currentChatId: null,
+        chats: [
+          {
+            id: "saved-other",
+            title: "Saved browser history",
+            createdTs: 1,
+            updatedTs: 2,
+            status: "idle",
+            archived: false,
+            totalTokensUsed: 0,
+            runId: null,
+          },
+        ],
+        messagesByChatId: {
+          "saved-other": [
+            {
+              id: "other-message",
+              chatId: "saved-other",
+              createdTs: 1,
+              role: "user",
+              content: "s".repeat(1_050_000),
+            },
+          ],
+        },
+        draftsByChatId: {},
+        pendingAskByChatId: {},
+        queuedUserMessagesByChatId: {},
+        activeChatIds: [],
+      };
+      const serialized = JSON.stringify(state);
+      mockStorage.setItem(key, serialized);
+      return { key, serialized };
+    };
+
+    const createOversizedPausedChat = async () => {
+      const store = create();
+      const resource = {
+        kind: "database" as const,
+        name: "instances/example/databases/example",
+        project: "projects/example",
+        label: "Example",
+      };
+      const capability: AgentDiagnosticCapability = {
+        kind: "diagnostic",
+        resource,
+      };
+      const chat = s(store).createChat({
+        title: "Current question",
+        context: "projects/example",
+        capability,
+      });
+      s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Earlier request",
+      });
+      const root = s(store).addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Inspect @Example",
+        metadata: { resourceReferences: [resource] },
+      })!;
+      await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        chat.id,
+        async () => {
+          const runId = await s(store).beginChatRun(chat.id, root.id, {
+            page: { path: "/", title: "Workspace" },
+            context: chat.context,
+            references: [resource],
+            capability,
+            runMode: "read-only",
+          });
+          expect(runId).toBeTruthy();
+          const tool = s(store).addMessage({
+            chatId: chat.id,
+            role: "tool",
+            toolCallId: "old-read",
+            content: "t".repeat(1_050_000),
+            metadata: { runId: runId!, error: "Old tool diagnostic" },
+          })!;
+          expect(
+            await s(store).pauseChatRun(chat.id, {
+              ...s(store).getChat(chat.id)!.runCheckpoint!,
+              throughMessageId: tool.id,
+              startupComplete: true,
+              suspension: "token-limit",
+            })
+          ).toBe(true);
+        }
+      );
+      const draft = { text: "Keep composing", resource };
+      s(store).setDraft(chat.id, draft);
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+      return {
+        store,
+        chat,
+        root: s(store)
+          .getMessages(chat.id)
+          .find((message) => message.id === root.id)!,
+        draft: s(store).getDraft(chat.id),
+        capability: s(store).getChat(chat.id)!.capability,
+      };
+    };
+
+    test("explicitly frees other-account saved history after automatic cleanup preserves it", async () => {
+      const store = create();
+      const current = s(store).createChat({ title: "Current chat" });
+      s(store).addMessage({
+        chatId: current.id,
+        role: "user",
+        content: "Keep this question",
+      });
+      s(store).setDraft(current.id, { text: "Keep this draft" });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const other = saveOtherHistory("workspaces/other", "other@example.com");
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+      expect(mockStorage.getItem(other.key)).toBe(other.serialized);
+
+      expect(await s(store).freeAgentStorage()).toBe(true);
+
+      expect(mockStorage.getItem(other.key)).not.toBe(other.serialized);
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+      expect(
+        s(store)
+          .getMessages(current.id)
+          .map((message) => message.content)
+      ).toEqual(["Keep this question"]);
+      expect(s(store).getDraft(current.id).text).toBe("Keep this draft");
+      expect(s(store).storagePressure).toBeUndefined();
+    });
+
+    test("automatically reclaims inactive same-account other-workspace history before admission", async () => {
+      const store = create();
+      const current = s(store).createChat({ title: "Current chat" });
+      s(store).setDraft(current.id, { text: "Keep this draft" });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const other = saveOtherHistory("workspaces/other");
+
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+
+      expect(mockStorage.getItem(other.key)).not.toBe(other.serialized);
+      expect(s(store).getChat(current.id)).not.toBeNull();
+      expect(s(store).getDraft(current.id).text).toBe("Keep this draft");
+    });
+
+    test("accepts freed peer capacity when another tab keeps the current chat open", async () => {
+      const store = create();
+      const current = s(store).createChat({ title: "Shared current chat" });
+      s(store).addMessage({
+        chatId: current.id,
+        role: "user",
+        content: "Keep this shared question",
+      });
+      s(store).setDraft(current.id, { text: "Keep this shared draft" });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const follower = create();
+      s(follower).setCurrentChat(current.id);
+      expect(await s(follower).flushRunPersistence()).toBe(true);
+      const before = s(store).getMessages(current.id);
+      const other = saveOtherHistory("workspaces/other", "other@example.com");
+      expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+
+      expect(await s(store).freeAgentStorage()).toBe(true);
+
+      expect(mockStorage.getItem(other.key)).toBeNull();
+      expect(s(store).getMessages(current.id)).toEqual(before);
+      expect(persisted().messagesByChatId[current.id]).toEqual(before);
+      expect(s(store).getDraft(current.id).text).toBe("Keep this shared draft");
+      expect(s(follower).getMessages(current.id)).toEqual(before);
+      expect(s(follower).currentChatId).toBe(current.id);
+      expect(s(store).storagePressure).toBeUndefined();
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+    });
+
+    test("reclaims peer history below the durable target when a protected pending write exceeds the budget", async () => {
+      const store = create();
+      const current = s(store).createChat({ title: "Current chat" });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const other = saveOtherHistory("workspaces/other");
+      const peer = JSON.parse(other.serialized) as PersistedAgentState;
+      peer.messagesByChatId["saved-other"][0].content = "s".repeat(700_000);
+      peer.messagesByChatId["saved-other"].push(
+        {
+          id: "peer-query-call",
+          chatId: "saved-other",
+          createdTs: 2,
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "peer-query",
+              name: "call_api",
+              arguments: JSON.stringify({ operationId: "SQLService/Query" }),
+            },
+          ],
+        },
+        {
+          id: "peer-query-result",
+          chatId: "saved-other",
+          createdTs: 3,
+          role: "tool",
+          toolCallId: "peer-query",
+          content: JSON.stringify({
+            status: 200,
+            response: {
+              results: [
+                {
+                  columnNames: ["value"],
+                  rows: [{ values: [{ stringValue: "q".repeat(4_000) }] }],
+                },
+              ],
+            },
+          }),
+        }
+      );
+      mockStorage.setItem(other.key, JSON.stringify(peer));
+      expect(estimateAgentStorageBytes(mockStorage)).toBeLessThan(
+        cleanupTargetBytes
+      );
+      s(store).setChatStatus(current.id, "running");
+      s(store).setAbortController(current.id, new AbortController());
+      const message = s(store).addMessage({
+        chatId: current.id,
+        role: "tool",
+        toolCallId: "pending-result",
+        content: "p".repeat(900_000),
+      })!;
+      try {
+        expect(await s(store).flushRunPersistence()).toBe(true);
+        expect(persisted().messagesByChatId[current.id]).toContainEqual(
+          message
+        );
+        expect(s(store).getChat(current.id)?.status).toBe("running");
+        expect(
+          (JSON.parse(mockStorage.getItem(other.key)!) as PersistedAgentState)
+            .chats
+        ).toEqual([]);
+        expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+      } finally {
+        s(store).setAbortController(current.id, null);
+        s(store).setChatStatus(current.id, "idle");
+      }
+    });
+
+    test("resets only an oversized current run to its original question after explicit consent", async () => {
+      const { store, chat, root, draft, capability } =
+        await createOversizedPausedChat();
+
+      expect(await s(store).freeAgentStorage({ resetCurrentChat: true })).toBe(
+        true
+      );
+
+      expect(s(store).getMessages(chat.id)).toEqual([root]);
+      expect(persisted().messagesByChatId[chat.id]).toEqual([root]);
+      expect(s(store).getChat(chat.id)).toMatchObject({
+        context: "projects/example",
+        capability,
+        status: "error",
+        runId: null,
+      });
+      expect(s(store).getChat(chat.id)?.runCheckpoint).toBeUndefined();
+      expect(s(store).getChat(chat.id)?.runBudget).toBeUndefined();
+      expect(s(store).getPendingAsk(chat.id)).toBeNull();
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+    });
+
+    test("retires the current scoped legacy backup after an explicitly reset replacement is durable", async () => {
+      const { store, chat, root, draft } = await createOversizedPausedChat();
+      const key = getAgentStateKey(workspaceName);
+      const legacyKey = key.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      const original = mockStorage.getItem(key)!;
+      mockStorage.setItem(legacyKey, original);
+
+      expect(await s(store).freeAgentStorage({ resetCurrentChat: true })).toBe(
+        true
+      );
+
+      expect(mockStorage.getItem(legacyKey)).toBeNull();
+      expect(persisted().messagesByChatId[chat.id]).toEqual([root]);
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+      expect(s(store).getChat(chat.id)?.runCheckpoint).toBeUndefined();
+      expect(await s(store).checkAgentStorageAdmission()).toBe(true);
+    });
+
+    test("preserves a current legacy source changed while acquiring reclamation locks", async () => {
+      const { store, chat, draft } = await createOversizedPausedChat();
+      const key = getAgentStateKey(workspaceName);
+      const legacyKey = key.replace("bb-agent-state-v3", AGENT_STATE_KEY);
+      const original = mockStorage.getItem(key)!;
+      const before = s(store).getMessages(chat.id);
+      mockStorage.setItem(legacyKey, original);
+      const changed = JSON.parse(original) as PersistedAgentState;
+      changed.messagesByChatId[chat.id].push({
+        id: "late-legacy-result",
+        chatId: chat.id,
+        createdTs: 2_000,
+        role: "assistant",
+        content: "A response saved by another client",
+      });
+      const changedSource = JSON.stringify(changed);
+      const protection = locks.pauseNextExclusive(
+        `bb-agent-chat-protection:${JSON.stringify(key)}:${JSON.stringify(chat.id)}`
+      );
+      const freeing = s(store).freeAgentStorage({ resetCurrentChat: true });
+      await protection.reached;
+      const accounting = locks.pauseNextExclusive("bb-agent-storage-budget-v1");
+      protection.resume();
+      try {
+        await accounting.reached;
+        mockStorage.setItem(legacyKey, changedSource);
+      } finally {
+        accounting.resume();
+      }
+
+      expect(await freeing).toBe(false);
+      expect(mockStorage.getItem(legacyKey)).toBe(changedSource);
+      expect(s(store).getMessages(chat.id)).toEqual(before);
+      expect(persisted().messagesByChatId[chat.id]).toEqual(before);
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+      expect(s(store).getChat(chat.id)?.runCheckpoint).toBeDefined();
+    });
+
+    test("preserves the current paused run unless resetting it was explicitly selected", async () => {
+      const { store, chat, draft } = await createOversizedPausedChat();
+      const before = s(store).getMessages(chat.id);
+      const checkpoint = s(store).getChat(chat.id)?.runCheckpoint;
+
+      expect(await s(store).freeAgentStorage()).toBe(false);
+
+      expect(s(store).getMessages(chat.id)).toEqual(before);
+      expect(persisted().messagesByChatId[chat.id]).toEqual(before);
+      expect(s(store).getChat(chat.id)).toMatchObject({
+        status: "paused",
+        runCheckpoint: checkpoint,
+      });
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+      expect(s(store).storagePressure).toBeDefined();
+    });
+
+    test("keeps an actually active other-tab conversation during confirmed cleanup", async () => {
+      const store = create();
+      s(store).createChat({ title: "Current chat" });
+      const protectedChat = addHistory(store, 100);
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const follower = create();
+      s(follower).setCurrentChat(protectedChat.id);
+      expect(await s(follower).flushRunPersistence()).toBe(true);
+      await withAgentRunLease(
+        getAgentStateKey(workspaceName),
+        protectedChat.id,
+        async () => {
+          s(follower).setChatStatus(protectedChat.id, "running");
+          s(follower).setAbortController(
+            protectedChat.id,
+            new AbortController()
+          );
+          s(follower).addMessage({
+            chatId: protectedChat.id,
+            role: "tool",
+            toolCallId: "active-read",
+            content: "a".repeat(1_050_000),
+          });
+          expect(await s(follower).flushRunPersistence()).toBe(true);
+          expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+
+          expect(await s(store).freeAgentStorage()).toBe(false);
+
+          expect(s(follower).getChat(protectedChat.id)?.status).toBe("running");
+          expect(persisted().chats.map((chat) => chat.id)).toContain(
+            protectedChat.id
+          );
+          expect(
+            persisted().messagesByChatId[protectedChat.id].at(-1)?.content
+          ).toHaveLength(1_050_000);
+          s(follower).setAbortController(protectedChat.id, null);
+          s(follower).setChatStatus(protectedChat.id, "idle");
+        }
+      );
+    });
+
+    test("does not reset the confirmed conversation after the current selection changes", async () => {
+      const { store, chat, draft } = await createOversizedPausedChat();
+      const next = s(store).createChat({
+        title: "Another chat",
+        select: false,
+      });
+      s(store).addMessage({
+        chatId: next.id,
+        role: "user",
+        content: "Another question",
+      });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const before = s(store).getMessages(chat.id);
+      const paused = locks.pauseNextExclusive("bb-agent-storage-budget-v1");
+      const freeing = s(store).freeAgentStorage({ resetCurrentChat: true });
+      try {
+        await paused.reached;
+        s(store).setCurrentChat(next.id);
+      } finally {
+        paused.resume();
+      }
+      expect(await freeing).toBe(false);
+      expect(s(store).getMessages(chat.id)).toEqual(before);
+      expect(
+        s(store)
+          .getMessages(next.id)
+          .map((message) => message.content)
+      ).toEqual(["Another question"]);
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+    });
+
+    test("does not reset after switching away from and back to the confirmed conversation", async () => {
+      const { store, chat, draft } = await createOversizedPausedChat();
+      const next = s(store).createChat({
+        title: "Another chat",
+        select: false,
+      });
+      s(store).addMessage({
+        chatId: next.id,
+        role: "user",
+        content: "Another question",
+      });
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const before = s(store).getMessages(chat.id);
+      const checkpoint = s(store).getChat(chat.id)?.runCheckpoint;
+      const paused = locks.pauseNextExclusive("bb-agent-storage-budget-v1");
+      const freeing = s(store).freeAgentStorage({ resetCurrentChat: true });
+      try {
+        await paused.reached;
+        s(store).setCurrentChat(next.id);
+        s(store).setCurrentChat(chat.id);
+      } finally {
+        paused.resume();
+      }
+
+      expect(await freeing).toBe(false);
+      expect(s(store).currentChatId).toBe(chat.id);
+      expect(s(store).getMessages(chat.id)).toEqual(before);
+      expect(persisted().messagesByChatId[chat.id]).toEqual(before);
+      expect(s(store).getChat(chat.id)?.runCheckpoint).toEqual(checkpoint);
+      expect(s(store).getDraft(chat.id)).toEqual(draft);
+    });
+
+    test("does not publish current-run truncation when the durable save fails", async () => {
+      const { store, chat, draft } = await createOversizedPausedChat();
+      const before = s(store).getMessages(chat.id);
+      const key = getAgentStateKey(workspaceName);
+      const durable = mockStorage.getItem(key);
+      const write = vi.spyOn(mockStorage, "setItem").mockImplementation(() => {
+        throw new DOMException("Browser quota is full", "QuotaExceededError");
+      });
+      try {
+        expect(
+          await s(store).freeAgentStorage({ resetCurrentChat: true })
+        ).toBe(false);
+        expect(s(store).getMessages(chat.id)).toEqual(before);
+        expect(mockStorage.getItem(key)).toBe(durable);
+        expect(s(store).getDraft(chat.id)).toEqual(draft);
+        expect(s(store).getChat(chat.id)?.runCheckpoint).toBeDefined();
+      } finally {
+        write.mockRestore();
+      }
     });
   });
 });

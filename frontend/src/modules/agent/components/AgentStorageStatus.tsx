@@ -1,8 +1,14 @@
-import { RotateCw } from "lucide-react";
+import { RotateCw, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { AgentErrorDetails } from "./AgentErrorDetails";
+import {
+  AgentPopover,
+  AgentPopoverContent,
+  AgentPopoverTitle,
+} from "./ui/AgentPopover";
 
 interface AgentStorageStatusProps {
   pressure?: {
@@ -13,17 +19,24 @@ interface AgentStorageStatusProps {
     otherScopeBytes?: number;
   };
   onRetrySaving: () => Promise<boolean>;
+  onFreeSpaceAndRetry?: () => Promise<boolean>;
   disabled?: boolean;
+  error?: string | null;
 }
 
 export function AgentStorageStatus({
   pressure,
   onRetrySaving,
+  onFreeSpaceAndRetry,
   disabled = false,
+  error,
 }: AgentStorageStatusProps) {
   const { t } = useTranslation();
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [freeFailed, setFreeFailed] = useState(false);
+  const recoveryRef = useRef<HTMLButtonElement>(null);
 
   const retrySaving = async () => {
     if (pendingRef.current || disabled) return;
@@ -39,31 +52,120 @@ export function AgentStorageStatus({
     }
   };
 
+  const freeSpaceAndRetry = async () => {
+    if (pendingRef.current || disabled || !onFreeSpaceAndRetry) return;
+    pendingRef.current = true;
+    setPending(true);
+    setFreeFailed(false);
+    try {
+      if (await onFreeSpaceAndRetry()) {
+        setConfirmationOpen(false);
+      } else {
+        setFreeFailed(true);
+      }
+    } catch {
+      setFreeFailed(true);
+    } finally {
+      pendingRef.current = false;
+      setPending(false);
+    }
+  };
+
   if (!pressure) return null;
+  const full = pressure.reason !== "unavailable";
 
   return (
-    <Alert
-      appearance="caption"
-      variant="warning"
-      role="region"
-      aria-label={t("agent.storage.title")}
-      data-agent-storage-status
-    >
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <p role="status" aria-live="polite" aria-atomic="true">
-          {t("agent.storage.save-failed")}
-        </p>
-        <Button
-          size="sm"
-          appearance="outline"
-          disabled={disabled || pending}
-          aria-busy={pending}
-          onClick={() => void retrySaving()}
+    <>
+      <Alert
+        variant="error"
+        showIcon={false}
+        className="rounded-sm border-0 bg-error/10 px-3 py-2 text-sm shadow-none"
+        aria-label={t("agent.storage.title")}
+        data-agent-storage-status
+      >
+        <div
+          className="flex items-start justify-between gap-2"
+          data-agent-storage-header
         >
-          <RotateCw aria-hidden="true" />
-          {t("agent.storage.retry")}
-        </Button>
-      </div>
-    </Alert>
+          <p className="min-w-0 break-words">
+            {full ? t("agent.storage.full") : t("agent.storage.save-failed")}
+          </p>
+          <div
+            className="ml-auto flex shrink-0 items-center"
+            data-agent-storage-actions
+          >
+            <Button
+              ref={recoveryRef}
+              size="xs"
+              appearance="outline"
+              className="gap-1.5"
+              disabled={disabled || pending || (full && !onFreeSpaceAndRetry)}
+              aria-busy={pending}
+              aria-haspopup={full ? "dialog" : undefined}
+              aria-expanded={full ? confirmationOpen : undefined}
+              onClick={() => {
+                if (!full) {
+                  void retrySaving();
+                  return;
+                }
+                setFreeFailed(false);
+                setConfirmationOpen(true);
+              }}
+            >
+              {full ? (
+                <Trash2 size={14} className="shrink-0" aria-hidden="true" />
+              ) : (
+                <RotateCw size={14} className="shrink-0" aria-hidden="true" />
+              )}
+              {full
+                ? t("agent.storage.free-and-retry")
+                : t("agent.storage.retry")}
+            </Button>
+          </div>
+        </div>
+        <AgentErrorDetails error={error} />
+      </Alert>
+      <AgentPopover
+        open={confirmationOpen}
+        onOpenChange={(open) => {
+          if (!pendingRef.current) setConfirmationOpen(open);
+        }}
+      >
+        <AgentPopoverContent
+          anchor={recoveryRef}
+          finalFocus={recoveryRef}
+          className="w-64 p-3"
+          data-agent-storage-confirmation
+        >
+          <AgentPopoverTitle className="mb-3 font-normal">
+            {t("agent.storage.free-title")}
+          </AgentPopoverTitle>
+          {freeFailed && (
+            <p role="status" className="mb-3 text-xs text-error">
+              {t("agent.storage.free-failed")}
+            </p>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              appearance="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => setConfirmationOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={disabled || pending || !onFreeSpaceAndRetry}
+              aria-busy={pending}
+              onClick={() => void freeSpaceAndRetry()}
+            >
+              {t("agent.storage.free-and-retry")}
+            </Button>
+          </div>
+        </AgentPopoverContent>
+      </AgentPopover>
+    </>
   );
 }

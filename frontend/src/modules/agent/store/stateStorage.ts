@@ -15,13 +15,28 @@ function* storedMessages(state: unknown): Generator<Record<string, unknown>> {
   }
 }
 
-export function parseAgentStoredState(serialized: string): unknown {
+export function parseAgentStoredState(
+  serialized: string,
+  {
+    strictCompressionMarkers = false,
+  }: { strictCompressionMarkers?: boolean } = {}
+): unknown {
   const state: unknown = JSON.parse(serialized);
   for (const message of storedMessages(state)) {
     const metadata = message.metadata;
     if (!isRecord(metadata) || !("agentCompressedContent" in metadata))
       continue;
     const marker = metadata.agentCompressedContent;
+    if (
+      strictCompressionMarkers &&
+      (message.content !== CONTENT_PLACEHOLDER ||
+        !isRecord(marker) ||
+        Object.keys(marker).some(
+          (key) => !["version", "value", "metadataAbsent"].includes(key)
+        ))
+    ) {
+      throw new Error("Invalid compressed agent message content.");
+    }
     if (message.content === CONTENT_PLACEHOLDER) {
       if (
         !isRecord(marker) ||

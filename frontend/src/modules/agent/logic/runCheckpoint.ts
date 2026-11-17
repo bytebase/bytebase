@@ -13,6 +13,65 @@ export interface AgentRunContinuation {
   messages: AgentMessage[];
 }
 
+// An incomplete startup may rerun only before any provider reservation or recorded outcome.
+export function getAgentRunStartup(
+  chat: AgentChat | null | undefined,
+  messages: readonly AgentMessage[]
+): AgentRunCheckpoint | undefined {
+  if (!chat || chat.archived) return undefined;
+  const budget = normalizeRunBudget(chat.runBudget);
+  const checkpoint = normalizeRunCheckpoint(chat.runCheckpoint);
+  if (
+    !budget ||
+    !checkpoint ||
+    checkpoint.startupComplete !== false ||
+    checkpoint.phase !== "working" ||
+    checkpoint.suspension !== "interrupted" ||
+    checkpoint.finalizationText !== undefined ||
+    checkpoint.referencePreflightPending ||
+    checkpoint.rootUserMessageId !== checkpoint.throughMessageId ||
+    chat.runId !== checkpoint.runId ||
+    budget.runId !== checkpoint.runId ||
+    budget.providerAttemptCount !== 0 ||
+    budget.totalTokensUsed !== 0 ||
+    budget.hasUnreportedUsage ||
+    chat.modelAttempts?.some((attempt) => attempt.runId === checkpoint.runId) ||
+    (chat.lastRunUsage?.runId === checkpoint.runId &&
+      chat.lastRunUsage.calls.length > 0)
+  )
+    return undefined;
+  const capability = normalizeAgentDiagnosticCapability(chat.capability);
+  if (
+    (chat.capability !== undefined && !capability) ||
+    JSON.stringify(capability) !==
+      JSON.stringify(checkpoint.bindings.capability)
+  )
+    return undefined;
+  const root = messages.at(-1);
+  if (
+    root?.id !== checkpoint.rootUserMessageId ||
+    root.role !== "user" ||
+    !root.content?.trim() ||
+    root.metadata?.runId !== checkpoint.runId ||
+    root.metadata.pending ||
+    root.toolCallId ||
+    root.toolCalls?.length
+  )
+    return undefined;
+  const ids = new Set<string>();
+  for (const message of messages) {
+    if (
+      !message.id ||
+      ids.has(message.id) ||
+      message.chatId !== chat.id ||
+      (message !== root && message.metadata?.runId === checkpoint.runId)
+    )
+      return undefined;
+    ids.add(message.id);
+  }
+  return checkpoint;
+}
+
 export function getAgentRunClarificationBindings(
   chat: AgentChat | null | undefined,
   messages: readonly AgentMessage[]

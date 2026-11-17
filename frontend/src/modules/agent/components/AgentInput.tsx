@@ -1,4 +1,4 @@
-import { Send } from "lucide-react";
+import { AlertTriangle, ChevronRight, Send } from "lucide-react";
 import {
   type RefObject,
   useCallback,
@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FormField, FormLabel } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { projectNamePrefix } from "@/lib/resourceName";
@@ -80,7 +81,11 @@ import {
   updateDraftResourceMentions,
 } from "../logic/resourceMention";
 import { acceptAgentResponseActions } from "../logic/responseActions";
-import { getAgentRunContinuation } from "../logic/runCheckpoint";
+import {
+  getAgentRunContinuation,
+  getAgentRunStartup,
+} from "../logic/runCheckpoint";
+import { getAgentRunFeedback } from "../logic/runFeedback";
 import {
   type AgentRunLease,
   supportsAgentRunRecovery,
@@ -128,11 +133,12 @@ import {
   selectCurrentChatRequiresAIConfiguration,
   selectCurrentPendingAsk,
   selectLoading,
+  selectMessages,
   useAgentStore,
 } from "../store/agent";
 import { AgentChatbox, AgentChatboxFooter } from "./AgentChatbox";
+import { AgentErrorDetails, AgentErrorDetailsPanel } from "./AgentErrorDetails";
 import { AgentResourcePicker } from "./AgentResourcePicker";
-import { AgentStorageStatus } from "./AgentStorageStatus";
 import { AgentTokenBudgetStatus } from "./AgentTokenBudgetStatus";
 
 // Module-level map — survives across renders.
@@ -510,14 +516,17 @@ export function AgentInput({
   retryActionRef,
   resendActionRef,
   focusActionRef,
+  freeSpaceAndRetryActionRef,
 }: {
   retryActionRef?: RefObject<(() => void) | null>;
   resendActionRef?: RefObject<((messageId: string) => void) | null>;
   focusActionRef?: RefObject<((atEnd?: boolean) => void) | null>;
+  freeSpaceAndRetryActionRef?: RefObject<(() => Promise<boolean>) | null>;
 }) {
   const { t, i18n } = useTranslation();
   // Zustand selectors
   const currentChat = useAgentStore(selectCurrentChat);
+  const currentMessages = useAgentStore(selectMessages);
   const currentPendingAsk = useAgentStore(selectCurrentPendingAsk);
   const loading = useAgentStore(selectLoading);
   const executionAvailable = useAgentStore((state) =>
@@ -533,7 +542,6 @@ export function AgentInput({
   const workspaceName = useAgentStore((s) => s.workspaceName);
   const userEmail = useAgentStore((s) => s.userEmail);
   const storagePressure = useAgentStore((s) => s.storagePressure);
-  const storageScope = JSON.stringify([workspaceName, userEmail]);
   const sendWithEnter = useAgentStore((s) => s.preferences.sendWithEnter);
   const currentDraft = useAgentStore((s) =>
     currentChatId ? s.draftsByChatId[currentChatId] : undefined
@@ -658,7 +666,10 @@ export function AgentInput({
   const [continuationFailure, setContinuationFailure] = useState<{
     chatId: string;
     runId: string | null;
+    endFailed?: boolean;
   } | null>(null);
+  const [endingRun, setEndingRun] = useState(false);
+  const endingRunRef = useRef(false);
   const [choiceSelection, setChoiceSelection] = useState<{
     chatId: string;
     toolCallId: string;
@@ -682,14 +693,34 @@ export function AgentInput({
         : undefined,
     () => undefined
   );
+  const currentContinuationFailure =
+    continuationFailure?.chatId === currentChat?.id &&
+    continuationFailure?.runId === (currentChat?.runId ?? null) &&
+    !getAgentRunContinuation(currentChat, currentMessages) &&
+    !getAgentRunStartup(currentChat, currentMessages)
+      ? continuationFailure
+      : null;
+  const feedback = getAgentRunFeedback({
+    executionAvailable,
+    storageBlocked: Boolean(storagePressure),
+    aiConfigurationRequired: isAIConfigurationBlocked || aiEnabled === false,
+    recoverySupported: supportsAgentRunRecovery(),
+    remoteBusy,
+    continuationUnavailable: Boolean(currentContinuationFailure),
+    chat: currentChat,
+    messages: currentMessages,
+    pendingAttemptId,
+  });
   const mentionRangeRef = useRef<{ start: number; end: number } | null>(null);
   const selectedMentionCaretRef = useRef<number | null>(null);
   const previousChatIdRef = useRef<string | null>(null);
   const confirmationInFlightRef = useRef(false);
   const messageActionInFlightRef = useRef<symbol | null>(null);
+  const storageRecoveryInFlightRef = useRef<symbol | null>(null);
   useEffect(() => {
     return () => {
       messageActionInFlightRef.current = null;
+      storageRecoveryInFlightRef.current = null;
     };
   }, [currentChatId, workspaceName, userEmail]);
 
@@ -1396,6 +1427,7 @@ export function AgentInput({
           ? undefined
           : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
+      let admitted = false;
       const recordUsage = (usage: AgentModelCallUsage) => {
         if (isCurrentChatScope(store, chatId)) {
           store.recordChatModelCallUsage(chatId, runId, usage);
@@ -1429,11 +1461,15 @@ export function AgentInput({
           });
         }
       };
-      const admitExecution = async () =>
-        ownsInvocation() &&
-        (await useAgentStore.getState().checkAgentStorageAdmission()) &&
-        ownsInvocation() &&
-        !useAgentStore.getState().getChat(chatId)?.archived;
+      const admitExecution = async () => {
+        const allowed =
+          ownsInvocation() &&
+          (await useAgentStore.getState().checkAgentStorageAdmission()) &&
+          ownsInvocation() &&
+          !useAgentStore.getState().getChat(chatId)?.archived;
+        if (allowed) admitted = true;
+        return allowed;
+      };
 
       const systemPrompt = buildSystemPrompt({
         ...page,
@@ -2189,6 +2225,7 @@ export function AgentInput({
                           .reserveChatRunAttempt(chatId, runId)
                       : { kind: "superseded" as const };
                     if (reservation.kind === "allowed") {
+                      admitted = true;
                       setPendingProviderAttempt(
                         controller,
                         reservation.attemptId
@@ -2229,6 +2266,12 @@ export function AgentInput({
         ) {
           return;
         }
+        if (
+          outcome.kind === "completed" &&
+          resumeCheckpoint?.phase === "finalizing" &&
+          typeof resumeCheckpoint.finalizationText === "string"
+        )
+          admitted = true;
         const queryCalls = getCurrentTurnQueryCalls(
           useAgentStore.getState().getMessages(chatId)
         );
@@ -2380,6 +2423,7 @@ export function AgentInput({
           useAgentStore.getState().setAbortController(chatId, null);
         }
       }
+      return admitted;
     },
     [buildChatHistory, handleOutcome, t, workspace?.name]
   );
@@ -2570,10 +2614,11 @@ export function AgentInput({
       runMode: AgentRunMode = "default",
       starterId?: LandingStarterId,
       skipReferencePreflight = false,
-      intent: "new" | "continue" = "new",
+      intent: "new" | "continue" | "startup" = "new",
       lease?: AgentRunLease
     ) => {
-      return withChatRunSegment(
+      let accepted = false;
+      await withChatRunSegment(
         chatId,
         async () => {
           let runId = uuidv4();
@@ -2600,7 +2645,7 @@ export function AgentInput({
                 reference.kind === "issue" ||
                 reference.kind === "plan"
             ) || currentStore.getChat(chatId)?.capability !== undefined;
-          const effectiveRunMode = hasResourceReference ? "read-only" : runMode;
+          let effectiveRunMode = hasResourceReference ? "read-only" : runMode;
           if (
             !hasResourceReference &&
             (starterId === "workspace-recent" ||
@@ -2613,7 +2658,37 @@ export function AgentInput({
             return;
           let resumeCheckpoint: AgentRunCheckpoint | undefined;
           if (supportsAgentRunRecovery()) {
-            if (intent === "continue") {
+            if (intent === "startup") {
+              const startup = getAgentRunStartup(
+                chat,
+                currentStore.getMessages(chatId)
+              );
+              if (!startup) return;
+              const restarted = await currentStore.retryChatRunStartup(
+                chatId,
+                startup.runId
+              );
+              const latest = useAgentStore.getState();
+              if (
+                !isCurrentChatScope(currentStore, chatId) ||
+                latest.currentChatId !== chatId ||
+                latest.getChat(chatId)?.runId !== startup.runId ||
+                latest.getChat(chatId)?.archived
+              )
+                return;
+              if (!restarted) {
+                latest.setChatStatus(chatId, "error", {
+                  lastError: getRunUpdateError(
+                    t("agent.token-budget.action-failed")
+                  ),
+                });
+                return;
+              }
+              runId = startup.runId;
+              currentPage = startup.bindings.page;
+              effectiveRunMode = startup.bindings.runMode;
+              skipReferencePreflight = false;
+            } else if (intent === "continue") {
               if (!canContinueChatRun(chatId)) return;
               const continuation = getAgentRunContinuation(
                 chat,
@@ -2692,6 +2767,7 @@ export function AgentInput({
             !hasResourceReference &&
             starterId === "workspace-recent"
           ) {
+            accepted = true;
             await runRecentActivityStarter(
               chatId,
               currentPage,
@@ -2707,6 +2783,7 @@ export function AgentInput({
           ) {
             const projectName = store.getChat(chatId)?.context;
             if (projectName?.startsWith(projectNamePrefix)) {
+              accepted = true;
               await runRecentActivityStarter(
                 chatId,
                 currentPage,
@@ -2721,6 +2798,7 @@ export function AgentInput({
             !hasResourceReference &&
             starterId === "workspace-attention"
           ) {
+            accepted = true;
             await runWorkspaceAttentionStarter(chatId, currentPage, runId);
             return;
           }
@@ -2731,23 +2809,27 @@ export function AgentInput({
           ) {
             const projectName = store.getChat(chatId)?.context;
             if (projectName?.startsWith(projectNamePrefix)) {
+              accepted = true;
               await runProjectAttentionStarter(chatId, currentPage, runId);
               return;
             }
           }
-          await runChat(
-            chatId,
-            currentPage,
-            runId,
-            effectiveRunMode,
-            resumeCheckpoint?.referencePreflightPending
-              ? false
-              : skipReferencePreflight || Boolean(resumeCheckpoint),
-            resumeCheckpoint
+          accepted = Boolean(
+            await runChat(
+              chatId,
+              currentPage,
+              runId,
+              effectiveRunMode,
+              resumeCheckpoint?.referencePreflightPending
+                ? false
+                : skipReferencePreflight || Boolean(resumeCheckpoint),
+              resumeCheckpoint
+            )
           );
         },
         lease
       );
+      return accepted;
     },
     [
       canContinueChatRun,
@@ -3026,18 +3108,28 @@ export function AgentInput({
   ]);
 
   const runMessageAction = useCallback(
-    async (messageId?: string) => {
+    async (
+      messageId?: string,
+      storageRecovery?: "new" | "continue" | "startup"
+    ) => {
       const store = useAgentStore.getState();
       const chat = selectCurrentChat(store);
       if (
         !chat ||
         chat.archived ||
-        (chat.status !== "idle" && chat.status !== "error") ||
+        store.isChatRunning(chat.id) ||
+        store.getAbortController(chat.id) ||
+        chat.status === "awaiting_user" ||
+        (!messageId &&
+          chat.status !== "idle" &&
+          chat.status !== "error" &&
+          !(storageRecovery === "continue" && chat.status === "paused")) ||
         store.getPendingAsk(chat.id) ||
         store.queuedUserMessagesByChatId[chat.id] ||
         store.queuedUserMessageInFlightByChatId[chat.id] ||
-        chat.runCheckpoint?.suspension === "token-limit" ||
-        store.storagePressure ||
+        (!messageId &&
+          !storageRecovery &&
+          chat.runCheckpoint?.suspension === "token-limit") ||
         messageActionInFlightRef.current
       ) {
         return;
@@ -3049,12 +3141,24 @@ export function AgentInput({
       if (
         message?.role !== "user" ||
         !message.content?.trim() ||
-        (!messageId && chat.status !== "error" && !chat.interrupted)
+        (!messageId &&
+          !storageRecovery &&
+          chat.status !== "error" &&
+          !chat.interrupted)
       ) {
         return;
       }
 
       const messageText = message.content;
+      const retryStartup =
+        !messageId && Boolean(getAgentRunStartup(chat, messages));
+      const retryNew =
+        storageRecovery === "new" ||
+        (!messageId && !chat.runId && !chat.runCheckpoint);
+      if (!messageId && store.storagePressure) {
+        if (!retryStartup && !retryNew) canContinueChatRun(chat.id);
+        return;
+      }
       const action = Symbol();
       messageActionInFlightRef.current = action;
       const currentPage = getCurrentPageSnapshot();
@@ -3072,6 +3176,8 @@ export function AgentInput({
           currentChat.lastError !== chat.lastError ||
           currentChat.interrupted !== chat.interrupted ||
           current.getMessages(chat.id) !== messages ||
+          current.isChatRunning(chat.id) ||
+          current.getAbortController(chat.id) ||
           current.getPendingAsk(chat.id) ||
           current.queuedUserMessagesByChatId[chat.id] ||
           current.queuedUserMessageInFlightByChatId[chat.id] ||
@@ -3079,17 +3185,35 @@ export function AgentInput({
         ) {
           return;
         }
+        let accepted = false;
         await withChatRunSegment(chat.id, async (lease) => {
-          if (!messageId && !canContinueChatRun(chat.id)) return;
-          current.clearError(chat.id);
+          if (
+            !messageId &&
+            !retryStartup &&
+            !retryNew &&
+            !canContinueChatRun(chat.id)
+          )
+            return;
+          if (
+            messageId &&
+            supportsAgentRunRecovery() &&
+            current.getChat(chat.id)?.runId &&
+            !(await current.endPausedRun(chat.id))
+          ) {
+            if (useAgentStore.getState().storagePressure) {
+              current.setChatStatus(chat.id, "error", {
+                lastError: getRunUpdateError(
+                  t("agent.token-budget.action-failed")
+                ),
+              });
+            }
+            return;
+          }
+          if (!retryStartup) current.clearError(chat.id);
+          if (retryNew) setContinuationFailure(null);
           let starterId: LandingStarterId | undefined;
           if (messageId) {
-            if (
-              supportsAgentRunRecovery() &&
-              current.getChat(chat.id)?.runId &&
-              !(await current.endPausedRun(chat.id))
-            )
-              return;
+            setContinuationFailure(null);
             const references = normalizeAgentResourceReferences(
               message.metadata?.resourceReferences,
               message.metadata?.resourceReference
@@ -3113,16 +3237,22 @@ export function AgentInput({
               translate: t,
             });
           }
-          await startChatRun(
+          accepted = await startChatRun(
             chat.id,
             currentPage,
             messageId ? "default" : (chat.runMode ?? "default"),
             starterId,
             false,
-            messageId ? "new" : "continue",
+            messageId || retryNew
+              ? "new"
+              : retryStartup
+                ? "startup"
+                : "continue",
             lease
           );
+          if (accepted && retryStartup) setContinuationFailure(null);
         });
+        return accepted;
       } finally {
         if (messageActionInFlightRef.current === action) {
           messageActionInFlightRef.current = null;
@@ -3131,6 +3261,51 @@ export function AgentInput({
     },
     [blockWhenAIIsNotConfigured, canContinueChatRun, startChatRun, t]
   );
+
+  const freeSpaceAndRetry = useCallback(async () => {
+    const scope = useAgentStore.getState();
+    const chatId = scope.currentChatId;
+    if (!chatId || storageRecoveryInFlightRef.current) return false;
+    const action = Symbol();
+    storageRecoveryInFlightRef.current = action;
+    try {
+      if (!(await scope.freeAgentStorage())) return false;
+      const current = useAgentStore.getState();
+      if (
+        storageRecoveryInFlightRef.current !== action ||
+        !isCurrentChatScope(scope, chatId) ||
+        current.currentChatId !== chatId
+      )
+        return false;
+      const chat = current.getChat(chatId);
+      if (!chat || chat.archived) return false;
+      if (current.getPendingAsk(chatId)) return true;
+      const continuation = getAgentRunContinuation(
+        chat,
+        current.getMessages(chatId)
+      );
+      if (continuation) {
+        return Boolean(await runMessageAction(undefined, "continue"));
+      } else if (getAgentRunStartup(chat, current.getMessages(chatId))) {
+        return Boolean(await runMessageAction(undefined, "startup"));
+      } else if (!chat.runId && !chat.runCheckpoint) {
+        return Boolean(await runMessageAction(undefined, "new"));
+      }
+      return false;
+    } finally {
+      if (storageRecoveryInFlightRef.current === action)
+        storageRecoveryInFlightRef.current = null;
+    }
+  }, [runMessageAction]);
+
+  useEffect(() => {
+    if (!freeSpaceAndRetryActionRef) return;
+    freeSpaceAndRetryActionRef.current = freeSpaceAndRetry;
+    return () => {
+      if (freeSpaceAndRetryActionRef.current === freeSpaceAndRetry)
+        freeSpaceAndRetryActionRef.current = null;
+    };
+  }, [freeSpaceAndRetryActionRef, freeSpaceAndRetry]);
 
   useEffect(() => {
     if (!retryActionRef) return;
@@ -3149,6 +3324,75 @@ export function AgentInput({
       if (resendActionRef.current === resend) resendActionRef.current = null;
     };
   }, [resendActionRef, runMessageAction]);
+
+  const endCurrentRun = async () => {
+    const scope = useAgentStore.getState();
+    const chat = currentChat;
+    if (
+      endingRunRef.current ||
+      !chat?.runId ||
+      chat.runBudget?.runId !== chat.runId ||
+      chat.archived ||
+      scope.currentChatId !== chat.id ||
+      scope.remoteBusyChatIds[chat.id] ||
+      !scope.canUseAgentExecution()
+    )
+      return;
+    endingRunRef.current = true;
+    setEndingRun(true);
+    try {
+      let ended = false;
+      await withChatRunSegment(chat.id, async () => {
+        const store = useAgentStore.getState();
+        if (
+          !isCurrentChatScope(scope, chat.id) ||
+          store.currentChatId !== chat.id ||
+          store.getChat(chat.id)?.runId !== chat.runId ||
+          store.remoteBusyChatIds[chat.id]
+        )
+          return;
+        store.syncState();
+        const latest = useAgentStore.getState();
+        const current = latest.getChat(chat.id);
+        if (
+          !current ||
+          !isCurrentChatScope(scope, chat.id) ||
+          latest.currentChatId !== chat.id ||
+          current.runId !== chat.runId ||
+          current.runBudget?.runId !== chat.runId ||
+          current.archived ||
+          latest.remoteBusyChatIds[chat.id] ||
+          !latest.canUseAgentExecution()
+        )
+          return;
+        ended = await latest.endPausedRun(chat.id);
+      });
+      if (!ended) throw new Error("Agent run could not be ended");
+      setContinuationFailure((failure) =>
+        failure?.chatId === chat.id && failure.runId === chat.runId
+          ? null
+          : failure
+      );
+    } catch (error) {
+      const latest = useAgentStore.getState();
+      if (
+        !getAgentRunContinuation(
+          latest.getChat(chat.id),
+          latest.getMessages(chat.id)
+        )
+      ) {
+        setContinuationFailure({
+          chatId: chat.id,
+          runId: chat.runId,
+          endFailed: true,
+        });
+      }
+      throw error;
+    } finally {
+      endingRunRef.current = false;
+      setEndingRun(false);
+    }
+  };
 
   const cancelPendingRequest = useCallback(() => {
     const chat = selectCurrentChat(useAgentStore.getState());
@@ -3650,94 +3894,122 @@ export function AgentInput({
 
   return (
     <div ref={composerRef} className="flex flex-col gap-3 border-t p-3">
-      {!executionAvailable && (
+      {feedback === "execution-unavailable" && (
         <Alert appearance="caption" variant="warning">
-          {t("agent.token-budget.recovery-unavailable")}
+          <div className="min-w-0">
+            {t("agent.token-budget.recovery-unavailable")}
+            <AgentErrorDetails error={currentChat?.lastError} />
+          </div>
         </Alert>
       )}
-      {continuationFailure &&
-        currentChat &&
-        continuationFailure.chatId === currentChat.id &&
-        continuationFailure.runId === (currentChat.runId ?? null) && (
-          <Alert appearance="caption" variant="warning" role="alert">
-            {t("agent.token-budget.continuation-unavailable")}
-          </Alert>
-        )}
-      <AgentStorageStatus
-        key={`storage-status:${storageScope}`}
-        pressure={storagePressure}
-        onRetrySaving={() => useAgentStore.getState().flushRunPersistence()}
-      />
-      <AgentTokenBudgetStatus
-        chat={currentChat}
-        pendingAttemptId={pendingAttemptId}
-        disabled={!executionAvailable}
-        remoteBusy={remoteBusy}
-        canResume={Boolean(
-          !storagePressure &&
-            currentChat &&
-            getAgentRunContinuation(
-              currentChat,
-              useAgentStore.getState().getMessages(currentChat.id)
-            )
-        )}
-        onIncreaseLimit={async (limit) => {
-          if (!currentChat) return false;
-          const store = useAgentStore.getState();
-          if (store.getAbortController(currentChat.id))
-            return store.increaseRunTokenLimit(currentChat.id, limit);
-          let increased = false;
-          await withChatRunSegment(currentChat.id, async () => {
-            increased = await useAgentStore
-              .getState()
-              .increaseRunTokenLimit(currentChat.id, limit);
-          });
-          return increased;
-        }}
-        onResume={async () => {
-          if (
-            !currentChat ||
-            useAgentStore.getState().storagePressure ||
-            (await blockWhenAIIsNotConfigured(currentChat.id))
-          )
-            return false;
-          let resumed = false;
-          await withChatRunSegment(currentChat.id, async (lease) => {
+      {feedback === "continuation-unavailable" && currentChat && (
+        <Alert
+          appearance="caption"
+          variant="warning"
+          role="alert"
+          showIcon={false}
+        >
+          <Collapsible className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <div className="flex min-w-0 max-w-full items-start gap-1">
+                <AlertTriangle
+                  size={14}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 break-words">
+                  {t("agent.token-budget.continuation-unavailable")}
+                </span>
+              </div>
+              {currentChat.lastError && (
+                <CollapsibleTrigger
+                  render={<Button size="xs" appearance="secondary" />}
+                  className="group w-auto gap-x-1.5"
+                  data-agent-error-details
+                >
+                  <ChevronRight
+                    size={14}
+                    className="shrink-0 group-aria-expanded:rotate-90"
+                    aria-hidden="true"
+                  />
+                  {t("error-page.error-details")}
+                </CollapsibleTrigger>
+              )}
+              {currentContinuationFailure?.endFailed && (
+                <span>{t("agent.token-budget.action-failed")}</span>
+              )}
+            </div>
+            {currentChat.lastError && (
+              <AgentErrorDetailsPanel error={currentChat.lastError} />
+            )}
+          </Collapsible>
+        </Alert>
+      )}
+      {feedback === "token-budget" && (
+        <AgentTokenBudgetStatus
+          chat={currentChat}
+          error={currentChat?.lastError}
+          pendingAttemptId={pendingAttemptId}
+          disabled={!executionAvailable || endingRun}
+          remoteBusy={remoteBusy}
+          canResume={Boolean(
+            !storagePressure &&
+              currentChat &&
+              getAgentRunContinuation(
+                currentChat,
+                useAgentStore.getState().getMessages(currentChat.id)
+              )
+          )}
+          onIncreaseLimit={async (limit) => {
+            if (!currentChat) return false;
             const store = useAgentStore.getState();
-            store.syncState();
-            const latest = useAgentStore.getState();
-            const chat = latest.getChat(currentChat.id);
+            if (store.getAbortController(currentChat.id))
+              return store.increaseRunTokenLimit(currentChat.id, limit);
+            let increased = false;
+            await withChatRunSegment(currentChat.id, async () => {
+              increased = await useAgentStore
+                .getState()
+                .increaseRunTokenLimit(currentChat.id, limit);
+            });
+            return increased;
+          }}
+          onResume={async () => {
             if (
-              !chat ||
-              chat.runId !== currentChat.runId ||
-              latest.getAbortController(chat.id) ||
-              chat.runCheckpoint?.suspension !== "token-limit" ||
-              !getAgentRunContinuation(chat, latest.getMessages(chat.id))
+              !currentChat ||
+              useAgentStore.getState().storagePressure ||
+              (await blockWhenAIIsNotConfigured(currentChat.id))
             )
-              return;
-            resumed = true;
-            await startChatRun(
-              chat.id,
-              chat.page ?? getCurrentPageSnapshot(),
-              chat.runMode ?? "default",
-              undefined,
-              true,
-              "continue",
-              lease
-            );
-          });
-          return resumed;
-        }}
-        onEndRun={async () => {
-          if (!currentChat) return;
-          let ended = false;
-          await withChatRunSegment(currentChat.id, async () => {
-            ended = await useAgentStore.getState().endPausedRun(currentChat.id);
-          });
-          if (!ended) throw new Error("Agent run could not be ended");
-          setContinuationFailure(null);
-        }}
-      />
+              return false;
+            let resumed = false;
+            await withChatRunSegment(currentChat.id, async (lease) => {
+              const store = useAgentStore.getState();
+              store.syncState();
+              const latest = useAgentStore.getState();
+              const chat = latest.getChat(currentChat.id);
+              if (
+                !chat ||
+                chat.runId !== currentChat.runId ||
+                latest.getAbortController(chat.id) ||
+                chat.runCheckpoint?.suspension !== "token-limit" ||
+                !getAgentRunContinuation(chat, latest.getMessages(chat.id))
+              )
+                return;
+              resumed = true;
+              await startChatRun(
+                chat.id,
+                chat.page ?? getCurrentPageSnapshot(),
+                chat.runMode ?? "default",
+                undefined,
+                true,
+                "continue",
+                lease
+              );
+            });
+            return resumed;
+          }}
+          onEndRun={endCurrentRun}
+        />
+      )}
       <div className="min-w-0">
         {/* Pending ask banner */}
         {currentPendingAsk && (

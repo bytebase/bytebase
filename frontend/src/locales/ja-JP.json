@@ -44,6 +44,7 @@
     "api-permission-request": "AI アシスタントによるこの API リクエストの実行を許可しますか？",
     "api-permission-title": "実行の許可を求める",
     "archive-all-chats": "すべてのチャットをアーカイブ",
+    "archive-all-chats-confirmation": "すべてのチャット（{{count}}件）をアーカイブしますか？",
     "archive-chat": "チャットをアーカイブ",
     "archive-chat-confirmation": "このチャットをアーカイブしますか？",
     "archived-only-chats": "アーカイブ済みのチャットを表示",
@@ -115,7 +116,7 @@
     "custom-input-placeholder": "値を入力",
     "database-reference-unavailable": "このデータベースは利用できないか、アクセス権がありません。",
     "delete-all-chats": "すべてのチャットを削除",
-    "delete-all-chats-confirmation": "アーカイブ済みのチャットをすべて削除しますか？この操作は元に戻せません。",
+    "delete-all-chats-confirmation": "アーカイブ済みのチャット（{{count}}件）をすべて削除しますか？この操作は元に戻せません。",
     "delete-chat": "チャットを削除",
     "delete-chat-confirmation": "このチャットを削除しますか？この操作は元に戻せません。",
     "diagnostic-help": {
@@ -383,6 +384,10 @@
     },
     "stop": "停止",
     "storage": {
+      "free-and-retry": "空き容量を確保して再試行",
+      "free-failed": "十分な空き容量を確保できませんでした。他の Agent タブを閉じるか、進行中の実行を終了してから再試行してください。",
+      "free-title": "他の保存済み Agent チャットを削除しますか？",
+      "full": "Agent 履歴のストレージがいっぱいです。",
       "retention-info": "チャット履歴の保持",
       "retention-policy": "ローカルストレージの空き容量が必要になると、完了した古いチャットが自動的に削除されます。進行中のチャットと下書きは保持されます。",
       "retry": "再試行",

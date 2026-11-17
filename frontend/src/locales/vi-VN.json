@@ -44,6 +44,7 @@
     "api-permission-request": "Cho phép trợ lý thực hiện yêu cầu API này?",
     "api-permission-title": "Yêu cầu quyền thực hiện",
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
+    "archive-all-chats-confirmation": "Lưu trữ tất cả cuộc trò chuyện ({{count}})?",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
     "archive-chat-confirmation": "Lưu trữ cuộc trò chuyện này?",
     "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
@@ -115,7 +116,7 @@
     "custom-input-placeholder": "Nhập giá trị",
     "database-reference-unavailable": "Cơ sở dữ liệu này không còn khả dụng hoặc bạn không có quyền truy cập.",
     "delete-all-chats": "Xóa tất cả cuộc trò chuyện",
-    "delete-all-chats-confirmation": "Bạn có chắc chắn muốn xóa tất cả cuộc trò chuyện đã lưu trữ không? Hành động này không thể hoàn tác.",
+    "delete-all-chats-confirmation": "Xóa tất cả cuộc trò chuyện đã lưu trữ ({{count}})? Hành động này không thể hoàn tác.",
     "delete-chat": "Xóa cuộc trò chuyện",
     "delete-chat-confirmation": "Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.",
     "diagnostic-help": {
@@ -383,6 +384,10 @@
     },
     "stop": "Dừng",
     "storage": {
+      "free-and-retry": "Giải phóng bộ nhớ và thử lại",
+      "free-failed": "Không thể giải phóng đủ bộ nhớ. Hãy đóng các thẻ Agent khác hoặc kết thúc các lượt chạy đang hoạt động rồi thử lại.",
+      "free-title": "Xóa các cuộc trò chuyện Agent đã lưu khác?",
+      "full": "Bộ nhớ lịch sử Agent đã đầy.",
       "retention-info": "Lưu giữ lịch sử trò chuyện",
       "retention-policy": "Các cuộc trò chuyện đã hoàn tất cũ hơn sẽ tự động bị xóa khi cần giải phóng bộ nhớ cục bộ. Các cuộc trò chuyện đang hoạt động và bản nháp được giữ lại.",
       "retry": "Thử lại",

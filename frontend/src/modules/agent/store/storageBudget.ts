@@ -25,7 +25,9 @@ export class AgentStorageFullError extends Error {
     cause?: unknown
   ) {
     super(
-      "Agent storage is full.",
+      reason === "budget"
+        ? `Agent storage is full. Agent data requires ${bytes} bytes; the limit is ${limitBytes} bytes.`
+        : `Agent storage is full. The browser rejected the write for ${bytes} bytes of Agent data.`,
       cause === undefined ? undefined : { cause }
     );
     this.name = "AgentStorageFullError";

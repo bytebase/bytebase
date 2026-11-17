@@ -5377,6 +5377,13 @@ describe("agent tools ask_user", () => {
     if (result.kind !== "ask_user")
       throw new Error("Expected pending question");
     expect(result.ask).not.toHaveProperty("resourceProject");
+    expect(result.ask.defaultValue).toBeUndefined();
+    expect(
+      result.ask.options?.find((option) => option.value === "choose-project")
+    ).toMatchObject({ kind: "custom-input", placeholder: "Search projects" });
+    expect(
+      result.ask.options?.find((option) => option.value === "workspace")
+    ).not.toHaveProperty("kind");
   });
 
   test("does not accept model-provided resource project metadata", async () => {

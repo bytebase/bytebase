@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { act } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { AgentStorageStatus } from "./AgentStorageStatus";
@@ -10,22 +10,90 @@ vi.mock("react-i18next", () => ({
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-const pressure = { reason: "budget" as const, phase: "saving" as const, bytes: 3145728, limitBytes: 3145728 };
+const pressure = { reason: "unavailable" as const, phase: "saving" as const, bytes: 3145728, limitBytes: 3145728 };
+const fullPressure = { ...pressure, reason: "budget" as const };
 
 describe("AgentStorageStatus", () => {
+  test("matches the transcript error panel with a compact outlined recovery action", () => {
+    render(<AgentStorageStatus pressure={pressure} onRetrySaving={vi.fn()} />);
+    const region = screen.getByRole("alert");
+    const retry = screen.getByRole("button", { name: "agent.storage.retry" });
+    expect(region).toHaveClass("rounded-sm", "border-0", "bg-error/10", "px-3", "py-2", "text-sm", "text-error", "shadow-none");
+    expect(region).not.toHaveClass("text-xs", "text-warning", "bg-warning/10");
+    const header = region.querySelector("[data-agent-storage-header]");
+    expect(header).toHaveClass("flex", "items-start", "justify-between", "gap-2");
+    expect(header).toContainElement(screen.getByText("agent.storage.save-failed"));
+    expect(header).toContainElement(retry);
+    expect(retry.parentElement).toHaveClass("ml-auto", "shrink-0");
+    expect(screen.getByText("agent.storage.save-failed")).not.toHaveClass(
+      "grow",
+      "basis-64"
+    );
+    expect(region.querySelector(":scope > svg")).toBeNull();
+    expect(retry).toHaveClass("h-6", "gap-1.5");
+    expect(retry).toHaveClass("border", "border-control-border");
+    expect(retry.querySelector("svg")).toHaveAttribute("width", "14");
+    expect(retry.querySelector("svg")).toHaveAttribute("height", "14");
+    expect(retry.querySelector("svg")).toHaveClass("shrink-0");
+  });
+
+  test("keeps expandable shared Error details below the summary and right-aligned recovery", async () => {
+    const rawError = "QuotaExceededError: Browser storage is full";
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const onRetrySaving = vi.fn(async () => true);
+    render(<AgentStorageStatus pressure={pressure} error={rawError} onRetrySaving={onRetrySaving} />);
+    const region = screen.getByRole("alert", { name: "agent.storage.title" });
+    const header = region.querySelector<HTMLElement>("[data-agent-storage-header]");
+    expect(header).not.toBeNull();
+    const status = screen.getByText("agent.storage.save-failed");
+    const retry = screen.getByRole("button", { name: "agent.storage.retry" });
+    const details = screen.getByRole("button", { name: "error-page.error-details" });
+    expect(header).toContainElement(status);
+    expect(header).toContainElement(retry);
+    expect(header).not.toContainElement(details);
+    expect(header && (header.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+    expect(region.querySelectorAll("svg.lucide-triangle-alert")).toHaveLength(0);
+    expect(region.querySelector(":scope > svg")).toBeNull();
+    const actions = region.querySelector("[data-agent-storage-actions]");
+    expect(actions).toHaveClass("flex", "shrink-0", "ml-auto");
+    expect(actions).not.toHaveClass("flex-wrap");
+    expect(actions).toContainElement(retry);
+    expect(actions).not.toContainElement(details);
+    expect(details).toHaveAttribute("data-agent-error-details");
+    expect(details).toHaveClass("text-xs", "underline", "decoration-dotted");
+    expect(details).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(rawError)).toBeNull();
+    await act(async () => fireEvent.click(details));
+    expect(details).toHaveAttribute("aria-expanded", "true");
+    const diagnostic = screen.getByText(rawError);
+    expect(region).toContainElement(diagnostic);
+    expect(header).not.toContainElement(diagnostic);
+    expect(header && (header.compareDocumentPosition(diagnostic) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+    expect(within(region).getAllByRole("button")).toHaveLength(2);
+    expect(onRetrySaving).not.toHaveBeenCalled();
+    await act(async () => fireEvent.click(retry));
+    expect(onRetrySaving).toHaveBeenCalledOnce();
+    expect(fetch).not.toHaveBeenCalled();
+    await act(async () => fireEvent.click(details));
+    expect(details).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(rawError)).toBeNull();
+    expect(onRetrySaving).toHaveBeenCalledOnce();
+  });
+
   test("stays absent without pressure", () => {
     const { container } = render(<AgentStorageStatus onRetrySaving={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
   });
 
-  test.each(["budget", "quota", "unavailable"] as const)("shows only a save failure and Retry for %s without moving focus", (reason) => {
+  test("shows only a save failure and Retry for unavailable storage without moving focus", () => {
     const draft = document.createElement("textarea");
     document.body.appendChild(draft);
     draft.focus();
-    render(<AgentStorageStatus pressure={{ ...pressure, reason, phase: "admission", otherScopeBytes: 1024 }} onRetrySaving={vi.fn()} />);
-    expect(screen.getByRole("region", { name: "agent.storage.title" })).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
+    render(<AgentStorageStatus pressure={{ ...pressure, phase: "admission", otherScopeBytes: 1024 }} onRetrySaving={vi.fn()} />);
+    expect(screen.getByRole("alert", { name: "agent.storage.title" })).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
     expect(screen.getAllByRole("button")).toHaveLength(1);
-    expect(screen.getByRole("status")).toHaveTextContent("agent.storage.save-failed");
+    expect(screen.getByText("agent.storage.save-failed")).toBeVisible();
     expect(draft).toHaveFocus();
     draft.remove();
   });
@@ -37,17 +105,17 @@ describe("AgentStorageStatus", () => {
     const onRetrySaving = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
     const { rerender } = render(<AgentStorageStatus pressure={pressure} onRetrySaving={onRetrySaving} />);
     fireEvent.click(screen.getByRole("button", { name: "agent.storage.retry" }));
-    rerender(<AgentStorageStatus pressure={{ ...pressure, bytes: 42, reason: "quota" }} onRetrySaving={onRetrySaving} />);
+    rerender(<AgentStorageStatus pressure={{ ...pressure, bytes: 42 }} onRetrySaving={onRetrySaving} />);
     fireEvent.click(screen.getByRole("button", { name: "agent.storage.retry" }));
     expect(onRetrySaving).toHaveBeenCalledOnce();
     expect(screen.getByRole("button")).toBeDisabled();
     expect(screen.getByRole("button")).toHaveAttribute("aria-busy", "true");
     await act(async () => finish(true));
-    expect(screen.getByRole("region")).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
+    expect(screen.getByRole("alert")).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
     expect(screen.getByRole("button")).toBeEnabled();
     expect(fetch).not.toHaveBeenCalled();
     rerender(<AgentStorageStatus onRetrySaving={onRetrySaving} />);
-    expect(screen.queryByRole("region")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   test.each([false, "throw"])("keeps unsuccessful retries recoverable: %s", async (result) => {
@@ -56,8 +124,8 @@ describe("AgentStorageStatus", () => {
     else onRetrySaving.mockRejectedValueOnce(new Error("Unavailable"));
     render(<AgentStorageStatus pressure={pressure} onRetrySaving={onRetrySaving} />);
     await act(async () => fireEvent.click(screen.getByRole("button")));
-    expect(screen.getByRole("region")).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent(/^agent.storage.save-failedagent.storage.retry$/);
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(screen.getByRole("button")).toBeEnabled();
     await act(async () => fireEvent.click(screen.getByRole("button")));
     expect(onRetrySaving).toHaveBeenCalledTimes(2);
@@ -69,5 +137,80 @@ describe("AgentStorageStatus", () => {
     expect(screen.getByRole("button")).toBeDisabled();
     fireEvent.click(screen.getByRole("button"));
     expect(onRetrySaving).not.toHaveBeenCalled();
+  });
+
+  test.each(["budget", "quota"] as const)("offers confirmed recovery instead of a futile Retry for %s", async (reason) => {
+    const onFreeSpaceAndRetry = vi.fn(async () => true);
+    const onRetrySaving = vi.fn();
+    render(<AgentStorageStatus pressure={{ ...fullPressure, reason }} onRetrySaving={onRetrySaving} onFreeSpaceAndRetry={onFreeSpaceAndRetry} />);
+    expect(screen.getByText("agent.storage.full")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "agent.storage.retry" })).toBeNull();
+    const recovery = screen.getByRole("button", { name: "agent.storage.free-and-retry" });
+    expect(recovery.parentElement).toHaveClass("ml-auto");
+    expect(recovery.querySelector("svg")).toHaveAttribute("width", "14");
+    expect(recovery.querySelector("svg")).toHaveAttribute("height", "14");
+    await act(async () => fireEvent.click(recovery));
+    const dialog = await screen.findByRole("dialog", { name: "agent.storage.free-title" });
+    expect(dialog.closest("[data-bb-layer-family]")).toHaveAttribute("data-bb-layer-family", "agent");
+    expect(dialog).toHaveClass("w-64", "p-3");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })).toHaveClass("h-7");
+    expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" }).querySelector("svg")).toBeNull();
+    expect(onFreeSpaceAndRetry).not.toHaveBeenCalled();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "common.cancel" })));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(onFreeSpaceAndRetry).not.toHaveBeenCalled();
+    expect(onRetrySaving).not.toHaveBeenCalled();
+  });
+
+  test("offers only confirmation actions and closes after successful recovery", async () => {
+    const onFreeSpaceAndRetry = vi.fn(async () => true);
+    render(<AgentStorageStatus pressure={fullPressure} onRetrySaving={vi.fn()} onFreeSpaceAndRetry={onFreeSpaceAndRetry} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "agent.storage.free-and-retry" })));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByRole("checkbox")).toBeNull();
+    expect(within(dialog).getAllByRole("button")).toHaveLength(2);
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })));
+    expect(onFreeSpaceAndRetry).toHaveBeenCalledExactlyOnceWith();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  test("prevents duplicate recovery and dismissal while freeing space", async () => {
+    let finish!: (saved: boolean) => void;
+    const onFreeSpaceAndRetry = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+    render(<AgentStorageStatus pressure={fullPressure} onRetrySaving={vi.fn()} onFreeSpaceAndRetry={onFreeSpaceAndRetry} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "agent.storage.free-and-retry" })));
+    const dialog = await screen.findByRole("dialog");
+    const confirm = within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" });
+    const cancel = within(dialog).getByRole("button", { name: "common.cancel" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    fireEvent.click(cancel);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onFreeSpaceAndRetry).toHaveBeenCalledExactlyOnceWith();
+    expect(confirm).toBeDisabled();
+    expect(confirm).toHaveAttribute("aria-busy", "true");
+    expect(cancel).toBeDisabled();
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    await act(async () => finish(true));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  test.each([false, "throw"])("keeps failed recovery visible and actionable without another alert: %s", async (result) => {
+    const onFreeSpaceAndRetry = vi.fn(async () => true);
+    if (result === false) onFreeSpaceAndRetry.mockResolvedValueOnce(false);
+    else onFreeSpaceAndRetry.mockRejectedValueOnce(new Error("Storage is still full"));
+    render(<AgentStorageStatus pressure={fullPressure} onRetrySaving={vi.fn()} onFreeSpaceAndRetry={onFreeSpaceAndRetry} />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "agent.storage.free-and-retry" })));
+    const dialog = await screen.findByRole("dialog");
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })));
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("agent.storage.free-failed");
+    expect(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })).toBeEnabled();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: "agent.storage.free-and-retry" })));
+    expect(onFreeSpaceAndRetry).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
