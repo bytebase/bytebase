@@ -235,6 +235,24 @@ export function AgentWindow() {
   const hasRunningChat = useAgentStore(selectHasRunningChat);
   const storedWorkspaceName = useAgentStore((s) => s.workspaceName);
   const storedUserEmail = useAgentStore((s) => s.userEmail);
+  const conversationIdentity = JSON.stringify([
+    storedWorkspaceName,
+    storedUserEmail,
+    currentChatId,
+  ]);
+  const protectedConversationRef = useRef<string | null>(null);
+  const waitingForChatProtection = Boolean(currentChat && !chatProtectionReady);
+  // Reclamation releases protection without discarding pending answers or recovery callbacks.
+  const keepConversationMounted =
+    !waitingForChatProtection ||
+    protectedConversationRef.current === conversationIdentity;
+  useLayoutEffect(() => {
+    if (chatProtectionReady) {
+      protectedConversationRef.current = conversationIdentity;
+    } else if (protectedConversationRef.current !== conversationIdentity) {
+      protectedConversationRef.current = null;
+    }
+  }, [chatProtectionReady, conversationIdentity]);
   const openingBehavior = useAgentStore((s) => s.preferences.openingBehavior);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
@@ -1994,54 +2012,68 @@ export function AgentWindow() {
         onStart={startContextualChat}
         onContinue={continueCurrentChat}
       />
-    ) : currentChat && !chatProtectionReady ? (
-      <div
-        role="status"
-        aria-busy="true"
-        className="flex min-h-0 flex-1 items-center justify-center gap-2 p-4 text-sm text-control-light"
-      >
-        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-        {t("common.loading")}
-      </div>
     ) : (
       <>
-        <AgentChat
-          onOpenAccessGrantDraft={openAccessGrantDraft}
-          className="min-h-0 flex-1"
-          contextLabel={
-            currentChat?.context
-              ? getContextLabel(currentChat.context)
-              : workspace?.title || t("agent.context-workspace")
-          }
-          onRetry={retryLastTurn}
-          onFreeSpaceAndRetry={
-            currentChat && !currentChat.archived ? freeSpaceAndRetry : undefined
-          }
-          onResend={resendMessage}
-          onSelectSuggestion={selectEmptyChatSuggestion}
-          onContinueAction={continueResponseAction}
-        />
-        {currentChat?.archived ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-block-border p-3">
-            <p role="status" className="text-sm text-control-light">
-              {t("agent.chat-archived-notice")}
-            </p>
-            <Button
-              appearance="secondary"
-              size="sm"
-              onClick={restoreCurrentChat}
-            >
-              <Undo2 className="size-4" aria-hidden="true" />
-              {t("agent.unarchive-chat")}
-            </Button>
+        {waitingForChatProtection && (
+          <div
+            role="status"
+            aria-busy="true"
+            className="flex min-h-0 flex-1 items-center justify-center gap-2 p-4 text-sm text-control-light"
+          >
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+            {t("common.loading")}
           </div>
-        ) : (
-          <AgentInput
-            retryActionRef={retryLastTurnRef}
-            freeSpaceAndRetryActionRef={freeSpaceAndRetryRef}
-            resendActionRef={resendMessageRef}
-            focusActionRef={focusInputRef}
-          />
+        )}
+        {keepConversationMounted && (
+          <div
+            hidden={waitingForChatProtection}
+            inert={waitingForChatProtection}
+            className={cn(
+              "min-h-0 flex-1 flex-col",
+              waitingForChatProtection ? "hidden" : "flex"
+            )}
+          >
+            <AgentChat
+              onOpenAccessGrantDraft={openAccessGrantDraft}
+              className="min-h-0 flex-1"
+              contextLabel={
+                currentChat?.context
+                  ? getContextLabel(currentChat.context)
+                  : workspace?.title || t("agent.context-workspace")
+              }
+              onRetry={retryLastTurn}
+              onFreeSpaceAndRetry={
+                currentChat && !currentChat.archived
+                  ? freeSpaceAndRetry
+                  : undefined
+              }
+              onResend={resendMessage}
+              onSelectSuggestion={selectEmptyChatSuggestion}
+              onContinueAction={continueResponseAction}
+            />
+            {currentChat?.archived ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-block-border p-3">
+                <p role="status" className="text-sm text-control-light">
+                  {t("agent.chat-archived-notice")}
+                </p>
+                <Button
+                  appearance="secondary"
+                  size="sm"
+                  onClick={restoreCurrentChat}
+                >
+                  <Undo2 className="size-4" aria-hidden="true" />
+                  {t("agent.unarchive-chat")}
+                </Button>
+              </div>
+            ) : (
+              <AgentInput
+                retryActionRef={retryLastTurnRef}
+                freeSpaceAndRetryActionRef={freeSpaceAndRetryRef}
+                resendActionRef={resendMessageRef}
+                focusActionRef={focusInputRef}
+              />
+            )}
+          </div>
         )}
       </>
     );

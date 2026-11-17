@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { PersistedAgentState } from "./agent";
-import { reclaimOtherAgentHistory } from "./otherHistoryRetention";
+import {
+  reclaimOtherAgentHistory,
+  withAgentHistoryReclamationLocks,
+} from "./otherHistoryRetention";
 import * as stateStorage from "./stateStorage";
 
 const member = "member@example.com";
@@ -110,6 +113,68 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+});
+
+describe("withAgentHistoryReclamationLocks", () => {
+  test("keeps scope retirement blocked by a newly opened chat during partial cleanup", async () => {
+    locks.block(
+      `bb-agent-chat-protection:${JSON.stringify(currentKey)}:"later"`
+    );
+    const action = vi.fn((ids: ReadonlySet<string>, ownsScope: boolean) => {
+      expect([...ids]).toEqual(["old"]);
+      expect(ownsScope).toBe(false);
+      return 1;
+    });
+
+    expect(
+      await withAgentHistoryReclamationLocks(
+        currentKey,
+        ["old"],
+        () => true,
+        action,
+        { allowPartial: true }
+      )
+    ).toBe(1);
+    expect(action).toHaveBeenCalledOnce();
+  });
+
+  test.each([
+    { version: 2, kind: "open", pending: false },
+    { version: 3, kind: "open", pending: false },
+    { version: 2, kind: "running", pending: false },
+    { version: 3, kind: "running", pending: false },
+    { version: 2, kind: "open", pending: true },
+    { version: 3, kind: "open", pending: true },
+    { version: 2, kind: "running", pending: true },
+    { version: 3, kind: "running", pending: true },
+  ])(
+    "preserves a v$version $kind claim with pending=$pending during partial reclamation",
+    async ({ version, kind, pending }) => {
+      const scope = scopedKey("current", member, version);
+      locks.block(
+        kind === "open"
+          ? `bb-agent-chat-protection:${JSON.stringify(scope)}:"old"`
+          : `bb-agent-run:${JSON.stringify([scope, "old"])}`,
+        pending
+      );
+      const action = vi.fn((ids: ReadonlySet<string>, ownsScope: boolean) => {
+        expect([...ids]).toEqual(["new"]);
+        expect(ownsScope).toBe(false);
+        return 1;
+      });
+
+      expect(
+        await withAgentHistoryReclamationLocks(
+          currentKey,
+          ["old", "new"],
+          () => true,
+          action,
+          { allowPartial: true }
+        )
+      ).toBe(1);
+      expect(action).toHaveBeenCalledOnce();
+    }
+  );
 });
 
 describe("reclaimOtherAgentHistory", () => {

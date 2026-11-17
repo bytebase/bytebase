@@ -123,10 +123,12 @@ export const withAgentHistoryReclamationLocks = async (
   key: string,
   ids: readonly string[],
   isCurrent: () => boolean,
-  action: () => number
+  action: (lockedChatIds: ReadonlySet<string>, ownsScope: boolean) => number,
+  { allowPartial = false }: { allowPartial?: boolean } = {}
 ): Promise<number> => {
   const scopes = aliases(key);
   const claims = scopes.flatMap((scope) => ids.map((id) => ({ scope, id })));
+  const lockedChatIds = new Set(ids);
   const owned = new Set<string>();
   const withPersistence = async (index: number): Promise<number> => {
     if (!isCurrent()) return 0;
@@ -134,8 +136,13 @@ export const withAgentHistoryReclamationLocks = async (
       return withAgentPersistenceLock(scopes[index], () =>
         withPersistence(index + 1)
       );
-    if (await hasLiveLocks(scopes, owned, !scopedIdentity(key))) return 0;
-    return withAgentStorageBudgetLock(() => (isCurrent() ? action() : 0));
+    const liveLocks = await hasLiveLocks(scopes, owned, !scopedIdentity(key));
+    // Retiring a legacy scope requires ownership of every chat and no other live claims.
+    const ownsScope = lockedChatIds.size === new Set(ids).size && !liveLocks;
+    if (!ownsScope && !allowPartial) return 0;
+    return withAgentStorageBudgetLock(() =>
+      isCurrent() ? action(lockedChatIds, ownsScope) : 0
+    );
   };
   const withClaims = async (
     index: number,
@@ -145,6 +152,7 @@ export const withAgentHistoryReclamationLocks = async (
     if (index === claims.length)
       return execution ? withPersistence(0) : withClaims(0, true);
     const { scope, id } = claims[index];
+    if (!lockedChatIds.has(id)) return withClaims(index + 1, execution);
     const name = execution
       ? `bb-agent-run:${JSON.stringify([scope, id])}`
       : `bb-agent-chat-protection:${JSON.stringify(scope)}:${JSON.stringify(id)}`;
@@ -159,7 +167,10 @@ export const withAgentHistoryReclamationLocks = async (
     const result = execution
       ? await withAgentRunLease(scope, id, nested)
       : await withAgentChatEvictionLease(scope, id, nested);
-    return result.acquired ? (result.value ?? 0) : 0;
+    if (result.acquired) return result.value ?? 0;
+    if (!allowPartial) return 0;
+    lockedChatIds.delete(id);
+    return withClaims(index + 1, execution);
   };
   return withClaims(0, false);
 };

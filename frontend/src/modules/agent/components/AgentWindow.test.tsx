@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { act, cloneElement, useState } from "react";
+import { act, cloneElement, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { getLayerRoot } from "@/components/ui/layer";
@@ -21,6 +21,7 @@ import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
 
 const mocks = vi.hoisted(() => ({
   freeSpaceAndRetryActionRef: undefined as { current: (() => Promise<boolean>) | null } | undefined,
+  inputUnmounted: vi.fn(),
   accessGrantDrawerOnClose: undefined as (() => void) | undefined,
   routeName: "project.plan.detail",
   activeSQLTheme: undefined as SQLEditorTheme | undefined,
@@ -261,7 +262,9 @@ vi.mock("./AgentChat", () => ({
 vi.mock("./AgentInput", () => ({
   AgentInput: ({ freeSpaceAndRetryActionRef }: { freeSpaceAndRetryActionRef?: { current: (() => Promise<boolean>) | null } }) => {
     mocks.freeSpaceAndRetryActionRef = freeSpaceAndRetryActionRef;
-    return <div data-testid="agent-input" />;
+    const [answer, setAnswer] = useState("");
+    useEffect(() => () => mocks.inputUnmounted(), []);
+    return <div data-testid="agent-input"><input aria-label="Mock pending answer" value={answer} onChange={(event) => setAnswer(event.target.value)} /></div>;
   },
 }));
 
@@ -350,6 +353,7 @@ const selectChatMenuAction = async (chatId: string, selector: string) => {
 
 beforeEach(async () => {
   mocks.freeSpaceAndRetryActionRef = undefined;
+  mocks.inputUnmounted.mockClear();
   vi.stubGlobal("localStorage", createMockStorage());
   vi.stubGlobal(
     "ResizeObserver",
@@ -544,6 +548,39 @@ test("keeps the conversation available when protection readiness is unspecified"
 
     expect(screen.getByTestId("agent-chat")).toBeVisible();
     expect(screen.getByTestId("agent-input")).toBeVisible();
+  } finally {
+    unmount();
+  }
+});
+
+test.each([1200, 390])("preserves the mounted conversation while its protection is temporarily released at width %s", async (width) => {
+  const store = useAgentStore.getState();
+  const chat = store.createChat({ title: "Current question", context: mocks.workspace.name });
+  await act(async () => store.refreshChatProtection());
+  useAgentStore.setState({ size: { width, height: 600 } });
+  const { render, unmount } = renderIntoContainer(<AgentWindow />);
+  try {
+    render();
+    const conversation = screen.getByTestId("agent-chat");
+    const input = screen.getByTestId("agent-input");
+    act(() => fireEvent.change(screen.getByRole("textbox", { name: "Mock pending answer" }), { target: { value: "Keep this custom answer" } }));
+
+    act(() => store.releaseChatProtection());
+
+    expect(screen.getByTestId("agent-chat")).toBe(conversation);
+    expect(screen.getByTestId("agent-input")).toBe(input);
+    expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+    expect(input).not.toBeVisible();
+    expect(input.closest("[inert]")).not.toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("common.loading");
+
+    act(() => store.refreshChatProtection());
+
+    expect(screen.getByTestId("agent-input")).toBe(input);
+    expect(screen.getByRole("textbox", { name: "Mock pending answer" })).toHaveValue("Keep this custom answer");
+    expect(input).toBeVisible();
+    expect(input.closest("[inert]")).toBeNull();
+    expect(store.getChat(chat.id)).not.toBeNull();
   } finally {
     unmount();
   }
@@ -949,6 +986,84 @@ describe("AgentWindow", () => {
       expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "false");
     } finally {
       unmount();
+    }
+  });
+
+  test("preserves the input through real history reclamation and protection reacquisition", async () => {
+    const held = new Set<{ name: string; mode: LockMode }>();
+    const waiters = new Set<() => void>();
+    let releaseCleanup!: () => void;
+    const cleanup = new Promise<void>((resolve) => { releaseCleanup = resolve; });
+    let enterCleanup!: () => void;
+    const enteredCleanup = new Promise<void>((resolve) => { enterCleanup = resolve; });
+    let pauseCleanup = true;
+    const locks = {
+      request: async <T,>(name: string, options: LockOptions, action: (lock: Lock | null) => T | PromiseLike<T>): Promise<T> => {
+        const mode = options.mode ?? "exclusive";
+        const unavailable = () => [...held].some((lock) => lock.name === name && (mode === "exclusive" || lock.mode === "exclusive"));
+        await Promise.resolve();
+        while (unavailable()) {
+          if (options.ifAvailable) return await action(null);
+          if (options.signal?.aborted) throw options.signal.reason;
+          await new Promise<void>((resolve) => waiters.add(resolve));
+        }
+        if (options.signal?.aborted) throw options.signal.reason;
+        const lock = { name, mode };
+        held.add(lock);
+        try {
+          if (pauseCleanup && mode === "exclusive" && name.startsWith("bb-agent-chat-protection:")) {
+            pauseCleanup = false;
+            enterCleanup();
+            await cleanup;
+          }
+          return await action(lock);
+        } finally {
+          held.delete(lock);
+          for (const resolve of waiters) resolve();
+          waiters.clear();
+        }
+      },
+      query: async () => ({ held: [...held].map((lock) => ({ ...lock, clientId: "test" })), pending: [] }),
+    };
+    vi.stubGlobal("navigator", { locks });
+    const store = useAgentStore.getState();
+    store.createChat({ title: "Current question", context: mocks.workspace.name });
+    await act(async () => { store.refreshChatProtection(); await store.flushRunPersistence(); });
+    await waitFor(() => expect(useAgentStore.getState().chatProtectionReady).toBe(true));
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      const input = screen.getByTestId("agent-input");
+      act(() => fireEvent.change(screen.getByRole("textbox", { name: "Mock pending answer" }), { target: { value: "Keep this custom answer" } }));
+      const recovery = vi.fn(async () => (await store.freeAgentStorage()) && mocks.inputUnmounted.mock.calls.length === 0);
+      mocks.freeSpaceAndRetryActionRef!.current = recovery;
+
+      await act(async () => {
+        screen.getByTestId("agent-free-storage").click();
+        await enteredCleanup;
+      });
+
+      expect(useAgentStore.getState().chatProtectionReady).toBe(false);
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(input).not.toBeVisible();
+      expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+
+      await act(async () => { releaseCleanup(); await cleanup; });
+      await waitFor(() => expect(useAgentStore.getState().chatProtectionReady).toBe(true));
+      await waitFor(() => expect(screen.getByTestId("agent-chat")).toHaveAttribute("data-storage-recovery-result", "true"));
+
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(screen.getByRole("textbox", { name: "Mock pending answer" })).toHaveValue("Keep this custom answer");
+      expect(input).toBeVisible();
+      expect(recovery).toHaveBeenCalledOnce();
+    } finally {
+      releaseCleanup();
+      unmount();
+      await act(async () => {
+        store.releaseChatProtection();
+        vi.unstubAllGlobals();
+        store.refreshChatProtection();
+      });
     }
   });
 

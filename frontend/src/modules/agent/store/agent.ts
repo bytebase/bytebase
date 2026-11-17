@@ -4624,10 +4624,8 @@ export const createAgentStore = () => {
       if (!isCurrent()) return false;
       const state = store.getState();
       const ids = state.chats.map((chat) => chat.id);
-      if (ids.some((id) => isExecuting(state, id)))
-        return options.resetCurrentChat
-          ? false
-          : store.getState().checkAgentStorageAdmission();
+      if (options.resetCurrentChat && chatId && isExecuting(state, chatId))
+        return false;
       if (options.resetCurrentChat && chatId && !unchanged(state, chatId))
         return false;
       if (legacyValue) {
@@ -4649,88 +4647,103 @@ export const createAgentStore = () => {
       for (const id of ids) reclamationChatIds.add(id);
       refreshChatProtection();
       let saved = false;
-      await withAgentHistoryReclamationLocks(key, ids, isCurrent, () => {
-        store.getState().syncState();
-        const current = store.getState();
-        if (
-          !isCurrent() ||
-          ids.some((id) => isExecuting(current, id, true)) ||
-          storage.getItem(legacyKey) !== legacyValue
-        )
-          return 0;
-        if (options.resetCurrentChat && chatId && !unchanged(current, chatId))
-          return 0;
-        const removed = new Set(
-          current.chats
-            .filter((chat) => chat.id !== chatId && unchanged(current, chat.id))
-            .map((chat) => chat.id)
-        );
-        let retained = omitAgentQuerySamples(
-          removeAgentHistoryChats(persistedSnapshot(current), removed)
-        );
-        if (options.resetCurrentChat && chatId) {
-          const chat = current.chats.find((item) => item.id === chatId);
-          if (!chat) return 0;
-          const messages = current.messagesByChatId[chatId] ?? [];
-          const root =
-            messages.find(
-              (message) =>
-                message.role === "user" &&
-                message.id === chat.runCheckpoint?.rootUserMessageId
-            ) ?? messages.findLast((message) => message.role === "user");
-          const reset: AgentChat = {
-            ...chat,
-            status: "error",
-            runId: null,
-            runMode: undefined,
-            runCheckpoint: undefined,
-            runBudget: undefined,
-            modelAttempts: undefined,
-            legacyUsage: undefined,
-            lastRunUsage: undefined,
-            totalTokensUsed: 0,
-            hasUnreportedUsage: false,
-            interrupted: false,
-            interruptionReason: undefined,
-            lastError: null,
-          };
-          retained = {
+      await withAgentHistoryReclamationLocks(
+        key,
+        ids,
+        isCurrent,
+        (lockedIds, ownsScope) => {
+          store.getState().syncState();
+          const current = store.getState();
+          if (!isCurrent() || storage.getItem(legacyKey) !== legacyValue)
+            return 0;
+          if (
+            options.resetCurrentChat &&
+            chatId &&
+            (!lockedIds.has(chatId) ||
+              isExecuting(current, chatId, true) ||
+              !unchanged(current, chatId))
+          )
+            return 0;
+          const removed = new Set(
+            current.chats
+              .filter(
+                (chat) =>
+                  chat.id !== chatId &&
+                  lockedIds.has(chat.id) &&
+                  !isExecuting(current, chat.id, true) &&
+                  unchanged(current, chat.id)
+              )
+              .map((chat) => chat.id)
+          );
+          let retained = omitAgentQuerySamples(
+            removeAgentHistoryChats(persistedSnapshot(current), removed)
+          );
+          if (options.resetCurrentChat && chatId) {
+            const chat = current.chats.find((item) => item.id === chatId);
+            if (!chat) return 0;
+            const messages = current.messagesByChatId[chatId] ?? [];
+            const root =
+              messages.find(
+                (message) =>
+                  message.role === "user" &&
+                  message.id === chat.runCheckpoint?.rootUserMessageId
+              ) ?? messages.findLast((message) => message.role === "user");
+            const reset: AgentChat = {
+              ...chat,
+              status: "error",
+              runId: null,
+              runMode: undefined,
+              runCheckpoint: undefined,
+              runBudget: undefined,
+              modelAttempts: undefined,
+              legacyUsage: undefined,
+              lastRunUsage: undefined,
+              totalTokensUsed: 0,
+              hasUnreportedUsage: false,
+              interrupted: false,
+              interruptionReason: undefined,
+              lastError: null,
+            };
+            retained = {
+              ...retained,
+              chats: retained.chats.map((item) =>
+                item.id === chatId ? reset : item
+              ),
+              messagesByChatId: {
+                ...retained.messagesByChatId,
+                [chatId]: root ? [root] : [],
+              },
+              pendingAskByChatId: { ...retained.pendingAskByChatId },
+              queuedUserMessagesByChatId: {
+                ...retained.queuedUserMessagesByChatId,
+              },
+              activeChatIds: retained.activeChatIds?.filter(
+                (id) => id !== chatId
+              ),
+            };
+            delete retained.pendingAskByChatId[chatId];
+            delete retained.queuedUserMessagesByChatId[chatId];
+          }
+          const candidate = {
+            ...current,
             ...retained,
-            chats: retained.chats.map((item) =>
-              item.id === chatId ? reset : item
-            ),
-            messagesByChatId: {
-              ...retained.messagesByChatId,
-              [chatId]: root ? [root] : [],
-            },
-            pendingAskByChatId: { ...retained.pendingAskByChatId },
-            queuedUserMessagesByChatId: {
-              ...retained.queuedUserMessagesByChatId,
-            },
-            activeChatIds: retained.activeChatIds?.filter(
-              (id) => id !== chatId
+            remoteBusyChatIds: Object.fromEntries(
+              Object.entries(current.remoteBusyChatIds).filter(
+                ([id]) => !lockedIds.has(id)
+              )
             ),
           };
-          delete retained.pendingAskByChatId[chatId];
-          delete retained.queuedUserMessagesByChatId[chatId];
-        }
-        const candidate = {
-          ...current,
-          ...retained,
-          remoteBusyChatIds: Object.fromEntries(
-            Object.entries(current.remoteBusyChatIds).filter(
-              ([id]) => !ids.includes(id)
-            )
-          ),
-        };
-        saved = synchronizeState(candidate, true, true, {
-          resetChatId: options.resetCurrentChat
-            ? (chatId ?? undefined)
-            : undefined,
-        });
-        if (saved) pendingStatesByScope.set(key, store.getState());
-        return saved ? 1 : 0;
-      });
+          saved = synchronizeState(candidate, true, true, {
+            discardLegacy: ownsScope,
+            resetChatId: options.resetCurrentChat
+              ? (chatId ?? undefined)
+              : undefined,
+          });
+          if (saved) pendingStatesByScope.set(key, store.getState());
+          return saved ? 1 : 0;
+        },
+        { allowPartial: true }
+      );
       if (!isCurrent() || (!saved && options.resetCurrentChat)) return false;
       return await store.getState().checkAgentStorageAdmission();
     } catch (error) {
@@ -4864,7 +4877,7 @@ export const createAgentStore = () => {
     state: AgentState,
     persist: boolean,
     underLock = false,
-    reclamation?: { resetChatId?: string }
+    reclamation?: { resetChatId?: string; discardLegacy?: boolean }
   ): boolean => {
     const storage = getSafeStorage();
     const workspaceName = state.workspaceName;
@@ -4983,7 +4996,7 @@ export const createAgentStore = () => {
           key,
           merged,
           saved,
-          Boolean(reclamation)
+          Boolean(reclamation?.discardLegacy)
         );
         merged = written.retained;
         serialized = written.serialized;

@@ -9697,6 +9697,74 @@ describe("automatic history cleanup integration", () => {
       }
     });
 
+    test.each(["open", "running"] as const)(
+      "frees unrelated inactive history while another tab keeps a chat %s",
+      async (condition) => {
+        const store = create();
+        const current = s(store).createChat({ title: "Current chat" });
+        s(store).setDraft(current.id, { text: "Keep composing" });
+        const protectedChat = addHistory(store, 10);
+        const history = addHistory(store, 1_050_000);
+        s(store).addMessage({
+          chatId: history.id,
+          role: "tool",
+          toolCallId: "interrupted-tool",
+          content: "",
+          metadata: { pending: true },
+        });
+        expect(await s(store).flushRunPersistence()).toBe(true);
+        const follower = create();
+        s(follower).setCurrentChat(protectedChat.id);
+        expect(await s(follower).flushRunPersistence()).toBe(true);
+
+        const recover = async () => {
+          if (condition === "running") {
+            s(follower).setChatStatus(protectedChat.id, "running");
+            s(follower).setAbortController(
+              protectedChat.id,
+              new AbortController()
+            );
+            expect(await s(follower).flushRunPersistence()).toBe(true);
+          }
+          try {
+            expect(await s(store).checkAgentStorageAdmission()).toBe(false);
+            expect(await s(store).freeAgentStorage()).toBe(true);
+            expect(s(store).getChat(history.id)).toBeNull();
+            expect(persisted().chats.map((chat) => chat.id)).not.toContain(
+              history.id
+            );
+            expect(s(store).getChat(protectedChat.id)).not.toBeNull();
+            expect(persisted().chats.map((chat) => chat.id)).toContain(
+              protectedChat.id
+            );
+            expect(s(follower).currentChatId).toBe(protectedChat.id);
+            expect(s(follower).getMessages(protectedChat.id)).toHaveLength(1);
+            expect(s(follower).getChat(protectedChat.id)?.status).toBe(
+              condition === "running" ? "running" : "idle"
+            );
+            expect(
+              persisted().chats.find((chat) => chat.id === protectedChat.id)
+                ?.status
+            ).toBe(condition === "running" ? "running" : "idle");
+            expect(s(store).getDraft(current.id).text).toBe("Keep composing");
+            expect(s(store).storagePressure).toBeUndefined();
+          } finally {
+            if (condition === "running") {
+              s(follower).setAbortController(protectedChat.id, null);
+              s(follower).setChatStatus(protectedChat.id, "idle");
+            }
+          }
+        };
+        if (condition === "running")
+          await withAgentRunLease(
+            getAgentStateKey(workspaceName),
+            protectedChat.id,
+            recover
+          );
+        else await recover();
+      }
+    );
+
     test("resets only an oversized current run to its original question after explicit consent", async () => {
       const { store, chat, root, draft, capability } =
         await createOversizedPausedChat();
