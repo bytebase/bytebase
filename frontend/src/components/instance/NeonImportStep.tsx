@@ -65,7 +65,6 @@ export function NeonImportStep({
   duplicateIds,
   destination,
   instancesHref,
-  context,
   onCheck,
   onRetryUnknown,
   onRetryFailed,
@@ -82,8 +81,6 @@ export function NeonImportStep({
   duplicateIds: ReadonlySet<string>;
   destination: string;
   instancesHref: string;
-  // The engine and API-key summary shown under the title.
-  context?: ReactNode;
   onCheck: () => void;
   onRetryUnknown: (key: string) => void;
   onRetryFailed: () => void;
@@ -269,7 +266,6 @@ export function NeonImportStep({
       >
         {title}
       </h1>
-      {context}
 
       <section
         aria-label={t("instance.neon.import.progress-label")}
@@ -601,16 +597,11 @@ export function NeonImportStep({
               {scheduled > 0 && (
                 <div className="flex gap-2 px-4 py-3">
                   <CalendarClock className="size-4 shrink-0 text-control-light" />
-                  <div>
-                    <span className="font-medium text-main">
-                      {t("instance.neon.import.created.scheduled", {
-                        count: scheduled,
-                      })}
-                    </span>{" "}
-                    <span className="text-control">
-                      {t("instance.neon.import.created.scheduled-help")}
-                    </span>
-                  </div>
+                  <span className="font-medium text-main">
+                    {t("instance.neon.import.created.scheduled", {
+                      count: scheduled,
+                    })}
+                  </span>
                 </div>
               )}
               {manual > 0 && (
@@ -906,7 +897,7 @@ function FailedEntry({
                 }))
               }
             />
-            <Hint ready={ready}>{t("instance.neon.sheet.password-help")}</Hint>
+            <Hint ready={ready} />
           </>
         );
       case "role":
@@ -930,9 +921,7 @@ function FailedEntry({
                 }))
               }
             />
-            <Hint ready={ready}>
-              {t("instance.neon.import.failed.role-password")}
-            </Hint>
+            <Hint ready={ready} />
           </>
         );
       case "database":
@@ -1028,11 +1017,13 @@ function FailedEntry({
 
 function Hint({ ready, children }: { ready: boolean; children?: ReactNode }) {
   const { t } = useTranslation();
+  if (!ready && !children) return null;
   return (
     <span className="text-xs leading-4 text-control-light">
       {ready && (
         <span className="font-medium text-success">
-          {t("instance.neon.import.failed.ready")}{" "}
+          {t("instance.neon.import.failed.ready")}
+          {children ? " " : ""}
         </span>
       )}
       {children}

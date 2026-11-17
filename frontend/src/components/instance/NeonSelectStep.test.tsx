@@ -253,9 +253,7 @@ test("a failed page keeps rows and selections and retries in place", () => {
   expect(
     screen.getByRole("checkbox", { name: /row-select-label.*storefront \/ main/ })
   ).toBeChecked();
-  expect(
-    screen.getByText(/page-error-retry-in.*14:32:10.*page-error-kept/)
-  ).toBeVisible();
+  expect(screen.getByText(/page-error-retry-in.*14:32:10/)).toBeVisible();
   expect(screen.queryByRole("button", { name: /load-more/ })).toBeNull();
   const retry = screen.getByRole("button", {
     name: "instance.neon.select.retry-page",
@@ -289,9 +287,7 @@ test("lists a Neon project that could not be enumerated as its own row with retr
     .getByText(/project-failed.*misty-credit-15529086/)
     .closest("tr") as HTMLElement;
   expect(
-    within(row).getByText(
-      /instance.neon.reason.access-denied.*project-failed-help/
-    )
+    within(row).getByText("instance.neon.reason.access-denied")
   ).toBeVisible();
   fireEvent.click(within(row).getByRole("button"));
   expect(onRetryProject).toHaveBeenCalledWith("misty-credit-15529086");
@@ -313,7 +309,9 @@ test("does not call an incomplete listing empty", () => {
       },
     ],
   });
-  expect(screen.getByText(/project-failed-help/)).toBeVisible();
+  expect(
+    screen.getByText(/project-failed.*misty-credit-15529086/)
+  ).toBeVisible();
   expect(screen.queryByText("instance.neon.select.empty")).toBeNull();
 });
 

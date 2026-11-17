@@ -87,7 +87,6 @@ function Harness({
       shared={shared ?? undefined}
       duplicateIds={duplicateIds}
       schedule={schedule}
-      instanceScope="workspace instances"
       onChange={(update) => setDraft(update)}
       onClose={onClose}
     />
@@ -101,7 +100,7 @@ const choose = async (trigger: HTMLElement, name: string | RegExp) => {
   fireEvent.click(option);
 };
 
-test("holds every setting of a row and says the connection database does not limit sync", () => {
+test("holds every setting of a row", () => {
   render(<Harness />);
   expect(screen.getByLabelText("instance.instance-name")).toHaveValue(
     "analytics / main"
@@ -119,7 +118,6 @@ test("holds every setting of a row and says the connection database does not lim
   expect(screen.getByLabelText("instance.neon.sheet.database")).toHaveTextContent(
     "events"
   );
-  expect(screen.getByText("instance.neon.sheet.database-help")).toBeVisible();
   expect(
     screen.getByRole("switch", { name: "instance.sync-databases.sync-all" })
   ).toBeChecked();
@@ -135,9 +133,6 @@ test("a row follows the shared interval until one is chosen, and can go back to 
   await choose(interval(), "instance.neon.interval.off");
   expect(latest.syncSeconds).toBe(0);
   expect(interval()).toHaveTextContent("instance.neon.interval.off");
-  expect(interval()).toHaveAccessibleDescription(
-    "instance.neon.sheet.interval-off"
-  );
   await choose(interval(), /shared-option.*interval.hourly/);
   expect(latest.syncSeconds).toBeUndefined();
 });
@@ -153,7 +148,6 @@ test("mounts a fresh form for another row", () => {
       shared={defaultSharedSettings()}
       duplicateIds={new Set()}
       schedule="editable"
-      instanceScope="workspace instances"
       onChange={() => {}}
       onClose={onClose}
     />
@@ -171,7 +165,7 @@ test("requires a role when the databases have different owners", async () => {
   expect(screen.getByText("instance.neon.sheet.role-required")).toBeVisible();
   await choose(screen.getByLabelText("instance.neon.sheet.role"), "ingest");
   expect(latest.role).toBe("ingest");
-  expect(screen.getByText("instance.neon.sheet.role-check")).toBeVisible();
+  expect(screen.queryByText("instance.neon.sheet.role-required")).toBeNull();
 });
 
 test("an empty database subset is valid and summarized as none", () => {

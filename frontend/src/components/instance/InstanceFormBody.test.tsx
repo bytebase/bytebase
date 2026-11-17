@@ -796,7 +796,6 @@ test("a pasted Neon connection string fills the connection fields and is not kep
   expect(field).toHaveAccessibleDescription(
     "instance.neon.manual.connection-string-filled"
   );
-  expect(screen.getByText("instance.neon.manual.tls-note")).toBeVisible();
 });
 
 test("a connection string typed by hand is read when the field is left, not per keystroke", () => {
@@ -921,7 +920,6 @@ test("editing a Neon instance shows its connection settings without the hosting 
   expect(screen.getByLabelText(/instance.hostname/)).toHaveValue(
     "ep-example-123456.us-east-2.aws.neon.tech"
   );
-  expect(screen.getByText("instance.neon.manual.tls-note")).toBeVisible();
 });
 
 test("Neon TLS mode omits Disabled and allows toggling certificate verification off", async () => {

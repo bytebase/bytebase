@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import { ExternalLink, Info, Lock, Server, Trash2 } from "lucide-react";
+import { ExternalLink, Info, Server, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -1763,13 +1763,6 @@ export function InstanceFormBody({
                       </div>
                     )}
                   </FormField>
-                )}
-
-                {isNeon && (
-                  <p className="flex items-start gap-1.5 text-xs leading-4 text-control-light">
-                    <Lock className="mt-px size-3.5 shrink-0" />
-                    <span>{t("instance.neon.manual.tls-note")}</span>
-                  </p>
                 )}
 
                 {/* MongoDB connection string schema */}

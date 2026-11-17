@@ -1,13 +1,6 @@
 import type { TFunction } from "i18next";
 import { CircleCheck, SlidersHorizontal, TriangleAlert } from "lucide-react";
-import {
-  type ReactNode,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
@@ -23,12 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FormField, FormLabel } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -155,22 +143,22 @@ export function NeonConfigureStep({
       return next;
     });
 
-  const differHint = (setting: NeonSharedKey, fallback: ReactNode) =>
+  const differHint = (setting: NeonSharedKey) =>
     overrides[setting] > 0 ? (
-      <span className="inline-flex flex-wrap items-center gap-x-1 tabular-nums">
-        {t("instance.neon.configure.differ", { count: overrides[setting] })}
-        <Button
-          appearance="link"
-          size="xs"
-          className="relative h-auto p-0 after:absolute after:-inset-x-2 after:-bottom-2 after:top-0 after:content-['']"
-          onClick={() => onResetOverride(setting)}
-        >
-          {t("common.reset")}
-        </Button>
-      </span>
-    ) : (
-      fallback
-    );
+      <p className="text-xs leading-4 text-control-light">
+        <span className="inline-flex flex-wrap items-center gap-x-1 tabular-nums">
+          {t("instance.neon.configure.differ", { count: overrides[setting] })}
+          <Button
+            appearance="link"
+            size="xs"
+            className="relative h-auto p-0 after:absolute after:-inset-x-2 after:-bottom-2 after:top-0 after:content-['']"
+            onClick={() => onResetOverride(setting)}
+          >
+            {t("common.reset")}
+          </Button>
+        </span>
+      </p>
+    ) : null;
 
   const actionBar = (
     <SelectionActionBar
@@ -219,16 +207,9 @@ export function NeonConfigureStep({
   return (
     <div className="flex w-full flex-col gap-6">
       <section className="flex flex-col gap-3">
-        <div>
-          <h2 className="text-base font-semibold leading-6 text-main">
-            {t("instance.neon.configure.shared.title")}
-          </h2>
-          <p className="text-xs leading-4 text-control-light">
-            {t("instance.neon.configure.shared.description", {
-              count: drafts.length,
-            })}
-          </p>
-        </div>
+        <h2 className="text-base font-semibold leading-6 text-main">
+          {t("instance.neon.configure.shared.title")}
+        </h2>
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-sm border border-block-border p-4 sm:grid-cols-2 xl:grid-cols-4">
           <FormField layout="vertical" title={t("common.environment")}>
             <EnvironmentSelect
@@ -238,14 +219,7 @@ export function NeonConfigureStep({
               value={shared.environment}
               onChange={(environment) => onSharedChange({ environment })}
             />
-            <p className="text-xs leading-4 text-control-light">
-              {differHint(
-                "environment",
-                shared.environment
-                  ? ""
-                  : t("instance.neon.configure.environment-hint")
-              )}
-            </p>
+            {differHint("environment")}
           </FormField>
           <FormField
             layout="vertical"
@@ -258,14 +232,7 @@ export function NeonConfigureStep({
                 onCheckedChange={(syncAll) => onSharedChange({ syncAll })}
               />
             </div>
-            <p className="text-xs leading-4 text-control-light">
-              {differHint(
-                "syncAll",
-                shared.syncAll
-                  ? t("instance.neon.sheet.scope-all")
-                  : t("instance.neon.configure.sync-all-off")
-              )}
-            </p>
+            {differHint("syncAll")}
           </FormField>
           {schedule === "editable" ? (
             <FormField
@@ -284,12 +251,7 @@ export function NeonConfigureStep({
                   onSharedChange({ syncSeconds: Number(value) })
                 }
               />
-              <p className="text-xs leading-4 text-control-light">
-                {differHint(
-                  "syncSeconds",
-                  t("instance.neon.configure.interval-hint")
-                )}
-              </p>
+              {differHint("syncSeconds")}
             </FormField>
           ) : (
             <FormField
@@ -326,22 +288,15 @@ export function NeonConfigureStep({
                 }
               />
             )}
-            <p
-              className={cn(
-                "text-xs leading-4 tabular-nums",
-                over > 0 ? "text-error" : "text-control-light"
-              )}
-            >
-              {over > 0
-                ? t("instance.neon.configure.limit.over", {
-                    instances: t("instance.neon.count.instances", {
-                      count: over,
-                    }),
-                  })
-                : schedule !== "off"
-                  ? t("instance.neon.configure.limit.activated")
-                  : ""}
-            </p>
+            {over > 0 && (
+              <p className="text-xs leading-4 tabular-nums text-error">
+                {t("instance.neon.configure.limit.over", {
+                  instances: t("instance.neon.count.instances", {
+                    count: over,
+                  }),
+                })}
+              </p>
+            )}
           </FormField>
         </div>
       </section>
@@ -415,13 +370,8 @@ export function NeonConfigureStep({
                 <TableHead className="hidden whitespace-nowrap sm:table-cell">
                   {t("common.environment")}
                 </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  <span className="whitespace-nowrap">
-                    {t("instance.neon.sheet.role")}
-                  </span>{" "}
-                  <span className="text-xs font-normal whitespace-nowrap text-control-light">
-                    {t("instance.neon.configure.role-note")}
-                  </span>
+                <TableHead className="hidden whitespace-nowrap md:table-cell">
+                  {t("instance.neon.sheet.role")}
                 </TableHead>
                 <TableHead className="hidden whitespace-nowrap lg:table-cell">
                   {t("instance.neon.sheet.sync")}
@@ -922,9 +872,6 @@ function NeedsPanel({
                     name: draft.title,
                   })}
                 </div>
-                <p className="max-w-3xl text-xs leading-4 text-control">
-                  {t("instance.neon.configure.needs.password-body")}
-                </p>
               </div>
               <div className="flex shrink-0 flex-col gap-1.5">
                 <FormLabel htmlFor={inputId}>
@@ -1019,9 +966,6 @@ function BulkSettingForm({
           ? t("instance.neon.configure.bulk.environment-title", { count })
           : t("instance.neon.configure.bulk.interval-title", { count })}
       </DialogTitle>
-      <DialogDescription>
-        {t("instance.neon.configure.bulk.description")}
-      </DialogDescription>
       {setting === "environment" ? (
         <FormField
           layout="vertical"

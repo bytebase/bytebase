@@ -347,9 +347,6 @@ test("imports 45 selections with one confirmation as batches of 20, 20, and 5", 
     instance: { syncInterval: { seconds: 3600n } },
   });
   expect(mocks.refresh).toHaveBeenCalled();
-  expect(
-    screen.getByText("instance.neon.context.key-discarded")
-  ).toBeVisible();
   expect(document.querySelector('[role="alert"]')).toBeNull();
   // Nothing is left to lose, so leaving no longer warns and setup just closes.
   await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(false));
@@ -527,7 +524,12 @@ test("shows no instance limit number under an unlimited license", async () => {
   mocks.discover.mockResolvedValue(page(branches(1)));
   mount();
   await connect();
-  expect(screen.queryByText(/footer-limit/)).toBeNull();
+  selectAll();
+  fireEvent.click(button(/select.configure.*"count":1/));
+  expect(
+    screen.getByText("instance.neon.configure.limit.unlimited")
+  ).toBeVisible();
+  expect(screen.queryByText(/configure.limit.usage/)).toBeNull();
 });
 
 test("never retries an unknown outcome on its own: check, confirm, then retry with the same ID", async () => {

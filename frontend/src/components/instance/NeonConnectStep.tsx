@@ -1,4 +1,3 @@
-import { KeyRound } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { SecretInput } from "@/components/SecretInput";
@@ -167,14 +166,6 @@ export function NeonConnectStep({
           }
         />
       )}
-
-      <p className="flex max-w-3xl items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
-        <KeyRound className="mt-px size-3.5 shrink-0" />
-        <span>
-          <span>{t("instance.neon.connect.not-saved-body")}</span>{" "}
-          <span>{t("instance.neon.connect.credentials-saved-body")}</span>
-        </span>
-      </p>
     </form>
   );
 }

@@ -28,7 +28,6 @@ import { formatEnvironmentName } from "@/types/v1/environment";
 import { type NeonOption, NeonOptionSelect } from "./NeonOptionSelect";
 import {
   branchKey,
-  commonOwner,
   effectiveSettings,
   hasOverride,
   isValidInstanceId,
@@ -139,7 +138,6 @@ export function NeonRowSheet({
   shared,
   duplicateIds,
   schedule,
-  instanceScope,
   onChange,
   onClose,
 }: {
@@ -149,8 +147,6 @@ export function NeonRowSheet({
   shared?: NeonSharedSettings;
   duplicateIds: ReadonlySet<string>;
   schedule: NeonScheduleMode;
-  // The collection the instance ID must be unique in, as a phrase.
-  instanceScope: string;
   onChange: (update: (draft: NeonImportDraft) => NeonImportDraft) => void;
   onClose: () => void;
 }) {
@@ -169,7 +165,6 @@ export function NeonRowSheet({
             shared={shared}
             duplicateIds={duplicateIds}
             schedule={schedule}
-            instanceScope={instanceScope}
             onChange={onChange}
             onClose={onClose}
           />
@@ -184,7 +179,6 @@ function RowForm({
   shared,
   duplicateIds,
   schedule,
-  instanceScope,
   onChange,
   onClose,
 }: {
@@ -192,7 +186,6 @@ function RowForm({
   shared?: NeonSharedSettings;
   duplicateIds: ReadonlySet<string>;
   schedule: NeonScheduleMode;
-  instanceScope: string;
   onChange: (update: (draft: NeonImportDraft) => NeonImportDraft) => void;
   onClose: () => void;
 }) {
@@ -204,10 +197,6 @@ function RowForm({
     shared ?? { environment: "", syncAll: true, syncSeconds: 0 }
   );
   const environmentOptions = useRowEnvironmentOptions(shared);
-  const owner = commonOwner(
-    branch,
-    effective.syncAll ? undefined : draft.databases
-  );
   const idError = !isValidInstanceId(draft.instanceId)
     ? t("resource-id.validation.pattern", { resource: t("common.instance") })
     : duplicateIds.has(draft.instanceId)
@@ -280,9 +269,7 @@ function RowForm({
                     {t("instance.neon.sheet.instance-id")}
                   </FormLabel>
                 }
-                description={t("instance.neon.sheet.instance-id-help", {
-                  scope: instanceScope,
-                })}
+                description={t("instance.neon.sheet.instance-id-help")}
               >
                 <Input
                   id={`${id}-id`}
@@ -336,35 +323,23 @@ function RowForm({
                     {t("instance.neon.sheet.role")}
                   </FormLabel>
                 }
-                description={t("instance.neon.sheet.role-help")}
               >
                 <NeonOptionSelect
                   id={`${id}-role`}
                   value={draft.role}
                   invalid={!draft.role}
                   placeholder={t("instance.neon.choose-role")}
-                  aria-describedby={`${id}-role-note`}
+                  aria-describedby={!draft.role ? `${id}-role-note` : undefined}
                   options={branch.roles.map((role) => ({
                     value: role,
                     label: role,
                   }))}
                   onChange={(role) => onChange((row) => withRole(row, role))}
                 />
-                {!draft.role ? (
+                {!draft.role && (
                   <FormError id={`${id}-role-note`}>
                     {t("instance.neon.sheet.role-required")}
                   </FormError>
-                ) : (
-                  <p
-                    id={`${id}-role-note`}
-                    className="text-xs leading-4 text-pretty text-control-light"
-                  >
-                    {owner && owner === draft.role
-                      ? t("instance.neon.sheet.role-prefilled", {
-                          role: draft.role,
-                        })
-                      : t("instance.neon.sheet.role-check")}
-                  </p>
                 )}
               </FormField>
               <FormField
@@ -373,7 +348,6 @@ function RowForm({
                     {t("common.password")}
                   </FormLabel>
                 }
-                description={t("instance.neon.sheet.password-help")}
               >
                 <NeonOptionSelect
                   id={`${id}-password-source`}
@@ -405,7 +379,9 @@ function RowForm({
                       role: draft.role,
                     })}
                     aria-invalid={passwordMissing || undefined}
-                    aria-describedby={`${id}-password-note`}
+                    aria-describedby={
+                      passwordMissing ? `${id}-password-note` : undefined
+                    }
                     placeholder={t("instance.neon.password-for", {
                       role: draft.role,
                     })}
@@ -414,19 +390,10 @@ function RowForm({
                     }
                   />
                 )}
-                {passwordMissing ? (
+                {passwordMissing && (
                   <FormError id={`${id}-password-note`}>
                     {t("instance.neon.sheet.password-required")}
                   </FormError>
-                ) : (
-                  <p
-                    id={`${id}-password-note`}
-                    className="text-xs leading-4 text-pretty text-control-light"
-                  >
-                    {draft.passwordSource === "typed"
-                      ? t("instance.neon.sheet.password-typed-hint")
-                      : t("instance.neon.sheet.password-neon-hint")}
-                  </p>
                 )}
               </FormField>
               <FormField
@@ -435,7 +402,6 @@ function RowForm({
                     {t("instance.neon.sheet.database")}
                   </FormLabel>
                 }
-                description={t("instance.neon.sheet.database-help")}
               >
                 <NeonOptionSelect
                   id={`${id}-database`}
@@ -500,16 +466,11 @@ function RowForm({
                     ))}
                   </fieldset>
                 )}
-                <p className="text-xs leading-4 tabular-nums text-control-light">
-                  {effective.syncAll
-                    ? t("instance.neon.sheet.scope-all")
-                    : draft.databases.length > 0
-                      ? t("instance.neon.sheet.scope-some", {
-                          count: draft.databases.length,
-                          total: branch.databases.length,
-                        })
-                      : t("instance.neon.sheet.scope-none")}
-                </p>
+                {!effective.syncAll && draft.databases.length === 0 && (
+                  <p className="text-xs leading-4 text-control-light">
+                    {t("instance.neon.sheet.scope-none")}
+                  </p>
+                )}
               </FormField>
               {schedule === "editable" && (
                 <FormField
@@ -521,7 +482,6 @@ function RowForm({
                 >
                   <NeonOptionSelect
                     id={`${id}-interval`}
-                    aria-describedby={`${id}-interval-note`}
                     value={
                       shared && draft.syncSeconds === undefined
                         ? SHARED
@@ -535,14 +495,6 @@ function RowForm({
                       }))
                     }
                   />
-                  <p
-                    id={`${id}-interval-note`}
-                    className="text-xs leading-4 text-pretty text-control-light"
-                  >
-                    {effective.syncSeconds > 0
-                      ? t("instance.neon.sheet.interval-on")
-                      : t("instance.neon.sheet.interval-off")}
-                  </p>
                 </FormField>
               )}
             </FormFieldGroup>

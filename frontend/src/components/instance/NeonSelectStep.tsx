@@ -4,7 +4,6 @@ import {
   ChevronRight,
   CircleCheck,
   CircleDashed,
-  Info,
   LoaderCircle,
   RotateCw,
   TriangleAlert,
@@ -304,16 +303,13 @@ export function NeonSelectStep({
             })}
           </span>
         ) : (
-          <>
-            <span className="inline-flex items-center gap-1.5 text-main">
-              <CircleDashed className="size-4 text-control-light" />
-              {t("instance.neon.select.status.partial", {
-                count: drafts.length,
-                projects: neonProjects(projectCount),
-              })}
-            </span>
-            <span>{t("instance.neon.select.status.total-note")}</span>
-          </>
+          <span className="inline-flex items-center gap-1.5 text-main">
+            <CircleDashed className="size-4 text-control-light" />
+            {t("instance.neon.select.status.partial", {
+              count: drafts.length,
+              projects: neonProjects(projectCount),
+            })}
+          </span>
         )}
         {failures.length > 0 && (
           <span className="text-warning-hover">
@@ -436,8 +432,7 @@ export function NeonSelectStep({
                           })}
                         </div>
                         <p className="max-w-2xl text-xs leading-4 text-control">
-                          {neonReasonText(t, failure.reason, failure.message)}{" "}
-                          {t("instance.neon.select.project-failed-help")}
+                          {neonReasonText(t, failure.reason, failure.message)}
                         </p>
                       </div>
                       <Button
@@ -731,15 +726,7 @@ export function NeonSelectStep({
           <div className="border-t border-block-border p-3">
             <NeonWarning
               title={t("instance.neon.select.page-error-title")}
-              description={[
-                pageFailureText(status.pageFailure),
-                t("instance.neon.select.page-error-kept", {
-                  branches: branches(drafts.length),
-                  selections: t("instance.neon.count.selections", {
-                    count: selectedCount,
-                  }),
-                }),
-              ].join(" ")}
+              description={pageFailureText(status.pageFailure)}
             >
               <Button
                 appearance="outline"
@@ -755,11 +742,6 @@ export function NeonSelectStep({
           </div>
         )}
       </div>
-
-      <p className="flex items-start gap-1.5 text-xs leading-4 text-pretty text-control-light">
-        <Info className="mt-px size-3.5 shrink-0" />
-        <span>{t("instance.neon.select.live-note")}</span>
-      </p>
     </div>
   );
 }

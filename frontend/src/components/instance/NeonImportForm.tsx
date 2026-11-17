@@ -1,6 +1,6 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import type { TFunction } from "i18next";
-import { ArrowRight, KeyRound, LoaderCircle } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -13,7 +13,6 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { instanceServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
-import { EngineIcon } from "@/components/EngineIcon";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -33,7 +32,6 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { useAppStore } from "@/stores/app";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DiscoverNeonBranchesResponse,
   NeonProjectDiscoveryFailure,
@@ -66,7 +64,6 @@ import {
   importsActivated,
   instanceResourceName,
   mergeDiscovery,
-  NEON_BATCH_SIZE,
   type NeonImportDraft,
   type NeonImportRun,
   type NeonInstanceCheck,
@@ -764,37 +761,16 @@ export function NeonImportForm({
     retryAt: pageRetryIn > 0 ? pageRetryAt : undefined,
   };
 
-  const contextBar = (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs leading-4 text-control-light">
-      <span className="inline-flex items-center gap-1.5">
-        <EngineIcon engine={Engine.POSTGRES} className="size-4 shrink-0" />
-        {t("instance.neon.context.engine")}
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <KeyRound className="size-3.5 shrink-0" />
-        {finished
-          ? t("instance.neon.context.key-discarded")
-          : t("instance.neon.context.key")}
-      </span>
-    </div>
-  );
-
-  const heading = (title: string, description: string, context = true) => (
+  const heading = (title: string) => (
     <div className="flex flex-col gap-4">
       <NeonStepIndicator step={step} />
-      <div className="flex flex-col gap-1">
-        <h1
-          data-step-heading
-          tabIndex={-1}
-          className="text-lg font-semibold leading-7 text-balance text-main focus:outline-hidden"
-        >
-          {title}
-        </h1>
-        <p className="max-w-2xl text-sm leading-5 text-pretty text-control-light">
-          {description}
-        </p>
-      </div>
-      {context && contextBar}
+      <h1
+        data-step-heading
+        tabIndex={-1}
+        className="text-lg font-semibold leading-7 text-balance text-main focus:outline-hidden"
+      >
+        {title}
+      </h1>
     </div>
   );
 
@@ -859,22 +835,14 @@ export function NeonImportForm({
                       "text-error"
                     )
                   : footerNote(
-                      [
-                        selected.length > 0
-                          ? t("instance.neon.select.footer-selected", {
-                              branches: branchCount(selected.length),
-                              projects: t("instance.neon.count.neon-projects", {
-                                count: selectedProjects,
-                              }),
-                            })
-                          : t("instance.neon.select.footer-none"),
-                        capacity !== undefined &&
-                          t("instance.neon.select.footer-limit", {
-                            count: capacity,
-                          }),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")
+                      selected.length > 0
+                        ? t("instance.neon.select.footer-selected", {
+                            branches: branchCount(selected.length),
+                            projects: t("instance.neon.count.neon-projects", {
+                              count: selectedProjects,
+                            }),
+                          })
+                        : t("instance.neon.select.footer-none")
                     )}
                 <Button
                   className="tabular-nums"
@@ -949,7 +917,6 @@ export function NeonImportForm({
                 {t("instance.neon.import.stop")}
               </Button>
             }
-            right={footerNote(t("instance.neon.import.stop-note"))}
           />
         ) : (
           <StickyActionFooter
@@ -992,9 +959,6 @@ export function NeonImportForm({
   const scheduledCount = selected.filter(
     (draft) => effectiveSettings(draft, shared).syncSeconds > 0
   ).length;
-  const batchSizes = chunkIndices(selected.map((_, index) => index)).map(
-    (chunk) => chunk.length
-  );
 
   return (
     <div hidden={!active} data-testid="neon-import" className="w-full">
@@ -1037,10 +1001,7 @@ export function NeonImportForm({
         )}
         {step === 1 && (
           <>
-            {heading(
-              t("instance.neon.steps.select"),
-              t("instance.neon.select.description")
-            )}
+            {heading(t("instance.neon.steps.select"))}
             <NeonSelectStep
               drafts={drafts}
               status={status}
@@ -1061,10 +1022,7 @@ export function NeonImportForm({
         {step === 2 && (
           <>
             {heading(
-              t("instance.neon.configure.title", { count: selected.length }),
-              t("instance.neon.configure.description"),
-              // Omit the context summary so the configuration table stays near the top.
-              false
+              t("instance.neon.configure.title", { count: selected.length })
             )}
             <NeonConfigureStep
               drafts={selected}
@@ -1093,7 +1051,6 @@ export function NeonImportForm({
               duplicateIds={runDuplicateIds}
               destination={destination}
               instancesHref={instancesHref}
-              context={contextBar}
               onCheck={() => void checkUnknown()}
               onRetryUnknown={(key) =>
                 setConfirm({ kind: "retry-unknown", key })
@@ -1122,13 +1079,6 @@ export function NeonImportForm({
         shared={step === 3 ? undefined : shared}
         duplicateIds={step === 3 ? runDuplicateIds : duplicateIds}
         schedule={schedule}
-        instanceScope={
-          parent
-            ? t("instance.neon.destination.project-instances", {
-                project: project?.title || parent,
-              })
-            : t("instance.neon.destination.workspace-instances")
-        }
         onChange={(update) => {
           if (!editingKey) return;
           if (step === 3) {
@@ -1173,7 +1123,6 @@ export function NeonImportForm({
                   : scheduledCount === selected.length
                     ? t("instance.neon.confirm.sync-all-scheduled")
                     : [
-                        t("instance.neon.confirm.sync-activated"),
                         scheduledCount > 0 &&
                           t("instance.neon.confirm.sync-scheduled", {
                             count: scheduledCount,
@@ -1185,20 +1134,12 @@ export function NeonImportForm({
                         .filter(Boolean)
                         .join(" ")}
               </ConfirmRow>
-              <ConfirmRow term={t("instance.neon.confirm.credentials")}>
-                {t("instance.neon.confirm.credentials-value")}
-              </ConfirmRow>
             </dl>
-            <DialogDescription className="text-xs leading-4 text-control-light">
-              {batchSizes.length > 1
-                ? t("instance.neon.confirm.batch-split", {
-                    batches: batchSizes.length,
-                    sizes: batchSizes.join(", "),
-                    max: NEON_BATCH_SIZE,
-                  })
-                : t("instance.neon.confirm.batch-single")}{" "}
-              {t("instance.neon.confirm.remain")}
-            </DialogDescription>
+            {selected.length > 1 && (
+              <DialogDescription className="text-xs leading-4 text-control-light">
+                {t("instance.neon.confirm.remain")}
+              </DialogDescription>
+            )}
             <div className="flex flex-wrap justify-end gap-2">
               <Button
                 appearance="outline"
@@ -1222,21 +1163,27 @@ export function NeonImportForm({
           <AlertDialogTitle>{t("instance.neon.stop.title")}</AlertDialogTitle>
           <AlertDialogDescription render={<div />}>
             <ul className="flex list-disc flex-col gap-2 pl-5">
-              <li>
-                {t("instance.neon.stop.created", {
-                  count: summary?.created ?? 0,
-                })}
-              </li>
-              <li>
-                {t("instance.neon.stop.awaiting", {
-                  count: summary?.awaiting ?? 0,
-                })}
-              </li>
-              <li>
-                {t("instance.neon.stop.unsent", {
-                  count: summary?.unsent ?? 0,
-                })}
-              </li>
+              {(summary?.created ?? 0) > 0 && (
+                <li>
+                  {t("instance.neon.stop.created", {
+                    count: summary?.created ?? 0,
+                  })}
+                </li>
+              )}
+              {(summary?.awaiting ?? 0) > 0 && (
+                <li>
+                  {t("instance.neon.stop.awaiting", {
+                    count: summary?.awaiting ?? 0,
+                  })}
+                </li>
+              )}
+              {(summary?.unsent ?? 0) > 0 && (
+                <li>
+                  {t("instance.neon.stop.unsent", {
+                    count: summary?.unsent ?? 0,
+                  })}
+                </li>
+              )}
             </ul>
           </AlertDialogDescription>
           <AlertDialogFooter>

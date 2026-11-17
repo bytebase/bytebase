@@ -33,7 +33,7 @@ function renderStep(props: Partial<Parameters<typeof NeonConnectStep>[0]> = {}) 
   return handlers;
 }
 
-test("masks the API key behind a reveal control, suppresses password managers, and says what is saved", () => {
+test("masks the API key behind a reveal control, suppresses password managers, and shows field hints", () => {
   renderStep();
   const key = screen.getByLabelText("instance.neon.connect.api-key");
   expect(key).toHaveAttribute("type", "password");
@@ -45,10 +45,7 @@ test("masks the API key behind a reveal control, suppresses password managers, a
   );
   expect(key).toHaveAttribute("type", "text");
   expect(
-    screen.getByText("instance.neon.connect.not-saved-body")
-  ).toBeVisible();
-  expect(
-    screen.getByText("instance.neon.connect.credentials-saved-body")
+    screen.getByText("instance.neon.connect.api-key-help")
   ).toBeVisible();
   expect(
     screen.getByText("instance.neon.connect.project-id-help")
