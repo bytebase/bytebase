@@ -1,4 +1,3 @@
-import { Building2, Folder } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
@@ -28,11 +27,7 @@ import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { isValidProjectName } from "@/types/v1/project";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { ChoiceCard } from "./ChoiceCard";
-import {
-  NeonImportForm,
-  NeonStepIndicator,
-  neonDestinationLabel,
-} from "./NeonImportForm";
+import { NeonImportForm, NeonStepIndicator } from "./NeonImportForm";
 import { NeonWarning } from "./NeonWarning";
 import { remainingInstanceCapacity } from "./neon-import";
 
@@ -359,34 +354,6 @@ function CreateInstanceFormInner({
                       />
                     </RadioGroup>
                   </FormField>
-                  <FormField title={t("instance.neon.confirm.destination")}>
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex items-center gap-1.5 text-sm leading-5 font-medium text-main">
-                        {parent ? (
-                          <Folder className="size-4 shrink-0 text-control-light" />
-                        ) : (
-                          <Building2 className="size-4 shrink-0 text-control-light" />
-                        )}
-                        <span>
-                          {t("instance.neon.destination.adding", {
-                            destination: neonDestinationLabel(
-                              t,
-                              parent,
-                              project
-                            ),
-                          })}
-                        </span>
-                      </span>
-                      <p className="max-w-2xl text-xs leading-4 text-pretty text-control-light">
-                        {parent
-                          ? t("instance.neon.destination.project-help", {
-                              project: project?.title || parent,
-                            })
-                          : t("instance.neon.destination.workspace-help")}{" "}
-                        {t("instance.neon.destination.neon-project-note")}
-                      </p>
-                    </div>
-                  </FormField>
                   {neonCapacity === 0 && (
                     <NeonWarning
                       title={t("instance.neon.limit-reached.title")}
@@ -399,12 +366,8 @@ function CreateInstanceFormInner({
               {showNeonImport && (
                 <>
                   <NeonStepIndicator step={0} />
-                  <h1
-                    data-step-heading
-                    tabIndex={-1}
-                    className="text-lg font-semibold leading-7 text-balance text-main focus:outline-hidden"
-                  >
-                    {t("instance.neon.title")}
+                  <h1 data-step-heading tabIndex={-1} className="sr-only">
+                    {t("instance.neon.steps.connect")}
                   </h1>
                 </>
               )}

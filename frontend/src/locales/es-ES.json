@@ -1837,8 +1837,6 @@
         "batch-split": "Bytebase envía las instancias en {{batches}} lotes de hasta {{max}} ({{sizes}}) y muestra los resultados a medida que vuelve cada lote.",
         "credentials": "Credenciales",
         "credentials-value": "El rol y la contraseña de cada instancia se guardan en Bytebase. La clave de API de Neon no se guarda.",
-        "destination": "Destino",
-        "destination-value": "{{destination}}. No se puede cambiar después de importar.",
         "instances-value": "{{instances}} con tipo de proveedor Neon, de {{projects}}.",
         "remain": "Las instancias ya creadas se mantienen si una posterior falla.",
         "sync-activated": "Cada instancia se activa.",
@@ -1879,7 +1877,6 @@
         "try-again": "Reintentar"
       },
       "context": {
-        "destination": "Destino:",
         "engine": "PostgreSQL · alojado en Neon",
         "key": "La clave de API se mantiene en memoria, no se guarda",
         "key-discarded": "Clave de API de Neon descartada"
@@ -1903,13 +1900,9 @@
         "selections_other": "{{count}} selecciones"
       },
       "destination": {
-        "adding": "Se añadirán a {{destination}}",
-        "neon-project-note": "Los proyectos de Neon son independientes de los proyectos de Bytebase.",
         "project": "Proyecto de Bytebase · {{project}}",
-        "project-help": "Las ramas y sus bases de datos pertenecen a {{project}}.",
         "project-instances": "las instancias de proyecto de {{project}}",
         "workspace": "Espacio de trabajo",
-        "workspace-help": "Las ramas se añaden como instancias del espacio de trabajo; las bases de datos pueden asignarse a cualquier proyecto de Bytebase.",
         "workspace-instances": "las instancias del espacio de trabajo"
       },
       "edit-settings": "Editar ajustes",
@@ -1960,7 +1953,7 @@
           "badge-scheduled": "Sincronización programada",
           "by-check": "Encontrada en la lista de instancias cuando comprobaste.",
           "by-retry": "Creada al reintentar.",
-          "description": "Registradas en {{destination}}. Las bases de datos aún no se listan: aparecen tras la primera sincronización de cada instancia.",
+          "description": "Las bases de datos aún no se listan: aparecen tras la primera sincronización de cada instancia.",
           "manual": "{{count}} solo con sincronización manual.",
           "manual-help_one": "Su programación está desactivada. Abre la instancia y ejecuta una sincronización para listar sus bases de datos.",
           "manual-help_other": "Su programación está desactivada. Abre cada instancia y ejecuta una sincronización para listar sus bases de datos.",
@@ -2134,7 +2127,7 @@
         "configure-none": "Configurar instancias",
         "configure_one": "Configurar {{count}} instancia",
         "configure_other": "Configurar {{count}} instancias",
-        "description": "Cada rama que selecciones se convierte en una instancia de PostgreSQL en {{destination}}. En el siguiente paso defines el entorno, el rol y la sincronización de cada una.",
+        "description": "Cada rama que selecciones se convierte en una instancia de PostgreSQL. En el siguiente paso defines el entorno, el rol y la sincronización de cada una.",
         "deselect-shown": "Deseleccionar las ramas seleccionadas mostradas",
         "empty": "Neon no devolvió ninguna rama para esta clave de API.",
         "empty-filter": "Ninguna rama cargada coincide con «{{query}}».",
@@ -2253,8 +2246,7 @@
         "manual": "Solo sincronización manual",
         "scheduled": "Programada cada {{interval}}",
         "unscheduled-help": "Tu plan actual no activa instancias, por lo que las instancias importadas no se sincronizan de forma programada. Ejecuta una sincronización desde cada instancia para listar sus bases de datos."
-      },
-      "title": "Añadir instancias de Neon"
+      }
     },
     "new-instance": "Nueva instancia",
     "no-environment": "Esta instancia no ha sido ligada al entorno.",
@@ -2418,9 +2410,7 @@
     },
     "vendor": {
       "generic": "Cualquier host o nube",
-      "generic-description": "Conecta una instancia mediante host y puerto, IAM en la nube o un túnel SSH.",
       "neon": "Neon",
-      "neon-description": "Importa ramas con una clave de API de Neon o conecta una rama directamente.",
       "self": "Alojado en"
     },
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"

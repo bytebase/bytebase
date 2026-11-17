@@ -1837,8 +1837,6 @@
         "batch-split": "Bytebase gửi các phiên bản theo {{batches}} lô, mỗi lô tối đa {{max}} ({{sizes}}), và hiển thị kết quả khi từng lô trả về.",
         "credentials": "Thông tin xác thực",
         "credentials-value": "Vai trò và mật khẩu của từng phiên bản được lưu trong Bytebase. Khóa API Neon không được lưu.",
-        "destination": "Đích",
-        "destination-value": "{{destination}}. Không thể thay đổi sau khi nhập.",
         "instances-value": "{{instances}} với loại nhà cung cấp Neon, từ {{projects}}.",
         "remain": "Các phiên bản đã tạo vẫn được giữ nếu phiên bản sau thất bại.",
         "sync-activated": "Mọi phiên bản đều được kích hoạt.",
@@ -1879,7 +1877,6 @@
         "try-again": "Thử lại"
       },
       "context": {
-        "destination": "Đích:",
         "engine": "PostgreSQL · lưu trữ tại Neon",
         "key": "Khóa API chỉ giữ trong bộ nhớ, không được lưu",
         "key-discarded": "Đã hủy khóa API Neon"
@@ -1903,13 +1900,9 @@
         "selections_other": "{{count}} lựa chọn"
       },
       "destination": {
-        "adding": "Thêm vào {{destination}}",
-        "neon-project-note": "Dự án Neon tách biệt với dự án Bytebase.",
         "project": "Dự án Bytebase · {{project}}",
-        "project-help": "Các nhánh và cơ sở dữ liệu của chúng thuộc về {{project}}.",
         "project-instances": "các phiên bản dự án trong {{project}}",
         "workspace": "Không gian làm việc",
-        "workspace-help": "Các nhánh được thêm làm phiên bản của không gian làm việc; cơ sở dữ liệu có thể gán cho bất kỳ dự án Bytebase nào.",
         "workspace-instances": "các phiên bản của không gian làm việc"
       },
       "edit-settings": "Chỉnh sửa cài đặt",
@@ -1960,7 +1953,7 @@
           "badge-scheduled": "Đồng bộ định kỳ",
           "by-check": "Được tìm thấy trong danh sách phiên bản khi bạn kiểm tra.",
           "by-retry": "Được tạo khi thử lại.",
-          "description": "Đã đăng ký trong {{destination}}. Cơ sở dữ liệu chưa được liệt kê: chúng xuất hiện sau lần đồng bộ đầu tiên của phiên bản.",
+          "description": "Cơ sở dữ liệu chưa được liệt kê: chúng xuất hiện sau lần đồng bộ đầu tiên của phiên bản.",
           "manual": "{{count}} phiên bản chỉ đồng bộ thủ công.",
           "manual-help_one": "Lịch của phiên bản này đang tắt. Hãy mở phiên bản và chạy đồng bộ để liệt kê cơ sở dữ liệu.",
           "manual-help_other": "Lịch của chúng đang tắt. Hãy mở từng phiên bản và chạy đồng bộ để liệt kê cơ sở dữ liệu.",
@@ -2134,7 +2127,7 @@
         "configure-none": "Cấu hình phiên bản",
         "configure_one": "Cấu hình {{count}} phiên bản",
         "configure_other": "Cấu hình {{count}} phiên bản",
-        "description": "Mỗi nhánh bạn chọn sẽ trở thành một phiên bản PostgreSQL trong {{destination}}. Ở bước tiếp theo, bạn đặt môi trường, vai trò và đồng bộ cho từng phiên bản.",
+        "description": "Mỗi nhánh bạn chọn sẽ trở thành một phiên bản PostgreSQL. Ở bước tiếp theo, bạn đặt môi trường, vai trò và đồng bộ cho từng phiên bản.",
         "deselect-shown": "Bỏ chọn các nhánh đã chọn đang hiển thị",
         "empty": "Neon không trả về nhánh nào cho khóa API này.",
         "empty-filter": "Không có nhánh đã tải nào khớp với “{{query}}”.",
@@ -2253,8 +2246,7 @@
         "manual": "Chỉ đồng bộ thủ công",
         "scheduled": "Đồng bộ định kỳ mỗi {{interval}}",
         "unscheduled-help": "Gói hiện tại không kích hoạt phiên bản, nên các phiên bản đã nhập không được đồng bộ định kỳ. Hãy chạy đồng bộ từ từng phiên bản để liệt kê cơ sở dữ liệu."
-      },
-      "title": "Thêm phiên bản Neon"
+      }
     },
     "new-instance": "Phiên bản mới",
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
@@ -2418,9 +2410,7 @@
     },
     "vendor": {
       "generic": "Bất kỳ máy chủ hoặc đám mây nào",
-      "generic-description": "Kết nối một phiên bản qua máy chủ và cổng, IAM đám mây hoặc đường hầm SSH.",
       "neon": "Neon",
-      "neon-description": "Nhập hàng loạt nhánh bằng khóa API Neon hoặc kết nối trực tiếp một nhánh.",
       "self": "Được lưu trữ tại"
     },
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"

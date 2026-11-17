@@ -1837,8 +1837,6 @@
         "batch-split": "Bytebase はインスタンスを最大 {{max}} 件ずつ {{batches}} バッチ（{{sizes}}）で送信し、各バッチが返るたびに結果を表示します。",
         "credentials": "認証情報",
         "credentials-value": "各インスタンスのロールとパスワードは Bytebase に保存されます。Neon API キーは保存されません。",
-        "destination": "追加先",
-        "destination-value": "{{destination}}。インポート後は変更できません。",
         "instances-value": "ベンダータイプ Neon の{{instances}}（{{projects}}から）。",
         "remain": "後のインスタンスが失敗しても、作成済みのインスタンスは残ります。",
         "sync-activated": "すべてのインスタンスが有効化されます。",
@@ -1879,7 +1877,6 @@
         "try-again": "再試行"
       },
       "context": {
-        "destination": "追加先:",
         "engine": "PostgreSQL · Neon でホスト",
         "key": "API キーはメモリ上にのみ保持され、保存されません",
         "key-discarded": "Neon API キーは破棄されました"
@@ -1903,13 +1900,9 @@
         "selections_other": "{{count}} 件の選択"
       },
       "destination": {
-        "adding": "{{destination}} に追加します",
-        "neon-project-note": "Neon プロジェクトは Bytebase プロジェクトとは独立しています。",
         "project": "Bytebase プロジェクト · {{project}}",
-        "project-help": "ブランチとそのすべてのデータベースは {{project}} に属します。",
         "project-instances": "{{project}} のプロジェクトインスタンス",
         "workspace": "ワークスペース",
-        "workspace-help": "ブランチはワークスペースインスタンスとして追加され、データベースは任意の Bytebase プロジェクトに割り当てられます。",
         "workspace-instances": "ワークスペースインスタンス"
       },
       "edit-settings": "設定を編集",
@@ -1960,7 +1953,7 @@
           "badge-scheduled": "定期同期",
           "by-check": "確認時にインスタンス一覧で見つかりました。",
           "by-retry": "再試行で作成されました。",
-          "description": "{{destination}} に登録されました。データベースはまだ一覧表示されていません。インスタンスの初回同期後に表示されます。",
+          "description": "データベースはまだ一覧表示されていません。インスタンスの初回同期後に表示されます。",
           "manual": "{{count}} 件は手動同期のみです。",
           "manual-help_one": "スケジュールがオフです。インスタンスを開いて同期を実行すると、データベースが一覧表示されます。",
           "manual-help_other": "スケジュールがオフです。各インスタンスを開いて同期を実行すると、データベースが一覧表示されます。",
@@ -2134,7 +2127,7 @@
         "configure-none": "インスタンスを設定",
         "configure_one": "{{count}} 件のインスタンスを設定",
         "configure_other": "{{count}} 件のインスタンスを設定",
-        "description": "選択した各ブランチは {{destination}} の PostgreSQL インスタンス 1 つになります。環境、ロール、同期は次のステップでそれぞれ設定します。",
+        "description": "選択した各ブランチは PostgreSQL インスタンス 1 つになります。環境、ロール、同期は次のステップでそれぞれ設定します。",
         "deselect-shown": "表示中の選択済みブランチの選択を解除",
         "empty": "この API キーでは Neon からブランチが返されませんでした。",
         "empty-filter": "「{{query}}」に一致する読み込み済みのブランチはありません。",
@@ -2253,8 +2246,7 @@
         "manual": "手動同期のみ",
         "scheduled": "{{interval}}ごとに定期同期",
         "unscheduled-help": "現在のプランではインスタンスが有効化されないため、インポートしたインスタンスは定期同期されません。各インスタンスで同期を実行すると、データベースが一覧表示されます。"
-      },
-      "title": "Neon インスタンスを追加"
+      }
     },
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
@@ -2418,9 +2410,7 @@
     },
     "vendor": {
       "generic": "任意のホストまたはクラウド",
-      "generic-description": "ホストとポート、クラウド IAM、または SSH トンネルを使用して 1 つのインスタンスに接続します。",
       "neon": "Neon",
-      "neon-description": "Neon API キーでブランチを一括インポートするか、1 つのブランチに直接接続します。",
       "self": "ホスティング先"
     },
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"

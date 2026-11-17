@@ -358,16 +358,31 @@ test("imports 45 selections with one confirmation as batches of 20, 20, and 5", 
   await waitFor(() => expect(onDismiss).toHaveBeenCalledOnce());
 });
 
-test("shows the destination it was opened from and offers no control to change it", async () => {
-  mocks.discover.mockResolvedValue(page(branches(1)));
+test("scopes requests and permission errors to the destination setup was opened from, with no control to change it", async () => {
+  mocks.discover
+    .mockRejectedValueOnce(new ConnectError("Denied", Code.PermissionDenied))
+    .mockResolvedValueOnce(page(branches(1)));
   mount({
     parent: "projects/checkout",
     project: { title: "Checkout Service" } as Project,
   });
-  await connect();
+  fireEvent.change(screen.getByLabelText("instance.neon.connect.api-key"), {
+    target: { value: "napi_example" },
+  });
+  fireEvent.click(button("instance.neon.connect.find"));
   expect(
-    screen.getByText('instance.neon.destination.project{"project":"Checkout Service"}')
+    await screen.findByText(
+      'instance.neon.connect.error.permission-body{"destination":"instance.neon.destination.project{\\"project\\":\\"Checkout Service\\"}"}'
+    )
   ).toBeVisible();
+
+  fireEvent.click(button("instance.neon.connect.find"));
+  await screen.findByRole("heading", { name: "instance.neon.steps.select" });
+  expect(mocks.discover).toHaveBeenLastCalledWith(
+    expect.objectContaining({ parent: "projects/checkout" }),
+    expect.anything()
+  );
+  expect(screen.queryByText("instance.neon.context.destination")).toBeNull();
   expect(screen.queryByRole("combobox", { name: /destination/i })).toBeNull();
 });
 

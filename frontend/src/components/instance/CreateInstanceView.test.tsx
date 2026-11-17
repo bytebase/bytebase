@@ -37,8 +37,6 @@ let CreateInstanceView: typeof import("./CreateInstanceView").CreateInstanceView
 
 vi.mock("./NeonImportForm", () => ({
   NeonStepIndicator: () => <div data-testid="neon-steps" />,
-  neonDestinationLabel: (_t: unknown, parent?: string) =>
-    parent ? `project ${parent}` : "workspace",
   NeonImportForm: ({
     active,
     onStepChange,
@@ -863,22 +861,21 @@ test("keeps the engine and hosting pickers visible on Connect when Neon is chose
   cleanup();
 });
 
-test("states the destination setup was opened from and offers no control to change it", () => {
+test("omits the destination row on the entry screen and keeps the Step 0 heading screen-reader only", () => {
   neon();
   const workspace = render(<CreateInstanceView {...props} />);
-  expect(
-    workspace.getByText("instance.neon.destination.adding")
-  ).toBeVisible();
-  expect(
-    workspace.getByText(/instance.neon.destination.workspace-help/)
-  ).toBeVisible();
+  expect(workspace.queryByText(/instance\.neon\.destination/)).toBeNull();
+  expect(workspace.queryByText("instance.neon.title")).toBeNull();
+  expect(workspace.queryAllByRole("combobox")).toHaveLength(0);
+  const heading = workspace.container.querySelector("[data-step-heading]");
+  expect(heading).toHaveClass("sr-only");
+  expect(heading).toHaveTextContent("instance.neon.steps.connect");
   cleanup();
+
   const project = render(
     <CreateInstanceView {...props} parent="projects/checkout" />
   );
-  expect(
-    project.getByText(/instance.neon.destination.project-help/)
-  ).toBeVisible();
+  expect(project.queryByText(/instance\.neon\.destination/)).toBeNull();
   expect(project.queryAllByRole("combobox")).toHaveLength(0);
   cleanup();
 });

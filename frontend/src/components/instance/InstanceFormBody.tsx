@@ -1400,18 +1400,10 @@ export function InstanceFormBody({
                 value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
               )
             }
-            className="grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2"
+            className="grid w-full grid-cols-1 items-stretch gap-2 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]"
           >
-            <ChoiceCard
-              value="generic"
-              title={t("instance.vendor.generic")}
-              description={t("instance.vendor.generic-description")}
-            />
-            <ChoiceCard
-              value="neon"
-              title={t("instance.vendor.neon")}
-              description={t("instance.vendor.neon-description")}
-            />
+            <ChoiceCard value="generic" title={t("instance.vendor.generic")} />
+            <ChoiceCard value="neon" title={t("instance.vendor.neon")} />
           </RadioGroup>
         </FormField>
       )}

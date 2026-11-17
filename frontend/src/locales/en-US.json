@@ -1837,8 +1837,6 @@
         "batch-split": "Bytebase sends the instances in {{batches}} batches of up to {{max}} ({{sizes}}) and shows results as each batch returns.",
         "credentials": "Credentials",
         "credentials-value": "Each instance's role and password are saved in Bytebase. The Neon API key is not saved.",
-        "destination": "Destination",
-        "destination-value": "{{destination}}. This cannot be changed after import.",
         "instances-value": "{{instances}} with vendor type Neon, from {{projects}}.",
         "remain": "Instances already created stay if a later one fails.",
         "sync-activated": "Every instance is activated.",
@@ -1879,7 +1877,6 @@
         "try-again": "Try again"
       },
       "context": {
-        "destination": "Destination:",
         "engine": "PostgreSQL · hosted on Neon",
         "key": "API key held in memory, not saved",
         "key-discarded": "Neon API key discarded"
@@ -1903,13 +1900,9 @@
         "selections_other": "{{count}} selections"
       },
       "destination": {
-        "adding": "Adding to {{destination}}",
-        "neon-project-note": "Neon projects are separate from Bytebase projects.",
         "project": "Bytebase project · {{project}}",
-        "project-help": "Branches and their databases belong to {{project}}.",
         "project-instances": "project instances in {{project}}",
         "workspace": "Workspace",
-        "workspace-help": "Branches are added as workspace instances; databases can be assigned to any Bytebase project.",
         "workspace-instances": "workspace instances"
       },
       "edit-settings": "Edit settings",
@@ -1960,7 +1953,7 @@
           "badge-scheduled": "Scheduled sync",
           "by-check": "Found in the instance list when you checked.",
           "by-retry": "Created on retry.",
-          "description": "Registered in {{destination}}. Databases are not listed yet: they appear after an instance's first sync.",
+          "description": "Databases are not listed yet: they appear after an instance's first sync.",
           "manual": "{{count}} with manual sync only.",
           "manual-help_one": "Its schedule is off. Open the instance and run a sync to list its databases.",
           "manual-help_other": "Their schedule is off. Open each instance and run a sync to list its databases.",
@@ -2134,7 +2127,7 @@
         "configure-none": "Configure instances",
         "configure_one": "Configure {{count}} instance",
         "configure_other": "Configure {{count}} instances",
-        "description": "Each branch you select becomes one PostgreSQL instance in {{destination}}. You set the environment, role, and sync for each in the next step.",
+        "description": "Each branch you select becomes one PostgreSQL instance. You set the environment, role, and sync for each in the next step.",
         "deselect-shown": "Deselect the selected branches shown",
         "empty": "Neon returned no branches for this API key.",
         "empty-filter": "No loaded branch matches “{{query}}”.",
@@ -2253,8 +2246,7 @@
         "manual": "Manual sync only",
         "scheduled": "Scheduled every {{interval}}",
         "unscheduled-help": "Your current plan does not activate instances, so imported instances are not synced on a schedule. Run a sync from each instance to list its databases."
-      },
-      "title": "Add Neon instances"
+      }
     },
     "new-instance": "New Instance",
     "no-environment": "This instance has not been bound to the environment",
@@ -2418,9 +2410,7 @@
     },
     "vendor": {
       "generic": "Any host or cloud",
-      "generic-description": "Connect one instance with host and port, cloud IAM, or an SSH tunnel.",
       "neon": "Neon",
-      "neon-description": "Import branches with a Neon API key, or connect one branch directly.",
       "self": "Hosted on"
     },
     "your-snowflake-account-locator": "Your Snowflake account locator"

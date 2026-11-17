@@ -1,12 +1,6 @@
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import type { TFunction } from "i18next";
-import {
-  ArrowRight,
-  Building2,
-  Folder,
-  KeyRound,
-  LoaderCircle,
-} from "lucide-react";
+import { ArrowRight, KeyRound, LoaderCircle } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -117,7 +111,7 @@ export function NeonStepIndicator({ step }: { step: number }) {
   );
 }
 
-export function neonDestinationLabel(
+function neonDestinationLabel(
   t: TFunction,
   parent: string | undefined,
   project: Project | undefined
@@ -777,15 +771,6 @@ export function NeonImportForm({
         {t("instance.neon.context.engine")}
       </span>
       <span className="inline-flex items-center gap-1.5">
-        {parent ? (
-          <Folder className="size-3.5 shrink-0" />
-        ) : (
-          <Building2 className="size-3.5 shrink-0" />
-        )}
-        {t("instance.neon.context.destination")}
-        <span className="font-medium text-main">{destination}</span>
-      </span>
-      <span className="inline-flex items-center gap-1.5">
         <KeyRound className="size-3.5 shrink-0" />
         {finished
           ? t("instance.neon.context.key-discarded")
@@ -1054,7 +1039,7 @@ export function NeonImportForm({
           <>
             {heading(
               t("instance.neon.steps.select"),
-              t("instance.neon.select.description", { destination })
+              t("instance.neon.select.description")
             )}
             <NeonSelectStep
               drafts={drafts}
@@ -1078,8 +1063,7 @@ export function NeonImportForm({
             {heading(
               t("instance.neon.configure.title", { count: selected.length }),
               t("instance.neon.configure.description"),
-              // The table is what this step is for; the destination is stated
-              // again in the confirmation.
+              // Omit the context summary so the configuration table stays near the top.
               false
             )}
             <NeonConfigureStep
@@ -1173,9 +1157,6 @@ export function NeonImportForm({
               {t("instance.neon.confirm.title", { count: selected.length })}
             </DialogTitle>
             <dl className="flex flex-col gap-3 text-sm leading-5 text-control">
-              <ConfirmRow term={t("instance.neon.confirm.destination")}>
-                {t("instance.neon.confirm.destination-value", { destination })}
-              </ConfirmRow>
               <ConfirmRow term={t("common.instances")}>
                 {t("instance.neon.confirm.instances-value", {
                   instances: t("instance.neon.count.postgres-instances", {

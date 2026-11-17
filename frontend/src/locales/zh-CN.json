@@ -1837,8 +1837,6 @@
         "batch-split": "Bytebase 会分 {{batches}} 批发送实例，每批最多 {{max}} 个（{{sizes}}），并在每批返回时显示结果。",
         "credentials": "凭据",
         "credentials-value": "每个实例的角色和密码会保存在 Bytebase 中。Neon API 密钥不会被保存。",
-        "destination": "目标",
-        "destination-value": "{{destination}}。导入后无法更改。",
         "instances-value": "{{instances}}，厂商类型为 Neon，来自{{projects}}。",
         "remain": "如果后续实例失败，已创建的实例会保留。",
         "sync-activated": "每个实例都会被激活。",
@@ -1879,7 +1877,6 @@
         "try-again": "重试"
       },
       "context": {
-        "destination": "目标：",
         "engine": "PostgreSQL · 托管于 Neon",
         "key": "API 密钥仅保存在内存中，不会存储",
         "key-discarded": "Neon API 密钥已丢弃"
@@ -1903,13 +1900,9 @@
         "selections_other": "{{count}} 项选择"
       },
       "destination": {
-        "adding": "添加到 {{destination}}",
-        "neon-project-note": "Neon 项目与 Bytebase 项目相互独立。",
         "project": "Bytebase 项目 · {{project}}",
-        "project-help": "分支及其所有数据库将归属 {{project}}。",
         "project-instances": "{{project}} 中的项目实例",
         "workspace": "工作空间",
-        "workspace-help": "分支将添加为工作空间实例，数据库可分配给任意 Bytebase 项目。",
         "workspace-instances": "工作空间实例"
       },
       "edit-settings": "编辑设置",
@@ -1960,7 +1953,7 @@
           "badge-scheduled": "定时同步",
           "by-check": "检查时在实例列表中找到。",
           "by-retry": "重试时已创建。",
-          "description": "已在 {{destination}} 中注册。数据库尚未列出：实例首次同步后才会出现。",
+          "description": "数据库尚未列出：实例首次同步后才会出现。",
           "manual": "{{count}} 个仅手动同步。",
           "manual-help_one": "它的计划已关闭。请打开该实例并手动同步以列出数据库。",
           "manual-help_other": "它们的计划已关闭。请打开各实例并手动同步以列出数据库。",
@@ -2134,7 +2127,7 @@
         "configure-none": "配置实例",
         "configure_one": "配置 {{count}} 个实例",
         "configure_other": "配置 {{count}} 个实例",
-        "description": "选择的每个分支都会成为 {{destination}} 中的一个 PostgreSQL 实例。下一步可为每个实例设置环境、角色和同步。",
+        "description": "选择的每个分支都会成为一个 PostgreSQL 实例。下一步可为每个实例设置环境、角色和同步。",
         "deselect-shown": "取消选择显示的已选分支",
         "empty": "Neon 未为此 API 密钥返回任何分支。",
         "empty-filter": "没有已加载的分支匹配“{{query}}”。",
@@ -2253,8 +2246,7 @@
         "manual": "仅手动同步",
         "scheduled": "每 {{interval}} 定时同步",
         "unscheduled-help": "当前订阅方案不会激活实例，因此导入的实例不会定时同步。请在各实例页面手动同步以列出其数据库。"
-      },
-      "title": "添加 Neon 实例"
+      }
     },
     "new-instance": "新实例",
     "no-environment": "此实例尚未绑定到环境",
@@ -2418,9 +2410,7 @@
     },
     "vendor": {
       "generic": "任意主机或云服务",
-      "generic-description": "通过主机和端口、云 IAM 或 SSH 隧道连接单个实例。",
       "neon": "Neon",
-      "neon-description": "可用 Neon API 密钥批量导入分支，或通过连接信息连接单个分支。",
       "self": "托管于"
     },
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"

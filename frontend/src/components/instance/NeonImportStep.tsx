@@ -82,7 +82,7 @@ export function NeonImportStep({
   duplicateIds: ReadonlySet<string>;
   destination: string;
   instancesHref: string;
-  // The engine, destination, and API-key summary shown under the title.
+  // The engine and API-key summary shown under the title.
   context?: ReactNode;
   onCheck: () => void;
   onRetryUnknown: (key: string) => void;
@@ -582,9 +582,7 @@ export function NeonImportStep({
           heading={t("instance.neon.count.instances", {
             count: created.length,
           })}
-          description={t("instance.neon.import.created.description", {
-            destination,
-          })}
+          description={t("instance.neon.import.created.description")}
         >
           {schedule === "off" ? (
             <div className="flex gap-2 border-b border-block-border px-4 py-3 text-xs leading-4 text-control">

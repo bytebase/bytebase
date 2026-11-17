@@ -707,11 +707,14 @@ const hosting = (name: RegExp) => screen.getByRole("radio", { name });
 
 test("PostgreSQL reveals where it is hosted, with self-managed as the default", () => {
   mountCreate(Engine.POSTGRES);
-  expect(hosting(/^instance.vendor.generic/)).toHaveAttribute(
-    "aria-checked",
-    "true"
-  );
-  fireEvent.click(hosting(/^instance.vendor.neon/));
+  const generic = hosting(/^instance.vendor.generic/);
+  const neon = hosting(/^instance.vendor.neon/);
+  expect(generic).toHaveAttribute("aria-checked", "true");
+  expect(generic.closest("label")).toHaveClass("min-h-9");
+  expect(neon.closest("label")).toHaveClass("min-h-9");
+  expect(generic.closest("label")?.textContent).toBe("instance.vendor.generic");
+  expect(neon.closest("label")?.textContent).toBe("instance.vendor.neon");
+  fireEvent.click(neon);
   expect(context.basicInfo.vendor).toBe(Vendor.NEON);
   expect(context.basicInfo.engine).toBe(Engine.POSTGRES);
 });
