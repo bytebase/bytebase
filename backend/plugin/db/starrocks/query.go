@@ -28,9 +28,25 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	results, err := session.Query(ctx, statement, queryOptions(queryContext))
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSessionLocked(session)
 		return nil, err
 	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSessionLocked(session)
+	}
 	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
+}
+
+// discardSessionLocked closes a session a statement took with it, so the next
+// statement opens a new one instead of reusing a dead one. The caller holds mu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
+	}
 }
 
 // querySession returns the session QueryConn runs on, opening it on first use.
