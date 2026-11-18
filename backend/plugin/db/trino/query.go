@@ -12,17 +12,21 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// QueryConn runs the script's statements on one session of the omni driver's,
-// which is the one connection the statements share. conn is unused: the caller's
-// *sql.Conn, if it had one, is not the contract's Session.
+// QueryConn runs the script's statements on the driver's session, which lives
+// until Close so an editor request's statements share it. conn is unused: the
+// caller's *sql.Conn, if it had one, is not the contract's Session.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.driver.Session(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to open a session")
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session == nil {
+		session, err := d.driver.Session(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to open a session")
+		}
+		d.session = session
 	}
-	defer session.Close()
 
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+	results, err := d.session.Query(ctx, statement, omnidriver.QueryOptions{
 		Schema:         queryContext.Schema,
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,

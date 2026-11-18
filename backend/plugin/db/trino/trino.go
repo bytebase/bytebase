@@ -10,14 +10,16 @@
 //
 // GetDB returns nil, as it does for every engine whose session is not a
 // *sql.DB. QueryConn takes a *sql.Conn the caller pooled, but the omni driver
-// hands out its own Session, so an editor's statements no longer share a server
-// session across requests.
+// hands out its own Session; the driver keeps that session until Close, so the
+// statements of one editor request share it as they shared the caller's
+// connection before.
 package trino
 
 import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"sync"
 
 	omnidriver "github.com/bytebase/omni/driver"
 	omnitrino "github.com/bytebase/omni/trino/driver"
@@ -35,6 +37,11 @@ func init() {
 // Driver is Bytebase's Trino driver.
 type Driver struct {
 	driver *omnitrino.Driver
+	// sessionMu guards session. A driver is opened per request, and its
+	// QueryConn callers are sequential, but the adapter keeps the session for
+	// the driver's lifetime so it must not be shared by two calls at once.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
 }
 
 func newDriver() db.Driver {
@@ -74,6 +81,12 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 }
 
 func (d *Driver) Close(context.Context) error {
+	d.sessionMu.Lock()
+	if d.session != nil {
+		_ = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
 	return d.driver.Close()
 }
 
