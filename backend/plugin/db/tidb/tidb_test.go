@@ -433,10 +433,10 @@ func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
 	require.NotNil(t, held)
 }
 
-// TestQueryConnReportsAParseErrorAsAKnownDifference records the error text the
-// product now shows for invalid SQL: omni's parser message rather than
-// Bytebase's parser adapter's "Syntax error at line ..." rendering.
-func TestQueryConnReportsAParseErrorAsAKnownDifference(t *testing.T) {
+// TestQueryConnReportsTheParsersError pins the error a statement the parser
+// cannot read produces: the driver's own message and position, which the adapter
+// passes through rather than re-rendering.
+func TestQueryConnReportsTheParsersError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	container, _ := testcontainer.NewTiDBDatabase(t)
@@ -445,12 +445,6 @@ func TestQueryConnReportsAParseErrorAsAKnownDifference(t *testing.T) {
 
 	_, err := driver.QueryConn(ctx, nil, "SELECT FROM WHERE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 	require.Error(t, err)
-	// Before, through Bytebase's parser adapter:
-	//   Syntax error at line 1:8: syntax error at or near "FROM"
-	//   related text: SELECT FROM WHERE
-	// After, omni's parser error as the driver reports it:
-	//   syntax error at or near "FROM" (line 1, column 8)
-	//   related text: SELECT FROM WHERE
 	require.Contains(t, err.Error(), `syntax error at or near "FROM" (line 1, column 8)`)
-	require.NotContains(t, err.Error(), "Syntax error at line")
+	require.Contains(t, err.Error(), "related text: SELECT FROM WHERE")
 }
