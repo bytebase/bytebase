@@ -745,3 +745,36 @@ func TestCommentOnlyViewChangeIsRecreated(t *testing.T) {
 	require.GreaterOrEqual(t, comment, 0, sql)
 	require.Less(t, createUpper, comment, sql)
 }
+
+// TestIndexOnlyMatViewChangeRecreatesBeforeItsIndex covers a selected dependent
+// materialized view whose only change is an index: the synthesized definition
+// carries the index, so the catalog index ops must not run before it.
+func TestIndexOnlyMatViewChangeRecreatesBeforeItsIndex(t *testing.T) {
+	snapshot := func(columnType string, unique bool) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name: "lower", Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+			}},
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+				Name:       "mv",
+				Definition: "SELECT id FROM public.lower",
+				Indexes:    []*metadatapb.IndexMetadata{{Name: "idx_mv", Expressions: []string{"id"}, Unique: unique}},
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "lower",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
+	require.NoError(t, err)
+	createView := strings.Index(sql, `CREATE MATERIALIZED VIEW "public"."mv"`)
+	createIndex := strings.Index(sql, "CREATE UNIQUE INDEX idx_mv")
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.GreaterOrEqual(t, createIndex, 0, sql)
+	require.Less(t, createView, createIndex, sql)
+	require.NotContains(t, sql, "DROP INDEX")
+}

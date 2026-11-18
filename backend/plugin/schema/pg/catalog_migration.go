@@ -376,6 +376,25 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 	return result
 }
 
+func containsObjectReference(sql, schema, object string) bool {
+	return strings.Contains(sql, quoteQualified(schema, object)) || strings.Contains(sql, schema+"."+object)
+}
+
+func indexOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string) string {
+	schema := schemaByName(meta, schemaName)
+	if schema == nil {
+		return ""
+	}
+	for _, view := range schema.GetMaterializedViews() {
+		for _, index := range view.GetIndexes() {
+			if index.GetName() == indexName {
+				return schemaName + "." + view.GetName()
+			}
+		}
+	}
+	return ""
+}
+
 func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
 	name := strings.TrimSpace(typeName)
 	for strings.HasSuffix(name, "[]") {
@@ -534,15 +553,39 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	for _, item := range items {
 		dropped[item.key] = true
 	}
-	deferredComments := make(map[string][]catalog.MigrationOp)
-	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
+	deferredOps := make(map[string][]catalog.MigrationOp)
+	forSelected := func(op catalog.MigrationOp) (string, bool) {
 		if op.Type == catalog.OpComment {
 			for key := range dropped {
 				if op.ObjectName == key || strings.HasPrefix(op.ObjectName, key+".") {
-					deferredComments[key] = append(deferredComments[key], op)
-					return true
+					return key, true
 				}
 			}
+			return "", false
+		}
+		switch op.Type {
+		case catalog.OpCreateIndex, catalog.OpDropIndex:
+			for key := range dropped {
+				schemaName, objectName := splitObjectKey(key)
+				if containsObjectReference(op.SQL, schemaName, objectName) || indexOwner(oldMeta, schemaName, op.ObjectName) == key || indexOwner(newMeta, schemaName, op.ObjectName) == key {
+					return key, true
+				}
+			}
+		case catalog.OpCreateTrigger, catalog.OpDropTrigger:
+			for key := range dropped {
+				schemaName, objectName := splitObjectKey(key)
+				if containsObjectReference(op.SQL, schemaName, objectName) {
+					return key, true
+				}
+			}
+		default:
+		}
+		return "", false
+	}
+	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
+		if key, ok := forSelected(op); ok {
+			deferredOps[key] = append(deferredOps[key], op)
+			return true
 		}
 		key := op.SchemaName + "." + op.ObjectName
 		if op.Type == catalog.OpDropView && dropped[key] {
@@ -568,6 +611,13 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		item := items[index]
 		if item.createOp != nil {
 			ops = append(ops, *item.createOp)
+			materialized := strings.Contains(item.createOp.SQL, "MATERIALIZED VIEW")
+			for _, deferred := range deferredOps[item.key] {
+				if materialized && (deferred.Type == catalog.OpDropIndex || deferred.Type == catalog.OpDropTrigger) {
+					continue
+				}
+				ops = append(ops, deferred)
+			}
 		} else if item.createSQL != "" {
 			schemaName, objectName := splitObjectKey(item.key)
 			ops = append(ops, catalog.MigrationOp{
@@ -579,7 +629,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				ObjType:    'r',
 			})
 		}
-		ops = append(ops, deferredComments[item.key]...)
 	}
 	plan.Ops = ops
 }
