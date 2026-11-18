@@ -37,6 +37,7 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -255,6 +256,12 @@ func convertValue(value omnidriver.Value) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Bytes}}
 	case omnidriver.String:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	case omnidriver.Structured:
+		encoded, err := json.Marshal(value.Structured)
+		if err != nil {
+			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value.Structured)}}
+		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(encoded)}}
 	default:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}

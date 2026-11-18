@@ -405,6 +405,16 @@ func (f *fakeDynamoDB) serve(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, map[string]any{"Items": []any{map[string]any{"blob": map[string]any{"B": "AAEC"}}}})
 			return
 		}
+		if strings.Contains(request.Statement, `"document"`) {
+			writeJSON(w, map[string]any{"Items": []any{map[string]any{
+				"list": map[string]any{"L": []any{map[string]any{"S": "a"}, map[string]any{"N": "1"}}},
+				"map":  map[string]any{"M": map[string]any{"k": map[string]any{"S": "v"}}},
+				"set":  map[string]any{"SS": []string{"a", "b"}},
+				"blob": map[string]any{"BS": []string{"AAEC"}},
+				"nums": map[string]any{"NS": []string{"1", "2"}},
+			}}})
+			return
+		}
 		if strings.Contains(request.Statement, `"sparse"`) {
 			writeJSON(w, map[string]any{"Items": []any{
 				map[string]any{"pk": map[string]any{"S": "a"}, "name": map[string]any{"S": "alice"}},

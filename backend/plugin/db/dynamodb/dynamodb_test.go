@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	omnidriver "github.com/bytebase/omni/driver"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -224,6 +226,30 @@ func TestContractBehavior(t *testing.T) {
 		}
 	})
 
+	t.Run("documents are json", func(t *testing.T) {
+		fake := newFakeDynamoDB(t)
+		t.Cleanup(fake.server.Close)
+		driver := openTestDriver(t, fake, nil)
+
+		results, err := driver.QueryConn(context.Background(), nil, `SELECT * FROM "document"`, db.QueryContext{})
+		if err != nil {
+			t.Fatalf("QueryConn() = %v", err)
+		}
+		want := map[string]string{
+			"blob": `["AAEC"]`,
+			"list": `["a","1"]`,
+			"map":  `{"k":"v"}`,
+			"nums": `["1","2"]`,
+			"set":  `["a","b"]`,
+		}
+		for i, column := range results[0].ColumnNames {
+			got := results[0].Rows[0].Values[i].GetStringValue()
+			if got != want[column] {
+				t.Errorf("%s = %q, want %q", column, got, want[column])
+			}
+		}
+	})
+
 	t.Run("secondary indexes sync", func(t *testing.T) {
 		fake := newFakeDynamoDB(t)
 		fake.tables = []string{"orders"}
@@ -292,6 +318,16 @@ func openTestDriver(t *testing.T, fake *fakeDynamoDB, extraParams map[string]str
 	}
 	t.Cleanup(func() { _ = driver.Close(context.Background()) })
 	return driver
+}
+
+func TestConvertValueStructured(t *testing.T) {
+	got := convertValue(omnidriver.Value{
+		Kind:       omnidriver.Structured,
+		Structured: map[string]any{"a": float64(1)},
+	})
+	if got.GetStringValue() != `{"a":1}` {
+		t.Errorf("convertValue(Structured) = %q, want JSON", got.GetStringValue())
+	}
 }
 
 func rowCounts(results []*v1pb.QueryResult) []int64 {
