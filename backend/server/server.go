@@ -251,7 +251,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory, ruleReviewCovers)
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
-	var ruleReviewExecutor reviewrun.Executor
+	var ruleReviewExecutor *reviewrun.RuleExecutor
 	if profile.SQLReviewV2 {
 		ruleReviewExecutor = reviewrun.NewRuleExecutor(stores)
 	}
