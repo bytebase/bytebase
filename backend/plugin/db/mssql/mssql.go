@@ -281,8 +281,7 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 // GetDB returns nil: SQL Server is driven through omni's sessions, not a
-// *sql.DB, and every production caller guards a nil handle. The editor keeps a
-// session per call, which is the one behaviour this changes.
+// *sql.DB, and every production caller guards a nil handle.
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
