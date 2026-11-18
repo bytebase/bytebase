@@ -431,7 +431,43 @@ func TestMergeAIReviewFindingsPutsProblemsOnRuleFindings(t *testing.T) {
 		kept, merge = unchanged(&ruleThread{Comment: reworded, Priority: p0}, []int{0}, view)
 		require.False(t, kept, "the comment lacks the rule's text as it is now, so it is written again")
 		require.Empty(t, merge.requests[0].Threads)
+
+		// The rule finding is on db1 and db2, and this run's problem on db1
+		// alone: the comment was written for both, so it cannot stay.
+		everywhere := dropRule()
+		everywhere.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		everywhere.earlier = &ruleThread{Comment: added, Priority: p0}
+		partial := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+		problems, err := mergeAIReviewFindings(context.Background(), partial.merge, results(view), nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.NotNil(t, problems[0].Rule)
+		require.False(t, problems[0].Unchanged, "the problem is on part of the rule finding's databases now")
 	})
+}
+
+func TestCanKeepEarlier(t *testing.T) {
+	t.Parallel()
+
+	const rules = "Drops column `legacy_status`."
+	const added = rules + "\n\nv_orders reads it.\n\n- db1, db2: orders holds 5k to 9k rows.\n\nSuggested fix: Drop v_orders first."
+	keeps := func(comment string) bool {
+		rule := dropRule()
+		rule.members[0].targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+		rule.earlier = &ruleThread{Comment: comment}
+		return canKeepEarlier(rule)
+	}
+	require.True(t, keeps(added), "a comment for every database of the result, whatever facts it lists them with")
+	require.False(t, keeps(rules), "the rules' text alone holds nothing to keep")
+	require.False(t, keeps(strings.Replace(added, "Drops column", "Drops the column", 1)), "the rules' text changed")
+	require.False(t, keeps(rules+"\n\ndb2: v_orders reads it.\n\nSuggested fix: Drop v_orders first."), "written for one database")
+	require.False(t, keeps(rules+"\n\nprod/db2: v_orders reads it."), "one database, named with its instance")
+	require.False(t, keeps(rules+"\n\nv_orders reads it.\n\n- db1\n- Not flagged on db2\n\nSuggested fix: Drop v_orders first."), "written for part of the databases")
+	require.False(t, keeps(rules+"\n\nv_orders reads it.\n\n- db1\n- Flagged differently on db2"))
+	require.True(t, keeps(rules+"\n\n  v_orders reads it."))
+	require.False(t, keeps(rules+"\n\n  v_orders reads it.\n\n  - db1\n  - Not flagged on db2"), "indented under the item of a merged result too")
+
+	none := dropRule()
+	require.False(t, canKeepEarlier(none), "no earlier thread")
 }
 
 func TestHoldsLines(t *testing.T) {

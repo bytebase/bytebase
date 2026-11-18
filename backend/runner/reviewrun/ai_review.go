@@ -394,10 +394,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	}
 
 	// The merge is shown the comment an earlier run left on a rule result when
-	// that comment holds more than the rules' own text, which is what the AI
-	// review added to it then. A comment that lacks a line of the rules' text
-	// as it is now, such as the line numbers of a result's statements after an
-	// edit moved them, cannot stay, so it is not shown.
+	// that comment can stay as it is.
 	var threads []*ruleResult
 	for i, member := range members {
 		offered = append(offered, len(findings)+len(earlier)+i)
@@ -409,7 +406,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		rule := member.result
 		thread := slices.Index(threads, rule)
 		if thread < 0 {
-			if rule.earlier == nil || rule.earlier.Comment == rule.payload().Comment || !holdsLines(rule.earlier.Comment, rule.payload().Comment) {
+			if !canKeepEarlier(rule) {
 				continue
 			}
 			thread = len(threads)
@@ -494,12 +491,55 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	return problems, nil
 }
 
+// canKeepEarlier reports whether the comment an earlier run left on a rule
+// result can stay as it is. It holds more than the rules' own text, which is
+// what the AI review added then. It holds every line of the rules' text as it
+// is now, which the line numbers of a merged result's statements leave when an
+// edit moves them. And it names no part of the result's databases as the ones
+// a problem is on, since the model is shown no database name and cannot tell
+// whether that part is the same now.
+func canKeepEarlier(rule *ruleResult) bool {
+	if rule.earlier == nil {
+		return false
+	}
+	text := rule.payload().Comment
+	if rule.earlier.Comment == text || !holdsLines(rule.earlier.Comment, text) {
+		return false
+	}
+	var targets []string
+	for _, member := range rule.members {
+		targets = append(targets, member.targets...)
+	}
+	var labels []string
+	for target, label := range databaseLabels(targets) {
+		labels = append(labels, label+": ")
+		// A database is named with its instance where another shares its name.
+		if i := strings.Index(target, common.InstanceNamePrefix); i >= 0 {
+			if instance, database, err := common.GetInstanceDatabaseID(target[i:]); err == nil {
+				labels = append(labels, database+": ", instance+"/"+database+": ")
+			}
+		}
+	}
+	for _, line := range strings.Split(rule.earlier.Comment, "\n") {
+		line = strings.TrimLeft(line, " ")
+		if strings.HasPrefix(line, flaggedDifferentlyOn) || strings.HasPrefix(line, notFlaggedOn) ||
+			slices.ContainsFunc(labels, func(label string) bool { return strings.HasPrefix(line, label) }) {
+			return false
+		}
+	}
+	return true
+}
+
 // markUnchanged marks the problems on the rule results in same, whose earlier
-// comment the merge says already states them. A result its problems raise
-// above the priority that comment was posted with is left out: nobody read
-// the comment at the higher priority, so it is written again.
+// comment the merge says already states them. Two kinds of result are left
+// out, and their comment is written again. One is a result its problems raise
+// above the priority that comment was posted with: nobody read the comment at
+// the higher priority. The other is a result with a problem that is not on
+// every database of its rule finding: canKeepEarlier offers only a comment
+// written for all of them.
 func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
 	priority := make(map[*ruleResult]storepb.IssueCommentPayload_ReviewMetadata_Priority)
+	partial := make(map[*ruleResult]bool)
 	for _, problem := range problems {
 		if problem.Rule == nil || !same[problem.Rule.result] {
 			continue
@@ -511,13 +551,18 @@ func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
 		if raised := raisedPriority(problem); priorityRank(raised) < priorityRank(priority[rule]) {
 			priority[rule] = raised
 		}
+		// Without statement boundaries the comment cannot say which of the
+		// other databases flagged the statement, so it names no part either.
+		if !problem.BlockIsStatement || !slices.Equal(problemTargets(problem.Findings), problem.Rule.finding.targets) {
+			partial[rule] = true
+		}
 	}
 	for _, problem := range problems {
 		if problem.Rule == nil {
 			continue
 		}
 		rule := problem.Rule.result
-		if p, ok := priority[rule]; ok && priorityRank(p) >= priorityRank(rule.earlier.Priority) {
+		if p, ok := priority[rule]; ok && !partial[rule] && priorityRank(p) >= priorityRank(rule.earlier.Priority) {
 			problem.Unchanged = true
 		}
 	}
@@ -1000,6 +1045,13 @@ const (
 	aiReviewFixLabel  = "\n\nSuggested fix: "
 )
 
+// The lines of a comment that name the reviewed databases a problem is not
+// on, which canKeepEarlier reads back.
+const (
+	flaggedDifferentlyOn = "- Flagged differently on "
+	notFlaggedOn         = "- Not flagged on "
+)
+
 // aiReviewGroup is databases of a problem that one line of its comment covers,
 // with the highest severity their findings carry.
 type aiReviewGroup struct {
@@ -1111,10 +1163,10 @@ func aiReviewCommentText(problem *aiReviewProblem, lead *aiReviewFinding, findin
 		}
 	}
 	if len(differently) > 0 {
-		lines = append(lines, "- Flagged differently on "+databaseList(differently, labels))
+		lines = append(lines, flaggedDifferentlyOn+databaseList(differently, labels))
 	}
 	if len(unflagged) > 0 {
-		lines = append(lines, "- Not flagged on "+databaseList(unflagged, labels))
+		lines = append(lines, notFlaggedOn+databaseList(unflagged, labels))
 	}
 	if len(lines) > 0 {
 		_, _ = b.WriteString("\n\n" + strings.Join(lines, "\n"))
