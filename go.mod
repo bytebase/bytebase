@@ -31,7 +31,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
-	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
 	github.com/bytebase/omni v0.0.0-20261117182848-10972659bef0
 	github.com/caarlos0/env/v11 v11.4.1
@@ -174,6 +173,7 @@ require (
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.0.2 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
