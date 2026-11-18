@@ -200,7 +200,8 @@ func (i identifier) matches(stored string) bool {
 	if i.quoted {
 		return i.name == stored
 	}
-	return strings.EqualFold(i.name, stored)
+	// PostgreSQL folds an unquoted identifier to lower case before resolving it.
+	return strings.ToLower(i.name) == stored
 }
 
 // typeReference is a parsed type name: object is the whole name unqualified.
@@ -871,6 +872,9 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			return nil, errors.Errorf("cannot generate a migration: backup-schema view %s depends on an object that must be recreated", key)
 		}
 	}
+	if err := refuseAmbiguousIndexComments(plan.Ops, selected, oldMeta, newMeta); err != nil {
+		return nil, err
+	}
 	var items []restoreItem
 	for _, candidate := range candidates {
 		if selected[candidate.key] {
@@ -927,6 +931,36 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 	}
 	plan.Ops = ops
 	return recreated, nil
+}
+
+// refuseAmbiguousIndexComments rejects a comment on an index name that several of
+// a schema's relations own while one of them is selected: the comment cannot be
+// attributed, and leaving it in the plan runs it against the wrong index.
+func refuseAmbiguousIndexComments(ops []catalog.MigrationOp, selected map[string]bool, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) error {
+	for _, op := range ops {
+		if op.Type != catalog.OpComment {
+			continue
+		}
+		target, ok := parseCommentTarget(op.SQL)
+		if !ok || target.kind != "INDEX" || len(target.parts) != 2 {
+			continue
+		}
+		owners := make(map[string]bool)
+		for _, owner := range append(indexNameOwners(oldMeta, target.parts[0], target.parts[1]), indexNameOwners(newMeta, target.parts[0], target.parts[1])...) {
+			owners[owner] = true
+		}
+		if len(owners) < 2 {
+			continue
+		}
+		for owner := range owners {
+			if !selected[owner] {
+				continue
+			}
+			schemaName, objectName := splitObjectKey(owner)
+			return errors.Errorf("cannot generate a migration: index %s has a comment but its name is used by more than one relation, and %s must be recreated", quoteQualified(target.parts[0], target.parts[1]), quoteQualified(schemaName, objectName))
+		}
+	}
+	return nil
 }
 
 // opTargetsSelected reports whether an operation belongs to a selected restored
@@ -1111,15 +1145,26 @@ func quotedIdentifier(text string, start int) (string, int, bool) {
 }
 
 func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string, selected map[string]bool) string {
-	schema := schemaByName(meta, schemaName)
-	if schema == nil {
+	owners := indexNameOwners(meta, schemaName, indexName)
+	if len(owners) != 1 || !selected[owners[0]] {
 		return ""
 	}
-	owner, owners := "", 0
+	return owners[0]
+}
+
+// indexNameOwners returns the relations of a schema that own an index name.
+// CockroachDB allows the same name on several, unlike PostgreSQL.
+func indexNameOwners(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string) []string {
+	schema := schemaByName(meta, schemaName)
+	if schema == nil {
+		return nil
+	}
+	var owners []string
 	add := func(name string, indexes []*metadatapb.IndexMetadata) {
 		for _, index := range indexes {
 			if index.GetName() == indexName {
-				owner, owners = objectKey(schemaName, name), owners+1
+				owners = append(owners, objectKey(schemaName, name))
+				return
 			}
 		}
 	}
@@ -1129,10 +1174,7 @@ func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexNa
 	for _, view := range schema.GetMaterializedViews() {
 		add(view.GetName(), view.GetIndexes())
 	}
-	if owners != 1 || !selected[owner] {
-		return ""
-	}
-	return owner
+	return owners
 }
 
 func unionKeys(left, right []string) []string {

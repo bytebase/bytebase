@@ -825,6 +825,10 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 	mixedLower := objectKey("foo", "bar")
 	require.True(t, referencesType(`"Foo".bar`, mixedUpper))
 	require.False(t, referencesType(`"Foo".bar`, mixedLower), "a quoted schema keeps its case while the object folds")
+	require.False(t, referencesType("public.Foo", upper), "an unquoted reference folds to lower case before resolving")
+	require.True(t, referencesType("public.Foo", lower))
+	_, ok = referencedRelation("public.FOO", map[string]bool{upper: true})
+	require.False(t, ok, "an unquoted reference does not name a quoted upper-case relation")
 	require.True(t, referencesType(`foo."Bar"`, objectKey("foo", "Bar")))
 	require.False(t, referencesType(`foo."Bar"`, objectKey("foo", "bar")), "a quoted object keeps its case while the schema folds")
 	key, ok := referencedRelation("public.Foo", map[string]bool{lower: true})
@@ -1001,6 +1005,27 @@ func TestRemoveCompositeAttributeOpsKeepsUnrelatedComments(t *testing.T) {
 	require.Len(t, got, 2, "only the rebuilt attribute's comment is removed")
 	require.Contains(t, got[0].SQL, `"public"."other"`)
 	require.Contains(t, got[1].SQL, `"public"."c"."ab"`)
+}
+
+// TestRefuseAmbiguousIndexComments rejects a comment whose index name several of a
+// schema's relations own while one of them is selected: nothing can attribute the
+// comment, so the migration is refused rather than run against the wrong index.
+func TestRefuseAmbiguousIndexComments(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "t",
+			Indexes: []*metadatapb.IndexMetadata{{Name: "idx"}},
+		}},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+			Name:    "mv",
+			Indexes: []*metadatapb.IndexMetadata{{Name: "idx"}},
+		}},
+	}}}
+	ops := []catalog.MigrationOp{{Type: catalog.OpComment, SQL: `COMMENT ON INDEX "public"."idx" IS 'z'`}}
+	err := refuseAmbiguousIndexComments(ops, map[string]bool{objectKey("public", "mv"): true}, meta, meta)
+	require.ErrorContains(t, err, "used by more than one relation")
+	require.NoError(t, refuseAmbiguousIndexComments(ops, map[string]bool{objectKey("public", "other"): true}, meta, meta), "an unrelated selection keeps the comment")
 }
 
 // TestOpTargetsSelectedParsesCommentTargets covers COMMENT ON statements whose
