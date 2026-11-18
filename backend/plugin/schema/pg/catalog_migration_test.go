@@ -664,6 +664,50 @@ func TestSplitCompositeRetypeReaddsUnchangedSuffix(t *testing.T) {
 	require.Contains(t, sql, `COMMENT ON COLUMN "public"."c"."z" IS 'keep'`, "the re-added attribute keeps its comment")
 }
 
+// TestSplitCompositeReleasesTheWholeSuffixBeforeEveryDrop covers a suffix whose
+// later attribute is released from a relation that the triggering attribute never
+// named: every suffix release must precede every relation it is released from.
+func TestSplitCompositeReleasesTheWholeSuffixBeforeEveryDrop(t *testing.T) {
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{
+			pgTable("z_old", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}),
+			pgTable("a_old", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}),
+		},
+		CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+			Name: "c",
+			Attributes: []*metadatapb.CompositeTypeAttribute{
+				{Name: "a", Type: "public.z_old"},
+				{Name: "b", Type: "public.a_old"},
+			},
+		}},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:   "public",
+		Tables: []*metadatapb.TableMetadata{pgTable("new_a", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+			Name: "c",
+			Attributes: []*metadatapb.CompositeTypeAttribute{
+				{Name: "a", Type: "public.new_a"},
+				{Name: "b", Type: "text"},
+			},
+		}},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	dropA := strings.Index(sql, `DROP ATTRIBUTE "a"`)
+	dropB := strings.Index(sql, `DROP ATTRIBUTE "b"`)
+	dropAOld := strings.Index(sql, `DROP TABLE "public"."a_old"`)
+	dropZOld := strings.Index(sql, `DROP TABLE "public"."z_old"`)
+	for name, index := range map[string]int{"drop a": dropA, "drop b": dropB, "drop a_old": dropAOld, "drop z_old": dropZOld} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, dropA, dropZOld, "the triggering release precedes its relation drop")
+	require.Less(t, dropB, dropAOld, "a later suffix release precedes the relation it holds")
+	require.Less(t, dropB, dropZOld, "a later suffix release precedes every relation drop in the plan")
+}
+
 // TestRestoredUnloadableViewReleasesRowTypeDependents covers an unchanged
 // unloadable view that must be recreated for a column change while an unchanged
 // composite attribute holds its row type: the attribute is dropped before the
@@ -777,6 +821,12 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 	require.True(t, referencesType("public.Foo", lower))
 	_, ok := referencedRelation(`"public"."Foo"`, map[string]bool{lower: true})
 	require.False(t, ok, `"public"."Foo" is not "public"."foo"`)
+	mixedUpper := objectKey("Foo", "bar")
+	mixedLower := objectKey("foo", "bar")
+	require.True(t, referencesType(`"Foo".bar`, mixedUpper))
+	require.False(t, referencesType(`"Foo".bar`, mixedLower), "a quoted schema keeps its case while the object folds")
+	require.True(t, referencesType(`foo."Bar"`, objectKey("foo", "Bar")))
+	require.False(t, referencesType(`foo."Bar"`, objectKey("foo", "bar")), "a quoted object keeps its case while the schema folds")
 	key, ok := referencedRelation("public.Foo", map[string]bool{lower: true})
 	require.True(t, ok)
 	require.Equal(t, lower, key)

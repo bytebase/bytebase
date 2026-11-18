@@ -214,18 +214,22 @@ func parseTypeReference(typeName string) (typeReference, bool) {
 	for strings.HasSuffix(name, "[]") {
 		name = strings.TrimSuffix(name, "[]")
 	}
-	first, next, quoted, ok := scanIdentifier(name, 0)
+	first, next, firstQuoted, ok := scanIdentifier(name, 0)
 	if !ok {
 		return typeReference{}, false
 	}
 	if next >= len(name) || name[next] != '.' {
-		return typeReference{object: identifier{name: first, quoted: quoted}}, true
+		return typeReference{object: identifier{name: first, quoted: firstQuoted}}, true
 	}
-	second, _, quoted, ok := scanIdentifier(name, next+1)
+	second, _, secondQuoted, ok := scanIdentifier(name, next+1)
 	if !ok {
 		return typeReference{}, false
 	}
-	return typeReference{schema: identifier{name: first, quoted: quoted}, object: identifier{name: second, quoted: quoted}, qualified: true}, true
+	return typeReference{
+		schema:    identifier{name: first, quoted: firstQuoted},
+		object:    identifier{name: second, quoted: secondQuoted},
+		qualified: true,
+	}, true
 }
 
 // releaseCompositeBeforeTableDrop releases the composite attributes that hold the
@@ -310,6 +314,17 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 		return
 	}
 	suffix := newComposite.GetAttributes()[firstTarget:]
+	// A later suffix attribute can be released from a different relation than the
+	// one that triggered the re-add, so all their drops bound the releases.
+	for _, target := range suffix {
+		old := attributeByName(oldComposite, target.GetName())
+		if old == nil {
+			continue
+		}
+		if dropKey, ok := referencedRelation(old.GetType(), dropped); ok {
+			dropKeys[dropKey] = true
+		}
+	}
 	drop := -1
 	for key := range dropKeys {
 		if index := findDropObject(plan, key); index >= 0 && (drop < 0 || index < drop) {
