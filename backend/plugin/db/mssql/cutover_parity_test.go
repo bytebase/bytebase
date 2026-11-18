@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -125,7 +126,6 @@ var knownDifferences = map[string]string{
 	"failing statement":                      "the omni driver names the statement the server reported the error at",
 	"types":                                  "an empty binary cell is an empty byte value; the old driver reported NULL for it",
 	"divide by zero alone":                   "a lone failing statement's error rides on its result, not on the call",
-	"divide by zero in a batch":              "the error that arrives while reading a batch's rows is the client's own text, not the server messages the old driver unpacked",
 	"procedure extras after a failing batch": "the omni driver returns the procedure's later result sets after every statement's result even when a later batch fails; the old driver dropped them",
 	"explain xml":                            "the omni driver states the plan's format in QueryPlan as well as returning its rows",
 	"explain text":                           "the omni driver states the plan's format in QueryPlan as well as returning its rows",
@@ -155,8 +155,6 @@ func assertKnownDifference(t *testing.T, got parityQuery, gotErr error) {
 		require.NoError(t, gotErr)
 		require.Len(t, got.Results, 1)
 		require.Contains(t, got.Results[0].Error, "Divide by zero error encountered.")
-	case "divide by zero in a batch":
-		require.ErrorContains(t, gotErr, "mssql: Divide by zero error encountered. (8134)")
 	case "procedure extras after a failing batch":
 		// The procedure's first result and the failing statement's own result
 		// come first, then the procedure's second result set.
@@ -178,6 +176,15 @@ func assertKnownDifference(t *testing.T, got parityQuery, gotErr error) {
 	default:
 		t.Fatalf("no assertion for known difference %q", got.Name)
 	}
+}
+
+// serverNamePattern matches the server name SQL Server puts in an error
+// message. The recording ran on one container and the replay on another, so the
+// name is the only part of an unpacked error that cannot match.
+var serverNamePattern = regexp.MustCompile(`(Server )[^,]+(, Line )`)
+
+func normalizeServerName(text string) string {
+	return serverNamePattern.ReplaceAllString(text, "${1}<server>${2}")
 }
 
 // normalizeLogs collapses the extra spaces protobuf's text format inserts at
@@ -252,7 +259,7 @@ func TestCutoverParityAgainstRecordedOldPath(t *testing.T) {
 			continue
 		}
 		require.Equal(t, want.Affected, got.Affected, got.Name)
-		require.Equal(t, want.Error, got.Error, got.Name)
+		require.Equal(t, normalizeServerName(want.Error), normalizeServerName(got.Error), got.Name)
 		require.Equal(t, normalizeLogs(want.Logs), normalizeLogs(got.Logs), got.Name)
 	}
 
@@ -281,7 +288,7 @@ func TestCutoverParityAgainstRecordedOldPath(t *testing.T) {
 			if diff := cmp.Diff(want.Results, got.Results); diff != "" {
 				t.Errorf("results (-want +got):\n%s", diff)
 			}
-			require.Equal(t, want.CallError, got.CallError)
+			require.Equal(t, normalizeServerName(want.CallError), normalizeServerName(got.CallError))
 		})
 	}
 

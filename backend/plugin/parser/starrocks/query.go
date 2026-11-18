@@ -52,9 +52,9 @@ func validateQuery(statement string) (bool, bool, error) {
 // with ExecContext rather than read a result set; validateQuery signals that through
 // its second return value. MySQL and Postgres gate SET the same way.
 //
-// Only variable assignment qualifies. SET PASSWORD and SET DEFAULT STORAGE VAULT are
-// separate nodes and stay refused, as they are for Postgres: they administer the
-// server rather than prepare a read. Also refused: SET ... AS DEFAULT STORAGE VOLUME,
+// Only variable assignment qualifies. SET PASSWORD is a separate node and stays
+// refused, as it is for Postgres: it administers the server rather than preparing
+// the session for a read. Also refused: SET ... AS DEFAULT STORAGE VOLUME,
 // which sets the cluster's default volume; SET DEFAULT ROLE ... TO user, which
 // changes users' default roles; and SET LDAP_ADMIN_PASSWORD, which stores the
 // cluster's LDAP bind password. SET ROLE only activates roles for the session.
@@ -139,7 +139,7 @@ func isExplainableInner(node ast.Node) bool {
 	}
 	switch node.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
-		*ast.MergeStmt, *ast.TruncateTableStmt:
+		*ast.TruncateTableStmt:
 		return true
 	}
 	return false

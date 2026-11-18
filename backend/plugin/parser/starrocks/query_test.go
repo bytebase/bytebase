@@ -359,6 +359,12 @@ func TestValidateQuery(t *testing.T) {
 			description: "EXPLAIN over DDL must be rejected",
 		},
 		{
+			// StarRocks.g4 has STORAGE VOLUME, not VAULT, so the statement has
+			// no grammar rule and fails to parse rather than reaching validation.
+			statement:   "SET DEFAULT STORAGE VAULT v",
+			description: "SET DEFAULT STORAGE VAULT must be rejected",
+		},
+		{
 			statement:   "SELECT a FROM t xx yy zz",
 			description: "Trailing junk after a valid prefix must be rejected",
 		},
@@ -395,7 +401,6 @@ func TestValidateQuerySetStatements(t *testing.T) {
 		{"a SET anywhere in a script needs executing", "SELECT 1; SET time_zone = 'UTC'", true, false},
 		{"a SET does not launder a DDL beside it", "SET time_zone = 'UTC'; DROP TABLE t", false, false},
 		{"SET PASSWORD administers the server", "SET PASSWORD FOR 'u' = 'x'", false, false},
-		{"SET DEFAULT STORAGE VAULT administers the server", "SET DEFAULT STORAGE VAULT v", false, false},
 		{"SET DEFAULT STORAGE VOLUME administers the cluster", "SET v AS DEFAULT STORAGE VOLUME", false, false},
 		{"SET CATALOG switches the session", "SET CATALOG hive", true, false},
 		{"SET WAREHOUSE switches the session", "SET WAREHOUSE w", true, false},
