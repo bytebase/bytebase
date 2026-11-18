@@ -7,9 +7,8 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 )
 
-// Dump writes the database's DDL. omni's catalog renders the synced metadata,
-// where the driver this replaced called Bytebase's schema renderer: a filtered
-// index keeps its WHERE predicate and a view definition ends with one `;`.
+// Dump writes the database's DDL. The rendering is omni's catalog's; the adapter
+// passes the synced metadata through.
 func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
 	return d.impl.Dump(ctx, out, dbMetadata)
 }
