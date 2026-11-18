@@ -38,46 +38,12 @@
 //     no databricks catalog that renders a synced schema as Databricks DDL, so
 //     the metadata argument is not read.
 //
-// Known differences from the driver this replaced, kept because they are the
-// driver's own behavior or because reproducing the old one would reimplement it:
-//
-//   - The session's schema now reaches the statement. The previous driver sent
-//     only the catalog and ran every unqualified name in the catalog's default
-//     schema, so the editor's schema selection had no effect.
-//   - A script's statements are trimmed of their trailing semicolons and leading
-//     whitespace, which is the text the driver runs; the previous driver sent the
-//     splitter's slice, semicolons included.
-//   - A statement that returns no rows still reports its columns and does not
-//     end the script. The previous driver stopped at the first statement whose
-//     data array was empty, dropping that statement's result and every statement
-//     after it.
-//   - A failed statement reports its error on its own result and the statements
-//     before it keep their results; the previous driver returned the call's error
-//     with no results at all.
-//   - The result-size cap is enforced and reported as Truncated, which the
-//     previous driver did not do: it returned every row the warehouse answered,
-//     however large.
-//   - Execute returns the rows the script affected, summed from the
-//     num_affected_rows columns, where the previous driver returned 0 for every
-//     script, and it reports each command and its response to the task run log,
-//     where the previous driver logged nothing.
-//   - A statement the caller wrote as EXPLAIN carries QueryPlan{TEXT}: the
-//     previous driver returned the plan's rows with no plan, so the viewer did
-//     not draw them.
-//   - SyncInstance lists a catalog without its schemas. The previous driver read
-//     every schema and table of every catalog during an instance sync, and the
-//     product reads only each catalog's name from it; SyncDBSchema reads one
-//     catalog's schemas.
-//   - The catalog, schema and table listings, the schemas within a catalog, the
-//     tables within a schema and a view's dependency columns are in name or
-//     position order, which the previous driver kept in the service's order.
-//   - A statement the warehouse refuses is the SDK helper's text
-//     ("FAILED: <code> <message>"), and Execute wraps it with "failed to split
-//     statements"/"failed to execute statement"; the previous driver returned the
-//     bare SDK error.
-//   - A missing workspace, token or warehouse is refused by Open with the
-//     driver's message naming the field, where the previous driver's SDK resolved
-//     what it could from the environment and said "Warehouse ID must be set".
+// The statement split, the EXPLAIN rewrite, the result decode, the cap, the
+// session's schema and the dump are omni's driver's, not this adapter's, and
+// several of them behave differently from the replaced driver. This PR's
+// "Parity evidence" table records each difference and what it means for the
+// product, and cutover_parity_test.go asserts both answers over the recorded
+// workspace. Read those before changing the adapter.
 package databricks
 
 import (
