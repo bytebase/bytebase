@@ -91,6 +91,10 @@ func TestProbeHonoursAutocommit(t *testing.T) {
 	driver := openTestDriverOn(ctx, t, container, database)
 	t.Cleanup(func() { require.NoError(t, driver.Close(ctx)) })
 
+	// The row-limit rules and plancheck reach the estimate through the same
+	// prober, so the adapter answers db.RowEstimator too.
+	require.Implements(t, (*db.RowEstimator)(nil), driver)
+
 	batch := fmt.Sprintf("BATCH ON id LIMIT 2 DRY RUN DELETE FROM %s.t WHERE id > 0", database)
 	_, err = driver.Probe(ctx, db.ProbeContext{}, batch)
 	require.Error(t, err, "TiDB refuses BATCH ... DRY RUN inside a transaction")
