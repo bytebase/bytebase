@@ -13,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/plugin/schema/internal/omnicatalog"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -28,14 +29,15 @@ func init() {
 	schema.RegisterDiffMetadataMigration(storepb.Engine_MYSQL, omniDiffMetadataMigration)
 }
 
-// sdlDatabaseContext is the synthetic database both SDL inputs are loaded under.
+// sdlDatabaseContext is the synthetic database both SDL inputs are loaded under,
+// the same one the metadata diff loads both snapshots under.
 // Bytebase declarative schema text is single-database and unqualified (no leading
 // CREATE DATABASE / USE), but the omni catalog resolves unqualified CREATE TABLE,
 // foreign-key, and view references against a current database and errors with
 // "No database selected" otherwise. Loading both the source (dumped) and target
 // (user) SDL under the SAME fixed database name keeps every table identity key
 // (database, name) aligned, so the database wrapper is invisible to the diff.
-const sdlDatabaseContext = "bbcatalog"
+const sdlDatabaseContext = omnicatalog.Database
 
 // withDatabaseContext prepends a CREATE DATABASE / USE preamble so unqualified
 // declarative DDL resolves. foreign_key_checks is left to LoadSDL, which disables
@@ -181,7 +183,7 @@ func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string
 	if plan == nil {
 		return "", nil
 	}
-	return stripDatabaseContext(plan.SQL()), nil
+	return omnicatalog.StripDatabaseContext(plan.SQL()), nil
 }
 
 // mysqlDiffSDLMigration is the bare (no session context) 3-arg form: two schema texts plus
@@ -190,89 +192,6 @@ func mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion string
 // behavior. Production callers reach the context-aware form via schema.SDLMigration.
 func mysqlDiffSDLMigration(sourceSDL, targetSDL, engineVersion string) (string, error) {
 	return mysqlDiffSDLMigrationWithContext(sourceSDL, targetSDL, engineVersion, nil)
-}
-
-// stripDatabaseContext removes the synthetic database qualifier from generated DDL.
-// loadCatalog loads both SDL inputs under sdlDatabaseContext so unqualified references
-// resolve, which makes the omni migration generator emit fully-qualified identifiers
-// (e.g. ALTER TABLE `bbcatalog`.`t`). Bytebase applies the migration within a connection
-// already scoped to the target database, so the qualifier must be removed.
-//
-// The scan is literal- and comment-aware: a '…' or "…" string literal — say a view
-// body or CHECK expression whose text happens to contain the byte sequence
-// `bbcatalog`.`x` — is copied opaquely (scanViewBodyToken, a quote/identifier
-// scanner), so only identifier-position qualifiers are stripped, and the identifier
-// following a stripped qualifier is itself copied opaquely so even an object literally
-// named "bbcatalog" keeps its own quoting. Comments matter because omni emits routine
-// bodies VERBATIM into create ops: a user comment ("-- don't …") carries unbalanced
-// quotes that would otherwise open a phantom literal swallowing later qualifiers, so
-// #…, "-- …", and non-executable /*…*/ comments are copied opaquely, while executable
-// /*!…*/ comment interiors are scanned as the live SQL they are.
-func stripDatabaseContext(sql string) string {
-	quoted := "`" + sdlDatabaseContext + "`"
-	if !strings.Contains(sql, quoted+".") {
-		return sql
-	}
-	var out strings.Builder
-	out.Grow(len(sql))
-	for i := 0; i < len(sql); {
-		c := sql[i]
-		if isViewBodySpaceByte(c) {
-			out.WriteByte(c)
-			i++
-			continue
-		}
-		if end, isComment := scanMySQLComment(sql, i); isComment {
-			out.WriteString(sql[i:end])
-			i = end
-			continue
-		}
-		end := scanViewBodyToken(sql, i)
-		tok := sql[i:end]
-		if tok == quoted && end < len(sql) && sql[end] == '.' && end+1 < len(sql) && sql[end+1] == '`' {
-			identEnd := scanViewBodyToken(sql, end+1)
-			out.WriteString(sql[end+1 : identEnd])
-			i = identEnd
-			continue
-		}
-		out.WriteString(tok)
-		i = end
-	}
-	return out.String()
-}
-
-// scanMySQLComment reports whether a NON-EXECUTABLE MySQL comment starts at i and, if
-// so, the offset just past it: "#…" and "-- …" (double dash followed by whitespace or
-// end of input, per MySQL's rule) run to end of line; "/*…*/" runs to its terminator.
-// Version-gated executable comments ("/*!…*/") are NOT comments — their interior is
-// live SQL — so they are left to the normal token scan.
-func scanMySQLComment(sql string, i int) (int, bool) {
-	switch sql[i] {
-	case '#':
-		return mysqlLineCommentEnd(sql, i), true
-	case '-':
-		if i+1 < len(sql) && sql[i+1] == '-' && (i+2 >= len(sql) || isViewBodySpaceByte(sql[i+2])) {
-			return mysqlLineCommentEnd(sql, i), true
-		}
-	case '/':
-		if i+1 < len(sql) && sql[i+1] == '*' && (i+2 >= len(sql) || sql[i+2] != '!') {
-			if idx := strings.Index(sql[i+2:], "*/"); idx >= 0 {
-				return i + 2 + idx + 2, true
-			}
-			return len(sql), true
-		}
-	default:
-	}
-	return 0, false
-}
-
-// mysqlLineCommentEnd returns the offset of the newline terminating a line comment
-// starting at i (or end of input); the newline itself is left to the whitespace copy.
-func mysqlLineCommentEnd(sql string, i int) int {
-	for i < len(sql) && sql[i] != '\n' {
-		i++
-	}
-	return i
 }
 
 // mysqlSDLDropAdvices analyzes the SDL migration plan from the current (dumped)
@@ -346,17 +265,17 @@ func mysqlSDLDropAdvices(userSDLText string, currentSchema *model.DatabaseMetada
 		// and append the operation statement (with the synthetic bbcatalog qualifier stripped)
 		// rather than a (table-valued) ObjectName.
 		case catalog.OpDropColumn:
-			add(dropAdvice(fmt.Sprintf("Dropping a column from table '%s' will result in data loss. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a column from table '%s' will result in data loss. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 		case catalog.OpModifyColumn:
-			add(dropAdvice(fmt.Sprintf("Modifying a column on table '%s' may result in data loss. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Modifying a column on table '%s' may result in data loss. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 		case catalog.OpDropIndex:
-			add(dropAdvice(fmt.Sprintf("Dropping an index on table '%s'. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping an index on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 		case catalog.OpDropConstraint:
-			add(dropAdvice(fmt.Sprintf("Dropping a constraint on table '%s'. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a constraint on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 		case catalog.OpDropForeignKey:
-			add(dropAdvice(fmt.Sprintf("Dropping a foreign key on table '%s'. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a foreign key on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 		case catalog.OpDropCheck:
-			add(dropAdvice(fmt.Sprintf("Dropping a check constraint on table '%s'. (%s)", op.ParentObject, stripDatabaseContext(op.SQL))))
+			add(dropAdvice(fmt.Sprintf("Dropping a check constraint on table '%s'. (%s)", op.ParentObject, omnicatalog.StripDatabaseContext(op.SQL))))
 
 		// Object DROP branches: warn unless this drop is the paired half of a redefinition
 		// (the create half emits the single REPLACE advice below).
@@ -518,72 +437,5 @@ func replaceAdvice(content string) *storepb.Advice {
 		Code:    code.SDLReplaceOperation.Int32(),
 		Title:   "CREATE OR REPLACE operation detected",
 		Content: content,
-	}
-}
-
-// isViewBodySpaceByte reports whether b is whitespace between tokens.
-func isViewBodySpaceByte(b byte) bool {
-	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
-}
-
-// scanViewBodyToken returns the end offset of the token starting at i (a non-space
-// byte): a whole '…'/"…" string literal, a whole `…` identifier, a word run, or a
-// single punctuation byte. String literals honor backslash escapes and doubled
-// delimiters; backtick identifiers only doubled backticks. An unterminated literal or
-// identifier runs to the end. It copies the scanner omni's SDL dump uses for view bodies.
-func scanViewBodyToken(body string, i int) int {
-	switch c := body[i]; c {
-	case '\'', '"':
-		for j := i + 1; j < len(body); {
-			switch {
-			case body[j] == '\\' && j+1 < len(body):
-				j += 2
-			case body[j] == c:
-				if j+1 < len(body) && body[j+1] == c {
-					j += 2
-					continue
-				}
-				return j + 1
-			default:
-				j++
-			}
-		}
-		return len(body)
-	case '`':
-		for j := i + 1; j < len(body); {
-			if body[j] == '`' {
-				if j+1 < len(body) && body[j+1] == '`' {
-					j += 2
-					continue
-				}
-				return j + 1
-			}
-			j++
-		}
-		return len(body)
-	default:
-		if !isViewBodyWordByte(body[i]) {
-			return i + 1
-		}
-		j := i + 1
-		for j < len(body) && isViewBodyWordByte(body[j]) {
-			j++
-		}
-		return j
-	}
-}
-
-// isViewBodyWordByte reports whether b can be part of a bare word. Multibyte (>= 0x80)
-// bytes are treated as word bytes so an unquoted multibyte identifier stays one token.
-func isViewBodyWordByte(b byte) bool {
-	switch {
-	case b >= 'a' && b <= 'z', b >= 'A' && b <= 'Z', b >= '0' && b <= '9':
-		return true
-	case b == '_' || b == '$':
-		return true
-	case b >= 0x80:
-		return true
-	default:
-		return false
 	}
 }
