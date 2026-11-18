@@ -6,14 +6,17 @@
 // Elasticsearch is not a SQL-shaped engine, so each db.Driver method answers in
 // its own way:
 //
-//   - Open builds the endpoint and the login and reaches nothing. https is
-//     selected by use_ssl, by a host that names its own https, or by AWS IAM,
-//     which always requires it, and a host that names no port reaches 9200. TLS
-//     material is the data source's: verify_tls_certificate decides whether the
-//     endpoint's certificate is checked, and a data source asked for https with
-//     no material encrypts without verifying. A data source with an SSH host
-//     dials through the tunnel; an AWS IAM login signs each request through a
-//     transport of the caller's, which then owns its connections.
+//   - Open builds the endpoint and the login without reaching the endpoint
+//     itself; Ping does. It does reach out for the connection path: a data
+//     source with an SSH host opens the jump host here and the endpoint's
+//     connections then dial through it (Config.Dial), while an AWS IAM login
+//     resolves the credentials it signs each request with, through a transport
+//     of the caller's that owns its connections. https is selected by use_ssl,
+//     by a host that names its own https, or by AWS IAM, which always requires
+//     it, and a host that names no port reaches 9200. TLS material is the data
+//     source's: verify_tls_certificate decides whether the endpoint's
+//     certificate is checked, and a data source asked for https with no
+//     material encrypts without verifying.
 //   - Ping asks the endpoint for its root document.
 //   - QueryConn runs each Kibana Dev Console request of the script and answers
 //     one result per request.
@@ -99,7 +102,8 @@ func newDriver() db.Driver {
 }
 
 // Open maps the connection config onto the driver contract. It does not reach
-// the endpoint; Ping does.
+// the endpoint, though an SSH data source does dial its jump host and an AWS IAM
+// login resolves its credentials here; Ping reaches the endpoint.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
 	d := &Driver{}
