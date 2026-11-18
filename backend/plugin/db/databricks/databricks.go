@@ -208,7 +208,11 @@ func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, er
 
 func (executeLogger) TransactionControl(odbdriver.TransactionOp, error) {}
 
-func (executeLogger) Retry(error, int, int) {}
+// Retry records a retried statement. Databricks' driver retries nothing today, so
+// this only fires if it starts to.
+func (l executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
 
 func errorString(err error) string {
 	if err == nil {
