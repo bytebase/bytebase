@@ -35,45 +35,12 @@
 //   - SyncInstance reports the project's datasets and no version and no roles:
 //     BigQuery states neither.
 //
-// Known differences from the driver this replaced, kept because they are the
-// driver's own behavior or because reproducing the old one would reimplement it:
-//
-//   - A statement keeps its comments. The previous driver removed every comment
-//     with its own splitter before sending the text.
-//   - An unclosed literal is that statement's error on its own result; the
-//     previous driver failed the whole QueryConn call.
-//   - Which statements return rows is googlesql/analysis.ClassifySQL rather than
-//     a first-keyword test: a parenthesized query returns rows where the old
-//     driver ran it as a command, a CTE-prefixed INSERT does not where the old
-//     driver read it as a query, and SET is a query.
-//   - A query that returns no rows still reports its columns. The previous
-//     driver learned the schema from the first row and reported none.
-//   - The result-size cap is byte-accurate and keeps the row that went over,
-//     reported as Truncated; the previous driver measured only at power-of-two
-//     row counts and a cap of 0 stopped at the first row.
-//   - An explain request (a dry run) stops at the first statement the service
-//     refuses; the previous driver answered every statement.
-//   - No operator_email job label is set. The contract's QueryOptions carries no
-//     operator identity, so the cost-attribution label the previous driver
-//     attached is not reproducible here; adding it is a contract change.
-//   - A NUMERIC and a BIGNUMERIC cell is its exact decimal text, a TIMESTAMP and
-//     a DATETIME are typed timestamps, a RANGE is the half-open literal the
-//     service states, and an ARRAY or a RECORD is its elements in order. The
-//     previous driver returned Go's rendering of the client's values.
-//   - A synced dataset lists its tables in name order rather than the service's;
-//     the INFORMATION_SCHEMA read quotes the dataset as a path; and a column the
-//     view states with no ordinal position (an ingestion-time partitioned
-//     table's _PARTITIONTIME and _PARTITIONDATE) is left out of the sync instead
-//     of failing it.
-//   - A dataset that is not there is the product's not-found error naming it.
-//     The previous driver reported the 403 the INFORMATION_SCHEMA read answered,
-//     which is why a dropped dataset never reached the not-found path. A driver
-//     open on no dataset at all reports the same, where the previous driver sent
-//     a query against an empty dataset name and returned its syntax error.
-//   - The error text of Open and Ping is the driver's: Open names the missing
-//     `project` parameter where the previous driver said "project ID cannot be
-//     empty", and Ping prefixes the client's error with "bigquery: bad
-//     connection:".
+// The statement split, the query-or-command decision, a result's shape, the
+// result-size cap, the dry run and the sync are omni's driver's, not this
+// adapter's, and several of them behave differently from the replaced driver.
+// This PR's "Parity evidence" section records each difference and what it means
+// for the product; cutover_parity_test.go pins the statement-level ones both
+// ways. Read those before changing the adapter.
 package bigquery
 
 import (
