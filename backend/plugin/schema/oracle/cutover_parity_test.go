@@ -93,3 +93,16 @@ func TestMetadataMigrationKeepsLegacyOmissions(t *testing.T) {
 	require.NotContains(t, migration, "GENERATED")
 	require.NotContains(t, migration, "INVISIBLE")
 }
+
+// TestMaterializedViewDefinitionDropsIndexVisibility pins the per-object path to
+// the same compatibility strip as the database definition: an index's INVISIBLE
+// state is deferred.
+func TestMaterializedViewDefinitionDropsIndexVisibility(t *testing.T) {
+	definition, err := GetMaterializedViewDefinition("", &metadatapb.MaterializedViewMetadata{
+		Name:       "MV",
+		Definition: "SELECT 1 FROM DUAL",
+		Indexes:    []*metadatapb.IndexMetadata{{Name: "IDX_MV", Expressions: []string{"1"}, Visible: false}},
+	})
+	require.NoError(t, err)
+	require.NotContains(t, definition, "INVISIBLE")
+}

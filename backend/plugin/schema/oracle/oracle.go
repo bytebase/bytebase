@@ -57,7 +57,7 @@ func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) 
 }
 
 func GetMaterializedViewDefinition(_ string, view *metadatapb.MaterializedViewMetadata) (string, error) {
-	return catalog.GetMaterializedViewDefinition("", view)
+	return catalog.GetMaterializedViewDefinition("", stripMaterializedViewUnrenderedFacts(view))
 }
 
 func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
@@ -84,6 +84,14 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 				index.Visible = true
 			}
 		}
+	}
+	return out
+}
+
+func stripMaterializedViewUnrenderedFacts(view *metadatapb.MaterializedViewMetadata) *metadatapb.MaterializedViewMetadata {
+	out := proto.CloneOf(view)
+	for _, index := range out.GetIndexes() {
+		index.Visible = true
 	}
 	return out
 }
