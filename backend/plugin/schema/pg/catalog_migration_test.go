@@ -522,10 +522,11 @@ func TestUnloadableDependentViewsRestoreInDependencyOrder(t *testing.T) {
 	require.Less(t, createB, createA, "the dependency is created first")
 }
 
-// TestUnloadableBackupSchemaViewIsNotRestored keeps the backup-schema contract:
-// the restore fallback must not reintroduce bbdataarchive objects after the
-// plan's filter removed them.
-func TestUnloadableBackupSchemaViewIsNotRestored(t *testing.T) {
+// TestBackupSchemaDependentViewIsRejected keeps the backup-schema contract: a
+// bbdataarchive view that must be dropped for a restored object cannot be
+// emitted, so the migration is refused rather than producing a lower drop that
+// the remaining backup view blocks.
+func TestBackupSchemaDependentViewIsRejected(t *testing.T) {
 	snapshot := func(columnType string) *model.DatabaseMetadata {
 		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "bbdataarchive",
@@ -540,9 +541,8 @@ func TestUnloadableBackupSchemaViewIsNotRestored(t *testing.T) {
 		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
 	}
 
-	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
-	require.NoError(t, err)
-	require.Empty(t, sql)
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.ErrorContains(t, err, "backup-schema view")
 }
 
 // TestSplitCompositeRetypeAddsAttributeBeforeItsComment covers a split release

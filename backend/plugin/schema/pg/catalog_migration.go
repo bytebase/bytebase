@@ -42,7 +42,9 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	orderTypeAndTableCreates(plan, newSchema.GetProto())
 	restoreIndexDefinitions(plan, newSchema.GetProto())
 	releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto())
-	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
+	if err := restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport); err != nil {
+		return "", err
+	}
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
 	plan = plan.Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
@@ -490,10 +492,10 @@ func attributeType(composite *metadatapb.CompositeTypeMetadata, name string) str
 // stand-in on both sides, so the catalog has no dependency edge and would alter
 // the column under a view that must be dropped first. The snapshot's
 // DependencyColumns is the only record of that edge.
-func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) {
+func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) error {
 	affected := affectedTableColumns(oldMeta, newMeta)
 	if len(affected) == 0 {
-		return
+		return nil
 	}
 	unloadable := make(map[string]bool)
 	for _, report := range reports {
@@ -555,9 +557,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	}
 	for _, oldSchema := range oldMeta.GetSchemas() {
 		newSchema := schemaByName(newMeta, oldSchema.GetName())
-		if newSchema == nil {
-			continue
-		}
 		for _, view := range oldSchema.GetViews() {
 			if viewByName(newSchema, view.GetName()) != nil {
 				continue
@@ -600,6 +599,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
+	for key := range selected {
+		if strings.HasPrefix(key, "bbdataarchive.") {
+			return errors.Errorf("cannot generate a migration: backup-schema view %s depends on an object that must be recreated", key)
+		}
+	}
 	var items []restoreItem
 	for _, candidate := range candidates {
 		if selected[candidate.key] {
@@ -607,7 +611,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		}
 	}
 	if len(items) == 0 {
-		return
+		return nil
 	}
 	order := restoreOrder(items)
 	dropped := make(map[string]bool, len(items))
@@ -644,6 +648,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		})
 	}
 	plan.Ops = ops
+	return nil
 }
 
 // opTargetsSelected reports whether an operation belongs to a selected restored
