@@ -222,10 +222,8 @@ func serverCertificatePEM(t *testing.T) string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw}))
 }
 
-// TestSyncInstanceMatchesRecordedAnswer replays an answer recorded from the
-// pinned Elasticsearch 8.19.25 server, and requires the adapter to read it the
-// way that run did: this version, one database, these indices with their
-// document counts and sizes, and these users.
+// The routes below are recorded answers from the pinned Elasticsearch 8.19.25
+// server, so a mapping drift shows up as a metadata difference.
 func TestSyncInstanceMatchesRecordedAnswer(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"GET /": `{"version":{"number":"8.19.25"}}`,
@@ -287,8 +285,6 @@ func TestSyncInstanceMatchesRecordedAnswer(t *testing.T) {
 	require.True(t, proto.Equal(instance.Databases[0], schema), "SyncDBSchema and SyncInstance read the same database")
 }
 
-// TestSyncInstanceFailsOpenOnUsers pins that a user list the endpoint refuses is
-// not a sync failure: most deployments have no internal users.
 func TestSyncInstanceFailsOpenOnUsers(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"GET /": `{"version":{"number":"8.19.25"}}`,
@@ -357,9 +353,6 @@ GET /_cat/indices?h=index`, db.QueryContext{})
 	}, server.requests)
 }
 
-// TestQueryConnFailsTheCall pins how a request that fails answers: the call
-// fails with the endpoint's own status and body, as it did before. Earlier
-// results of the same script do not come back.
 func TestQueryConnFailsTheCall(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"GET /alpha/_doc/1": `{}`,
@@ -373,9 +366,6 @@ GET /nope/_search`, db.QueryContext{})
 	require.ErrorContains(t, err, "index_not_found_exception")
 }
 
-// TestQueryConnEmptyAnswer pins an answer with no body: a HEAD, or an empty
-// 200. The status is the whole verdict, so it is a result with no columns and no
-// rows, and nothing is parsed.
 func TestQueryConnEmptyAnswer(t *testing.T) {
 	server := newTestServer(t, map[string]string{"HEAD /alpha": ""})
 	results, err := server.open(t).QueryConn(context.Background(), nil, "HEAD /alpha", db.QueryContext{})
@@ -386,8 +376,6 @@ func TestQueryConnEmptyAnswer(t *testing.T) {
 	require.Equal(t, "HEAD /alpha\n", results[0].Statement)
 }
 
-// TestQueryConnUnsupportedContentType pins that an answer whose type the driver
-// cannot read is an error naming the type.
 func TestQueryConnUnsupportedContentType(t *testing.T) {
 	server := newTestServer(t, map[string]string{"GET /": "png:not json"})
 	results, err := server.open(t).QueryConn(context.Background(), nil, "GET /", db.QueryContext{})
@@ -395,9 +383,6 @@ func TestQueryConnUnsupportedContentType(t *testing.T) {
 	require.ErrorContains(t, err, "Content-Type not supported: image/png")
 }
 
-// TestQueryConnTruncatesAtTheCap pins the result-size cap: a REST answer is one
-// row, so the row that crosses the cap is kept and the result says it is
-// truncated, with the message every driver uses.
 func TestQueryConnTruncatesAtTheCap(t *testing.T) {
 	server := newTestServer(t, map[string]string{"GET /alpha/_search": `{"took": 1}`})
 	// One byte is smaller than any answer's columns, so the row crosses the cap.
@@ -409,8 +394,6 @@ func TestQueryConnTruncatesAtTheCap(t *testing.T) {
 	require.Equal(t, dbutil.FormatMaximumSQLResultSizeMessage(limit), results[0].Error)
 }
 
-// TestQueryConnBulkFailure pins that a bulk request the endpoint accepted but
-// did not fully apply fails: the verdict is in the body, not the status.
 func TestQueryConnBulkFailure(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"POST /alpha/_bulk": `{
@@ -432,9 +415,6 @@ POST /alpha/_bulk
 	require.ErrorContains(t, err, "1 of 2 bulk items failed: [missing]: document missing")
 }
 
-// TestExplainProfilesTheSearch holds an explain to what it is: the search runs
-// with profiling on, the profile is the only column, the hits do not come back,
-// and the result says it is a JSON plan that ran.
 func TestExplainProfilesTheSearch(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"POST /alpha/_search": `{
@@ -464,9 +444,8 @@ POST /alpha/_search
 	require.Equal(t, []string{"POST /alpha/_search"}, server.requests)
 }
 
-// TestExplainRefusesWhatIsNotASearch pins the line between explaining and doing:
-// profiling runs the request, so anything that is not a search is refused and
-// never sent.
+// Profiling runs the request, so an explain of anything but a search must be
+// refused before it is sent.
 func TestExplainRefusesWhatIsNotASearch(t *testing.T) {
 	server := newTestServer(t, map[string]string{"*": `{}`})
 	for _, script := range []string{
@@ -484,8 +463,6 @@ func TestExplainRefusesWhatIsNotASearch(t *testing.T) {
 	require.Empty(t, server.requests, "an explain of a write sent nothing")
 }
 
-// TestExplainWithoutAProfile pins that a search the endpoint did not profile is
-// an error, not a plan made of the search's own hits.
 func TestExplainWithoutAProfile(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"POST /alpha/_search": `{"took": 1, "hits": {"total": {"value": 0}}}`,
@@ -495,9 +472,6 @@ func TestExplainWithoutAProfile(t *testing.T) {
 	require.ErrorContains(t, err, "the search answered with no profile to explain")
 }
 
-// TestExecuteReportsTheScriptSteps pins the task run's log: one command per
-// request with its text, and one response, and 0 affected rows because an
-// Elasticsearch answer states its counts in its own columns.
 func TestExecuteReportsTheScriptSteps(t *testing.T) {
 	const script = "\nPOST /alpha/_bulk\n{\"index\":{}}\n{\"name\":\"row 1\"}"
 	server := newTestServer(t, map[string]string{
@@ -527,8 +501,6 @@ func TestExecuteReportsTheScriptSteps(t *testing.T) {
 	require.Empty(t, logs[1].GetCommandResponse().GetError())
 }
 
-// TestExecuteFailsOnARefusedRequest pins that a request the endpoint refuses
-// ends the script with its error and reports nothing as affected.
 func TestExecuteFailsOnARefusedRequest(t *testing.T) {
 	server := newTestServer(t, map[string]string{"*": `!{"error":"refused"}`})
 	affected, err := server.open(t).Execute(context.Background(), "POST /alpha/_bulk\n{\"index\":{}}", db.ExecuteOptions{})
@@ -536,8 +508,8 @@ func TestExecuteFailsOnARefusedRequest(t *testing.T) {
 	require.ErrorContains(t, err, "request failed with status code 500")
 }
 
-// TestPingKeepsTheAWSHints pins the connection test's error text on a managed
-// OpenSearch domain: the hint names the role that could not be assumed.
+// A managed OpenSearch domain's refusal names the role that could not be
+// assumed, which is what a support case reads.
 func TestPingKeepsTheAWSHints(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -583,8 +555,8 @@ func TestPingKeepsTheAWSHints(t *testing.T) {
 	}
 }
 
-// TestDumpWritesNothing pins the no-op: a synced index does not carry what
-// recreates it, so there is nothing to write and nothing to refuse.
+// A synced index does not carry what recreates it, so there is nothing to write
+// and nothing to refuse.
 func TestDumpWritesNothing(t *testing.T) {
 	server := newTestServer(t, map[string]string{})
 	var out strings.Builder
@@ -593,20 +565,16 @@ func TestDumpWritesNothing(t *testing.T) {
 	require.Empty(t, server.requests)
 }
 
-// TestGetDB pins that there is no database/sql handle to hand out.
 func TestGetDB(t *testing.T) {
 	require.Nil(t, (&Driver{}).GetDB())
 }
 
-// TestToRowValue pins the mapping of a contract value: every answer this driver
-// reads is text.
 func TestToRowValue(t *testing.T) {
 	require.Equal(t, &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: "alpha"}},
 		toRowValue(omnidriver.Value{Kind: omnidriver.String, String: "alpha"}))
 	require.Equal(t, dbutil.NullRowValue, toRowValue(omnidriver.Value{Kind: omnidriver.Null}))
 }
 
-// TestToQueryPlan pins the plan mapping: the format crosses as its enum name.
 func TestToQueryPlan(t *testing.T) {
 	require.Nil(t, toQueryPlan(nil))
 	require.Equal(t, &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON, Executed: true},
