@@ -4813,7 +4813,7 @@
     CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
 
   catalogExpected: ''
-  catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type of view "public"."v", which must be recreated'
+  catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type of view "public"."v", which this migration must create'
 - description: TestCockroachMetadataDiffSplitAttributeReaddsUnchangedSuffix
   difference: the catalog releases and re-adds the unchanged attribute that follows the split one, so the composite keeps target order; the legacy generator left it in place, which appended the split attribute after it.
   oldMetadata: |-
@@ -4991,7 +4991,7 @@
 
   catalogExpected: ''
   catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type
-  of view "public"."v", which must be recreated'
+  of view "public"."v", which this migration must create'
 - description: TestCockroachMetadataDiffRestoredUnloadableViewRefusesAddedRowTypeAttribute
   difference: the catalog refuses the migration because the added attribute needs the view, which is dropped first and recreated after the catalog's ALTER TYPE; the legacy generator placed the type before the recreation and produced a migration PostgreSQL rejects.
   oldMetadata: |-
@@ -5082,7 +5082,7 @@
 
   catalogExpected: ''
   catalogError: 'cannot generate a migration: attribute "r" of type "public"."c" uses the row type
-  of view "public"."v", which must be recreated'
+  of view "public"."v", which this migration must create'
 - description: TestCockroachMetadataDiffRestoredUnloadableViewReleasesRetypedRowTypeAttribute
   difference: the catalog releases the attribute retyped to the view row type before the synthesized drop and re-adds it after the recreation; the legacy generator altered it while the row type was absent.
   oldMetadata: |-

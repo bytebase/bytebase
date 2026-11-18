@@ -1106,6 +1106,66 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 	require.False(t, opTargetsSelected(callsTheView, selected, nil, nil, nil), "a trigger belongs to its table, not to the function it calls")
 }
 
+// deferredViewSnapshot builds the pair used by the deferred-create tests: a target
+// that adds public.upper above a restored public.lower.
+func deferredViewSnapshot(columnType string, addUpper bool) *model.DatabaseMetadata {
+	schemaMeta := &metadatapb.SchemaMetadata{
+		Name:   "public",
+		Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+		Views: []*metadatapb.ViewMetadata{{
+			Name:       "lower",
+			Definition: "SELECT FROM",
+			DependencyColumns: []*metadatapb.DependencyColumn{{
+				Schema: "public", Table: "t", Column: "id",
+			}},
+		}},
+	}
+	if addUpper {
+		schemaMeta.Views = append(schemaMeta.Views, &metadatapb.ViewMetadata{
+			Name:       "upper",
+			Definition: "SELECT id FROM public.lower",
+			DependencyColumns: []*metadatapb.DependencyColumn{{
+				Schema: "public", Table: "lower",
+			}},
+		})
+	}
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schemaMeta}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+}
+
+// TestDeferredCreatedViewRefusesARowTypeColumn covers a view the target adds on a
+// restored view: its create is deferred with the rest of the recreation, so a
+// table column of its row type cannot be ordered and the migration is refused.
+func TestDeferredCreatedViewRefusesARowTypeColumn(t *testing.T) {
+	source := deferredViewSnapshot("integer", false)
+	target := deferredViewSnapshot("bigint", true)
+	target.GetProto().Schemas[0].Tables = append(target.GetProto().Schemas[0].Tables,
+		pgTable("holds", 0, &metadatapb.ColumnMetadata{Name: "row", Type: "public.upper"}))
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.ErrorContains(t, err, `column "row" of table "public"."holds" uses the row type of view "public"."upper"`)
+}
+
+// TestDeferredCreatedViewOrdersItsAttributeAfterwards covers an existing composite
+// that gains an attribute of a view the target adds: the attribute is added after
+// the view's deferred create.
+func TestDeferredCreatedViewOrdersItsAttributeAfterwards(t *testing.T) {
+	composite := func(columnType string, addAttribute bool) *model.DatabaseMetadata {
+		meta := deferredViewSnapshot(columnType, addAttribute)
+		attributes := []*metadatapb.CompositeTypeAttribute{{Name: "x", Type: "integer"}}
+		if addAttribute {
+			attributes = append(attributes, &metadatapb.CompositeTypeAttribute{Name: "r", Type: "public.upper"})
+		}
+		meta.GetProto().Schemas[0].CompositeTypes = []*metadatapb.CompositeTypeMetadata{{Name: "c", Attributes: attributes}}
+		return model.NewDatabaseMetadata(meta.GetProto(), nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, composite("integer", false), composite("bigint", true))
+	require.NoError(t, err)
+	createView := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	addAttribute := strings.Index(sql, `ADD ATTRIBUTE "r" public.upper`)
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.GreaterOrEqual(t, addAttribute, 0, sql)
+	require.Less(t, createView, addAttribute, "the attribute is added after the view it needs is created")
+}
+
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
 // attribute the target adds, out of a restored view's drop: releasing a column
 // would discard its data, and a new attribute would need the view before its
