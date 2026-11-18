@@ -11,13 +11,11 @@
 // Constraints of the engine and the contract, here rather than at each call:
 //   - Config.ReadOnly is unused: TiDB's MySQL wire handshake has no read-only
 //     session parameter.
-//   - Config.ApplicationName is "bytebase", which renders the same
-//     /*app=bytebase*/ comment the old driver prepended to every statement of a
-//     query or a change script.
+//   - Config.ApplicationName is "bytebase", which renders the /*app=bytebase*/
+//     comment every statement of a query or a change script carries.
 //   - Execute ignores ExecuteOptions.CreateDatabase and the `-- txn-isolation`
-//     directive: the old driver ran a create-database script under the
-//     transaction directive and never applied an isolation level, and neither is
-//     this cutover's to change.
+//     directive: a create-database script runs under the transaction directive,
+//     and no isolation level is set.
 //   - A change script still reads its transaction mode from
 //     ParseTransactionConfig, so the directives do not reach the server.
 //   - A probe runs on one session so its pre-executions and its statement share
@@ -25,33 +23,18 @@
 //     BeginTx sends and ended with "ROLLBACK".
 //   - QueryConn takes a *sql.Conn the caller pooled and ignores it: the omni
 //     driver hands out its own Session, which the adapter keeps until Close, so
-//     the statements of one editor request share it as they shared the caller's
-//     connection before.
-//
-// Known differences from the driver this replaced:
-//   - A parse failure now reports omni's parser text, for example
-//     `expected identifier (line 1, column 51)`, instead of Bytebase's parser
-//     adapter's `Syntax error at line 1:51: ... related text: ...`. The
-//     splitter's errors move the same way.
-//   - Dump renders omni's catalog rather than Bytebase's renderer. Differentially
-//     verified byte-identical over the synced metadata except for two things:
-//     partitions keep their ordinal order instead of their name order, which is
-//     what makes a partitioned table's dump restorable, and the script ends with
-//     a blank line where the old one stopped at its last SET statement.
-//   - Query results carry the contract's typed values: an unsigned integer is
-//     Uint64Value rather than text, the BLOB, BINARY and VARBINARY families are
-//     bytes rather than a string scan, and an empty binary is empty bytes
-//     rather than NULL.
-//   - The result-size cap is checked against a row's real encoded size rather
-//     than at power-of-two row counts, so the same message can arrive with
-//     fewer rows.
-//   - A cap of zero is refused: the product reads 0 as "no rows" and the
-//     contract reads it as "no cap".
-//   - Instance roles are read in a deterministic (user, host) order, and a grant
-//     names its account with proper quoting, so an account whose name contains a
-//     quote is now read instead of skipped.
-//   - An EXPLAIN statement the caller writes still reports its plan, and an
-//     explain request still reports none, as before.
+//     the statements of one editor request share it.
+//   - Dump renders omni's catalog, whose partitions keep their ordinal order;
+//     that order is what makes a partitioned table's dump restorable.
+//   - Query results carry the contract's typed values: an unsigned integer is a
+//     Uint64 value, the BLOB, BINARY and VARBINARY families are bytes, and an
+//     empty binary is empty bytes rather than NULL.
+//   - A result-size cap is checked against a row's real encoded size, and a cap
+//     of zero is refused: the product reads 0 as "no rows" and the contract
+//     reads it as "no cap".
+//   - Instance roles are read in a deterministic (user, host) order, and a
+//     grant names its account with proper quoting, so an account whose name
+//     contains a quote is read.
 package tidb
 
 import (
