@@ -685,6 +685,9 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName string) (*v1pb.TaskRunSession, error) {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
+		if db == nil {
+			return nil, errors.Errorf("session monitoring for engine %v needs a direct database/sql connection, but the driver does not expose one", engine.String())
+		}
 		query := `
 			WITH target_session AS (
 				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1

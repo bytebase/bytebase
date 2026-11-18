@@ -152,7 +152,11 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 				migrationContext.GetChangelogTableName(),
 			)
 
-			if _, err := cleanupDriver.GetDB().ExecContext(cleanupCtx, sql); err != nil {
+			cleanupSQLDB, err := ghost.RequireDirectConnection(cleanupDriver)
+			if err != nil {
+				return err
+			}
+			if _, err := cleanupSQLDB.ExecContext(cleanupCtx, sql); err != nil {
 				return errors.Wrapf(err, "failed to drop gh-ost temp tables")
 			}
 			return nil
