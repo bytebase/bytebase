@@ -1,6 +1,7 @@
 package hive
 
 import (
+	"errors"
 	"testing"
 
 	odriver "github.com/bytebase/omni/driver"
@@ -123,16 +124,12 @@ func TestToQueryResult(t *testing.T) {
 	require.Nil(t, converted.QueryPlan)
 
 	result.Truncated = true
-	result.Err = assertError("boom")
+	result.Err = errors.New("boom")
 	require.Equal(t, util.FormatMaximumSQLResultSizeMessage(64), toQueryResult(result, 64).Error)
 
 	result.Truncated = false
 	require.Equal(t, "boom", toQueryResult(result, 64).Error)
 }
-
-type assertError string
-
-func (e assertError) Error() string { return string(e) }
 
 // TestSSHDataSourceIsRefused proves the refusal reaches the product's contract
 // rather than a direct dial.

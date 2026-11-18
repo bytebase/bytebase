@@ -95,8 +95,7 @@ func init() {
 
 // Driver is Bytebase's Hive driver.
 type Driver struct {
-	config db.ConnectionConfig
-	impl   *hivedriver.Driver
+	impl *hivedriver.Driver
 }
 
 func newDriver() db.Driver {
@@ -119,7 +118,6 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		_ = impl.Close()
 		return nil, errors.Wrap(err, "failed to ping hive server")
 	}
-	d.config = config
 	d.impl = impl
 	return d, nil
 }
