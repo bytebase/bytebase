@@ -282,7 +282,8 @@ func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.Datab
 		if op.Type != catalog.OpCreateIndex {
 			continue
 		}
-		index := indexByName(meta, op.SchemaName, indexOwnerFromSQL(op.SQL), op.ObjectName)
+		ownerSchema, ownerObject := indexOwnerFromSQL(op.SQL)
+		index := indexByName(meta, op.SchemaName, ownerSchema, ownerObject, op.ObjectName)
 		if index == nil || index.GetDefinition() == "" {
 			continue
 		}
@@ -290,23 +291,26 @@ func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.Datab
 	}
 }
 
-func indexByName(meta *metadatapb.DatabaseSchemaMetadata, schemaName, ownerKey, name string) *metadatapb.IndexMetadata {
-	schema := schemaByName(meta, schemaName)
-	if schema == nil {
-		return nil
-	}
-	if ownerKey != "" {
-		_, owner := splitObjectKey(ownerKey)
+func indexByName(meta *metadatapb.DatabaseSchemaMetadata, fallbackSchema, ownerSchema, ownerObject, name string) *metadatapb.IndexMetadata {
+	if ownerSchema != "" {
+		schema := schemaByName(meta, ownerSchema)
+		if schema == nil {
+			return nil
+		}
 		for _, table := range schema.GetTables() {
-			if table.GetName() == owner {
+			if table.GetName() == ownerObject {
 				return findIndex(table.GetIndexes(), name)
 			}
 		}
 		for _, view := range schema.GetMaterializedViews() {
-			if view.GetName() == owner {
+			if view.GetName() == ownerObject {
 				return findIndex(view.GetIndexes(), name)
 			}
 		}
+		return nil
+	}
+	schema := schemaByName(meta, fallbackSchema)
+	if schema == nil {
 		return nil
 	}
 	for _, table := range schema.GetTables() {
@@ -659,8 +663,8 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	}
 	switch op.Type {
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
-		if owner := indexOwnerFromSQL(op.SQL); owner != "" {
-			return selected[owner]
+		if ownerSchema, ownerObject := indexOwnerFromSQL(op.SQL); ownerSchema != "" {
+			return selected[ownerSchema+"."+ownerObject]
 		}
 		return indexNameOwner(oldMeta, op.SchemaName, op.ObjectName, selected) != ""
 	case catalog.OpCreateTrigger, catalog.OpDropTrigger:
@@ -675,24 +679,24 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	return false
 }
 
-func indexOwnerFromSQL(sql string) string {
+func indexOwnerFromSQL(sql string) (string, string) {
 	index := strings.Index(sql, " ON ")
 	if index < 0 {
-		return ""
+		return "", ""
 	}
 	rest := strings.TrimSpace(sql[index+4:])
 	if strings.HasPrefix(rest, "ONLY ") {
 		rest = strings.TrimSpace(strings.TrimPrefix(rest, "ONLY "))
 	}
-	first, next, ok := quotedIdentifier(rest, 0)
+	schemaName, next, ok := quotedIdentifier(rest, 0)
 	if !ok || next >= len(rest) || rest[next] != '.' {
-		return ""
+		return "", ""
 	}
-	second, _, ok := quotedIdentifier(rest, next+1)
+	objectName, _, ok := quotedIdentifier(rest, next+1)
 	if !ok {
-		return ""
+		return "", ""
 	}
-	return first + "." + second
+	return schemaName, objectName
 }
 
 func quotedIdentifier(text string, start int) (string, int, bool) {

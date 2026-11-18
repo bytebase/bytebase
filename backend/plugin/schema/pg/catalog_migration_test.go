@@ -789,8 +789,8 @@ func TestIndexByNameUsesOwner(t *testing.T) {
 			{Name: "b", Indexes: []*metadatapb.IndexMetadata{{Name: "idx", Definition: "definition b"}}},
 		},
 	}}}
-	require.Equal(t, "definition a", indexByName(meta, "public", "public.a", "idx").GetDefinition())
-	require.Equal(t, "definition b", indexByName(meta, "public", "public.b", "idx").GetDefinition())
+	require.Equal(t, "definition a", indexByName(meta, "public", "public", "a", "idx").GetDefinition())
+	require.Equal(t, "definition b", indexByName(meta, "public", "public", "b", "idx").GetDefinition())
 }
 
 // TestRemovedDependentViewDropsBeforeUnloadableView covers an old-only upper
