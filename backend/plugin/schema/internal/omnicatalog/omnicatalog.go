@@ -123,6 +123,12 @@ func snapshotObject(meta *metadatapb.DatabaseSchemaMetadata, key string) proto.M
 					return v
 				}
 			}
+		case "sequence":
+			for _, sequence := range s.GetSequences() {
+				if sequence.GetName() == name {
+					return sequence
+				}
+			}
 		case "function":
 			for _, f := range s.GetFunctions() {
 				if f.GetName() == name {
