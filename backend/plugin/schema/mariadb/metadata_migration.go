@@ -64,6 +64,7 @@ func clearImplicitTableCharsets(c *catalog.Catalog, meta *metadatapb.DatabaseSch
 				loaded.Charset, loaded.Collation = "", ""
 			case table.GetCollation() == "":
 				loaded.Collation = ""
+			default:
 			}
 		}
 	}
