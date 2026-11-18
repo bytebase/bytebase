@@ -35,7 +35,6 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
-	github.com/databricks/databricks-sdk-go v0.192.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/github/gh-ost v1.1.11
 	github.com/go-ego/gse v1.3.1
@@ -187,6 +186,7 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
+	github.com/databricks/databricks-sdk-go v0.192.0 // indirect
 	github.com/dave/dst v0.27.2 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.8.2 // indirect
