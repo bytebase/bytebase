@@ -52,6 +52,25 @@ export const accountListRequest = (
   filter: { query, state: state === "inactive" ? State.DELETED : undefined },
 });
 
+// Whether an account belongs in the list as filtered, mirroring the server
+// filter `accountListRequest` builds, so a local update cannot show a row the
+// next fetch would not return.
+export const accountMatchesList = (
+  account: { title: string; email: string; state: State },
+  state: AccountStateFilter,
+  query: string
+): boolean => {
+  const deleted = account.state === State.DELETED;
+  if (state === "active" && deleted) return false;
+  if (state === "inactive" && !deleted) return false;
+  const search = query.trim().toLowerCase();
+  return (
+    !search ||
+    account.title.toLowerCase().includes(search) ||
+    account.email.toLowerCase().includes(search)
+  );
+};
+
 export function AccountPageInfo({
   isProject,
   description,

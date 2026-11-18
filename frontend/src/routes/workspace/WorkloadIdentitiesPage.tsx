@@ -51,6 +51,7 @@ import {
   AccountSkeletonRows,
   type AccountStateFilter,
   accountListRequest,
+  accountMatchesList,
   DeactivateAccountDialog,
   useAccountRoles,
 } from "./MachineAccountList";
@@ -321,7 +322,11 @@ function WorkloadIdentityTable({
                     title={wi.title}
                     email={wi.email}
                     inactive={wi.state === State.DELETED}
-                    onOpen={canOpenDetail ? () => onSelected(wi) : undefined}
+                    onOpen={
+                      canOpenDetail && wi.state !== State.DELETED
+                        ? () => onSelected(wi)
+                        : undefined
+                    }
                   />
                 </TableCell>
                 <TableCell>
@@ -414,15 +419,16 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
     fetchList,
   });
 
-  // Keeps a row only while it still matches the state filter.
+  // Keeps a row only while it matches the filters. Removing the last loaded
+  // row refetches, so remaining pages stay reachable.
   const handleUpdated = (wi: WorkloadIdentity) => {
-    const hidden =
-      (stateFilter === "active" && wi.state === State.DELETED) ||
-      (stateFilter === "inactive" && wi.state === State.ACTIVE);
-    if (hidden) {
-      data.removeCache(wi);
-    } else {
+    if (accountMatchesList(wi, stateFilter, query)) {
       data.updateCache([wi]);
+      return;
+    }
+    data.removeCache(wi);
+    if (data.hasMore && data.dataList.every((row) => row.name === wi.name)) {
+      data.refresh();
     }
   };
 
@@ -491,7 +497,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
           onUpdated={handleUpdated}
           onSelected={(wi) => void handleSelected(wi)}
         />
-        {data.dataList.length > 0 && (
+        {(data.dataList.length > 0 || data.hasMore) && (
           <PagedTableFooter
             pageSize={data.pageSize}
             pageSizeOptions={data.pageSizeOptions}
@@ -511,8 +517,8 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
           setShowDrawer(false);
           setEditingWI(undefined);
         }}
-        onCreated={(wi) => data.updateCache([wi])}
-        onUpdated={(wi) => data.updateCache([wi])}
+        onCreated={handleUpdated}
+        onUpdated={handleUpdated}
       />
     </PageLayout>
   );

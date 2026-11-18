@@ -11,6 +11,8 @@ const { passThrough } = vi.hoisted(() => ({
   passThrough: ({ children }: { children?: ReactNode }) => children,
 }));
 
+const pagedState = vi.hoisted(() => ({ hasMore: false, refresh: vi.fn() }));
+
 const {
   mockDeleteServiceAccount,
   mockPushNotification,
@@ -180,9 +182,10 @@ vi.mock("@/hooks/usePagedData", () => ({
     ]);
     return {
       dataList,
-      hasMore: false,
+      hasMore: pagedState.hasMore,
       isFetchingMore: false,
       isLoading: false,
+      refresh: pagedState.refresh,
       loadMore: vi.fn(),
       onPageSizeChange: vi.fn(),
       pageSize: 20,
@@ -394,5 +397,18 @@ describe("ServiceAccountsPage", () => {
       expect.objectContaining({ email: "bot@service.bytebase.com", state: 2 })
     );
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+
+  it("refetches when deactivating the last loaded row leaves more pages", async () => {
+    pagedState.hasMore = true;
+    try {
+      await act(async () => root.render(createElement(ServiceAccountsPage)));
+      await act(async () => menuItem("common.deactivate")?.click());
+      await act(async () => dialogButton("common.deactivate")?.click());
+      expect(mockRemoveCache).toHaveBeenCalledOnce();
+      expect(pagedState.refresh).toHaveBeenCalledOnce();
+    } finally {
+      pagedState.hasMore = false;
+    }
   });
 });

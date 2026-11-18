@@ -69,6 +69,7 @@ import {
   AccountSkeletonRows,
   type AccountStateFilter,
   accountListRequest,
+  accountMatchesList,
   DeactivateAccountDialog,
   useAccountRoles,
 } from "./MachineAccountList";
@@ -357,7 +358,11 @@ function ServiceAccountTable({
                       title={sa.title}
                       email={sa.email}
                       inactive={isDeleted}
-                      onOpen={canOpenDetail ? () => onSelected(sa) : undefined}
+                      onOpen={
+                        canOpenDetail && !isDeleted
+                          ? () => onSelected(sa)
+                          : undefined
+                      }
                     />
                   </TableCell>
                   <TableCell>
@@ -764,15 +769,16 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
     fetchList,
   });
 
-  // Keeps a row only while it still matches the state filter.
+  // Keeps a row only while it matches the filters. Removing the last loaded
+  // row refetches, so remaining pages stay reachable.
   const handleUpdated = (sa: ServiceAccount) => {
-    const hidden =
-      (stateFilter === "active" && sa.state === State.DELETED) ||
-      (stateFilter === "inactive" && sa.state === State.ACTIVE);
-    if (hidden) {
-      data.removeCache(sa);
-    } else {
+    if (accountMatchesList(sa, stateFilter, query)) {
       data.updateCache([sa]);
+      return;
+    }
+    data.removeCache(sa);
+    if (data.hasMore && data.dataList.every((row) => row.name === sa.name)) {
+      data.refresh();
     }
   };
 
@@ -835,7 +841,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
           onUpdated={handleUpdated}
           onSelected={handleOpenEdit}
         />
-        {data.dataList.length > 0 && (
+        {(data.dataList.length > 0 || data.hasMore) && (
           <PagedTableFooter
             pageSize={data.pageSize}
             pageSizeOptions={data.pageSizeOptions}
@@ -855,8 +861,8 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
           setShowDrawer(false);
           setEditingSa(undefined);
         }}
-        onCreated={(sa) => data.updateCache([sa])}
-        onUpdated={(sa) => data.updateCache([sa])}
+        onCreated={handleUpdated}
+        onUpdated={handleUpdated}
       />
     </PageLayout>
   );
