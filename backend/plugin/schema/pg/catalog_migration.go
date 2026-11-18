@@ -177,34 +177,55 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 }
 
 func referencesType(typeName, key string) bool {
+	reference, ok := parseTypeReference(typeName)
+	if !ok {
+		return false
+	}
+	schemaName, objectName := splitObjectKey(key)
+	if reference.qualified && !reference.schema.matches(schemaName) {
+		return false
+	}
+	return reference.object.matches(objectName)
+}
+
+// identifier is one component of a type name. A quoted component keeps its dots
+// (`"a.b"."c"` is not `"a"."b.c"`) and PostgreSQL matches its case exactly; an
+// unquoted one folds case.
+type identifier struct {
+	name   string
+	quoted bool
+}
+
+func (i identifier) matches(stored string) bool {
+	if i.quoted {
+		return i.name == stored
+	}
+	return strings.EqualFold(i.name, stored)
+}
+
+// typeReference is a parsed type name: object is the whole name unqualified.
+type typeReference struct {
+	schema, object identifier
+	qualified      bool
+}
+
+func parseTypeReference(typeName string) (typeReference, bool) {
 	name := strings.TrimSpace(typeName)
 	for strings.HasSuffix(name, "[]") {
 		name = strings.TrimSuffix(name, "[]")
 	}
-	schemaName, objectName := splitObjectKey(key)
-	partSchema, partObject, qualified := splitQualifiedIdentifier(name)
-	if qualified {
-		return strings.EqualFold(partSchema, schemaName) && strings.EqualFold(partObject, objectName)
-	}
-	return strings.EqualFold(partObject, objectName)
-}
-
-// splitQualifiedIdentifier separates a type name's schema and object parts,
-// keeping a quoted identifier's dots with it: `"a.b"."c"` is not `"a"."b.c"`.
-// The object part is the whole name when the type is unqualified.
-func splitQualifiedIdentifier(name string) (string, string, bool) {
-	first, next, ok := quotedIdentifier(name, 0)
+	first, next, quoted, ok := scanIdentifier(name, 0)
 	if !ok {
-		return "", "", false
+		return typeReference{}, false
 	}
 	if next >= len(name) || name[next] != '.' {
-		return "", first, false
+		return typeReference{object: identifier{name: first, quoted: quoted}}, true
 	}
-	second, _, ok := quotedIdentifier(name, next+1)
+	second, _, quoted, ok := scanIdentifier(name, next+1)
 	if !ok {
-		return "", "", false
+		return typeReference{}, false
 	}
-	return first, second, true
+	return typeReference{schema: identifier{name: first, quoted: quoted}, object: identifier{name: second, quoted: quoted}, qualified: true}, true
 }
 
 // releaseCompositeBeforeTableDrop releases the composite attributes that hold the
@@ -566,8 +587,9 @@ func addAttributeSQL(schema, composite string, attribute *metadatapb.CompositeTy
 }
 
 func findAlterAttribute(plan *catalog.MigrationPlan, schema, composite, attribute string) int {
+	operand := "ATTRIBUTE " + quoteIdentifier(attribute)
 	for i, op := range plan.Ops {
-		if op.Type == catalog.OpAlterType && op.SchemaName == schema && op.ObjectName == composite && strings.Contains(op.SQL, quoteIdentifier(attribute)) {
+		if op.Type == catalog.OpAlterType && op.SchemaName == schema && op.ObjectName == composite && strings.Contains(op.SQL, operand) {
 			return i
 		}
 	}
@@ -670,20 +692,16 @@ func isIdentifierByte(b byte) bool {
 }
 
 func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
-	name := strings.TrimSpace(typeName)
-	for strings.HasSuffix(name, "[]") {
-		name = strings.TrimSuffix(name, "[]")
+	reference, ok := parseTypeReference(typeName)
+	if !ok {
+		return "", false
 	}
-	partSchema, partObject, qualified := splitQualifiedIdentifier(name)
 	for key := range relations {
 		schemaName, objectName := splitObjectKey(key)
-		if qualified {
-			if strings.EqualFold(partSchema, schemaName) && strings.EqualFold(partObject, objectName) {
-				return key, true
-			}
+		if reference.qualified && !reference.schema.matches(schemaName) {
 			continue
 		}
-		if strings.EqualFold(partObject, objectName) {
+		if reference.object.matches(objectName) {
 			return key, true
 		}
 	}
@@ -924,8 +942,7 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	if op.Type == catalog.OpComment {
 		for key := range selected {
 			schemaName, objectName := splitObjectKey(key)
-			description := schemaName + "." + objectName
-			if op.ObjectName == description || strings.HasPrefix(op.ObjectName, description+".") {
+			if containsObjectReference(op.SQL, schemaName, objectName) {
 				return true
 			}
 		}
@@ -970,6 +987,15 @@ func indexOwnerFromSQL(sql string) (string, string) {
 		return "", ""
 	}
 	return schemaName, objectName
+}
+
+// scanIdentifier is quotedIdentifier plus whether the identifier was quoted.
+func scanIdentifier(text string, start int) (string, int, bool, bool) {
+	name, next, ok := quotedIdentifier(text, start)
+	if !ok {
+		return "", start, false, false
+	}
+	return name, next, start < len(text) && text[start] == '"', true
 }
 
 func quotedIdentifier(text string, start int) (string, int, bool) {

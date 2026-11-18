@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -767,6 +768,63 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 		require.True(t, ok, "%s names %s", tc.typeName, tc.key)
 		require.Equal(t, tc.key, key)
 	}
+
+	upper := objectKey("public", "Foo")
+	lower := objectKey("public", "foo")
+	require.True(t, referencesType(`"public"."Foo"`, upper))
+	require.False(t, referencesType(`"public"."Foo"`, lower), "a quoted identifier matches its case exactly")
+	require.True(t, referencesType("public.foo", lower), "an unquoted identifier folds case")
+	require.True(t, referencesType("public.Foo", lower))
+	_, ok := referencedRelation(`"public"."Foo"`, map[string]bool{lower: true})
+	require.False(t, ok, `"public"."Foo" is not "public"."foo"`)
+	key, ok := referencedRelation("public.Foo", map[string]bool{lower: true})
+	require.True(t, ok)
+	require.Equal(t, lower, key)
+}
+
+// TestReleaseMovesTheAttributeNamedLikeItsType covers an attribute whose name
+// repeats its composite type's name: the release must find the operation for that
+// attribute, not the first one that mentions the type.
+func TestReleaseMovesTheAttributeNamedLikeItsType(t *testing.T) {
+	snapshot := func(table string) *model.DatabaseMetadata {
+		attributeType := "text"
+		schemaMeta := &metadatapb.SchemaMetadata{
+			Name: "public",
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{
+					{Name: "x", Type: attributeType},
+					{Name: "c", Type: attributeType},
+				},
+			}},
+		}
+		if table != "" {
+			schemaMeta.Tables = []*metadatapb.TableMetadata{pgTable(table, 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})}
+			schemaMeta.CompositeTypes[0].Attributes[0].Type = "public." + table
+			schemaMeta.CompositeTypes[0].Attributes[1].Type = "public." + table
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schemaMeta}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("old_t"), snapshot(""))
+	require.NoError(t, err)
+	dropTable := strings.Index(sql, `DROP TABLE "public"."old_t"`)
+	attributeC := strings.Index(sql, `ALTER ATTRIBUTE "c" TYPE text`)
+	require.GreaterOrEqual(t, dropTable, 0, sql)
+	require.GreaterOrEqual(t, attributeC, 0, sql)
+	require.Less(t, attributeC, dropTable, "the attribute named like its type is released before the drop")
+}
+
+// TestOpTargetsSelectedKeepsDistinctCommentOwners keeps a comment on `"a"."b.c"`
+// with its owner when `"a.b"."c"` is the selected view: their flattened
+// descriptions are equal, but the quoted targets are not.
+func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
+	selected := map[string]bool{objectKey("a.b", "c"): true}
+	other := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a"."b.c" IS 'new'`}
+	require.False(t, opTargetsSelected(other, selected, nil), "the other view's comment is not the selected view's")
+	own := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a.b"."c" IS 'new'`}
+	require.True(t, opTargetsSelected(own, selected, nil))
+	column := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON COLUMN "a.b"."c"."id" IS 'id'`}
+	require.True(t, opTargetsSelected(column, selected, nil), "an accessory of the selected view belongs to it")
 }
 
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
