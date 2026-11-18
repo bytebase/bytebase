@@ -3,58 +3,30 @@
 // the contract's Config and back; the client, the sync queries, the emulator's
 // REST listings and the cross-partition query path belong to the omni driver.
 //
-// The adapter keeps the credential and network path Bytebase owns:
+// Constraints the adapter owns:
 //
-//   - An emulator endpoint in a development build (localhost,
-//     127.0.0.1 or host.docker.internal) authenticates with the emulator's
-//     well-known account key and accepts the certificate it signs itself, as
-//     the old driver did. The old driver chose that path from the build flag
-//     and the endpoint; the adapter tells the omni driver the endpoint is the
-//     emulator (Params["emulator"]) and supplies the key and TLS settings.
-//   - Otherwise a data source with an Azure app registration becomes a
-//     client-secret credential, and a data source without one falls back to
-//     azidentity's default chain. The account key, application name, read-only
-//     flag and engine version are not part of either mapping, and neither is a
-//     SQL connection parameter: the adapter leaves Config.Dial, Config.ReadOnly
-//     and Config.ApplicationName unset, because the old driver supported no SSH
-//     tunnel, no read-only session and no application name.
-//
-// Every db.Driver method:
-//
-//   - Open builds the omni driver; it does not reach the account. Ping does.
-//   - Close releases the client's connections. The old Close was a no-op.
-//   - Ping reads the database list, which is what the old driver did.
-//   - GetDB returns nil: Cosmos DB has no database/sql handle, and the API
-//     pools no *sql.Conn for it.
-//   - Execute reports connect.CodeUnimplemented with "method Execute
-//     unimplemented": container items are written through the container API,
-//     not the query language, and the omni driver has no Executor either.
-//   - QueryConn runs one statement in QueryContext.Container and returns one
-//     result, the shape the API expects for this engine.
-//   - SyncInstance reads the account's databases, and SyncDBSchema the
-//     database's containers as tables with no columns, since items are
-//     schemaless.
+//   - A development build pointed at a local endpoint (localhost, 127.0.0.1 or
+//     host.docker.internal) is the emulator: it authenticates with the
+//     well-known account key and accepts the certificate it signs itself, and
+//     the adapter says so through Params["emulator"].
+//   - Otherwise an app registration becomes a client-secret credential, and a
+//     data source without one falls back to azidentity's default chain. Config
+//     carries no account key, application name, read-only flag or engine
+//     version, and there is no SSH tunnel: Cosmos DB has no such session knob.
+//   - GetDB returns nil: Cosmos DB has no database/sql handle.
+//   - Execute is connect.CodeUnimplemented. The query language has no statement
+//     that writes, and the omni driver has no Executor for this engine.
 //   - Dump writes nothing: the synced metadata does not carry the partition
 //     key, indexing policy, unique keys or default TTL that recreate a
-//     container, and the old driver dumped nothing either.
-//
-// QueryContext.Explain never reaches QueryConn for this engine: the API refuses
-// an explain request before opening a driver, because
-// db.SupportedExplainFormats(COSMOSDB) is empty (validateExplainFormat in
-// backend/api/v1/sql_service.go). The old driver ignored the flag, and the
-// adapter does not map it, so an explain that did arrive would run the
-// statement as an ordinary query, exactly as before.
-//
-// Two defects are kept rather than fixed, so a reader can tell a cutover from a
-// behaviour change:
-//
-//   - MaximumSQLResultSize is not enforced. The old driver returned every row a
-//     statement delivered however the policy capped the result, and the adapter
-//     leaves QueryOptions.MaxResultBytes unset for the same reason.
-//   - A query failed as the call's error, not as a result. The omni driver
-//     reports a failed statement in its Result; the adapter turns a Result with
-//     an error back into the call's connect.CodeInternal answer, which is what
-//     the old driver returned.
+//     container.
+//   - QueryOptions.MaxResultBytes is left unset, so MaximumSQLResultSize is not
+//     enforced for this engine.
+//   - A statement's failure is the call's connect.CodeInternal error rather than
+//     a result, because the API reads one result per query here.
+//   - QueryConn runs one statement scoped to QueryContext.Container, which is the
+//     query's scope, not a schema, and the query language cannot open another.
+//   - An explain request never reaches QueryConn:
+//     db.SupportedExplainFormats(COSMOSDB) is empty, so the API refuses it first.
 package cosmosdb
 
 import (
@@ -100,13 +72,27 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the contract's Config. It does not reach
 // the account: Ping does.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	dataSource := config.DataSource
+	driverConfig, err := connectionConfig(config.DataSource, config.ConnectionContext.DatabaseName)
+	if err != nil {
+		return nil, err
+	}
+	inner, err := omnicosmosdb.Open(ctx, driverConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &Driver{inner: inner}, nil
+}
+
+// connectionConfig maps a data source onto the contract's Config: the emulator
+// path in a development build, an app registration as a client secret, or
+// azidentity's default chain.
+func connectionConfig(dataSource *storepb.DataSource, database string) (omnidriver.Config, error) {
 	if dataSource == nil {
-		return nil, errors.New("cosmosdb: a data source is required")
+		return omnidriver.Config{}, errors.New("cosmosdb: a data source is required")
 	}
 	driverConfig := omnidriver.Config{
 		Host:     dataSource.Host,
-		Database: config.ConnectionContext.DatabaseName,
+		Database: database,
 		Params:   map[string]string{},
 	}
 	switch credential := dataSource.GetAzureCredential(); {
@@ -131,11 +117,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	default:
 		driverConfig.Params[omnicosmosdb.ParamAuth] = omnicosmosdb.AuthDefault
 	}
-	inner, err := omnicosmosdb.Open(ctx, driverConfig)
-	if err != nil {
-		return nil, err
-	}
-	return &Driver{inner: inner}, nil
+	return driverConfig, nil
 }
 
 func isLocalhostEndpoint(endpoint string) bool {
