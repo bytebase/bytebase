@@ -172,6 +172,10 @@ func (*Driver) OwnsQuerySession() {}
 // affected. Databricks has no transaction control a script can issue, so the
 // transaction mode the product sends changes nothing, which is what the previous
 // driver did.
+//
+// Known difference: the count is the summed num_affected_rows the warehouse
+// states, and each command and its response reach the task run log. The previous
+// driver returned 0 for every script and logged nothing.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// The directive is removed from the script as before; its mode reaches no
 	// option, because Databricks has no transaction control a script can issue,

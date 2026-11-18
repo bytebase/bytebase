@@ -19,12 +19,14 @@ import (
 // Databricks plan is; a statement the caller wrote as EXPLAIN runs as written.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	results, err := d.session.Query(ctx, statement, odbdriver.QueryOptions{
-		// The editor's schema selection is the schema each statement runs in;
-		// the catalog is the session's.
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  queryContext.Option.GetExplainFormat().String(),
+		// Known difference: the schema reaches the statement. The previous driver
+		// sent only the catalog, so the editor's schema selection had no effect.
+		Schema:        queryContext.Schema,
+		Limit:         queryContext.Limit,
+		Explain:       queryContext.Explain,
+		ExplainFormat: queryContext.Option.GetExplainFormat().String(),
+		// Known difference: the cap is enforced. The previous driver returned every
+		// row the warehouse answered, however large.
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 		// A Databricks result is the columns its statement traces, so the flag
 		// changes nothing; it is passed for the contract's sake.
