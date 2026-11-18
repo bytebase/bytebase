@@ -82,9 +82,9 @@ type Driver struct {
 	impl      *omnich.Driver
 	sshClient *ssh.Client
 
-	// session is the one server session QueryConn runs on. The old driver ran
-	// every statement on the *sql.Conn its caller opened from GetDB, so a
-	// driver kept one session for its lifetime; this holds the same shape.
+	// session is the one server session QueryConn runs on, held for the
+	// driver's lifetime so statements a caller runs through one driver share
+	// it.
 	sessionMu sync.Mutex
 	session   omnidriver.Session
 }
@@ -139,8 +139,8 @@ func clickhouseConfig(dataSource *storepb.DataSource, password, database string)
 		Database: database,
 		User:     dataSource.GetUsername(),
 		Password: password,
-		// The old driver ignored a data source's extra parameters; the contract
-		// carries them as ClickHouse settings, which is what they are.
+		// A data source's extra parameters are ClickHouse settings, which is
+		// what the contract carries them as.
 		Params: dataSource.GetExtraConnectionParameters(),
 	}
 	if tlsConfig != nil {
@@ -189,8 +189,8 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute runs the script's statements, reporting each to the task run's log.
-// The transaction directive is read as before; ClickHouse cannot roll back, so
-// the log still carries the BEGIN and ROLLBACK the old driver wrote.
+// ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK
+// its transaction wrapper issues.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	config, cleaned := base.ParseTransactionConfig(statement)
 	transactionMode := config.Mode
@@ -209,7 +209,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // executeLogger reports the driver contract's execute steps to the task run's
-// log, in the same shape the old driver wrote them.
+// log.
 type executeLogger struct {
 	opts db.ExecuteOptions
 }
@@ -240,7 +240,7 @@ func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error
 	l.opts.LogTransactionControl(t, errorString(err))
 }
 
-// Retry logs nothing: this driver never retries, as before.
+// Retry logs nothing: this driver never retries.
 func (executeLogger) Retry(error, int, int) {}
 
 func errorString(err error) string {

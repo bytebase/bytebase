@@ -178,8 +178,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		require.Equal(t, int32(-1), values[0].GetInt32Value())
 		require.Equal(t, uint32(2), values[1].GetUint32Value())
 		require.Equal(t, float32(1.5), values[2].GetFloatValue())
-		// A DateTime64 is a typed timestamp with the precision its type names,
-		// where the old driver wrote an RFC3339 string.
+		// A DateTime64 is a typed timestamp with the precision its type names.
 		require.Equal(t, int32(3), values[3].GetTimestampValue().GetAccuracy())
 		require.Equal(t, "2026-11-18T07:30:00.123Z", values[3].GetTimestampValue().GetGoogleTimestamp().AsTime().Format(time.RFC3339Nano))
 		require.Equal(t, "07:30:00", values[4].GetStringValue())
@@ -242,8 +241,18 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		require.Equal(t, "3", results[0].Rows[0].Values[0].GetStringValue())
 	})
 
+	t.Run("the driver sets the execution-time default", func(t *testing.T) {
+		// The pinned omni driver sets max_execution_time = 300 before applying a
+		// data source's own parameters, so a restrictive server profile does not
+		// fail a resource-intensive sync or query with code 160.
+		results, err := database.QueryConn(ctx, nil, "SELECT toString(getSetting('max_execution_time'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Equal(t, "300", results[0].Rows[0].Values[0].GetStringValue())
+	})
+
 	t.Run("the result-size cap", func(t *testing.T) {
-		// 0 is no cap in the contract; the old driver read it as a zero-byte cap.
+		// 0 is no cap in the contract.
 		results, err := database.QueryConn(ctx, nil, "SELECT id FROM t", db.QueryContext{})
 		require.NoError(t, err)
 		require.Empty(t, results[0].Error)

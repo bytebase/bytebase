@@ -84,10 +84,9 @@ func planOf(plan *omnidriver.Plan) *v1pb.QueryResult_QueryPlan {
 	return db.TypedExplainPlan(plan.Format, plan.Executed, true)
 }
 
-// toRowValue maps one contract value onto the product's row value. The kinds
-// follow the old driver's conversion: a small integer stays 32-bit, a float32
-// stays a float, a decimal and a UUID are text; a timestamp is now the typed
-// value its ClickHouse type names rather than an RFC3339 string.
+// toRowValue maps one contract value onto the product's row value: a small
+// integer stays 32-bit, a float32 stays a float, a decimal and a UUID are text,
+// and a timestamp is the typed value its ClickHouse type names.
 func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:

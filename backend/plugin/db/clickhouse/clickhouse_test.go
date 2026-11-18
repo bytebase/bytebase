@@ -40,8 +40,7 @@ func TestClickHouseConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, tlsConfig)
 
-	// A host and port the driver cannot dial are refused at Open, where the old
-	// driver built an unusable ":" address and failed at the first statement.
+	// A host and port the driver cannot dial are refused at Open.
 	_, err = newDriver().Open(context.Background(), storepb.Engine_CLICKHOUSE, db.ConnectionConfig{DataSource: &storepb.DataSource{}})
 	require.ErrorContains(t, err, "host must be set")
 }
@@ -135,8 +134,8 @@ func TestToQueryResult(t *testing.T) {
 		Executed: true,
 	}, explain.QueryPlan)
 
-	// An explain request leaves the plan to the API handler, as the old driver
-	// did by leaving the field empty.
+	// An explain request leaves the plan to the API handler, which describes
+	// the request's format.
 	request := toQueryResult(&omnidriver.Result{
 		Statement: "EXPLAIN SELECT 1",
 		Plan:      &omnidriver.Plan{Format: "TEXT"},
