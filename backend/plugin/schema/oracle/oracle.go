@@ -1,9 +1,7 @@
 // Package oracle implements Bytebase's schema contracts for Oracle on top of
 // omni's Oracle catalog. The catalog owns deparse, diff, and migration; this
-// package keeps the registry wiring, plus the metadata extractor that
-// get_database_metadata.go still holds. Moving extraction needs a parity
-// decision first: omni normalizes check expressions, adds view dependency
-// columns, and leaves the inferred type off an untyped virtual column.
+// package keeps the registry wiring and the metadata extractor that
+// get_database_metadata.go holds.
 package oracle
 
 import (
