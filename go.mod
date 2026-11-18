@@ -93,7 +93,6 @@ require (
 	github.com/stripe/stripe-go/v87 v87.1.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
-	github.com/trinodb/trino-go-client v1.4.1
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xuri/excelize/v2 v2.11.1
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
@@ -310,6 +309,7 @@ require (
 	github.com/tiendc/go-deepcopy v1.7.2 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
+	github.com/trinodb/trino-go-client v1.4.1 // indirect
 	github.com/twpayne/go-geom v1.4.1 // indirect
 	github.com/twpayne/go-kml v1.5.2 // indirect
 	github.com/vcaesar/cedar v0.50.1 // indirect

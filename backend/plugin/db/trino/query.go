@@ -1,137 +1,63 @@
 package trino
 
 import (
+	"context"
 	"database/sql"
-	"strings"
-	"time"
 
-	"github.com/trinodb/trino-go-client/trino"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	omnidriver "github.com/bytebase/omni/driver"
+	"github.com/pkg/errors"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// trinoTimeLayout renders a TIME the way Trino and PostgreSQL print one, which
-// is what a SQL client shows: the fraction when the column's type carries one,
-// and nothing when it does not. The nines trim trailing zeros and take the
-// decimal point with them, so TIME keeps 12:34:56 while TIME(3) keeps
-// 12:34:56.789 instead of losing it.
-//
-// A zoned time keeps its offset as well, since dropping it moves the instant.
-const (
-	trinoTimeLayout   = "15:04:05.999999999"
-	trinoTimeTZLayout = trinoTimeLayout + "-07:00"
-)
-
-func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
-	switch typeName {
-	case "VARCHAR", "TEXT", "CHAR", "TIMESTAMP", "TIMESTAMP WITH TIME ZONE", "TIMESTAMP WITHOUT TIME ZONE":
-		return new(sql.NullString)
-	case "BOOLEAN":
-		return new(sql.NullBool)
-	case "TINYINT", "SMALLINT", "INTEGER", "BIGINT":
-		return new(sql.NullInt64)
-	case "DECIMAL", "REAL", "DOUBLE":
-		return new(sql.NullFloat64)
-	case "VARBINARY", "BINARY":
-		return new([]byte)
-	// The driver hands a VARIANT column a trino.Variant, which the default
-	// *sql.NullString below cannot hold, failing the whole query.
-	case "VARIANT":
-		return new(trino.Variant)
-	// The driver decodes these to time.Time. Left to the default below, Go
-	// renders them through *sql.NullString as RFC3339Nano, so a DATE came back
-	// as 2026-01-02T00:00:00Z and a TIME as 0000-01-01T12:34:56Z.
-	case "DATE", "TIME", "TIME WITH TIME ZONE":
-		return new(sql.NullTime)
-	default:
-		return new(sql.NullString)
+// QueryConn runs the script's statements on one session of the omni driver's,
+// which is the one connection the statements share. conn is unused: the caller's
+// *sql.Conn, if it had one, is not the contract's Session.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	session, err := d.driver.Session(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open a session")
 	}
+	defer session.Close()
+
+	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	})
+	if err != nil {
+		return nil, err
+	}
+	queryResults := make([]*v1pb.QueryResult, len(results))
+	for i, result := range results {
+		// Known difference from the contract: Bytebase showed "Affected Rows 0"
+		// for a statement the engine states no count for, such as DDL and SET
+		// SESSION. The contract leaves the count nil, so the adapter restores the
+		// row the old driver built.
+		if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil && !result.Truncated {
+			zero := int64(0)
+			result = &omnidriver.Result{Statement: result.Statement, Latency: result.Latency, AffectedRows: &zero}
+		}
+		queryResults[i] = util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+	}
+	return queryResults, nil
 }
 
-func convertValue(typeName string, _ *sql.ColumnType, value any) *v1pb.RowValue {
-	switch raw := value.(type) {
-	case *sql.NullString:
-		if raw.Valid {
-			if strings.Contains(typeName, "TIMESTAMP") {
-				t, err := time.Parse(time.RFC3339, raw.String)
-				if err == nil {
-					return &v1pb.RowValue{
-						Kind: &v1pb.RowValue_TimestampValue{
-							TimestampValue: &v1pb.RowValue_Timestamp{
-								GoogleTimestamp: timestamppb.New(t),
-								Accuracy:        6,
-							},
-						},
-					}
-				}
-			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String,
-				},
-			}
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int64Value{
-					Int64Value: raw.Int64,
-				},
-			}
-		}
-	case *[]byte:
-		if len(*raw) > 0 {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: *raw,
-				},
-			}
-		}
-	case *sql.NullBool:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BoolValue{
-					BoolValue: raw.Bool,
-				},
-			}
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_DoubleValue{
-					DoubleValue: raw.Float64,
-				},
-			}
-		}
-	case *sql.NullTime:
-		if raw.Valid {
-			layout := trinoTimeLayout
-			switch typeName {
-			case "DATE":
-				layout = time.DateOnly
-			case "TIME WITH TIME ZONE":
-				layout = trinoTimeTZLayout
-			default:
-			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.Time.Format(layout),
-				},
-			}
-		}
-	case *trino.Variant:
-		// String is the JSON text the server returns for CAST(v AS JSON). A
-		// VARIANT null is valid and renders as "null", unlike a SQL NULL.
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String(),
-				},
-			}
-		}
+// explainFormat names the plan format the API's enum asks for in the contract's
+// terms. Trino states a plan in text or in JSON, and an unset format leaves the
+// engine's default.
+func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
+	switch format {
+	case v1pb.QueryOption_TEXT:
+		return "TEXT"
+	case v1pb.QueryOption_JSON:
+		return "JSON"
 	default:
+		return ""
 	}
-	return util.NullRowValue
 }
