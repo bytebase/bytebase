@@ -459,6 +459,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
 		Limit:          queryContext.Limit,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
 	})
 	if err != nil {
 		// The script could not be run at all; the session is not one to keep.
