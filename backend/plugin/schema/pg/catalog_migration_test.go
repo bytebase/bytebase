@@ -850,3 +850,49 @@ func TestSplitRetypeToCreatedType(t *testing.T) {
 	require.Less(t, dropAttribute, createType, sql)
 	require.Less(t, createType, addAttribute, sql)
 }
+
+// TestReversedDependentViewsUseSeparateDropAndCreateOrders covers dependents
+// whose relationship reverses: drops follow the old graph, creates the target.
+func TestReversedDependentViewsUseSeparateDropAndCreateOrders(t *testing.T) {
+	view := func(name, definition string, deps ...string) *metadatapb.ViewMetadata {
+		v := &metadatapb.ViewMetadata{Name: name, Definition: definition}
+		for _, dep := range deps {
+			v.DependencyColumns = append(v.DependencyColumns, &metadatapb.DependencyColumn{Schema: "public", Table: dep})
+		}
+		return v
+	}
+	snapshot := func(columnType string, reversed bool) *model.DatabaseMetadata {
+		lower := view("lower", "SELECT FROM", "t")
+		lower.Columns = []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}
+		views := []*metadatapb.ViewMetadata{lower}
+		if reversed {
+			views = append(views, view("a", "SELECT id FROM public.lower", "lower"), view("b", "SELECT id FROM public.a", "a"))
+		} else {
+			views = append(views, view("b", "SELECT id FROM public.lower", "lower"), view("a", "SELECT id FROM public.b", "b"))
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views:  views,
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
+	require.NoError(t, err)
+	dropB := strings.Index(sql, `DROP VIEW IF EXISTS "public"."b"`)
+	dropA := strings.Index(sql, `DROP VIEW IF EXISTS "public"."a"`)
+	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
+	createLower := strings.Index(sql, `CREATE VIEW "public"."lower"`)
+	createA := strings.Index(sql, `CREATE VIEW "public"."a"`)
+	createB := strings.Index(sql, `CREATE VIEW "public"."b"`)
+	require.GreaterOrEqual(t, dropB, 0, sql)
+	require.GreaterOrEqual(t, dropA, 0, sql)
+	require.GreaterOrEqual(t, dropLower, 0, sql)
+	require.GreaterOrEqual(t, createLower, 0, sql)
+	require.GreaterOrEqual(t, createA, 0, sql)
+	require.GreaterOrEqual(t, createB, 0, sql)
+	require.Less(t, dropA, dropB, sql)
+	require.Less(t, dropB, dropLower, sql)
+	require.Less(t, createLower, createA, sql)
+	require.Less(t, createA, createB, sql)
+}
