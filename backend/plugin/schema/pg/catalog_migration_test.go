@@ -417,3 +417,38 @@ func TestRecreatedViewReappliesUnchangedComment(t *testing.T) {
 	require.Contains(t, sql, `COMMENT ON VIEW "public"."v" IS 'ids'`)
 	require.Equal(t, 1, strings.Count(sql, "COMMENT ON VIEW"))
 }
+
+// TestUnloadableUnchangedViewRecreatedWhenDependencyChanges covers a view whose
+// definition omni cannot parse. Both sides hold the same stand-in, so the
+// catalog has no dependency edge; DependencyColumns must still force the drop
+// and recreation around the column change.
+func TestUnloadableUnchangedViewRecreatedWhenDependencyChanges(t *testing.T) {
+	view := func() *metadatapb.ViewMetadata {
+		return &metadatapb.ViewMetadata{
+			Name:       "v",
+			Definition: "SELECT FROM",
+			DependencyColumns: []*metadatapb.DependencyColumn{{
+				Schema: "public", Table: "t", Column: "id",
+			}},
+		}
+	}
+	source := newCockroachDatabaseMetadata(
+		[]*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		[]*metadatapb.ViewMetadata{view()},
+	)
+	target := newCockroachDatabaseMetadata(
+		[]*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "bigint"})},
+		[]*metadatapb.ViewMetadata{view()},
+	)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	drop := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	alter := strings.Index(sql, "ALTER TABLE public.t ALTER COLUMN id TYPE bigint")
+	create := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM`)
+	require.GreaterOrEqual(t, drop, 0, sql)
+	require.GreaterOrEqual(t, alter, 0, sql)
+	require.GreaterOrEqual(t, create, 0, sql)
+	require.Less(t, drop, alter, "the view is dropped before the column change")
+	require.Less(t, alter, create, "the view is recreated after the column change")
+}

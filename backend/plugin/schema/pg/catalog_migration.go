@@ -41,6 +41,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	plan := catalog.GenerateMigration(from, to, diff).Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
 	})
+	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
 	return plan.SQL(), nil
 }
@@ -63,6 +64,177 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 		return nil, nil, err
 	}
 	return c, report, nil
+}
+
+// restoreUnloadableDependentViews recreates a view the catalog could not parse
+// when a column it depends on is dropped or retyped. The unparsed view is a
+// stand-in on both sides, so the catalog has no dependency edge and would alter
+// the column under a view that must be dropped first. The snapshot's
+// DependencyColumns is the only record of that edge.
+func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) {
+	affected := affectedTableColumns(oldMeta, newMeta)
+	if len(affected) == 0 {
+		return
+	}
+	unloadable := make(map[string]bool)
+	for _, report := range reports {
+		for _, m := range []map[string]error{report.Degraded, report.Missing} {
+			for key := range m {
+				unloadable[key] = true
+			}
+		}
+	}
+	var drops, creates []catalog.MigrationOp
+	for _, schema := range newMeta.GetSchemas() {
+		oldSchema := schemaByName(oldMeta, schema.GetName())
+		if oldSchema == nil {
+			continue
+		}
+		for _, view := range schema.GetViews() {
+			key := "rel:" + schema.GetName() + "." + view.GetName()
+			oldView := viewByName(oldSchema, view.GetName())
+			if oldView == nil || !proto.Equal(oldView, view) || !unloadable[key] {
+				continue
+			}
+			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
+				continue
+			}
+			drops = append(drops, catalog.MigrationOp{
+				Type:       catalog.OpDropView,
+				SchemaName: schema.GetName(),
+				ObjectName: view.GetName(),
+				SQL:        "DROP VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
+				Phase:      catalog.PhasePre,
+				ObjType:    'r',
+			})
+			creates = append(creates, catalog.MigrationOp{
+				Type:       catalog.OpCreateView,
+				SchemaName: schema.GetName(),
+				ObjectName: view.GetName(),
+				SQL:        "CREATE OR REPLACE VIEW " + quoteQualified(schema.GetName(), view.GetName()) + " AS " + strings.TrimSuffix(strings.TrimSpace(view.GetDefinition()), ";"),
+				Phase:      catalog.PhaseMain,
+				ObjType:    'r',
+			})
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			key := "rel:" + schema.GetName() + "." + view.GetName()
+			oldView := materializedViewByName(oldSchema, view.GetName())
+			if oldView == nil || !proto.Equal(oldView, view) || !unloadable[key] {
+				continue
+			}
+			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
+				continue
+			}
+			drops = append(drops, catalog.MigrationOp{
+				Type:       catalog.OpDropView,
+				SchemaName: schema.GetName(),
+				ObjectName: view.GetName(),
+				SQL:        "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
+				Phase:      catalog.PhasePre,
+				ObjType:    'r',
+			})
+			creates = append(creates, catalog.MigrationOp{
+				Type:       catalog.OpCreateView,
+				SchemaName: schema.GetName(),
+				ObjectName: view.GetName(),
+				SQL:        "CREATE MATERIALIZED VIEW " + quoteQualified(schema.GetName(), view.GetName()) + " AS " + strings.TrimSuffix(strings.TrimSpace(view.GetDefinition()), ";"),
+				Phase:      catalog.PhaseMain,
+				ObjType:    'r',
+			})
+		}
+	}
+	if len(drops) == 0 {
+		return
+	}
+	plan.Ops = append(drops, append(plan.Ops, creates...)...)
+}
+
+type affectedColumnSet map[string]map[string]bool
+
+func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) affectedColumnSet {
+	affected := make(affectedColumnSet)
+	for _, schema := range oldMeta.GetSchemas() {
+		newSchema := schemaByName(newMeta, schema.GetName())
+		if newSchema == nil {
+			continue
+		}
+		for _, table := range schema.GetTables() {
+			newTable := tableByName(newSchema, table.GetName())
+			if newTable == nil {
+				continue
+			}
+			for _, column := range table.GetColumns() {
+				newColumn := columnByName(newTable, column.GetName())
+				if newColumn != nil && newColumn.GetType() == column.GetType() {
+					continue
+				}
+				tableKey := schema.GetName() + "." + table.GetName()
+				if affected[tableKey] == nil {
+					affected[tableKey] = make(map[string]bool)
+				}
+				affected[tableKey][column.GetName()] = true
+			}
+		}
+	}
+	return affected
+}
+
+func dependsOnAffectedColumn(dependencies []*metadatapb.DependencyColumn, affected affectedColumnSet) bool {
+	for _, dependency := range dependencies {
+		columns, ok := affected[dependency.GetSchema()+"."+dependency.GetTable()]
+		if !ok {
+			continue
+		}
+		if dependency.GetColumn() == "" || columns[dependency.GetColumn()] {
+			return true
+		}
+	}
+	return false
+}
+
+func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadatapb.SchemaMetadata {
+	for _, schema := range meta.GetSchemas() {
+		if schema.GetName() == name {
+			return schema
+		}
+	}
+	return nil
+}
+
+func tableByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
+	for _, table := range schema.GetTables() {
+		if table.GetName() == name {
+			return table
+		}
+	}
+	return nil
+}
+
+func columnByName(table *metadatapb.TableMetadata, name string) *metadatapb.ColumnMetadata {
+	for _, column := range table.GetColumns() {
+		if column.GetName() == name {
+			return column
+		}
+	}
+	return nil
+}
+
+func viewByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.ViewMetadata {
+	for _, view := range schema.GetViews() {
+		if view.GetName() == name {
+			return view
+		}
+	}
+	return nil
+}
+
+func materializedViewByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.MaterializedViewMetadata {
+	for _, view := range schema.GetMaterializedViews() {
+		if view.GetName() == name {
+			return view
+		}
+	}
+	return nil
 }
 
 // withIdentityColumns sets the identity flag a CockroachDB snapshot leaves off.
