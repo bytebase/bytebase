@@ -331,7 +331,7 @@ type parityDriver struct {
 func (p *parityDriver) queryConn(ctx context.Context, t *testing.T, script string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	t.Helper()
 	if p.conn == nil {
-		if sqlDB := p.driver.GetDB(); sqlDB != nil {
+		if sqlDB := db.SQLDB(p.driver); sqlDB != nil {
 			conn, err := sqlDB.Conn(ctx)
 			require.NoError(t, err)
 			p.conn = conn

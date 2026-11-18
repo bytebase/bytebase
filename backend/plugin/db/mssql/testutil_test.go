@@ -37,8 +37,9 @@ func openMSSQL(ctx context.Context, t *testing.T, host, port, database string) d
 }
 
 // newSyncTestDatabase gives the test a database of its own on the shared
-// container so the cases can run in parallel, and returns a driver open on it.
-func newSyncTestDatabase(ctx context.Context, t *testing.T, container *testcontainer.Container) *Driver {
+// container so the cases can run in parallel, and returns a driver open on it
+// with the database's name.
+func newSyncTestDatabase(ctx context.Context, t *testing.T, container *testcontainer.Container) (*Driver, string) {
 	t.Helper()
 
 	name := fmt.Sprintf("sync_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
@@ -50,7 +51,7 @@ func newSyncTestDatabase(ctx context.Context, t *testing.T, container *testconta
 
 	driver, ok := opened.(*Driver)
 	require.True(t, ok, "expected *Driver")
-	return driver
+	return driver, name
 }
 
 // executeBatches runs a setup script one GO-separated batch at a time, which is

@@ -67,10 +67,8 @@ func TestQueryConnStopsServerQueryWhenContextEnds(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = driver.Close(background) })
 
-			conn, err := driver.GetDB().Conn(background)
-			require.NoError(t, err)
-			t.Cleanup(func() { _ = conn.Close() })
-			// Runs first, so a query that outlived its context cannot hold up the closes above.
+			// Runs first, so a query that outlived its context cannot hold up the
+			// cleanup below.
 			t.Cleanup(func() {
 				_, err := rawDB.Exec(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()`, dbName)
 				require.NoError(t, err)
@@ -84,7 +82,7 @@ func TestQueryConnStopsServerQueryWhenContextEnds(t *testing.T) {
 
 			done := make(chan []*v1pb.QueryResult, 1)
 			go func() {
-				results, err := driver.QueryConn(ctx, conn, "SELECT pg_sleep(30);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+				results, err := driver.QueryConn(ctx, nil, "SELECT pg_sleep(30);", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 				if err != nil {
 					results = []*v1pb.QueryResult{{Error: err.Error()}}
 				}
@@ -101,7 +99,7 @@ func TestQueryConnStopsServerQueryWhenContextEnds(t *testing.T) {
 			select {
 			case results := <-done:
 				require.Len(t, results, 1)
-				require.Contains(t, results[0].Error, tc.wantErr)
+				require.Contains(t, results[0].GetError(), tc.wantErr)
 			case <-time.After(10 * time.Second):
 				require.FailNow(t, "QueryConn was still blocked 10s after the query started")
 			}

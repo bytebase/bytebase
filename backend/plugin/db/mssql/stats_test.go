@@ -24,7 +24,7 @@ func TestCountAffectedRows(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedMSSQLContainer(t)
 
-	driver := newSyncTestDatabase(ctx, t, container)
+	driver, _ := newSyncTestDatabase(ctx, t, container)
 	executeBatches(ctx, t, driver, `
 CREATE TABLE dbo.t (id INT IDENTITY(1,1) PRIMARY KEY, c1 INT NULL);
 GO

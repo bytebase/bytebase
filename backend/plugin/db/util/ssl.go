@@ -233,6 +233,21 @@ func GetPGSSLMode(ds *storepb.DataSource) SSLMode {
 	return sslMode
 }
 
+// GetPGTLSConfigForHost returns Bytebase's TLS settings for one host the pg
+// driver dials: the client certificate and CA from the data source, the
+// verification mode it chose, and a server name and hostname verifier bound to
+// host rather than to the data source's first host. The driver calls it once per
+// host it may dial, so a multi-host data source verifies each host against its
+// own certificate.
+func GetPGTLSConfigForHost(ds *storepb.DataSource, host string) (*tls.Config, error) {
+	tlscfg, err := GetTLSConfig(ds)
+	if err != nil || tlscfg == nil {
+		return nil, err
+	}
+	applyPGTLSConfigForHost(tlscfg, host, tlscfg)
+	return tlscfg, nil
+}
+
 // ApplyPGTLSConfig applies Bytebase TLS settings to pgx primary and fallback TLS configs.
 func ApplyPGTLSConfig(tlscfg *tls.Config, host string, fallbacks []*pgconn.FallbackConfig) {
 	if tlscfg == nil {
