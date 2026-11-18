@@ -240,8 +240,7 @@ func recordParitySchema(ctx context.Context, t *testing.T, opened db.Driver) jso
 // compareParitySchema compares the synced metadata after removing what the old
 // driver did not record and the driver now does: a collection's create options,
 // an index's options beyond its key and uniqueness, and a view's definition.
-// Those are asserted to be present below, and the dump round trip proves they
-// are what makes the script restorable.
+// Those are asserted to be present below, since they are what a dump reads.
 func compareParitySchema(t *testing.T, wantRaw, gotRaw json.RawMessage) {
 	t.Helper()
 	got := &metadatapb.DatabaseSchemaMetadata{}

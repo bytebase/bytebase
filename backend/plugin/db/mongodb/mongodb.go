@@ -1,84 +1,35 @@
-// Package mongodb is Bytebase's MongoDB driver: a thin adapter over
+// Package mongodb is Bytebase's MongoDB driver: an adapter over
 // github.com/bytebase/omni/mongo/driver. The connection string, the sync
-// queries, the mongosh execution, the result rendering and the dump belong to
-// the omni driver; this package maps a db.ConnectionConfig onto the contract's
-// Config and the contract's results back into the product's types.
+// queries, the mongosh execution, the result rendering and the dump are the
+// driver's; this package maps a db.ConnectionConfig onto the contract's Config
+// and the contract's results back into the product's types.
 //
 // Bytebase registers this engine as MONGODB and dispatches through this
-// package, while omni's tree is mongo/driver. Neither name is changed: the
-// engine value is the product's, and the package path is what the driver
-// registry, the parser registration and the completion registration already
-// use, so a rename here would be churn outside the cutover's subject.
+// package, while omni's tree is mongo/driver. Neither name changes: the engine
+// value is the product's, and the package path is what the driver registry, the
+// parser registration and the completion registration already use.
 //
-// The adapter keeps what is product-side:
+// What stays product-side is the path to the server and the task run's log:
+// Open maps a data source onto driver.Config, including an SSH Dial, the TLS
+// material and the connection string options; Execute reports each statement to
+// the task run log; SyncInstance converts the contract's roles into the instance
+// metadata.
 //
-//   - Open maps a data source onto driver.Config: the host list with each
-//     additional address's own port, the database, the login, the auth
-//     database, replica set, direct connection and extra connection parameters
-//     as connection string options, mongodb+srv for an SRV data source, the TLS
-//     material, and an SSH Dial. It does not reach the server; Ping does.
-//   - Execute reports each statement to the task run log.
-//   - SyncInstance converts the contract's roles into the instance metadata.
+// Every db.Driver method:
 //
-// Every db.Driver method, including the ones that answer "not supported":
-//
-//   - Open, Close, Ping, SyncInstance, SyncDBSchema and Dump delegate.
-//   - GetDB returns nil. MongoDB has no database/sql handle, and the driver
-//     this replaced answered nil too.
-//   - QueryConn opens one contract session per call. MongoDB keeps no session
-//     state this driver sets, so a session is not held between calls; conn is
-//     unused, since the caller's *sql.Conn is not the contract's Session.
-//   - Execute runs each statement on its own. There is no transaction: MongoDB
-//     has none this path takes part in, so the contract's TransactionMode and
-//     IsolationLevel are left unset, and ExecuteOptions.MaximumRetries reaches
-//     the contract unused, as the driver never retries a statement. There is no
-//     DDL either: a change script is mongosh, and its statements are run in
-//     order.
+//   - Ping, Close, SyncInstance, SyncDBSchema and Dump delegate.
+//   - GetDB returns nil: MongoDB has no database/sql handle.
+//   - QueryConn opens one session per call; MongoDB keeps no session state.
+//   - Execute runs each statement on its own. MongoDB has no transaction this
+//     path takes part in, so TransactionMode and IsolationLevel are unset, and
+//     no DDL, so a change script is mongosh; MaximumRetries reaches the contract
+//     unused.
 //   - ReadOnly, QueryOptions.Schema and QueryOptions.MaskingEnabled do nothing:
-//     MongoDB has no read-only session, no schema per session, and no masking
-//     to withhold.
+//     MongoDB has no read-only session, no schema per session and no masking to
+//     withhold.
 //
-// Behaviour that moves with the driver, each pinned in cutover_parity_test.go
-// except where noted:
-//
-//   - Dump is no longer a no-op. It renders the synced database as a mongosh
-//     script that recreates its collections with their options, its indexes and
-//     its views, where the old driver wrote nothing; a view whose synced
-//     metadata carries no definition is named in a comment, since it cannot be
-//     recreated without one. TestCutoverDumpRoundTrip drops, recreates and
-//     re-dumps a database to prove the script restores it.
-//   - SyncDBSchema records what that script reads and the old driver dropped: a
-//     collection's create options, an index's options beyond its key and
-//     uniqueness, and a view's definition. A time-series collection is synced
-//     as a collection instead of being skipped; omni's tape pins that, since
-//     the pinned harness server (4.4) predates time-series collections.
-//   - SyncInstance names a user by its name where the old driver used the users
-//     collection's _id, so an instance role named "admin.testuser" is now
-//     "testuser".
-//   - A missing database answers driver.ErrNotFound, whose message still holds
-//     "database <name> does not exist".
-//   - QueryConn answers one result per statement of a script, so a
-//     multi-statement request runs instead of failing the client's
-//     single-statement parse; a statement's failure is its own result's error
-//     instead of the call's; and text the parser cannot split is one result
-//     carrying the parser's error.
-//   - A row limit no longer reaches countDocuments, where it changed what the
-//     count counted, and MaximumSQLResultSize now caps a result, which the old
-//     driver ignored.
-//   - An explicit explain request reports the plan it produced on the result;
-//     the rows are the same plan document.
-//   - Every value that is not a document renders as {"value": ...}; the old
-//     driver rendered an int32 or a double as its Go spelling and a null as
-//     "<nil>".
-//   - Execute reports the documents a write inserted, modified or deleted,
-//     where the old driver reported none.
-//   - An SSH data source now dials through its tunnel; the old driver ignored
-//     the SSH fields and connected to the host directly.
-//   - TLS material is read on each dial rather than once at Open, so invalid
-//     material fails at the first connection instead of at Open.
-//   - A connection parameter that names one of the driver's defaults
-//     (authSource, appName) overrides it, where the old builder put both values
-//     into the URI.
+// Where the driver's answer differs from the driver this replaced is named case
+// by case in the parity test's known-difference tables (cutover_parity_test.go).
 package mongodb
 
 import (
