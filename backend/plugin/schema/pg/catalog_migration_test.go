@@ -741,5 +741,7 @@ func TestCommentOnlyViewChangeIsRecreated(t *testing.T) {
 	require.GreaterOrEqual(t, dropUpper, 0, sql)
 	require.GreaterOrEqual(t, createUpper, 0, sql)
 	require.Less(t, dropUpper, createUpper, sql)
-	require.Contains(t, sql, "COMMENT ON VIEW")
+	comment := strings.Index(sql, "COMMENT ON VIEW")
+	require.GreaterOrEqual(t, comment, 0, sql)
+	require.Less(t, createUpper, comment, sql)
 }

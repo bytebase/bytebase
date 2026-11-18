@@ -534,7 +534,16 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	for _, item := range items {
 		dropped[item.key] = true
 	}
+	deferredComments := make(map[string][]catalog.MigrationOp)
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
+		if op.Type == catalog.OpComment {
+			for key := range dropped {
+				if op.ObjectName == key || strings.HasPrefix(op.ObjectName, key+".") {
+					deferredComments[key] = append(deferredComments[key], op)
+					return true
+				}
+			}
+		}
 		key := op.SchemaName + "." + op.ObjectName
 		if op.Type == catalog.OpDropView && dropped[key] {
 			return true
@@ -559,20 +568,18 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		item := items[index]
 		if item.createOp != nil {
 			ops = append(ops, *item.createOp)
-			continue
+		} else if item.createSQL != "" {
+			schemaName, objectName := splitObjectKey(item.key)
+			ops = append(ops, catalog.MigrationOp{
+				Type:       catalog.OpCreateView,
+				SchemaName: schemaName,
+				ObjectName: objectName,
+				SQL:        item.createSQL,
+				Phase:      catalog.PhaseMain,
+				ObjType:    'r',
+			})
 		}
-		if item.createSQL == "" {
-			continue
-		}
-		schemaName, objectName := splitObjectKey(item.key)
-		ops = append(ops, catalog.MigrationOp{
-			Type:       catalog.OpCreateView,
-			SchemaName: schemaName,
-			ObjectName: objectName,
-			SQL:        item.createSQL,
-			Phase:      catalog.PhaseMain,
-			ObjType:    'r',
-		})
+		ops = append(ops, deferredComments[item.key]...)
 	}
 	plan.Ops = ops
 }
