@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -672,7 +671,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	defer driver.Close(ctx)
 
 	appName := fmt.Sprintf("bytebase-taskrun-%d", taskRunUID)
-	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver.GetDB(), appName)
+	session, err := getSession(ctx, instance.Metadata.GetEngine(), driver, appName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get session"))
 	}
@@ -682,9 +681,18 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, req *connect.Req
 	return connect.NewResponse(session), nil
 }
 
-func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName string) (*v1pb.TaskRunSession, error) {
+func getSession(ctx context.Context, engine storepb.Engine, driver db.Driver, appName string) (*v1pb.TaskRunSession, error) {
+	// A driver whose engine package reads its own sessions answers here; the
+	// others are read through the pool they still hold.
+	if reader, ok := driver.(db.TaskRunSessionReader); ok {
+		return reader.TaskRunSession(ctx, appName)
+	}
+	sqlDB := db.SQLDB(driver)
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
+		if sqlDB == nil {
+			return nil, errors.Errorf("session monitoring for engine %v needs a direct database/sql connection, but the driver does not expose one", engine.String())
+		}
 		query := `
 			WITH target_session AS (
 				SELECT pid FROM pg_catalog.pg_stat_activity WHERE application_name = $1 LIMIT 1
@@ -711,7 +719,7 @@ func getSession(ctx context.Context, engine storepb.Engine, db *sql.DB, appName 
 			   OR a.pid = ANY(pg_blocking_pids((SELECT pid FROM target_session)))
 			ORDER BY a.pid
 		`
-		rows, err := db.QueryContext(ctx, query, appName)
+		rows, err := sqlDB.QueryContext(ctx, query, appName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to query rows")
 		}

@@ -57,6 +57,7 @@ import {
   normalizeRunBindings,
   normalizeRunBudget,
   normalizeRunCheckpoint,
+  normalizeRunMaskingPage,
   projectChatUsage,
   projectRunBudget,
   reserveRunAttempt,
@@ -161,6 +162,7 @@ export interface PersistedAgentState {
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
+  followUpQueuesByChatId?: Record<string, AgentFollowUpQueue>;
   activeChatIds?: string[];
 }
 
@@ -184,10 +186,18 @@ export interface QueuedUserMessage {
   chatId: string;
   text: string;
   page: AgentChatSnapshot;
+  maskingPage?: AgentRunBindings["maskingPage"];
+  fromFollowUpQueue?: true;
   runMode?: AgentRunMode;
   starterId?: LandingStarterId;
+  followUpSourceId?: string;
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
+}
+
+export interface AgentFollowUpQueue {
+  messages: QueuedUserMessage[];
+  paused: boolean;
 }
 
 interface RegisteredExpressionDraftTarget {
@@ -196,7 +206,10 @@ interface RegisteredExpressionDraftTarget {
   token: symbol;
 }
 
-type QueueUserMessageInput = Omit<QueuedUserMessage, "id">;
+export type QueueUserMessageInput = Omit<
+  QueuedUserMessage,
+  "id" | "fromFollowUpQueue"
+>;
 
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 const DRAFT_PERSIST_DELAY_MS = 250;
@@ -270,12 +283,23 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
+const normalizeFollowUpSourceId = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined;
+  // Dropping an invalid marker would silently restore latest-query fallback.
+  return typeof value === "string" && value.trim() && value.length <= 1000
+    ? value
+    : "";
+};
+
 const normalizeDraft = (raw: unknown): AgentDraft | null => {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  const followUpSourceId = normalizeFollowUpSourceId(raw.followUpSourceId);
+  const provenance = followUpSourceId !== undefined ? { followUpSourceId } : {};
   if (raw.mentions !== undefined) {
     const mentions = normalizeAgentResourceMentions(raw.text, raw.mentions);
     return {
       text: raw.text,
+      ...provenance,
       ...(mentions.length > 0 ? { mentions } : {}),
     };
   }
@@ -302,7 +326,7 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
             label: normalizedProject.title,
           }
         : undefined;
-  if (!resource) return { text: raw.text };
+  if (!resource) return { text: raw.text, ...provenance };
 
   let text = raw.text;
   let mention: AgentMentionRange | null = null;
@@ -314,9 +338,9 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
         mention = candidate;
       }
     }
-    if (!mention) return { text };
+    if (!mention) return { text, ...provenance };
   } else if (raw.mention !== undefined) {
-    return { text };
+    return { text, ...provenance };
   } else {
     const token = formatResourceMention(resource.label);
     let start = text.lastIndexOf(token);
@@ -341,15 +365,16 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
         trigger ?? getMentionTriggerRange(prefix, prefix.length),
         resource.label
       );
-      if (!inserted) return { text: raw.text };
+      if (!inserted) return { text: raw.text, ...provenance };
       text = inserted.text;
       mention = inserted.mention;
     }
   }
-  if (!mention) return { text };
+  if (!mention) return { text, ...provenance };
 
   return {
     text,
+    ...provenance,
     ...(normalizedProject ? { project: normalizedProject } : {}),
     resource,
     mention,
@@ -378,11 +403,14 @@ const normalizeQueuedUserMessage = (
     raw.resourceReferences,
     raw.resourceReference
   );
+  const maskingPage = normalizeRunMaskingPage(raw.maskingPage);
   return {
     id: raw.id,
     chatId: raw.chatId,
     text: raw.text,
     page: { path: raw.page.path, title: raw.page.title },
+    ...(maskingPage ? { maskingPage } : {}),
+    ...(raw.fromFollowUpQueue === true ? { fromFollowUpQueue: true } : {}),
     runMode:
       raw.runMode === "default" || raw.runMode === "read-only"
         ? raw.runMode
@@ -391,6 +419,9 @@ const normalizeQueuedUserMessage = (
       typeof raw.starterId === "string"
         ? (raw.starterId as LandingStarterId)
         : undefined,
+    ...(raw.followUpSourceId !== undefined
+      ? { followUpSourceId: normalizeFollowUpSourceId(raw.followUpSourceId) }
+      : {}),
     ...(raw.resourceReferences === undefined && resourceReferences[0]
       ? { resourceReference: resourceReferences[0] }
       : {}),
@@ -398,6 +429,23 @@ const normalizeQueuedUserMessage = (
       ? { resourceReferences }
       : {}),
   };
+};
+
+const restorePromotedFollowUp = (
+  state: Pick<
+    PersistedAgentState,
+    "queuedUserMessagesByChatId" | "followUpQueuesByChatId"
+  >,
+  message: QueuedUserMessage
+) => {
+  const { fromFollowUpQueue: _promoted, ...pending } = message;
+  const queues = (state.followUpQueuesByChatId ??= {});
+  const tail = queues[message.chatId]?.messages ?? [];
+  queues[message.chatId] = {
+    paused: true,
+    messages: [pending, ...tail.filter(({ id }) => id !== message.id)],
+  };
+  delete state.queuedUserMessagesByChatId[message.chatId];
 };
 
 type DraftHandoffKind =
@@ -481,6 +529,9 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          followUpSourceId: normalizeFollowUpSourceId(
+            metadata.followUpSourceId
+          ),
           interruptionReason: normalizeInterruptionReason(
             metadata.interruptionReason
           ),
@@ -648,6 +699,10 @@ const normalizePendingAsk = (
       pendingAsk.resourceProject === context)
       ? pendingAsk.resourceProject
       : undefined;
+  const apiPermission = isRecord(pendingAsk.apiPermission)
+    ? pendingAsk.apiPermission
+    : undefined;
+  const expiresAt = apiPermission?.expiresAt;
 
   return {
     toolCallId: pendingAsk.toolCallId,
@@ -655,13 +710,17 @@ const normalizePendingAsk = (
     kind,
     ...(resourceProject ? { resourceProject } : {}),
     ...(kind === "confirm" &&
-    isRecord(pendingAsk.apiPermission) &&
-    typeof pendingAsk.apiPermission.actionId === "string" &&
-    typeof pendingAsk.apiPermission.operationId === "string"
+    typeof apiPermission?.actionId === "string" &&
+    typeof apiPermission.operationId === "string"
       ? {
           apiPermission: {
-            actionId: pendingAsk.apiPermission.actionId,
-            operationId: pendingAsk.apiPermission.operationId,
+            actionId: apiPermission.actionId,
+            operationId: apiPermission.operationId,
+            ...(typeof expiresAt === "number" &&
+            Number.isFinite(expiresAt) &&
+            expiresAt > 0
+              ? { expiresAt }
+              : {}),
           },
         }
       : {}),
@@ -844,7 +903,8 @@ const createEmptyPersistedState = (): PersistedAgentState => ({
 
 const normalizePersistedState = (
   raw: unknown,
-  recoverInterruptedRuns = true
+  recoverInterruptedRuns = true,
+  preserveActiveFollowUpOwners = false
 ): PersistedAgentState => {
   if (!isRecord(raw)) {
     return createEmptyPersistedState();
@@ -881,6 +941,16 @@ const normalizePersistedState = (
   const messagesByChatId: Record<string, AgentMessage[]> = {};
   const pendingAskByChatId: Record<string, AgentPendingAsk> = {};
   const draftsByChatId: Record<string, AgentDraft> = {};
+  const rawFollowUpQueues = isRecord(raw.followUpQueuesByChatId)
+    ? raw.followUpQueuesByChatId
+    : {};
+  const rawStartupMessages = isRecord(raw.queuedUserMessagesByChatId)
+    ? raw.queuedUserMessagesByChatId
+    : {};
+  const rawActiveChatIds = Array.isArray(raw.activeChatIds)
+    ? raw.activeChatIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const activeFollowUpOwners = new Set<string>();
 
   for (const chat of chats) {
     const rawMessages: unknown[] = Array.isArray(rawMessagesByChatId[chat.id])
@@ -921,7 +991,25 @@ const normalizePersistedState = (
     if (lastMessage) {
       chat.updatedTs = Math.max(chat.updatedTs, lastMessage.createdTs);
     }
-    if (recoverInterruptedRuns && chat.status === "running") {
+    const followUps = rawFollowUpQueues[chat.id];
+    const startup = rawStartupMessages[chat.id];
+    if (
+      preserveActiveFollowUpOwners &&
+      !chat.archived &&
+      ((isRecord(startup) && startup.fromFollowUpQueue === true) ||
+        (isRecord(followUps) &&
+          Array.isArray(followUps.messages) &&
+          followUps.messages.length > 0 &&
+          (chat.status === "running" ||
+            chat.status === "awaiting_user" ||
+            rawActiveChatIds.includes(chat.id))))
+    )
+      activeFollowUpOwners.add(chat.id);
+    if (
+      recoverInterruptedRuns &&
+      chat.status === "running" &&
+      !activeFollowUpOwners.has(chat.id)
+    ) {
       chat.status = DEFAULT_CHAT_STATUS;
       chat.interrupted = true;
       chat.interruptionReason = "unexpected";
@@ -962,14 +1050,10 @@ const normalizePersistedState = (
 
   const chatIds = new Set(chats.map((chat) => chat.id));
   const queuedUserMessagesByChatId: Record<string, QueuedUserMessage> = {};
-  if (isRecord(raw.queuedUserMessagesByChatId)) {
-    for (const [chatId, value] of Object.entries(
-      raw.queuedUserMessagesByChatId
-    )) {
-      const message = normalizeQueuedUserMessage(value, chatIds);
-      if (message?.chatId === chatId) {
-        queuedUserMessagesByChatId[chatId] = message;
-      }
+  for (const [chatId, value] of Object.entries(rawStartupMessages)) {
+    const message = normalizeQueuedUserMessage(value, chatIds);
+    if (message?.chatId === chatId) {
+      queuedUserMessagesByChatId[chatId] = message;
     }
   }
   const legacyQueuedMessage = normalizeQueuedUserMessage(
@@ -979,6 +1063,54 @@ const normalizePersistedState = (
   if (legacyQueuedMessage) {
     queuedUserMessagesByChatId[legacyQueuedMessage.chatId] ??=
       legacyQueuedMessage;
+  }
+
+  const followUpQueuesByChatId: Record<string, AgentFollowUpQueue> = {};
+  if (Object.keys(rawFollowUpQueues).length) {
+    for (const chat of chats) {
+      const queue = rawFollowUpQueues[chat.id];
+      if (chat.archived || !isRecord(queue) || !Array.isArray(queue.messages))
+        continue;
+      const seen = new Set(messagesByChatId[chat.id]?.map(({ id }) => id));
+      const startup = queuedUserMessagesByChatId[chat.id];
+      if (startup) seen.add(startup.id);
+      const messages: QueuedUserMessage[] = [];
+      for (const value of queue.messages) {
+        const message = normalizeQueuedUserMessage(value, chatIds);
+        if (message?.chatId !== chat.id || seen.has(message.id)) continue;
+        seen.add(message.id);
+        messages.push(message);
+      }
+      if (messages.length)
+        followUpQueuesByChatId[chat.id] = {
+          messages,
+          paused:
+            (recoverInterruptedRuns && !activeFollowUpOwners.has(chat.id)) ||
+            queue.paused !== false,
+        };
+    }
+  }
+
+  if (recoverInterruptedRuns && !preserveActiveFollowUpOwners) {
+    for (const chat of chats) {
+      const startup = queuedUserMessagesByChatId[chat.id];
+      if (!startup?.fromFollowUpQueue) continue;
+      const messages = messagesByChatId[chat.id];
+      const recorded = messages.some(({ id }) => id === startup.id);
+      if (!recorded && !chat.archived) {
+        restorePromotedFollowUp(
+          { queuedUserMessagesByChatId, followUpQueuesByChatId },
+          startup
+        );
+      } else {
+        delete queuedUserMessagesByChatId[chat.id];
+        if (chat.status === "idle" && !chat.archived && !chat.interrupted) {
+          chat.interrupted = true;
+          chat.interruptionReason = "unexpected";
+          setLastUserInterruptionReason(messages, "unexpected");
+        }
+      }
+    }
   }
 
   const hasCurrentChatId = Object.prototype.hasOwnProperty.call(
@@ -1009,12 +1141,16 @@ const normalizePersistedState = (
     pendingAskByChatId,
     draftsByChatId,
     queuedUserMessagesByChatId,
-    activeChatIds:
-      !recoverInterruptedRuns && Array.isArray(raw.activeChatIds)
-        ? raw.activeChatIds.filter(
-            (id): id is string => typeof id === "string" && chatIds.has(id)
-          )
-        : undefined,
+    ...(Object.keys(followUpQueuesByChatId).length
+      ? { followUpQueuesByChatId }
+      : {}),
+    activeChatIds: Array.isArray(raw.activeChatIds)
+      ? rawActiveChatIds.filter(
+          (id) =>
+            chatIds.has(id) &&
+            (!recoverInterruptedRuns || activeFollowUpOwners.has(id))
+        )
+      : undefined,
   };
 };
 
@@ -1040,9 +1176,13 @@ export interface AgentState {
   messagesByChatId: Record<string, AgentMessage[]>;
   pendingAskByChatId: Record<string, AgentPendingAsk>;
   draftsByChatId: Record<string, AgentDraft>;
+  landingDraft: AgentDraft;
+  landingContext: string | undefined;
   currentChatId: string | null;
   abortControllersByChatId: Record<string, AbortController>;
   queuedUserMessagesByChatId: Record<string, QueuedUserMessage>;
+  followUpQueuesByChatId: Record<string, AgentFollowUpQueue>;
+  followUpDrainChatIds: Record<string, boolean>;
   queuedUserMessageInFlightByChatId: Record<string, boolean>;
   remoteBusyChatIds: Record<string, boolean>;
   chatProtectionReady: boolean;
@@ -1072,6 +1212,14 @@ export interface AgentState {
   // Chat CRUD
   createChat: (options?: CreateChatOptions) => AgentChat;
   queueUserMessage: (message: QueueUserMessageInput) => void;
+  enqueueFollowUp: (message: QueueUserMessageInput) => string | null;
+  removeFollowUp: (chatId: string, messageId: string) => boolean;
+  setFollowUpQueuePaused: (chatId: string, paused: boolean) => boolean;
+  setFollowUpDrainActive: (chatId: string, active: boolean) => boolean;
+  promoteFollowUp: (
+    chatId: string,
+    messageId: string
+  ) => QueuedUserMessage | null;
   takeQueuedUserMessage: (chatId: string) => QueuedUserMessage | null;
   finishQueuedUserMessage: (chatId: string) => void;
   commitQueuedUserMessage: (
@@ -1080,6 +1228,8 @@ export interface AgentState {
   getDraft: (chatId?: string | null) => AgentDraft;
   setDraft: (chatId: string, draft: AgentDraft) => void;
   clearDraft: (chatId: string) => void;
+  setLandingDraft: (draft: AgentDraft, context?: string) => void;
+  clearLandingDraft: (context?: string) => void;
   ensureCurrentChat: (
     page?: AgentChatSnapshot,
     context?: string,
@@ -1429,18 +1579,42 @@ const readPersistedState = (
   const saved = storage?.getItem(key);
   if (!saved) return null;
   try {
-    return normalizePersistedState(parseAgentStoredState(saved));
+    return normalizePersistedState(
+      parseAgentStoredState(saved),
+      true,
+      key.startsWith(`${AGENT_RUN_STATE_KEY}.`) && supportsAgentRunRecovery()
+    );
   } catch {
     if (!key.startsWith(`${AGENT_RUN_STATE_KEY}.`)) storage?.removeItem(key);
     return null;
   }
 };
 
+const getPersistedFollowUpOwners = (state: PersistedAgentState) =>
+  Object.fromEntries(
+    state.chats
+      .filter(
+        (chat) =>
+          !chat.archived &&
+          (state.queuedUserMessagesByChatId[chat.id]?.fromFollowUpQueue ||
+            (state.followUpQueuesByChatId?.[chat.id] &&
+              (chat.status === "running" ||
+                chat.status === "awaiting_user" ||
+                state.activeChatIds?.includes(chat.id))))
+      )
+      .map((chat) => [chat.id, true])
+  );
+
 const selectPersistedChats = (
   state: PersistedAgentState,
   chats: AgentChat[]
 ): PersistedAgentState => {
   const ids = new Set(chats.map((chat) => chat.id));
+  const followUpQueuesByChatId = Object.fromEntries(
+    Object.entries(state.followUpQueuesByChatId ?? {}).filter(([id]) =>
+      ids.has(id)
+    )
+  );
   return {
     currentChatId: ids.has(state.currentChatId ?? "")
       ? state.currentChatId
@@ -1467,6 +1641,9 @@ const selectPersistedChats = (
         return message ? [[chat.id, message]] : [];
       })
     ),
+    ...(Object.keys(followUpQueuesByChatId).length
+      ? { followUpQueuesByChatId }
+      : {}),
   };
 };
 
@@ -1508,6 +1685,8 @@ const mergePersistedStates = (
       merged.queuedUserMessagesByChatId[id] =
         state.queuedUserMessagesByChatId[id];
     }
+    const queue = state.followUpQueuesByChatId?.[id];
+    if (queue) (merged.followUpQueuesByChatId ??= {})[id] = queue;
   }
   return merged;
 };
@@ -1516,7 +1695,8 @@ const hasOnlyEmptyChat = (state: PersistedAgentState | null) => {
   if (!state || state.chats.length === 0) return true;
   if (
     state.chats.length !== 1 ||
-    Object.keys(state.queuedUserMessagesByChatId).length > 0
+    Object.keys(state.queuedUserMessagesByChatId).length > 0 ||
+    Object.keys(state.followUpQueuesByChatId ?? {}).length > 0
   )
     return false;
   const chat = state.chats[0];
@@ -1665,7 +1845,15 @@ const persistedSnapshot = (state: AgentState): PersistedAgentState => ({
   pendingAskByChatId: state.pendingAskByChatId,
   draftsByChatId: state.draftsByChatId,
   queuedUserMessagesByChatId: state.queuedUserMessagesByChatId,
-  activeChatIds: Object.keys(state.abortControllersByChatId),
+  ...(Object.keys(state.followUpQueuesByChatId).length
+    ? { followUpQueuesByChatId: state.followUpQueuesByChatId }
+    : {}),
+  activeChatIds: [
+    ...new Set([
+      ...Object.keys(state.abortControllersByChatId),
+      ...Object.keys(state.followUpDrainChatIds),
+    ]),
+  ],
 });
 
 const samePersistedValue = (a: unknown, b: unknown) =>
@@ -1826,6 +2014,34 @@ const chatExecution = (state: PersistedAgentState, chat: AgentChat) => {
   };
 };
 
+// Queue edits rebase independently of transcript ownership. Retain only local
+// additions and removals so concurrent writes cannot restore an already sent item.
+const rebaseFollowUpQueue = (
+  base: AgentFollowUpQueue | undefined,
+  local: AgentFollowUpQueue | undefined,
+  remote: AgentFollowUpQueue | undefined,
+  restoredHeadId?: string
+): AgentFollowUpQueue | undefined => {
+  if (samePersistedValue(base, local)) return remote;
+  const previousIds = new Set(base?.messages.map(({ id }) => id));
+  const localIds = new Set(local?.messages.map(({ id }) => id));
+  const remoteIds = new Set(remote?.messages.map(({ id }) => id));
+  const messages = (remote?.messages ?? []).filter(
+    ({ id }) => !previousIds.has(id) || localIds.has(id)
+  );
+  for (const message of local?.messages ?? []) {
+    if (!previousIds.has(message.id) && !remoteIds.has(message.id)) {
+      if (message.id === restoredHeadId) messages.unshift(message);
+      else messages.push(message);
+    }
+  }
+  if (!messages.length) return undefined;
+  let paused = remote?.paused ?? local?.paused ?? false;
+  if (local && (base ? local.paused !== base.paused : local.paused))
+    paused = local.paused;
+  return { messages, paused };
+};
+
 // Rebase only this tab's edits; an untouched snapshot must not undo another tab.
 const rebasePersistedChanges = (
   base: PersistedAgentState,
@@ -1974,6 +2190,32 @@ const rebasePersistedChanges = (
     if (source.queuedUserMessagesByChatId[id])
       result.queuedUserMessagesByChatId[id] =
         source.queuedUserMessagesByChatId[id];
+    if (!chat.archived) {
+      const remoteQueue = remote.followUpQueuesByChatId?.[id];
+      const remoteStartup = remote.queuedUserMessagesByChatId[id];
+      const queue = rebaseFollowUpQueue(
+        base.followUpQueuesByChatId?.[id],
+        local.followUpQueuesByChatId?.[id],
+        remoteQueue,
+        !local.queuedUserMessagesByChatId[id] &&
+          remoteStartup?.fromFollowUpQueue
+          ? remoteStartup.id
+          : undefined
+      );
+      if (queue) {
+        const claimedIds = new Set(
+          result.messagesByChatId[id].map(({ id }) => id)
+        );
+        const startup = result.queuedUserMessagesByChatId[id];
+        if (startup) claimedIds.add(startup.id);
+        const messages = queue.messages.filter(({ id }) => !claimedIds.has(id));
+        if (messages.length)
+          (result.followUpQueuesByChatId ??= {})[id] = {
+            ...queue,
+            messages,
+          };
+      }
+    }
     const draft = samePersistedValue(
       local.draftsByChatId[id],
       base.draftsByChatId[id]
@@ -2016,7 +2258,12 @@ export const createAgentStore = () => {
     if (!writer) {
       writer = createAgentRunPersistence(key, () =>
         withAgentStorageBudgetLock(() => {
-          const state = pendingStatesByScope.get(key);
+          // Draft edits can arrive while the writer is waiting for its lock.
+          const current = store.getState();
+          const state =
+            currentScopeKey(current) === key
+              ? current
+              : pendingStatesByScope.get(key);
           if (!state || !synchronizeState(state, true, true))
             throw new Error("Agent persistence unavailable");
         })
@@ -2044,6 +2291,18 @@ export const createAgentStore = () => {
 
       const _hasRunningChat = (): boolean =>
         get().chats.some((chat) => chat.status === "running");
+
+      const canEditFollowUpQueue = (chatId: string): AgentChat | null => {
+        if (!synchronizeState(get(), false) || get().remoteBusyChatIds[chatId])
+          return null;
+        const chat = _getChat(chatId);
+        return chat && !chat.archived ? chat : null;
+      };
+
+      const pauseFollowUpQueue = (state: AgentState, chatId: string) => {
+        const queue = state.followUpQueuesByChatId[chatId];
+        if (queue) queue.paused = true;
+      };
 
       const clearSqlFixDrafts = (state: AgentState, chatId: string) => {
         delete state.sqlFixSourcesByChatId[chatId];
@@ -2167,9 +2426,13 @@ export const createAgentStore = () => {
         messagesByChatId: initial.messagesByChatId,
         pendingAskByChatId: initial.pendingAskByChatId,
         draftsByChatId: initial.draftsByChatId,
+        landingDraft: { text: "" },
+        landingContext: undefined,
         currentChatId: initial.currentChatId,
         abortControllersByChatId: {},
         queuedUserMessagesByChatId: initial.queuedUserMessagesByChatId,
+        followUpQueuesByChatId: {},
+        followUpDrainChatIds: {},
         queuedUserMessageInFlightByChatId: {},
         remoteBusyChatIds: {},
         chatProtectionReady: true,
@@ -2240,6 +2503,16 @@ export const createAgentStore = () => {
           if (!_getChat(chatId)) return;
           const normalized = normalizeDraft(draft);
           if (!normalized) return;
+          const { followUpSourceId: source, ...previous } =
+            get().getDraft(chatId);
+          const { followUpSourceId: nextSource, ...next } = normalized;
+          if (source !== undefined) {
+            const unchanged = JSON.stringify(previous) === JSON.stringify(next);
+            if (unchanged && nextSource === undefined)
+              normalized.followUpSourceId = source;
+            if (!unchanged && nextSource === source)
+              delete normalized.followUpSourceId;
+          }
           set((state) => {
             if (
               normalized.text ||
@@ -2257,6 +2530,21 @@ export const createAgentStore = () => {
         clearDraft: (chatId) =>
           set((state) => {
             delete state.draftsByChatId[chatId];
+          }),
+
+        setLandingDraft: (draft, context) => {
+          const normalized = normalizeDraft(draft);
+          if (!normalized) return;
+          set((state) => {
+            state.landingDraft = normalized;
+            if (context !== undefined) state.landingContext = context;
+          });
+        },
+
+        clearLandingDraft: (context) =>
+          set((state) => {
+            state.landingDraft = { text: "" };
+            state.landingContext = context;
           }),
 
         getAbortController: (chatId) => {
@@ -2325,7 +2613,12 @@ export const createAgentStore = () => {
           ) {
             return;
           }
-          const { resourceReference, resourceReferences, ...rest } = message;
+          const {
+            resourceReference,
+            resourceReferences,
+            followUpSourceId,
+            ...rest
+          } = message;
           const normalizedReferences = normalizeAgentResourceReferences(
             resourceReferences,
             resourceReference
@@ -2334,6 +2627,12 @@ export const createAgentStore = () => {
             state.queuedUserMessagesByChatId[message.chatId] = {
               ...rest,
               id: uuidv4(),
+              ...(followUpSourceId !== undefined
+                ? {
+                    followUpSourceId:
+                      normalizeFollowUpSourceId(followUpSourceId),
+                  }
+                : {}),
               ...(resourceReferences === undefined && normalizedReferences[0]
                 ? { resourceReference: normalizedReferences[0] }
                 : {}),
@@ -2346,10 +2645,125 @@ export const createAgentStore = () => {
           });
         },
 
+        enqueueFollowUp: (input) => {
+          const { chatId } = input;
+          const chat = canEditFollowUpQueue(chatId);
+          if (
+            !chat ||
+            !get().canUseAgentExecution() ||
+            get().storagePressure ||
+            chat.requiresAIConfiguration
+          )
+            return null;
+          const message = normalizeQueuedUserMessage(
+            { ...input, id: uuidv4() },
+            new Set([chatId])
+          );
+          if (!message) return null;
+          set((state) => {
+            const queue = (state.followUpQueuesByChatId[chatId] ??= {
+              messages: [],
+              paused: chat.status === "error" || Boolean(chat.interrupted),
+            });
+            queue.messages.push(message);
+          });
+          return message.id;
+        },
+
+        removeFollowUp: (chatId, messageId) => {
+          if (!canEditFollowUpQueue(chatId)) return false;
+          const index = get().followUpQueuesByChatId[
+            chatId
+          ]?.messages.findIndex(({ id }) => id === messageId);
+          if (index === undefined || index < 0) return false;
+          set((state) => {
+            const queue = state.followUpQueuesByChatId[chatId];
+            queue.messages.splice(index, 1);
+            if (!queue.messages.length)
+              delete state.followUpQueuesByChatId[chatId];
+          });
+          return true;
+        },
+
+        setFollowUpQueuePaused: (chatId, paused) => {
+          if (!canEditFollowUpQueue(chatId)) return false;
+          const queue = get().followUpQueuesByChatId[chatId];
+          if (!queue) return false;
+          if (queue.paused !== paused) {
+            set((state) => {
+              state.followUpQueuesByChatId[chatId].paused = paused;
+            });
+          }
+          return true;
+        },
+
+        setFollowUpDrainActive: (chatId, active) => {
+          if (active) {
+            if (!canEditFollowUpQueue(chatId) || !canOwnRun(get(), chatId))
+              return false;
+          } else if (!get().followUpDrainChatIds[chatId]) {
+            return false;
+          }
+          set((state) => {
+            if (active) state.followUpDrainChatIds[chatId] = true;
+            else delete state.followUpDrainChatIds[chatId];
+          });
+          return true;
+        },
+
+        promoteFollowUp: (chatId, messageId) => {
+          const chat = canEditFollowUpQueue(chatId);
+          const state = get();
+          const queue = state.followUpQueuesByChatId[chatId];
+          const head = queue?.messages[0];
+          if (
+            !chat ||
+            chat.status !== "idle" ||
+            chat.runCheckpoint ||
+            chat.requiresAIConfiguration ||
+            state.storagePressure ||
+            state.pendingAskByChatId[chatId] ||
+            state.abortControllersByChatId[chatId] ||
+            state.queuedUserMessagesByChatId[chatId] ||
+            state.queuedUserMessageInFlightByChatId[chatId] ||
+            !canOwnRun(state, chatId) ||
+            head?.id !== messageId ||
+            queue.paused
+          )
+            return null;
+          // The answer may not exist yet when the follow-up is enqueued.
+          const source = state.getMessages(chatId).at(-1);
+          const promoted =
+            head.followUpSourceId === undefined &&
+            !head.resourceReference &&
+            !head.resourceReferences?.length &&
+            source?.chatId === chatId &&
+            source.role === "assistant" &&
+            source.content?.trim() &&
+            !source.toolCalls?.length &&
+            !source.metadata?.pending &&
+            !source.metadata?.error
+              ? { ...head, followUpSourceId: source.id }
+              : head;
+          set((draft) => {
+            const pending = draft.followUpQueuesByChatId[chatId];
+            pending.messages.shift();
+            if (!pending.messages.length)
+              delete draft.followUpQueuesByChatId[chatId];
+            draft.queuedUserMessagesByChatId[chatId] = {
+              ...promoted,
+              fromFollowUpQueue: true,
+            };
+            draft.queuedUserMessageInFlightByChatId[chatId] = true;
+          });
+          return promoted;
+        },
+
         takeQueuedUserMessage: (chatId) => {
           const message = get().queuedUserMessagesByChatId[chatId];
           if (
             !message ||
+            message.fromFollowUpQueue ||
             _getChat(chatId)?.runCheckpoint?.suspension === "token-limit" ||
             get().remoteBusyChatIds[chatId] ||
             get().queuedUserMessageInFlightByChatId[chatId]
@@ -2399,10 +2813,20 @@ export const createAgentStore = () => {
                 createdTs: Date.now(),
                 role: "user",
                 content: queued.text,
-                metadata: queued.resourceReferences
-                  ? { resourceReferences: queued.resourceReferences }
-                  : queued.resourceReference
-                    ? { resourceReference: queued.resourceReference }
+                metadata:
+                  queued.resourceReferences ||
+                  queued.resourceReference ||
+                  queued.followUpSourceId !== undefined
+                    ? {
+                        ...(queued.resourceReferences
+                          ? { resourceReferences: queued.resourceReferences }
+                          : queued.resourceReference
+                            ? { resourceReference: queued.resourceReference }
+                            : {}),
+                        ...(queued.followUpSourceId !== undefined
+                          ? { followUpSourceId: queued.followUpSourceId }
+                          : {}),
+                      }
                     : undefined,
               };
               chatMessages.push(committed);
@@ -2471,7 +2895,8 @@ export const createAgentStore = () => {
           if (
             current.status === "running" ||
             get().getPendingAsk(current.id) ||
-            get().queuedUserMessagesByChatId[current.id]
+            get().queuedUserMessagesByChatId[current.id] ||
+            get().followUpQueuesByChatId[current.id]
           ) {
             return get().createChat({ page, context, workspaceName });
           }
@@ -2503,7 +2928,8 @@ export const createAgentStore = () => {
             chat.capability === undefined &&
             chat.status === "idle" &&
             !get().getPendingAsk(chat.id) &&
-            !get().queuedUserMessagesByChatId[chat.id];
+            !get().queuedUserMessagesByChatId[chat.id] &&
+            !get().followUpQueuesByChatId[chat.id];
           const current = _getChat(get().currentChatId);
           const matchingChat =
             current?.context === context &&
@@ -2595,6 +3021,12 @@ export const createAgentStore = () => {
         },
 
         archiveChat: (chatId) => {
+          get().syncState();
+          if (
+            get().remoteBusyChatIds[chatId] &&
+            get().followUpQueuesByChatId[chatId]
+          )
+            return null;
           if (!_getChat(chatId)) return null;
           if (_getChat(chatId)?.runBudget)
             get().getAbortController(chatId)?.abort();
@@ -2602,6 +3034,7 @@ export const createAgentStore = () => {
             const chat = state.chats.find((c) => c.id === chatId);
             if (chat) {
               chat.archived = true;
+              delete state.followUpQueuesByChatId[chatId];
               clearSqlFixDrafts(state, chatId);
               if (chat.runBudget) {
                 chat.runCheckpoint = undefined;
@@ -2625,17 +3058,27 @@ export const createAgentStore = () => {
         },
 
         archiveAllActiveChats: () => {
+          get().syncState();
+          const canArchive = (state: AgentState, chat: AgentChat) =>
+            !chat.archived &&
+            !(
+              state.remoteBusyChatIds[chat.id] &&
+              state.followUpQueuesByChatId[chat.id]
+            );
           let archivedCount = 0;
           for (const chat of get().chats)
-            if (!chat.archived && chat.runBudget)
+            if (canArchive(get(), chat) && chat.runBudget)
               get().getAbortController(chat.id)?.abort();
           set((state) => {
-            const activeChats = state.chats.filter((chat) => !chat.archived);
+            const activeChats = state.chats.filter((chat) =>
+              canArchive(state, chat)
+            );
             archivedCount = activeChats.length;
             if (archivedCount === 0) return;
 
             for (const chat of activeChats) {
               chat.archived = true;
+              delete state.followUpQueuesByChatId[chat.id];
               clearSqlFixDrafts(state, chat.id);
               if (chat.runBudget) {
                 chat.runCheckpoint = undefined;
@@ -2711,6 +3154,8 @@ export const createAgentStore = () => {
             delete state.draftsByChatId[chatId];
             delete state.abortControllersByChatId[chatId];
             delete state.queuedUserMessagesByChatId[chatId];
+            delete state.followUpQueuesByChatId[chatId];
+            delete state.followUpDrainChatIds[chatId];
             delete state.queuedUserMessageInFlightByChatId[chatId];
             clearSqlFixDrafts(state, chatId);
             if (state.currentChatId === chatId) {
@@ -2765,6 +3210,8 @@ export const createAgentStore = () => {
 
             for (const chatId of deletedChatIds) {
               delete state.queuedUserMessagesByChatId[chatId];
+              delete state.followUpQueuesByChatId[chatId];
+              delete state.followUpDrainChatIds[chatId];
               delete state.queuedUserMessageInFlightByChatId[chatId];
               delete state.expressionDraftTargetsByChatId[chatId];
               clearSqlFixDrafts(state, chatId);
@@ -3070,6 +3517,8 @@ export const createAgentStore = () => {
               chat.lastError = options.lastError ?? null;
               chat.requiresAIConfiguration =
                 options.requiresAIConfiguration ?? false;
+              if (status === "error" || options.interrupted)
+                pauseFollowUpQueue(state, chatId);
               if (options.page) {
                 chat.page = options.page;
               }
@@ -3509,6 +3958,8 @@ export const createAgentStore = () => {
             if (ownsRun) delete state.remoteBusyChatIds[chatId];
             delete state.pendingAskByChatId[chatId];
             delete state.queuedUserMessagesByChatId[chatId];
+            delete state.queuedUserMessageInFlightByChatId[chatId];
+            pauseFollowUpQueue(state, chatId);
           });
           return get().flushRunPersistence();
         },
@@ -3653,6 +4104,31 @@ export const createAgentStore = () => {
         recoverChatRun: async (chatId, runId) => {
           get().syncState();
           const chat = _getChat(chatId);
+          const state = get();
+          const queued = state.queuedUserMessagesByChatId[chatId];
+          const key = currentScopeKey(state);
+          const saved = key ? storageSnapshotsByScope.get(key) : undefined;
+          const checkpoint = saved?.chats.find(
+            ({ id }) => id === chatId
+          )?.runCheckpoint;
+          const recorded = saved?.messagesByChatId[chatId]?.find(
+            ({ id }) => id === queued?.id
+          );
+          // The startup receipt no longer owns execution once its root is durable.
+          const committedStartup = Boolean(
+            queued &&
+              checkpoint?.runId === runId &&
+              checkpoint.rootUserMessageId === queued.id &&
+              recorded?.role === "user"
+          );
+          // A follow-up may have been promoted before its checkpoint was written.
+          const abandonedPromotion = Boolean(
+            queued?.fromFollowUpQueue &&
+              saved?.queuedUserMessagesByChatId[chatId]?.id === queued.id &&
+              !checkpoint &&
+              runId === null &&
+              (!recorded || recorded.role === "user")
+          );
           if (
             !chat ||
             chat.archived ||
@@ -3660,16 +4136,25 @@ export const createAgentStore = () => {
             chat.status === "awaiting_user" ||
             !get().remoteBusyChatIds[chatId] ||
             get().getAbortController(chatId) ||
-            get().queuedUserMessagesByChatId[chatId] ||
-            get().queuedUserMessageInFlightByChatId[chatId] ||
+            state.followUpDrainChatIds[chatId] ||
+            ((queued || state.queuedUserMessageInFlightByChatId[chatId]) &&
+              !committedStartup &&
+              !abandonedPromotion) ||
             !supportsAgentRunRecovery() ||
             !canOwnRun(get(), chatId)
           )
             return false;
           set((state) => {
             delete state.remoteBusyChatIds[chatId];
+            if (committedStartup || abandonedPromotion) {
+              if (abandonedPromotion && !recorded && queued)
+                restorePromotedFollowUp(state, queued);
+              else delete state.queuedUserMessagesByChatId[chatId];
+              delete state.queuedUserMessageInFlightByChatId[chatId];
+            }
+            pauseFollowUpQueue(state, chatId);
           });
-          if (chat.status === "running") {
+          if (chat.status === "running" || (abandonedPromotion && recorded)) {
             if (chat.runCheckpoint?.suspension === "token-limit") {
               get().setChatStatus(chatId, "paused");
             } else {
@@ -3739,6 +4224,7 @@ export const createAgentStore = () => {
             return false;
           set((state) => {
             delete state.remoteBusyChatIds[chatId];
+            pauseFollowUpQueue(state, chatId);
           });
           if (await get().flushRunPersistence()) return true;
           if (_getChat(chatId)?.runId === runId) {
@@ -3778,6 +4264,7 @@ export const createAgentStore = () => {
             );
             if (!currentChat) return;
             delete state.pendingAskByChatId[id];
+            pauseFollowUpQueue(state, id);
             state.messagesByChatId[id] ??= [];
             state.messagesByChatId[id].push(toolMessage);
             currentChat.status = DEFAULT_CHAT_STATUS;
@@ -3870,6 +4357,7 @@ export const createAgentStore = () => {
           get().syncState();
           const id = chatId ?? get().currentChatId;
           if (!id || get().remoteBusyChatIds[id]) return;
+          set((state) => pauseFollowUpQueue(state, id));
           get().getAbortController(id)?.abort();
           get().setAbortController(id, null);
           if (get().isChatRunning(id)) {
@@ -3922,9 +4410,13 @@ export const createAgentStore = () => {
               draft.messagesByChatId = empty.messagesByChatId;
               draft.pendingAskByChatId = empty.pendingAskByChatId;
               draft.draftsByChatId = empty.draftsByChatId;
+              draft.landingDraft = { text: "" };
+              draft.landingContext = undefined;
               draft.currentChatId = empty.currentChatId;
               draft.abortControllersByChatId = {};
               draft.queuedUserMessagesByChatId = {};
+              draft.followUpQueuesByChatId = {};
+              draft.followUpDrainChatIds = {};
               draft.queuedUserMessageInFlightByChatId = {};
               draft.remoteBusyChatIds = {};
               draft.expressionDraftTargetsByChatId = {};
@@ -4025,12 +4517,19 @@ export const createAgentStore = () => {
             draft.messagesByChatId = persistedState.messagesByChatId;
             draft.pendingAskByChatId = persistedState.pendingAskByChatId;
             draft.draftsByChatId = persistedState.draftsByChatId;
+            draft.landingDraft = { text: "" };
+            draft.landingContext = undefined;
             draft.currentChatId = persistedState.currentChatId;
             draft.abortControllersByChatId = {};
             draft.queuedUserMessagesByChatId =
               persistedState.queuedUserMessagesByChatId;
+            draft.followUpQueuesByChatId =
+              persistedState.followUpQueuesByChatId ?? {};
+            draft.followUpDrainChatIds = {};
             draft.queuedUserMessageInFlightByChatId = {};
-            draft.remoteBusyChatIds = {};
+            draft.remoteBusyChatIds = supportsAgentRunRecovery()
+              ? getPersistedFollowUpOwners(persistedState)
+              : {};
             draft.expressionDraftTargetsByChatId = {};
             draft.sqlFixSourcesByChatId = {};
             draft.sqlFixDraftsById = {};
@@ -4152,8 +4651,12 @@ export const createAgentStore = () => {
             draft.draftsByChatId = state.draftsByChatId;
             draft.currentChatId = state.currentChatId;
             draft.queuedUserMessagesByChatId = state.queuedUserMessagesByChatId;
+            draft.followUpQueuesByChatId = state.followUpQueuesByChatId ?? {};
+            draft.followUpDrainChatIds = {};
             draft.queuedUserMessageInFlightByChatId = {};
-            draft.remoteBusyChatIds = {};
+            draft.remoteBusyChatIds = supportsAgentRunRecovery()
+              ? getPersistedFollowUpOwners(state)
+              : {};
           });
         },
       };
@@ -4229,6 +4732,8 @@ export const createAgentStore = () => {
       state.abortControllersByChatId[chatId] ||
       state.pendingAskByChatId[chatId] ||
       state.queuedUserMessagesByChatId[chatId] ||
+      state.followUpQueuesByChatId[chatId]?.messages.length ||
+      state.followUpDrainChatIds[chatId] ||
       state.queuedUserMessageInFlightByChatId[chatId] ||
       state.remoteBusyChatIds[chatId]
     )
@@ -4407,9 +4912,14 @@ export const createAgentStore = () => {
               else low = middle + 1;
             }
           }
+          const retained = removeAgentHistoryChats(
+            snapshot,
+            new Set(ids.slice(0, count))
+          );
           const candidate = {
             ...state,
-            ...removeAgentHistoryChats(snapshot, new Set(ids.slice(0, count))),
+            ...retained,
+            followUpQueuesByChatId: retained.followUpQueuesByChatId ?? {},
           };
           const saved = synchronizeState(candidate, true, true);
           if (saved) pendingStatesByScope.set(key, store.getState());
@@ -4577,6 +5087,7 @@ export const createAgentStore = () => {
     ) =>
       Boolean(
         state.abortControllersByChatId[id] ||
+          state.followUpDrainChatIds[id] ||
           state.queuedUserMessagesByChatId[id] ||
           state.queuedUserMessageInFlightByChatId[id] ||
           (!ownsReclamationLease && hasAgentRunLease(key, id))
@@ -4605,6 +5116,10 @@ export const createAgentStore = () => {
           samePersistedValue(
             state.queuedUserMessagesByChatId[id],
             consent.queuedUserMessagesByChatId[id]
+          ) &&
+          samePersistedValue(
+            state.followUpQueuesByChatId[id],
+            consent.followUpQueuesByChatId?.[id]
           )
       );
     };
@@ -4671,6 +5186,7 @@ export const createAgentStore = () => {
                   chat.id !== chatId &&
                   lockedIds.has(chat.id) &&
                   !isExecuting(current, chat.id, true) &&
+                  !current.followUpQueuesByChatId[chat.id]?.messages.length &&
                   unchanged(current, chat.id)
               )
               .map((chat) => chat.id)
@@ -4717,16 +5233,19 @@ export const createAgentStore = () => {
               queuedUserMessagesByChatId: {
                 ...retained.queuedUserMessagesByChatId,
               },
+              followUpQueuesByChatId: { ...retained.followUpQueuesByChatId },
               activeChatIds: retained.activeChatIds?.filter(
                 (id) => id !== chatId
               ),
             };
             delete retained.pendingAskByChatId[chatId];
             delete retained.queuedUserMessagesByChatId[chatId];
+            delete retained.followUpQueuesByChatId?.[chatId];
           }
           const candidate = {
             ...current,
             ...retained,
+            followUpQueuesByChatId: retained.followUpQueuesByChatId ?? {},
             remoteBusyChatIds: Object.fromEntries(
               Object.entries(current.remoteBusyChatIds).filter(
                 ([id]) => !lockedIds.has(id)
@@ -4936,6 +5455,7 @@ export const createAgentStore = () => {
             state.remoteBusyChatIds[chat.id] ||
             !(
               state.abortControllersByChatId[chat.id] ||
+              state.followUpDrainChatIds[chat.id] ||
               chat.status === "running" ||
               chat.status === "awaiting_user" ||
               state.pendingAskByChatId[chat.id] ||
@@ -4943,7 +5463,11 @@ export const createAgentStore = () => {
             )
           )
             return false;
-          if (state.abortControllersByChatId[chat.id]) return true;
+          if (
+            state.abortControllersByChatId[chat.id] ||
+            state.followUpDrainChatIds[chat.id]
+          )
+            return true;
           const previous = baseChats.get(chat.id);
           if (!previous) return true;
           const previousExecution = chatExecution(base, previous);
@@ -5067,6 +5591,13 @@ export const createAgentStore = () => {
           )
         )
           draft.queuedUserMessagesByChatId = merged.queuedUserMessagesByChatId;
+        if (
+          !samePersistedValue(
+            draft.followUpQueuesByChatId,
+            merged.followUpQueuesByChatId ?? {}
+          )
+        )
+          draft.followUpQueuesByChatId = merged.followUpQueuesByChatId ?? {};
         if (!samePersistedValue(draft.draftsByChatId, draftsByChatId))
           draft.draftsByChatId = draftsByChatId;
         if (!samePersistedValue(draft.remoteBusyChatIds, remoteBusyChatIds))
@@ -5075,9 +5606,14 @@ export const createAgentStore = () => {
       });
       if (!persist && supportsAgentRunRecovery()) {
         snapshotsByScope.set(key, remote);
+        // A scheduled write must use the rebased state with the new baseline.
+        if (pendingStatesByScope.has(key))
+          pendingStatesByScope.set(key, store.getState());
       } else
         snapshotsByScope.set(key, {
           ...persistedSnapshot(store.getState()),
+          followUpQueuesByChatId: (persist ? merged : remote)
+            .followUpQueuesByChatId,
           draftsByChatId: persist
             ? store.getState().draftsByChatId
             : base.draftsByChatId,
@@ -5108,6 +5644,8 @@ export const createAgentStore = () => {
         previousState.abortControllersByChatId ||
       state.queuedUserMessagesByChatId !==
         previousState.queuedUserMessagesByChatId ||
+      state.followUpQueuesByChatId !== previousState.followUpQueuesByChatId ||
+      state.followUpDrainChatIds !== previousState.followUpDrainChatIds ||
       state.queuedUserMessageInFlightByChatId !==
         previousState.queuedUserMessageInFlightByChatId ||
       state.remoteBusyChatIds !== previousState.remoteBusyChatIds ||
@@ -5127,7 +5665,9 @@ export const createAgentStore = () => {
       state.abortControllersByChatId !==
         previousState.abortControllersByChatId ||
       state.queuedUserMessagesByChatId !==
-        previousState.queuedUserMessagesByChatId;
+        previousState.queuedUserMessagesByChatId ||
+      state.followUpQueuesByChatId !== previousState.followUpQueuesByChatId ||
+      state.followUpDrainChatIds !== previousState.followUpDrainChatIds;
     const draftChanged = state.draftsByChatId !== previousState.draftsByChatId;
     if (!nonDraftStateChanged && !draftChanged) return;
     saveDraftShadow(state);
@@ -5190,7 +5730,21 @@ if (typeof window !== "undefined") {
       if (state.remoteBusyChatIds[chat.id]) continue;
       const controller = state.abortControllersByChatId[chat.id];
       const queued = state.queuedUserMessagesByChatId[chat.id];
+      if (state.followUpQueuesByChatId[chat.id])
+        state.setFollowUpQueuePaused(chat.id, true);
+      if (state.followUpDrainChatIds[chat.id])
+        state.setFollowUpDrainActive(chat.id, false);
       controller?.abort();
+      if (
+        queued?.fromFollowUpQueue &&
+        !state.messagesByChatId[chat.id]?.some(({ id }) => id === queued.id)
+      ) {
+        useAgentStore.setState((draft) => {
+          restorePromotedFollowUp(draft, queued);
+          delete draft.queuedUserMessageInFlightByChatId[chat.id];
+        });
+        continue;
+      }
       // Keep the question for an explicit retry, never replay an approval on exit.
       if (queued) state.commitQueuedUserMessage(chat.id);
       if (

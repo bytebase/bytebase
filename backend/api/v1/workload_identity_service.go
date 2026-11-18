@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -389,10 +390,11 @@ func validateWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) erro
 // convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
 func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.WorkloadIdentity {
 	result := &v1pb.WorkloadIdentity{
-		Name:  common.FormatWorkloadIdentityEmail(wi.Email),
-		State: convertDeletedToState(wi.MemberDeleted),
-		Email: wi.Email,
-		Title: wi.Name,
+		Name:       common.FormatWorkloadIdentityEmail(wi.Email),
+		State:      convertDeletedToState(wi.MemberDeleted),
+		Email:      wi.Email,
+		Title:      wi.Name,
+		CreateTime: timestamppb.New(wi.CreatedAt),
 	}
 
 	// Convert workload identity config

@@ -322,3 +322,33 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		require.ErrorIs(t, err, omnidriver.ErrNotFound)
 	})
 }
+
+// TestQueryConnDiscardsTheSessionAfterACanceledQuery pins the session lifetime
+// on the path that ends a statement early: the client closes the connection
+// when a statement's context ends, so the stream's next statement must not be
+// handed that session.
+func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.SharedClickHouseContainer(t)
+	opened, err := newDriver().Open(ctx, storepb.Engine_CLICKHOUSE, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     container.GetHost(),
+			Port:     container.GetPort(),
+			Username: container.GetUsername(),
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = opened.Close(ctx) })
+	driver, ok := opened.(*Driver)
+	require.True(t, ok)
+
+	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
+	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	require.NoError(t, err)
+	require.NotNil(t, driver.session, "a statement of its own leaves the session in place")
+
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+}

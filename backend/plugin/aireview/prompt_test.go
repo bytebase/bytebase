@@ -193,3 +193,12 @@ func TestBuildMessagesSaysWhenThereAreNoTools(t *testing.T) {
 	withoutTools := buildMessages(request, "1\tSELECT 1;", "NONCE", false)[1].GetContent()
 	require.Contains(t, withoutTools, "</sql-NONCE>\nNo tools are available in this review. Judge from the target facts and the statements, and list in notes every fact you needed and could not get.\nReview the statements above.")
 }
+
+func TestPromptsAskForCode(t *testing.T) {
+	t.Parallel()
+
+	const ask = "are shown as Markdown, the way GitHub shows a comment. In them, write every identifier, every piece of SQL down to a single keyword, every error the database raises, and every value taken from a statement or a definition as code,"
+	require.Contains(t, basePrompt, "The title, the evidence, and the fix "+ask)
+	require.Contains(t, summaryPrompt, "The title, the evidence, the facts, and the fix "+ask)
+	require.NotContains(t, mergePrompt, "Markdown", "the merge writes no comment text")
+}

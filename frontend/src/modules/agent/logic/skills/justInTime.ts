@@ -1,3 +1,5 @@
+import { queryAccessRecoveryInstruction } from "./query";
+
 export const skill = {
   name: "just-in-time",
   description:
@@ -5,6 +7,8 @@ export const skill = {
   content: `# Just-in-Time Access Requests
 
 ## Eligibility and scope
+
+${queryAccessRecoveryInstruction}
 
 Honor an explicitly requested JIT Access Grant or confirmed just-in-time method selection without asking the method again. JIT does not require denied exemption configuration and remains valid when exemptions are also eligible. For a general unmasked-data request with no selected method, load get_skill(name="data-masking", section="exemption") and use its ask_unmask_method flow before collecting method-specific details. Known missing query access requires JIT because exemptions do not grant it; only an explicit inability to query or structured select/info permission denial establishes that evidence, not masked values or a generic query error.
 

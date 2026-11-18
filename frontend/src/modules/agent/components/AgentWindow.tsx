@@ -224,6 +224,8 @@ export function AgentWindow() {
   const orderedChats = useAgentStore(selectOrderedChats);
   const currentChat = useAgentStore(selectCurrentChat);
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const landingDraft = useAgentStore((s) => s.landingDraft);
+  const landingContext = useAgentStore((s) => s.landingContext);
   const chatProtectionReady = useAgentStore(
     (s) => s.chatProtectionReady !== false
   );
@@ -872,6 +874,40 @@ export function AgentWindow() {
     [orderedChats]
   );
 
+  useEffect(() => {
+    if (
+      !visible ||
+      minimized ||
+      showArchivedOnly ||
+      currentChat ||
+      activeChats.length > 0 ||
+      storedWorkspaceName !== workspace?.name ||
+      storedUserEmail !== userEmail
+    )
+      return;
+    if (
+      !contextualStart &&
+      !landingDraft.text.trim() &&
+      getDraftResourceMentions(landingDraft).length === 0
+    )
+      resetContextualStart();
+    setCompactPanel(null);
+    setMobileScreen("conversation");
+  }, [
+    activeChats.length,
+    contextualStart,
+    currentChat,
+    landingDraft,
+    minimized,
+    resetContextualStart,
+    showArchivedOnly,
+    storedUserEmail,
+    storedWorkspaceName,
+    userEmail,
+    visible,
+    workspace?.name,
+  ]);
+
   const isArchiveAllDisabled =
     hasRunningChat || showArchivedOnly || activeChats.length === 0;
   const isUnarchiveAllDisabled =
@@ -947,6 +983,10 @@ export function AgentWindow() {
                           `#${contextualStart.name.split("/").at(-1)}`
                         : `#${contextualStart.name.split("/").at(-1)}`))
     : "";
+
+  const conversationContext = currentChat
+    ? currentChat.context
+    : (landingContext ?? getCurrentChatContext() ?? workspace?.name);
 
   const selectFirstDisplayedChat = useCallback(() => {
     const store = useAgentStore.getState();
@@ -1324,9 +1364,21 @@ export function AgentWindow() {
   const selectEmptyChatSuggestion = useCallback(
     (starterId: LandingStarterId) => {
       const store = useAgentStore.getState();
-      const chat = store.getChat(store.currentChatId);
+      let chat = store.getChat(store.currentChatId);
+      if (!chat) {
+        if (
+          showArchivedOnly ||
+          store.landingDraft.text.trim() ||
+          getDraftResourceMentions(store.landingDraft).length > 0
+        )
+          return;
+        chat = store.ensureCurrentChat(
+          getCurrentPageSnapshot(),
+          store.landingContext ?? getCurrentChatContext() ?? workspace?.name,
+          workspace?.name
+        );
+      }
       if (
-        !chat ||
         chat.status !== "idle" ||
         store.getMessages(chat.id).length ||
         store.getDraft(chat.id).text.trim() ||
@@ -1342,22 +1394,22 @@ export function AgentWindow() {
         starterId,
       });
     },
-    [getCurrentPageSnapshot, t]
+    [getCurrentPageSnapshot, showArchivedOnly, t, workspace?.name]
   );
   const continueResponseAction = useCallback(
-    (chatId: string, prompt: string, references: AgentResourceReference[]) => {
+    (
+      chatId: string,
+      prompt: string,
+      references: AgentResourceReference[],
+      followUpSourceId?: string
+    ) => {
       const store = useAgentStore.getState();
       const chat = store.getChat(chatId);
-      const draft = store.getDraft(chatId);
       if (
         store.currentChatId !== chatId ||
         !chat ||
         chat.status !== "idle" ||
         chat.archived ||
-        draft.text.trim() ||
-        draft.project ||
-        draft.resource ||
-        draft.mentions?.length ||
         store.queuedUserMessagesByChatId[chatId]
       ) {
         return;
@@ -1377,6 +1429,7 @@ export function AgentWindow() {
         text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
         page: getCurrentPageSnapshot(),
         runMode: "default",
+        ...(followUpSourceId !== undefined ? { followUpSourceId } : {}),
         ...(boundReferences.length > 0
           ? { resourceReferences: boundReferences }
           : {}),
@@ -2036,9 +2089,10 @@ export function AgentWindow() {
             <AgentChat
               onOpenAccessGrantDraft={openAccessGrantDraft}
               className="min-h-0 flex-1"
+              context={conversationContext}
               contextLabel={
-                currentChat?.context
-                  ? getContextLabel(currentChat.context)
+                conversationContext
+                  ? getContextLabel(conversationContext)
                   : workspace?.title || t("agent.context-workspace")
               }
               onRetry={retryLastTurn}
@@ -2048,7 +2102,9 @@ export function AgentWindow() {
                   : undefined
               }
               onResend={resendMessage}
-              onSelectSuggestion={selectEmptyChatSuggestion}
+              onSelectSuggestion={
+                showArchivedOnly ? undefined : selectEmptyChatSuggestion
+              }
               onContinueAction={continueResponseAction}
             />
             {currentChat?.archived ? (
@@ -3018,7 +3074,7 @@ function ChatListMenu({
             </Button>
             <Button
               size="sm"
-              variant={archived ? "destructive" : "default"}
+              variant="destructive"
               disabled={disabled}
               onClick={() => {
                 setPendingAction(null);
@@ -3131,6 +3187,7 @@ function ChatRowMenu({
           ) : (
             <AgentDropdownMenuItem
               data-agent-archive-chat
+              className="text-error data-highlighted:bg-error/10"
               onClick={(event) => {
                 event.stopPropagation();
                 skipMenuFinalFocusRef.current = true;
@@ -3167,6 +3224,7 @@ function ChatRowMenu({
             </Button>
             <Button
               size="sm"
+              variant="destructive"
               onClick={() => {
                 setArchiveOpen(false);
                 onArchive();

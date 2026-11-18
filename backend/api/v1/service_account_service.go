@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
@@ -336,9 +337,10 @@ func (s *ServiceAccountService) UndeleteServiceAccount(ctx context.Context, requ
 // Note: service_key is NOT populated by this function; it should only be returned on create/rotate.
 func convertToServiceAccount(sa *store.ServiceAccountMessage) *v1pb.ServiceAccount {
 	return &v1pb.ServiceAccount{
-		Name:  common.FormatServiceAccountEmail(sa.Email),
-		State: convertDeletedToState(sa.MemberDeleted),
-		Email: sa.Email,
-		Title: sa.Name,
+		Name:       common.FormatServiceAccountEmail(sa.Email),
+		State:      convertDeletedToState(sa.MemberDeleted),
+		Email:      sa.Email,
+		Title:      sa.Name,
+		CreateTime: timestamppb.New(sa.CreatedAt),
 	}
 }

@@ -380,6 +380,42 @@ describe("extractDeniedQueryAccessRequest", () => {
 });
 
 describe("resolveDeniedQueryAccessDraft", () => {
+  test.each([
+    ["network failure", JSON.stringify({ error: "Failed to fetch" })],
+    [
+      "syntax error",
+      JSON.stringify({
+        status: 200,
+        response: { results: [{ error: "syntax error" }] },
+      }),
+    ],
+    [
+      "rejected confirmation",
+      JSON.stringify({ error: "The member declined execution" }),
+    ],
+    ["metadata denial", denied([database], ["bb.databases.get"])],
+  ])("does not start access recovery for %s", async (_name, result) => {
+    await expect(
+      resolveDeniedQueryAccessDraft(query, result)
+    ).resolves.toBeUndefined();
+    expect(api.getDatabase).not.toHaveBeenCalled();
+    expect(api.getProject).not.toHaveBeenCalled();
+    expect(setup.getMaskingSetup).not.toHaveBeenCalled();
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  test.each([false, undefined])(
+    "does not offer access when fresh JIT eligibility is %s",
+    async (eligible) => {
+      setup.getMaskingSetup.mockResolvedValue({ justInTime: { eligible } });
+      await expect(
+        resolveDeniedQueryAccessDraft(query, denied())
+      ).resolves.toBeUndefined();
+      expect(setup.getMaskingSetup).toHaveBeenCalledOnce();
+      expect(sessionStorage.length).toBe(0);
+    }
+  );
+
   test("checks every target belongs to one active JIT-enabled project", async () => {
     const otherDatabase = "instances/prod/databases/other";
     await expect(

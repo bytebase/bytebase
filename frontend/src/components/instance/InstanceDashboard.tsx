@@ -105,7 +105,10 @@ import {
 } from "@/types";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
-import { UpdateInstanceRequestSchema } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  UpdateInstanceRequestSchema,
+  Vendor,
+} from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import {
   engineNameV1,
@@ -940,8 +943,11 @@ export function InstanceDashboard({
       sortable: true,
       render: (instance) => (
         <div className="flex items-center gap-x-2 min-w-0">
-          <EngineIcon engine={instance.engine} className="h-5 w-5" />
+          <EngineIcon engine={instance.engine} className="size-5" />
           <EllipsisText text={instance.title} />
+          {instance.vendor === Vendor.NEON && (
+            <Badge>{t("instance.vendor.neon")}</Badge>
+          )}
         </div>
       ),
     },

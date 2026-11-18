@@ -9,11 +9,11 @@ const overview = `# Data Masking Overview
 
 Do not write saved masking policy, even from a workspace or project chat. Never modify masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM. Typed tools prepare NEW unsaved forms; only member clicks open/apply and UI saves. Never query or read real row values or request them; use labeled synthetic values. Never accept, ask for, or reveal a hash salt.
 
-For new rule/unspecified column-masking setup, including "how to mask ...", load get_skill(name="data-masking", section="rule"). If eligible, missing scope/parameters require clarification before done. Conceptual/effect-only questions can remain explanatory. Use section="exemption" for exemptions or section="semantic-type" for custom types. Explicit classification/catalog help is guide-only.
+For global masking-rule setup, including "how to mask ...", load get_skill(name="data-masking", section="rule"). If eligible, missing scope/parameters require clarification before done. Conceptual/effect-only questions can remain explanatory. Use section="exemption" for exemptions or section="semantic-type" for custom types. Classification/catalog edits are guide-only; classification-based rules use section="rule".
 
 ## Goal and evidence
 
-A semantic type selects an algorithm; a global rule or a direct catalog assignment assigns it to columns. Classifications alone do not mask; exemptions allow unmasked visibility, not query access. Ask only missing columns/pattern, target audience, desired visibility, and scope, one actionable step at a time.
+A semantic type selects an algorithm; a global rule or a direct catalog assignment assigns it to columns. Classifications alone do not mask; exemptions allow unmasked visibility, not query access. Ask only missing resource predicates, target audience, desired visibility, and scope, one actionable step at a time.
 
 Reuse confirmed chat answers, never examples/unselected options/suggestions or another chat. Clarify conflicts; answers are not evidence/approval. Audience is not scope: "all users" is not all databases, nor project chat consent to project scope. Never silently change project or infer workspace scope. Use unselected runtime choices; wait for Reply, never auto-submit/write. Say "I can prepare a draft", not "I will apply it".
 

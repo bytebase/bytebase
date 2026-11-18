@@ -37,11 +37,15 @@ import {
   isAgentAIConfigurationError,
 } from "../logic/aiConfiguration";
 import {
+  type AgentMaskingPageResource,
   getCurrentAgentPageResource,
   getCurrentChatContext,
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
-import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import {
+  extractDeniedQueryAccessRequest,
+  resolveDeniedQueryAccessDraft,
+} from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
@@ -64,6 +68,12 @@ import {
   getHistoricalMaskingDatabase,
 } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
+import {
+  getCurrentTurnQueryCalls,
+  getQueryMaskingSetupTarget,
+  getQueryResponseActions,
+} from "../logic/queryFollowUps";
+import { resolveQueryMaskingEligibility } from "../logic/queryMaskingEligibility";
 import {
   canAddResourceMention,
   formatResourceMention,
@@ -88,6 +98,8 @@ import {
 import { getAgentRunFeedback } from "../logic/runFeedback";
 import {
   type AgentRunLease,
+  isAgentRunLeasePending,
+  subscribeAgentRunLeases,
   supportsAgentRunRecovery,
   withAgentRunLease,
 } from "../logic/runOwnership";
@@ -96,6 +108,7 @@ import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
 } from "../logic/skills";
+import { queryAccessRecoveryInstruction } from "../logic/skills/query";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -119,6 +132,7 @@ import type {
   AgentHandoff,
   AgentMessage,
   AgentModelCallUsage,
+  AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentRunBindings,
   AgentRunCheckpoint,
@@ -138,11 +152,22 @@ import {
 } from "../store/agent";
 import { AgentChatbox, AgentChatboxFooter } from "./AgentChatbox";
 import { AgentErrorDetails, AgentErrorDetailsPanel } from "./AgentErrorDetails";
+import { AgentFollowUpQueueList } from "./AgentFollowUpQueueList";
 import { AgentResourcePicker } from "./AgentResourcePicker";
 import { AgentTokenBudgetStatus } from "./AgentTokenBudgetStatus";
 
 // Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
+const drainingFollowUps = new Set<string>();
+
+interface ChatRunResult {
+  accepted: boolean;
+  succeeded: boolean;
+}
+
+interface FrozenPageContext {
+  maskingPage?: AgentMaskingPageResource;
+}
 
 // Pending usage belongs to the live controller, even when the composer unmounts.
 const pendingProviderAttempts = new WeakMap<AbortController, string>();
@@ -212,6 +237,12 @@ const formatPermissionTime = (expiresAt: number): string => {
   const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 };
+
+const hasExpiredApiPermission = (expiresAt: number | undefined): boolean =>
+  typeof expiresAt === "number" &&
+  Number.isFinite(expiresAt) &&
+  expiresAt > 0 &&
+  expiresAt <= Date.now();
 
 const isSuccessfulDatabaseSchemaRead = (
   args: Record<string, unknown>,
@@ -329,48 +360,6 @@ const hasCurrentTurnDatabaseSchemaRead = (
     }
   }
   return schemaRead;
-};
-
-const getCurrentTurnQueryCalls = (
-  messages: AgentMessage[]
-): { args: Record<string, unknown>; result?: string }[] => {
-  const lastUserIndex = messages.findLastIndex(
-    (message) => message.role === "user"
-  );
-  if (lastUserIndex < 0) return [];
-
-  const queryCalls: { args: Record<string, unknown>; result?: string }[] = [];
-  const callsById = new Map<string, (typeof queryCalls)[number]>();
-  for (const message of messages.slice(lastUserIndex + 1)) {
-    if (message.role === "assistant") {
-      for (const call of message.toolCalls ?? []) {
-        if (call.name !== "call_api") continue;
-        let args: Record<string, unknown>;
-        try {
-          const parsed: unknown = JSON.parse(call.arguments);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            continue;
-          }
-          args = parsed as Record<string, unknown>;
-        } catch {
-          continue;
-        }
-        if (
-          args.operationId !== "SQLService/Query" &&
-          args.operationId !== "bytebase.v1.SQLService.Query"
-        ) {
-          continue;
-        }
-        const queryCall: (typeof queryCalls)[number] = { args };
-        queryCalls.push(queryCall);
-        callsById.set(call.id, queryCall);
-      }
-    } else if (message.role === "tool" && message.toolCallId) {
-      const queryCall = callsById.get(message.toolCallId);
-      if (queryCall) queryCall.result = message.content;
-    }
-  }
-  return queryCalls;
 };
 
 // ---------------------------------------------------------------------------
@@ -539,19 +528,40 @@ export function AgentInput({
     selectCurrentChatRequiresAIConfiguration
   );
   const currentChatId = useAgentStore((s) => s.currentChatId);
+  const landingContext = useAgentStore((s) => s.landingContext);
   const workspaceName = useAgentStore((s) => s.workspaceName);
   const userEmail = useAgentStore((s) => s.userEmail);
+  const localLeasePending = useSyncExternalStore(
+    subscribeAgentRunLeases,
+    () => {
+      const key =
+        workspaceName && userEmail
+          ? getAgentStateKey(workspaceName, userEmail)
+          : null;
+      return Boolean(
+        key && currentChatId && isAgentRunLeasePending(key, currentChatId)
+      );
+    },
+    () => false
+  );
   const storagePressure = useAgentStore((s) => s.storagePressure);
   const sendWithEnter = useAgentStore((s) => s.preferences.sendWithEnter);
   const currentDraft = useAgentStore((s) =>
-    currentChatId ? s.draftsByChatId[currentChatId] : undefined
+    currentChatId ? s.draftsByChatId[currentChatId] : s.landingDraft
   );
   const queuedUserMessagesByChatId = useAgentStore(
     (s) => s.queuedUserMessagesByChatId
   );
+  const followUpQueue = useAgentStore((state) =>
+    state.currentChatId
+      ? state.followUpQueuesByChatId[state.currentChatId]
+      : undefined
+  );
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   const currentUserName = useAppStore((s) => s.currentUser?.name ?? "");
-  const context = currentChat?.context;
+  const context = currentChat
+    ? currentChat.context
+    : (landingContext ?? getCurrentChatContext() ?? workspaceName ?? undefined);
   const projectContext = context?.startsWith(projectNamePrefix)
     ? context
     : undefined;
@@ -769,6 +779,11 @@ export function AgentInput({
           userName: currentUserName,
         })
       : undefined;
+  const canRestorePendingAsk = Boolean(
+    apiPermissionPreview ||
+      (followUpQueue?.messages.length &&
+        (!apiPermission || hasExpiredApiPermission(apiPermission.expiresAt)))
+  );
   useEffect(() => {
     if (
       !executionAvailable ||
@@ -776,7 +791,7 @@ export function AgentInput({
       !currentChatId ||
       !currentChat ||
       currentController ||
-      (currentChat.status === "awaiting_user" && !apiPermissionPreview)
+      (currentChat.status === "awaiting_user" && !canRestorePendingAsk)
     )
       return;
     const chatId = currentChatId;
@@ -807,13 +822,15 @@ export function AgentInput({
           } else if (chat.status === "awaiting_user") {
             const ask = store.getPendingAsk(chatId);
             if (
-              ask?.apiPermission &&
-              getPendingApiCallPreview({
-                actionId: ask.apiPermission.actionId,
-                chatId,
-                toolCallId: ask.toolCallId,
-                userName: currentUserName,
-              })
+              ask &&
+              (!ask.apiPermission ||
+                hasExpiredApiPermission(ask.apiPermission.expiresAt) ||
+                getPendingApiCallPreview({
+                  actionId: ask.apiPermission.actionId,
+                  chatId,
+                  toolCallId: ask.toolCallId,
+                  userName: currentUserName,
+                }))
             ) {
               if (runId) await store.recoverPendingAsk(chatId, runId);
             }
@@ -845,24 +862,45 @@ export function AgentInput({
     };
   }, [
     apiPermissionPreview?.expiresAt,
+    canRestorePendingAsk,
     currentChat?.runId,
     currentChat?.status,
     currentChatId,
     currentController,
     currentUserName,
     executionAvailable,
+    followUpQueue?.messages.length,
     remoteBusy,
     userEmail,
     workspaceName,
   ]);
   useEffect(() => {
-    if (!apiPermissionPreview) return;
-    const timer = window.setInterval(
+    if (apiPermissionPreview) {
+      const timer = window.setInterval(
+        () => setPermissionTick((tick) => tick + 1),
+        1000
+      );
+      return () => window.clearInterval(timer);
+    }
+    const expiresAt = apiPermission?.expiresAt;
+    if (
+      !remoteBusy ||
+      !followUpQueue?.messages.length ||
+      !expiresAt ||
+      hasExpiredApiPermission(expiresAt)
+    )
+      return;
+    const timer = window.setTimeout(
       () => setPermissionTick((tick) => tick + 1),
-      1000
+      Math.min(2_147_483_647, Math.max(0, expiresAt - Date.now() + 1))
     );
-    return () => window.clearInterval(timer);
-  }, [apiPermissionPreview?.expiresAt]);
+    return () => window.clearTimeout(timer);
+  }, [
+    apiPermissionPreview?.expiresAt,
+    apiPermission?.expiresAt,
+    followUpQueue?.messages.length,
+    remoteBusy,
+  ]);
   const isAwaitingChoose =
     currentPendingAsk?.kind === "choose" && chooseOptions.length > 0;
   const selectedChoice =
@@ -908,14 +946,17 @@ export function AgentInput({
         return;
       }
       const store = useAgentStore.getState();
-      const chatId =
-        store.currentChatId ??
-        store.ensureCurrentChat(
-          getCurrentPageSnapshot(),
-          getCurrentChatContext(),
-          workspace?.name
-        ).id;
-      store.setDraft(chatId, update(store.getDraft(chatId)));
+      if (store.currentChatId) {
+        store.setDraft(
+          store.currentChatId,
+          update(store.getDraft(store.currentChatId))
+        );
+      } else {
+        store.setLandingDraft(
+          update(store.landingDraft),
+          store.landingContext ?? getCurrentChatContext() ?? workspace?.name
+        );
+      }
     },
     [
       currentChatId,
@@ -951,14 +992,25 @@ export function AgentInput({
     },
     [input, setInput]
   );
-  const sendLabel = currentPendingAsk ? t("agent.reply") : t("agent.send");
+  const isQueueSubmission =
+    !currentPendingAsk &&
+    (isCurrentChatRunning ||
+      Boolean(currentController) ||
+      Boolean(followUpQueue?.messages.length));
+  const sendLabel = currentPendingAsk
+    ? t("agent.reply")
+    : isQueueSubmission
+      ? t("agent.follow-up-queue.enqueue")
+      : t("agent.send");
   const inputPlaceholder = isCustomChoice
     ? (selectedChoice.placeholder ?? t("agent.custom-input-placeholder"))
     : currentPendingAsk?.kind === "input"
       ? currentPendingAsk.prompt
       : currentPendingAsk?.kind === "choose"
         ? currentPendingAsk.prompt
-        : t("agent.input-placeholder");
+        : isCurrentChatRunning && !remoteBusy
+          ? t("agent.follow-up-queue.input-placeholder")
+          : t("agent.input-placeholder");
   const confirmLabel =
     currentPendingAsk?.confirmLabel?.trim() || t("agent.confirm");
   const cancelLabel =
@@ -976,7 +1028,9 @@ export function AgentInput({
     currentChat?.archived ||
     currentChat?.status === "paused" ||
     currentChat?.runCheckpoint?.suspension === "token-limit" ||
-    isCurrentChatRunning ||
+    remoteBusy ||
+    (isCurrentChatRunning && Boolean(currentPendingAsk)) ||
+    (localLeasePending && Boolean(currentPendingAsk)) ||
     isAwaitingConfirm ||
     (isAwaitingChoose && !isCustomChoice) ||
     isAIConfigurationBlocked ||
@@ -997,6 +1051,12 @@ export function AgentInput({
   const selectContext = useCallback(
     (resource: string) => {
       const store = useAgentStore.getState();
+      if (!store.currentChatId) {
+        store.setLandingDraft(store.landingDraft, resource);
+        setResourcePickerOpen(false);
+        mentionRangeRef.current = null;
+        return true;
+      }
       const selected = store.selectOrCreateChatForContext(
         resource,
         getCurrentPageSnapshot(),
@@ -1024,16 +1084,11 @@ export function AgentInput({
       ) {
         return;
       }
-      const chatId =
-        store.currentChatId ??
-        store.ensureCurrentChat(
-          getCurrentPageSnapshot(),
-          getCurrentChatContext(),
-          workspace?.name
-        ).id;
       const draft = currentPendingAsk
         ? (composerDraft ?? { text: "" })
-        : store.getDraft(chatId);
+        : store.currentChatId
+          ? store.getDraft(store.currentChatId)
+          : store.landingDraft;
       const mentions = getDraftResourceMentions(draft);
       if (!canAddResourceMention(mentions, resource)) return;
       const range = mentionRangeRef.current;
@@ -1059,7 +1114,6 @@ export function AgentInput({
       isCustomChoice,
       selectedChoice,
       updateComposerDraft,
-      workspace?.name,
     ]
   );
 
@@ -1347,7 +1401,8 @@ export function AgentInput({
       runId: string,
       runMode: AgentRunMode,
       skipReferencePreflight = false,
-      resumeCheckpoint?: AgentRunCheckpoint
+      resumeCheckpoint?: AgentRunCheckpoint,
+      frozenPageContext?: FrozenPageContext
     ) => {
       const store = useAgentStore.getState();
       if (!store.getChat(chatId)) return;
@@ -1415,7 +1470,9 @@ export function AgentInput({
       const referencedPlan = planReference?.name;
       const currentPageResource = capability
         ? undefined
-        : getCurrentAgentPageResource();
+        : frozenPageContext
+          ? frozenPageContext.maskingPage
+          : getCurrentAgentPageResource();
       const maskingPage = bindings
         ? bindings.maskingPage
         : isAgentMaskingPageResource(currentPageResource)
@@ -1428,6 +1485,7 @@ export function AgentInput({
           : resolveInstanceNameFromPagePath(page.path);
       const controller = new AbortController();
       let admitted = false;
+      let completedSuccessfully = false;
       const recordUsage = (usage: AgentModelCallUsage) => {
         if (isCurrentChatScope(store, chatId)) {
           store.recordChatModelCallUsage(chatId, runId, usage);
@@ -1510,9 +1568,26 @@ export function AgentInput({
         }),
         systemGuidance: capability
           ? ""
-          : getMaskingSkillGuidance([...maskingSections]),
+          : [
+              getMaskingSkillGuidance([...maskingSections]),
+              getCurrentTurnQueryCalls(
+                useAgentStore.getState().getMessages(chatId)
+              ).some(
+                ({ args, result }) =>
+                  result !== undefined &&
+                  extractDeniedQueryAccessRequest(args, result)
+              )
+                ? queryAccessRecoveryInstruction
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
       });
       const tools = resolveRequestContext().tools;
+      let pageToolPath =
+        resumeCheckpoint?.pageToolPath ??
+        bindings?.pageToolPath ??
+        (frozenPageContext ? page.path : undefined);
       const executor = createToolExecutor(router, {
         chatId,
         userName: useAppStore.getState().currentUser?.name,
@@ -1538,8 +1613,12 @@ export function AgentInput({
         },
         canUseCurrentPage: () =>
           isCurrentChatScope(store, chatId) &&
-          useAgentStore.getState().currentChatId === chatId,
+          useAgentStore.getState().currentChatId === chatId &&
+          (pageToolPath === undefined ||
+            getCurrentPageSnapshot().path === pageToolPath),
         onNavigate: () => {
+          if (pageToolPath !== undefined)
+            pageToolPath = getCurrentPageSnapshot().path;
           useAgentStore
             .getState()
             .updateChatPage(chatId, getCurrentPageSnapshot());
@@ -2056,6 +2135,7 @@ export function AgentInput({
           if (!previous || !throughMessageId) return false;
           return current.saveChatRunCheckpoint(chatId, {
             ...previous,
+            ...(pageToolPath !== undefined ? { pageToolPath } : {}),
             ...phase,
             suspension: "interrupted",
             throughMessageId,
@@ -2289,7 +2369,14 @@ export function AgentInput({
                   ? await resolveDeniedQueryAccessDraft(
                       queryCalls[0].args,
                       queryCalls[0].result
-                    ).catch(() => undefined)
+                    )
+                      .then((draft) =>
+                        preparedAccessRequestDraft ||
+                        draft?.kind === "requestRole"
+                          ? draft
+                          : undefined
+                      )
+                      .catch(() => undefined)
                   : undefined
               : undefined,
             preparedAccessRequestDraft
@@ -2352,6 +2439,33 @@ export function AgentInput({
             ];
             handoff = undefined;
           }
+          let queryMaskingEligibility: AgentQueryMaskingEligibility | undefined;
+          if (outcome.success && !capability && !accessRequestDraft) {
+            const turnMessages = useAgentStore.getState().getMessages(chatId);
+            const maskingSetupTarget = getQueryMaskingSetupTarget(
+              actions,
+              turnMessages,
+              references
+            );
+            if (maskingSetupTarget) {
+              queryMaskingEligibility = await resolveQueryMaskingEligibility(
+                store.workspaceName ?? "",
+                maskingSetupTarget
+              );
+              if (
+                !ownsInvocation() ||
+                useAgentStore.getState().getChat(chatId)?.archived
+              )
+                return;
+            }
+            actions = getQueryResponseActions(
+              actions,
+              turnMessages,
+              references,
+              t,
+              queryMaskingEligibility
+            );
+          }
           useAgentStore.getState().addMessage({
             chatId,
             role: "assistant",
@@ -2362,6 +2476,7 @@ export function AgentInput({
               ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
               ...(handoff ? { handoff } : {}),
               ...(actions.length > 0 ? { actions } : {}),
+              ...(queryMaskingEligibility ? { queryMaskingEligibility } : {}),
               ...(accessRequestDraft ? { accessRequestDraft } : {}),
               ...(actions.some((action) => action.kind === "continue") &&
               references.length > 0
@@ -2405,12 +2520,17 @@ export function AgentInput({
               return;
             }
           }
+          const succeeded =
+            outcome.kind === "completed" && outcome.success && ownsInvocation();
           handleOutcome(chatId, outcome);
           if (
             managed &&
             !(await useAgentStore.getState().flushRunPersistence())
-          )
+          ) {
             reportPersistenceFailure();
+          } else {
+            completedSuccessfully = succeeded;
+          }
         }
       } catch (error) {
         if (!managed) throw error;
@@ -2423,7 +2543,10 @@ export function AgentInput({
           useAgentStore.getState().setAbortController(chatId, null);
         }
       }
-      return admitted;
+      return {
+        accepted: admitted,
+        succeeded: completedSuccessfully && !controller.signal.aborted,
+      } satisfies ChatRunResult;
     },
     [buildChatHistory, handleOutcome, t, workspace?.name]
   );
@@ -2461,6 +2584,7 @@ export function AgentInput({
           metadata: { route: page.path, runId },
         });
         store.finishChatRun(chatId);
+        return !parseRecentActivityResult(result).error;
       } catch {
         if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
           store.removeMessagesByRunId(chatId, runId);
@@ -2523,6 +2647,7 @@ export function AgentInput({
           },
         });
         store.finishChatRun(chatId);
+        return !parseAttentionResult(result).error;
       } catch {
         if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
           store.removeMessagesByRunId(chatId, runId);
@@ -2585,6 +2710,7 @@ export function AgentInput({
           },
         });
         store.finishChatRun(chatId);
+        return !parseAttentionResult(result).error;
       } catch {
         if (controller.signal.aborted || runToken !== runTokens.get(chatId)) {
           store.removeMessagesByRunId(chatId, runId);
@@ -2607,7 +2733,7 @@ export function AgentInput({
     [formatProjectAttention, t]
   );
 
-  const startChatRun = useCallback(
+  const executeChatRun = useCallback(
     async (
       chatId: string,
       currentPage: { path: string; title: string },
@@ -2615,9 +2741,11 @@ export function AgentInput({
       starterId?: LandingStarterId,
       skipReferencePreflight = false,
       intent: "new" | "continue" | "startup" = "new",
-      lease?: AgentRunLease
+      lease?: AgentRunLease,
+      frozenPageContext?: FrozenPageContext
     ) => {
       let accepted = false;
+      let succeeded = false;
       await withChatRunSegment(
         chatId,
         async () => {
@@ -2718,9 +2846,14 @@ export function AgentInput({
               const capability = normalizeAgentDiagnosticCapability(
                 chat.capability
               );
-              const pageResource = getCurrentAgentPageResource();
+              const pageResource = frozenPageContext
+                ? frozenPageContext.maskingPage
+                : getCurrentAgentPageResource();
               const bindings: AgentRunBindings = {
                 page: currentPage,
+                ...(frozenPageContext
+                  ? { pageToolPath: currentPage.path }
+                  : {}),
                 context: chat.context,
                 references: capability ? [capability.resource] : references,
                 runMode: effectiveRunMode,
@@ -2762,17 +2895,29 @@ export function AgentInput({
               runMode: effectiveRunMode,
             });
           }
+          // Stop can interrupt startup while its initial checkpoint is being saved.
+          const startedChat = useAgentStore.getState().getChat(chatId);
+          if (
+            !isCurrentChatScope(currentStore, chatId) ||
+            !startedChat ||
+            startedChat.archived ||
+            startedChat.status !== "running" ||
+            startedChat.runId !== runId
+          )
+            return;
           if (
             !resumeCheckpoint &&
             !hasResourceReference &&
             starterId === "workspace-recent"
           ) {
             accepted = true;
-            await runRecentActivityStarter(
-              chatId,
-              currentPage,
-              runId,
-              "projects/-"
+            succeeded = Boolean(
+              await runRecentActivityStarter(
+                chatId,
+                currentPage,
+                runId,
+                "projects/-"
+              )
             );
             return;
           }
@@ -2784,11 +2929,13 @@ export function AgentInput({
             const projectName = store.getChat(chatId)?.context;
             if (projectName?.startsWith(projectNamePrefix)) {
               accepted = true;
-              await runRecentActivityStarter(
-                chatId,
-                currentPage,
-                runId,
-                projectName
+              succeeded = Boolean(
+                await runRecentActivityStarter(
+                  chatId,
+                  currentPage,
+                  runId,
+                  projectName
+                )
               );
               return;
             }
@@ -2799,7 +2946,9 @@ export function AgentInput({
             starterId === "workspace-attention"
           ) {
             accepted = true;
-            await runWorkspaceAttentionStarter(chatId, currentPage, runId);
+            succeeded = Boolean(
+              await runWorkspaceAttentionStarter(chatId, currentPage, runId)
+            );
             return;
           }
           if (
@@ -2810,26 +2959,32 @@ export function AgentInput({
             const projectName = store.getChat(chatId)?.context;
             if (projectName?.startsWith(projectNamePrefix)) {
               accepted = true;
-              await runProjectAttentionStarter(chatId, currentPage, runId);
+              succeeded = Boolean(
+                await runProjectAttentionStarter(chatId, currentPage, runId)
+              );
               return;
             }
           }
-          accepted = Boolean(
-            await runChat(
-              chatId,
-              currentPage,
-              runId,
-              effectiveRunMode,
-              resumeCheckpoint?.referencePreflightPending
-                ? false
-                : skipReferencePreflight || Boolean(resumeCheckpoint),
-              resumeCheckpoint
-            )
+          const result = await runChat(
+            chatId,
+            currentPage,
+            runId,
+            effectiveRunMode,
+            resumeCheckpoint?.referencePreflightPending
+              ? false
+              : skipReferencePreflight || Boolean(resumeCheckpoint),
+            resumeCheckpoint,
+            frozenPageContext
           );
+          accepted = result?.accepted ?? false;
+          succeeded = result?.succeeded ?? false;
         },
         lease
       );
-      return accepted;
+      if (succeeded && supportsAgentRunRecovery()) {
+        succeeded = await useAgentStore.getState().flushRunPersistence();
+      }
+      return { accepted, succeeded } satisfies ChatRunResult;
     },
     [
       canContinueChatRun,
@@ -2839,6 +2994,171 @@ export function AgentInput({
       runWorkspaceAttentionStarter,
       t,
     ]
+  );
+
+  const drainFollowUps = useCallback(
+    async (chatId: string, lease?: AgentRunLease, resume = false) => {
+      const scope = useAgentStore.getState();
+      const key = JSON.stringify([
+        scope.workspaceName,
+        scope.userEmail,
+        chatId,
+      ]);
+      if (drainingFollowUps.has(key)) return;
+      drainingFollowUps.add(key);
+      try {
+        await withChatRunSegment(
+          chatId,
+          async (owner) => {
+            const store = useAgentStore.getState();
+            const chat = store.getChat(chatId);
+            if (
+              !isCurrentChatScope(scope, chatId) ||
+              !chat ||
+              chat.archived ||
+              store.remoteBusyChatIds[chatId] ||
+              store.getAbortController(chatId) ||
+              store.getPendingAsk(chatId) ||
+              chat.status === "running" ||
+              chat.status === "paused" ||
+              chat.runCheckpoint?.suspension === "token-limit"
+            )
+              return;
+            if (resume) {
+              if (
+                chat.runId &&
+                supportsAgentRunRecovery() &&
+                !(await store.endPausedRun(chatId))
+              )
+                return;
+              if (!isCurrentChatScope(scope, chatId)) return;
+              store.clearError(chatId);
+              store.setFollowUpQueuePaused(chatId, false);
+            }
+            if (useAgentStore.getState().followUpQueuesByChatId[chatId]?.paused)
+              return;
+            if (
+              !store.followUpQueuesByChatId[chatId]?.messages.length ||
+              !store.setFollowUpDrainActive(chatId, true)
+            )
+              return;
+            try {
+              if (
+                supportsAgentRunRecovery() &&
+                !(await store.flushRunPersistence())
+              ) {
+                store.setFollowUpQueuePaused(chatId, true);
+                return;
+              }
+              while (isCurrentChatScope(scope, chatId)) {
+                const current = useAgentStore.getState();
+                const queue = current.followUpQueuesByChatId[chatId];
+                const head = queue?.messages[0];
+                if (!head || queue.paused) return;
+                if (
+                  (await blockWhenAIIsNotConfigured(chatId)) ||
+                  !(await current.checkAgentStorageAdmission()) ||
+                  (supportsAgentRunRecovery() &&
+                    !(await current.flushRunPersistence()))
+                ) {
+                  if (isCurrentChatScope(scope, chatId))
+                    current.setFollowUpQueuePaused(chatId, true);
+                  return;
+                }
+                if (!isCurrentChatScope(scope, chatId)) return;
+                // Admission is asynchronous; deletion or Stop may have changed the head.
+                const latest =
+                  useAgentStore.getState().followUpQueuesByChatId[chatId];
+                if (latest?.paused) return;
+                if (latest?.messages[0]?.id !== head.id) continue;
+                const promoted = current.promoteFollowUp(chatId, head.id);
+                if (!promoted) return;
+                if (!current.commitQueuedUserMessage(chatId)) {
+                  current.setFollowUpQueuePaused(chatId, true);
+                  return;
+                }
+                const result = await executeChatRun(
+                  chatId,
+                  promoted.page,
+                  promoted.runMode ?? "default",
+                  promoted.starterId,
+                  false,
+                  "new",
+                  owner,
+                  { maskingPage: promoted.maskingPage }
+                );
+                if (!isCurrentChatScope(scope, chatId)) return;
+                if (!result.succeeded) {
+                  const status = current.getChat(chatId)?.status;
+                  if (status !== "awaiting_user" && status !== "paused")
+                    current.setFollowUpQueuePaused(chatId, true);
+                  return;
+                }
+              }
+            } finally {
+              if (
+                isCurrentChatScope(scope, chatId) &&
+                store.setFollowUpDrainActive(chatId, false) &&
+                supportsAgentRunRecovery()
+              ) {
+                await store.flushRunPersistence();
+              }
+            }
+          },
+          lease
+        );
+      } catch {
+        if (isCurrentChatScope(scope, chatId))
+          scope.setFollowUpQueuePaused(chatId, true);
+      } finally {
+        drainingFollowUps.delete(key);
+      }
+    },
+    [blockWhenAIIsNotConfigured, executeChatRun]
+  );
+
+  const startChatRun = useCallback(
+    async (...args: Parameters<typeof executeChatRun>) => {
+      const [
+        chatId,
+        page,
+        mode,
+        starter,
+        skipPreflight,
+        intent,
+        lease,
+        frozenPage,
+      ] = args;
+      const scope = useAgentStore.getState();
+      let accepted = false;
+      await withChatRunSegment(
+        chatId,
+        async (owner) => {
+          const result = await executeChatRun(
+            chatId,
+            page,
+            mode,
+            starter,
+            skipPreflight,
+            intent,
+            owner,
+            frozenPage
+          );
+          accepted = result.accepted;
+          if (!isCurrentChatScope(scope, chatId)) return;
+          if (result.succeeded) {
+            await drainFollowUps(chatId, owner);
+          } else {
+            const status = scope.getChat(chatId)?.status;
+            if (status !== "awaiting_user" && status !== "paused")
+              scope.setFollowUpQueuePaused(chatId, true);
+          }
+        },
+        lease
+      );
+      return accepted;
+    },
+    [drainFollowUps, executeChatRun]
   );
 
   useEffect(() => {
@@ -2874,6 +3194,9 @@ export function AgentInput({
                 : message.text;
             store.setDraft(message.chatId, {
               text,
+              ...(message.followUpSourceId !== undefined
+                ? { followUpSourceId: message.followUpSourceId }
+                : {}),
               ...(references.length > 0
                 ? message.resourceReferences
                   ? { mentions }
@@ -2939,6 +3262,49 @@ export function AgentInput({
     const store = useAgentStore.getState();
     const chat = selectCurrentChat(store);
     if (
+      chat &&
+      !store.getPendingAsk(chat.id) &&
+      !chat.archived &&
+      chat.status !== "paused" &&
+      chat.runCheckpoint?.suspension !== "token-limit" &&
+      (store.isChatRunning(chat.id) ||
+        store.getAbortController(chat.id) ||
+        store.queuedUserMessagesByChatId[chat.id] ||
+        store.followUpQueuesByChatId[chat.id]?.messages.length)
+    ) {
+      const draft = store.getDraft(chat.id);
+      const text = draft.text.trim();
+      const mentions = getDraftResourceMentions(draft);
+      if (
+        !text ||
+        (mentions.length > 0 && hasUnboundResourceMention(draft.text, mentions))
+      )
+        return;
+      const references = normalizeAgentResourceReferences(
+        mentions.map(({ resource }) => resource)
+      );
+      const pageResource = getCurrentAgentPageResource();
+      const queuedId = store.enqueueFollowUp({
+        chatId: chat.id,
+        text,
+        page: getCurrentPageSnapshot(),
+        runMode: "default",
+        ...(draft.followUpSourceId !== undefined
+          ? { followUpSourceId: draft.followUpSourceId }
+          : {}),
+        ...(isAgentMaskingPageResource(pageResource)
+          ? { maskingPage: pageResource }
+          : {}),
+        ...(references.length ? { resourceReferences: references } : {}),
+      });
+      if (queuedId) {
+        if (store.getDraft(chat.id) === draft) store.clearDraft(chat.id);
+        setResourcePickerOpen(false);
+        mentionRangeRef.current = null;
+      }
+      return;
+    }
+    if (
       chat?.archived ||
       chat?.status === "paused" ||
       chat?.runCheckpoint?.suspension === "token-limit" ||
@@ -2948,12 +3314,28 @@ export function AgentInput({
       return;
 
     const currentPage = getCurrentPageSnapshot();
+    const landingDraft = chat ? undefined : store.landingDraft;
+    if (landingDraft) {
+      const mentions = getDraftResourceMentions(landingDraft);
+      if (
+        !landingDraft.text.trim() ||
+        (mentions.length > 0 &&
+          hasUnboundResourceMention(landingDraft.text, mentions))
+      )
+        return;
+    }
     const sourceThread = store.ensureCurrentChat(
       currentPage,
-      getCurrentChatContext(),
+      (landingDraft ? store.landingContext : undefined) ??
+        getCurrentChatContext(),
       workspace?.name
     );
     const sourceChatId = sourceThread.id;
+    if (landingDraft) {
+      store.setDraft(sourceChatId, landingDraft);
+      if (useAgentStore.getState().landingDraft === landingDraft)
+        store.clearLandingDraft();
+    }
     const submittedDraft = store.getDraft(sourceChatId);
     const pendingAskBeforeConfig = store.getPendingAsk(sourceChatId);
     if (await blockWhenAIIsNotConfigured(sourceChatId)) return;
@@ -3072,6 +3454,9 @@ export function AgentInput({
         content: text,
         metadata: {
           route: currentPage.path,
+          ...(submittedDraft.followUpSourceId !== undefined
+            ? { followUpSourceId: submittedDraft.followUpSourceId }
+            : {}),
           ...(stagedReference ? { resourceReference: stagedReference } : {}),
           ...(references.length > 1 ? { resourceReferences: references } : {}),
         },
@@ -3224,6 +3609,9 @@ export function AgentInput({
               content: messageText,
               metadata: {
                 route: currentPage.path,
+                ...(message.metadata?.followUpSourceId !== undefined
+                  ? { followUpSourceId: message.metadata.followUpSourceId }
+                  : {}),
                 ...(references[0] ? { resourceReference: references[0] } : {}),
                 ...(references.length > 1
                   ? { resourceReferences: references }
@@ -3533,8 +3921,11 @@ export function AgentInput({
                   runId: chat.runId ?? undefined,
                 },
               });
+              currentStore.setFollowUpQueuePaused(chatId, true);
               currentStore.finishChatRun(chatId);
               setContinuationFailure(null);
+              if (supportsAgentRunRecovery())
+                await currentStore.flushRunPersistence();
               return;
             }
             if (currentChat.archived) {
@@ -3549,6 +3940,7 @@ export function AgentInput({
                 currentStore.getMessages(chatId)
               )
             ) {
+              currentStore.setFollowUpQueuePaused(chatId, true);
               currentStore.finishChatRun(chatId);
               setContinuationFailure(null);
               if (!(await currentStore.flushRunPersistence())) {
@@ -3824,7 +4216,12 @@ export function AgentInput({
         onSend={() => void (isCustomChoice ? submitChoice() : send())}
         sendDisabled={isSendDisabled}
         sendLabel={sendLabel}
-        onStop={() => useAgentStore.getState().cancel(currentChat?.id, "user")}
+        allowQueue={!currentPendingAsk && !remoteBusy}
+        onStop={() => {
+          const store = useAgentStore.getState();
+          if (currentChat) store.setFollowUpQueuePaused(currentChat.id, true);
+          store.cancel(currentChat?.id, "user");
+        }}
         stopDisabled={remoteBusy}
         textareaProps={{
           textareaRef,
@@ -3843,7 +4240,10 @@ export function AgentInput({
           "aria-label": isCustomChoice
             ? t("agent.custom-input-label")
             : inputPlaceholder,
-          disabled: isCurrentChatRunning || isAIConfigurationBlocked,
+          disabled:
+            remoteBusy ||
+            (isCurrentChatRunning && Boolean(currentPendingAsk)) ||
+            isAIConfigurationBlocked,
           onChange: (event) => {
             setInput(event.target.value);
             if (!canMentionResource) {
@@ -3894,6 +4294,28 @@ export function AgentInput({
 
   return (
     <div ref={composerRef} className="flex flex-col gap-3 border-t p-3">
+      <AgentFollowUpQueueList
+        queue={followUpQueue}
+        disabled={remoteBusy}
+        resumeDisabled={
+          !executionAvailable ||
+          Boolean(storagePressure) ||
+          isAIConfigurationBlocked ||
+          isCurrentChatRunning ||
+          Boolean(currentController) ||
+          localLeasePending ||
+          Boolean(currentPendingAsk) ||
+          currentChat?.status === "paused"
+        }
+        onRemove={(messageId) => {
+          if (currentChatId)
+            useAgentStore.getState().removeFollowUp(currentChatId, messageId);
+        }}
+        onResume={() => {
+          if (currentChatId)
+            void drainFollowUps(currentChatId, undefined, true);
+        }}
+      />
       {feedback === "execution-unavailable" && (
         <Alert appearance="caption" variant="warning">
           <div className="min-w-0">
@@ -4103,10 +4525,12 @@ export function AgentInput({
           <div className="flex flex-wrap gap-x-2 gap-y-2">
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
               disabled={
-                isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
+                isCurrentChatRunning ||
+                localLeasePending ||
+                (apiPermission && !apiPermissionPreview)
               }
               onClick={() => submitConfirmation(true)}
             >
@@ -4114,9 +4538,9 @@ export function AgentInput({
             </Button>
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
-              disabled={isCurrentChatRunning}
+              disabled={isCurrentChatRunning || localLeasePending}
               onClick={() => submitConfirmation(false)}
             >
               {apiPermission

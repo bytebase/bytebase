@@ -1,12 +1,19 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppStoreState } from "@/stores/app/types";
 import {
   type Expr,
   ExprSchema,
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseMetadataSchema,
+  DatabaseSchema$,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   consumeMaskingExemptionDraft,
   getMaskingExemptionDraft,
@@ -22,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   setup: vi.fn(),
   project: vi.fn(),
   database: vi.fn(),
+  metadata: vi.fn(),
   user: vi.fn(),
   policy: vi.fn(),
   parse: vi.fn(),
@@ -34,7 +42,10 @@ vi.mock("@/stores/app", () => ({
 }));
 vi.mock("@/api", () => ({
   projectServiceClientConnect: { getProject: mocks.project },
-  databaseServiceClientConnect: { getDatabase: mocks.database },
+  databaseServiceClientConnect: {
+    getDatabase: mocks.database,
+    getDatabaseMetadata: mocks.metadata,
+  },
   userServiceClientConnect: { getUser: mocks.user },
   orgPolicyServiceClientConnect: { getPolicy: mocks.policy },
   celServiceClientConnect: {
@@ -141,6 +152,309 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("exact exemption target evidence", () => {
+  const canonical = `${project}/instances/primary/databases/app`;
+  const targetCondition =
+    'resource.schema_name == "public" && resource.table_name == "staff" && resource.column_name == "email"';
+  const equals = (field: string, value: string) =>
+    call("_==_", [select(field), literal(value)]);
+  const target = () =>
+    call("_&&_", [
+      equals("schema_name", "public"),
+      call("_&&_", [
+        equals("table_name", "staff"),
+        equals("column_name", "email"),
+      ]),
+    ]);
+  const exact = () => ({
+    ...input,
+    condition: targetCondition,
+    scope: { kind: "database", database: canonical },
+  });
+  const metadata = () =>
+    create(DatabaseMetadataSchema, {
+      name: `${canonical}/metadata`,
+      schemas: [
+        {
+          name: "public",
+          tables: [{ name: "staff", columns: [{ name: "email" }] }],
+        },
+      ],
+    });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-18T08:00:00Z"));
+    expressions.set(targetCondition, target());
+    mocks.database.mockImplementation(async ({ name }) =>
+      create(DatabaseSchema$, {
+        name,
+        project,
+        state: State.ACTIVE,
+        syncStatus: SyncStatus.OK,
+        successfulSyncTime: timestampFromDate(new Date()),
+      })
+    );
+    mocks.metadata.mockResolvedValue(metadata());
+  });
+
+  it("automatically checks the exact schema target using the already verified canonical database", async () => {
+    const result = await prepareMaskingExemptionDraft(exact(), context);
+
+    expect(result).toMatchObject({
+      draftId: expect.any(String),
+      targetEvidence: {
+        status: "found",
+        database: canonical,
+        target: { schema: "public", table: "staff", column: "email" },
+      },
+    });
+    expect(mocks.database).toHaveBeenCalledTimes(1);
+    expect(mocks.metadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: `${canonical}/metadata`,
+        filter: 'table.contains("staff")',
+        limit: 20,
+      }),
+      expect.anything()
+    );
+    expect(result.draft).not.toHaveProperty("targetEvidence");
+  });
+
+  it("requires clarification when only another schema has the same table and column", async () => {
+    const value = metadata();
+    value.schemas[0].name = "private";
+    mocks.metadata.mockResolvedValue(value);
+
+    await expect(
+      prepareMaskingExemptionDraft(exact(), context)
+    ).rejects.toMatchObject({
+      targetEvidence: [
+        expect.objectContaining({
+          status: "no-current-match",
+          target: { schema: "public", table: "staff", column: "email" },
+        }),
+      ],
+    });
+  });
+
+  it("allows an acknowledged future target without storing acknowledgment or evidence in the exemption", async () => {
+    mocks.metadata.mockResolvedValue(
+      create(DatabaseMetadataSchema, { name: `${canonical}/metadata` })
+    );
+
+    const result = await prepareMaskingExemptionDraft(
+      { ...exact(), allowUnmatchedTarget: true },
+      context
+    );
+
+    expect(result).toMatchObject({
+      targetEvidence: { status: "no-current-match" },
+      draft: {
+        scope: { kind: "database", database: canonical },
+        members: ["user:member@example.com"],
+        expirationTimestamp: "2030-01-01T00:00:00.000Z",
+      },
+    });
+    const stored = getMaskingExemptionDraft(result.draftId, context);
+    expect(stored).toEqual(result.draft);
+    expect(stored).not.toHaveProperty("allowUnmatchedTarget");
+    expect(stored).not.toHaveProperty("targetEvidence");
+    const group = await parseMaskingExemptionDraftCondition(
+      result.draft.condition
+    );
+    expect(group.args).toContainEqual({
+      type: "Condition",
+      operator: "_==_",
+      args: ["resource.schema_name", "public"],
+    });
+  });
+
+  it("returns unverified evidence instead of treating denied metadata as absence", async () => {
+    mocks.metadata.mockRejectedValue(
+      new ConnectError("denied", Code.PermissionDenied)
+    );
+
+    expect(await prepareMaskingExemptionDraft(exact(), context)).toMatchObject({
+      draftId: expect.any(String),
+      targetEvidence: { status: "unverified" },
+    });
+  });
+
+  it("checks a project-scoped predicate constrained to one exact verified database", async () => {
+    expressions.set(
+      "single-database",
+      call("_&&_", [equals("database", canonical), target()])
+    );
+
+    const result = await prepareMaskingExemptionDraft(
+      { ...exact(), scope: { kind: "project" }, condition: "single-database" },
+      context
+    );
+
+    expect(result).toMatchObject({
+      targetEvidence: { status: "found", database: canonical },
+      draft: { scope: { kind: "project" } },
+    });
+    expect(mocks.database).toHaveBeenCalledTimes(1);
+    expect(mocks.metadata).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([targetCondition, "true"])(
+    "does not enumerate project-wide target metadata for %s",
+    async (condition) => {
+      const result = await prepareMaskingExemptionDraft(
+        { ...exact(), scope: { kind: "project" }, condition },
+        context
+      );
+
+      expect(result).toMatchObject({
+        draftId: expect.any(String),
+        targetEvidence: { status: "unverified" },
+      });
+      expect(mocks.metadata).not.toHaveBeenCalled();
+      expect(mocks.database).not.toHaveBeenCalled();
+    }
+  );
+
+  it("does not repeat target reads during ordinary draft validation or revalidation", async () => {
+    const result = await prepareMaskingExemptionDraft(exact(), context);
+    expect(mocks.metadata).toHaveBeenCalledTimes(1);
+    mocks.metadata.mockClear();
+
+    await validateMaskingExemptionDraft(result.draft, context);
+    await revalidateMaskingExemptionDraft(result.draftId, context);
+
+    expect(mocks.metadata).not.toHaveBeenCalled();
+  });
+
+  it.each(["disjunction", "multiple-databases"])(
+    "does not treat %s as one exact database target",
+    async (kind) => {
+      expressions.set(
+        kind,
+        kind === "disjunction"
+          ? call("_||_", [equals("database", canonical), target()])
+          : call("_&&_", [
+              call("@in", [
+                select("database"),
+                create(ExprSchema, {
+                  exprKind: {
+                    case: "listExpr",
+                    value: {
+                      elements: [
+                        literal(canonical),
+                        literal(`${project}/instances/primary/databases/other`),
+                      ],
+                    },
+                  },
+                }),
+              ]),
+              target(),
+            ])
+      );
+
+      const result = await prepareMaskingExemptionDraft(
+        { ...exact(), scope: { kind: "project" }, condition: kind },
+        context
+      );
+
+      expect(result).toMatchObject({
+        draftId: expect.any(String),
+        targetEvidence: { status: "unverified" },
+      });
+      expect(result.targetEvidence).not.toHaveProperty("database");
+      expect(mocks.metadata).not.toHaveBeenCalled();
+    }
+  );
+
+  it("does not scan metadata for a name-pattern target within an exact database", async () => {
+    expressions.set(
+      "prefix",
+      call("_&&_", [
+        equals("schema_name", "public"),
+        call("startsWith", [literal("private_")], select("column_name")),
+      ])
+    );
+
+    const result = await prepareMaskingExemptionDraft(
+      { ...exact(), condition: "prefix" },
+      context
+    );
+
+    expect(result).toMatchObject({
+      targetEvidence: { status: "unverified", database: canonical },
+    });
+    expect(mocks.metadata).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed future-target acknowledgment", async () => {
+    await expect(
+      prepareMaskingExemptionDraft(
+        { ...exact(), allowUnmatchedTarget: "true" },
+        context
+      )
+    ).rejects.toThrow(/acknowledgment.*boolean/i);
+    expect(mocks.metadata).not.toHaveBeenCalled();
+  });
+
+  it("rejects an explicit empty schema restriction rather than dropping it from the selector", async () => {
+    expressions.set("empty-schema", equals("schema_name", ""));
+
+    await expect(
+      prepareMaskingExemptionDraft(
+        { ...exact(), condition: "empty-schema" },
+        context
+      )
+    ).rejects.toThrow(/cannot be represented.*selector/i);
+    expect(mocks.metadata).not.toHaveBeenCalled();
+  });
+
+  it("rejects an editor revision changed during target checking", async () => {
+    mocks.metadata.mockImplementation(async () => {
+      mocks.snapshot.mockResolvedValue({
+        project,
+        sessionId: "new-editor",
+        revision: "1",
+      });
+      return metadata();
+    });
+
+    await expect(
+      prepareMaskingExemptionDraft(exact(), context)
+    ).rejects.toThrow(/draft has changed/i);
+  });
+
+  it("rejects an account switch during target checking", async () => {
+    mocks.metadata.mockImplementation(async () => {
+      mocks.state.currentUser!.name = "users/other@example.com";
+      return metadata();
+    });
+
+    await expect(
+      prepareMaskingExemptionDraft(exact(), context)
+    ).rejects.toThrow(/context/i);
+  });
+
+  it("does not let acknowledgment bypass the existing permission checks", async () => {
+    const setup = await mocks.setup();
+    setup.steps[0].configure = {
+      status: "denied",
+      requiredPermissions: ["bb.policies.updateMaskingExemptionPolicy"],
+      missingPermissions: ["bb.policies.updateMaskingExemptionPolicy"],
+      scope: project,
+    };
+
+    await expect(
+      prepareMaskingExemptionDraft(
+        { ...exact(), allowUnmatchedTarget: true },
+        context
+      )
+    ).rejects.toThrow(/permission/i);
+    expect(mocks.metadata).not.toHaveBeenCalled();
+  });
 });
 
 it("accepts a parsed column-only predicate without table or catalog metadata and retains database scope", async () => {

@@ -258,8 +258,8 @@ export function AgentContextualStart({
                 {requiresReference && (
                   <Button
                     appearance="secondary"
-                    size="md"
-                    className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
+                    size="sm"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
                     disabled={!canStart || loading || !reference}
                     onClick={() => onStart("", reference)}
                     data-agent-contextual-mention
@@ -274,15 +274,18 @@ export function AgentContextualStart({
                         `@${reference?.label ?? title}`
                       )}
                     </span>
-                    <ArrowUpRight className="shrink-0" aria-hidden="true" />
+                    <ArrowUpRight
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   </Button>
                 )}
                 {suggestions.map((suggestion) => (
                   <Button
                     key={suggestion}
                     appearance="secondary"
-                    size="md"
-                    className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
+                    size="sm"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
                     disabled={!canStart || (requiresReference && !reference)}
                     onClick={() => onStart(suggestion, reference)}
                     data-agent-contextual-suggestion
@@ -290,7 +293,10 @@ export function AgentContextualStart({
                     <span className="min-w-0 flex-1 break-words">
                       {suggestion}
                     </span>
-                    <ArrowUpRight className="shrink-0" aria-hidden="true" />
+                    <ArrowUpRight
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   </Button>
                 ))}
               </div>
@@ -304,7 +310,7 @@ export function AgentContextualStart({
           {hasCurrentChat && (
             <Button
               appearance="solid"
-              size="md"
+              size="sm"
               className="mt-4"
               onClick={onContinue}
               data-agent-contextual-continue

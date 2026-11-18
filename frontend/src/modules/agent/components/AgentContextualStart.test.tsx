@@ -81,10 +81,25 @@ test("shows Continue last chat as the localized primary action", async () => {
   const button = screen.getByRole("button", {
     name: "Continue last chat",
   });
-  expect(button).toHaveClass("bg-accent", "text-accent-text");
+  expect(button).toHaveClass("bg-accent", "text-accent-text", "h-7", "px-2", "text-xs");
   fireEvent.click(button);
   expect(onContinue).toHaveBeenCalledOnce();
   expect(onStart).not.toHaveBeenCalled();
+});
+
+test("uses compact wrapping actions for contextual suggestions and resource mentions", () => {
+  const name = "instances/primary/databases/app";
+  renderContext(
+    { kind: "database", project: "projects/sample", names: [name] },
+    { kind: "database", name, project: "projects/sample", label: "App database" }
+  );
+  const buttons = document.querySelectorAll("[data-agent-contextual-suggestion], [data-agent-contextual-mention]");
+  expect(buttons.length).toBeGreaterThan(1);
+  for (const button of buttons) {
+    expect(button).toHaveClass("h-auto", "px-2", "py-1.5", "text-xs", "whitespace-normal");
+    expect(button).not.toHaveClass("py-2", "text-sm");
+    expect(button.querySelector("svg:last-child")).toHaveClass("size-4");
+  }
 });
 
 test("hides Continue when there is no eligible chat", () => {

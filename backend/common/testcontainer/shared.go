@@ -32,6 +32,7 @@ var (
 	sharedMariaDB107   = startOnce(mariaDBStarter("mariadb:10.7.8"))
 	sharedRedisCluster = startOnce(getRedisClusterContainer)
 	sharedCassandra    = startOnce(getCassandraContainer)
+	sharedHive         = startOnce(getHiveContainer)
 	sharedCosmos       = startOnce(getCosmosContainer)
 	sharedClickHouse   = startOnce(getClickHouseContainer)
 
@@ -146,6 +147,11 @@ func SharedCassandraContainer(t testing.TB) *Container { return shared(t, shared
 // It carries no *sql.DB: the driver under test is the only client, and the
 // server's own account is "default" with no password.
 func SharedClickHouseContainer(t testing.TB) *Container { return shared(t, sharedClickHouse) }
+
+// SharedHiveContainer is one HiveServer2 for the package's tests, on the image
+// omni pins. Tests share its databases rather than taking one each, because the
+// image's metastore is a single embedded Derby.
+func SharedHiveContainer(t testing.TB) *Container { return shared(t, sharedHive) }
 
 // SharedCosmosContainer is SharedPgContainer for the Cosmos DB emulator. It
 // carries no *sql.DB, so a test builds its endpoint from GetHost and GetPort

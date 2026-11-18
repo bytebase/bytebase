@@ -66,6 +66,7 @@ describe("buildSystemPrompt", () => {
       expect(prompt).not.toContain("permission panel will ask");
       expect(prompt).not.toContain("offer a draft-plan");
       expect(prompt).not.toContain("use draft-issue-comment");
+      expect(prompt).not.toContain('get_skill(name="query")');
       expect(prompt).not.toContain("Current page:");
     }
   );
@@ -121,6 +122,16 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("via APIs or DOM actions");
     expect(prompt).toContain("member-clicked typed drafts");
     expect(prompt).toContain("local unsaved forms");
+  });
+
+  test("loads query guidance before SQL data execution or result follow-ups", () => {
+    const prompt = buildSystemPrompt({ path: "/landing", title: "Workspace" });
+
+    expect(prompt).toContain(
+      'For SQL data queries, load get_skill(name="query") before execution or result follow-ups.'
+    );
+    expect(prompt).not.toContain("How can I request access to unmasked data?");
+    expect(prompt).not.toContain("nonempty per-column reasons");
   });
 
   test.each(["workspaces/default", "projects/orders"])(

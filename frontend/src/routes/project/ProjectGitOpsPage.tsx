@@ -12,7 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
-import { WorkloadIdentityDialog } from "@/components/WorkloadIdentityFlow/WorkloadIdentityDialog";
+import { WorkloadIdentitySheet } from "@/components/WorkloadIdentityFlow/WorkloadIdentitySheet";
 import { useServerState } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
@@ -357,7 +357,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
         />
       )}
 
-      <WorkloadIdentityDialog
+      <WorkloadIdentitySheet
         open={dialogOpen}
         project={projectName}
         closeOnCreate

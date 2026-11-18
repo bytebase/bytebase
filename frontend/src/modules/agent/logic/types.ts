@@ -55,6 +55,7 @@ export interface AgentRunBudget {
 
 export interface AgentRunBindings {
   page: AgentChatSnapshot;
+  pageToolPath?: string;
   context?: string;
   references: AgentResourceReference[];
   runMode: AgentRunMode;
@@ -70,6 +71,7 @@ export interface AgentRunCheckpoint {
   rootUserMessageId: string;
   throughMessageId: string;
   bindings: AgentRunBindings;
+  pageToolPath?: string;
   maskingSections: MaskingSkillSection[];
   phase: "working" | "finalizing";
   startupComplete?: boolean;
@@ -168,6 +170,12 @@ export interface AgentResourceReference {
   label: string;
 }
 
+// This snapshot permits a suggestion, not configuration; clicked workflows recheck access.
+export interface AgentQueryMaskingEligibility {
+  database: string;
+  allowed: boolean;
+}
+
 export type AgentDiagnosticCapability = {
   kind: "diagnostic";
   resource: AgentResourceReference;
@@ -185,6 +193,7 @@ export interface AgentResourceMention {
 
 export interface AgentDraft {
   text: string;
+  followUpSourceId?: string;
   mentions?: AgentResourceMention[];
   project?: {
     name: string;
@@ -195,6 +204,8 @@ export interface AgentDraft {
 }
 
 export interface AgentMessageMetadata {
+  // Lookup provenance only; the source answer grants no authority for this turn.
+  followUpSourceId?: string;
   queryResultRetention?: { version: 1; level: "omitted" };
   runPreflight?: true;
   route?: string;
@@ -206,6 +217,7 @@ export interface AgentMessageMetadata {
   evidence?: AgentAnswerEvidence;
   handoff?: AgentHandoff;
   actions?: AgentResponseAction[];
+  queryMaskingEligibility?: AgentQueryMaskingEligibility;
   maskingRuleDraftHandoff?: {
     draftId: string;
     outcome: "opened" | "applied";
@@ -279,6 +291,7 @@ export interface AgentPendingAsk {
   apiPermission?: {
     actionId: string;
     operationId: string;
+    expiresAt?: number;
   };
   defaultValue?: string;
   defaultResource?: AgentResourceReference;

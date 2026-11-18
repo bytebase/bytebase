@@ -28,7 +28,14 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSession(session)
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSession(session)
 	}
 	return toQueryResults(results, queryContext), nil
 }

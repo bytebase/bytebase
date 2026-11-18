@@ -14,6 +14,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -342,4 +344,50 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	require.Len(t, missing, 1)
 	attachReleaseStates(ctx, s, s, missing)
 	require.Nil(t, missing[0].Payload.GetReleaseState())
+}
+
+func TestGetSessionWithoutDirectConnection(t *testing.T) {
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		t.Run(engine.String(), func(t *testing.T) {
+			session, err := getSession(context.Background(), engine, nil, "bytebase-taskrun-1")
+			require.Nil(t, session)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "session monitoring")
+			require.Contains(t, err.Error(), "direct database/sql connection")
+		})
+	}
+}
+
+// sessionReaderDriver stands in for a driver whose engine package reads its own
+// sessions, as PostgreSQL's does.
+type sessionReaderDriver struct {
+	db.Driver
+	session *v1pb.TaskRunSession
+}
+
+func (d sessionReaderDriver) TaskRunSession(context.Context, string) (*v1pb.TaskRunSession, error) {
+	return d.session, nil
+}
+
+// noHandleDriver is a driver with neither a session reader nor a *sql.DB.
+type noHandleDriver struct {
+	db.Driver
+}
+
+func TestGetSessionPrefersTheDriversOwnRead(t *testing.T) {
+	t.Parallel()
+	want := &v1pb.TaskRunSession{
+		Session: &v1pb.TaskRunSession_Postgres_{Postgres: &v1pb.TaskRunSession_Postgres{
+			Session: &v1pb.TaskRunSession_Postgres_Session{Pid: "42", Query: "SELECT 1"},
+		}},
+	}
+	got, err := getSession(context.Background(), storepb.Engine_POSTGRES, sessionReaderDriver{session: want}, "bytebase-taskrun-1")
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestGetSessionNeedsAHandleOrAReader(t *testing.T) {
+	t.Parallel()
+	_, err := getSession(context.Background(), storepb.Engine_POSTGRES, noHandleDriver{}, "bytebase-taskrun-1")
+	require.ErrorContains(t, err, "needs a direct database/sql connection")
 }

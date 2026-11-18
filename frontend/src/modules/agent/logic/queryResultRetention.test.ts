@@ -132,60 +132,90 @@ describe("boundAgentQueryResult", () => {
     ]);
   });
 
-  test("preserves every non-row field, including masking beyond displayed columns and Access Grants", () => {
-    const columns = Array.from({ length: 25 }, (_, index) => `column_${index}`);
-    const result = {
-      statement: "SELECT * FROM records",
-      columnNames: columns,
-      columnTypeNames: columns.map(() => "TEXT"),
-      rows: [row("x".repeat(70_000))],
-      rowsCount: "2000",
-      masked: columns.map((_, index) =>
-        index === 24
-          ? {
-              semanticTypeId: "private_value",
-              semanticTypeTitle: "Private Value",
-              maskingRuleId: "masking-rule",
-              algorithm: "full-mask",
-              context: "Matched masking rule",
-              classificationLevel: 2,
-              semanticTypeIcon: "",
-            }
-          : {}
-      ),
-      permissionDenied: {
-        method: "bytebase.v1.SQLService.Query",
-        requiredPermissions: ["bb.sql.select"],
-        resources: ["instances/example/databases/app"],
-      },
-      queryPlan: { format: "JSON", executed: true, content: "protected plan" },
-      unknownFutureField: { retained: true },
-    };
-    const raw = JSON.stringify({
-      status: 200,
-      response: {
-        results: [result],
-        appliedAccessGrant: "projects/example/accessGrants/123",
-        allowExport: false,
-        advices: [{ title: "review warning" }],
-      },
-      traceId: "trace",
-    });
-    const bounded = JSON.parse(boundAgentQueryResult(raw));
+  test.each([
+    { level: "sampled", retain: boundAgentQueryResult },
+    { level: "omitted", retain: omitAgentQueryRows },
+  ])(
+    "preserves masking beyond displayed columns and Access Grants with $level rows",
+    ({ level, retain }) => {
+      const columns = Array.from(
+        { length: 25 },
+        (_, index) => `column_${index}`
+      );
+      const result = {
+        statement: "SELECT * FROM records",
+        columnNames: columns,
+        columnTypeNames: columns.map(() => "TEXT"),
+        rows: [row("x".repeat(70_000))],
+        rowsCount: "2000",
+        masked: columns.map((_, index) =>
+          index === 24
+            ? {
+                semanticTypeId: "private_value",
+                semanticTypeTitle: "Private Value",
+                maskingRuleId: "masking-rule",
+                algorithm: "full-mask",
+                context: "Matched masking rule",
+                classificationLevel: 2,
+                semanticTypeIcon: "",
+              }
+            : {}
+        ),
+        permissionDenied: {
+          method: "bytebase.v1.SQLService.Query",
+          requiredPermissions: ["bb.sql.select"],
+          resources: ["instances/example/databases/app"],
+        },
+        queryPlan: {
+          format: "JSON",
+          executed: true,
+          content: "protected plan",
+        },
+        unknownFutureField: { retained: true },
+      };
+      const raw = JSON.stringify({
+        status: 200,
+        response: {
+          results: [result],
+          appliedAccessGrant: "projects/example/accessGrants/123",
+          allowExport: false,
+          advices: [{ title: "review warning" }],
+        },
+        traceId: "trace",
+      });
+      const bounded = JSON.parse(retain(raw));
 
-    expect(bounded).toEqual({
-      ...JSON.parse(raw),
-      response: {
-        ...JSON.parse(raw).response,
-        results: [{ ...result, rows: [] }],
-      },
-      agentQueryPreview: {
-        version: 1,
-        level: "sampled",
-        results: [{ receivedRows: 1, retainedRows: 0 }],
-      },
-    });
-  });
+      expect(bounded).toEqual({
+        ...JSON.parse(raw),
+        response: {
+          ...JSON.parse(raw).response,
+          results: [{ ...result, rows: [] }],
+        },
+        agentQueryPreview: {
+          version: 1,
+          level,
+          results: [{ receivedRows: 1, retainedRows: 0 }],
+        },
+      });
+    }
+  );
+
+  test.each([
+    { level: "sampled", retain: boundAgentQueryResult },
+    { level: "omitted", retain: omitAgentQueryRows },
+  ])(
+    "does not invent masking evidence from values or empty reasons with $level rows",
+    ({ retain }) => {
+      const raw = envelope([
+        { columnNames: ["literal"], rows: [row("******")] },
+        { columnNames: ["value"], rows: [row("plain")], masked: [{}] },
+      ]);
+      const retained = JSON.parse(retain(raw));
+
+      expect(retained.response.results[0]).not.toHaveProperty("masked");
+      expect(retained.response.results[1].masked).toEqual([{}]);
+    }
+  );
 
   test("preserves detailed HTTP errors byte-for-byte", () => {
     const raw = JSON.stringify(

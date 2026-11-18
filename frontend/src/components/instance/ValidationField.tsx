@@ -22,6 +22,7 @@ const validationMessages: Record<string, (t: TFunction) => string> = {
   "gcp-instance": (t) => t("instance.validation.gcp-instance"),
   "gcp-project": (t) => t("instance.validation.gcp-project"),
   "keytab-resupply": (t) => t("instance.validation.keytab-resupply"),
+  "neon-pooled-host": (t) => t("instance.validation.neon-pooled-host"),
   "oracle-service": (t) => t("instance.validation.oracle-service"),
   "pem-certificate": (t) => t("instance.validation.pem-certificate"),
   "pem-key": (t) => t("instance.validation.pem-key"),
