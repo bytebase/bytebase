@@ -266,7 +266,7 @@ func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string
 
 func insertAfterObjectCreate(ops []catalog.MigrationOp, key string, op catalog.MigrationOp) []catalog.MigrationOp {
 	for i, existing := range ops {
-		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView) && existing.SchemaName+"."+existing.ObjectName == key {
+		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView || existing.Type == catalog.OpCreateType) && existing.SchemaName+"."+existing.ObjectName == key {
 			result := make([]catalog.MigrationOp, 0, len(ops)+1)
 			result = append(result, ops[:i+1]...)
 			result = append(result, op)
@@ -391,8 +391,30 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 				result[schema.GetName()+"."+view.GetName()] = true
 			}
 		}
+		for _, enum := range schema.GetEnumTypes() {
+			if other == nil || enumByName(other, enum.GetName()) == nil {
+				result[schema.GetName()+"."+enum.GetName()] = true
+			}
+		}
+		for _, composite := range schema.GetCompositeTypes() {
+			if other == nil || compositeByName(other, composite.GetName()) == nil {
+				result[schema.GetName()+"."+composite.GetName()] = true
+			}
+		}
 	}
 	return result
+}
+
+func enumByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.EnumTypeMetadata {
+	if schema == nil {
+		return nil
+	}
+	for _, enum := range schema.GetEnumTypes() {
+		if enum.GetName() == name {
+			return enum
+		}
+	}
+	return nil
 }
 
 func containsObjectReference(sql, schema, object string) bool {
@@ -407,7 +429,9 @@ func containsObjectReference(sql, schema, object string) bool {
 		}
 		index += start
 		end := index + len(needle)
-		if end == len(sql) || !isIdentifierByte(sql[end]) {
+		beforeBoundary := index == 0 || !isIdentifierByte(sql[index-1])
+		afterBoundary := end == len(sql) || !isIdentifierByte(sql[end])
+		if beforeBoundary && afterBoundary {
 			return true
 		}
 		start = end
@@ -525,6 +549,32 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			})
 		}
 	}
+	for _, oldSchema := range oldMeta.GetSchemas() {
+		newSchema := schemaByName(newMeta, oldSchema.GetName())
+		if newSchema == nil {
+			continue
+		}
+		for _, view := range oldSchema.GetViews() {
+			if viewByName(newSchema, view.GetName()) != nil {
+				continue
+			}
+			candidates = append(candidates, candidate{
+				key:     oldSchema.GetName() + "." + view.GetName(),
+				dropSQL: "DROP VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
+				deps:    dependencyKeys(view.GetDependencyColumns()),
+			})
+		}
+		for _, view := range oldSchema.GetMaterializedViews() {
+			if materializedViewByName(newSchema, view.GetName()) != nil {
+				continue
+			}
+			candidates = append(candidates, candidate{
+				key:     oldSchema.GetName() + "." + view.GetName(),
+				dropSQL: "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
+				deps:    dependencyKeys(view.GetDependencyColumns()),
+			})
+		}
+	}
 	selected := make(map[string]bool)
 	for _, candidate := range candidates {
 		if candidate.unloadable && candidate.direct {
@@ -634,14 +684,45 @@ func indexOwnerFromSQL(sql string) string {
 	if strings.HasPrefix(rest, "ONLY ") {
 		rest = strings.TrimSpace(strings.TrimPrefix(rest, "ONLY "))
 	}
-	if end := strings.IndexAny(rest, " ("); end >= 0 {
-		rest = rest[:end]
-	}
-	rest = strings.ReplaceAll(rest, `"`, "")
-	if !strings.Contains(rest, ".") {
+	first, next, ok := quotedIdentifier(rest, 0)
+	if !ok || next >= len(rest) || rest[next] != '.' {
 		return ""
 	}
-	return rest
+	second, _, ok := quotedIdentifier(rest, next+1)
+	if !ok {
+		return ""
+	}
+	return first + "." + second
+}
+
+func quotedIdentifier(text string, start int) (string, int, bool) {
+	if start >= len(text) {
+		return "", start, false
+	}
+	if text[start] == '"' {
+		var b strings.Builder
+		for i := start + 1; i < len(text); i++ {
+			if text[i] != '"' {
+				b.WriteByte(text[i])
+				continue
+			}
+			if i+1 < len(text) && text[i+1] == '"' {
+				b.WriteByte('"')
+				i++
+				continue
+			}
+			return b.String(), i + 1, true
+		}
+		return "", start, false
+	}
+	end := start
+	for end < len(text) && (isIdentifierByte(text[end]) || text[end] == '$') {
+		end++
+	}
+	if end == start {
+		return "", start, false
+	}
+	return text[start:end], end, true
 }
 
 func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string, selected map[string]bool) string {

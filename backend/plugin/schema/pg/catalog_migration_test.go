@@ -792,3 +792,61 @@ func TestIndexByNameUsesOwner(t *testing.T) {
 	require.Equal(t, "definition a", indexByName(meta, "public", "public.a", "idx").GetDefinition())
 	require.Equal(t, "definition b", indexByName(meta, "public", "public.b", "idx").GetDefinition())
 }
+
+// TestRemovedDependentViewDropsBeforeUnloadableView covers an old-only upper
+// view: it is not recreated, but its drop must precede the lower view it
+// depends on.
+func TestRemovedDependentViewDropsBeforeUnloadableView(t *testing.T) {
+	lower := func() *metadatapb.ViewMetadata {
+		return &metadatapb.ViewMetadata{
+			Name: "lower", Definition: "SELECT FROM",
+			DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+		}
+	}
+	upper := &metadatapb.ViewMetadata{
+		Name: "upper", Definition: "SELECT id FROM public.lower",
+		DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}},
+	}
+	snapshot := func(columnType string, views ...*metadatapb.ViewMetadata) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views:  views,
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("integer", upper, lower()), snapshot("bigint", lower()))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, dropLower, 0, sql)
+	require.Less(t, dropUpper, dropLower, sql)
+}
+
+// TestSplitRetypeToCreatedType covers a composite attribute moving to a type
+// this migration creates: the attribute is dropped before the old table and
+// added after the new type exists.
+func TestSplitRetypeToCreatedType(t *testing.T) {
+	oldMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:           "public",
+		Tables:         []*metadatapb.TableMetadata{pgTable("old_t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		CompositeTypes: []*metadatapb.CompositeTypeMetadata{{Name: "c", Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "r", Type: "public.old_t"}}}},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	newMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:           "public",
+		Tables:         []*metadatapb.TableMetadata{pgTable("new_t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		EnumTypes:      []*metadatapb.EnumTypeMetadata{{Name: "e", Values: []string{"a", "b"}}},
+		CompositeTypes: []*metadatapb.CompositeTypeMetadata{{Name: "c", Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "r", Type: "public.e"}}}},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, oldMeta, newMeta)
+	require.NoError(t, err)
+	dropAttribute := strings.Index(sql, `DROP ATTRIBUTE "r"`)
+	createType := strings.Index(sql, `CREATE TYPE "public"."e"`)
+	addAttribute := strings.Index(sql, `ADD ATTRIBUTE "r" public.e`)
+	require.GreaterOrEqual(t, dropAttribute, 0, sql)
+	require.GreaterOrEqual(t, createType, 0, sql)
+	require.GreaterOrEqual(t, addAttribute, 0, sql)
+	require.Less(t, dropAttribute, createType, sql)
+	require.Less(t, createType, addAttribute, sql)
+}
