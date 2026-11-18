@@ -342,9 +342,13 @@ func getTrinoContainer(ctx context.Context) (*Container, error) {
 	})
 }
 
+// getTiDBContainer starts the TiDB release the cutover was measured on: v8.5.5
+// is the release omni's engine test matrix pins for tidb, and the one the
+// partition-order, unsigned-integer, binary and role-grant changes were diffed
+// against.
 func getTiDBContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, testcontainers.ContainerRequest{
-		Image:      "pingcap/tidb:v8.5.0",
+		Image:      "pingcap/tidb:v8.5.5",
 		WaitingFor: wait.ForLog("server is running MySQL protocol").WithStartupTimeout(5 * time.Minute),
 	}, spec{
 		port:     "4000/tcp",
