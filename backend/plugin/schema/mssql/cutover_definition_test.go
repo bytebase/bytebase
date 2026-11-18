@@ -239,3 +239,29 @@ func TestDefinitionRewritesEachModuleAtItsOwnSection(t *testing.T) {
 	require.Contains(t, got, function.Definition, "the hoisted function body is untouched")
 	require.Contains(t, got, legacyViewText(view), "the actual view keeps the legacy text")
 }
+
+// TestDefinitionDoesNotRewriteModuleTextInsideTableLiteral pins the batch
+// recognition: a GO line inside a table default's string literal is not a
+// module boundary, so a module text embedded there stays untouched.
+func TestDefinitionDoesNotRewriteModuleTextInsideTableLiteral(t *testing.T) {
+	view := &metadatapb.ViewMetadata{Name: "v", Definition: "ALTER VIEW [dbo].[v] AS SELECT 1;"}
+	catalogView, err := catalog.GetViewDefinition(view)
+	require.NoError(t, err)
+
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "dbo",
+		Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Columns: []*metadatapb.ColumnMetadata{
+				{Name: "id", Type: "int", Nullable: false},
+				{Name: "script", Type: "nvarchar(max)", Nullable: true, Default: "('" + catalogView + "')"},
+			},
+		}},
+		Views: []*metadatapb.ViewMetadata{view},
+	}}}
+
+	got, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	require.NoError(t, err)
+	require.Contains(t, got, catalogView, "the table literal keeps the catalog text")
+	require.Contains(t, got, legacyViewText(view), "the actual view keeps the legacy text")
+}

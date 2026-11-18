@@ -140,21 +140,120 @@ func restoreLegacyModuleText(rendered string, metadata *metadatapb.DatabaseSchem
 	replacements := moduleReplacements(metadata)
 	var out strings.Builder
 	out.Grow(len(rendered))
+	atBatchStart, atLineStart := true, true
 	for i := 0; i < len(rendered); {
-		// A module section starts the dump or follows a batch separator, and a
-		// match consumes the whole section. Text inside an earlier module's
-		// body therefore cannot be mistaken for a later module's section.
-		if i == 0 || (i >= len("GO\n\n") && rendered[i-len("GO\n\n"):i] == "GO\n\n") {
+		if atBatchStart {
+			for i < len(rendered) && (rendered[i] == ' ' || rendered[i] == '\t' || rendered[i] == '\r' || rendered[i] == '\n') {
+				out.WriteByte(rendered[i])
+				atLineStart = rendered[i] == '\n'
+				i++
+			}
 			if replacement, ok := matchModuleSection(rendered[i:], replacements); ok {
 				out.WriteString(replacement.legacy)
 				i += len(replacement.catalog)
+				atBatchStart, atLineStart = true, true
 				continue
 			}
 		}
-		out.WriteByte(rendered[i])
-		i++
+		if atLineStart {
+			if end, ok := goLineEnd(rendered, i); ok {
+				out.WriteString(rendered[i:end])
+				i = end
+				atBatchStart, atLineStart = true, true
+				continue
+			}
+		}
+		var end int
+		switch {
+		case rendered[i] == '\'':
+			end = quotedEnd(rendered, i, '\'', '\'')
+		case rendered[i] == '"':
+			end = quotedEnd(rendered, i, '"', '"')
+		case rendered[i] == '[':
+			end = quotedEnd(rendered, i, '[', ']')
+		case strings.HasPrefix(rendered[i:], "--"):
+			end = lineCommentEnd(rendered, i)
+		case strings.HasPrefix(rendered[i:], "/*"):
+			end = blockCommentEnd(rendered, i)
+		default:
+			end = i + 1
+		}
+		out.WriteString(rendered[i:end])
+		atLineStart = rendered[end-1] == '\n'
+		atBatchStart = false
+		i = end
 	}
 	return out.String()
+}
+
+// goLineEnd reports whether a line whose first character is text[i] is a T-SQL
+// batch separator, and returns the position after its newline. GO is only a
+// separator when it is alone on the line and outside any literal or comment.
+func goLineEnd(text string, i int) (int, bool) {
+	j := i
+	for j < len(text) && (text[j] == ' ' || text[j] == '\t') {
+		j++
+	}
+	if j+2 > len(text) || !strings.EqualFold(text[j:j+2], "GO") {
+		return 0, false
+	}
+	j += 2
+	for j < len(text) && (text[j] == ' ' || text[j] == '\t' || text[j] == '\r') {
+		j++
+	}
+	if j == len(text) {
+		return j, true
+	}
+	if text[j] != '\n' {
+		return 0, false
+	}
+	return j + 1, true
+}
+
+// quotedEnd returns the position after the closing quote, treating a doubled
+// quote as an escaped quote inside the value.
+func quotedEnd(text string, i int, open, close byte) int {
+	j := i + 1
+	for j < len(text) {
+		if text[j] != close {
+			j++
+			continue
+		}
+		if j+1 < len(text) && text[j+1] == close {
+			j += 2
+			continue
+		}
+		return j + 1
+	}
+	return len(text)
+}
+
+func lineCommentEnd(text string, i int) int {
+	if end := strings.IndexByte(text[i:], '\n'); end >= 0 {
+		return i + end + 1
+	}
+	return len(text)
+}
+
+// blockCommentEnd handles T-SQL's nested block comments.
+func blockCommentEnd(text string, i int) int {
+	depth := 1
+	for j := i + 2; j < len(text); {
+		switch {
+		case strings.HasPrefix(text[j:], "/*"):
+			depth++
+			j += 2
+		case strings.HasPrefix(text[j:], "*/"):
+			depth--
+			j += 2
+			if depth == 0 {
+				return j
+			}
+		default:
+			j++
+		}
+	}
+	return len(text)
 }
 
 type moduleReplacement struct {
