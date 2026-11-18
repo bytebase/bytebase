@@ -598,6 +598,97 @@ func TestSplitCompositeRetypeReappliesUnchangedComment(t *testing.T) {
 	require.Equal(t, 1, strings.Count(sql, "COMMENT ON COLUMN"), sql)
 }
 
+// TestSplitCompositeRetypeKeepsTargetAttributeOrder pins the order of attributes
+// split from one dropped row type onto the same created type: composite fields are
+// positional, so both ADDs must follow the target's attribute order.
+func TestSplitCompositeRetypeKeepsTargetAttributeOrder(t *testing.T) {
+	snapshot := func(table string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable(table, 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{
+					{Name: "a", Type: "public." + table},
+					{Name: "b", Type: "public." + table},
+				},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("old_t"), snapshot("new_t"))
+	require.NoError(t, err)
+	dropTable := strings.Index(sql, `DROP TABLE "public"."old_t"`)
+	dropA := strings.Index(sql, `DROP ATTRIBUTE "a"`)
+	dropB := strings.Index(sql, `DROP ATTRIBUTE "b"`)
+	addA := strings.Index(sql, `ADD ATTRIBUTE "a" public.new_t`)
+	addB := strings.Index(sql, `ADD ATTRIBUTE "b" public.new_t`)
+	for name, index := range map[string]int{"drop table": dropTable, "drop a": dropA, "drop b": dropB, "add a": addA, "add b": addB} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, dropA, dropTable, "attribute a is released before the old row type is dropped")
+	require.Less(t, dropB, dropTable, "attribute b is released before the old row type is dropped")
+	require.Less(t, addA, addB, "split attributes keep the target's attribute order")
+}
+
+// TestRestoredUnloadableViewReleasesRowTypeDependents covers an unchanged
+// unloadable view that must be recreated for a column change while an unchanged
+// composite attribute holds its row type: the attribute is dropped before the
+// view and re-added after it, or the view drop finds a dependent object.
+func TestRestoredUnloadableViewReleasesRowTypeDependents(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name:       "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "r", Type: "public.v"}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	dropAttribute := strings.Index(sql, `ALTER TYPE "public"."c" DROP ATTRIBUTE "r"`)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	addAttribute := strings.Index(sql, `ALTER TYPE "public"."c" ADD ATTRIBUTE "r" public.v`)
+	for name, index := range map[string]int{"drop attribute": dropAttribute, "drop view": dropView, "create view": createView, "add attribute": addAttribute} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, dropAttribute, dropView, "the row-type dependent is released before the view is dropped")
+	require.Less(t, createView, addAttribute, "the attribute is re-added after the view is recreated")
+}
+
+// TestRestoredUnloadableViewRefusesRowTypeColumn keeps a table column out of the
+// release plan: a column cannot be released without discarding its data, so a
+// restored view whose row type it holds is refused instead.
+func TestRestoredUnloadableViewRefusesRowTypeColumn(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{
+				pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType}),
+				pgTable("holds", 0, &metadatapb.ColumnMetadata{Name: "r", Type: "public.v"}),
+			},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.ErrorContains(t, err, `column "r" of table "public"."holds" uses the row type of view "public"."v"`)
+}
+
 // TestLoadableDependentViewFollowsUnloadableView covers a loadable unchanged
 // view that depends on an unloadable one: dropping the lower view fails while
 // the upper still references it, so the closure must restore both.

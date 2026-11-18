@@ -4531,3 +4531,286 @@
   catalogExpected: |-
     DROP TYPE "public"."c";
     DROP VIEW "public"."v"
+- description: TestCockroachMetadataDiffRestoredUnloadableViewReleasesRowTypeDependents
+  difference: the catalog releases the composite attribute before the synthesized drop of the unchanged unloadable view and re-adds it after the recreation; the legacy generator dropped the view while the attribute still held its row type.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "public"."v";
+
+    ALTER TABLE "public"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
+
+  catalogExpected: "ALTER TYPE \"public\".\"c\" DROP ATTRIBUTE \"r\";\nDROP VIEW IF EXISTS \"public\".\"v\";\nALTER TABLE public.t ALTER COLUMN id TYPE bigint;\nCREATE VIEW \"public\".\"v\" AS \nSELECT FROM;\nALTER TYPE \"public\".\"c\" ADD ATTRIBUTE \"r\" public.v"
+- description: TestCockroachMetadataDiffSplitAttributesKeepTargetOrder
+  difference: the catalog adds both split attributes in the target's attribute order; the legacy generator emitted the same order with statement terminators and a blank line between statements.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "old_t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "a",
+                  "type": "public.old_t"
+                },
+                {
+                  "name": "b",
+                  "type": "public.old_t"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "new_t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "a",
+                  "type": "public.new_t"
+                },
+                {
+                  "name": "b",
+                  "type": "public.new_t"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "a";
+
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "b";
+
+    DROP TABLE "public"."old_t";
+
+    CREATE TABLE "public"."new_t" (
+        "id" integer NOT NULL
+    );
+
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "a" public.new_t;
+
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "b" public.new_t;
+
+  catalogExpected: |-
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "a";
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "b";
+    DROP TABLE "public"."old_t" CASCADE;
+    CREATE TABLE "public"."new_t" (
+        "id" integer NOT NULL
+    );
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "a" public.new_t;
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "b" public.new_t
+- description: TestCockroachMetadataDiffRestoredUnloadableViewRefusesRowTypeColumn
+  difference: the catalog refuses the migration because the unchanged column cannot be released without discarding its data; the legacy generator dropped the view under the column and produced a migration PostgreSQL rejects.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "name": "holds",
+              "columns": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            },
+            {
+              "name": "holds",
+              "columns": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "public"."v";
+
+    ALTER TABLE "public"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
+
+  catalogExpected: ''
+  catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type of view "public"."v", which must be recreated'
