@@ -538,10 +538,6 @@ export function NeonSelectStep({
                     const { branch } = row;
                     const available = branchAvailable(branch);
                     const checkboxId = `${id}-${branchKey(branch)}`;
-                    const owners = [
-                      ...new Set(branch.databases.map((db) => db.owner)),
-                    ];
-                    const inspected = !branch.discoveryError || owners.length;
                     return (
                       <TableRow
                         key={branchKey(branch)}
@@ -599,34 +595,14 @@ export function NeonSelectStep({
                           )}
                         </TableCell>
                         <TableCell className="hidden align-top whitespace-nowrap md:table-cell">
-                          {!inspected || branch.databases.length === 0 ? (
+                          {branch.databases.length > 0 ? (
+                            <span className="text-main">
+                              {branch.databases.map((db) => db.name).join(", ")}
+                            </span>
+                          ) : (
                             <span className="text-control-light">
                               {t("instance.neon.select.not-available")}
                             </span>
-                          ) : owners.length === 1 ? (
-                            <>
-                              <div className="text-main">
-                                {branch.databases
-                                  .map((db) => db.name)
-                                  .join(", ")}
-                              </div>
-                              <div className="text-xs leading-4 text-control-light">
-                                {t("instance.neon.select.owner", {
-                                  owner: owners[0],
-                                })}
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="text-main">
-                                {branch.databases
-                                  .map((db) => `${db.name} (${db.owner})`)
-                                  .join(", ")}
-                              </div>
-                              <div className="text-xs leading-4 text-control-light">
-                                {t("instance.neon.select.owners-differ")}
-                              </div>
-                            </>
                           )}
                         </TableCell>
                         <TableCell className="hidden align-top text-xs whitespace-nowrap lg:table-cell">

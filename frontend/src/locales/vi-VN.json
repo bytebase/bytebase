@@ -2091,7 +2091,7 @@
         "clear-filter": "Xóa bộ lọc",
         "col": {
           "branch": "Nhánh",
-          "databases": "Cơ sở dữ liệu và chủ sở hữu",
+          "databases": "Cơ sở dữ liệu",
           "roles": "Vai trò"
         },
         "configure-none": "Cấu hình phiên bản",
@@ -2122,7 +2122,6 @@
         "over-limit-body": "Hãy bỏ chọn {{branches}} để tiếp tục, hoặc tăng giới hạn trong Cài đặt > Gói đăng ký.",
         "over-limit-title": "Đã chọn {{branches}}, trong khi gói của bạn chỉ có thể {{instances}}",
         "owner": "chủ sở hữu {{owner}}",
-        "owners-differ": "chủ sở hữu khác nhau",
         "page-error-key": "Neon từ chối khóa API. Hãy quay lại và nhập lại.",
         "page-error-rate": "Neon đang giới hạn yêu cầu của khóa API này.",
         "page-error-retry-in": "Bạn có thể thử lại lúc {{time}}.",

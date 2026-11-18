@@ -103,7 +103,7 @@ Whole-request failures stay on this step and keep the entered values. An invalid
 
 ### Select branches
 
-A table lists loaded branches grouped by Neon project, with each group collapsible and labeled with the Neon project name and ID. A row shows the branch name and ID, its databases with owner roles, its available roles, and its availability. Nothing is selected initially. A branch with a discovery error stays visible with its reason and cannot be selected.
+A table lists loaded branches grouped by Neon project, with each group collapsible and labeled with the Neon project name and ID. A row shows the branch name and ID, its databases, its available roles, and its availability. Nothing is selected initially. A branch with a discovery error stays visible with its reason and cannot be selected.
 
 Pages load on demand. **Load more** appends one page, and **Load all remaining** keeps loading until the continuation token is empty or a request fails. Until the token is empty, the status line gives the loaded count and says more remain; it never states a total. Select-all controls exist for the table and for each Neon project, are labeled as acting on loaded, available branches, and loading a page never changes the selection. A view toggle switches between loaded and selected rows. Filtering by name is client-side and enabled only after every page is loaded, so it cannot hide branches Neon has not returned.
 

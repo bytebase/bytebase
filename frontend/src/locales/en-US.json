@@ -2091,7 +2091,7 @@
         "clear-filter": "Clear filter",
         "col": {
           "branch": "Branch",
-          "databases": "Databases and owners",
+          "databases": "Databases",
           "roles": "Roles"
         },
         "configure-none": "Configure instances",
@@ -2122,7 +2122,6 @@
         "over-limit-body": "Deselect {{branches}} to continue, or raise the limit in Settings > Subscription.",
         "over-limit-title": "{{branches}} selected, and your plan can add {{instances}}",
         "owner": "owner {{owner}}",
-        "owners-differ": "different owners",
         "page-error-key": "Neon rejected the API key. Go back and enter it again.",
         "page-error-rate": "Neon is limiting requests for this API key.",
         "page-error-retry-in": "You can retry at {{time}}.",

@@ -824,6 +824,7 @@ test("text that is not a connection string is reported once the field is left an
   mountCreate(Engine.POSTGRES);
   selectHosting(/^instance.vendor.neon/);
   const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  expect(field).toHaveAttribute("data-agent-sensitive");
   fireEvent.change(field, { target: { value: "not a connection string" } });
   expect(
     screen.queryByText("instance.neon.manual.connection-string-invalid")

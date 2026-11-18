@@ -361,3 +361,20 @@ test("keeps trailing column headers and available status on a single line while 
   expect(desktopUnavailableReason).toBeDefined();
   expect(desktopUnavailableReason).not.toHaveClass("whitespace-nowrap");
 });
+
+test("lists branch database names without owner annotations", () => {
+  const multiDb = create(NeonBranchSchema, {
+    projectId: "storefront-id",
+    projectTitle: "storefront",
+    branchId: "br-storefront-main",
+    branchTitle: "main",
+    databases: [
+      { name: "app", owner: "app_owner" },
+      { name: "analytics", owner: "bi_owner" },
+    ],
+    roles: ["neondb_owner"],
+  });
+  renderStep({ drafts: [makeDraft(multiDb)] });
+  expect(screen.getAllByText("app, analytics").length).toBeGreaterThan(0);
+  expect(screen.queryByText(/app_owner|bi_owner/)).toBeNull();
+});

@@ -722,6 +722,7 @@ function NeonConnectionStringField({
     >
       <Input
         id={id}
+        data-agent-sensitive
         value={value}
         disabled={disabled}
         autoComplete="off"

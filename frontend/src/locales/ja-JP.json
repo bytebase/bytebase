@@ -2091,7 +2091,7 @@
         "clear-filter": "絞り込みを解除",
         "col": {
           "branch": "ブランチ",
-          "databases": "データベースとオーナー",
+          "databases": "データベース",
           "roles": "ロール"
         },
         "configure-none": "インスタンスを設定",
@@ -2122,7 +2122,6 @@
         "over-limit-body": "続行するには{{branches}}の選択を解除するか、設定 > サブスクリプションで上限を引き上げてください。",
         "over-limit-title": "{{branches}}を選択していますが、現在のプランで追加できるのは{{instances}}です",
         "owner": "オーナー {{owner}}",
-        "owners-differ": "オーナーが異なります",
         "page-error-key": "Neon が API キーを拒否しました。戻ってもう一度入力してください。",
         "page-error-rate": "Neon がこの API キーのリクエストを制限しています。",
         "page-error-retry-in": "{{time}} 以降に再試行できます。",

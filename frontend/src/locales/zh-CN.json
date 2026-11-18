@@ -2091,7 +2091,7 @@
         "clear-filter": "清除筛选",
         "col": {
           "branch": "分支",
-          "databases": "数据库与所有者",
+          "databases": "数据库",
           "roles": "角色"
         },
         "configure-none": "配置实例",
@@ -2122,7 +2122,6 @@
         "over-limit-body": "请取消选择{{branches}}后继续，或在“设置 > 订阅”中提高实例上限。",
         "over-limit-title": "已选择{{branches}}，而当前方案还能添加{{instances}}",
         "owner": "所有者 {{owner}}",
-        "owners-differ": "所有者不同",
         "page-error-key": "Neon 拒绝了 API 密钥。请返回并重新输入。",
         "page-error-rate": "Neon 正在限制此 API 密钥的请求。",
         "page-error-retry-in": "{{time}} 起可重试。",

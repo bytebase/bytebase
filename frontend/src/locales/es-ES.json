@@ -2091,7 +2091,7 @@
         "clear-filter": "Borrar filtro",
         "col": {
           "branch": "Rama",
-          "databases": "Bases de datos y propietarios",
+          "databases": "Bases de datos",
           "roles": "Roles"
         },
         "configure-none": "Configurar instancias",
@@ -2122,7 +2122,6 @@
         "over-limit-body": "Deselecciona {{branches}} para continuar o aumenta el límite en Ajustes > Suscripción.",
         "over-limit-title": "{{branches}} seleccionadas, y tu plan permite añadir {{instances}}",
         "owner": "propietario {{owner}}",
-        "owners-differ": "propietarios distintos",
         "page-error-key": "Neon rechazó la clave de API. Vuelve atrás e introdúcela de nuevo.",
         "page-error-rate": "Neon está limitando las solicitudes de esta clave de API.",
         "page-error-retry-in": "Puedes reintentar a las {{time}}.",
