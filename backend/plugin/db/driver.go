@@ -95,6 +95,7 @@ type ConnectionContext struct {
 	EnvironmentID string
 	InstanceID    string
 	EngineVersion string
+	Vendor        storepb.Vendor
 	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
 	TenantMode   bool
 	DatabaseName string
