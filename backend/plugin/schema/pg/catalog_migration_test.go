@@ -544,3 +544,29 @@ func TestUnloadableBackupSchemaViewIsNotRestored(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, sql)
 }
+
+// TestSplitCompositeRetypeAddsAttributeBeforeItsComment covers a split release
+// whose attribute also gains a comment: the ADD must land after the new relation
+// exists but before the COMMENT that targets the attribute.
+func TestSplitCompositeRetypeAddsAttributeBeforeItsComment(t *testing.T) {
+	snapshot := func(table, attributeType, comment string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable(table, 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{
+					Name: "r", Type: attributeType, Comment: comment,
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("old_t", "public.old_t", ""), snapshot("new_t", "public.new_t", "row comment"))
+	require.NoError(t, err)
+	add := strings.Index(sql, `ADD ATTRIBUTE "r" public.new_t`)
+	comment := strings.Index(sql, "COMMENT ON COLUMN")
+	require.GreaterOrEqual(t, add, 0, sql)
+	require.GreaterOrEqual(t, comment, 0, sql)
+	require.Less(t, add, comment, sql)
+}

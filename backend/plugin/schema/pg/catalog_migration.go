@@ -39,6 +39,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return "", nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
+	restoreIndexDefinitions(plan, newSchema.GetProto())
 	releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto())
 	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
@@ -97,24 +98,73 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 				if alter < 0 || drop < 0 || alter < drop {
 					continue
 				}
-				if _, dependsOnCreated := referencedRelation(newType, created); dependsOnCreated {
+				if createdKey, dependsOnCreated := referencedRelation(newType, created); dependsOnCreated {
 					plan.Ops[alter].SQL = "ALTER TYPE " + quoteQualified(schema.GetName(), composite.GetName()) + " DROP ATTRIBUTE " + quoteIdentifier(attribute.GetName())
 					plan.Ops[alter].Phase = catalog.PhasePre
 					plan.Ops = moveOp(plan.Ops, alter, drop)
-					plan.Ops = append(plan.Ops, catalog.MigrationOp{
+					add := catalog.MigrationOp{
 						Type:       catalog.OpAlterType,
 						SchemaName: schema.GetName(),
 						ObjectName: composite.GetName(),
 						SQL:        addAttributeSQL(schema.GetName(), composite.GetName(), attribute, newType),
 						Phase:      catalog.PhaseMain,
 						ObjType:    'r',
-					})
+					}
+					plan.Ops = insertAfterObjectCreate(plan.Ops, createdKey, add)
 					continue
 				}
 				plan.Ops = moveOp(plan.Ops, alter, drop)
 			}
 		}
 	}
+}
+
+func insertAfterObjectCreate(ops []catalog.MigrationOp, key string, op catalog.MigrationOp) []catalog.MigrationOp {
+	for i, existing := range ops {
+		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView) && existing.SchemaName+"."+existing.ObjectName == key {
+			result := make([]catalog.MigrationOp, 0, len(ops)+1)
+			result = append(result, ops[:i+1]...)
+			result = append(result, op)
+			result = append(result, ops[i+1:]...)
+			return result
+		}
+	}
+	return append(ops, op)
+}
+
+func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
+	for i, op := range plan.Ops {
+		if op.Type != catalog.OpCreateIndex {
+			continue
+		}
+		index := indexByName(meta, op.SchemaName, op.ObjectName)
+		if index == nil || index.GetDefinition() == "" {
+			continue
+		}
+		plan.Ops[i].SQL = strings.TrimRight(strings.TrimSpace(index.GetDefinition()), ";")
+	}
+}
+
+func indexByName(meta *metadatapb.DatabaseSchemaMetadata, schemaName, name string) *metadatapb.IndexMetadata {
+	schema := schemaByName(meta, schemaName)
+	if schema == nil {
+		return nil
+	}
+	for _, table := range schema.GetTables() {
+		for _, index := range table.GetIndexes() {
+			if index.GetName() == name {
+				return index
+			}
+		}
+	}
+	for _, view := range schema.GetMaterializedViews() {
+		for _, index := range view.GetIndexes() {
+			if index.GetName() == name {
+				return index
+			}
+		}
+	}
+	return nil
 }
 
 func addAttributeSQL(schema, composite string, attribute *metadatapb.CompositeTypeAttribute, newType string) string {

@@ -492,7 +492,7 @@
   catalogExpected: ''
   catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: con:public.users.users_account_id_fkey: ERROR: there is no unique constraint matching given keys for referenced table "accounts" (SQLSTATE 42830)'
 - description: TestCockroachMetadataDiffCreateIndexUsesFullDefinitionFromMetadata
-  difference: the index is rendered from its expressions, omitting USING btree and the WITH (fillfactor) storage parameter. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the index is rendered from its stored definition, including USING btree and the WITH (fillfactor) storage parameter; the text is otherwise unchanged.
   oldMetadata: |-
     {
       "schemas": [
@@ -544,7 +544,7 @@
   legacyExpected: |+
     CREATE INDEX idx_users_email ON public.users USING btree (email DESC NULLS LAST) WITH (fillfactor='70');
 
-  catalogExpected: CREATE INDEX idx_users_email ON public.users (email DESC NULLS LAST)
+  catalogExpected: CREATE INDEX idx_users_email ON public.users USING btree (email DESC NULLS LAST) WITH (fillfactor='70')
 - description: TestCockroachMetadataDiffCreateTableForeignKeysAfterAllTables
   difference: catalog refuses a changed foreign key whose referenced key is not unique; the legacy generator rendered it without checking.
   oldMetadata: |-
