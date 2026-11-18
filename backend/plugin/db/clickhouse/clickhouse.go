@@ -278,8 +278,6 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb
 	return d.impl.Dump(ctx, out, dbMetadata)
 }
 
-// querySession returns the driver's one session, opening it on the first query
-// so Open still does not reach the server.
 // discardSession closes a session a statement took with it, so the stream's
 // next statement opens a new one instead of reusing the dead one.
 func (d *Driver) discardSession(session omnidriver.Session) {
@@ -291,6 +289,8 @@ func (d *Driver) discardSession(session omnidriver.Session) {
 	}
 }
 
+// querySession returns the driver's one session, opening it on the first query
+// so Open still does not reach the server.
 func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
 	d.sessionMu.Lock()
 	defer d.sessionMu.Unlock()
