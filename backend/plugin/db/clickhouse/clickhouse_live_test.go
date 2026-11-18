@@ -20,7 +20,7 @@ const testDatabase = "bb_clickhouse_cutover"
 // TestClickHouseDriver exercises the adapter against a live server: ping, the
 // instance and database syncs, the editor's query path and its read/write
 // classification, the result-size cap, the session a driver holds, the task-run
-// log, and a dump that restores and round-trips.
+// log, the execution-time default, and that Dump delegates to the driver.
 func TestClickHouseDriver(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedClickHouseContainer(t)
@@ -219,10 +219,9 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("a write answers with no rows", func(t *testing.T) {
-		// Known difference: the old driver added a synthetic "Affected Rows: 0"
-		// row here. clickhouse-go states no affected count, so the driver's
-		// result carries none and the adapter adds nothing; Execute still
-		// answers 0.
+		// A write answers with no rows: clickhouse-go states no affected count,
+		// so the result carries neither columns nor an "Affected Rows" row, and
+		// Execute answers 0.
 		results, err := database.QueryConn(ctx, nil, "INSERT INTO t (id) VALUES (5)", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
