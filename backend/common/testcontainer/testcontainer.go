@@ -556,7 +556,7 @@ func getCassandraContainer(ctx context.Context) (retC *Container, retErr error) 
 
 func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr error) {
 	c, err := start(ctx, testcontainers.ContainerRequest{
-		Image: "redis:7.2-alpine",
+		Image: "redis:7.4.12-alpine",
 		Cmd: []string{
 			"redis-server", "--cluster-enabled", "yes",
 			"--cluster-config-file", "/tmp/nodes.conf", "--cluster-node-timeout", "5000",
