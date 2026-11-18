@@ -17,53 +17,23 @@
 //     until Close and serializes the calls, so what a statement sets there (the
 //     search_path, a temporary table) holds for the next one. It reports
 //     OwnsQuerySession, so no caller opens a second connection for it.
-//   - The data source's extra connection parameters reach no connection. The
-//     driver this replaced read none of them; the only parameter the contract
-//     takes here is ParamDatashare, which is the datashare flag.
-//   - ApplicationName is not set: the driver this replaced set no
-//     application_name, and the task-run session listing supports PostgreSQL and
-//     CockroachDB only.
-//   - TLS is required only when the data source carries a client certificate,
-//     which is when the driver this replaced built a TLS configuration; a data
-//     source with UseSsl alone leaves libpq's default negotiation in place.
-//   - Dump writes nothing. Redshift's omni driver has no Dumper — redshift/catalog
-//     has no renderer for a synced snapshot — and Bytebase's Dump returned nil, so
-//     the no-op is kept rather than replaced by a renderer no server has checked.
+//   - The data source's extra connection parameters reach no connection: the
+//     only parameter the contract takes here is ParamDatashare, the datashare
+//     flag.
+//   - ApplicationName is not set: the task-run session listing supports
+//     PostgreSQL and CockroachDB only.
+//   - TLS is configured only when the data source carries a client certificate;
+//     a data source with UseSsl alone leaves libpq's default negotiation in
+//     place.
+//   - Dump writes nothing: omni's Redshift driver has no Dumper — redshift/catalog
+//     has no renderer for a synced snapshot — and a renderer no server has
+//     checked would be the only way to replace the no-op.
 //
-// Behaviours that differ from the driver this replaced, each made by omni's
-// driver and recorded below or in cutover_parity_test.go:
-//   - The sync reads only user schemas: everything but information_schema whose
-//     name starts with pg_. The old predicates excluded pg_catalog and
-//     information_schema by name, so the sync failed for any non-superuser on
-//     obj_description over Redshift's own pg_auto_copy/pg_internal schemas. It
-//     also orders every read, reads a view's whole definition with SHOW VIEW
-//     (pg_views truncates it at 256 bytes), reads a numeric column's precision
-//     and scale, and keeps a datashare's views out of its table list.
-//   - Execute splits every script with the engine's splitter. The old driver sent
-//     a sheet longer than common.MaxSheetCheckSize, or one with more than
-//     common.MaximumCommands statements, as a single command.
-//   - Execute refuses a transactional script holding a statement Redshift commits
-//     on its own (TRUNCATE, VACUUM, a database statement) or its own transaction
-//     control, naming autocommit mode; the old driver ran it and let the
-//     statement commit the transaction.
-//   - A database-creation step runs one CREATE DATABASE statement and refuses a
-//     script that holds initialization after it; the old driver ran the script's
-//     lines one by one in the admin database.
-//   - Autocommit mode runs every statement on one connection, so a script that
-//     sets session state keeps it; the old driver used a pooled connection per
-//     statement.
-//   - A masked caller does not receive a procedure call's rows, which the
-//     analysis cannot trace to columns; the old driver returned them.
-//   - A datashare statement has the database's name stripped from the relations
-//     it names, not from every occurrence in its text, so a literal that spells
-//     the name keeps it.
-//   - The task-run log records the total affected rows and no per-result list,
-//     as before, though the contract reports both.
-//   - A database missing from the server is driver.ErrNotFound, which the adapter
-//     maps to the product's not-found error. The name it looks for is the one the
-//     connection opened on, which falls back to the data source's database and
-//     then to dev; the old driver compared only the connection context's name, so
-//     a driver opened without one reported not-found for a database that exists.
+// Behaviour the sync, Execute and the datashare rewrite get from omni's driver
+// rather than from this adapter — the user-schema predicate, script splitting,
+// the refusals of a transactional script that holds a statement Redshift commits
+// on its own, and the stripping of the database name from the named relations —
+// is pinned by cutover_parity_test.go.
 package redshift
 
 import (
