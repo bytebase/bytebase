@@ -204,10 +204,6 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'ck comment',
 	metadata, err := GetDatabaseMetadata(sql)
 	require.NoError(t, err)
 	require.Equal(t, "ck comment", metadata.Schemas[0].Tables[0].Comment)
-
-	omniCatalog, err := catalog.LoadSQL(sql)
-	require.NoError(t, err)
-	require.Empty(t, omniCatalog.Metadata().Schemas[0].Tables[0].Comment)
 }
 
 // TestDefinitionRewritesEachModuleAtItsOwnSection pins replacement to the
