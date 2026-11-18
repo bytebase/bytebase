@@ -106,8 +106,8 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		user, password = awsCredential.GetAccessKeyId(), awsCredential.GetSecretAccessKey()
 		params[omnidynamodb.ParamSessionToken] = awsCredential.GetSessionToken()
 	default:
-		// Leave both empty: the omni driver's LoadDefaultConfig reads the same
-		// default chain the old driver read.
+		// Leave both empty: the omni driver's LoadDefaultConfig reads the
+		// default chain.
 	}
 	if accountID := dataSource.GetExtraConnectionParameters()["accountId"]; accountID != "" {
 		params[omnidynamodb.ParamAccountID] = accountID

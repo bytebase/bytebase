@@ -18,8 +18,7 @@ func TestEndpointTLS(t *testing.T) {
 		wantTLS    bool
 	}{
 		{
-			// No host: the AWS SDK resolves the region's own https endpoint, as
-			// it did before the cutover.
+			// No host: the AWS SDK resolves the region's own https endpoint.
 			name:       "no_host_uses_the_sdk_transport",
 			dataSource: &storepb.DataSource{Region: "ap-northeast-1", UseSsl: true},
 		},
@@ -56,11 +55,11 @@ func TestEndpointTLS(t *testing.T) {
 			if err != nil {
 				t.Fatalf("endpointTLS() = %v", err)
 			}
-			// The point of the empty config is that it verifies: the old driver
-			// used the AWS SDK's own transport, so verify_tls_certificate was
-			// ignored and a self-signed endpoint never passed.
+			// The empty config verifies the endpoint against the system roots:
+			// verify_tls_certificate is ignored and a self-signed endpoint does
+			// not pass.
 			if config.InsecureSkipVerify {
-				t.Error("endpoint TLS config skips verification; the old driver always verified")
+				t.Error("endpoint TLS config skips verification; TLS must verify")
 			}
 		})
 	}
@@ -129,8 +128,7 @@ func TestOpenWithoutRoleArnSkipsAssumeRole(t *testing.T) {
 	}
 }
 
-// A configured account skips STS. This is the one identity path the old driver
-// did not have: it always asked STS, so there was nothing to compare against.
+// A configured account skips STS and names the pseudo database directly.
 func TestSyncInstanceUsesConfiguredAccount(t *testing.T) {
 	fake := newFakeDynamoDB(t)
 	stsServer, stsLog := newFakeSTS(t, stsAnswers)
@@ -155,7 +153,7 @@ func TestSyncInstanceUsesConfiguredAccount(t *testing.T) {
 	}
 }
 
-func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
+func TestContractBehavior(t *testing.T) {
 	t.Run("limit caps the statement", func(t *testing.T) {
 		fake := newFakeDynamoDB(t)
 		t.Cleanup(fake.server.Close)
@@ -168,8 +166,8 @@ func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
 		if len(results) != 1 || results[0].RowsCount != 1 {
 			t.Fatalf("QueryConn() = %d results, rows %v; want one row", len(results), rowCounts(results))
 		}
-		// Known difference: the old driver put Limit on every ExecuteStatement
-		// page, so Limit=1 read three pages and returned three rows.
+		// Limit is a cap on the statement's rows, so the driver asks for no
+		// page after it has them.
 		if len(fake.requests) != 1 {
 			t.Errorf("requests = %v, want only the first page", fake.requests)
 		}
@@ -187,8 +185,7 @@ func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
 		if len(results) != 1 {
 			t.Fatalf("QueryConn() = %d results, want 1", len(results))
 		}
-		// Known difference: the old driver never read MaximumSQLResultSize and
-		// returned the whole answer with no error.
+		// MaximumSQLResultSize truncates the result and reports the limit.
 		if !strings.Contains(results[0].GetError(), "max allowed output size") {
 			t.Errorf("QueryConn() error = %q, want the result-size message", results[0].GetError())
 		}
@@ -204,8 +201,7 @@ func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
 			t.Fatalf("QueryConn() = %v", err)
 		}
 		value := results[0].Rows[0].Values[0]
-		// Known difference: the old driver put the raw bytes in a proto string,
-		// which protojson could not marshal when they were not valid UTF-8.
+		// A binary crosses as bytes, so arbitrary bytes need not be valid UTF-8.
 		if string(value.GetBytesValue()) != string([]byte{0, 1, 2}) {
 			t.Errorf("binary value = %v, want bytes 00 01 02", value)
 		}
@@ -221,8 +217,8 @@ func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
 			t.Fatalf("QueryConn() = %v", err)
 		}
 		missing := results[0].Rows[1].Values[0]
-		// Known difference: the old driver appended a nil *v1pb.RowValue, which
-		// protojson dropped; the grid now receives an explicit NULL.
+		// A missing attribute is an explicit NULL, so the grid renders a null
+		// cell rather than a dropped value.
 		if _, ok := missing.GetKind().(*v1pb.RowValue_NullValue); !ok {
 			t.Errorf("missing attribute = %v, want an explicit NULL", missing)
 		}
@@ -250,9 +246,8 @@ func TestKnownDifferencesFromTheOldDriver(t *testing.T) {
 		if strings.Join(columns, ",") != "created,pk,sku" {
 			t.Errorf("columns = %v, want [created pk sku]", columns)
 		}
-		// Known difference: the old driver reported only the table's HASH and
-		// RANGE index, the latter empty for a hash-only table, and ignored the
-		// secondary indexes and their key attributes.
+		// Every key attribute of the table and of its secondary indexes is a
+		// column; a hash-only table has no RANGE index.
 		var indexes []string
 		for _, index := range table.Indexes {
 			indexes = append(indexes, index.Type+":"+index.Name+"("+strings.Join(index.Expressions, ",")+")")

@@ -24,16 +24,14 @@ import (
 )
 
 // The differential test runs one corpus through db.Driver and records what the
-// endpoint was asked and what the product received. The golden file was
-// recorded from the pre-cutover driver at 5063056d81 (DynamoDB's own
-// implementation), then the new adapter had to reproduce it. Re-record with:
+// endpoint was asked and what the product received. The golden file is the
+// contract this adapter keeps. Re-record with:
 //
 //	RECORD_DYNAMODB_GOLDEN=1 go test -run TestDriverDifferential ./backend/plugin/db/dynamodb/
 //
-// The golden deliberately excludes the cases the cutover changes on purpose:
-// per-page Limit, MaximumSQLResultSize truncation, binary values, a missing
-// attribute, and secondary-index sync. Those are asserted in
-// TestKnownDifferencesFromTheOldDriver instead.
+// The golden excludes cases whose contract is asserted directly in
+// TestContractBehavior: Limit, MaximumSQLResultSize truncation, binary values, a
+// missing attribute, and secondary-index sync.
 func TestDriverDifferential(t *testing.T) {
 	golden := differentialGolden{
 		Success: runDifferentialCorpus(t, stsAnswers),
@@ -61,7 +59,7 @@ func TestDriverDifferential(t *testing.T) {
 		t.Fatalf("unmarshal golden: %v", err)
 	}
 	if diff := compareGolden(golden, want); diff != "" {
-		t.Errorf("cutover changed the driver's statements or results:\n%s", diff)
+		t.Errorf("the adapter changed the driver's statements or results:\n%s", diff)
 	}
 }
 
