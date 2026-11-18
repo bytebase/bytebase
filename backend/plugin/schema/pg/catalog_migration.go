@@ -598,7 +598,7 @@ func routineReturnClause(definition string) string {
 	rest := definition[index+len("RETURNS "):]
 	end := len(rest)
 	for _, marker := range []string{"\nAS ", "\n AS ", " LANGUAGE ", "\nLANGUAGE ", " IMMUTABLE", " STABLE", " VOLATILE", " STRICT", " SECURITY ", " COST ", " ROWS ", " WINDOW ", "\n"} {
-		if i := strings.Index(rest, marker); i >= 0 && i < end {
+		if i := indexOutsideQuotes(rest, marker); i >= 0 && i < end {
 			end = i
 		}
 	}

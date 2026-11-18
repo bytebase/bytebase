@@ -1428,6 +1428,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "return type with a clause word in its name",
+			world: world{viewName: "v LANGUAGE suffix", function: &metadatapb.FunctionMetadata{
+				Name:       "w",
+				Signature:  "w()",
+				Definition: `CREATE FUNCTION public.w() RETURNS public."v LANGUAGE suffix" LANGUAGE sql AS $$ SELECT $$`,
+			}},
+			refused: true,
+		},
+		{
 			name: "body reference",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",
