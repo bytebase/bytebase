@@ -18,6 +18,7 @@ func factsMetadata() (*metadatapb.DatabaseSchemaMetadata, *metadatapb.DatabaseSc
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:     "dbo",
+				SkipDump: true,
 				Synonyms: []*metadatapb.SynonymMetadata{{Name: "syn", TargetSchema: "dbo", TargetName: "t"}},
 				Sequences: []*metadatapb.SequenceMetadata{{
 					Name: "seq", DataType: "bigint", Start: "1", Comment: "seq comment",

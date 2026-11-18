@@ -90,7 +90,8 @@ func legacyProcedureText(procedure *metadatapb.ProcedureMetadata) string {
 
 // stripUnrenderedFacts preserves the pre-cutover dump. The old renderer never
 // wrote sequences, synonyms, triggers, or any extended-property comment, and it
-// ignored both the default-constraint name on a column and every SkipDump flag.
+// ignored both the default-constraint name on a column and every SkipDump flag,
+// including the schema-level one.
 // Each of those is a fix of its own; until one ships with its release note, the
 // strip keeps the catalog from adding it to every dump.
 func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
@@ -99,6 +100,7 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 	}
 	out := proto.CloneOf(metadata)
 	for _, schema := range out.GetSchemas() {
+		schema.SkipDump = false
 		schema.Sequences = nil
 		schema.Synonyms = nil
 		for _, table := range schema.GetTables() {
