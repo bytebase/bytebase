@@ -530,6 +530,11 @@ func parametersNameType(parameters, key string, objects map[string]bool, searchP
 			case '"', '\'':
 				i = closingQuote(parameters, i, parameters[i])
 				continue
+			case '$':
+				if end, ok := dollarQuoteEnd(parameters, i); ok {
+					i = end
+				}
+				continue
 			case '(':
 				depth++
 				continue
@@ -572,6 +577,10 @@ func routineArgumentList(definition string) string {
 		switch definition[i] {
 		case '"', '\'':
 			i = closingQuote(definition, i, definition[i])
+		case '$':
+			if end, ok := dollarQuoteEnd(definition, i); ok {
+				i = end
+			}
 		case '(':
 			depth++
 		case ')':
@@ -599,6 +608,34 @@ func closingQuote(text string, start int, quote byte) int {
 		return i
 	}
 	return len(text) - 1
+}
+
+// dollarQuoteEnd returns the index of the closing tag of the dollar-quoted string
+// starting at start. It reports false when start does not begin one, as with a
+// $1 parameter placeholder.
+func dollarQuoteEnd(text string, start int) (int, bool) {
+	if start >= len(text) || text[start] != '$' {
+		return 0, false
+	}
+	i := start + 1
+	if i < len(text) && text[i] != '$' {
+		if text[i] != '_' && (text[i] < 'a' || text[i] > 'z') && (text[i] < 'A' || text[i] > 'Z') {
+			return 0, false
+		}
+		i++
+		for i < len(text) && text[i] != '$' && isIdentifierByte(text[i]) {
+			i++
+		}
+	}
+	if i >= len(text) || text[i] != '$' {
+		return 0, false
+	}
+	tag := text[start : i+1]
+	closing := strings.Index(text[i+1:], tag)
+	if closing < 0 {
+		return len(text) - 1, true
+	}
+	return i + closing + len(tag), true
 }
 
 // routineResultNamesType reports whether a routine's result declaration names the
@@ -997,6 +1034,11 @@ func ambiguousParameters(parameters string, objects map[string]bool, searchPath 
 			switch parameters[i] {
 			case '"', '\'':
 				i = closingQuote(parameters, i, parameters[i])
+				continue
+			case '$':
+				if end, ok := dollarQuoteEnd(parameters, i); ok {
+					i = end
+				}
 				continue
 			case '(':
 				depth++
@@ -1523,18 +1565,16 @@ func scanIdentifier(text string, start int) (string, int, bool, bool) {
 // an index named `"x ON y"` does not look like the owner clause.
 func indexOutsideQuotes(text, needle string) int {
 	for i := 0; i < len(text); i++ {
-		if text[i] == '"' {
-			for i++; i < len(text); i++ {
-				if text[i] != '"' {
-					continue
-				}
-				if i+1 < len(text) && text[i+1] == '"' {
-					i++
-					continue
-				}
-				break
-			}
+		switch text[i] {
+		case '"', '\'':
+			i = closingQuote(text, i, text[i])
 			continue
+		case '$':
+			if end, ok := dollarQuoteEnd(text, i); ok {
+				i = end
+				continue
+			}
+		default:
 		}
 		if strings.HasPrefix(text[i:], needle) {
 			return i

@@ -1527,6 +1527,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			}},
 		},
 		{
+			name: "dollar-quoted default with a closing parenthesis",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "dd",
+				Signature:  "dd(text)",
+				Definition: `CREATE FUNCTION public.dd(x text DEFAULT $$)$$, OUT result public.v) RETURNS record LANGUAGE sql AS $$ SELECT $$`,
+			}},
+			refused: true,
+		},
+		{
 			name: "unqualified parameter type",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "u",
