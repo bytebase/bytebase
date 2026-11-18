@@ -14,19 +14,18 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// cutoverParityCase records the migration the legacy Bytebase generator emitted
-// before Oracle moved to omni's catalog. The old implementation is deleted, so
-// these strings are the recorded differential rather than a live second path.
+// cutoverParityCase holds a fixture's two expected migration texts: the
+// catalog's, and the same script with its trailing blank line.
 type cutoverParityCase struct {
 	Description     string `yaml:"description"`
 	LegacyExpected  string `yaml:"legacyExpected"`
 	CatalogExpected string `yaml:"catalogExpected"`
 }
 
-// TestCutoverParity pins the only migration difference the cutover introduced:
-// the legacy generator ended six scripts with a blank line where omni's plan
-// ends after the last statement. Every other case in generate_migration.yaml is
-// byte-identical and is covered by TestGenerateMigration.
+// TestCutoverParity pins the fixture cases where the catalog migration ends
+// after the last statement while the second expected text keeps one trailing
+// blank line. Every other case in generate_migration.yaml is byte-identical and
+// is covered by TestGenerateMigration.
 func TestCutoverParity(t *testing.T) {
 	content, err := os.ReadFile("testdata/cutover_parity.yaml")
 	require.NoError(t, err)
@@ -50,16 +49,15 @@ func TestCutoverParity(t *testing.T) {
 				parseMetadata(t, source.OldMetadata), parseMetadata(t, source.NewMetadata))
 			require.NoError(t, err)
 			require.Equal(t, tc.CatalogExpected, migration)
-			// Known difference: the catalog drops the legacy trailing blank
-			// line, so the predecessor output is exactly one newline longer.
+			// The fixture's second text keeps the trailing blank line; the
+			// catalog's does not.
 			require.Equal(t, tc.LegacyExpected, migration+"\n")
 		})
 	}
 }
 
 // TestMetadataMigrationKeepsLegacyOmissions pins the migration path to the same
-// compatibility strip as the definition path. The legacy generator emitted no
-// identity clause and no index visibility, so an identity column or an invisible
+// compatibility strip as the definition path. An identity column or an invisible
 // index in the target must not reach the catalog diff.
 func TestMetadataMigrationKeepsLegacyOmissions(t *testing.T) {
 	oldMetadata := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
