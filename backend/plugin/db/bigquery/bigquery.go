@@ -210,8 +210,11 @@ func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, er
 // the previous driver logged none.
 func (executeLogger) TransactionControl(odriver.TransactionOp, error) {}
 
-// Retry logs nothing: this driver never retries.
-func (executeLogger) Retry(error, int, int) {}
+// Retry records a retried script. BigQuery's driver retries nothing today, so
+// this only fires if it starts to.
+func (l executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
 
 func errorString(err error) string {
 	if err == nil {
