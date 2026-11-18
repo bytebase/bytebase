@@ -990,3 +990,181 @@ test("Neon TLS mode omits Disabled and allows toggling certificate verification 
     mocks.hasSSL = false;
   }
 });
+
+test("connection string field autofills MySQL, PostgreSQL, MSSQL, and Oracle during creation and drops secrets from the field", () => {
+  mountCreate(Engine.MYSQL);
+  let field = screen.getByLabelText(/instance\.connection-string\.label/);
+  expect(field).toHaveAttribute("data-agent-sensitive");
+  paste(
+    field,
+    "mysql://admin:s3cr3t@mysql.example.com:25060/ignored_db?ssl-mode=VERIFY_IDENTITY"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "mysql.example.com",
+    port: "25060",
+    username: "admin",
+    updatedPassword: "s3cr3t",
+    database: "",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(field).toHaveValue("");
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.filled"
+  );
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.POSTGRES,
+    }))
+  );
+  field = screen.getByLabelText(/instance\.connection-string\.label/);
+  paste(
+    field,
+    "postgresql://pguser:pgpass@pg.example.com:5433/appdb?sslmode=require"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "pg.example.com",
+    port: "5433",
+    username: "pguser",
+    updatedPassword: "pgpass",
+    database: "appdb",
+    useSsl: true,
+    verifyTlsCertificate: false,
+  });
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.MSSQL,
+    }))
+  );
+  field = screen.getByLabelText(/instance\.connection-string\.label/);
+  paste(
+    field,
+    "Server=tcp:sql.example.com,1433;Initial Catalog=orders;User ID=sa;Password={your_password};Encrypt=True;TrustServerCertificate=False;"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "sql.example.com",
+    port: "1433",
+    username: "sa",
+    updatedPassword: "",
+    useEmptyPassword: false,
+    database: "orders",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.filled-missing-password"
+  );
+});
+
+test("connection string validates against the selected engine and resets when switching engines", () => {
+  mountCreate(Engine.POSTGRES);
+  const field = screen.getByLabelText(/instance\.connection-string\.label/);
+  paste(field, "mysql://root:pass@mysql.example.com:3306/app");
+  expect(field).toHaveValue("mysql://root:pass@mysql.example.com:3306/app");
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.postgres"
+  );
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.MYSQL,
+    }))
+  );
+  const mysqlField = screen.getByLabelText(
+    /instance\.connection-string\.label/
+  );
+  expect(mysqlField).toHaveValue("");
+  expect(
+    screen.queryByText("instance.connection-string.invalid.postgres")
+  ).toBeNull();
+});
+
+test("connection string field is hidden for unsupported engines and when editing an existing instance", () => {
+  mountCreate(Engine.MARIADB);
+  expect(
+    screen.queryByLabelText(/instance\.connection-string\.label/)
+  ).not.toBeInTheDocument();
+
+  cleanup();
+  render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/prod-mysql",
+        title: "Prod MySQL",
+        engine: Engine.MYSQL,
+        state: State.ACTIVE,
+        dataSources: [
+          {
+            id: "admin",
+            type: DataSourceType.ADMIN,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            host: "mysql.example.com",
+            port: "3306",
+          },
+        ],
+      })}
+    >
+      <Editor />
+    </InstanceFormProvider>
+  );
+  expect(
+    screen.queryByLabelText(/instance\.connection-string\.label/)
+  ).not.toBeInTheDocument();
+});
+
+test("pasting an Oracle SID connection string updates OracleConnectionFields and TLS controls", async () => {
+  mocks.hasSSL = true;
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const OracleWithControls = () => {
+      context = useInstanceFormContext();
+      const update = (updated: EditDataSource) =>
+        context.setDataSourceEditState((previous) => ({
+          ...previous,
+          dataSources: previous.dataSources.map((source) =>
+            source.id === updated.id ? updated : source
+          ),
+        }));
+      return (
+        <>
+          <InstanceFormBody />
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={update}
+          />
+        </>
+      );
+    };
+    render(
+      <InstanceFormProvider>
+        <OracleWithControls />
+      </InstanceFormProvider>
+    );
+    act(() =>
+      context.setBasicInfo((previous) => ({
+        ...previous,
+        engine: Engine.ORACLE,
+      }))
+    );
+
+    const field = screen.getByLabelText(/instance\.connection-string\.label/);
+    paste(field, "oracle://system:secret@ora.example.com:1522?SID=XE&SSL=true");
+
+    expect(screen.getByRole("radio", { name: "instance.sid" })).toBeChecked();
+    expect(
+      screen.getByRole("textbox", { name: /^instance\.sid/ })
+    ).toHaveValue("XE");
+    expect(
+      screen.getByRole("combobox", { name: "data-source.ssl.posture.self" })
+    ).toHaveTextContent("data-source.ssl.posture.tls");
+  } finally {
+    mocks.hasSSL = false;
+  }
+});

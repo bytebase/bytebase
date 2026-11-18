@@ -1609,6 +1609,23 @@
         "title": "Check database engine support"
       }
     },
+    "connection-string": {
+      "filled": "Filled connection fields from the connection string.",
+      "filled-missing-password": "Filled connection fields. Enter the password below.",
+      "help": {
+        "mssql": "Paste a SQL Server connection string to autofill host, port, credentials, database, and TLS.",
+        "mysql": "Paste a MySQL connection string to autofill host, port, credentials, and TLS.",
+        "oracle": "Paste an Oracle connection string to autofill host, port, credentials, service name or SID, and TLS.",
+        "postgres": "Paste a PostgreSQL connection string to autofill host, port, credentials, database, and TLS."
+      },
+      "invalid": {
+        "mssql": "Enter a valid Server=...; or sqlserver:// connection string.",
+        "mysql": "Enter a valid mysql:// connection string.",
+        "oracle": "Enter a valid Easy Connect or oracle:// connection string with a service name or SID.",
+        "postgres": "Enter a valid postgresql:// or key=value connection string."
+      },
+      "label": "Connection string"
+    },
     "create-failed": "Instance creation failed",
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",

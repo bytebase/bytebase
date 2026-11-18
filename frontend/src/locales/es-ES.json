@@ -1609,6 +1609,23 @@
         "title": "Revisar soporte del motor de base de datos"
       }
     },
+    "connection-string": {
+      "filled": "Se rellenaron los campos de conexión a partir de la cadena de conexión.",
+      "filled-missing-password": "Se rellenaron los campos de conexión. Introduce la contraseña abajo.",
+      "help": {
+        "mssql": "Pega una cadena de conexión de SQL Server para rellenar el host, el puerto, las credenciales, la base de datos y TLS.",
+        "mysql": "Pega una cadena de conexión de MySQL para rellenar el host, el puerto, las credenciales y TLS.",
+        "oracle": "Pega una cadena de conexión de Oracle para rellenar el host, el puerto, las credenciales, el nombre de servicio o SID y TLS.",
+        "postgres": "Pega una cadena de conexión de PostgreSQL para rellenar el host, el puerto, las credenciales, la base de datos y TLS."
+      },
+      "invalid": {
+        "mssql": "Introduce una cadena de conexión Server=...; o sqlserver:// válida.",
+        "mysql": "Introduce una cadena de conexión mysql:// válida.",
+        "oracle": "Introduce una cadena de conexión Easy Connect u oracle:// válida con nombre de servicio o SID.",
+        "postgres": "Introduce una cadena de conexión postgresql:// o key=value válida."
+      },
+      "label": "Cadena de conexión"
+    },
     "create-failed": "Error al crear la instancia",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",

@@ -1609,6 +1609,23 @@
         "title": "检查数据库引擎支持"
       }
     },
+    "connection-string": {
+      "filled": "已根据连接字符串填充连接字段。",
+      "filled-missing-password": "已填充连接字段，请在下方输入密码。",
+      "help": {
+        "mssql": "粘贴 SQL Server 连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
+        "mysql": "粘贴 MySQL 连接字符串以自动填充主机、端口、凭据和 TLS。",
+        "oracle": "粘贴 Oracle 连接字符串以自动填充主机、端口、凭据、服务名或 SID 以及 TLS。",
+        "postgres": "粘贴 PostgreSQL 连接字符串以自动填充主机、端口、凭据、数据库和 TLS。"
+      },
+      "invalid": {
+        "mssql": "请输入有效的 Server=...; 或 sqlserver:// 连接字符串。",
+        "mysql": "请输入有效的 mysql:// 连接字符串。",
+        "oracle": "请输入包含服务名或 SID 的有效 Easy Connect 或 oracle:// 连接字符串。",
+        "postgres": "请输入有效的 postgresql:// 或 key=value 连接字符串。"
+      },
+      "label": "连接字符串"
+    },
     "create-failed": "实例创建失败",
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",

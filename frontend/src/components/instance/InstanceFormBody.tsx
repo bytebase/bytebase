@@ -83,6 +83,13 @@ import {
   updateDataSourceSecret,
 } from "./common";
 import {
+  applyParsedConnectionString,
+  type ConnectionStringEngine,
+  type ParsedConnectionString,
+  parseConnectionString,
+  supportsConnectionString,
+} from "./connection-string";
+import {
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
   SnowflakeExtraLinkPlaceHolder,
@@ -774,6 +781,130 @@ function NeonConnectionStringField({
   );
 }
 
+const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
+  [Engine.MYSQL]:
+    "mysql://user:password@db.example.com:3306/mydb?ssl-mode=REQUIRED",
+  [Engine.POSTGRES]:
+    "postgresql://user:password@db.example.com:5432/mydb?sslmode=require",
+  [Engine.MSSQL]:
+    "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=...;Encrypt=True;",
+  [Engine.ORACLE]: "tcps://user:password@db.example.com:1522/orclpdb1",
+};
+
+function ConnectionStringField({
+  engine,
+  disabled,
+  onParsed,
+}: {
+  engine: ConnectionStringEngine;
+  disabled: boolean;
+  onParsed: (parsed: ParsedConnectionString) => void;
+}) {
+  const { t } = useTranslation();
+  const id = useId();
+  const [value, setValue] = useState("");
+  const [filledState, setFilledState] = useState<
+    "none" | "complete" | "missing-password"
+  >("none");
+  const [checked, setChecked] = useState(false);
+  const invalid = checked && value.trim() !== "";
+  const filled = filledState !== "none";
+  const noteId = `${id}-note`;
+
+  const helpText = {
+    [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.help.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.help.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.help.oracle"),
+  }[engine];
+
+  const invalidText = {
+    [Engine.MYSQL]: t("instance.connection-string.invalid.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.invalid.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.invalid.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.invalid.oracle"),
+  }[engine];
+
+  const read = (text: string) => {
+    const parsed = parseConnectionString(engine, text);
+    if (!parsed) return false;
+    onParsed(parsed);
+    setValue("");
+    setFilledState(
+      parsed.password !== undefined ? "complete" : "missing-password"
+    );
+    setChecked(false);
+    return true;
+  };
+
+  return (
+    <FormField
+      title={
+        <FormLabel htmlFor={id} className="flex-wrap">
+          {t("instance.connection-string.label")}{" "}
+          <span className="font-normal text-control-light">
+            {t("instance.neon.optional")}
+          </span>
+        </FormLabel>
+      }
+      description={helpText}
+    >
+      <Input
+        id={id}
+        data-agent-sensitive
+        value={value}
+        disabled={disabled}
+        autoComplete="off"
+        spellCheck={false}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid || filled ? noteId : undefined}
+        placeholder={CONNECTION_STRING_PLACEHOLDERS[engine]}
+        onChange={(event) => {
+          setValue(event.target.value);
+          setFilledState("none");
+          setChecked(false);
+        }}
+        onPaste={(event) => {
+          const pasted = event.clipboardData.getData("text");
+          const target = event.currentTarget;
+          const start = target.selectionStart ?? value.length;
+          const end = target.selectionEnd ?? value.length;
+          const combined = `${value.slice(0, start)}${pasted}${value.slice(end)}`;
+          event.preventDefault();
+          if (!read(combined)) {
+            setValue(combined);
+            setFilledState("none");
+            setChecked(combined.trim() !== "");
+          }
+        }}
+        onBlur={() => {
+          if (value.trim() && !read(value)) setChecked(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || !value.trim()) return;
+          event.preventDefault();
+          if (!read(value)) setChecked(true);
+        }}
+      />
+      {invalid ? (
+        <FormError id={noteId}>{invalidText}</FormError>
+      ) : (
+        filled && (
+          <p
+            id={noteId}
+            role="status"
+            className="text-xs leading-4 text-control-light"
+          >
+            {filledState === "missing-password"
+              ? t("instance.connection-string.filled-missing-password")
+              : t("instance.connection-string.filled")}
+          </p>
+        )
+      )}
+    </FormField>
+  );
+}
+
 function AdditionalAddressesFields({
   addresses,
   defaultPort,
@@ -1305,6 +1436,20 @@ export function InstanceFormBody({
     }));
   };
 
+  const fillFromConnectionString = useCallback(
+    (parsed: ParsedConnectionString) => {
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.id === prev.editingDataSourceId
+            ? applyParsedConnectionString(ds, basicInfo.engine, parsed)
+            : ds
+        ),
+      }));
+    },
+    [basicInfo.engine, setDataSourceEditState]
+  );
+
   const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
   const changeVendor = (vendor: Vendor) => {
     if (isCreating) {
@@ -1639,12 +1784,22 @@ export function InstanceFormBody({
                     </div>
                   </Alert>
                 )}
-                {isNeon && isCreating && (
+                {isNeon && isCreating ? (
                   <NeonConnectionStringField
                     disabled={!allowEdit}
                     pooledHost={isNeonPooledHost(connectionDataSource.host)}
                     onParsed={fillFromNeonConnectionString}
                   />
+                ) : (
+                  isCreating &&
+                  supportsConnectionString(basicInfo.engine) && (
+                    <ConnectionStringField
+                      key={basicInfo.engine}
+                      engine={basicInfo.engine}
+                      disabled={!allowEdit}
+                      onParsed={fillFromConnectionString}
+                    />
+                  )
                 )}
                 {editingDataSource && (
                   <DataSourceForm
