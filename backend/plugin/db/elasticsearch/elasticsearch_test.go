@@ -164,9 +164,17 @@ func TestOpenWithAWSAuth(t *testing.T) {
 	}
 }
 
-// TestOpenWithAnSSHHost pins that the tunnel is the path: Open dials the jump
-// host, where the driver this replaced ignored it and reached the endpoint
-// directly.
+// TestOpenWithAnSSHHost pins that a jump host is the path: Open dials it before
+// it builds the endpoint.
+func TestSecure(t *testing.T) {
+	// https is what the endpoint is built with when any of these says so; the
+	// AWS login has no other way to reach a managed domain.
+	require.True(t, secure(&storepb.DataSource{UseSsl: true}))
+	require.True(t, secure(&storepb.DataSource{Host: "https://search.example.com"}))
+	require.True(t, secure(&storepb.DataSource{AuthenticationType: storepb.DataSource_AWS_RDS_IAM}))
+	require.False(t, secure(&storepb.DataSource{Host: "search.example.com", Port: "9200"}))
+}
+
 func TestOpenWithAnSSHHost(t *testing.T) {
 	_, err := (&Driver{}).Open(context.Background(), storepb.Engine_ELASTICSEARCH, db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
@@ -182,9 +190,7 @@ func TestOpenWithAnSSHHost(t *testing.T) {
 }
 
 func TestTLSSettings(t *testing.T) {
-	t.Run("use_ssl with no material keeps the old default", func(t *testing.T) {
-		// The old driver encrypted without verifying when it was asked for
-		// https and given nothing to verify with.
+	t.Run("use_ssl with no material encrypts without verifying", func(t *testing.T) {
 		tlsConfig, err := tlsSettings(&storepb.DataSource{UseSsl: true})
 		require.NoError(t, err)
 		require.True(t, tlsConfig.InsecureSkipVerify)
@@ -193,8 +199,7 @@ func TestTLSSettings(t *testing.T) {
 
 	t.Run("a CA certificate becomes the endpoint's roots", func(t *testing.T) {
 		certificate := serverCertificatePEM(t)
-		// The old client added the CA whether or not verification was on,
-		// which is where the roots come from here too.
+		// The CA becomes part of the roots whether or not verification is on.
 		tlsConfig, err := tlsSettings(&storepb.DataSource{UseSsl: true, SslCa: certificate})
 		require.NoError(t, err)
 		require.NotNil(t, tlsConfig.RootCAs)
@@ -217,10 +222,10 @@ func serverCertificatePEM(t *testing.T) string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw}))
 }
 
-// TestSyncInstanceMatchesRecordedAnswer replays the answer the pinned
-// Elasticsearch 8.19.25 server gave the driver this replaced, and requires the
-// adapter to read it the same way: the same version, the same one database, the
-// same indices with their document counts and sizes, and the same users.
+// TestSyncInstanceMatchesRecordedAnswer replays an answer recorded from the
+// pinned Elasticsearch 8.19.25 server, and requires the adapter to read it the
+// way that run did: this version, one database, these indices with their
+// document counts and sizes, and these users.
 func TestSyncInstanceMatchesRecordedAnswer(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"GET /": `{"version":{"number":"8.19.25"}}`,
@@ -320,8 +325,8 @@ GET /_cat/indices?h=index`, db.QueryContext{})
 	require.Len(t, results, 3)
 
 	// An object answer is one column per key, in name order, one row, and the
-	// numbers keep the digits the endpoint wrote: max_score stays 1.0, where
-	// the driver this replaced decoded through float64 and printed 1.
+	// numbers keep the digits the endpoint wrote: max_score stays 1.0, where a
+	// float64 decode would print 1.
 	search := results[0]
 	require.Equal(t, []string{"_shards", "hits", "timed_out", "took"}, search.ColumnNames)
 	require.Empty(t, search.ColumnTypeNames, "Elasticsearch states no column type")
@@ -370,7 +375,7 @@ GET /nope/_search`, db.QueryContext{})
 
 // TestQueryConnEmptyAnswer pins an answer with no body: a HEAD, or an empty
 // 200. The status is the whole verdict, so it is a result with no columns and no
-// rows; the driver this replaced failed the call trying to parse it.
+// rows, and nothing is parsed.
 func TestQueryConnEmptyAnswer(t *testing.T) {
 	server := newTestServer(t, map[string]string{"HEAD /alpha": ""})
 	results, err := server.open(t).QueryConn(context.Background(), nil, "HEAD /alpha", db.QueryContext{})
@@ -405,8 +410,7 @@ func TestQueryConnTruncatesAtTheCap(t *testing.T) {
 }
 
 // TestQueryConnBulkFailure pins that a bulk request the endpoint accepted but
-// did not fully apply fails: the verdict is in the body, which the driver this
-// replaced read past.
+// did not fully apply fails: the verdict is in the body, not the status.
 func TestQueryConnBulkFailure(t *testing.T) {
 	server := newTestServer(t, map[string]string{
 		"POST /alpha/_bulk": `{
@@ -533,8 +537,7 @@ func TestExecuteFailsOnARefusedRequest(t *testing.T) {
 }
 
 // TestPingKeepsTheAWSHints pins the connection test's error text on a managed
-// OpenSearch domain: a support case reads the hint that names the role which
-// could not be assumed.
+// OpenSearch domain: the hint names the role that could not be assumed.
 func TestPingKeepsTheAWSHints(t *testing.T) {
 	for _, tc := range []struct {
 		name   string

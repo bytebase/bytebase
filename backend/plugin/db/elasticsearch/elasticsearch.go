@@ -6,92 +6,48 @@
 // Elasticsearch is not a SQL-shaped engine, so each db.Driver method answers in
 // its own way:
 //
-//   - Open builds the endpoint and the login and reaches nothing. The host and
-//     port are the data source's, a scheme in the host wins, and https is
-//     selected by use_ssl, by a host that names its own https, or by AWS IAM
-//     (which always requires it). TLS material is the data source's;
-//     verify_tls_certificate decides whether the endpoint's certificate is
-//     checked, and a data source with no TLS settings still skips verification
-//     when it is asked for https, as before. A data source with an SSH host
-//     dials through the tunnel, which the old driver ignored: it reached the
-//     endpoint directly whatever the jump host said.
+//   - Open builds the endpoint and the login and reaches nothing. https is
+//     selected by use_ssl, by a host that names its own https, or by AWS IAM,
+//     which always requires it, and a host that names no port reaches 9200. TLS
+//     material is the data source's: verify_tls_certificate decides whether the
+//     endpoint's certificate is checked, and a data source asked for https with
+//     no material encrypts without verifying. A data source with an SSH host
+//     dials through the tunnel; an AWS IAM login signs each request through a
+//     transport of the caller's, which then owns its connections.
 //   - Ping asks the endpoint for its root document.
 //   - QueryConn runs each Kibana Dev Console request of the script and answers
-//     one result per request, and fails the call as before when a request
-//     fails.
+//     one result per request.
 //   - Execute runs the same requests through the driver's script path and
-//     reports 0 affected rows: an Elasticsearch answer states its own counts in
-//     its columns.
+//     reports 0 affected rows: an Elasticsearch answer states its counts in its
+//     own columns.
 //   - SyncInstance reads the version, the cluster's indices and its users;
-//     SyncDBSchema returns the indices as one database named "node", which is
-//     the name the old driver gave it.
+//     SyncDBSchema returns the indices as one database named "node".
 //   - Dump writes nothing. A synced index states its document count and data
 //     size, not the mappings and settings that would recreate it, so a dump of
 //     the metadata could not create the index it describes.
-//   - GetDB returns nil. Elasticsearch has no database/sql handle, and no
-//     caller reached for one.
+//   - GetDB returns nil. Elasticsearch has no database/sql handle.
+//
+// An answer is text: one column per key of an object answer, in name order, or
+// one column holding an array answer, and a value keeps the digits the endpoint
+// wrote, so a long past 2^53 is not rounded. No column carries a type name,
+// because Elasticsearch states none. An answer with no body is a result with no
+// columns and no rows, a partly applied bulk request fails the statement, and a
+// result that passes MaximumSQLResultSize is kept and marked truncated with the
+// message every driver uses. A request that fails fails the call rather than
+// answering the results before it. Sync orders indices and users by name.
 //
 // `db.QueryContext.Schema`, `Limit` and `SkipMasking` are not mapped: a cluster
 // is one namespace, a REST answer has no statement to rewrite with a row limit,
 // and Elasticsearch answers with text the driver never relates to a column, so
-// there is nothing for masking to withhold. `MaximumSQLResultSize` is the
-// driver's own cap and marks the answer row truncated with the legacy message.
-// `QueryContext.Explain` profiles the search: the older engines' explain runs
-// the search rather than describing it, and the result says so.
+// there is nothing for masking to withhold. `QueryContext.Explain` profiles the
+// search, which is the only plan Elasticsearch states, and the result says it
+// ran; a request that is not a search is refused rather than run, so an explain
+// cannot carry out a write.
 //
-// What stays here is what Bytebase decides and omni must not: the SSH tunnel
+// The package also holds what Bytebase decides and omni must not: the SSH tunnel
 // (Config.Dial), the AWS IAM login (a SigV4 round tripper around the caller's
-// transport, plus the role-assumption hints the connection test and sync errors
-// have always carried), and the task run's execute log.
-//
-// Known differences from the driver this replaced, measured by running both
-// against the pinned Elasticsearch 8.19.25 container over one corpus. The ones
-// the cutover plan decided are noted there (docs/migration/cutover-changes.md in
-// omni); the rest were found by that run and are fixes unless noted.
-//
-// Requests:
-//
-//   - Ping reads `GET /` where the old client sent `HEAD /`. The same answer,
-//     the root document, now comes back with the version in it.
-//   - The index-settings request is
-//     `GET /*/_settings?filter_path=**.hidden&expand_wildcards=open,hidden`
-//     where the old client sent the same filters ordered differently and also
-//     named index.hidden. The answer, and so the synced metadata, is the same.
-//   - The cat-indices request writes `pretty` where the old client wrote
-//     `pretty=true`. The answer is the same.
-//
-// Answers:
-//
-//   - A search's object answer sorts its keys by name; the old driver took them
-//     in map order, which changed from one answer to the next.
-//   - A number in an object answer keeps the digits the endpoint wrote, so
-//     max_score stays 1.0 where the old driver decoded through float64 and
-//     printed 1, and a long past 2^53 is no longer rounded.
-//   - Indices and users are sorted by name instead of arriving in the server's
-//     and the answer object's order, so one sync and its golden hold one order.
-//   - A partially applied bulk request fails the statement: the endpoint
-//     answers 200 and states the failures in its body, which the old driver
-//     read past.
-//   - An answer with no body (a HEAD, an empty 200) is an empty result instead
-//     of "failed to parse json body: unexpected end of JSON input", the result
-//     size cap is enforced instead of ignored, and an explain of anything but a
-//     search is refused instead of run.
-//   - Execute reports each request to the task run's log. The old driver
-//     reported nothing, because it ran the script through QueryConn.
-//   - A transport failure keeps its text but now names the request it was
-//     making, because it is net/http's own error: a refused certificate reads
-//     `Get "https://...": x509: certificate signed by unknown authority` where
-//     the old client had no request to name.
-//   - A data source with no username and no password used to send
-//     `Authorization: Basic Og==`; the driver now sends no Authorization header.
-//     A secured endpoint that refuses the empty login refuses the absence of one
-//     too, but the request on the wire differs.
-//   - An SSH data source now reaches the endpoint through the jump host. The old
-//     driver ignored the SSH settings, so Open dials the jump host where it used
-//     to open without touching a network.
-//   - A data source with no port used to reach the scheme's default (80 or 443)
-//     because the old driver built "host:" and let net/http fill it in; the
-//     endpoint now defaults to 9200, which is Elasticsearch's own port.
+// transport, plus the role-assumption hints the connection test carries), and the
+// task run's execute log.
 package elasticsearch
 
 import (
@@ -162,11 +118,15 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		}
 	}
 
+	if tlsConfig != nil {
+		cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
+	}
+
 	var opts esdriver.Options
 	if aws {
 		// A managed domain signs each request with SigV4 through a transport
-		// of the caller's, which then owns its own connections: the tunnel is
-		// not available on this login path, as it was not before.
+		// of the caller's, which then owns its own connections, so this login
+		// path cannot also take the tunnel.
 		d.aws = true
 		d.awsRoleARN = dataSource.GetAwsCredential().GetRoleArn()
 		transport, err := signedTransport(ctx, config, dataSource, tlsConfig)
@@ -177,9 +137,6 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	} else {
 		cfg.User = dataSource.GetUsername()
 		cfg.Password = config.Password
-		if tlsConfig != nil {
-			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
-		}
 		if dataSource.GetSshHost() != "" {
 			sshClient, err := util.GetSSHClient(dataSource)
 			if err != nil {
@@ -201,9 +158,9 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 	return d, nil
 }
 
-// endpointHost is the data source's host as the old driver built it: a host that
-// carries its own scheme also carries the port glued onto it. The contract's
-// endpoint takes a host that names its own port, and ignores Config.Port for it.
+// endpointHost is the data source's host with its port glued on when the host
+// carries its own scheme: the contract's endpoint takes the port inside the host
+// it is given and ignores Config.Port for it.
 func endpointHost(dataSource *storepb.DataSource) string {
 	host := dataSource.GetHost()
 	if port := dataSource.GetPort(); port != "" && strings.Contains(host, "://") {
@@ -222,9 +179,8 @@ func secure(dataSource *storepb.DataSource) bool {
 }
 
 // tlsSettings returns the TLS settings the endpoint is verified with. A data
-// source with no TLS settings keeps the old driver's default of encrypting
-// without verifying, and a CA certificate is added to the endpoint's roots
-// whether or not verification is on, which is where the old client put it.
+// source with no TLS settings encrypts without verifying, and a CA certificate
+// becomes part of the endpoint's roots whether or not verification is on.
 func tlsSettings(dataSource *storepb.DataSource) (*tls.Config, error) {
 	tlsConfig, err := util.GetTLSConfig(dataSource)
 	if err != nil {
@@ -305,8 +261,8 @@ func (d *Driver) closeSSHClient() {
 }
 
 // Ping asks the endpoint for its root document. On a managed OpenSearch domain
-// a refusal keeps the hints the old client added, since a support case reads
-// them: the role that could not be assumed, and where to look otherwise.
+// a refusal carries hints a support case reads: the role that could not be
+// assumed, and where to look otherwise.
 func (d *Driver) Ping(ctx context.Context) error {
 	if err := d.inner.Ping(ctx); err != nil {
 		return d.connectionError(err)
@@ -315,8 +271,7 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 // connectionError names what a managed OpenSearch domain's refusal means. The
-// status is in the driver's error text, which is all the old client matched on
-// either.
+// status is in the driver's error text, which is what there is to match on.
 func (d *Driver) connectionError(err error) error {
 	if !d.aws {
 		return err
@@ -349,8 +304,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // QueryConn runs each request of a read-only script and answers one result per
-// request. A request that fails fails the call, which is how the driver it
-// replaced answered: earlier results in the same script did not come back.
+// request. A request that fails fails the call, so the results before it in the
+// same script are not answered either.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.inner.Session(ctx)
 	if err != nil {
@@ -409,8 +364,8 @@ func toQueryResult(result *omnidriver.Result, queryContext db.QueryContext) *v1p
 		Latency:   durationpb.New(result.Latency),
 	}
 	for _, column := range result.Columns {
-		// Elasticsearch states no column type, and Bytebase left
-		// ColumnTypeNames empty, so it is not filled with empty names either.
+		// Elasticsearch states no column type, so ColumnTypeNames stays empty
+		// rather than holding empty names.
 		converted.ColumnNames = append(converted.ColumnNames, column.Name)
 	}
 	for _, row := range result.Rows {
