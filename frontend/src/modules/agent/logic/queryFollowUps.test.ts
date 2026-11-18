@@ -418,17 +418,16 @@ describe("getQueryMaskingSetupTarget", () => {
 });
 
 describe("getQueryResponseActions", () => {
-  test("runtime permission evidence offers masking setup without a model overview call", () => {
+  test("an existing Query response offers masking setup with runtime permission evidence and no model overview", () => {
+    const messages = turn(...query());
     expect(
-      getQueryResponseActions(
-        [rowCount, groups],
-        turn(...query()),
-        [reference],
-        {
-          database,
-          allowed: true,
-        }
-      )
+      getQueryMaskingSetupTarget([rowCount, groups], messages, [reference])
+    ).toBe(database);
+    expect(
+      getQueryResponseActions([rowCount, groups], messages, [reference], {
+        database,
+        allowed: true,
+      })
     ).toEqual([rowCount, groups, setup]);
   });
 
@@ -626,6 +625,17 @@ describe("getQueryResponseActions", () => {
     "Does my exemption apply?",
     "Are my exemptions active?",
     "Can you MASK these columns?",
+    "How can I enable masking for this column?",
+    "Can you apply masking to these results?",
+    "How can I access unmasked data?",
+    "Can you show me unmasked values?",
+    "When does my exemption expire?",
+    "Should I check when my exemption expires?",
+    "Can I request a masking exemption?",
+    "Can you check whether my masking exemption is active?",
+    "Which masking rules apply to these columns?",
+    "Is masking enabled for these results?",
+    "Are these values masked?",
   ])("drops explicit unsupported English governance wording: %s", (prompt) => {
     expect(
       getQueryResponseActions(
@@ -657,6 +667,100 @@ describe("getQueryResponseActions", () => {
     expect(
       getQueryResponseActions([action], turn(...query()), [reference])
     ).toEqual([action]);
+  });
+
+  test.each([
+    { column: "masked", prompt: "How many records have masked set to true?" },
+    {
+      column: "masked",
+      prompt: "Can you group these rows by the masked column?",
+    },
+    { column: "unmasked", prompt: "Can you summarize the unmasked column?" },
+    { column: "status", prompt: "Which rows have status = 'masked'?" },
+    { column: "status", prompt: "How many rows have status = 'unmasked'?" },
+    {
+      column: "masking",
+      prompt: "Can you compare the masking and exemption columns?",
+    },
+    {
+      column: "masking",
+      prompt: "Can you count records where masking = true?",
+    },
+    {
+      column: "exemption",
+      prompt: "Can you count records where exemption is null?",
+    },
+    {
+      column: "status",
+      prompt: "What is the distribution of the 'masked' status?",
+    },
+    {
+      column: "status",
+      prompt: "Can you show rows whose status is 'unmasked'?",
+    },
+    {
+      column: "exemption",
+      prompt: "How many active tax exemptions were recorded?",
+    },
+  ])(
+    "preserves an ordinary data question about $column: $prompt",
+    ({ column, prompt }) => {
+      const action: AgentResponseAction = { kind: "continue", prompt };
+      expect(
+        getQueryResponseActions(
+          [action],
+          turn(
+            ...query(envelope({ columnNames: [column], masked: [{}] }), {
+              statement: `SELECT ${column} FROM records`,
+            })
+          ),
+          [reference],
+          { database, allowed: false }
+        )
+      ).toEqual([action]);
+    }
+  );
+
+  test("retains positive masking evidence in the existing Query response", () => {
+    const messages = turn(
+      ...query(envelope({ masked: [{ algorithm: "Full mask" }] }))
+    );
+    expect(
+      getQueryMaskingSetupTarget([rowCount, setup], messages, [reference])
+    ).toBeUndefined();
+    expect(
+      getQueryResponseActions([rowCount, setup], messages, [reference], {
+        database,
+        allowed: false,
+      })
+    ).toEqual([rowCount, unmask]);
+  });
+
+  test("offers setup for multiple successful results in the existing Query response", () => {
+    const messages = turn(
+      ...query({
+        status: 200,
+        response: {
+          results: [
+            ...envelope().response.results,
+            {
+              columnNames: ["other"],
+              rows: [],
+              statement: "SELECT other FROM records",
+            },
+          ],
+        },
+      })
+    );
+    expect(
+      getQueryMaskingSetupTarget([rowCount, setup], messages, [reference])
+    ).toBe(database);
+    expect(
+      getQueryResponseActions([rowCount, setup], messages, [reference], {
+        database,
+        allowed: true,
+      })
+    ).toEqual([rowCount, setup]);
   });
 
   test.each(

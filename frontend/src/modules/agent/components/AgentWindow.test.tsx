@@ -208,7 +208,8 @@ vi.mock("./AgentChat", () => ({
     onContinueAction?: (
       chatId: string,
       prompt: string,
-      references: { kind: "project"; name: string; project: string; label: string }[]
+      references: { kind: "project"; name: string; project: string; label: string }[],
+      followUpSourceId?: string
     ) => void;
   }) => {
     const [storageRecoveryResult, setStorageRecoveryResult] = useState<boolean>();
@@ -236,6 +237,26 @@ vi.mock("./AgentChat", () => ({
             []
           )
         }
+      />
+      <button
+        type="button"
+        data-testid="agent-continue-with-source"
+        onClick={() => {
+          const store = useAgentStore.getState();
+          const chatId = store.currentChatId ?? "";
+          const source = store.getMessages(chatId).find((message) => message.role === "assistant");
+          onContinueAction?.(chatId, "How can I request access to unmasked data?", [], source?.id);
+        }}
+      />
+      <button
+        type="button"
+        data-testid="agent-continue-with-empty-source"
+        onClick={() => onContinueAction?.(
+          useAgentStore.getState().currentChatId ?? "",
+          "How can I request access to unmasked data?",
+          [],
+          ""
+        )}
       />
       <button
         type="button"
@@ -1065,6 +1086,24 @@ describe("AgentWindow", () => {
         vi.unstubAllGlobals();
         store.refreshChatProtection();
       });
+    }
+  });
+
+  test("retains an explicitly unresolved follow-up source instead of dropping provenance", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      act(() => document.body.querySelector<HTMLButtonElement>(
+        '[data-testid="agent-continue-with-empty-source"]'
+      )?.click());
+      expect(getCurrentQueuedUserMessage()).toMatchObject({
+        chatId: chat.id,
+        followUpSourceId: "",
+      });
+    } finally {
+      unmount();
     }
   });
 
@@ -3576,6 +3615,33 @@ describe("AgentWindow", () => {
       runMode: "default",
     });
     unmount();
+  });
+
+  test("queues an older answer's follow-up source without replacing the composer draft", () => {
+    const store = useAgentStore.getState();
+    const chat = store.ensureCurrentChat(undefined, "projects/orders");
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
+    const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query employees" });
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Employees returned." });
+    store.setDraft(chat.id, { text: "Keep my unsent draft." });
+    const draft = structuredClone(store.getDraft(chat.id));
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    render();
+
+    try {
+      act(() => document.body.querySelector<HTMLButtonElement>(
+        '[data-testid="agent-continue-with-source"]'
+      )?.click());
+      expect(getCurrentQueuedUserMessage()).toMatchObject({
+        chatId: chat.id,
+        text: "How can I request access to unmasked data?",
+        followUpSourceId: source.id,
+      });
+      expect(store.getDraft(chat.id)).toEqual(draft);
+    } finally {
+      unmount();
+    }
   });
 
   test.each([

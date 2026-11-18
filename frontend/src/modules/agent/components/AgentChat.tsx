@@ -123,7 +123,8 @@ interface AgentChatProps {
   onContinueAction?: (
     chatId: string,
     prompt: string,
-    references: AgentResourceReference[]
+    references: AgentResourceReference[],
+    followUpSourceId?: string
   ) => void;
 }
 
@@ -1550,7 +1551,8 @@ export function AgentChat({
                             onContinueAction?.(
                               msg.chatId,
                               action.prompt,
-                              boundReferences
+                              boundReferences,
+                              msg.id
                             )
                           }
                         >

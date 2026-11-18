@@ -2891,6 +2891,9 @@ export function AgentInput({
                 : message.text;
             store.setDraft(message.chatId, {
               text,
+              ...(message.followUpSourceId !== undefined
+                ? { followUpSourceId: message.followUpSourceId }
+                : {}),
               ...(references.length > 0
                 ? message.resourceReferences
                   ? { mentions }
@@ -3089,6 +3092,9 @@ export function AgentInput({
         content: text,
         metadata: {
           route: currentPage.path,
+          ...(submittedDraft.followUpSourceId !== undefined
+            ? { followUpSourceId: submittedDraft.followUpSourceId }
+            : {}),
           ...(stagedReference ? { resourceReference: stagedReference } : {}),
           ...(references.length > 1 ? { resourceReferences: references } : {}),
         },
@@ -3241,6 +3247,9 @@ export function AgentInput({
               content: messageText,
               metadata: {
                 route: currentPage.path,
+                ...(message.metadata?.followUpSourceId !== undefined
+                  ? { followUpSourceId: message.metadata.followUpSourceId }
+                  : {}),
                 ...(references[0] ? { resourceReference: references[0] } : {}),
                 ...(references.length > 1
                   ? { resourceReferences: references }

@@ -191,6 +191,7 @@ export interface AgentResourceMention {
 
 export interface AgentDraft {
   text: string;
+  followUpSourceId?: string;
   mentions?: AgentResourceMention[];
   project?: {
     name: string;
@@ -201,6 +202,8 @@ export interface AgentDraft {
 }
 
 export interface AgentMessageMetadata {
+  // Lookup provenance only; the source answer grants no authority for this turn.
+  followUpSourceId?: string;
   queryResultRetention?: { version: 1; level: "omitted" };
   runPreflight?: true;
   route?: string;

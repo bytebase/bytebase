@@ -1,8 +1,4 @@
-import enUS from "@/locales/en-US.json";
-import esES from "@/locales/es-ES.json";
-import jaJP from "@/locales/ja-JP.json";
-import viVN from "@/locales/vi-VN.json";
-import zhCN from "@/locales/zh-CN.json";
+import { isCanonicalQueryMaskingQuestion } from "./queryFollowUpQuestions";
 import { normalizeAgentResponseActions } from "./responseActions";
 import type {
   AgentQueryMaskingEligibility,
@@ -30,35 +26,46 @@ const parseRecord = (raw: string | undefined) => {
 const projectPattern = /^projects\/[A-Za-z0-9_-]+$/;
 const databasePattern =
   /^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/[A-Za-z0-9_-]+\/databases\/[^/\s@?#]+$/;
-const maskingQuestionPattern = /\b(?:un)?mask(?:s|ed|ing)?\b/i;
-const exemptionQuestionPattern = /\bexemptions?\b/i;
-const exemptionOwnershipPattern =
-  /\b(?:my|your|our)\s+(?:(?:current|active|existing)\s+)?exemptions?\b/i;
-const exemptionAccessPattern =
+const requestPrefixPattern =
+  /^(?:(?:can|could|would|will|should)\s+(?:i|we|you)\s+|how\s+(?:can|could|do|should|would)\s+(?:i|we|you)\s+|how\s+to\s+)(?:help\s+(?:me|us)\s+)?/;
+const maskingActionPattern = /^(?:un)?mask\b/;
+const maskingConfigurationPattern =
+  /^(?:set\s+up|configure|apply|enable|disable|change|manage|add|remove)\s+(?:(?:a|the|data)\s+)?(?:masking|masks?)\b/;
+const unmaskedAccessPattern =
+  /^(?:access|view|see|get(?:\s+access\s+to)?|request(?:\s+access\s+to)?|show(?:\s+(?:me|us))?)\s+(?:(?:the|these|those|my|our|your)\s+)?unmasked\b/;
+const maskingSubjectPattern =
+  /^(?:(?:which|what)\s+(?:are\s+|is\s+)?|(?:how|what)\s+(?:does|do|can|will|would|is)\s+(?:the\s+)?|(?:is|are|was|were)\s+)(?:data\s+)?(?:masking|unmasking|masks?)\b/;
+const maskingVisibilityPattern =
+  /^(?:(?:why|when)\s+)?(?:are|is|were|was)\s+(?:(?:these|those|the|my|our|your)\s+)?(?:values?|results?|columns?|fields?|data|rows?)\s+(?:being\s+)?(?:un)?masked\b/;
+const unmaskingActorPattern =
+  /^who\s+(?:(?:can|may|will|should)\s+)?unmasks?\b/;
+const exemptionCommandPattern =
+  /^(?:request|renew|grant|revoke|configure|change|remove|enable|disable)\s+(?:(?:a|an|the|my|your|our|current|active|existing|masking)\s+)*exemptions?\b/;
+const exemptionInspectionPattern =
+  /^(?:check|inspect)\s+(?:(?:whether|if|when)\s+)?(?:my|your|our|this|that|the|current|active|existing|masking)\s+(?:(?:current|active|existing|masking)\s+)*exemptions?\b/;
+const exemptionSubjectPattern =
+  /\b(?:my|your|our|this|that|the|current|active|existing|masking)\s+(?:(?:current|active|existing|masking)\s+)*exemptions?\b/;
+const exemptionStateQuestionPattern =
+  /^(?:when|how\s+long|does|do|is|are|has|have|why)\b/;
+const exemptionStatePattern =
   /\b(?:expir(?:e[sd]?|ing|ations?|y)|configur(?:e[sd]?|ing|ations?)|request(?:s|ed|ing)?|renew(?:s|ed|ing|als?)?|grant(?:s|ed|ing)?|appl(?:y|ies|ied|ying|icable|icability)|valid(?:ity)?|active|enabl(?:e[sd]?|ing)|eligib(?:le|ility)|access)\b/i;
-// Model questions are English; saved runtime questions may use any supported locale.
-const maskingQuestionTemplates = [enUS, esES, jaJP, viVN, zhCN]
-  .flatMap(({ agent }) => [
-    agent["follow-up"]["query-mask"],
-    agent["follow-up"]["query-mask-database"],
-    agent["follow-up"]["query-unmask"],
-    agent["follow-up"]["query-unmask-database"],
-  ])
-  .map((template) => template.toLowerCase().split("{{database}}"));
 
 function isMaskingQuestion(prompt: string): boolean {
-  if (
-    maskingQuestionPattern.test(prompt) ||
-    (exemptionQuestionPattern.test(prompt) &&
-      (exemptionOwnershipPattern.test(prompt) ||
-        exemptionAccessPattern.test(prompt)))
-  )
-    return true;
+  if (isCanonicalQueryMaskingQuestion(prompt)) return true;
   const question = prompt.trim().toLowerCase();
-  return maskingQuestionTemplates.some(([prefix, suffix]) =>
-    suffix === undefined
-      ? question === prefix
-      : question.startsWith(prefix) && question.endsWith(suffix)
+  const request = question.replace(requestPrefixPattern, "");
+  return (
+    maskingActionPattern.test(request) ||
+    maskingConfigurationPattern.test(request) ||
+    unmaskedAccessPattern.test(request) ||
+    maskingSubjectPattern.test(question) ||
+    maskingVisibilityPattern.test(question) ||
+    unmaskingActorPattern.test(question) ||
+    exemptionCommandPattern.test(request) ||
+    exemptionInspectionPattern.test(request) ||
+    (exemptionStateQuestionPattern.test(question) &&
+      exemptionSubjectPattern.test(question) &&
+      exemptionStatePattern.test(question))
   );
 }
 

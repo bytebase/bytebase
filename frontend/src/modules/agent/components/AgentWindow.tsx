@@ -1345,7 +1345,12 @@ export function AgentWindow() {
     [getCurrentPageSnapshot, t]
   );
   const continueResponseAction = useCallback(
-    (chatId: string, prompt: string, references: AgentResourceReference[]) => {
+    (
+      chatId: string,
+      prompt: string,
+      references: AgentResourceReference[],
+      followUpSourceId?: string
+    ) => {
       const store = useAgentStore.getState();
       const chat = store.getChat(chatId);
       if (
@@ -1372,6 +1377,7 @@ export function AgentWindow() {
         text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
         page: getCurrentPageSnapshot(),
         runMode: "default",
+        ...(followUpSourceId !== undefined ? { followUpSourceId } : {}),
         ...(boundReferences.length > 0
           ? { resourceReferences: boundReferences }
           : {}),

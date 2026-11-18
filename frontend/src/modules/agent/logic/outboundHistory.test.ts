@@ -51,6 +51,261 @@ const runtimeClarification = (
   return messages;
 };
 
+const sourceBoundQueryHistory = () => {
+  const database = "instances/main/databases/orders";
+  const project = "projects/orders";
+  const reference = {
+    kind: "database" as const,
+    name: database,
+    project,
+    label: "Orders",
+  };
+  const contactsSQL = "SELECT email FROM contacts";
+  const employeesSQL = "SELECT salary FROM employees";
+  const queryTurn = (name: string, statement: string): AgentMessage[] => [
+    {
+      ...userMessage({ resourceReferences: [reference] }),
+      id: `${name}-user`,
+      content: `Query ${name}`,
+    },
+    {
+      ...userMessage(),
+      id: `${name}-call`,
+      role: "assistant",
+      content: undefined,
+      toolCalls: [
+        {
+          id: `${name}-query`,
+          name: "call_api",
+          arguments: JSON.stringify({
+            operationId: "SQLService/Query",
+            body: { name: database, statement },
+          }),
+        },
+      ],
+    },
+    {
+      ...userMessage(),
+      id: `${name}-result`,
+      role: "tool",
+      toolCallId: `${name}-query`,
+      content: JSON.stringify({
+        status: 200,
+        response: {
+          results: [{ columnNames: [name], rows: [] }],
+        },
+      }),
+    },
+    {
+      ...userMessage({ resourceReferences: [reference] }),
+      id: `${name}-answer`,
+      role: "assistant",
+      content: `${name} returned.`,
+    },
+  ];
+  const contacts = queryTurn("contacts", contactsSQL);
+  const employees = queryTurn("employees", employeesSQL);
+  const followUp: AgentMessage = {
+    ...userMessage({
+      resourceReferences: [reference],
+      followUpSourceId: "contacts-answer",
+    }),
+    id: "older-answer-follow-up",
+    content: "How can I request access to unmasked data?",
+  };
+  return {
+    database,
+    project,
+    reference,
+    contactsSQL,
+    employeesSQL,
+    contacts,
+    employees,
+    followUp,
+    messages: [...contacts, ...employees, followUp],
+  };
+};
+
+describe("source-bound query follow-ups", () => {
+  test("restores the clicked query for an ordinary historical follow-up", () => {
+    const fixture = sourceBoundQueryHistory();
+    fixture.followUp.content = "Can you group these results by status?";
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain(
+      JSON.stringify({ statement: fixture.contactsSQL })
+    );
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+    delete fixture.followUp.metadata!.followUpSourceId;
+    expect(
+      buildOutboundHistory("system", fixture.messages, fixture.project)[0]
+        .content
+    ).not.toContain("Historical database context");
+  });
+
+  test("requires clarification instead of substituting another source when provenance is unavailable", () => {
+    const fixture = sourceBoundQueryHistory();
+    fixture.followUp.content = "Can you group these results by status?";
+    fixture.followUp.metadata!.followUpSourceId = "deleted-answer";
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain("Source-bound follow-up");
+    expect(history[0].content).toContain(
+      "Do not substitute another turn's database or SQL"
+    );
+    expect(history[0].content).toContain(
+      "ask for the missing scope or exact query"
+    );
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+  });
+
+  test("retains a source query within an explicitly selected matching project", () => {
+    const fixture = sourceBoundQueryHistory();
+    fixture.followUp.metadata!.resourceReferences = [
+      {
+        kind: "project",
+        name: fixture.project,
+        project: fixture.project,
+        label: "Orders",
+      },
+    ];
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain(
+      JSON.stringify({ statement: fixture.contactsSQL })
+    );
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+    fixture.followUp.metadata!.resourceReferences = [
+      {
+        kind: "project",
+        name: "projects/other",
+        project: "projects/other",
+        label: "Other",
+      },
+    ];
+    expect(
+      buildOutboundHistory("system", fixture.messages, "workspaces/example")[0]
+        .content
+    ).not.toContain("Historical database context");
+  });
+
+  test("restores the clicked contacts query rather than a later employees query in the same database", () => {
+    const fixture = sourceBoundQueryHistory();
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain(
+      JSON.stringify({
+        database: fixture.database,
+        project: fixture.project,
+        query: { statement: fixture.contactsSQL },
+      })
+    );
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+    expect(history.flatMap((message) => message.toolCalls ?? [])).toEqual([]);
+  });
+
+  test.each(
+    ["en-US", "es-ES", "ja-JP", "vi-VN", "zh-CN"].flatMap((locale) =>
+      [
+        "agent.follow-up.query-mask",
+        "agent.follow-up.query-mask-database",
+        "agent.follow-up.query-unmask",
+        "agent.follow-up.query-unmask-database",
+      ].map((key) => ({ locale, key }))
+    )
+  )(
+    "restores exact SQL for the canonical $locale $key question",
+    ({ locale, key }) => {
+      const fixture = sourceBoundQueryHistory();
+      fixture.followUp.content = `@Orders ${i18n.getFixedT(locale)(key, { database: fixture.database })}`;
+      const history = buildOutboundHistory(
+        "system",
+        fixture.messages,
+        fixture.project
+      );
+      expect(history[0].content).toContain(
+        JSON.stringify({ statement: fixture.contactsSQL })
+      );
+      expect(history[0].content).not.toContain(fixture.employeesSQL);
+    }
+  );
+
+  test.each([
+    "deleted",
+    "other-chat",
+    "user",
+    "future",
+    "canceled",
+    "different-database",
+    "other-project",
+  ])("does not fall back to a later query when the source is %s", (invalid) => {
+    const fixture = sourceBoundQueryHistory();
+    let context = fixture.project;
+    if (invalid === "deleted")
+      fixture.followUp.metadata!.followUpSourceId = "missing-answer";
+    if (invalid === "other-chat") fixture.contacts[3].chatId = "another-chat";
+    if (invalid === "user")
+      fixture.followUp.metadata!.followUpSourceId = fixture.contacts[0].id;
+    if (invalid === "future") {
+      fixture.followUp.metadata!.followUpSourceId = "future-answer";
+      fixture.messages.push({
+        ...userMessage(),
+        id: "future-answer",
+        role: "assistant",
+        content: "Later answer",
+      });
+    }
+    if (invalid === "canceled")
+      fixture.contacts[0].metadata!.interruptionReason = "user";
+    if (invalid === "different-database")
+      fixture.followUp.metadata!.resourceReferences = [
+        { ...fixture.reference, name: "instances/main/databases/other" },
+      ];
+    if (invalid === "other-project") context = "projects/other";
+    const history = buildOutboundHistory("system", fixture.messages, context);
+    expect(history[0].content).not.toContain("Historical database context");
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+  });
+
+  test("retains latest-query compatibility for a typed follow-up with no source marker", () => {
+    const fixture = sourceBoundQueryHistory();
+    delete fixture.followUp.metadata!.followUpSourceId;
+    expect(
+      buildOutboundHistory("system", fixture.messages, fixture.project)[0]
+        .content
+    ).toContain(JSON.stringify({ statement: fixture.employeesSQL }));
+  });
+
+  test("does not select one of multiple distinct queries in the source answer's turn", () => {
+    const fixture = sourceBoundQueryHistory();
+    const extraQuery = fixture.employees.slice(1, 3);
+    fixture.messages = [
+      ...fixture.contacts.slice(0, 3),
+      ...extraQuery,
+      fixture.contacts[3],
+      fixture.followUp,
+    ];
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).not.toContain("Historical database context");
+  });
+});
+
 describe("runtime-owned masking clarifications", () => {
   test.each([
     [

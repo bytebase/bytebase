@@ -8896,6 +8896,54 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("resends a follow-up with its original source independently of the composer provenance", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: '{"project":"projects/orders"}' });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    const reference = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
+    const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+    const original = store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "@Orders How can I request access to unmasked data?",
+      metadata: { resourceReferences: [reference], followUpSourceId: source.id },
+    })!;
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Review the original query." });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query employees" });
+    const newerSource = store.addMessage({ chatId: chat.id, role: "assistant", content: "Employees returned." })!;
+    store.setDraft(chat.id, {
+      text: "@Billing Keep this unsent question.",
+      mentions: [{
+        resource: { kind: "project", name: "projects/billing", project: "projects/billing", label: "Billing" },
+        range: { start: 0, end: 8 },
+      }],
+      followUpSourceId: newerSource.id,
+    });
+    const draft = structuredClone(store.getDraft(chat.id));
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+
+    try {
+      await act(async () => {
+        resendActionRef.current?.(original.id);
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      const resent = store.getMessages(chat.id).findLast((message) => message.role === "user");
+      expect(resent?.id).not.toBe(original.id);
+      expect(resent).toMatchObject({
+        content: original.content,
+        metadata: { resourceReference: reference, followUpSourceId: source.id },
+      });
+      expect(resent?.metadata?.followUpSourceId).not.toBe(newerSource.id);
+      expect(store.getDraft(chat.id)).toEqual(draft);
+    } finally {
+      view.unmount();
+    }
+  });
+
   describe("Resend admission", () => {
     test.each(["idle", "error"] as const)("rechecks admission for an %s chat despite prior storage pressure", async (status) => {
       enableRunRecovery();
@@ -9635,6 +9683,88 @@ describe("AgentInput", () => {
     expect(useAgentStore.getState().getMessages(chat.id)).toHaveLength(0);
     view.unmount();
   });
+
+  test.each(["unchanged", "text", "reference"] as const)(
+    "preserves a blocked follow-up source through manual send only while its draft is unchanged: %s",
+    async (edit) => {
+      mocks.getOrFetchSettingByName.mockResolvedValue({
+        value: { value: { case: "ai", value: { enabled: false } } },
+      });
+      mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("The restored follow-up completed.");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      });
+      mocks.executeTool.mockImplementation(async (name, args) => ({
+        kind: "tool_result",
+        result: JSON.stringify({
+          project: "projects/orders",
+          ...(name === "get_database_overview" ? {
+            database: { status: "available", name: args.databaseName, state: "ACTIVE" },
+          } : {}),
+        }),
+      }));
+      const page = { path: "/projects/orders", title: "Orders" };
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders", page });
+      const references = [
+        { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" },
+        { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" },
+      ];
+      store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
+      const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+      const question = "@Orders @orders (prod) How can I request access to unmasked data?";
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: question,
+        page,
+        resourceReferences: references,
+        followUpSourceId: source.id,
+      });
+      const blocked = renderIntoContainer(<AgentInput />);
+      blocked.render();
+      try {
+        await act(async () => {
+          await vi.waitFor(() => expect(getQueuedUserMessage(chat.id)).toBeUndefined());
+        });
+        expect(store.getDraft(chat.id)).toMatchObject({ text: question, followUpSourceId: source.id });
+        expect(store.getDraft(chat.id).mentions?.map(({ resource }) => resource)).toEqual(references);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      } finally {
+        blocked.unmount();
+      }
+
+      const restored = store.getDraft(chat.id);
+      if (edit === "text") {
+        store.setDraft(chat.id, { ...restored, text: `${restored.text} Explain the options.` });
+      } else if (edit === "reference") {
+        store.setDraft(chat.id, {
+          ...restored,
+          mentions: restored.mentions?.map((mention) => mention.resource.kind === "database"
+            ? { ...mention, resource: { ...mention.resource, name: "instances/prod/databases/other" } }
+            : mention),
+        });
+      }
+      const submitted = structuredClone(store.getDraft(chat.id));
+      expect(submitted.followUpSourceId).toBe(edit === "unchanged" ? source.id : undefined);
+      mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+      mocks.aiEnabled = true;
+      const ready = renderIntoContainer(<AgentInput />);
+      ready.render();
+      try {
+        await act(async () => {
+          await vi.waitFor(() => expect(ready.container.querySelector<HTMLButtonElement>("[data-agent-send]")).not.toBeDisabled());
+          ready.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        const sent = store.getMessages(chat.id).findLast((message) => message.role === "user");
+        expect(sent?.content).toBe(submitted.text);
+        expect(sent?.metadata?.followUpSourceId).toBe(edit === "unchanged" ? source.id : undefined);
+        expect(sent?.metadata?.resourceReferences).toEqual(submitted.mentions?.map(({ resource }) => resource));
+      } finally {
+        ready.unmount();
+      }
+    }
+  );
 
   test("restores both bound references when a queued follow-up is blocked", async () => {
     mocks.getOrFetchSettingByName.mockResolvedValue({

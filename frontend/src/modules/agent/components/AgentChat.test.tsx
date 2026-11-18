@@ -2057,7 +2057,8 @@ describe("AgentChat", () => {
     expect(onContinueAction).toHaveBeenCalledWith(
       chat.id,
       "What is the impact of these issues?",
-      []
+      [],
+      store.getMessages(chat.id)[0].id
     );
     expect(store.getMessages(chat.id)).toHaveLength(1);
     act(() => {
@@ -2260,7 +2261,8 @@ describe("AgentChat", () => {
         expect(onContinueAction).toHaveBeenCalledWith(
           chat.id,
           unmaskQuestion,
-          references
+          references,
+          maskedAnswer.id
         );
         expect(
           [visibleAnswer, maskedAnswer].map(
@@ -2269,6 +2271,36 @@ describe("AgentChat", () => {
                 ?.metadata
           )
         ).toEqual(savedMetadata);
+      } finally {
+        unmount();
+      }
+    });
+
+    test("binds an older answer's unmask question to its own source message", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      const contactsAnswer = addQueryTurn(chat.id, "contacts-query", true);
+      const employeesAnswer = addQueryTurn(chat.id, "employees-query", true);
+      const onContinueAction = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onContinueAction={onContinueAction} />
+      );
+      render();
+
+      try {
+        const followUps = container.querySelectorAll("[data-agent-follow-up]");
+        expect(followUps).toHaveLength(2);
+        const olderUnmask = Array.from(followUps[0]!.querySelectorAll<HTMLButtonElement>(
+          "[data-agent-action-continue]"
+        )).find((button) => button.textContent === unmaskQuestion);
+        act(() => olderUnmask?.click());
+        expect(onContinueAction).toHaveBeenCalledExactlyOnceWith(
+          chat.id,
+          unmaskQuestion,
+          references,
+          contactsAnswer.id
+        );
+        expect(contactsAnswer.id).not.toBe(employeesAnswer.id);
       } finally {
         unmount();
       }
@@ -2309,7 +2341,7 @@ describe("AgentChat", () => {
           followUps[0]!.querySelectorAll<HTMLButtonElement>("[data-agent-action-continue]")
         ).find((button) => button.textContent === maskQuestion);
         act(() => mask?.click());
-        expect(onContinueAction).toHaveBeenCalledWith(chat.id, maskQuestion, references);
+        expect(onContinueAction).toHaveBeenCalledWith(chat.id, maskQuestion, references, allowedAnswer.id);
         expect([allowedAnswer, deniedAnswer].map((answer) =>
           store.getMessages(chat.id).find((message) => message.id === answer.id)?.metadata
         )).toEqual(savedMetadata);
@@ -2367,7 +2399,7 @@ describe("AgentChat", () => {
     const followUp = container.querySelector<HTMLButtonElement>("[data-agent-action-continue]");
     expect(followUp?.textContent).toContain(prompt);
     act(() => followUp?.click());
-    expect(onContinueAction).toHaveBeenCalledWith(chat.id, prompt, []);
+    expect(onContinueAction).toHaveBeenCalledWith(chat.id, prompt, [], store.getMessages(chat.id)[0].id);
     expect(store.getMessages(chat.id)[0].metadata).toEqual(metadata);
     unmount();
   });
@@ -2556,7 +2588,8 @@ describe("AgentChat", () => {
     expect(onContinueAction).toHaveBeenCalledWith(
       chat.id,
       "How should I validate it?",
-      []
+      [],
+      store.getMessages(chat.id)[0].id
     );
     expect(store.getMessages(chat.id)).toHaveLength(1);
     unmount();
@@ -2667,7 +2700,7 @@ describe("AgentChat", () => {
       expect(question?.textContent).toContain("What is the impact?");
       expect(question?.disabled).toBe(false);
       act(() => question?.click());
-      expect(onContinueAction).toHaveBeenCalledWith(chat.id, "What is the impact?", []);
+      expect(onContinueAction).toHaveBeenCalledWith(chat.id, "What is the impact?", [], store.getMessages(chat.id)[0].id);
       expect(store.getDraft(chat.id)).toEqual(draft);
     } finally {
       unmount();
