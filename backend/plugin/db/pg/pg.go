@@ -193,6 +193,9 @@ func pgConfig(config db.ConnectionConfig) (omndriver.Config, error) {
 		return omndriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
 	}
 
+	// An empty Database leaves the contract's own default, postgres. pgx alone
+	// would resolve an omitted database to the login role's name, which an
+	// administrative role with no same-named database cannot open.
 	database := config.ConnectionContext.DatabaseName
 	if database == "" {
 		database = dataSource.GetDatabase()
