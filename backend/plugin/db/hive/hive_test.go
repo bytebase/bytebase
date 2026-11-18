@@ -114,7 +114,7 @@ func TestToQueryResult(t *testing.T) {
 		Columns:   []odriver.Column{{Name: "id", TypeName: "int"}, {Name: "note", TypeName: "string"}},
 		Rows:      [][]odriver.Value{{{Kind: odriver.Int32, Int64: 1}, {Kind: odriver.String, String: "a"}}},
 	}
-	converted := toQueryResult(result, 0)
+	converted := toQueryResult(result, db.QueryContext{})
 	require.Equal(t, "SELECT 1", converted.Statement)
 	require.Equal(t, []string{"id", "note"}, converted.ColumnNames)
 	require.Equal(t, []string{"INT", "STRING"}, converted.ColumnTypeNames)
@@ -125,10 +125,33 @@ func TestToQueryResult(t *testing.T) {
 
 	result.Truncated = true
 	result.Err = errors.New("boom")
-	require.Equal(t, util.FormatMaximumSQLResultSizeMessage(64), toQueryResult(result, 64).Error)
+	require.Equal(t, util.FormatMaximumSQLResultSizeMessage(64), toQueryResult(result, db.QueryContext{MaximumSQLResultSize: 64}).Error)
 
 	result.Truncated = false
-	require.Equal(t, "boom", toQueryResult(result, 64).Error)
+	require.Equal(t, "boom", toQueryResult(result, db.QueryContext{MaximumSQLResultSize: 64}).Error)
+}
+
+// TestToQueryResultRowLimit: the policy's row cap reaches the result even though
+// Hive has no parser to rewrite the statement with a LIMIT, and a plan is never
+// cut.
+func TestToQueryResultRowLimit(t *testing.T) {
+	result := &odriver.Result{
+		Statement: "SELECT id FROM t",
+		Columns:   []odriver.Column{{Name: "id", TypeName: "INT"}},
+		Rows: [][]odriver.Value{
+			{{Kind: odriver.Int32, Int64: 1}},
+			{{Kind: odriver.Int32, Int64: 2}},
+			{{Kind: odriver.Int32, Int64: 3}},
+		},
+	}
+	cut := toQueryResult(result, db.QueryContext{Limit: 2})
+	require.Equal(t, int64(2), cut.RowsCount)
+	require.Len(t, cut.Rows, 2)
+	require.Equal(t, int32(2), cut.Rows[1].Values[0].GetInt32Value())
+
+	plan := toQueryResult(result, db.QueryContext{Limit: 2, Explain: true})
+	require.Equal(t, int64(3), plan.RowsCount)
+	require.Len(t, plan.Rows, 3)
 }
 
 // TestSSHDataSourceIsRefused proves the refusal reaches the product's contract

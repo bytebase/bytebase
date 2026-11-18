@@ -20,8 +20,10 @@
 //     from the sync.
 //   - Execute ignores the transaction directive: HiveServer2 4.0 refuses
 //     BEGIN, COMMIT and ROLLBACK, so every statement commits itself.
-//   - QueryContext.Limit is not passed on: there is no hive parser to place a
-//     LIMIT with, so MaximumSQLResultSize is the only cap.
+//   - QueryContext.Limit is applied to the rows the adapter returns, not to the
+//     statement: there is no hive parser to place a LIMIT with, so the server
+//     computes every row and MaximumSQLResultSize bounds the transfer. An
+//     explain request's plan is never cut.
 //   - A plan arrives as rows with no typed QueryPlan, which the API names.
 //   - A failed statement's error is gohive's rendering of Hive's TStatus, whose
 //     fields gohive keeps as pointers it prints as addresses. That is the
@@ -200,10 +202,11 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	})
 }
 
-// QueryConn runs a script for the editor, one result per statement. Hive
-// answers a statement that returns no rows with an operation that has none, so
-// a DDL statement sent here reports Hive's error on its result instead of
-// failing the call, which is how the driver this replaced behaved too.
+// QueryConn runs a script for the editor, one result per statement, with the
+// caller's row limit applied to each result. Hive answers a statement that
+// returns no rows with an operation that has none, so a DDL statement sent here
+// reports Hive's error on its result instead of failing the call, which is how
+// the driver this replaced behaved too.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.impl.Session(ctx)
 	if err != nil {
@@ -225,7 +228,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
-		converted = append(converted, toQueryResult(result, queryContext.MaximumSQLResultSize))
+		converted = append(converted, toQueryResult(result, queryContext))
 	}
 	return converted, nil
 }
@@ -267,7 +270,16 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb
 // toQueryResult maps one contract result onto the product's result. The plan a
 // caller asked for arrives as rows, and the API names its format; the driver
 // states no typed QueryPlan, as before.
-func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+//
+// QueryContext.Limit is applied here because Hive has no parser to place a LIMIT
+// with, so the driver cannot cap rows at the server: the cap the policy asks for
+// is the one the engines that rewrite their statement get, and a plan is left
+// whole.
+func toQueryResult(result *odriver.Result, queryContext db.QueryContext) *v1pb.QueryResult {
+	rows := result.Rows
+	if !queryContext.Explain && queryContext.Limit > 0 && len(rows) > queryContext.Limit {
+		rows = rows[:queryContext.Limit]
+	}
 	converted := &v1pb.QueryResult{
 		Statement: result.Statement,
 		Latency:   durationpb.New(result.Latency),
@@ -276,7 +288,7 @@ func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResu
 		converted.ColumnNames = append(converted.ColumnNames, column.Name)
 		converted.ColumnTypeNames = append(converted.ColumnTypeNames, strings.ToUpper(column.TypeName))
 	}
-	for _, row := range result.Rows {
+	for _, row := range rows {
 		convertedRow := &v1pb.QueryRow{}
 		for _, value := range row {
 			convertedRow.Values = append(convertedRow.Values, toRowValue(value))
@@ -285,7 +297,7 @@ func toQueryResult(result *odriver.Result, maxResultBytes int64) *v1pb.QueryResu
 	}
 	converted.RowsCount = int64(len(converted.Rows))
 	if result.Truncated {
-		converted.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
+		converted.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 	} else if result.Err != nil {
 		converted.Error = result.Err.Error()
 	}

@@ -174,6 +174,15 @@ func TestHiveDriver(t *testing.T) {
 		require.Less(t, results[0].RowsCount, int64(2))
 	})
 
+	t.Run("the row limit is applied even though the statement is not rewritten", func(t *testing.T) {
+		results, err := session.QueryConn(ctx, nil, "SELECT * FROM orders ORDER BY id", db.QueryContext{Limit: 1})
+		require.NoError(t, err)
+		require.Len(t, results, 1)
+		require.Equal(t, int64(1), results[0].RowsCount)
+		require.Len(t, results[0].Rows, 1)
+		require.Equal(t, "SELECT * FROM orders ORDER BY id", results[0].Statement, "the statement reaches Hive as the caller wrote it")
+	})
+
 	t.Run("explain returns the plan as rows", func(t *testing.T) {
 		results, err := session.QueryConn(ctx, nil, "SELECT * FROM orders", db.QueryContext{Explain: true})
 		require.NoError(t, err)
