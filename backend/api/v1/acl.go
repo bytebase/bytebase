@@ -630,6 +630,13 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		}
 	default:
 	}
+	switch r := request.(type) {
+	case *v1pb.DiscoverNeonBranchesRequest:
+		return importDestinationResource(ctx, r.GetParent()), nil
+	case *v1pb.ImportInstancesRequest:
+		return importDestinationResource(ctx, r.GetParent()), nil
+	default:
+	}
 	if r, ok := request.(*v1pb.UpdateDatabaseCatalogRequest); ok {
 		// The catalog is in `catalog`, not the `database_catalog` the Update
 		// convention below derives from the method name. Without this it
@@ -814,4 +821,11 @@ func toSnakeCase(str string) string {
 	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
+}
+
+func importDestinationResource(ctx context.Context, parent string) []string {
+	if project, err := common.GetProjectID(parent); err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), project) {
+		return []string{""}
+	}
+	return []string{parent}
 }

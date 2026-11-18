@@ -68,6 +68,7 @@ export interface SecretInputProps extends AriaAttributes {
   multiline?: boolean;
   allowEmpty?: boolean;
   placeholder?: string;
+  autoComplete?: string;
   /** Change when the edited resource changes or its draft is discarded. */
   resetKey?: string | number;
 }
@@ -90,6 +91,7 @@ function SecretInputControl({
   multiline = false,
   allowEmpty = true,
   placeholder,
+  autoComplete = "new-password",
   className,
   resetKey: _resetKey,
   id,
@@ -148,8 +150,10 @@ function SecretInputControl({
       inputRef.current = element;
     },
     required: !allowEmpty && !unchanged,
-    autoComplete: "new-password",
+    autoComplete,
     spellCheck: false,
+    "data-1p-ignore": true,
+    "data-lpignore": "true",
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       change(event.target.value),
   };
@@ -177,6 +181,7 @@ function SecretInputControl({
               type="button"
               appearance="secondary"
               size="sm"
+              className="relative after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
               disabled={disabled}
               aria-label={t("common.toggle-password-visibility")}
               aria-pressed={showPassword}
@@ -190,6 +195,7 @@ function SecretInputControl({
               type="button"
               appearance="secondary"
               size="sm"
+              className="relative after:absolute after:-inset-y-1 after:inset-x-0 after:content-['']"
               disabled={disabled}
               aria-label={t("common.clear")}
               title={t("common.clear")}

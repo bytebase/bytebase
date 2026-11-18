@@ -2,6 +2,10 @@
 
 Status: implemented in this PR · 2026-11-09 · [BYT-10429](https://linear.app/bytebase/issue/BYT-10429) · builds on the BYT-10349 server fix, [#21931] (merged)
 
+Update: the flow now opens in a wide sheet with its steps in one row on top. D1 and D8 below say so;
+[service-account-and-workload-identity-lists.md](service-account-and-workload-identity-lists.md)
+has the reasons. The Scope and Tests sections describe the original PR.
+
 A workload identity lets a CI job sign in to Bytebase with the job's OIDC token instead of a stored
 secret. Today it is created in one sheet with up to eleven fields: the provider is a dropdown, the
 issuer and subject pattern hide under "Advanced", and nothing explains what any field binds to.
@@ -49,23 +53,19 @@ Verified on `main` at `f52ecbc`, in `CreateWorkloadIdentitySheet`
 
 ## Decisions
 
-**D1 · Four steps in a centered dialog.** Title "Create workload identity" with a close button.
-Steps: Token source, Repositories, Account, Done. A 224px left rail shows each step's title and
-one-line description ("Select the CI provider", "Match owner and repository", "Email and role",
-"Use it in your workflow"). Finished steps turn green and the line between them follows; a step can
-be clicked to go back to it, or forward past steps that are complete; Done is reached only by
-saving. The footer: Back (bordered, with a left arrow, from step 2) on the left; Cancel and
-Continue / Create (primary) on the right; on Done, only Done. Each step is validated before Continue, with errors beside the fields, and
-Back keeps what was entered. Every step opens scrolled to its top. The dialog has a fixed height:
-680px, or the window height minus 64px when the window is smaller. The buttons stay in the same
-place on every step; a short step leaves space above them, and a long one scrolls inside the step
-body. The scroll area leaves 4px of room for focus rings, so no field border is cut. Fields use the
-shared label, with a grey "(optional)" on optional fields, and their hint below the input. This
-is a `Dialog`, not the wide sheet that the UX contract suggests for short wizards. The rail with
-descriptions and the side-by-side layout follow the Claude Platform wizard that the flow is
-modelled on, and a side sheet leaves the form too little width beside the rail. All other wizard
-rules in the contract apply. Rejected: one page with sections; it keeps today's problem of a long
-form with no order.
+**D1 · Four steps in a wide sheet.** Title "Create workload identity" with the sheet's close
+button. Steps: Token source, Repositories, Account, Done. They run in one row under the title: the
+shared `StepIndicator` with `fitOneRow`, as on GitOps setup. When the titles do not fit, only the
+current step keeps its title. A step can be clicked to go back to it, or forward past steps that
+are complete; Done is reached only by saving. The footer: Back (bordered, with a left arrow, from
+step 2) on the left; Cancel and Continue / Create (primary) on the right; on Done, only Done. Each
+step is validated before Continue, with errors beside the fields, and Back keeps what was entered.
+Every step opens scrolled to its top. Only the step body scrolls, so the header, the step row and
+the footer stay in place. Fields use the shared label, with a grey "(optional)" on optional
+fields, and their hint below the input. The sheet is the UX contract's wide sheet for short
+wizards, and matches the service account sheet. Rejected: one page with sections; it keeps
+today's problem of a long form with no order. Rejected later: a centered dialog with a side rail,
+which gave the fields less width and differed from the service account page.
 
 **D2 · Step 1, Token source: "Where do your CI jobs get their token?"** Three choice cards
 (`RadioGroup` with the radio hidden; each card shows an icon, a title and a subtitle): GitHub
@@ -260,15 +260,11 @@ opens Advanced instead.
 
 **D8 · Phone layout.** Below 640px:
 
-- The rail becomes one row at the top: numbered circles joined by lines, with only the current
-  step's title and no descriptions. This is the shared `StepIndicator` with `variant="rail"`.
+- The shared sheet takes the full width.
+- The step row keeps only the current step's title.
 - Fields go to one column.
-- The dialog fills the screen height minus 16px top and bottom. The title, the step row and the
-  footer stay in place; only the step body scrolls. The footer gets a top border.
 - The email suffix moves under the name.
 - Code blocks scroll sideways.
-- The dialog sets its own width (full width minus 16px each side), because the shared
-  `DialogContent` is `100vw - 8rem` wide, which leaves 247px on a 375px phone.
 
 **D9 · Nothing that works today breaks.**
 

@@ -374,11 +374,18 @@ export function InstanceFormProvider({
     (ds: EditDataSource) =>
       validateDataSource(ds, {
         engine: basicInfo.engine,
+        vendor: basicInfo.vendor,
         isSaaSMode,
         stored: instance?.dataSources.find((stored) => stored.id === ds.id),
         keytabResupply: needsKeytabResupply(ds),
       }),
-    [basicInfo.engine, isSaaSMode, instance, needsKeytabResupply]
+    [
+      basicInfo.engine,
+      basicInfo.vendor,
+      isSaaSMode,
+      instance,
+      needsKeytabResupply,
+    ]
   );
 
   const checkDataSource = useCallback(

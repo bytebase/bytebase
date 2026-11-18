@@ -66,6 +66,7 @@ interface SslCertificateFormProps {
   hasKeyPath?: boolean;
   onKeyPathChange?: (val: string) => void;
   disabled?: boolean;
+  requireTls?: boolean;
   showVerify?: boolean;
   verifyControlLayout?: "field" | "inline";
   showKeyAndCert?: boolean;
@@ -309,6 +310,7 @@ export function SslCertificateForm({
   hasKeyPath = false,
   onKeyPathChange,
   disabled = false,
+  requireTls = false,
   showVerify = true,
   verifyControlLayout = "field",
   showKeyAndCert = false,
@@ -415,10 +417,14 @@ export function SslCertificateForm({
     showKeyAndCertFields && isLocalTlsClientIdentitySupported(engineType);
   const canShowMutualTls = supportsClientIdentity || hasClientIdentityMaterial;
   const canSelectMutualTls = supportsClientIdentity;
-  const resolvedPosture =
-    requestedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canShowMutualTls
+  const clampedPosture =
+    requireTls && requestedPosture === LOCAL_TLS_POSTURE_DISABLED
       ? LOCAL_TLS_POSTURE_TLS
       : requestedPosture;
+  const resolvedPosture =
+    clampedPosture === LOCAL_TLS_POSTURE_MUTUAL_TLS && !canShowMutualTls
+      ? LOCAL_TLS_POSTURE_TLS
+      : clampedPosture;
   const showConfiguredBadge = (hasStoredValue: boolean, visibleValue: string) =>
     hasStoredValue && !visibleValue;
   const renderLabel = (
@@ -440,10 +446,14 @@ export function SslCertificateForm({
   );
   const renderPostureControl = () => {
     const options = [
-      {
-        value: LOCAL_TLS_POSTURE_DISABLED,
-        label: t("data-source.ssl.posture.disabled"),
-      },
+      ...(requireTls
+        ? []
+        : [
+            {
+              value: LOCAL_TLS_POSTURE_DISABLED,
+              label: t("data-source.ssl.posture.disabled"),
+            },
+          ]),
       {
         value: LOCAL_TLS_POSTURE_TLS,
         label: t("data-source.ssl.posture.tls"),

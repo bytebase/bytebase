@@ -32,6 +32,7 @@ var (
 	sharedMariaDB107   = startOnce(mariaDBStarter("mariadb:10.7.8"))
 	sharedRedisCluster = startOnce(getRedisClusterContainer)
 	sharedCassandra    = startOnce(getCassandraContainer)
+	sharedHive         = startOnce(getHiveContainer)
 	sharedCosmos       = startOnce(getCosmosContainer)
 
 	startedMu sync.Mutex
@@ -140,6 +141,11 @@ func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sha
 
 // SharedCassandraContainer is one Cassandra 5 cluster for the package's tests.
 func SharedCassandraContainer(t testing.TB) *Container { return shared(t, sharedCassandra) }
+
+// SharedHiveContainer is one HiveServer2 for the package's tests, on the image
+// omni pins. Tests share its databases rather than taking one each, because the
+// image's metastore is a single embedded Derby.
+func SharedHiveContainer(t testing.TB) *Container { return shared(t, sharedHive) }
 
 // SharedCosmosContainer is SharedPgContainer for the Cosmos DB emulator. It
 // carries no *sql.DB, so a test builds its endpoint from GetHost and GetPort
