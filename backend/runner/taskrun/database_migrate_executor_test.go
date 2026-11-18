@@ -48,6 +48,21 @@ func TestRequireGhostConnection(t *testing.T) {
 			engine:  storepb.Engine_SPANNER,
 			wantErr: "gh-ost requires MySQL or MariaDB",
 		},
+		{
+			// TiDB is MySQL-compatible but has no MySQL replication for gh-ost
+			// to read, so the engine check refuses it before any pool is
+			// consulted. The TiDB driver exposes no *sql.DB after its cutover,
+			// so the pool-less case below is the one that ships.
+			name:    "tidb with a connection",
+			engine:  storepb.Engine_TIDB,
+			sqlDB:   &sql.DB{},
+			wantErr: "gh-ost requires MySQL or MariaDB",
+		},
+		{
+			name:    "tidb without a connection",
+			engine:  storepb.Engine_TIDB,
+			wantErr: "gh-ost requires MySQL or MariaDB",
+		},
 	}
 
 	for _, tt := range tests {
