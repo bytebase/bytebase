@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -147,6 +148,34 @@ func TestAdapterHoldsOneSessionAcrossQueryConnCalls(t *testing.T) {
 	require.Len(t, results, 1)
 	require.Len(t, results[0].Rows, 1)
 	require.Equal(t, int64(7), results[0].Rows[0].Values[0].GetInt64Value())
+}
+
+// TestAdapterDiscardsTheSessionAfterACanceledQuery: the MySQL client closes
+// the connection when a statement's context ends, so the session must not be
+// handed to the next statement in the same editor stream.
+func TestAdapterDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
+	ctx := context.Background()
+	container, database := newTestDatabase(t)
+	opened := openTestDatabaseDriver(t, container, database)
+	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
+
+	_, err := opened.QueryConn(ctx, nil, "SET @cutover_marker = 41", queryContext)
+	require.NoError(t, err)
+
+	canceledCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	// The statement runs past its context; the failure itself reaches the caller
+	// on the result, so this test pins only what the session does. It took the
+	// connection with it.
+	_, _ = opened.QueryConn(canceledCtx, nil, "SELECT SLEEP(10)", queryContext)
+	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
+	require.Nil(t, opened.session, "a canceled statement's session is not one to keep")
+
+	// The stream continues on a new session rather than the dead one.
+	results, err := opened.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Len(t, results[0].Rows, 1)
 }
 
 // TestAdapterGetDBReturnsADirectConnection keeps gh-ost working: it runs its

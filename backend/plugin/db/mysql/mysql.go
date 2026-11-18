@@ -422,6 +422,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		}
 		d.session = session
 	}
+	session := d.session
 
 	// The product reads a zero cap as "no rows", and the contract reads it as
 	// "no cap". A one-byte cap keeps the old zero-byte behaviour without letting
@@ -430,7 +431,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if maxResultBytes <= 0 {
 		maxResultBytes = 1
 	}
-	results, err := d.session.Query(ctx, statement, odriver.QueryOptions{
+	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		ExplainFormat:  explainFormat(queryContext),
@@ -438,7 +439,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
 	if err != nil {
+		// The client closes the connection when a statement's context ends, and an
+		// errored statement leaves the session's state unknown; either way the next
+		// statement on this stream would find a session it cannot use.
+		_ = session.Close()
+		d.session = nil
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		_ = session.Close()
+		d.session = nil
 	}
 	queryResults := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
