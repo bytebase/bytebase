@@ -177,8 +177,8 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 }
 
 func referencesType(typeName, key string) bool {
-	reference, ok := parseTypeReference(typeName)
-	if !ok {
+	reference, end, ok := parseTypeReferenceAt(strings.TrimSpace(typeName), 0)
+	if !ok || strings.TrimSpace(trailingModifier(typeName[end:])) != "" {
 		return false
 	}
 	schemaName, objectName := splitObjectKey(key)
@@ -488,7 +488,7 @@ func refuseRoutine(schemaName, name, signature, definition string, restored map[
 		viewSchema, viewName := splitObjectKey(key)
 		if !namesType(signature, viewSchema, viewName) &&
 			!parametersNameType(routineArgumentList(definition), viewSchema, viewName) &&
-			!namesType(routineReturnClause(definition), viewSchema, viewName) {
+			!routineResultNamesType(definition, viewSchema, viewName) {
 			continue
 		}
 		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteQualified(viewSchema, viewName))
@@ -576,6 +576,16 @@ func closingQuote(text string, start int, quote byte) int {
 		return i
 	}
 	return len(text) - 1
+}
+
+// routineResultNamesType reports whether a routine's result declaration names the
+// type: its RETURNS clause, or the columns of RETURNS TABLE.
+func routineResultNamesType(definition, schemaName, objectName string) bool {
+	clause := routineReturnClause(definition)
+	if strings.HasPrefix(clause, "TABLE") {
+		return parametersNameType(routineArgumentList(clause), schemaName, objectName)
+	}
+	return namesType(clause, schemaName, objectName)
 }
 
 // routineReturnClause is the text between RETURNS and the first clause after it,

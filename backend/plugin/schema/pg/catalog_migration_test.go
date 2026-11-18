@@ -934,6 +934,34 @@ func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 	require.True(t, opTargetsSelected(column, selected, nil, nil, nil), "an accessory of the selected view belongs to it")
 }
 
+// TestMultiwordTypeIsNotARelationReference covers a created table named like the
+// first word of a built-in type: `timestamp without time zone` must not depend on
+// a table called `timestamp`, or the false edge can hide the real order.
+func TestMultiwordTypeIsNotARelationReference(t *testing.T) {
+	require.False(t, referencesType("timestamp without time zone", objectKey("public", "timestamp")))
+	require.False(t, referencesType("character varying(10)", objectKey("public", "character")))
+	require.True(t, referencesType("timestamp", objectKey("public", "timestamp")))
+	require.True(t, referencesType("public.t[]", objectKey("public", "t")))
+	require.True(t, referencesType(`numeric(10,2)`, objectKey("public", "numeric")), "a modifier belongs to the type")
+
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{
+			pgTable("timestamp", 0, &metadatapb.ColumnMetadata{Name: "row", Type: "public.z_base"}),
+			pgTable("holder", 0, &metadatapb.ColumnMetadata{Name: "at", Type: "timestamp without time zone"}),
+			pgTable("z_base", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}),
+		},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	provider := strings.Index(sql, `CREATE TABLE "public"."z_base"`)
+	user := strings.Index(sql, `CREATE TABLE "public"."timestamp"`)
+	require.GreaterOrEqual(t, provider, 0, sql)
+	require.GreaterOrEqual(t, user, 0, sql)
+	require.Less(t, provider, user, sql)
+}
+
 // TestCreatedTableRowTypeOrdersItsProviderFirst covers two tables created in one
 // migration where one column uses the other's row type: the provider's create
 // must come first, or the type does not exist yet.
@@ -1389,6 +1417,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				Signature:  "n(text)",
 				Definition: "CREATE FUNCTION public.n(v text) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
 			}},
+		},
+		{
+			name: "returns table",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "t",
+				Signature:  "t()",
+				Definition: "CREATE FUNCTION public.t() RETURNS TABLE(result public.v) LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
 		},
 		{
 			name: "body reference",
