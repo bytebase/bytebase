@@ -299,6 +299,7 @@ beforeEach(async () => {
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     draftsByChatId: initialState.draftsByChatId,
+    landingDraft: initialState.landingDraft,
     currentChatId: initialState.currentChatId,
     workspaceName: "workspaces/demo",
     userEmail: "member@example.com",
@@ -2954,6 +2955,168 @@ describe("AgentChat", () => {
     expect(container.querySelectorAll("[data-agent-handoff]")).toHaveLength(0);
     unmount();
   });
+  describe("landing without a selected chat", () => {
+    test.each(["no chats", "all chats archived"] as const)(
+      "shows existing workspace starters with %s without creating a chat",
+      (state) => {
+        useAgentStore.setState({ chats: [], currentChatId: null, messagesByChatId: {} });
+        const store = useAgentStore.getState();
+        if (state === "all chats archived") {
+          const chat = store.createChat({ context: "projects/sample" });
+          store.archiveChat(chat.id);
+        }
+        useAgentStore.setState({ currentChatId: null });
+        const chats = useAgentStore.getState().chats;
+        const messages = useAgentStore.getState().messagesByChatId;
+        const onSelectSuggestion = vi.fn();
+        const { container, render, unmount } = renderIntoContainer(
+          <AgentChat
+            contextLabel="Example workspace"
+            onSelectSuggestion={onSelectSuggestion}
+          />
+        );
+        render();
+        try {
+          expect(container.querySelector("[data-agent-empty-chat]")?.textContent)
+            .toContain("Example workspace");
+          expect(container.querySelector("h2")?.textContent)
+            .toBe("agent.empty-chat.workspace-heading");
+          expect(
+            Array.from(container.querySelectorAll("[data-agent-empty-suggestion]"))
+              .map((item) => item.getAttribute("data-starter-id"))
+          ).toEqual([
+            "workspace-attention",
+            "workspace-recent",
+            "workspace-governance",
+          ]);
+          act(() => {
+            container.querySelector<HTMLButtonElement>(
+              '[data-starter-id="workspace-attention"]'
+            )?.click();
+          });
+          expect(onSelectSuggestion).toHaveBeenCalledExactlyOnceWith("workspace-attention");
+          expect(useAgentStore.getState().chats).toEqual(chats);
+          expect(useAgentStore.getState().currentChatId).toBeNull();
+          expect(useAgentStore.getState().messagesByChatId).toEqual(messages);
+        } finally {
+          unmount();
+        }
+      }
+    );
+
+    test("uses explicit project context and its existing starters", () => {
+      useAgentStore.setState({ chats: [], currentChatId: null });
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat
+          context="projects/sample"
+          contextLabel="Sample project"
+          onSelectSuggestion={vi.fn()}
+        />
+      );
+      render();
+      try {
+        expect(container.querySelector("[data-agent-empty-chat]")?.textContent)
+          .toContain("Sample project");
+        expect(container.querySelector("h2")?.textContent)
+          .toBe("agent.empty-chat.project-heading");
+        expect(
+          Array.from(container.querySelectorAll("[data-agent-empty-suggestion]"))
+            .map((item) => item.getAttribute("data-starter-id"))
+        ).toEqual([
+          "project-open-blockers",
+          "project-open-recent",
+          "project-propose-change",
+          "project-next",
+        ]);
+        expect(useAgentStore.getState().chats).toEqual([]);
+        expect(useAgentStore.getState().currentChatId).toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("keeps a selected unscoped chat in workspace scope despite the landing context", () => {
+      const chat = useAgentStore.getState().createChat({ context: undefined });
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat context="projects/other" onSelectSuggestion={vi.fn()} />
+      );
+      render();
+      try {
+        expect(container.querySelector("h2")?.textContent)
+          .toBe("agent.empty-chat.workspace-heading");
+        expect(
+          Array.from(container.querySelectorAll("[data-agent-empty-suggestion]"))
+            .map((item) => item.getAttribute("data-starter-id"))
+        ).toEqual([
+          "workspace-attention",
+          "workspace-recent",
+          "workspace-governance",
+        ]);
+        expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+        expect(useAgentStore.getState().getChat(chat.id)?.context).toBeUndefined();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("keeps the landing but hides starters for an unsent landing draft", () => {
+      useAgentStore.setState({
+        chats: [],
+        currentChatId: null,
+        landingDraft: { text: "My unfinished question" },
+      });
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onSelectSuggestion={vi.fn()} />
+      );
+      render();
+      try {
+        expect(container.querySelector("[data-agent-empty-chat]")).not.toBeNull();
+        expect(container.querySelector("[data-agent-empty-suggestion]")).toBeNull();
+        expect(useAgentStore.getState().landingDraft.text).toBe("My unfinished question");
+        expect(useAgentStore.getState().chats).toEqual([]);
+        expect(useAgentStore.getState().currentChatId).toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("does not infer a virtual landing without a suggestion callback", () => {
+      useAgentStore.setState({ chats: [], currentChatId: null });
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      render();
+      try {
+        expect(container.querySelector("[data-agent-empty-chat]")).toBeNull();
+        expect(container.querySelector("[data-agent-empty-suggestion]")).toBeNull();
+        expect(useAgentStore.getState().chats).toEqual([]);
+        expect(useAgentStore.getState().currentChatId).toBeNull();
+      } finally {
+        unmount();
+      }
+    });
+
+    test("keeps an explicitly selected archived transcript instead of the landing", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      store.addMessage({ chatId: chat.id, role: "user", content: "Archived question" });
+      store.addMessage({ chatId: chat.id, role: "assistant", content: "Archived answer" });
+      store.archiveChat(chat.id);
+      useAgentStore.setState({ currentChatId: chat.id });
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onSelectSuggestion={vi.fn()} />
+      );
+      render();
+      try {
+        expect(container.textContent).toContain("Archived question");
+        expect(container.textContent).toContain("Archived answer");
+        expect(container.querySelector("[data-agent-empty-chat]")).toBeNull();
+        expect(container.querySelector("[data-agent-empty-suggestion]")).toBeNull();
+        expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+      } finally {
+        unmount();
+      }
+    });
+  });
+
   test("shows project landing prompts in an empty project chat and prefills without sending", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });

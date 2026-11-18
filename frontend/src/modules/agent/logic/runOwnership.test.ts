@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   hasAgentRunLease,
+  isAgentRunLeasePending,
+  subscribeAgentRunLeases,
   supportsAgentRunRecovery,
   withAgentPersistenceLock,
   withAgentRunLease,
@@ -49,6 +51,21 @@ beforeEach(() => vi.stubGlobal("navigator", { locks: fakeLocks() }));
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Agent execution leases", () => {
+  test("notifies controls until the entire same-chat lease request settles", async () => {
+    const release = deferred();
+    const snapshots: boolean[] = [];
+    const unsubscribe = subscribeAgentRunLeases(() =>
+      snapshots.push(isAgentRunLeasePending("scope", "chat"))
+    );
+    const run = withAgentRunLease("scope", "chat", async () => release.promise);
+    expect(isAgentRunLeasePending("scope", "chat")).toBe(true);
+    expect(isAgentRunLeasePending("other", "chat")).toBe(false);
+    release.resolve();
+    await run;
+    expect(isAgentRunLeasePending("scope", "chat")).toBe(false);
+    expect(snapshots).toEqual([true, false]);
+    unsubscribe();
+  });
   test("serializes aggregate storage writes across scopes without permitting inverse locks", async () => {
     const release = deferred();
     const events: string[] = [];

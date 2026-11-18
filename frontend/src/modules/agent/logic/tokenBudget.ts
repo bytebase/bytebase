@@ -215,6 +215,38 @@ export function getRunTokenBudget(chat: AgentChat, pendingAttemptId?: string) {
   };
 }
 
+export function normalizeRunMaskingPage(
+  value: unknown
+): AgentRunBindings["maskingPage"] {
+  if (!record(value)) return undefined;
+  if (
+    value.kind === "global-masking" ||
+    value.kind === "semantic-types" ||
+    value.kind === "data-classification"
+  )
+    return { kind: value.kind };
+  if (
+    value.kind === "masking-exemption" &&
+    typeof value.project === "string" &&
+    value.project
+  )
+    return { kind: value.kind, project: value.project };
+  if (
+    value.kind === "database-catalog" &&
+    typeof value.project === "string" &&
+    value.project &&
+    Array.isArray(value.names) &&
+    value.names.length > 0 &&
+    value.names.every((name) => typeof name === "string" && name)
+  )
+    return {
+      kind: value.kind,
+      project: value.project,
+      names: [...value.names] as string[],
+    };
+  return undefined;
+}
+
 export function normalizeRunBindings(
   value: unknown
 ): AgentRunBindings | undefined {
@@ -223,6 +255,8 @@ export function normalizeRunBindings(
     !record(value.page) ||
     typeof value.page.path !== "string" ||
     typeof value.page.title !== "string" ||
+    (value.pageToolPath !== undefined &&
+      typeof value.pageToolPath !== "string") ||
     !Array.isArray(value.references) ||
     (value.runMode !== "default" && value.runMode !== "read-only") ||
     (value.context !== undefined && typeof value.context !== "string") ||
@@ -233,39 +267,13 @@ export function normalizeRunBindings(
   if (references.length !== value.references.length) return undefined;
   const capability = normalizeAgentDiagnosticCapability(value.capability);
   if (value.capability !== undefined && !capability) return undefined;
-  let maskingPage: AgentRunBindings["maskingPage"];
-  if (value.maskingPage !== undefined) {
-    if (!record(value.maskingPage)) return undefined;
-    const page = value.maskingPage;
-    if (
-      page.kind === "global-masking" ||
-      page.kind === "semantic-types" ||
-      page.kind === "data-classification"
-    )
-      maskingPage = { kind: page.kind };
-    else if (
-      page.kind === "masking-exemption" &&
-      typeof page.project === "string" &&
-      page.project
-    )
-      maskingPage = { kind: page.kind, project: page.project };
-    else if (
-      page.kind === "database-catalog" &&
-      typeof page.project === "string" &&
-      page.project &&
-      Array.isArray(page.names) &&
-      page.names.length > 0 &&
-      page.names.every((name) => typeof name === "string" && name)
-    )
-      maskingPage = {
-        kind: page.kind,
-        project: page.project,
-        names: page.names as string[],
-      };
-    else return undefined;
-  }
+  const maskingPage = normalizeRunMaskingPage(value.maskingPage);
+  if (value.maskingPage !== undefined && !maskingPage) return undefined;
   return {
     page: { path: value.page.path, title: value.page.title },
+    ...(value.pageToolPath === undefined
+      ? {}
+      : { pageToolPath: value.pageToolPath as string }),
     references,
     runMode: value.runMode,
     ...(value.context === undefined
@@ -301,6 +309,8 @@ export function normalizeRunCheckpoint(
     ) ||
     (value.finalizationText !== undefined &&
       typeof value.finalizationText !== "string") ||
+    (value.pageToolPath !== undefined &&
+      typeof value.pageToolPath !== "string") ||
     (value.phase === "finalizing" && typeof value.finalizationText !== "string")
   )
     return undefined;
@@ -320,6 +330,9 @@ export function normalizeRunCheckpoint(
         rootUserMessageId: value.rootUserMessageId,
         throughMessageId: value.throughMessageId,
         bindings,
+        ...(value.pageToolPath !== undefined
+          ? { pageToolPath: value.pageToolPath as string }
+          : {}),
         maskingSections: [
           ...new Set(value.maskingSections),
         ] as AgentRunCheckpoint["maskingSections"],

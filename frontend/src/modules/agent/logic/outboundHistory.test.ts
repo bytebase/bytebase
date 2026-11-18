@@ -127,6 +127,245 @@ const sourceBoundQueryHistory = () => {
 };
 
 describe("source-bound query follow-ups", () => {
+  const explanationChain = (hops = 1, withReferences = false) => {
+    const fixture = sourceBoundQueryHistory();
+    const explanations: AgentMessage[] = [];
+    let sourceId = "contacts-answer";
+    for (let hop = 1; hop <= hops; hop++) {
+      const answerId = `explanation-${hop}-answer`;
+      explanations.push(
+        {
+          ...userMessage({
+            followUpSourceId: sourceId,
+            ...(withReferences
+              ? { resourceReferences: [fixture.reference] }
+              : {}),
+          }),
+          id: `explanation-${hop}-user`,
+          content: "Why are these values redacted?",
+        },
+        {
+          ...userMessage(),
+          id: answerId,
+          role: "assistant",
+          content: "Masking protects sensitive values.",
+        }
+      );
+      sourceId = answerId;
+    }
+    fixture.followUp.metadata!.followUpSourceId = sourceId;
+    fixture.followUp.content = `How can I request unmasked access to ${fixture.database}?`;
+    const messages = [
+      ...fixture.contacts,
+      ...explanations,
+      ...fixture.employees,
+      fixture.followUp,
+    ];
+    if (!withReferences)
+      for (const message of messages)
+        if (message.metadata) delete message.metadata.resourceReferences;
+    return { ...fixture, explanations, messages };
+  };
+
+  test.each([1, 2])(
+    "restores the original query through %i explanation-only source hops without explicit references",
+    (hops) => {
+      const fixture = explanationChain(hops);
+      const history = buildOutboundHistory(
+        "system",
+        fixture.messages,
+        fixture.project
+      );
+      expect(history[0].content).toContain(
+        JSON.stringify({ statement: fixture.contactsSQL })
+      );
+      expect(history[0].content).not.toContain(fixture.employeesSQL);
+      expect(history.flatMap((message) => message.toolCalls ?? [])).toEqual([]);
+    }
+  );
+
+  test("restores the original query for an ordinary follow-up through two compatible source hops", () => {
+    const fixture = explanationChain(2, true);
+    fixture.followUp.content = "Can you group these results by status?";
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain(
+      JSON.stringify({ statement: fixture.contactsSQL })
+    );
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+  });
+
+  test.each([
+    "missing-marker",
+    "deleted-ancestor",
+    "empty-marker",
+    "non-assistant-ancestor",
+    "forward-ancestor",
+    "foreign-answer",
+    "foreign-user",
+    "canceled-user",
+    "failed-answer",
+    "different-database",
+    "different-project",
+    "duplicate-ancestor-after-source",
+  ])("does not traverse an explanation chain with %s", (invalid) => {
+    const fixture = explanationChain(2, true);
+    const intermediateUser = fixture.explanations[0];
+    const intermediateAnswer = fixture.explanations[1];
+    if (invalid === "missing-marker")
+      delete intermediateUser.metadata!.followUpSourceId;
+    if (invalid === "deleted-ancestor")
+      intermediateUser.metadata!.followUpSourceId = "missing-answer";
+    if (invalid === "empty-marker")
+      intermediateUser.metadata!.followUpSourceId = "";
+    if (invalid === "non-assistant-ancestor")
+      intermediateUser.metadata!.followUpSourceId = "contacts-user";
+    if (invalid === "forward-ancestor")
+      intermediateUser.metadata!.followUpSourceId = "explanation-2-answer";
+    if (invalid === "foreign-answer")
+      intermediateAnswer.chatId = "another-chat";
+    if (invalid === "foreign-user") intermediateUser.chatId = "another-chat";
+    if (invalid === "canceled-user")
+      intermediateUser.metadata!.interruptionReason = "user";
+    if (invalid === "failed-answer")
+      intermediateAnswer.metadata = { error: "The answer failed." };
+    if (invalid === "different-database")
+      intermediateUser.metadata!.resourceReferences = [
+        { ...fixture.reference, name: "instances/main/databases/other" },
+      ];
+    if (invalid === "different-project")
+      intermediateUser.metadata!.resourceReferences = [
+        {
+          kind: "project",
+          name: "projects/other",
+          project: "projects/other",
+          label: "Other",
+        },
+      ];
+    if (invalid === "duplicate-ancestor-after-source")
+      fixture.messages.splice(-1, 0, { ...fixture.contacts[3] });
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain("Source-bound follow-up");
+    expect(history[0].content).not.toContain("Historical database context");
+    expect(JSON.stringify(history)).not.toContain(fixture.contactsSQL);
+    expect(JSON.stringify(history)).not.toContain(fixture.employeesSQL);
+  });
+
+  test("does not traverse an explanation turn after a different database was chosen", () => {
+    const fixture = explanationChain(2);
+    const choice = clarification(
+      "intermediate-database-choice",
+      {
+        kind: "choose",
+        resourceKind: "database",
+        prompt: "Which database?",
+        options: [{ label: "Other", value: "instances/main/databases/other" }],
+      },
+      {
+        kind: "choose",
+        answer: "Other",
+        value: "instances/main/databases/other",
+      }
+    );
+    fixture.messages.splice(
+      fixture.messages.indexOf(fixture.explanations[1]),
+      0,
+      ...choice
+    );
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain("Source-bound follow-up");
+    expect(history[0].content).not.toContain("Historical database context");
+    expect(JSON.stringify(history)).not.toContain(fixture.contactsSQL);
+    expect(JSON.stringify(history)).not.toContain(fixture.employeesSQL);
+  });
+
+  test.each(["pending", "denied", "failed", "malformed", "ambiguous"])(
+    "does not bypass an intermediate %s Query to restore ancestor SQL",
+    (outcome) => {
+      const fixture = explanationChain(2);
+      const request = structuredClone(fixture.contacts.slice(1, 3));
+      request[0].id = "intermediate-call";
+      request[0].toolCalls![0].id = "intermediate-query";
+      request[0].toolCalls![0].arguments = JSON.stringify({
+        operationId: "SQLService/Query",
+        body: {
+          name: fixture.database,
+          statement:
+            outcome === "malformed" ? null : "SELECT status FROM invoices",
+        },
+      });
+      request[1].id = "intermediate-result";
+      request[1].toolCallId = "intermediate-query";
+      if (outcome === "pending") request.pop();
+      if (outcome === "denied")
+        request[1].content = JSON.stringify({ status: 403, error: "denied" });
+      if (outcome === "failed")
+        request[1].content = JSON.stringify({
+          status: 200,
+          response: { results: [{ error: "query failed" }] },
+        });
+      if (outcome === "ambiguous")
+        request.push(...structuredClone(fixture.employees.slice(1, 3)));
+      fixture.messages.splice(
+        fixture.messages.indexOf(fixture.explanations[1]),
+        0,
+        ...request
+      );
+      const history = buildOutboundHistory(
+        "system",
+        fixture.messages,
+        fixture.project
+      );
+      expect(history[0].content).toContain("Source-bound follow-up");
+      expect(history[0].content).not.toContain("Historical database context");
+      expect(JSON.stringify(history)).not.toContain(fixture.contactsSQL);
+      expect(JSON.stringify(history)).not.toContain(fixture.employeesSQL);
+      expect(JSON.stringify(history)).not.toContain(
+        "SELECT status FROM invoices"
+      );
+    }
+  );
+
+  test("uses a successful intermediate Query instead of traversing to older SQL", () => {
+    const fixture = explanationChain(2);
+    const request = structuredClone(fixture.contacts.slice(1, 3));
+    const intermediateSQL = "SELECT status FROM invoices";
+    request[0].id = "intermediate-call";
+    request[0].toolCalls![0].id = "intermediate-query";
+    request[0].toolCalls![0].arguments = JSON.stringify({
+      operationId: "SQLService/Query",
+      body: { name: fixture.database, statement: intermediateSQL },
+    });
+    request[1].id = "intermediate-result";
+    request[1].toolCallId = "intermediate-query";
+    fixture.messages.splice(
+      fixture.messages.indexOf(fixture.explanations[1]),
+      0,
+      ...request
+    );
+    const history = buildOutboundHistory(
+      "system",
+      fixture.messages,
+      fixture.project
+    );
+    expect(history[0].content).toContain(
+      JSON.stringify({ statement: intermediateSQL })
+    );
+    expect(history[0].content).not.toContain(fixture.contactsSQL);
+    expect(history[0].content).not.toContain(fixture.employeesSQL);
+  });
+
   test("restores the clicked query for an ordinary historical follow-up", () => {
     const fixture = sourceBoundQueryHistory();
     fixture.followUp.content = "Can you group these results by status?";
