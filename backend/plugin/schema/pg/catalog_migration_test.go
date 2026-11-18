@@ -521,3 +521,26 @@ func TestUnloadableDependentViewsRestoreInDependencyOrder(t *testing.T) {
 	require.Less(t, dropA, dropB, "the dependent view is dropped first")
 	require.Less(t, createB, createA, "the dependency is created first")
 }
+
+// TestUnloadableBackupSchemaViewIsNotRestored keeps the backup-schema contract:
+// the restore fallback must not reintroduce bbdataarchive objects after the
+// plan's filter removed them.
+func TestUnloadableBackupSchemaViewIsNotRestored(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "bbdataarchive",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "bbdataarchive", Table: "t", Column: "id",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}

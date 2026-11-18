@@ -38,11 +38,12 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if diff.IsEmpty() {
 		return "", nil
 	}
-	plan := catalog.GenerateMigration(from, to, diff).Filter(func(op catalog.MigrationOp) bool {
-		return op.SchemaName != "bbdataarchive"
-	})
+	plan := catalog.GenerateMigration(from, to, diff)
 	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
+	plan = plan.Filter(func(op catalog.MigrationOp) bool {
+		return op.SchemaName != "bbdataarchive"
+	})
 	return plan.SQL(), nil
 }
 
