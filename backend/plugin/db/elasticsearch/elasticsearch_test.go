@@ -164,8 +164,6 @@ func TestOpenWithAWSAuth(t *testing.T) {
 	}
 }
 
-// TestOpenWithAnSSHHost pins that a jump host is the path: Open dials it before
-// it builds the endpoint.
 func TestSecure(t *testing.T) {
 	// https is what the endpoint is built with when any of these says so; the
 	// AWS login has no other way to reach a managed domain.
@@ -272,13 +270,12 @@ func TestSyncInstanceMatchesRecordedAnswer(t *testing.T) {
 		{Name: "u1", Attribute: &u1Role},
 	}, instance.Metadata.GetRoles())
 
-	// The statements are the ones this driver issues, in this order.
 	require.Equal(t, []string{
 		"GET /",
 		"GET /*/_settings?filter_path=**.hidden&expand_wildcards=open,hidden",
 		"GET /_cat/indices?format=json&pretty",
 		"GET /_security/user",
-	}, server.requests)
+	}, server.requests, "the sync reads these routes in this order")
 
 	schema, err := opened.SyncDBSchema(context.Background())
 	require.NoError(t, err)
