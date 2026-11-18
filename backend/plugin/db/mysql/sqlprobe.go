@@ -1,5 +1,11 @@
 package mysql
 
+// This file is the *sql.DB bridge the advisor tests in advisor/mysql and
+// advisor/mariadb use to answer the affected-rows estimate without a live
+// adapter. The production estimate path is the contract driver's
+// CountAffectedRows; these helpers stay until those tests move onto a session
+// probe, which is the MariaDB cutover's work, not this one's.
+
 import (
 	"context"
 	"database/sql"
@@ -14,55 +20,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
 // erUnknownSystemVariable is the MySQL error number for setting a variable the server lacks.
 const erUnknownSystemVariable = 1193
-
-// CountAffectedRows returns the planner's estimate of the rows the INSERT, UPDATE, or DELETE
-// statement modifies.
-func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	if d.dbType == storepb.Engine_MARIADB {
-		return d.countAffectedRowsMariaDB(ctx, statement)
-	}
-	list, err := mysqlparser.ParseMySQL(statement)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to parse statement")
-	}
-	if list == nil || len(list.Items) != 1 {
-		return 0, errors.New("expected exactly one statement")
-	}
-	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := ExplainJSON(ctx, d.db, query)
-	if err != nil {
-		return 0, err
-	}
-	return EstimateAffectedRows(ctx, d.db, list.Items[0], query, plan)
-}
-
-// countAffectedRowsMariaDB reads the statement with omni's MariaDB parser.
-// MariaDB keeps this driver because it speaks the MySQL wire protocol, but its
-// grammar is its own: ParseMySQL rejects RETURNING and the other MariaDB-only
-// forms, and the summary would then report no rows for a statement that changes
-// many.
-func (d *Driver) countAffectedRowsMariaDB(ctx context.Context, statement string) (int64, error) {
-	list, err := mariadbparser.ParseMariaDB(statement)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to parse statement")
-	}
-	if list == nil || len(list.Items) != 1 {
-		return 0, errors.New("expected exactly one statement")
-	}
-	query := mariadbparser.AffectedRowsQuery(list.Items[0], statement)
-	plan, err := ExplainJSON(ctx, d.db, query)
-	if err != nil {
-		return 0, err
-	}
-	return EstimateAffectedRowsMariaDB(ctx, d.db, list.Items[0], query, plan)
-}
 
 // EstimateAffectedRowsMariaDB is EstimateAffectedRows for an omni MariaDB node.
 // Only the plan reader differs: ExplainTabularEstimate reads no AST, so MariaDB
