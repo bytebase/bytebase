@@ -351,8 +351,10 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 				drop = index
 			}
 		}
+		// A view the target adds has no drop to precede; the release only has to
+		// come before its deferred create.
 		if drop < 0 {
-			return
+			drop = 0
 		}
 		plan.Ops = slices.Insert(plan.Ops, drop, releases...)
 	}

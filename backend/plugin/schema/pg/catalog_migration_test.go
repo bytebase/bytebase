@@ -1166,6 +1166,50 @@ func TestDeferredCreatedViewOrdersItsAttributeAfterwards(t *testing.T) {
 	require.Less(t, createView, addAttribute, "the attribute is added after the view it needs is created")
 }
 
+// TestDeferredCreatedViewReleasesARetypedAttribute covers an existing attribute
+// retyped to a view the target adds: the view has no drop to precede, but the
+// release still has to happen before its deferred create, and the attribute is
+// re-added after it.
+func TestDeferredCreatedViewReleasesARetypedAttribute(t *testing.T) {
+	snapshot := func(columnType, attributeType string) *model.DatabaseMetadata {
+		schemaMeta := &metadatapb.SchemaMetadata{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "lower",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name:       "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "r", Type: attributeType}},
+			}},
+		}
+		if attributeType != "text" {
+			schemaMeta.Views = append(schemaMeta.Views, &metadatapb.ViewMetadata{
+				Name:       "upper",
+				Definition: "SELECT id FROM public.lower",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "lower",
+				}},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schemaMeta}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", "text"), snapshot("bigint", "public.upper"))
+	require.NoError(t, err)
+	release := strings.Index(sql, `ALTER TYPE "public"."c" DROP ATTRIBUTE "r"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	add := strings.Index(sql, `ALTER TYPE "public"."c" ADD ATTRIBUTE "r" public.upper`)
+	for name, index := range map[string]int{"release": release, "create view": createView, "add": add} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, release, createView, "the release happens before the deferred create")
+	require.Less(t, createView, add, "the attribute is re-added after the create")
+}
+
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
 // attribute the target adds, out of a restored view's drop: releasing a column
 // would discard its data, and a new attribute would need the view before its
