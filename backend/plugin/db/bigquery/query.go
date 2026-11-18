@@ -23,10 +23,15 @@ import (
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	results, err := d.session.Query(ctx, statement, odriver.QueryOptions{
 		// BigQuery has no session state and no schema below the dataset, so
-		// QueryContext.Schema has nothing to set; QueryContext.OperatorEmail has
-		// no field in the contract to carry it.
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
+		// QueryContext.Schema has nothing to set.
+		//
+		// Known difference: QueryOptions carries no operator identity, so the
+		// operator_email job label the previous driver attached is not set.
+		Limit:   queryContext.Limit,
+		Explain: queryContext.Explain,
+		// Known difference: the cap is byte-accurate and reports Truncated, and 0
+		// is no cap; the previous driver measured at power-of-two row counts and
+		// stopped at the first row for 0.
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
