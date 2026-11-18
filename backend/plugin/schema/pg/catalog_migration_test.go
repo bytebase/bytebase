@@ -597,3 +597,44 @@ func TestSplitCompositeRetypeReappliesUnchangedComment(t *testing.T) {
 	require.Less(t, add, comment, sql)
 	require.Equal(t, 1, strings.Count(sql, "COMMENT ON COLUMN"), sql)
 }
+
+// TestLoadableDependentViewFollowsUnloadableView covers a loadable unchanged
+// view that depends on an unloadable one: dropping the lower view fails while
+// the upper still references it, so the closure must restore both.
+func TestLoadableDependentViewFollowsUnloadableView(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{
+					Name:       "upper",
+					Definition: "SELECT id FROM public.lower",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "lower",
+					}},
+				},
+				{
+					Name:       "lower",
+					Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "t", Column: "id",
+					}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
+	createLower := strings.Index(sql, `CREATE VIEW "public"."lower"`)
+	createUpper := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, dropLower, 0, sql)
+	require.GreaterOrEqual(t, createLower, 0, sql)
+	require.GreaterOrEqual(t, createUpper, 0, sql)
+	require.Less(t, dropUpper, dropLower, sql)
+	require.Less(t, createLower, createUpper, sql)
+}

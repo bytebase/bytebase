@@ -318,52 +318,81 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
-	var items []restoreItem
+	type candidate struct {
+		key, dropSQL, createSQL string
+		deps                    []string
+		unloadable, direct      bool
+	}
+	var candidates []candidate
 	for _, schema := range newMeta.GetSchemas() {
 		oldSchema := schemaByName(oldMeta, schema.GetName())
 		if oldSchema == nil {
 			continue
 		}
-		add := func(key string, dependencies []*metadatapb.DependencyColumn, dropSQL, createSQL string) {
-			var deps []string
-			for _, dependency := range dependencies {
-				deps = append(deps, dependency.GetSchema()+"."+dependency.GetTable())
-			}
-			items = append(items, restoreItem{key: key, dropSQL: dropSQL, createSQL: createSQL, deps: deps})
-		}
 		for _, view := range schema.GetViews() {
 			key := schema.GetName() + "." + view.GetName()
 			oldView := viewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) || !unloadable["rel:"+key] {
-				continue
-			}
-			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
+			if oldView == nil || !proto.Equal(oldView, view) {
 				continue
 			}
 			createSQL, err := catalog.ViewDefinition(schema.GetName(), view)
 			if err != nil {
 				continue
 			}
-			add(key, view.GetDependencyColumns(),
-				"DROP VIEW IF EXISTS "+quoteQualified(schema.GetName(), view.GetName()),
-				trimDefinition(createSQL))
+			candidates = append(candidates, candidate{
+				key:        key,
+				dropSQL:    "DROP VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
+				createSQL:  trimDefinition(createSQL),
+				deps:       dependencyKeys(view.GetDependencyColumns()),
+				unloadable: unloadable["rel:"+key],
+				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
+			})
 		}
 		for _, view := range schema.GetMaterializedViews() {
 			key := schema.GetName() + "." + view.GetName()
 			oldView := materializedViewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) || !unloadable["rel:"+key] {
-				continue
-			}
-			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
+			if oldView == nil || !proto.Equal(oldView, view) {
 				continue
 			}
 			createSQL, err := catalog.MaterializedViewDefinition(schema.GetName(), view)
 			if err != nil {
 				continue
 			}
-			add(key, view.GetDependencyColumns(),
-				"DROP MATERIALIZED VIEW IF EXISTS "+quoteQualified(schema.GetName(), view.GetName()),
-				trimDefinition(createSQL))
+			candidates = append(candidates, candidate{
+				key:        key,
+				dropSQL:    "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
+				createSQL:  trimDefinition(createSQL),
+				deps:       dependencyKeys(view.GetDependencyColumns()),
+				unloadable: unloadable["rel:"+key],
+				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
+			})
+		}
+	}
+	selected := make(map[string]bool)
+	for _, candidate := range candidates {
+		if candidate.unloadable && candidate.direct {
+			selected[candidate.key] = true
+		}
+	}
+	for changed := true; changed; {
+		changed = false
+		for _, candidate := range candidates {
+			if selected[candidate.key] {
+				continue
+			}
+			for _, dependency := range candidate.deps {
+				if selected[dependency] {
+					selected[candidate.key] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+	var items []restoreItem
+	for _, candidate := range candidates {
+		if selected[candidate.key] {
+			items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: candidate.createSQL, deps: candidate.deps})
 		}
 	}
 	if len(items) == 0 {
@@ -373,11 +402,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(order) - 1; i >= 0; i-- {
 		item := items[order[i]]
-		schemaName, _, _ := strings.Cut(item.key, ".")
+		schemaName, objectName := splitObjectKey(item.key)
 		ops = append(ops, catalog.MigrationOp{
 			Type:       catalog.OpDropView,
 			SchemaName: schemaName,
-			ObjectName: strings.TrimPrefix(item.key, schemaName+"."),
+			ObjectName: objectName,
 			SQL:        item.dropSQL,
 			Phase:      catalog.PhasePre,
 			ObjType:    'r',
@@ -386,17 +415,30 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	ops = append(ops, plan.Ops...)
 	for _, index := range order {
 		item := items[index]
-		schemaName, _, _ := strings.Cut(item.key, ".")
+		schemaName, objectName := splitObjectKey(item.key)
 		ops = append(ops, catalog.MigrationOp{
 			Type:       catalog.OpCreateView,
 			SchemaName: schemaName,
-			ObjectName: strings.TrimPrefix(item.key, schemaName+"."),
+			ObjectName: objectName,
 			SQL:        item.createSQL,
 			Phase:      catalog.PhaseMain,
 			ObjType:    'r',
 		})
 	}
 	plan.Ops = ops
+}
+
+func dependencyKeys(dependencies []*metadatapb.DependencyColumn) []string {
+	keys := make([]string, 0, len(dependencies))
+	for _, dependency := range dependencies {
+		keys = append(keys, dependency.GetSchema()+"."+dependency.GetTable())
+	}
+	return keys
+}
+
+func splitObjectKey(key string) (string, string) {
+	schemaName, objectName, _ := strings.Cut(key, ".")
+	return schemaName, objectName
 }
 
 // restoreOrder puts each restore item after the selected items it depends on,
