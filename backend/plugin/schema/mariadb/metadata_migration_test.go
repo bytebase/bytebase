@@ -172,3 +172,20 @@ func TestDiffMetadataKeepsExplicitTableCharset(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, sql, "DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci")
 }
+
+// TestDiffMetadataRefusesCaseOnlyIdentities covers the one snapshot shape
+// omni's MariaDB catalog cannot represent: names that differ only by case.
+func TestDiffMetadataRefusesCaseOnlyIdentities(t *testing.T) {
+	table := func(name string) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{Name: name, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
+	}
+	snapshot := func(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
+		return mariadbMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "d", Schemas: []*metadatapb.SchemaMetadata{{Tables: tables}}})
+	}
+
+	_, err := schema.DiffMigration(storepb.Engine_MARIADB, snapshot(table("Foo")), snapshot(table("foo")))
+	require.ErrorContains(t, err, "case-only rename")
+
+	_, err = schema.DiffMigration(storepb.Engine_MARIADB, snapshot(table("Foo"), table("foo")), snapshot(table("Foo")))
+	require.ErrorContains(t, err, "cannot distinguish")
+}

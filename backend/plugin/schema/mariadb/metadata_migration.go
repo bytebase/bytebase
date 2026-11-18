@@ -2,9 +2,11 @@ package mariadb
 
 import (
 	"context"
+	"strings"
 
 	"github.com/bytebase/omni/mariadb/catalog"
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -74,5 +76,60 @@ func clearImplicitTableCharsets(c *catalog.Catalog, meta *metadatapb.DatabaseSch
 // snapshots, refusing one whose changed objects the catalog could not install as
 // defined (see omnicatalog.DiffMetadata).
 func mariaDBDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	if err := rejectCaseSensitiveIdentities(oldSchema, newSchema); err != nil {
+		return "", err
+	}
 	return omnicatalog.DiffMetadata(mariaDBCatalog, oldSchema.GetProto(), newSchema.GetProto())
+}
+
+// rejectCaseSensitiveIdentities refuses a snapshot whose table or view names
+// differ only by case. omni's MariaDB catalog keys objects by lower-cased name,
+// so a case-only rename or a pair of such objects would be conflated. Snapshots
+// with no such ambiguity diff correctly even on a case-sensitive instance.
+func rejectCaseSensitiveIdentities(oldSchema, newSchema *model.DatabaseMetadata) error {
+	if !oldSchema.GetIsObjectCaseSensitive() && !newSchema.GetIsObjectCaseSensitive() {
+		return nil
+	}
+	for _, schema := range []*model.DatabaseMetadata{oldSchema, newSchema} {
+		for _, s := range schema.GetProto().GetSchemas() {
+			seen := make(map[string]string)
+			for _, name := range relationNames(s) {
+				lower := strings.ToLower(name)
+				if previous, ok := seen[lower]; ok && previous != name {
+					return errors.Errorf("case-sensitive schema has %q and %q, which the MariaDB catalog cannot distinguish", previous, name)
+				}
+				seen[lower] = name
+			}
+		}
+	}
+	oldNames := relationNameMap(oldSchema.GetProto())
+	for _, schema := range newSchema.GetProto().GetSchemas() {
+		for _, name := range relationNames(schema) {
+			if previous, ok := oldNames[strings.ToLower(name)]; ok && previous != name {
+				return errors.Errorf("case-only rename %q to %q is not supported by the MariaDB catalog diff", previous, name)
+			}
+		}
+	}
+	return nil
+}
+
+func relationNames(schema *metadatapb.SchemaMetadata) []string {
+	names := make([]string, 0, len(schema.GetTables())+len(schema.GetViews()))
+	for _, table := range schema.GetTables() {
+		names = append(names, table.GetName())
+	}
+	for _, view := range schema.GetViews() {
+		names = append(names, view.GetName())
+	}
+	return names
+}
+
+func relationNameMap(meta *metadatapb.DatabaseSchemaMetadata) map[string]string {
+	names := make(map[string]string)
+	for _, schema := range meta.GetSchemas() {
+		for _, name := range relationNames(schema) {
+			names[strings.ToLower(name)] = name
+		}
+	}
+	return names
 }
