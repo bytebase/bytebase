@@ -937,3 +937,51 @@ func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
 	require.Equal(t, "note", remoteOrders.Columns[1].Name)
 	require.Equal(t, "character varying(30)", remoteOrders.Columns[1].Type)
 }
+
+func TestSyncInstanceSkipsNeonPostgresDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, _ := testcontainer.NewPgDatabase(t)
+
+	syncDatabaseNames := func(t *testing.T, vendor storepb.Vendor) []string {
+		t.Helper()
+		driver := &Driver{}
+		openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{
+				Type:     storepb.DataSourceType_ADMIN,
+				Username: "postgres",
+				Host:     pgContainer.GetHost(),
+				Port:     pgContainer.GetPort(),
+			},
+			Password: "root-password",
+			ConnectionContext: db.ConnectionContext{
+				Vendor: vendor,
+			},
+		})
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, openedDriver.Close(ctx)) })
+
+		meta, err := openedDriver.SyncInstance(ctx)
+		require.NoError(t, err)
+
+		names := make([]string, 0, len(meta.Databases))
+		for _, d := range meta.Databases {
+			names = append(names, d.Name)
+		}
+		return names
+	}
+
+	genericNames := syncDatabaseNames(t, storepb.Vendor_VENDOR_UNSPECIFIED)
+	require.Contains(t, genericNames, "postgres")
+	require.Contains(t, genericNames, dbName)
+	require.NotContains(t, genericNames, "template0")
+	require.NotContains(t, genericNames, "template1")
+
+	neonNames := syncDatabaseNames(t, storepb.Vendor_NEON)
+	require.NotContains(t, neonNames, "postgres")
+	require.Contains(t, neonNames, dbName)
+	require.NotContains(t, neonNames, "template0")
+	require.NotContains(t, neonNames, "template1")
+}
