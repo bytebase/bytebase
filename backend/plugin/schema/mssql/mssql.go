@@ -320,6 +320,11 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, case
 		schema.SkipDump = false
 	}
 	for _, oldSchema := range oldOut.GetSchemas() {
+		if schemaByName(newOut, oldSchema.GetName(), normalize) == nil {
+			clearSkipDump(oldSchema)
+		}
+	}
+	for _, oldSchema := range oldOut.GetSchemas() {
 		newSchema := schemaByName(newOut, oldSchema.GetName(), normalize)
 		if newSchema == nil {
 			continue
@@ -405,6 +410,33 @@ func reconcileObjects[T any](oldObjs, newObjs []T, name func(T) string, skipped 
 		}
 	}
 	return result
+}
+
+// clearSkipDump exposes every object of a schema the target removes: the schema
+// cannot be dropped while a skipped table or view still occupies it, and the
+// legacy differ dropped those objects with the schema.
+func clearSkipDump(schema *metadatapb.SchemaMetadata) {
+	for _, table := range schema.GetTables() {
+		table.SkipDump = false
+		for _, trigger := range table.GetTriggers() {
+			trigger.SkipDump = false
+		}
+	}
+	for _, view := range schema.GetViews() {
+		view.SkipDump = false
+		for _, trigger := range view.GetTriggers() {
+			trigger.SkipDump = false
+		}
+	}
+	for _, function := range schema.GetFunctions() {
+		function.SkipDump = false
+	}
+	for _, procedure := range schema.GetProcedures() {
+		procedure.SkipDump = false
+	}
+	for _, sequence := range schema.GetSequences() {
+		sequence.SkipDump = false
+	}
 }
 
 func tableByName(schema *metadatapb.SchemaMetadata, name string, normalize func(string) string) *metadatapb.TableMetadata {

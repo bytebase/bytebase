@@ -134,3 +134,22 @@ func TestMetadataMigrationMatchesSkippedNamesCaseInsensitively(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, sql)
 }
+
+// TestMetadataMigrationDropsSkippedObjectsWithTheirSchema covers a removed
+// schema: its skipped table must still be dropped, or SQL Server rejects the
+// schema drop because the physical table remains.
+func TestMetadataMigrationDropsSkippedObjectsWithTheirSchema(t *testing.T) {
+	old := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "app",
+		Tables: []*metadatapb.TableMetadata{{
+			Name:     "t",
+			SkipDump: true,
+			Columns:  []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+		}},
+	}}}, nil, nil, storepb.Engine_MSSQL, false)
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, nil, nil, storepb.Engine_MSSQL, false)
+
+	sql, err := schema.DiffMigration(storepb.Engine_MSSQL, old, target)
+	require.NoError(t, err)
+	require.Contains(t, sql, "DROP TABLE")
+}
