@@ -454,9 +454,7 @@ function RowForm({
                             )
                           }
                         />
-                        <span className="font-mono text-xs">
-                          {database.name}
-                        </span>
+                        <span>{database.name}</span>
                         <span className="text-xs text-control-light">
                           {t("instance.neon.select.owner", {
                             owner: database.owner,

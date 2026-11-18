@@ -377,4 +377,15 @@ test("lists branch database names without owner annotations", () => {
   renderStep({ drafts: [makeDraft(multiDb)] });
   expect(screen.getAllByText("app, analytics").length).toBeGreaterThan(0);
   expect(screen.queryByText(/app_owner|bi_owner/)).toBeNull();
+  const databasesCell = screen
+    .getAllByText("app, analytics")
+    .map((el) => el.closest("td"))
+    .find((td) => td?.classList.contains("md:table-cell"));
+  expect(databasesCell).toBeDefined();
+  expect(databasesCell).toHaveClass("text-sm", "text-control");
+  expect(databasesCell).not.toHaveClass("text-xs", "text-main");
+  expect(databasesCell?.querySelector(".text-main")).toBeNull();
+  const rolesCell = screen.getByText("neondb_owner").closest("td");
+  expect(rolesCell).toHaveClass("text-sm", "text-control");
+  expect(rolesCell).not.toHaveClass("text-xs");
 });

@@ -41,7 +41,7 @@ import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { NeonConfigureStep } from "./NeonConfigureStep";
 import { type NeonConnectFailure, NeonConnectStep } from "./NeonConnectStep";
 import { NeonImportStep } from "./NeonImportStep";
-import { NeonRowSheet, useEnvironmentTitle } from "./NeonRowSheet";
+import { NeonRowSheet } from "./NeonRowSheet";
 import {
   type NeonDiscoveryStatus,
   type NeonProjectFailure,
@@ -224,7 +224,6 @@ export function NeonImportForm({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const environmentTitle = useEnvironmentTitle();
   const license = {
     instanceCountLimit: useAppStore((state) => state.instanceCountLimit()),
     totalInstanceCount: useAppStore((state) => state.totalInstanceCount()),
@@ -739,19 +738,6 @@ export function NeonImportForm({
   const branchCount = (count: number) =>
     t("instance.neon.count.branches", { count });
 
-  const environmentSummary = () => {
-    const counts = new Map<string, number>();
-    for (const draft of selected) {
-      const title = environmentTitle(
-        effectiveSettings(draft, shared).environment
-      );
-      counts.set(title, (counts.get(title) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([title, count]) => `${title} ${count}`)
-      .join(", ");
-  };
-
   const status: NeonDiscoveryStatus = {
     started,
     loading,
@@ -774,7 +760,7 @@ export function NeonImportForm({
     </div>
   );
 
-  const footerNote = (text: string, tone = "text-control-light") => (
+  const footerNote = (text: string, tone: string) => (
     <span className={`text-xs leading-4 tabular-nums ${tone}`}>{text}</span>
   );
   const footer = ((): ReactNode => {
@@ -827,23 +813,13 @@ export function NeonImportForm({
             }
             right={
               <>
-                {overLimit > 0
-                  ? footerNote(
-                      t("instance.neon.select.footer-over", {
-                        branches: branchCount(overLimit),
-                      }),
-                      "text-error"
-                    )
-                  : footerNote(
-                      selected.length > 0
-                        ? t("instance.neon.select.footer-selected", {
-                            branches: branchCount(selected.length),
-                            projects: t("instance.neon.count.neon-projects", {
-                              count: selectedProjects,
-                            }),
-                          })
-                        : t("instance.neon.select.footer-none")
-                    )}
+                {overLimit > 0 &&
+                  footerNote(
+                    t("instance.neon.select.footer-over", {
+                      branches: branchCount(overLimit),
+                    }),
+                    "text-error"
+                  )}
                 <Button
                   className="tabular-nums"
                   disabled={selected.length === 0 || overLimit > 0}
@@ -878,16 +854,13 @@ export function NeonImportForm({
                       }),
                       "text-error"
                     )
-                  : needCount > 0
-                    ? footerNote(
-                        t("instance.neon.configure.footer-needs", {
-                          count: needCount,
-                        }),
-                        "text-warning-hover"
-                      )
-                    : footerNote(
-                        `${instances(selected.length)} · ${environmentSummary()}`
-                      )}
+                  : needCount > 0 &&
+                    footerNote(
+                      t("instance.neon.configure.footer-needs", {
+                        count: needCount,
+                      }),
+                      "text-warning-hover"
+                    )}
                 <Button
                   className="tabular-nums"
                   disabled={

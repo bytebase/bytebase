@@ -491,6 +491,16 @@ test("blocks a selection above what the workspace can still add", async () => {
     screen.getByRole("checkbox", { name: /row-select-label.*preview-2/ })
   );
   expect(button(/select.configure.*"count":2/)).toBeEnabled();
+  expect(screen.queryByText(/select\.footer-/)).toBeNull();
+  fireEvent.click(button(/select.configure.*"count":2/));
+  expect(button(/neon.import-count.*"count":2/)).toBeEnabled();
+  const footer = document.querySelector(
+    '[data-slot="sticky-action-footer-content"]'
+  );
+  expect(footer?.querySelectorAll("button")).toHaveLength(2);
+  expect(footer?.textContent).toBe(
+    'common.backinstance.neon.import-count{"count":2}'
+  );
 });
 
 test("reads the remaining instance number again when Select and Configure open and before import", async () => {

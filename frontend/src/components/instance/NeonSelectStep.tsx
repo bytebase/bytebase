@@ -596,16 +596,14 @@ export function NeonSelectStep({
                         </TableCell>
                         <TableCell className="hidden align-top whitespace-nowrap md:table-cell">
                           {branch.databases.length > 0 ? (
-                            <span className="text-main">
-                              {branch.databases.map((db) => db.name).join(", ")}
-                            </span>
+                            branch.databases.map((db) => db.name).join(", ")
                           ) : (
                             <span className="text-control-light">
                               {t("instance.neon.select.not-available")}
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="hidden align-top text-xs whitespace-nowrap lg:table-cell">
+                        <TableCell className="hidden align-top whitespace-nowrap lg:table-cell">
                           {branch.roles.length > 0 ? (
                             branch.roles.join(", ")
                           ) : (
