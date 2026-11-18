@@ -114,7 +114,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 			}
-			sqlDB := driver.GetDB()
+			sqlDB := db.SQLDB(driver)
 			if sqlDB != nil {
 				conn, err = sqlDB.Conn(ctx)
 				if err != nil {
@@ -401,7 +401,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 	defer driver.Close(ctx)
 
-	sqlDB := driver.GetDB()
+	sqlDB := db.SQLDB(driver)
 	var conn *sql.Conn
 	if sqlDB != nil {
 		conn, err = sqlDB.Conn(ctx)
@@ -1344,7 +1344,7 @@ func doExport(
 	}
 	defer driver.Close(ctx)
 
-	sqlDB := driver.GetDB()
+	sqlDB := db.SQLDB(driver)
 	var conn *sql.Conn
 	if sqlDB != nil {
 		conn, err = sqlDB.Conn(ctx)
