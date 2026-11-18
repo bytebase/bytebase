@@ -672,7 +672,7 @@ func TestChangedDependentViewIsDroppedBeforeUnloadableView(t *testing.T) {
 	require.NoError(t, err)
 	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
 	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
-	recreateUpper := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."upper"`)
+	recreateUpper := strings.Index(sql, `CREATE VIEW "public"."upper"`)
 	require.GreaterOrEqual(t, dropUpper, 0, sql)
 	require.GreaterOrEqual(t, dropLower, 0, sql)
 	require.GreaterOrEqual(t, recreateUpper, 0, sql)
@@ -772,9 +772,23 @@ func TestIndexOnlyMatViewChangeRecreatesBeforeItsIndex(t *testing.T) {
 	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
 	require.NoError(t, err)
 	createView := strings.Index(sql, `CREATE MATERIALIZED VIEW "public"."mv"`)
-	createIndex := strings.Index(sql, "CREATE UNIQUE INDEX idx_mv")
+	createIndex := strings.Index(sql, `CREATE UNIQUE INDEX "idx_mv"`)
 	require.GreaterOrEqual(t, createView, 0, sql)
 	require.GreaterOrEqual(t, createIndex, 0, sql)
 	require.Less(t, createView, createIndex, sql)
 	require.NotContains(t, sql, "DROP INDEX")
+}
+
+// TestIndexByNameUsesOwner covers snapshots where two relations carry an index
+// of the same name: the lookup must use the relation named in the create SQL.
+func TestIndexByNameUsesOwner(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{
+			{Name: "a", Indexes: []*metadatapb.IndexMetadata{{Name: "idx", Definition: "definition a"}}},
+			{Name: "b", Indexes: []*metadatapb.IndexMetadata{{Name: "idx", Definition: "definition b"}}},
+		},
+	}}}
+	require.Equal(t, "definition a", indexByName(meta, "public", "public.a", "idx").GetDefinition())
+	require.Equal(t, "definition b", indexByName(meta, "public", "public.b", "idx").GetDefinition())
 }

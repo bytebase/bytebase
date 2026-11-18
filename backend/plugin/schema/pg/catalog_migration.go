@@ -282,7 +282,7 @@ func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.Datab
 		if op.Type != catalog.OpCreateIndex {
 			continue
 		}
-		index := indexByName(meta, op.SchemaName, op.ObjectName)
+		index := indexByName(meta, op.SchemaName, indexOwnerFromSQL(op.SQL), op.ObjectName)
 		if index == nil || index.GetDefinition() == "" {
 			continue
 		}
@@ -290,23 +290,42 @@ func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.Datab
 	}
 }
 
-func indexByName(meta *metadatapb.DatabaseSchemaMetadata, schemaName, name string) *metadatapb.IndexMetadata {
+func indexByName(meta *metadatapb.DatabaseSchemaMetadata, schemaName, ownerKey, name string) *metadatapb.IndexMetadata {
 	schema := schemaByName(meta, schemaName)
 	if schema == nil {
 		return nil
 	}
-	for _, table := range schema.GetTables() {
-		for _, index := range table.GetIndexes() {
-			if index.GetName() == name {
-				return index
+	if ownerKey != "" {
+		_, owner := splitObjectKey(ownerKey)
+		for _, table := range schema.GetTables() {
+			if table.GetName() == owner {
+				return findIndex(table.GetIndexes(), name)
 			}
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			if view.GetName() == owner {
+				return findIndex(view.GetIndexes(), name)
+			}
+		}
+		return nil
+	}
+	for _, table := range schema.GetTables() {
+		if index := findIndex(table.GetIndexes(), name); index != nil {
+			return index
 		}
 	}
 	for _, view := range schema.GetMaterializedViews() {
-		for _, index := range view.GetIndexes() {
-			if index.GetName() == name {
-				return index
-			}
+		if index := findIndex(view.GetIndexes(), name); index != nil {
+			return index
+		}
+	}
+	return nil
+}
+
+func findIndex(indexes []*metadatapb.IndexMetadata, name string) *metadatapb.IndexMetadata {
+	for _, index := range indexes {
+		if index.GetName() == name {
+			return index
 		}
 	}
 	return nil
@@ -380,21 +399,6 @@ func containsObjectReference(sql, schema, object string) bool {
 	return strings.Contains(sql, quoteQualified(schema, object)) || strings.Contains(sql, schema+"."+object)
 }
 
-func indexOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string) string {
-	schema := schemaByName(meta, schemaName)
-	if schema == nil {
-		return ""
-	}
-	for _, view := range schema.GetMaterializedViews() {
-		for _, index := range view.GetIndexes() {
-			if index.GetName() == indexName {
-				return schemaName + "." + view.GetName()
-			}
-		}
-	}
-	return ""
-}
-
 func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
 	name := strings.TrimSpace(typeName)
 	for strings.HasSuffix(name, "[]") {
@@ -455,7 +459,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		key, dropSQL, createSQL string
 		deps                    []string
 		unloadable, direct      bool
-		changed                 bool
 	}
 	var candidates []candidate
 	for _, schema := range newMeta.GetSchemas() {
@@ -480,7 +483,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				deps:       unionKeys(dependencyKeys(oldView.GetDependencyColumns()), dependencyKeys(view.GetDependencyColumns())),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
-				changed:    !proto.Equal(oldView, view),
 			})
 		}
 		for _, view := range schema.GetMaterializedViews() {
@@ -500,7 +502,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				deps:       unionKeys(dependencyKeys(oldView.GetDependencyColumns()), dependencyKeys(view.GetDependencyColumns())),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
-				changed:    !proto.Equal(oldView, view),
 			})
 		}
 	}
@@ -525,25 +526,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
-	recreatedOps := make(map[string]catalog.MigrationOp)
-	for _, op := range plan.Ops {
-		if op.Type == catalog.OpCreateView || op.Type == catalog.OpAlterView {
-			recreatedOps[op.SchemaName+"."+op.ObjectName] = op
-		}
-	}
 	var items []restoreItem
 	for _, candidate := range candidates {
-		if !selected[candidate.key] {
-			continue
+		if selected[candidate.key] {
+			items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: candidate.createSQL, deps: candidate.deps})
 		}
-		item := restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: candidate.createSQL, deps: candidate.deps}
-		if candidate.changed {
-			if op, ok := recreatedOps[candidate.key]; ok {
-				item.createSQL = ""
-				item.createOp = &op
-			}
-		}
-		items = append(items, item)
 	}
 	if len(items) == 0 {
 		return
@@ -553,45 +540,8 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	for _, item := range items {
 		dropped[item.key] = true
 	}
-	deferredOps := make(map[string][]catalog.MigrationOp)
-	forSelected := func(op catalog.MigrationOp) (string, bool) {
-		if op.Type == catalog.OpComment {
-			for key := range dropped {
-				if op.ObjectName == key || strings.HasPrefix(op.ObjectName, key+".") {
-					return key, true
-				}
-			}
-			return "", false
-		}
-		switch op.Type {
-		case catalog.OpCreateIndex, catalog.OpDropIndex:
-			for key := range dropped {
-				schemaName, objectName := splitObjectKey(key)
-				if containsObjectReference(op.SQL, schemaName, objectName) || indexOwner(oldMeta, schemaName, op.ObjectName) == key || indexOwner(newMeta, schemaName, op.ObjectName) == key {
-					return key, true
-				}
-			}
-		case catalog.OpCreateTrigger, catalog.OpDropTrigger:
-			for key := range dropped {
-				schemaName, objectName := splitObjectKey(key)
-				if containsObjectReference(op.SQL, schemaName, objectName) {
-					return key, true
-				}
-			}
-		default:
-		}
-		return "", false
-	}
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
-		if key, ok := forSelected(op); ok {
-			deferredOps[key] = append(deferredOps[key], op)
-			return true
-		}
-		key := op.SchemaName + "." + op.ObjectName
-		if op.Type == catalog.OpDropView && dropped[key] {
-			return true
-		}
-		return (op.Type == catalog.OpCreateView || op.Type == catalog.OpAlterView) && recreatedOps[key].Type != ""
+		return opTargetsSelected(op, dropped, oldMeta)
 	})
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(order) - 1; i >= 0; i-- {
@@ -609,28 +559,93 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	ops = append(ops, plan.Ops...)
 	for _, index := range order {
 		item := items[index]
-		if item.createOp != nil {
-			ops = append(ops, *item.createOp)
-			materialized := strings.Contains(item.createOp.SQL, "MATERIALIZED VIEW")
-			for _, deferred := range deferredOps[item.key] {
-				if materialized && (deferred.Type == catalog.OpDropIndex || deferred.Type == catalog.OpDropTrigger) {
-					continue
-				}
-				ops = append(ops, deferred)
-			}
-		} else if item.createSQL != "" {
-			schemaName, objectName := splitObjectKey(item.key)
-			ops = append(ops, catalog.MigrationOp{
-				Type:       catalog.OpCreateView,
-				SchemaName: schemaName,
-				ObjectName: objectName,
-				SQL:        item.createSQL,
-				Phase:      catalog.PhaseMain,
-				ObjType:    'r',
-			})
-		}
+		schemaName, objectName := splitObjectKey(item.key)
+		ops = append(ops, catalog.MigrationOp{
+			Type:       catalog.OpCreateView,
+			SchemaName: schemaName,
+			ObjectName: objectName,
+			SQL:        item.createSQL,
+			Phase:      catalog.PhaseMain,
+			ObjType:    'r',
+		})
 	}
 	plan.Ops = ops
+}
+
+// opTargetsSelected reports whether an operation belongs to a selected restored
+// object. Its accessories (comments, indexes, triggers) are omitted because the
+// synthesized create from metadata already carries them.
+func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
+	if op.Type == catalog.OpComment {
+		for key := range selected {
+			if op.ObjectName == key || strings.HasPrefix(op.ObjectName, key+".") {
+				return true
+			}
+		}
+		return false
+	}
+	if selected[op.SchemaName+"."+op.ObjectName] {
+		return true
+	}
+	switch op.Type {
+	case catalog.OpCreateIndex, catalog.OpDropIndex:
+		if owner := indexOwnerFromSQL(op.SQL); owner != "" {
+			return selected[owner]
+		}
+		return indexNameOwner(oldMeta, op.SchemaName, op.ObjectName, selected) != ""
+	case catalog.OpCreateTrigger, catalog.OpDropTrigger:
+		for key := range selected {
+			schemaName, objectName := splitObjectKey(key)
+			if containsObjectReference(op.SQL, schemaName, objectName) {
+				return true
+			}
+		}
+	default:
+	}
+	return false
+}
+
+func indexOwnerFromSQL(sql string) string {
+	index := strings.Index(sql, " ON ")
+	if index < 0 {
+		return ""
+	}
+	rest := strings.TrimSpace(sql[index+4:])
+	if strings.HasPrefix(rest, "ONLY ") {
+		rest = strings.TrimSpace(strings.TrimPrefix(rest, "ONLY "))
+	}
+	if end := strings.IndexAny(rest, " ("); end >= 0 {
+		rest = rest[:end]
+	}
+	rest = strings.ReplaceAll(rest, `"`, "")
+	if !strings.Contains(rest, ".") {
+		return ""
+	}
+	return rest
+}
+
+func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexName string, selected map[string]bool) string {
+	schema := schemaByName(meta, schemaName)
+	if schema == nil {
+		return ""
+	}
+	found := ""
+	for _, view := range schema.GetMaterializedViews() {
+		for _, index := range view.GetIndexes() {
+			if index.GetName() != indexName {
+				continue
+			}
+			key := schemaName + "." + view.GetName()
+			if !selected[key] {
+				continue
+			}
+			if found != "" {
+				return ""
+			}
+			found = key
+		}
+	}
+	return found
 }
 
 func unionKeys(left, right []string) []string {
@@ -663,7 +678,6 @@ func splitObjectKey(key string) (string, string) {
 type restoreItem struct {
 	key, dropSQL, createSQL string
 	deps                    []string
-	createOp                *catalog.MigrationOp
 }
 
 func restoreOrder(items []restoreItem) []int {
