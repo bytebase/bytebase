@@ -638,3 +638,44 @@ func TestLoadableDependentViewFollowsUnloadableView(t *testing.T) {
 	require.Less(t, dropUpper, dropLower, sql)
 	require.Less(t, createLower, createUpper, sql)
 }
+
+// TestChangedDependentViewIsDroppedBeforeUnloadableView covers a changed upper
+// view: it is not recreated by the fallback, but it must still be dropped before
+// the lower view it depends on.
+func TestChangedDependentViewIsDroppedBeforeUnloadableView(t *testing.T) {
+	snapshot := func(columnType, upperDefinition string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{
+					Name:       "upper",
+					Definition: upperDefinition,
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "lower",
+					}},
+				},
+				{
+					Name:       "lower",
+					Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "t", Column: "id",
+					}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("integer", "SELECT id FROM public.lower"),
+		snapshot("bigint", "SELECT id, 1 AS x FROM public.lower"))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
+	recreateUpper := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."upper"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, dropLower, 0, sql)
+	require.GreaterOrEqual(t, recreateUpper, 0, sql)
+	require.Less(t, dropUpper, dropLower, sql)
+	require.Less(t, dropLower, recreateUpper, sql)
+}

@@ -322,6 +322,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		key, dropSQL, createSQL string
 		deps                    []string
 		unloadable, direct      bool
+		changed                 bool
 	}
 	var candidates []candidate
 	for _, schema := range newMeta.GetSchemas() {
@@ -332,7 +333,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		for _, view := range schema.GetViews() {
 			key := schema.GetName() + "." + view.GetName()
 			oldView := viewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) {
+			if oldView == nil {
 				continue
 			}
 			createSQL, err := catalog.ViewDefinition(schema.GetName(), view)
@@ -346,12 +347,13 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				deps:       dependencyKeys(view.GetDependencyColumns()),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
+				changed:    !proto.Equal(oldView, view),
 			})
 		}
 		for _, view := range schema.GetMaterializedViews() {
 			key := schema.GetName() + "." + view.GetName()
 			oldView := materializedViewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) {
+			if oldView == nil {
 				continue
 			}
 			createSQL, err := catalog.MaterializedViewDefinition(schema.GetName(), view)
@@ -365,6 +367,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				deps:       dependencyKeys(view.GetDependencyColumns()),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
+				changed:    !proto.Equal(oldView, view),
 			})
 		}
 	}
@@ -391,14 +394,26 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	}
 	var items []restoreItem
 	for _, candidate := range candidates {
-		if selected[candidate.key] {
-			items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: candidate.createSQL, deps: candidate.deps})
+		if !selected[candidate.key] {
+			continue
 		}
+		createSQL := candidate.createSQL
+		if candidate.changed {
+			createSQL = ""
+		}
+		items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: createSQL, deps: candidate.deps})
 	}
 	if len(items) == 0 {
 		return
 	}
 	order := restoreOrder(items)
+	dropped := make(map[string]bool, len(items))
+	for _, item := range items {
+		dropped[item.key] = true
+	}
+	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
+		return op.Type == catalog.OpDropView && dropped[op.SchemaName+"."+op.ObjectName]
+	})
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(order) - 1; i >= 0; i-- {
 		item := items[order[i]]
@@ -415,6 +430,9 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	ops = append(ops, plan.Ops...)
 	for _, index := range order {
 		item := items[index]
+		if item.createSQL == "" {
+			continue
+		}
 		schemaName, objectName := splitObjectKey(item.key)
 		ops = append(ops, catalog.MigrationOp{
 			Type:       catalog.OpCreateView,
