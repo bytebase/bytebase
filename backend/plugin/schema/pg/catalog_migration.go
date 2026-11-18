@@ -84,73 +84,152 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
-	var drops, creates []catalog.MigrationOp
+	var items []restoreItem
 	for _, schema := range newMeta.GetSchemas() {
 		oldSchema := schemaByName(oldMeta, schema.GetName())
 		if oldSchema == nil {
 			continue
 		}
+		add := func(key string, dependencies []*metadatapb.DependencyColumn, dropSQL, createSQL string) {
+			var deps []string
+			for _, dependency := range dependencies {
+				deps = append(deps, dependency.GetSchema()+"."+dependency.GetTable())
+			}
+			items = append(items, restoreItem{key: key, dropSQL: dropSQL, createSQL: createSQL, deps: deps})
+		}
 		for _, view := range schema.GetViews() {
-			key := "rel:" + schema.GetName() + "." + view.GetName()
+			key := schema.GetName() + "." + view.GetName()
 			oldView := viewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) || !unloadable[key] {
+			if oldView == nil || !proto.Equal(oldView, view) || !unloadable["rel:"+key] {
 				continue
 			}
 			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
 				continue
 			}
-			drops = append(drops, catalog.MigrationOp{
-				Type:       catalog.OpDropView,
-				SchemaName: schema.GetName(),
-				ObjectName: view.GetName(),
-				SQL:        "DROP VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
-				Phase:      catalog.PhasePre,
-				ObjType:    'r',
-			})
-			creates = append(creates, catalog.MigrationOp{
-				Type:       catalog.OpCreateView,
-				SchemaName: schema.GetName(),
-				ObjectName: view.GetName(),
-				SQL:        "CREATE OR REPLACE VIEW " + quoteQualified(schema.GetName(), view.GetName()) + " AS " + strings.TrimSuffix(strings.TrimSpace(view.GetDefinition()), ";"),
-				Phase:      catalog.PhaseMain,
-				ObjType:    'r',
-			})
+			createSQL, err := catalog.ViewDefinition(schema.GetName(), view)
+			if err != nil {
+				continue
+			}
+			add(key, view.GetDependencyColumns(),
+				"DROP VIEW IF EXISTS "+quoteQualified(schema.GetName(), view.GetName()),
+				trimDefinition(createSQL))
 		}
 		for _, view := range schema.GetMaterializedViews() {
-			key := "rel:" + schema.GetName() + "." + view.GetName()
+			key := schema.GetName() + "." + view.GetName()
 			oldView := materializedViewByName(oldSchema, view.GetName())
-			if oldView == nil || !proto.Equal(oldView, view) || !unloadable[key] {
+			if oldView == nil || !proto.Equal(oldView, view) || !unloadable["rel:"+key] {
 				continue
 			}
 			if !dependsOnAffectedColumn(view.GetDependencyColumns(), affected) && !dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected) {
 				continue
 			}
-			drops = append(drops, catalog.MigrationOp{
-				Type:       catalog.OpDropView,
-				SchemaName: schema.GetName(),
-				ObjectName: view.GetName(),
-				SQL:        "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
-				Phase:      catalog.PhasePre,
-				ObjType:    'r',
-			})
-			creates = append(creates, catalog.MigrationOp{
-				Type:       catalog.OpCreateView,
-				SchemaName: schema.GetName(),
-				ObjectName: view.GetName(),
-				SQL:        "CREATE MATERIALIZED VIEW " + quoteQualified(schema.GetName(), view.GetName()) + " AS " + strings.TrimSuffix(strings.TrimSpace(view.GetDefinition()), ";"),
-				Phase:      catalog.PhaseMain,
-				ObjType:    'r',
-			})
+			createSQL, err := catalog.MaterializedViewDefinition(schema.GetName(), view)
+			if err != nil {
+				continue
+			}
+			add(key, view.GetDependencyColumns(),
+				"DROP MATERIALIZED VIEW IF EXISTS "+quoteQualified(schema.GetName(), view.GetName()),
+				trimDefinition(createSQL))
 		}
 	}
-	if len(drops) == 0 {
+	if len(items) == 0 {
 		return
 	}
-	ops := make([]catalog.MigrationOp, 0, len(drops)+len(plan.Ops)+len(creates))
-	ops = append(ops, drops...)
+	order := restoreOrder(items)
+	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
+	for i := len(order) - 1; i >= 0; i-- {
+		item := items[order[i]]
+		schemaName, _, _ := strings.Cut(item.key, ".")
+		ops = append(ops, catalog.MigrationOp{
+			Type:       catalog.OpDropView,
+			SchemaName: schemaName,
+			ObjectName: strings.TrimPrefix(item.key, schemaName+"."),
+			SQL:        item.dropSQL,
+			Phase:      catalog.PhasePre,
+			ObjType:    'r',
+		})
+	}
 	ops = append(ops, plan.Ops...)
-	ops = append(ops, creates...)
+	for _, index := range order {
+		item := items[index]
+		schemaName, _, _ := strings.Cut(item.key, ".")
+		ops = append(ops, catalog.MigrationOp{
+			Type:       catalog.OpCreateView,
+			SchemaName: schemaName,
+			ObjectName: strings.TrimPrefix(item.key, schemaName+"."),
+			SQL:        item.createSQL,
+			Phase:      catalog.PhaseMain,
+			ObjType:    'r',
+		})
+	}
 	plan.Ops = ops
+}
+
+// restoreOrder puts each restore item after the selected items it depends on,
+// so drops run in reverse and creates in dependency order.
+type restoreItem struct {
+	key, dropSQL, createSQL string
+	deps                    []string
+}
+
+func restoreOrder(items []restoreItem) []int {
+	selected := make(map[string]int, len(items))
+	for i, item := range items {
+		selected[item.key] = i
+	}
+	indegree := make([]int, len(items))
+	dependents := make([][]int, len(items))
+	for i, item := range items {
+		seen := make(map[int]bool)
+		for _, dep := range item.deps {
+			j, ok := selected[dep]
+			if !ok || j == i || seen[j] {
+				continue
+			}
+			seen[j] = true
+			indegree[i]++
+			dependents[j] = append(dependents[j], i)
+		}
+	}
+	var ready []int
+	for i := range items {
+		if indegree[i] == 0 {
+			ready = append(ready, i)
+		}
+	}
+	order := make([]int, 0, len(items))
+	for len(ready) > 0 {
+		slices.Sort(ready)
+		index := ready[0]
+		ready = ready[1:]
+		order = append(order, index)
+		for _, dependent := range dependents[index] {
+			indegree[dependent]--
+			if indegree[dependent] == 0 {
+				ready = append(ready, dependent)
+			}
+		}
+	}
+	for i := range items {
+		if len(order) == len(items) {
+			break
+		}
+		found := false
+		for _, placed := range order {
+			if placed == i {
+				found = true
+				break
+			}
+		}
+		if !found {
+			order = append(order, i)
+		}
+	}
+	return order
+}
+
+func trimDefinition(sql string) string {
+	return strings.TrimRight(strings.TrimSpace(sql), "; \t\n\r")
 }
 
 type affectedColumnSet map[string]map[string]bool
@@ -269,8 +348,12 @@ func markIdentityColumns(columns []*metadatapb.ColumnMetadata) {
 func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
 	commented := make(map[string]bool)
 	for _, op := range plan.Ops {
-		if op.Type == catalog.OpComment {
+		switch {
+		case op.Type == catalog.OpComment:
 			commented[op.ObjectName] = true
+		case op.Type == catalog.OpCreateView && strings.Contains(op.SQL, "COMMENT ON"):
+			commented[op.SchemaName+"."+op.ObjectName] = true
+		default:
 		}
 	}
 	for _, schema := range meta.GetSchemas() {

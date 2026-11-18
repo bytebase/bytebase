@@ -445,10 +445,79 @@ func TestUnloadableUnchangedViewRecreatedWhenDependencyChanges(t *testing.T) {
 	require.NoError(t, err)
 	drop := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
 	alter := strings.Index(sql, "ALTER TABLE public.t ALTER COLUMN id TYPE bigint")
-	create := strings.Index(sql, `CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM`)
+	create := strings.Index(sql, `CREATE VIEW "public"."v" AS`)
 	require.GreaterOrEqual(t, drop, 0, sql)
 	require.GreaterOrEqual(t, alter, 0, sql)
 	require.GreaterOrEqual(t, create, 0, sql)
 	require.Less(t, drop, alter, "the view is dropped before the column change")
 	require.Less(t, alter, create, "the view is recreated after the column change")
+}
+
+// TestUnloadableUnchangedMaterializedViewRecreatedWithIndexes covers the same
+// fallback for a materialized view: the recreation keeps WITH NO DATA and its
+// indexes, which a bare CREATE ... AS would drop.
+func TestUnloadableUnchangedMaterializedViewRecreatedWithIndexes(t *testing.T) {
+	view := func() *metadatapb.MaterializedViewMetadata {
+		return &metadatapb.MaterializedViewMetadata{
+			Name:       "mv",
+			Definition: "SELECT FROM",
+			Indexes: []*metadatapb.IndexMetadata{{
+				Name: "idx_mv", Expressions: []string{"id"}, Type: "btree",
+			}},
+			DependencyColumns: []*metadatapb.DependencyColumn{{
+				Schema: "public", Table: "t", Column: "id",
+			}},
+		}
+	}
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:              "public",
+		Tables:            []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{view()},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:              "public",
+		Tables:            []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "bigint"})},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{view()},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	require.Contains(t, sql, `DROP MATERIALIZED VIEW IF EXISTS "public"."mv"`)
+	require.Contains(t, sql, `CREATE MATERIALIZED VIEW "public"."mv"`)
+	require.Contains(t, sql, "WITH NO DATA")
+	require.Contains(t, sql, `CREATE INDEX "idx_mv" ON "public"."mv"`)
+}
+
+// TestUnloadableDependentViewsRestoreInDependencyOrder pins the order among the
+// restored views: drops run dependents first, creates dependencies first.
+func TestUnloadableDependentViewsRestoreInDependencyOrder(t *testing.T) {
+	view := func(name string, deps ...*metadatapb.DependencyColumn) *metadatapb.ViewMetadata {
+		return &metadatapb.ViewMetadata{Name: name, Definition: "SELECT FROM", DependencyColumns: deps}
+	}
+	tableDep := func() *metadatapb.DependencyColumn {
+		return &metadatapb.DependencyColumn{Schema: "public", Table: "t", Column: "id"}
+	}
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				view("a", tableDep(), &metadatapb.DependencyColumn{Schema: "public", Table: "b"}),
+				view("b", tableDep()),
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	dropA := strings.Index(sql, `DROP VIEW IF EXISTS "public"."a"`)
+	dropB := strings.Index(sql, `DROP VIEW IF EXISTS "public"."b"`)
+	createA := strings.Index(sql, `CREATE VIEW "public"."a"`)
+	createB := strings.Index(sql, `CREATE VIEW "public"."b"`)
+	require.GreaterOrEqual(t, dropA, 0, sql)
+	require.GreaterOrEqual(t, dropB, 0, sql)
+	require.GreaterOrEqual(t, createA, 0, sql)
+	require.GreaterOrEqual(t, createB, 0, sql)
+	require.Less(t, dropA, dropB, "the dependent view is dropped first")
+	require.Less(t, createB, createA, "the dependency is created first")
 }
