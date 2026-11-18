@@ -39,6 +39,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return "", nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
+	orderTypeAndTableCreates(plan, newSchema.GetProto())
 	restoreIndexDefinitions(plan, newSchema.GetProto())
 	releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto())
 	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
@@ -67,6 +68,119 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 		return nil, nil, err
 	}
 	return c, report, nil
+}
+
+// orderTypeAndTableCreates puts a created composite or enum type before the
+// tables that use it, and a created table before a composite attribute that uses
+// its row type.
+func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
+	type createNode struct {
+		position int
+		key      string
+		relation bool // true for a table, false for a type
+	}
+	var nodes []createNode
+	byKey := make(map[string]int)
+	for i, op := range plan.Ops {
+		switch op.Type {
+		case catalog.OpCreateTable:
+			key := op.SchemaName + "." + op.ObjectName
+			byKey[key] = len(nodes)
+			nodes = append(nodes, createNode{position: i, key: key, relation: true})
+		case catalog.OpCreateType:
+			key := op.SchemaName + "." + op.ObjectName
+			byKey[key] = len(nodes)
+			nodes = append(nodes, createNode{position: i, key: key})
+		default:
+		}
+	}
+	if len(nodes) < 2 {
+		return
+	}
+	indegree := make([]int, len(nodes))
+	dependents := make([][]int, len(nodes))
+	addEdge := func(prerequisite, dependent int) {
+		if prerequisite == dependent {
+			return
+		}
+		indegree[dependent]++
+		dependents[prerequisite] = append(dependents[prerequisite], dependent)
+	}
+	for _, schema := range meta.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			tableIndex, ok := byKey[schema.GetName()+"."+table.GetName()]
+			if !ok {
+				continue
+			}
+			for _, column := range table.GetColumns() {
+				for key, index := range byKey {
+					if nodes[index].relation || !referencesType(column.GetType(), key) {
+						continue
+					}
+					addEdge(index, tableIndex)
+				}
+			}
+		}
+		for _, composite := range schema.GetCompositeTypes() {
+			compositeIndex, ok := byKey[schema.GetName()+"."+composite.GetName()]
+			if !ok {
+				continue
+			}
+			for _, attribute := range composite.GetAttributes() {
+				for key, index := range byKey {
+					if !referencesType(attribute.GetType(), key) {
+						continue
+					}
+					addEdge(index, compositeIndex)
+				}
+			}
+		}
+	}
+	order := make([]int, 0, len(nodes))
+	ready := make([]int, 0, len(nodes))
+	for i := range nodes {
+		if indegree[i] == 0 {
+			ready = append(ready, i)
+		}
+	}
+	for len(ready) > 0 {
+		slices.SortStableFunc(ready, func(a, b int) int { return nodes[a].position - nodes[b].position })
+		index := ready[0]
+		ready = ready[1:]
+		order = append(order, index)
+		for _, dependent := range dependents[index] {
+			indegree[dependent]--
+			if indegree[dependent] == 0 {
+				ready = append(ready, dependent)
+			}
+		}
+	}
+	if len(order) != len(nodes) {
+		return
+	}
+	positions := make([]int, 0, len(nodes))
+	for _, node := range nodes {
+		positions = append(positions, node.position)
+	}
+	slices.Sort(positions)
+	ops := make([]catalog.MigrationOp, len(plan.Ops))
+	copy(ops, plan.Ops)
+	for i, position := range positions {
+		ops[position] = plan.Ops[nodes[order[i]].position]
+	}
+	plan.Ops = ops
+}
+
+func referencesType(typeName, key string) bool {
+	name := strings.TrimSpace(typeName)
+	for strings.HasSuffix(name, "[]") {
+		name = strings.TrimSuffix(name, "[]")
+	}
+	name = strings.ReplaceAll(name, `"`, "")
+	if strings.EqualFold(name, key) {
+		return true
+	}
+	return !strings.Contains(name, ".") && strings.EqualFold(name, key[strings.LastIndex(key, ".")+1:])
 }
 
 // releaseCompositeBeforeTableDrop moves or splits an ALTER TYPE that releases a
@@ -392,10 +506,10 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
-	recreatedByPlan := make(map[string]bool)
+	recreatedOps := make(map[string]catalog.MigrationOp)
 	for _, op := range plan.Ops {
 		if op.Type == catalog.OpCreateView || op.Type == catalog.OpAlterView {
-			recreatedByPlan[op.SchemaName+"."+op.ObjectName] = true
+			recreatedOps[op.SchemaName+"."+op.ObjectName] = op
 		}
 	}
 	var items []restoreItem
@@ -403,11 +517,14 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		if !selected[candidate.key] {
 			continue
 		}
-		createSQL := candidate.createSQL
-		if candidate.changed && recreatedByPlan[candidate.key] {
-			createSQL = ""
+		item := restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: candidate.createSQL, deps: candidate.deps}
+		if candidate.changed {
+			if op, ok := recreatedOps[candidate.key]; ok {
+				item.createSQL = ""
+				item.createOp = &op
+			}
 		}
-		items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: createSQL, deps: candidate.deps})
+		items = append(items, item)
 	}
 	if len(items) == 0 {
 		return
@@ -418,7 +535,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		dropped[item.key] = true
 	}
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
-		return op.Type == catalog.OpDropView && dropped[op.SchemaName+"."+op.ObjectName]
+		key := op.SchemaName + "." + op.ObjectName
+		if op.Type == catalog.OpDropView && dropped[key] {
+			return true
+		}
+		return (op.Type == catalog.OpCreateView || op.Type == catalog.OpAlterView) && recreatedOps[key].Type != ""
 	})
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(order) - 1; i >= 0; i-- {
@@ -436,6 +557,10 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	ops = append(ops, plan.Ops...)
 	for _, index := range order {
 		item := items[index]
+		if item.createOp != nil {
+			ops = append(ops, *item.createOp)
+			continue
+		}
 		if item.createSQL == "" {
 			continue
 		}
@@ -482,6 +607,7 @@ func splitObjectKey(key string) (string, string) {
 type restoreItem struct {
 	key, dropSQL, createSQL string
 	deps                    []string
+	createOp                *catalog.MigrationOp
 }
 
 func restoreOrder(items []restoreItem) []int {

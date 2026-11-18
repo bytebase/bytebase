@@ -3708,7 +3708,7 @@
     );
     ALTER TYPE "public"."c" ADD ATTRIBUTE "r" t
 - description: TestCockroachMetadataDiffCreateSandwichTableCompositeTable
-  difference: the catalog orders the composite type by dependency, so the holder table follows the row type it uses. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the create order follows the dependencies (r, then composite c, then holder); the text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -3771,13 +3771,13 @@
     );
 
   catalogExpected: |-
-    CREATE TABLE "public"."holder" (
-        "x" c
-    );
     CREATE TABLE "public"."r" (
         "id" integer NOT NULL
     );
-    CREATE TYPE "public"."c" AS ("row" r)
+    CREATE TYPE "public"."c" AS ("row" r);
+    CREATE TABLE "public"."holder" (
+        "x" c
+    )
 - description: TestCockroachMetadataDiffDropSandwichTableCompositeTable
   difference: table drops use CASCADE. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
