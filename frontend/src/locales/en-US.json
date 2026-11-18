@@ -2530,6 +2530,18 @@
         "resolve": "Resolve",
         "resolve-thread": "Resolve thread",
         "resolved": "Resolved",
+        "targets": {
+          "clear-search": "Clear search",
+          "list-label": "Databases",
+          "more-environments": "+{{n}}",
+          "n-databases_one": "{{count}} database",
+          "n-databases_other": "{{count}} databases",
+          "n-of-m-databases_one": "{{count}} of {{total}} databases",
+          "n-of-m-databases_other": "{{count}} of {{total}} databases",
+          "no-match": "No databases match “{{query}}”",
+          "open-group": "Open group",
+          "search-placeholder": "Search databases"
+        },
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
         "walker": {

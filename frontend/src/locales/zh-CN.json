@@ -2530,6 +2530,18 @@
         "resolve": "解决",
         "resolve-thread": "解决线程",
         "resolved": "已解决",
+        "targets": {
+          "clear-search": "清除搜索",
+          "list-label": "数据库",
+          "more-environments": "+{{n}}",
+          "n-databases_one": "{{count}} 个数据库",
+          "n-databases_other": "{{count}} 个数据库",
+          "n-of-m-databases_one": "{{total}} 个中的 {{count}} 个数据库",
+          "n-of-m-databases_other": "{{total}} 个中的 {{count}} 个数据库",
+          "no-match": "没有与“{{query}}”匹配的数据库",
+          "open-group": "打开分组",
+          "search-placeholder": "搜索数据库"
+        },
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
         "walker": {

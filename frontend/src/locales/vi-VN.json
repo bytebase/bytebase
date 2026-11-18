@@ -2530,6 +2530,18 @@
         "resolve": "Giải quyết",
         "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
+        "targets": {
+          "clear-search": "Xóa tìm kiếm",
+          "list-label": "Cơ sở dữ liệu",
+          "more-environments": "+{{n}}",
+          "n-databases_one": "{{count}} cơ sở dữ liệu",
+          "n-databases_other": "{{count}} cơ sở dữ liệu",
+          "n-of-m-databases_one": "{{count}} trên {{total}} cơ sở dữ liệu",
+          "n-of-m-databases_other": "{{count}} trên {{total}} cơ sở dữ liệu",
+          "no-match": "Không có cơ sở dữ liệu nào khớp với “{{query}}”",
+          "open-group": "Mở nhóm",
+          "search-placeholder": "Tìm cơ sở dữ liệu"
+        },
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
         "walker": {

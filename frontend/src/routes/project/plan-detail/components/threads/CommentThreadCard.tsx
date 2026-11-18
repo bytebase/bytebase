@@ -42,11 +42,10 @@ import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { isValidDatabaseName } from "@/types/v1/database";
 import "./CommentThreadCard.css";
 import {
   productionEnvironmentsOf,
-  requestMissingDatabases,
+  useTargetDatabases,
 } from "./productionTargets";
 import { ReviewPriorityBadge } from "./ReviewResult";
 import { ThreadComment } from "./ThreadComment";
@@ -426,19 +425,8 @@ function ThreadMarkers({ thread }: { thread: CommentThread }) {
   const hasEnvTierFeature = usePlanFeature(
     PlanFeature.FEATURE_ENVIRONMENT_TIERS
   );
-  const targetKey = targets.join("\n");
-  useEffect(() => {
-    const names = targetKey.split("\n").filter(isValidDatabaseName);
-    if (names.length === 0) return;
-    const store = useAppStore.getState();
-    void requestMissingDatabases(
-      names,
-      (name) => Boolean(useAppStore.getState().databasesByName[name]),
-      (missing) => store.batchGetOrFetchDatabases(missing, true)
-    ).catch(() => {
-      // Without the databases the bar just shows no environment badge.
-    });
-  }, [targetKey]);
+  // Until the databases load, the bar shows no environment badge.
+  useTargetDatabases(targets);
   if (!review) return null;
   const urgent =
     review.priority === IssueComment_ReviewMetadata_Priority.P0 ||
