@@ -10,59 +10,42 @@
 //     parameters as ClickHouse settings, and an SSH Dial for a tunnelled data
 //     source. It does not reach the server; Ping does.
 //   - Ping, Close, Execute, SyncInstance, SyncDBSchema and Dump delegate.
-//   - QueryConn asks the driver for one session and runs the script on it, so
-//     statements a caller runs through one driver share a session, as the old
-//     driver's editor handle did.
-//   - GetDB returns nil. The omni driver owns its pool and hands out sessions
-//     instead of a *sql.DB; every Bytebase caller already tolerates nil there.
-//     The handle the editor used to open from it is gone, so a session is the
-//     driver's, not the caller's.
+//   - QueryConn asks the driver for one session and holds it, so statements a
+//     caller runs through one driver share a session.
+//   - GetDB returns nil: the omni driver owns its pool and hands out sessions
+//     instead of a *sql.DB. Every Bytebase caller already tolerates nil there,
+//     and no ClickHouse feature read the handle.
 //   - Execute reports each statement's range and the transaction control steps
 //     to the task run's log.
 //
-// Known differences from the driver this replaced, all of them the omni
-// driver's own behaviour rather than an adapter choice:
+// These are the contracts a caller can rely on, stated because a stored dump
+// and the editor's results depend on them:
 //
-//   - A statement that returns no rows answers with an empty result instead of
-//     the synthetic "Affected Rows: 0" row the old driver built. Execute still
-//     answers 0, because clickhouse-go states no affected count on either path.
-//   - Date, DateTime and DateTime64 values are typed timestamps carrying the
-//     precision their type names, where the old driver wrote DateTime as an
-//     RFC3339 string. Time and Time64 are clock strings and IPv4, IPv6 and
-//     FixedString are their values, where the old driver answered NULL.
-//   - A statement that reads rows is classified by the omni driver: SHOW,
-//     DESCRIBE, DESC, EXISTS and CHECK run as queries with their rows, and an
-//     EXPLAIN ANALYZE keeps the plan the server returned instead of discarding
-//     it, where the old validator called both a write. A WITH whose body only
-//     reads is a query too, however its CTE is spelled.
-//   - The result-size cap is byte-accurate rather than proto.Size checked at
-//     power-of-two row counts, and MaximumSQLResultSize of 0 means no cap where
-//     the old driver read it as a zero-byte cap.
-//   - A limit rewrite wraps only a statement that can stand as a subquery, and
-//     drops trailing comments a CTE cannot hold; the old wrapper wrapped every
-//     statement, so a SHOW or INSERT with a limit was refused by the server.
-//   - SyncInstance lists databases and users in name order; the old queries
-//     stated no ORDER BY, and its system-database NOT IN list was built in Go
-//     map order, so the statement itself varied between processes. A sync
-//     without a database name reads the connection's current database where the
-//     old driver read the schema of the empty name.
-//   - A sorting key, primary key or index expression is split at top-level
-//     commas only, so a function or tuple keeps its own; the old driver split
-//     every ", ".
 //   - Dump writes the server's own SHOW CREATE statement for every object,
-//     database-qualified and in an order that replays: tables and dictionaries,
-//     then views, then materialized views and Dictionary-engine tables after
-//     what they read, with the ".inner_id." storage tables left out. The old
-//     dump rendered system.tables.create_table_query with the database prefix
-//     stripped, wrote the storage tables, and put a materialized view before the
-//     table it reads, so it could not be restored. This is a user-visible change
-//     to a stored schema dump.
-//   - Extra connection parameters now reach ClickHouse as settings, and a
-//     tunnelled data source connects; the old driver ignored both.
+//     database-qualified and ordered so a restore replays: tables and
+//     dictionaries, then views, then materialized views and Dictionary-engine
+//     tables after what they read, with the ".inner_id." storage tables left
+//     out. The metadata it is given is not rendered and does not narrow the
+//     dump, so a dump restores and round-trips byte-identically.
+//   - A statement that returns no rows answers with an empty result. Execute
+//     answers 0 because clickhouse-go states no affected count.
+//   - Date, DateTime and DateTime64 are typed timestamps carrying the precision
+//     their type names; Time and Time64 are clock strings; IPv4, IPv6 and
+//     FixedString are their values.
+//   - SHOW, DESCRIBE, DESC, EXISTS and CHECK run as queries, and EXPLAIN
+//     ANALYZE keeps the rows the server returns beside a typed QueryPlan.
+//   - The result-size cap is byte-accurate and MaximumSQLResultSize 0 is no
+//     cap. A limit rewrite wraps only a statement that can stand in a CTE and
+//     drops trailing comments a CTE cannot hold.
+//   - SyncInstance lists databases and users in name order. A sorting key,
+//     primary key or index expression is split at top-level commas only, so a
+//     function or tuple keeps its own.
 //   - A connection the server refuses because the database is gone is
-//     driver.ErrNotFound, where the old driver reported the client's
-//     UNKNOWN_DATABASE error. A sync that runs on a session already open on a
-//     database the server dropped still answers an empty schema, as before.
+//     driver.ErrNotFound. A sync on a session already open on a dropped
+//     database answers an empty schema.
+//
+// Extra connection parameters reach ClickHouse as settings, and an SSH data
+// source connects through Config.Dial.
 package clickhouse
 
 import (
