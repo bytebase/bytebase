@@ -7,7 +7,10 @@ import { FormFieldGroup } from "@/components/ui/form";
 import { useAppStore } from "@/stores/app";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSourceType,
+  Vendor,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import type { EditDataSource } from "./common";
 import { createDataSourceDraft } from "./common";
@@ -69,6 +72,13 @@ export function DataSourceSection({
       username: DATASOURCE_READONLY_USER_NAME,
     };
     if (
+      basicInfo.engine === Engine.POSTGRES &&
+      basicInfo.vendor === Vendor.NEON
+    ) {
+      ds.useSsl = true;
+      ds.verifyTlsCertificate = true;
+    }
+    if (
       basicInfo.engine === Engine.SPANNER ||
       basicInfo.engine === Engine.BIGQUERY
     ) {
@@ -79,7 +89,13 @@ export function DataSourceSection({
       dataSources: [...prev.dataSources, ds],
       editingDataSourceId: ds.id,
     }));
-  }, [isCreating, adminDataSource, basicInfo.engine, setDataSourceEditState]);
+  }, [
+    isCreating,
+    adminDataSource,
+    basicInfo.engine,
+    basicInfo.vendor,
+    setDataSourceEditState,
+  ]);
 
   const handleDeleteDataSource = useCallback(
     async (ds: EditDataSource) => {

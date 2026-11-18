@@ -421,7 +421,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time, works
 	profile := &config.Profile{SaaS: true}
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID), &sampleProjectInstanceFixture{
 		store:       stores,
-		service:     apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, syncer, manager),
+		service:     apiv1.NewInstanceService(stores, "sample-test-secret", profile, licenseService, dbFactory, syncer, manager),
 		profile:     profile,
 		syncer:      syncer,
 		manager:     manager,

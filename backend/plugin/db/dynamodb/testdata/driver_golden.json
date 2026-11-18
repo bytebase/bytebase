@@ -1,0 +1,207 @@
+{
+  "success": {
+    "requests": [
+      "DynamoDB_20120810.ListTables {\"Limit\":1}",
+      "DynamoDB_20120810.ExecuteStatement {\"Statement\":\"SELECT * FROM \\\"users\\\";\"}",
+      "DynamoDB_20120810.ExecuteStatement {\"NextToken\":\"page2\",\"Statement\":\"SELECT * FROM \\\"users\\\";\"}",
+      "DynamoDB_20120810.ExecuteStatement {\"Statement\":\" SELECT * FROM \\\"empty\\\";\"}",
+      "DynamoDB_20120810.ExecuteStatement {\"Statement\":\"SELECT * FROM \\\"fail\\\"\"}",
+      "DynamoDB_20120810.ExecuteTransaction {\"TransactStatements\":[{\"Statement\":\"INSERT INTO \\\"users\\\" VALUE {'pk': 'a'};\"}]}",
+      "DynamoDB_20120810.ExecuteTransaction {\"TransactStatements\":[{\"Statement\":\" UPDATE \\\"users\\\" SET name='b';\"}]}",
+      "DynamoDB_20120810.ExecuteTransaction {\"TransactStatements\":[{\"Statement\":\"INSERT INTO \\\"users\\\" VALUE {'pk': 'a'};\"}]}",
+      "DynamoDB_20120810.ExecuteTransaction {\"TransactStatements\":[{\"Statement\":\" INSERT INTO \\\"fail\\\" VALUE {'pk': 'b'};\"}]}",
+      "DynamoDB_20120810.ListTables {\"Limit\":100}",
+      "DynamoDB_20120810.ListTables {\"ExclusiveStartTableName\":\"users\",\"Limit\":100}",
+      "DynamoDB_20120810.DescribeTable {\"TableName\":\"users\"}"
+    ],
+    "stsRequests": [
+      "Action=GetCallerIdentity\u0026Version=2011-06-15"
+    ],
+    "queries": [
+      {
+        "columnNames": [
+          "name",
+          "pk",
+          "sk"
+        ],
+        "columnTypeNames": [
+          "String",
+          "String",
+          "Number"
+        ],
+        "rows": [
+          {
+            "values": [
+              {
+                "stringValue": "alice"
+              },
+              {
+                "stringValue": "a"
+              },
+              {
+                "stringValue": "1"
+              }
+            ]
+          },
+          {
+            "values": [
+              {
+                "stringValue": "bob"
+              },
+              {
+                "stringValue": "b"
+              },
+              {
+                "stringValue": "2"
+              }
+            ]
+          },
+          {
+            "values": [
+              {
+                "stringValue": "carol"
+              },
+              {
+                "stringValue": "c"
+              },
+              {
+                "stringValue": "3"
+              }
+            ]
+          }
+        ],
+        "rowsCount": "3",
+        "statement": "SELECT * FROM \"users\";"
+      },
+      {
+        "statement": " SELECT * FROM \"empty\";"
+      },
+      {
+        "error": "operation error DynamoDB: ExecuteStatement, https response error StatusCode: 400, RequestID: test-request-id, api error ValidationException: statement failed",
+        "statement": "SELECT * FROM \"fail\""
+      }
+    ],
+    "queryErrors": [
+      "DynamoDB does not support EXPLAIN"
+    ],
+    "executeLog": [
+      {
+        "type": "COMMAND_EXECUTE",
+        "commandExecute": {
+          "statement": "INSERT INTO \"users\" VALUE {'pk': 'a'};"
+        }
+      },
+      {
+        "type": "COMMAND_RESPONSE",
+        "commandResponse": {
+          "allAffectedRows": [
+            "0"
+          ]
+        }
+      },
+      {
+        "type": "COMMAND_EXECUTE",
+        "commandExecute": {
+          "statement": " UPDATE \"users\" SET name='b';"
+        }
+      },
+      {
+        "type": "COMMAND_RESPONSE",
+        "commandResponse": {
+          "allAffectedRows": [
+            "0"
+          ]
+        }
+      },
+      {
+        "type": "COMMAND_EXECUTE",
+        "commandExecute": {
+          "statement": "INSERT INTO \"users\" VALUE {'pk': 'a'};"
+        }
+      },
+      {
+        "type": "COMMAND_RESPONSE",
+        "commandResponse": {
+          "allAffectedRows": [
+            "0"
+          ]
+        }
+      },
+      {
+        "type": "COMMAND_EXECUTE",
+        "commandExecute": {
+          "statement": " INSERT INTO \"fail\" VALUE {'pk': 'b'};"
+        }
+      },
+      {
+        "type": "COMMAND_RESPONSE",
+        "commandResponse": {
+          "error": "operation error DynamoDB: ExecuteTransaction, https response error StatusCode: 400, RequestID: test-request-id, api error ValidationException: transaction failed",
+          "allAffectedRows": [
+            "0"
+          ]
+        }
+      }
+    ],
+    "executeError": "operation error DynamoDB: ExecuteTransaction, https response error StatusCode: 400, RequestID: test-request-id, api error ValidationException: transaction failed",
+    "instance": {
+      "version": "",
+      "databases": [
+        {
+          "name": "123456789012-us-east-1"
+        }
+      ]
+    },
+    "schema": {
+      "name": "123456789012-us-east-1",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "pk"
+                },
+                {
+                  "name": "sk"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "pk",
+                  "expressions": [
+                    "pk"
+                  ],
+                  "type": "HASH"
+                },
+                {
+                  "name": "sk",
+                  "expressions": [
+                    "sk"
+                  ],
+                  "type": "RANGE"
+                }
+              ],
+              "rowCount": "3"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "refused": {
+    "requests": null,
+    "stsRequests": [
+      "Action=GetCallerIdentity\u0026Version=2011-06-15"
+    ],
+    "instanceError": "failed to get caller identity: operation error STS: GetCallerIdentity, https response error StatusCode: 403, RequestID: test-sts-request, api error AccessDenied: denied"
+  },
+  "emptyIdentity": {
+    "requests": null,
+    "stsRequests": [
+      "Action=GetCallerIdentity\u0026Version=2011-06-15"
+    ],
+    "instanceError": "account id is empty in the caller identity"
+  }
+}

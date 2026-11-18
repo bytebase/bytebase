@@ -21,7 +21,9 @@ Reply with one JSON object and nothing else. Do not wrap it in code fences.
 
 {"title": "...", "evidence": "...", "groups": [{"databases": ["...", "..."], "facts": "..."}, {"databases": ["..."], "facts": "..."}], "fix": "..."}
 
-- title: the problem as one short claim, at most 80 characters, true for every database, that names the statement's object and what goes wrong, such as "ALTER COLUMN body TYPE text rewrites posts under a lock". Leave out row counts.
+- title: the problem as one short claim, at most 80 characters, true for every database, that names the statement's object and what goes wrong, such as "`ALTER COLUMN body TYPE text` rewrites `posts` under a lock". Leave out row counts.
 - evidence: one or two short sentences.
-- groups: every database id from the findings appears in exactly one group. facts is the facts alone, as short as "events has 1M to 10M rows." Do not explain the severity.
-- fix: one or two sentences. When the groups need different changes, say which group needs which.
+- groups: every database id from the findings appears in exactly one group. facts is the facts alone, as short as "`events` has 1M to 10M rows." Do not explain the severity.
+- fix: one or two sentences, then the SQL in a fenced code block when the findings give it. When the groups need different changes, say which group needs which.
+
+The title, the evidence, the facts, and the fix are shown as Markdown, the way GitHub shows a comment. In them, write every identifier, every piece of SQL down to a single keyword, every error the database raises, and every value taken from a statement or a definition as code, such as `orders.legacy_status`, `CONCURRENTLY`, `'pending'`, and `DROP COLUMN zip`, even where a finding wrote it as plain text. Code inside a sentence is inline code, and a whole statement goes in a fenced code block on lines of its own, in the fix only. Code inside a sentence leaves out the quote characters a statement puts around an identifier: they are not part of its name. SQL in a code block keeps them, so that it runs as written. A number, such as a row count or a size, stays plain text.

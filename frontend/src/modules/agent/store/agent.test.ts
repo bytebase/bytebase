@@ -101,6 +101,665 @@ const s = (store: StoreApi<AgentState>) => {
   };
 };
 
+describe("landing drafts", () => {
+  const workspaceName = "workspaces/landing";
+  const setup = () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName(workspaceName);
+    return store;
+  };
+
+  test("typing retains the landing draft without creating, selecting, or touching a chat", () => {
+    const store = setup();
+    s(store).clearCurrentChat();
+    const before = s(store);
+    expect(before.landingDraft).toEqual({ text: "" });
+    expect(before.landingContext).toBeUndefined();
+
+    s(store).setLandingDraft({ text: "Inspect databases" }, "databases");
+
+    expect(s(store).landingDraft).toEqual({ text: "Inspect databases" });
+    expect(s(store).landingContext).toBe("databases");
+    expect(s(store).currentChatId).toBeNull();
+    expect(s(store).chats).toBe(before.chats);
+    expect(s(store).messagesByChatId).toBe(before.messagesByChatId);
+    expect(s(store).draftsByChatId).toBe(before.draftsByChatId);
+  });
+
+  test("retains staged context while typing and changes it only when supplied", () => {
+    const store = setup();
+    s(store).clearLandingDraft("databases");
+    s(store).setLandingDraft({ text: "Inspect databases" });
+    expect(s(store).landingContext).toBe("databases");
+    s(store).setLandingDraft({ text: "Inspect policies" }, "policies");
+    expect(s(store).landingContext).toBe("policies");
+  });
+
+  test("clearing the landing draft leaves per-chat drafts and selection untouched", () => {
+    const store = setup();
+    const chatId = s(store).currentChatId!;
+    s(store).setDraft(chatId, { text: "Existing conversation draft" });
+    const drafts = s(store).draftsByChatId;
+    s(store).setLandingDraft({ text: "Unsent landing draft" }, "databases");
+
+    s(store).clearLandingDraft("policies");
+
+    expect(s(store).landingDraft).toEqual({ text: "" });
+    expect(s(store).landingContext).toBe("policies");
+    expect(s(store).draftsByChatId).toBe(drafts);
+    expect(s(store).currentChatId).toBe(chatId);
+    s(store).clearLandingDraft();
+    expect(s(store).landingContext).toBeUndefined();
+  });
+
+  test("keeps the draft through minimize, restore, and same-scope initialization", () => {
+    const store = setup();
+    s(store).setLandingDraft({ text: "Keep composing" }, "databases");
+    const draft = s(store).landingDraft;
+    s(store).minimize();
+    s(store).restore();
+    expect(s(store).setWorkspaceName(workspaceName)).toBe(true);
+
+    expect(s(store).landingDraft).toBe(draft);
+    expect(s(store).landingContext).toBe("databases");
+  });
+
+  test.each(["workspace", "identity", "logout"] as const)(
+    "clears landing state after a true %s change without restoring it later",
+    (change) => {
+      const store = setup();
+      s(store).setLandingDraft({ text: "Private unsent draft" }, "databases");
+      if (change === "workspace") s(store).setWorkspaceName("workspaces/other");
+      else if (change === "identity")
+        s(store).setWorkspaceName(workspaceName, "other@example.com");
+      else s(store).setWorkspaceName(undefined, "");
+
+      expect(s(store).landingDraft).toEqual({ text: "" });
+      expect(s(store).landingContext).toBeUndefined();
+      s(store).setWorkspaceName(workspaceName);
+      expect(s(store).landingDraft).toEqual({ text: "" });
+      expect(s(store).landingContext).toBeUndefined();
+    }
+  );
+
+  test("preserves landing state when a workspace switch is rejected", () => {
+    const store = setup();
+    s(store).setLandingDraft({ text: "Keep composing" }, "databases");
+    s(store).setChatStatus(s(store).currentChatId!, "running");
+
+    expect(s(store).setWorkspaceName("workspaces/other")).toBe(false);
+    expect(s(store).landingDraft).toEqual({ text: "Keep composing" });
+    expect(s(store).landingContext).toBe("databases");
+  });
+
+  test.each(["syncState", "loadState"] as const)(
+    "%s preserves the local landing draft without importing another tab's draft",
+    (hydrate) => {
+      const owner = setup();
+      const follower = setup();
+      s(owner).setLandingDraft({ text: "Owner draft" }, "owner-context");
+      s(follower).setLandingDraft(
+        { text: "Follower draft" },
+        "follower-context"
+      );
+      const draft = s(follower).landingDraft;
+      const chat = s(owner).createChat({ title: "Remote chat" });
+
+      s(follower)[hydrate]();
+
+      expect(s(follower).getChat(chat.id)?.title).toBe("Remote chat");
+      expect(s(follower).landingDraft).toBe(draft);
+      expect(s(follower).landingContext).toBe("follower-context");
+      const fresh = setup();
+      expect(s(fresh).landingDraft).toEqual({ text: "" });
+      expect(s(fresh).landingContext).toBeUndefined();
+    }
+  );
+
+  test("normalizes resource mentions and preserves their draft payload", () => {
+    const store = setup();
+    s(store).setLandingDraft({
+      text: "Inspect @App",
+      followUpSourceId: "original-answer",
+      mentions: [
+        {
+          resource: {
+            kind: "project",
+            name: " projects/example ",
+            project: " projects/example ",
+            label: " App ",
+          },
+          range: { start: 8, end: 12 },
+        },
+      ],
+    });
+
+    expect(s(store).landingDraft).toEqual({
+      text: "Inspect @App",
+      followUpSourceId: "original-answer",
+      mentions: [
+        {
+          resource: {
+            kind: "project",
+            name: "projects/example",
+            project: "projects/example",
+            label: "App",
+          },
+          range: { start: 8, end: 12 },
+        },
+      ],
+    });
+  });
+
+  test("excludes landing state from persisted history and draft shadows", () => {
+    const store = setup();
+    const before = new Map(
+      Array.from({ length: mockStorage.length }, (_, index) => {
+        const key = mockStorage.key(index)!;
+        return [key, mockStorage.getItem(key)] as const;
+      })
+    );
+    s(store).setLandingDraft(
+      { text: "Private unsent draft" },
+      "private-context"
+    );
+    expect(mockStorage.length).toBe(before.size);
+    for (const [key, value] of before)
+      expect(mockStorage.getItem(key)).toBe(value);
+
+    s(store).saveState();
+
+    const persisted = JSON.parse(
+      mockStorage.getItem(getAgentStateKey(workspaceName))!
+    );
+    expect(persisted).not.toHaveProperty("landingDraft");
+    expect(persisted).not.toHaveProperty("landingContext");
+    for (let index = 0; index < mockStorage.length; index++) {
+      const value = mockStorage.getItem(mockStorage.key(index)!)!;
+      expect(value).not.toContain("Private unsent draft");
+      expect(value).not.toContain("private-context");
+    }
+  });
+});
+
+describe("follow-up queues", () => {
+  const workspaceName = "workspaces/follow-ups";
+  const setup = (store = createAgentStore()) => {
+    s(store).setWorkspaceName(workspaceName);
+    const chatId = s(store).currentChatId!;
+    const input = {
+      chatId,
+      text: "List databases",
+      page: { path: "/projects/example", title: "Example project" },
+      runMode: "read-only" as const,
+      maskingPage: {
+        kind: "database-catalog" as const,
+        project: "projects/example",
+        names: ["instances/main/databases/example"],
+      },
+      resourceReferences: [
+        {
+          kind: "database" as const,
+          name: "instances/main/databases/example",
+          project: "projects/example",
+          label: "Example",
+        },
+      ],
+    };
+    return { store, chatId, input };
+  };
+
+  test("queues while running and promotes only the head with the same bindings and ID", () => {
+    const { store, chatId, input } = setup();
+    s(store).setChatStatus(chatId, "running");
+    const head = s(store).enqueueFollowUp(input)!;
+    const next = s(store).enqueueFollowUp({ ...input, text: "List tables" })!;
+
+    expect(head).toMatch(/^[0-9a-f-]{36}$/);
+    expect(next).not.toBe(head);
+    expect(s(store).getMessages(chatId)).toEqual([]);
+    expect(s(store).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+    expect(s(store).promoteFollowUp(chatId, head)).toBeNull();
+
+    s(store).setChatStatus(chatId, "idle");
+    expect(s(store).promoteFollowUp(chatId, next)).toBeNull();
+    expect(s(store).promoteFollowUp(chatId, head)).toEqual({
+      ...input,
+      id: head,
+    });
+    expect(s(store).queuedUserMessagesByChatId[chatId]).toMatchObject({
+      id: head,
+    });
+    expect(s(store).takeQueuedUserMessage(chatId)).toBeNull();
+    expect(s(store).removeFollowUp(chatId, head)).toBe(false);
+    expect(s(store).promoteFollowUp(chatId, next)).toBeNull();
+    expect(s(store).getMessages(chatId)).toEqual([]);
+    expect(
+      s(store).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+    ).toEqual([next]);
+  });
+
+  test("binds an unqualified queued follow-up to the answer completed after enqueue", () => {
+    const { store, chatId, input } = setup();
+    s(store).addMessage({ chatId, role: "user", content: "Show the table" });
+    s(store).setChatStatus(chatId, "running");
+    const id = s(store).enqueueFollowUp({
+      ...input,
+      text: "How many rows are in this table?",
+      resourceReferences: undefined,
+    })!;
+    expect(
+      s(store).followUpQueuesByChatId[chatId].messages[0].followUpSourceId
+    ).toBeUndefined();
+    const answer = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "The table preview is ready.",
+    })!;
+    s(store).setChatStatus(chatId, "idle");
+
+    expect(s(store).promoteFollowUp(chatId, id)).toMatchObject({
+      followUpSourceId: answer.id,
+    });
+    expect(s(store).commitQueuedUserMessage(chatId)).toMatchObject({
+      message: { metadata: { followUpSourceId: answer.id } },
+    });
+  });
+
+  test.each(["source", "reference", "references"] as const)(
+    "preserves a queued follow-up's explicit %s instead of rebinding it",
+    (kind) => {
+      const { store, chatId, input } = setup();
+      const answer = s(store).addMessage({
+        chatId,
+        role: "assistant",
+        content: "The latest answer.",
+      })!;
+      const selection =
+        kind === "source"
+          ? { followUpSourceId: "chosen-answer" }
+          : kind === "reference"
+            ? { resourceReference: input.resourceReferences[0] }
+            : { resourceReferences: input.resourceReferences };
+      const id = s(store).enqueueFollowUp({
+        ...input,
+        resourceReferences: undefined,
+        ...selection,
+      })!;
+
+      const promoted = s(store).promoteFollowUp(chatId, id)!;
+      expect(promoted).toMatchObject(selection);
+      expect(promoted.followUpSourceId).not.toBe(answer.id);
+      expect(promoted.followUpSourceId).toBe(
+        kind === "source" ? "chosen-answer" : undefined
+      );
+    }
+  );
+
+  test.each([
+    {
+      name: "unfinished assistant",
+      role: "assistant" as const,
+      content: undefined,
+    },
+    { name: "blank answer", role: "assistant" as const, content: "  " },
+    {
+      name: "tool call",
+      role: "assistant" as const,
+      content: "Working",
+      toolCalls: [{ id: "call", name: "call_api", arguments: "{}" }],
+    },
+    {
+      name: "tool result",
+      role: "tool" as const,
+      content: "Result",
+      toolCallId: "call",
+    },
+    {
+      name: "assistant error",
+      role: "assistant" as const,
+      content: "Failed",
+      metadata: { error: "Request failed" },
+    },
+    {
+      name: "pending assistant",
+      role: "assistant" as const,
+      content: "Working",
+      metadata: { pending: true },
+    },
+    { name: "latest user", role: "user" as const, content: "A newer question" },
+  ])(
+    "never binds a queued follow-up to a $name or an older answer",
+    (latest) => {
+      const { store, chatId, input } = setup();
+      s(store).addMessage({
+        chatId,
+        role: "assistant",
+        content: "An older answer",
+      });
+      const { name: _name, ...message } = latest;
+      s(store).addMessage({ chatId, ...message });
+      const id = s(store).enqueueFollowUp({
+        ...input,
+        resourceReferences: undefined,
+      })!;
+
+      expect(
+        s(store).promoteFollowUp(chatId, id)?.followUpSourceId
+      ).toBeUndefined();
+      expect(
+        s(store).commitQueuedUserMessage(chatId)?.message.metadata
+          ?.followUpSourceId
+      ).toBeUndefined();
+    }
+  );
+
+  test("never binds a queued follow-up to an answer from another chat", () => {
+    const { store, chatId, input } = setup();
+    const other = s(store).createChat({ select: false });
+    const foreign = s(store).addMessage({
+      chatId: other.id,
+      role: "assistant",
+      content: "Another chat's answer",
+    })!;
+    store.setState((state) => ({
+      messagesByChatId: {
+        ...state.messagesByChatId,
+        [chatId]: [foreign],
+      },
+    }));
+    const id = s(store).enqueueFollowUp({
+      ...input,
+      resourceReferences: undefined,
+    })!;
+
+    expect(s(store).getMessages(chatId).at(-1)?.chatId).toBe(other.id);
+    expect(
+      s(store).promoteFollowUp(chatId, id)?.followUpSourceId
+    ).toBeUndefined();
+  });
+
+  test("chains sequential queued follow-ups through their own completed answers", () => {
+    const { store, chatId, input } = setup();
+    const first = s(store).enqueueFollowUp({
+      ...input,
+      resourceReferences: undefined,
+    })!;
+    const second = s(store).enqueueFollowUp({
+      ...input,
+      text: "Explain that count",
+      resourceReferences: undefined,
+    })!;
+    const queryAnswer = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Query result",
+    })!;
+
+    expect(s(store).promoteFollowUp(chatId, first)?.followUpSourceId).toBe(
+      queryAnswer.id
+    );
+    expect(
+      s(store).commitQueuedUserMessage(chatId)?.message.metadata
+        ?.followUpSourceId
+    ).toBe(queryAnswer.id);
+    s(store).finishQueuedUserMessage(chatId);
+    const countAnswer = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "The table has 42 rows",
+    })!;
+    expect(s(store).promoteFollowUp(chatId, second)?.followUpSourceId).toBe(
+      countAnswer.id
+    );
+    expect(
+      s(store).commitQueuedUserMessage(chatId)?.message.metadata
+        ?.followUpSourceId
+    ).toBe(countAnswer.id);
+  });
+
+  test("retains inferred provenance through an uncommitted promotion reload and a committed reload", () => {
+    const { store, chatId, input } = setup();
+    const id = s(store).enqueueFollowUp({
+      ...input,
+      resourceReferences: undefined,
+    })!;
+    const answer = s(store).addMessage({
+      chatId,
+      role: "assistant",
+      content: "Query result",
+    })!;
+    s(store).promoteFollowUp(chatId, id);
+
+    const restored = setup().store;
+    expect(s(restored).followUpQueuesByChatId[chatId]).toMatchObject({
+      paused: true,
+      messages: [{ id, followUpSourceId: answer.id }],
+    });
+    expect(s(restored).setFollowUpQueuePaused(chatId, false)).toBe(true);
+    expect(s(restored).promoteFollowUp(chatId, id)?.followUpSourceId).toBe(
+      answer.id
+    );
+    s(restored).commitQueuedUserMessage(chatId);
+    s(restored).finishQueuedUserMessage(chatId);
+
+    expect(
+      s(setup().store)
+        .getMessages(chatId)
+        .find((message) => message.id === id)
+    ).toMatchObject({ metadata: { followUpSourceId: answer.id } });
+  });
+
+  test("removes pending head and middle items without disturbing order", () => {
+    const { store, chatId, input } = setup();
+    const [head, second, third, tail] = [
+      "first",
+      "second",
+      "third",
+      "tail",
+    ].map((text) => s(store).enqueueFollowUp({ ...input, text })!);
+    expect(s(store).removeFollowUp(chatId, third)).toBe(true);
+    expect(s(store).removeFollowUp(chatId, head)).toBe(true);
+    expect(s(store).removeFollowUp(chatId, head)).toBe(false);
+    expect(
+      s(store).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+    ).toEqual([second, tail]);
+    expect(s(store).removeFollowUp(chatId, second)).toBe(true);
+    expect(s(store).removeFollowUp(chatId, tail)).toBe(true);
+    expect(s(store).followUpQueuesByChatId[chatId]).toBeUndefined();
+    expect(mockStorage.getItem(getAgentStateKey(workspaceName))).not.toContain(
+      "followUpQueuesByChatId"
+    );
+  });
+
+  test("retains the head while paused, while a controller exists, or while approval is pending", () => {
+    const { store, chatId, input } = setup();
+    const id = s(store).enqueueFollowUp(input)!;
+    expect(s(store).setFollowUpQueuePaused(chatId, true)).toBe(true);
+    expect(s(store).promoteFollowUp(chatId, id)).toBeNull();
+    expect(s(store).setFollowUpQueuePaused(chatId, false)).toBe(true);
+    s(store).setAbortController(chatId, new AbortController());
+    expect(s(store).promoteFollowUp(chatId, id)).toBeNull();
+    s(store).setAbortController(chatId, null);
+    s(store).setPendingAsk(chatId, {
+      kind: "input",
+      toolCallId: "tool-call",
+      prompt: "Which database?",
+    });
+    expect(s(store).promoteFollowUp(chatId, id)).toBeNull();
+    expect(s(store).followUpQueuesByChatId[chatId]?.messages).toEqual([
+      { ...input, id },
+    ]);
+  });
+
+  test.each(["stop", "interruption", "error", "dismissed question"] as const)(
+    "pauses pending follow-ups on %s without losing them",
+    (ending) => {
+      const { store, chatId, input } = setup();
+      const id = s(store).enqueueFollowUp(input)!;
+      switch (ending) {
+        case "stop":
+          s(store).setChatStatus(chatId, "running");
+          s(store).cancel(chatId, "user");
+          break;
+        case "interruption":
+          s(store).interruptChatRun(chatId);
+          break;
+        case "error":
+          s(store).setChatStatus(chatId, "error");
+          break;
+        case "dismissed question":
+          s(store).awaitUser(chatId, {
+            kind: "input",
+            toolCallId: "tool-call",
+            prompt: "Which database?",
+          });
+          expect(s(store).followUpQueuesByChatId[chatId]?.paused).toBe(false);
+          expect(s(store).cancelPendingAsk(chatId)).toBe(true);
+          break;
+      }
+      expect(s(store).followUpQueuesByChatId[chatId]).toMatchObject({
+        paused: true,
+        messages: [{ id }],
+      });
+    }
+  );
+
+  test("reloads follow-ups paused without adding them to history or the startup slot", () => {
+    const { store, chatId, input } = setup();
+    const first = s(store).enqueueFollowUp(input)!;
+    const second = s(store).enqueueFollowUp({ ...input, text: "List tables" })!;
+    expect(s(store).followUpQueuesByChatId[chatId]?.paused).toBe(false);
+
+    const restored = setup().store;
+    s(restored).syncState();
+    expect(s(restored).followUpQueuesByChatId[chatId]).toMatchObject({
+      paused: true,
+      messages: [
+        { ...input, id: first },
+        { id: second, text: "List tables" },
+      ],
+    });
+    expect(s(restored).promoteFollowUp(chatId, first)).toBeNull();
+    expect(s(restored).takeQueuedUserMessage(chatId)).toBeNull();
+    expect(s(restored).getMessages(chatId)).toEqual([]);
+  });
+
+  test("imports remote queues passively and cannot edit them during the owner's run", () => {
+    const { store: owner, chatId, input } = setup();
+    const follower = setup().store;
+    s(owner).setChatStatus(chatId, "running");
+    const id = s(owner).enqueueFollowUp(input)!;
+    s(follower).syncState();
+
+    expect(s(follower).remoteBusyChatIds[chatId]).toBe(true);
+    expect(s(follower).followUpQueuesByChatId[chatId]?.messages).toEqual([
+      { ...input, id },
+    ]);
+    expect(s(follower).enqueueFollowUp(input)).toBeNull();
+    expect(s(follower).removeFollowUp(chatId, id)).toBe(false);
+    expect(s(follower).setFollowUpQueuePaused(chatId, true)).toBe(false);
+    expect(s(follower).promoteFollowUp(chatId, id)).toBeNull();
+    expect(s(follower).archiveChat(chatId)).toBeNull();
+    expect(s(follower).getMessages(chatId)).toEqual([]);
+
+    expect(s(owner).removeFollowUp(chatId, id)).toBe(true);
+    s(follower).saveState();
+    expect(s(follower).followUpQueuesByChatId[chatId]).toBeUndefined();
+  });
+
+  test("does not undo another tab's removals by writing unrelated local changes", () => {
+    const { store: owner, chatId, input } = setup();
+    const removed = s(owner).enqueueFollowUp(input)!;
+    const kept = s(owner).enqueueFollowUp({ ...input, text: "Kept" })!;
+    const follower = setup().store;
+    expect(s(owner).removeFollowUp(chatId, removed)).toBe(true);
+    s(follower).renameChat(chatId, "New title");
+
+    expect(
+      s(follower).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+    ).toEqual([kept]);
+    const refreshed = setup().store;
+    expect(
+      s(refreshed).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+    ).toEqual([kept]);
+  });
+
+  test("drops archived and deleted follow-ups without exposing them across accounts", () => {
+    const { store, chatId, input } = setup();
+    const secondChat = s(store).createChat();
+    s(store).enqueueFollowUp(input);
+    s(store).enqueueFollowUp({ ...input, chatId: secondChat.id });
+
+    s(store).setWorkspaceName(workspaceName, "other@example.com");
+    expect(s(store).followUpQueuesByChatId).toEqual({});
+    s(store).setWorkspaceName(workspaceName);
+    expect(s(store).followUpQueuesByChatId[chatId]?.messages).toHaveLength(1);
+    s(store).archiveChat(chatId);
+    expect(s(store).enqueueFollowUp(input)).toBeNull();
+    expect(s(store).followUpQueuesByChatId[chatId]).toBeUndefined();
+    s(store).deleteChat(secondChat.id);
+    expect(s(store).followUpQueuesByChatId).toEqual({});
+    expect(s(setup().store).followUpQueuesByChatId).toEqual({});
+  });
+
+  test("pagehide pauses local follow-ups without committing them to history", () => {
+    const { store, chatId, input } = setup(useAgentStore);
+    try {
+      const id = s(store).enqueueFollowUp(input)!;
+      window.dispatchEvent(new Event("pagehide"));
+
+      expect(s(store).getMessages(chatId)).toEqual([]);
+      expect(s(store).followUpQueuesByChatId[chatId]).toEqual({
+        paused: true,
+        messages: [{ ...input, id }],
+      });
+      expect(
+        JSON.parse(mockStorage.getItem(getAgentStateKey(workspaceName))!)
+          .followUpQueuesByChatId[chatId].paused
+      ).toBe(true);
+    } finally {
+      s(store).setWorkspaceName(undefined);
+      window.dispatchEvent(new Event("pageshow"));
+    }
+  });
+
+  test("pagehide returns an uncommitted promotion to the front of the paused queue", () => {
+    const { store, chatId, input } = setup(useAgentStore);
+    try {
+      const head = s(store).enqueueFollowUp(input)!;
+      const tail = s(store).enqueueFollowUp({ ...input, text: "Tail" })!;
+      expect(s(store).promoteFollowUp(chatId, head)?.id).toBe(head);
+      window.dispatchEvent(new Event("pagehide"));
+
+      expect(s(store).getMessages(chatId)).toEqual([]);
+      expect(s(store).queuedUserMessagesByChatId[chatId]).toBeUndefined();
+      expect(s(store).followUpQueuesByChatId[chatId]).toMatchObject({
+        paused: true,
+        messages: [{ id: head }, { id: tail }],
+      });
+    } finally {
+      s(store).setWorkspaceName(undefined);
+      window.dispatchEvent(new Event("pageshow"));
+    }
+  });
+
+  test("restores an uncommitted promotion paused on reload without Web Locks", () => {
+    const { store, chatId, input } = setup();
+    const head = s(store).enqueueFollowUp(input)!;
+    const tail = s(store).enqueueFollowUp({ ...input, text: "Tail" })!;
+    expect(s(store).promoteFollowUp(chatId, head)?.id).toBe(head);
+
+    const restored = setup().store;
+    expect(s(restored).takeQueuedUserMessage(chatId)).toBeNull();
+    expect(s(restored).getMessages(chatId)).toEqual([]);
+    expect(s(restored).followUpQueuesByChatId[chatId]).toMatchObject({
+      paused: true,
+      messages: [{ id: head }, { id: tail }],
+    });
+  });
+});
+
 describe("runtime SQL fix drafts", () => {
   const resource = {
     kind: "plan" as const,
@@ -1775,7 +2434,7 @@ describe("durable run recovery", () => {
       })
     ).not.toBeNull();
   });
-  const restoredPendingApproval = async () => {
+  const restoredPendingApproval = async (withFollowUp = false) => {
     const { store: owner, chat, root } = await create();
     const store = createAgentStore();
     s(store).setWorkspaceName(workspaceName);
@@ -1787,6 +2446,15 @@ describe("durable run recovery", () => {
       async () => {
         runId = (await s(owner).beginChatRun(chat.id, root!.id, bindings))!;
         s(owner).setAbortController(chat.id, new AbortController());
+        if (withFollowUp) {
+          expect(
+            s(owner).enqueueFollowUp({
+              chatId: chat.id,
+              text: "Next request",
+              page: bindings.page,
+            })
+          ).toBeTruthy();
+        }
         const call = s(owner).addMessage({
           chatId: chat.id,
           role: "assistant",
@@ -1833,6 +2501,29 @@ describe("durable run recovery", () => {
     expect(s(store).getPendingAsk(chat.id)).toEqual(previous.ask);
     expect(s(store).getMessages(chat.id)).toEqual(previous.messages);
     expect(s(store).getAbortController(chat.id)).toBeNull();
+  });
+  test("a cold tab restores pending ask controls without resuming the follow-up queue", async () => {
+    const { chat, runId } = await restoredPendingApproval(true);
+    const key = getAgentStateKey(workspaceName);
+    const snapshot = JSON.parse(mockStorage.getItem(key)!);
+    delete snapshot.pendingAskByChatId[chat.id].apiPermission;
+    mockStorage.setItem(key, JSON.stringify(snapshot));
+    const restored = createAgentStore();
+    s(restored).setWorkspaceName(workspaceName);
+    const ask = s(restored).getPendingAsk(chat.id);
+    expect(ask).not.toBeNull();
+    expect(s(restored).remoteBusyChatIds[chat.id]).toBe(true);
+    expect(
+      await withAgentRunLease(key, chat.id, () =>
+        s(restored).recoverPendingAsk(chat.id, runId)
+      )
+    ).toEqual({ acquired: true, value: true });
+    expect(s(restored).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(restored).getPendingAsk(chat.id)).toEqual(ask);
+    expect(s(restored).followUpQueuesByChatId[chat.id]).toMatchObject({
+      paused: true,
+      messages: [{ text: "Next request" }],
+    });
   });
   test("keeps restored approval controls blocked when recovery cannot be persisted", async () => {
     const { store, chat, runId } = await restoredPendingApproval();
@@ -1971,6 +2662,63 @@ describe("durable run recovery", () => {
     );
     expect(s(store).getAbortController(chat.id)).toBeNull();
   });
+  test.each(["interrupted", "token-limit"] as const)(
+    "clears a durable startup receipt during %s recovery and pauses the tail",
+    async (suspension) => {
+      const { store: owner, chat } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const input = {
+        chatId: chat.id,
+        text: "Follow-up",
+        page: bindings.page,
+      };
+      const head = s(owner).enqueueFollowUp(input)!;
+      const tail = s(owner).enqueueFollowUp({ ...input, text: "Tail" })!;
+      const run = await withAgentRunLease(key, chat.id, async () => {
+        expect(s(owner).promoteFollowUp(chat.id, head)?.id).toBe(head);
+        expect(s(owner).commitQueuedUserMessage(chat.id)?.message.id).toBe(
+          head
+        );
+        const runId = await s(owner).beginChatRun(chat.id, head, bindings);
+        expect(runId).toBeTruthy();
+        expect(
+          await s(owner).saveChatRunCheckpoint(chat.id, {
+            ...s(owner).getChat(chat.id)!.runCheckpoint!,
+            suspension,
+            startupComplete: true,
+          })
+        ).toBe(true);
+        s(owner).setAbortController(chat.id, new AbortController());
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+        return runId;
+      });
+      expect(run.acquired).toBe(true);
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+      expect(s(restored).remoteBusyChatIds[chat.id]).toBe(true);
+      expect(s(restored).takeQueuedUserMessage(chat.id)).toBeNull();
+      expect(
+        await withAgentRunLease(key, chat.id, () =>
+          s(restored).recoverChatRun(chat.id, run.value!)
+        )
+      ).toEqual({ acquired: true, value: true });
+      expect(s(restored).getChat(chat.id)?.status).toBe(
+        suspension === "token-limit" ? "paused" : "idle"
+      );
+      expect(s(restored).remoteBusyChatIds[chat.id]).toBeUndefined();
+      expect(s(restored).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+      expect(
+        s(restored)
+          .getMessages(chat.id)
+          .filter(({ id }) => id === head)
+      ).toHaveLength(1);
+      expect(s(restored).followUpQueuesByChatId[chat.id]).toMatchObject({
+        paused: true,
+        messages: [{ id: tail }],
+      });
+    }
+  );
   test("retries passive run recovery after a persistence failure without replaying work", async () => {
     const { store, chat, runId } = await restoredWorkingRun();
     const budget = s(store).getChat(chat.id)!.runBudget;
@@ -2362,6 +3110,141 @@ describe("durable run recovery", () => {
       }
     );
   });
+  test("ending a paused startup releases its reservation without dropping pending follow-ups", async () => {
+    const { store, chat } = await create();
+    const lease = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chat.id,
+      async () => {
+        const input = {
+          chatId: chat.id,
+          text: "Startup request",
+          page: bindings.page,
+        };
+        s(store).queueUserMessage(input);
+        const startup = s(store).commitQueuedUserMessage(chat.id)!;
+        expect(
+          await s(store).beginChatRun(chat.id, startup.message.id, bindings)
+        ).toBeTruthy();
+        const next = s(store).enqueueFollowUp({
+          ...input,
+          text: "Next request",
+        })!;
+        expect(
+          await s(store).pauseChatRun(
+            chat.id,
+            s(store).getChat(chat.id)!.runCheckpoint!
+          )
+        ).toBe(true);
+        expect(s(store).queuedUserMessageInFlightByChatId[chat.id]).toBe(true);
+        expect(await s(store).endPausedRun(chat.id)).toBe(true);
+
+        expect(s(store).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+        expect(
+          s(store).queuedUserMessageInFlightByChatId[chat.id]
+        ).toBeUndefined();
+        expect(s(store).followUpQueuesByChatId[chat.id]).toMatchObject({
+          paused: true,
+          messages: [{ id: next }],
+        });
+        expect(s(store).setFollowUpQueuePaused(chat.id, false)).toBe(true);
+        expect(s(store).promoteFollowUp(chat.id, next)?.id).toBe(next);
+        expect(await s(store).flushRunPersistence()).toBe(true);
+      }
+    );
+    expect(lease.acquired).toBe(true);
+  });
+  test("reserves the follow-up queue for the owner between runs", async () => {
+    const { store: owner, chat } = await create();
+    const key = getAgentStateKey(workspaceName);
+    const input = {
+      chatId: chat.id,
+      text: "Follow-up",
+      page: bindings.page,
+    };
+    const id = s(owner).enqueueFollowUp(input)!;
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const follower = createAgentStore();
+    s(follower).setWorkspaceName(workspaceName);
+    expect(await s(follower).flushRunPersistence()).toBe(true);
+    expect(s(owner).setFollowUpDrainActive(chat.id, true)).toBe(false);
+
+    expect(
+      await withAgentRunLease(key, chat.id, async () => {
+        expect(s(owner).setFollowUpDrainActive(chat.id, true)).toBe(true);
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+        expect(s(owner).getAbortController(chat.id)).toBeNull();
+        expect(s(owner).remoteBusyChatIds[chat.id]).toBeUndefined();
+
+        s(follower).syncState();
+        expect(s(follower).remoteBusyChatIds[chat.id]).toBe(true);
+        expect(s(follower).enqueueFollowUp(input)).toBeNull();
+        expect(s(follower).removeFollowUp(chat.id, id)).toBe(false);
+        expect(s(follower).setFollowUpQueuePaused(chat.id, true)).toBe(false);
+        expect(s(follower).setFollowUpDrainActive(chat.id, false)).toBe(false);
+        expect(s(follower).archiveChat(chat.id)).toBeNull();
+
+        expect(s(owner).setFollowUpDrainActive(chat.id, false)).toBe(true);
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+      })
+    ).toMatchObject({ acquired: true });
+    s(follower).syncState();
+    expect(s(follower).remoteBusyChatIds[chat.id]).toBeUndefined();
+    expect(s(follower).followUpQueuesByChatId[chat.id]?.messages[0]?.id).toBe(
+      id
+    );
+  });
+  test.each(["uncommitted", "before-checkpoint"] as const)(
+    "recovers a promotion with no checkpoint without replay: %s",
+    async (stage) => {
+      const { store: owner, chat } = await create();
+      const key = getAgentStateKey(workspaceName);
+      const input = {
+        chatId: chat.id,
+        text: "Follow-up",
+        page: bindings.page,
+      };
+      const head = s(owner).enqueueFollowUp(input)!;
+      const tail = s(owner).enqueueFollowUp({ ...input, text: "Tail" })!;
+      expect(
+        await withAgentRunLease(key, chat.id, async () => {
+          expect(s(owner).promoteFollowUp(chat.id, head)?.id).toBe(head);
+          if (stage === "before-checkpoint")
+            expect(s(owner).commitQueuedUserMessage(chat.id)?.message.id).toBe(
+              head
+            );
+          expect(await s(owner).flushRunPersistence()).toBe(true);
+        })
+      ).toMatchObject({ acquired: true });
+
+      const restored = createAgentStore();
+      s(restored).setWorkspaceName(workspaceName);
+      expect(s(restored).remoteBusyChatIds[chat.id]).toBe(true);
+      expect(s(restored).takeQueuedUserMessage(chat.id)).toBeNull();
+      expect(s(restored).promoteFollowUp(chat.id, tail)).toBeNull();
+      expect(
+        await withAgentRunLease(key, chat.id, () =>
+          s(restored).recoverChatRun(chat.id, null)
+        )
+      ).toEqual({ acquired: true, value: true });
+      expect(s(restored).remoteBusyChatIds[chat.id]).toBeUndefined();
+      expect(s(restored).queuedUserMessagesByChatId[chat.id]).toBeUndefined();
+      expect(s(restored).followUpQueuesByChatId[chat.id]).toMatchObject({
+        paused: true,
+        messages:
+          stage === "uncommitted"
+            ? [{ id: head }, { id: tail }]
+            : [{ id: tail }],
+      });
+      expect(
+        s(restored)
+          .getMessages(chat.id)
+          .filter(({ id }) => id === head)
+      ).toHaveLength(stage === "uncommitted" ? 0 : 1);
+      if (stage === "before-checkpoint")
+        expect(s(restored).getChat(chat.id)?.interrupted).toBe(true);
+    }
+  );
   test("an observed paused run cannot be increased or ended without ownership", async () => {
     const { store, chat, root } = await create();
     await withAgentRunLease(
@@ -5990,26 +6873,59 @@ describe("useAgentStore (Zustand)", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/acme");
     const chatId = s(store).currentChatId!;
+    const permission = {
+      actionId: "action-1",
+      operationId: "bytebase.v1.ProjectService.UpdateProject",
+      expiresAt: 1_800_000_000_000,
+    };
     s(store).awaitUser(chatId, {
       toolCallId: "tool-write",
       prompt: "bytebase.v1.ProjectService.UpdateProject",
       kind: "confirm",
-      apiPermission: {
-        actionId: "action-1",
-        operationId: "bytebase.v1.ProjectService.UpdateProject",
-      },
+      apiPermission: permission,
     });
 
+    const raw = JSON.parse(
+      mockStorage.getItem(getAgentStateKey("workspaces/acme"))!
+    );
+    expect(raw.pendingAskByChatId[chatId].apiPermission).toEqual(permission);
     const rehydratedStore = createAgentStore();
     s(rehydratedStore).setWorkspaceName("workspaces/acme");
     expect(s(rehydratedStore).getPendingAsk(chatId)).toMatchObject({
       kind: "confirm",
-      apiPermission: {
-        actionId: "action-1",
-        operationId: "bytebase.v1.ProjectService.UpdateProject",
-      },
+      apiPermission: permission,
     });
   });
+
+  test.each([undefined, null, 0, -1, "1800000000000"])(
+    "does not restore an invalid or absent permission deadline: %s",
+    (expiresAt) => {
+      const workspace = "workspaces/acme";
+      const key = getAgentStateKey(workspace);
+      const store = createAgentStore();
+      s(store).setWorkspaceName(workspace);
+      const chatId = s(store).currentChatId!;
+      s(store).awaitUser(chatId, {
+        toolCallId: "tool-write",
+        prompt: "Allow the update?",
+        kind: "confirm",
+        apiPermission: { actionId: "action-1", operationId: "UpdateProject" },
+      });
+      const raw = JSON.parse(mockStorage.getItem(key)!);
+      Object.assign(raw.pendingAskByChatId[chatId].apiPermission, {
+        expiresAt,
+        body: "should not be restored",
+      });
+      mockStorage.setItem(key, JSON.stringify(raw));
+
+      const rehydrated = createAgentStore();
+      s(rehydrated).setWorkspaceName(workspace);
+      expect(s(rehydrated).getPendingAsk(chatId)?.apiPermission).toEqual({
+        actionId: "action-1",
+        operationId: "UpdateProject",
+      });
+    }
+  );
 
   test("normalizes invalid persisted choose asks to input", () => {
     localStorage.setItem(
@@ -8715,6 +9631,363 @@ describe("automatic history cleanup integration", () => {
     s(store).setWorkspaceName(workspaceName);
     return store;
   };
+
+  test.each(["updated", "cleared"] as const)(
+    "a delayed progress save preserves a draft %s after the save was scheduled",
+    async (change) => {
+      const store = create();
+      const chatId = s(store).currentChatId!;
+      s(store).setDraft(chatId, { text: "Earlier draft" });
+      s(store).saveState();
+      expect(await s(store).flushRunPersistence()).toBe(true);
+      const blocked = locks.pauseNextExclusive(
+        `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+      );
+      try {
+        const progress = s(store).addMessage({
+          chatId,
+          role: "assistant",
+          content: "Current run progress",
+        })!;
+        await blocked.reached;
+        if (change === "updated") {
+          s(store).setDraft(chatId, {
+            text: "Next @orders",
+            mentions: [
+              {
+                resource: {
+                  kind: "database",
+                  name: "instances/main/databases/orders",
+                  project: "projects/orders",
+                  label: "orders",
+                },
+                range: { start: 5, end: 12 },
+              },
+            ],
+          });
+        } else {
+          s(store).clearDraft(chatId);
+        }
+        const latest = s(store).getDraft(chatId);
+        blocked.resume();
+        await vi.waitFor(() => {
+          expect(persisted().messagesByChatId[chatId]).toContainEqual(
+            expect.objectContaining({ id: progress.id })
+          );
+        });
+        expect(s(store).getDraft(chatId)).toEqual(latest);
+        if (change === "updated") {
+          expect(s(store).getDraft(chatId)).toBe(latest);
+          expect(persisted().draftsByChatId[chatId]).toEqual(latest);
+        } else {
+          expect(persisted().draftsByChatId[chatId]).toBeUndefined();
+        }
+      } finally {
+        blocked.resume();
+      }
+    }
+  );
+
+  test("a delayed save for a departed workspace never borrows the new workspace draft", async () => {
+    const store = create();
+    const chatId = s(store).currentChatId!;
+    s(store).setDraft(chatId, { text: "Original workspace draft" });
+    s(store).saveState();
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const blocked = locks.pauseNextExclusive(
+      `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+    );
+    try {
+      const progress = s(store).addMessage({
+        chatId,
+        role: "assistant",
+        content: "Original workspace progress",
+      })!;
+      await blocked.reached;
+      expect(s(store).setWorkspaceName("workspaces/next")).toBe(true);
+      const nextChatId = s(store).currentChatId!;
+      s(store).setDraft(nextChatId, { text: "New workspace draft" });
+      const nextDraft = s(store).getDraft(nextChatId);
+      blocked.resume();
+      await vi.waitFor(() => {
+        expect(persisted().messagesByChatId[chatId]).toContainEqual(
+          expect.objectContaining({ id: progress.id })
+        );
+      });
+      expect(persisted().draftsByChatId[chatId]).toEqual({
+        text: "Original workspace draft",
+      });
+      expect(s(store).getDraft(nextChatId)).toBe(nextDraft);
+      expect(s(store).workspaceName).toBe("workspaces/next");
+      expect(
+        mockStorage.getItem(getAgentStateKey(workspaceName))
+      ).not.toContain("New workspace draft");
+    } finally {
+      blocked.resume();
+    }
+  });
+
+  test("a cold follower cannot pause or remove an active owner's follow-up queue", async () => {
+    const owner = create();
+    const chatId = s(owner).currentChatId!;
+    expect(await s(owner).flushRunPersistence()).toBe(true);
+    const lease = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chatId,
+      async () => {
+        s(owner).setChatStatus(chatId, "running");
+        s(owner).setAbortController(chatId, new AbortController());
+        const id = s(owner).enqueueFollowUp({
+          chatId,
+          text: "Next request",
+          page: { path: "/", title: "Workspace" },
+        })!;
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+
+        const follower = create();
+        expect(await s(follower).flushRunPersistence()).toBe(true);
+        expect(s(follower).remoteBusyChatIds[chatId]).toBe(true);
+        expect(s(follower).removeFollowUp(chatId, id)).toBe(false);
+        expect(s(follower).setFollowUpQueuePaused(chatId, true)).toBe(false);
+        s(owner).syncState();
+        expect(s(owner).followUpQueuesByChatId[chatId]).toMatchObject({
+          paused: false,
+          messages: [{ id }],
+        });
+        s(owner).setChatStatus(chatId, "idle");
+        s(owner).setAbortController(chatId, null);
+        expect(await s(owner).flushRunPersistence()).toBe(true);
+      }
+    );
+    expect(lease.acquired).toBe(true);
+  });
+
+  test("concurrent follow-up edits rebase additions and removals without resurrecting an item", async () => {
+    const first = create();
+    const chatId = s(first).currentChatId!;
+    expect(await s(first).flushRunPersistence()).toBe(true);
+    const input = {
+      chatId,
+      text: "Remove this",
+      page: { path: "/", title: "Workspace" },
+    };
+    const removed = s(first).enqueueFollowUp(input)!;
+    const retained = s(first).enqueueFollowUp({
+      ...input,
+      text: "Retain this",
+    })!;
+    expect(await s(first).flushRunPersistence()).toBe(true);
+    const second = create();
+    expect(await s(second).flushRunPersistence()).toBe(true);
+    s(first).syncState();
+
+    const blocked = locks.pauseNextExclusive(
+      `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+    );
+    const blockedAppend = locks.pauseNextExclusive(
+      `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+    );
+    try {
+      expect(s(first).removeFollowUp(chatId, removed)).toBe(true);
+      await blocked.reached;
+      const appended = s(second).enqueueFollowUp({
+        ...input,
+        text: "Appended",
+      })!;
+      blocked.resume();
+      await blockedAppend.reached;
+      s(second).syncState();
+      expect(
+        s(second).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+      ).toEqual([retained, appended]);
+      blockedAppend.resume();
+      await vi.waitFor(() => {
+        s(first).syncState();
+        expect(
+          s(first).followUpQueuesByChatId[chatId]?.messages.map(({ id }) => id)
+        ).toEqual([retained, appended]);
+      });
+    } finally {
+      blocked.resume();
+      blockedAppend.resume();
+    }
+  });
+
+  test.each(["enqueue", "remove"] as const)(
+    "preserves an accepted %s when another tab starts execution before it is saved",
+    async (operation) => {
+      const owner = create();
+      const chatId = s(owner).currentChatId!;
+      const input = {
+        chatId,
+        text: "Existing request",
+        page: { path: "/", title: "Workspace" },
+      };
+      const existing = s(owner).enqueueFollowUp(input)!;
+      const retained = s(owner).enqueueFollowUp({
+        ...input,
+        text: "Keep this",
+      })!;
+      expect(await s(owner).flushRunPersistence()).toBe(true);
+      const follower = create();
+      expect(await s(follower).flushRunPersistence()).toBe(true);
+      const blocked = locks.pauseNextExclusive(
+        `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+      );
+      try {
+        const lease = await withAgentRunLease(
+          getAgentStateKey(workspaceName),
+          chatId,
+          async () => {
+            expect(s(owner).setFollowUpQueuePaused(chatId, false)).toBe(true);
+            s(owner).setChatStatus(chatId, "running");
+            s(owner).setAbortController(chatId, new AbortController());
+            try {
+              await blocked.reached;
+              const accepted =
+                operation === "enqueue"
+                  ? s(follower).enqueueFollowUp({
+                      ...input,
+                      text: "Accepted next question",
+                    })
+                  : s(follower).removeFollowUp(chatId, existing);
+              expect(accepted).toBeTruthy();
+              blocked.resume();
+              expect(await s(owner).flushRunPersistence()).toBe(true);
+              expect(await s(follower).flushRunPersistence()).toBe(true);
+
+              const expected =
+                operation === "enqueue"
+                  ? [existing, retained, accepted as string]
+                  : [retained];
+              const queuedIds = () =>
+                s(follower).followUpQueuesByChatId[chatId]?.messages.map(
+                  ({ id }) => id
+                );
+              expect(queuedIds()).toEqual(expected);
+              expect(
+                persisted().followUpQueuesByChatId?.[chatId]?.messages.map(
+                  ({ id }) => id
+                )
+              ).toEqual(expected);
+              expect(s(follower).followUpQueuesByChatId[chatId]?.paused).toBe(
+                false
+              );
+              expect(s(follower).remoteBusyChatIds[chatId]).toBe(true);
+              s(follower).syncState();
+              s(follower).syncState();
+              expect(queuedIds()).toEqual(expected);
+              expect(
+                s(follower).enqueueFollowUp({ ...input, text: "Not admitted" })
+              ).toBeNull();
+              expect(s(follower).removeFollowUp(chatId, retained)).toBe(false);
+              expect(s(follower).setFollowUpQueuePaused(chatId, true)).toBe(
+                false
+              );
+              expect(s(follower).promoteFollowUp(chatId, retained)).toBeNull();
+              expect(s(follower).getMessages(chatId)).toEqual([]);
+              s(owner).syncState();
+              expect(
+                s(owner).followUpQueuesByChatId[chatId]?.messages.map(
+                  ({ id }) => id
+                )
+              ).toEqual(expected);
+              if (operation === "enqueue") {
+                expect(s(owner).setFollowUpDrainActive(chatId, true)).toBe(
+                  true
+                );
+                s(owner).setChatStatus(chatId, "idle");
+                s(owner).setAbortController(chatId, null);
+                for (const id of expected) {
+                  expect(s(owner).promoteFollowUp(chatId, id)?.id).toBe(id);
+                  expect(
+                    s(owner).commitQueuedUserMessage(chatId)?.message.id
+                  ).toBe(id);
+                  s(owner).finishQueuedUserMessage(chatId);
+                }
+                expect(await s(owner).flushRunPersistence()).toBe(true);
+                s(follower).syncState();
+                expect(queuedIds()).toBeUndefined();
+                expect(
+                  s(follower)
+                    .getMessages(chatId)
+                    .map(({ id }) => id)
+                ).toEqual(expected);
+                expect(await s(follower).flushRunPersistence()).toBe(true);
+                s(owner).syncState();
+                expect(s(owner).followUpQueuesByChatId[chatId]).toBeUndefined();
+              }
+            } finally {
+              blocked.resume();
+              s(owner).setChatStatus(chatId, "idle");
+              s(owner).setAbortController(chatId, null);
+              s(owner).setFollowUpDrainActive(chatId, false);
+              await s(owner).flushRunPersistence();
+            }
+          }
+        );
+        expect(lease.acquired).toBe(true);
+      } finally {
+        blocked.resume();
+      }
+    }
+  );
+
+  test("requires a run lease to promote a follow-up and leaves it pending otherwise", async () => {
+    const store = create();
+    const chatId = s(store).currentChatId!;
+    expect(await s(store).flushRunPersistence()).toBe(true);
+    const id = s(store).enqueueFollowUp({
+      chatId,
+      text: "Next request",
+      page: { path: "/", title: "Workspace" },
+    })!;
+    expect(s(store).promoteFollowUp(chatId, id)).toBeNull();
+    expect(s(store).followUpQueuesByChatId[chatId]?.messages[0]?.id).toBe(id);
+    const lease = await withAgentRunLease(
+      getAgentStateKey(workspaceName),
+      chatId,
+      async () => {
+        expect(s(store).promoteFollowUp(chatId, id)?.id).toBe(id);
+        expect(s(store).takeQueuedUserMessage(chatId)).toBeNull();
+        expect(await s(store).flushRunPersistence()).toBe(true);
+      }
+    );
+    expect(lease.acquired).toBe(true);
+  });
+
+  test("a concurrent enqueue does not resume a queue another tab paused", async () => {
+    const first = create();
+    const chatId = s(first).currentChatId!;
+    expect(await s(first).flushRunPersistence()).toBe(true);
+    const second = create();
+    expect(await s(second).flushRunPersistence()).toBe(true);
+    const input = {
+      chatId,
+      text: "First request",
+      page: { path: "/", title: "Workspace" },
+    };
+    const blocked = locks.pauseNextExclusive(
+      `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+    );
+    try {
+      const firstId = s(first).enqueueFollowUp(input)!;
+      await blocked.reached;
+      expect(s(first).setFollowUpQueuePaused(chatId, true)).toBe(true);
+      const secondId = s(second).enqueueFollowUp({
+        ...input,
+        text: "Second request",
+      })!;
+      blocked.resume();
+      expect(await s(second).flushRunPersistence()).toBe(true);
+      expect(s(second).followUpQueuesByChatId[chatId]).toMatchObject({
+        paused: true,
+        messages: [{ id: firstId }, { id: secondId }],
+      });
+    } finally {
+      blocked.resume();
+    }
+  });
 
   const addHistory = (store: StoreApi<AgentState>, contentSize: number) => {
     const chat = s(store).createChat({

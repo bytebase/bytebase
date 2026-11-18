@@ -54,6 +54,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.Metadata.GetVersion()
+	connectionContext.Vendor = instance.Metadata.GetVendor()
 
 	resolvedDataSource, err := dbutil.ResolveTLSMaterial(dataSource)
 	if err != nil {

@@ -55,6 +55,7 @@ export interface AgentRunBudget {
 
 export interface AgentRunBindings {
   page: AgentChatSnapshot;
+  pageToolPath?: string;
   context?: string;
   references: AgentResourceReference[];
   runMode: AgentRunMode;
@@ -70,6 +71,7 @@ export interface AgentRunCheckpoint {
   rootUserMessageId: string;
   throughMessageId: string;
   bindings: AgentRunBindings;
+  pageToolPath?: string;
   maskingSections: MaskingSkillSection[];
   phase: "working" | "finalizing";
   startupComplete?: boolean;
@@ -289,6 +291,7 @@ export interface AgentPendingAsk {
   apiPermission?: {
     actionId: string;
     operationId: string;
+    expiresAt?: number;
   };
   defaultValue?: string;
   defaultResource?: AgentResourceReference;

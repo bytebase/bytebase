@@ -413,6 +413,8 @@ beforeEach(async () => {
     messagesByChatId: initialState.messagesByChatId,
     pendingAskByChatId: initialState.pendingAskByChatId,
     currentChatId: initialState.currentChatId,
+    landingDraft: initialState.landingDraft,
+    landingContext: initialState.landingContext,
     chatProtectionReady: true,
     abortControllersByChatId: {},
     queuedUserMessagesByChatId: {},
@@ -955,6 +957,331 @@ test("falls back to the landing view when the preferred last chat is unavailable
   } finally {
     unmount();
   }
+});
+
+describe("landing after active chats are exhausted", () => {
+  test("keeps the general-page composer mounted when its context picker selects a project", () => {
+    mocks.currentContext = mocks.workspace.name;
+    useAgentStore.setState({ chats: [], currentChatId: null });
+    const store = useAgentStore.getState();
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      const input = screen.getByTestId("agent-input");
+      expect(screen.getByTestId("agent-chat")).toHaveAttribute(
+        "data-context-label",
+        mocks.workspace.title
+      );
+      act(() => store.setLandingDraft({ text: "" }, "projects/orders"));
+
+      expect(screen.getByTestId("agent-input")).toBe(input);
+      expect(mocks.inputUnmounted).not.toHaveBeenCalled();
+      expect(
+        document.body.querySelector("[data-agent-contextual-start]")
+      ).toBeNull();
+      expect(screen.getByTestId("agent-chat")).toHaveAttribute(
+        "data-context-label",
+        "Order service"
+      );
+      expect(useAgentStore.getState().currentChatId).toBeNull();
+      expect(useAgentStore.getState().chats).toEqual([]);
+      expect(useAgentStore.getState().landingContext).toBe("projects/orders");
+    } finally {
+      unmount();
+    }
+  });
+
+  test.each(
+    [1200, 700, 390].flatMap((width) =>
+      [false, true].map((archived) => ({ width, archived }))
+    )
+  )(
+    "starts a general-page chat only after selecting a landing starter at $width px with archived=$archived",
+    ({ width, archived }) => {
+      const store = useAgentStore.getState();
+      if (archived) store.archiveAllActiveChats();
+      useAgentStore.setState({
+        size: { width, height: 600 },
+        ...(archived ? {} : { chats: [] }),
+        currentChatId: null,
+      });
+      const chats = useAgentStore.getState().chats;
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        expect(screen.getByTestId("agent-chat")).toBeVisible();
+        expect(useAgentStore.getState().currentChatId).toBeNull();
+        expect(useAgentStore.getState().chats).toEqual(chats);
+        expect(useAgentStore.getState().queuedUserMessagesByChatId).toEqual({});
+
+        act(() => screen.getByTestId("agent-empty-suggestion").click());
+
+        const chatId = useAgentStore.getState().currentChatId;
+        expect(chatId).toBeTruthy();
+        expect(useAgentStore.getState().chats).toHaveLength(chats.length + 1);
+        expect(store.getChat(chatId)?.archived).toBe(false);
+        expect(store.getChat(chatId)?.context).toBe("projects/orders");
+        expect(getCurrentQueuedUserMessage()?.text).toBe(
+          "agent.landing-starters.project-open-blockers"
+        );
+        expect(store.getMessages(chatId)).toEqual([]);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390])(
+    "shows the existing landing with no chats at %ipx",
+    (width) => {
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      useAgentStore.setState({
+        size: { width, height: 600 },
+        chats: [],
+        currentChatId: null,
+      });
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        expect(
+          document.body.querySelector('[data-agent-contextual-start="project"]')
+        ).toBeInTheDocument();
+        expect(screen.queryByTestId("agent-input")).toBeNull();
+        expect(useAgentStore.getState().chats).toEqual([]);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390])(
+    "shows the existing landing when every chat is archived at %ipx",
+    (width) => {
+      const store = useAgentStore.getState();
+      store.archiveAllActiveChats();
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      useAgentStore.setState({ size: { width, height: 600 } });
+      const chats = useAgentStore.getState().chats;
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        expect(
+          document.body.querySelector('[data-agent-contextual-start="project"]')
+        ).toBeInTheDocument();
+        expect(screen.queryByTestId("agent-input")).toBeNull();
+        expect(useAgentStore.getState().chats).toEqual(chats);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each(
+    [1200, 700, 390].flatMap((width) =>
+      ["last", "all"].map((operation) => ({ width, operation }))
+    )
+  )(
+    "returns to the existing landing after $operation archive at $width px",
+    async ({ width, operation }) => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({
+        title: "Last discussion",
+        context: "projects/orders",
+        workspaceName: mocks.workspace.name,
+      });
+      store.addMessage({
+        chatId: chat.id,
+        role: "user",
+        content: "Earlier question",
+      });
+      const other =
+        operation === "all"
+          ? store.createChat({
+              title: "Other discussion",
+              context: "projects/orders",
+              select: false,
+            })
+          : undefined;
+      useAgentStore.setState({
+        size: { width, height: 600 },
+        chats: [store.getChat(chat.id)!, ...(other ? [other] : [])],
+      });
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        act(() => {
+          (
+            document.body.querySelector(
+              "[data-agent-contextual-continue]"
+            ) as HTMLButtonElement
+          ).click();
+        });
+        expect(screen.getByTestId("agent-input")).toBeInTheDocument();
+        await openChatList(width);
+        if (operation === "all" && width < 750) {
+          act(() => store.archiveAllActiveChats());
+        } else if (operation === "all") {
+          await act(async () => {
+            (
+              document.body.querySelector(
+                '[data-agent-chat-sidebar-actions] [aria-label="common.more"]'
+              ) as HTMLButtonElement
+            ).click();
+          });
+          await act(async () => {
+            (
+              getLayerRoot("agent").querySelector(
+                "[data-agent-archive-all-chats]"
+              ) as HTMLButtonElement
+            ).click();
+          });
+        } else {
+          await selectChatMenuAction(chat.id, "[data-agent-archive-chat]");
+        }
+        if (operation === "last" || width >= 750) {
+          const confirmation = getLayerRoot("agent").querySelector(
+            operation === "all"
+              ? "[data-agent-archive-all-chats-confirmation]"
+              : "[data-agent-archive-chat-confirmation]"
+          ) as HTMLElement;
+          await act(async () => {
+            within(confirmation)
+              .getByRole("button", { name: "common.archive" })
+              .click();
+          });
+        }
+        expect(store.getChat(chat.id)?.archived).toBe(true);
+        expect(
+          document.body.querySelector('[data-agent-contextual-start="project"]')
+        ).toBeInTheDocument();
+        expect(screen.queryByTestId("agent-input")).toBeNull();
+        expect(useAgentStore.getState().chats).toHaveLength(other ? 2 : 1);
+        expect(
+          useAgentStore.getState().chats.every((entry) => entry.archived)
+        ).toBe(true);
+        expect(store.getMessages(chat.id).at(-1)?.content).toBe(
+          "Earlier question"
+        );
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each([1200, 700, 390])(
+    "still opens an explicitly selected archived conversation at %ipx",
+    async (width) => {
+      const store = useAgentStore.getState();
+      const archived = store.createChat({
+        title: "Saved archived discussion",
+        context: "projects/orders",
+        archived: true,
+      });
+      store.addMessage({
+        chatId: archived.id,
+        role: "user",
+        content: "Saved question",
+      });
+      store.archiveAllActiveChats();
+      useAgentStore.setState({
+        size: { width, height: 600 },
+        currentChatId: null,
+      });
+      mocks.pageResource = {
+        kind: "project",
+        name: "projects/orders",
+        project: "projects/orders",
+      };
+      const count = useAgentStore.getState().chats.length;
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      try {
+        render();
+        await openChatList(width, true);
+        const row = document.body.querySelector(
+          `[data-agent-chat-row="${archived.id}"]`
+        ) as HTMLElement;
+        expect(row).toBeInTheDocument();
+        act(() => row.querySelector<HTMLButtonElement>("button")!.click());
+
+        expect(useAgentStore.getState().currentChatId).toBe(archived.id);
+        expect(
+          document.body.querySelector("[data-agent-contextual-start]")
+        ).toBeNull();
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "agent.chat-archived-notice"
+        );
+        expect(screen.queryByTestId("agent-input")).toBeNull();
+        expect(store.getChat(archived.id)?.archived).toBe(true);
+        expect(store.getMessages(archived.id).at(-1)?.content).toBe(
+          "Saved question"
+        );
+        expect(useAgentStore.getState().chats).toHaveLength(count);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test("keeps the existing conversation when the visible chat group is collapsed or archived browsing is empty", async () => {
+    const store = useAgentStore.getState();
+    const chat = store.createChat({
+      title: "Current discussion",
+      context: "projects/orders",
+      workspaceName: mocks.workspace.name,
+    });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Question" });
+    mocks.pageResource = {
+      kind: "project",
+      name: "projects/orders",
+      project: "projects/orders",
+    };
+    const { render, unmount } = renderIntoContainer(<AgentWindow />);
+    try {
+      render();
+      act(() => {
+        (
+          document.body.querySelector(
+            "[data-agent-contextual-continue]"
+          ) as HTMLButtonElement
+        ).click();
+      });
+      const group = document.body.querySelector(
+        '[data-agent-chat-group-toggle="projects/orders"]'
+      ) as HTMLButtonElement;
+      act(() => group.click());
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${chat.id}"]`)
+      ).toBeNull();
+      expect(screen.getByTestId("agent-input")).toBeInTheDocument();
+      expect(
+        document.body.querySelector("[data-agent-contextual-start]")
+      ).toBeNull();
+      await openChatList(1200, true);
+      expect(
+        document.body.querySelector(`[data-agent-chat-row="${chat.id}"]`)
+      ).toBeNull();
+      expect(useAgentStore.getState().currentChatId).toBe(chat.id);
+      expect(screen.getByTestId("agent-input")).toBeInTheDocument();
+      expect(
+        document.body.querySelector("[data-agent-contextual-start]")
+      ).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
 });
 
 test("shows an empty start on general pages without discarding the previous discussion", () => {
