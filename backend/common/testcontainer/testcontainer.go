@@ -554,6 +554,48 @@ func getCassandraContainer(ctx context.Context) (retC *Container, retErr error) 
 	}, spec{port: "9042/tcp"})
 }
 
+// hiveSite is the pinned HiveServer2's hive-site.xml, mounted beside the image's
+// own configuration. Hive 4 turns a CREATE TABLE into an external table; with
+// strict managed tables off, ALTER TABLE ... SET TBLPROPERTIES('EXTERNAL'='FALSE')
+// stores a managed one, which is what the sync's managed-table branch reads.
+// The warehouse stays on the container's filesystem: the image has no HDFS.
+const hiveSite = `<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>hive.strict.managed.tables</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>file:/opt/hive/data/warehouse</value>
+  </property>
+</configuration>
+`
+
+// getHiveContainer starts a HiveServer2 with the image's embedded Derby
+// metastore. It is the image omni pins, so the two suites read the same server.
+func getHiveContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "apache/hive:4.0.1",
+		Env:   map[string]string{"SERVICE_NAME": "hiveserver2"},
+		Files: []testcontainers.ContainerFile{{
+			Reader:            strings.NewReader(hiveSite),
+			ContainerFilePath: "/opt/hive/conf/hive-site.xml",
+			FileMode:          0o644,
+		}},
+		// The log line states HiveServer2 started; its thrift endpoint answers a
+		// little later, and waitDBPing covers that gap.
+		WaitingFor: wait.ForLog("Starting HiveServer2").WithStartupTimeout(5 * time.Minute),
+	}, spec{
+		port:     "10000/tcp",
+		username: "hive",
+		driver:   "hive",
+		dsn: func(c *Container) string {
+			return fmt.Sprintf("hive://%s@%s:%s/default?auth=NONE&service=hive", c.username, c.host, c.port)
+		},
+	})
+}
+
 func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr error) {
 	c, err := start(ctx, testcontainers.ContainerRequest{
 		Image: "redis:7.4.12-alpine",
