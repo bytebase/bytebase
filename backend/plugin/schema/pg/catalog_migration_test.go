@@ -870,11 +870,11 @@ func TestReleaseMovesTheAttributeNamedLikeItsType(t *testing.T) {
 func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 	selected := map[string]bool{objectKey("a.b", "c"): true}
 	other := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a"."b.c" IS 'new'`}
-	require.False(t, opTargetsSelected(other, selected, nil, nil), "the other view's comment is not the selected view's")
+	require.False(t, opTargetsSelected(other, selected, nil, nil, nil), "the other view's comment is not the selected view's")
 	own := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a.b"."c" IS 'new'`}
-	require.True(t, opTargetsSelected(own, selected, nil, nil))
+	require.True(t, opTargetsSelected(own, selected, nil, nil, nil))
 	column := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON COLUMN "a.b"."c"."id" IS 'id'`}
-	require.True(t, opTargetsSelected(column, selected, nil, nil), "an accessory of the selected view belongs to it")
+	require.True(t, opTargetsSelected(column, selected, nil, nil, nil), "an accessory of the selected view belongs to it")
 }
 
 // TestCreatedTableRowTypeOrdersItsProviderFirst covers two tables created in one
@@ -951,6 +951,58 @@ func TestAccessoryCommentsGoWithTheRestoredView(t *testing.T) {
 	require.Less(t, strings.Index(sql, `CREATE VIEW "public"."upper"`), triggerComment, sql)
 }
 
+// TestTargetOnlyIndexCommentGoesWithItsMatView covers an index comment on a
+// materialized view the target adds that depends on a restored view: the index
+// exists only in the target metadata, and the comment must go with the recreation
+// rather than run before it.
+func TestTargetOnlyIndexCommentGoesWithItsMatView(t *testing.T) {
+	snapshot := func(columnType string, addMaterializedView bool) *model.DatabaseMetadata {
+		schemaMeta := &metadatapb.SchemaMetadata{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "lower",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+		}
+		if addMaterializedView {
+			schemaMeta.MaterializedViews = []*metadatapb.MaterializedViewMetadata{{
+				Name:       "mv",
+				Definition: "SELECT id FROM public.lower",
+				Indexes:    []*metadatapb.IndexMetadata{{Name: "idx_mv", Expressions: []string{"id"}, Comment: "the index"}},
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "lower",
+				}},
+			}}
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schemaMeta}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
+	require.NoError(t, err)
+	comment := strings.Index(sql, `COMMENT ON INDEX "public"."idx_mv" IS 'the index'`)
+	require.GreaterOrEqual(t, comment, 0, sql)
+	require.Equal(t, 1, strings.Count(sql, `COMMENT ON INDEX "public"."idx_mv"`), "the index comment is emitted once, with the recreation")
+	require.Less(t, strings.Index(sql, `CREATE MATERIALIZED VIEW "public"."mv"`), comment, sql)
+}
+
+// TestRemoveCompositeAttributeOpsKeepsUnrelatedComments keeps a comment whose
+// value mentions the rebuilt attribute with its own object.
+func TestRemoveCompositeAttributeOpsKeepsUnrelatedComments(t *testing.T) {
+	ops := []catalog.MigrationOp{
+		{Type: catalog.OpComment, SchemaName: "public", ObjectName: "other", SQL: `COMMENT ON TABLE "public"."other" IS 'mentions "public"."c"."a"'`},
+		{Type: catalog.OpComment, SchemaName: "public", ObjectName: "c", SQL: `COMMENT ON COLUMN "public"."c"."a" IS 'rebuilt'`},
+		{Type: catalog.OpComment, SchemaName: "public", ObjectName: "c", SQL: `COMMENT ON COLUMN "public"."c"."ab" IS 'sibling'`},
+	}
+	got := removeCompositeAttributeOps(ops, "public", "c", "a")
+	require.Len(t, got, 2, "only the rebuilt attribute's comment is removed")
+	require.Contains(t, got[0].SQL, `"public"."other"`)
+	require.Contains(t, got[1].SQL, `"public"."c"."ab"`)
+}
+
 // TestOpTargetsSelectedParsesCommentTargets covers COMMENT ON statements whose
 // text contains a selected view's name without targeting it: an escaped quote can
 // spell another owner, and a function of that name shares the schema.
@@ -971,7 +1023,7 @@ func TestOpTargetsSelectedParsesCommentTargets(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			op := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b", SQL: tc.sql}
-			require.Equal(t, tc.claims, opTargetsSelected(op, selected, nil, nil), tc.sql)
+			require.Equal(t, tc.claims, opTargetsSelected(op, selected, nil, nil, nil), tc.sql)
 		})
 	}
 }
@@ -1007,7 +1059,7 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "t",
 		SQL:          `CREATE TRIGGER "v" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
 	}
-	require.False(t, opTargetsSelected(trigger, selected, nil, nil), "a trigger named like the view belongs to its own table")
+	require.False(t, opTargetsSelected(trigger, selected, nil, nil, nil), "a trigger named like the view belongs to its own table")
 	onTheView := catalog.MigrationOp{
 		Type:         catalog.OpCreateTrigger,
 		SchemaName:   "public",
@@ -1015,9 +1067,9 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "v",
 		SQL:          `CREATE TRIGGER "audit" AFTER INSERT ON "public"."v" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
 	}
-	require.True(t, opTargetsSelected(onTheView, selected, nil, nil), "a trigger on the selected view belongs to it")
+	require.True(t, opTargetsSelected(onTheView, selected, nil, nil, nil), "a trigger on the selected view belongs to it")
 	view := catalog.MigrationOp{Type: catalog.OpDropView, SchemaName: "public", ObjectName: "v", SQL: `DROP VIEW "public"."v"`}
-	require.True(t, opTargetsSelected(view, selected, nil, nil))
+	require.True(t, opTargetsSelected(view, selected, nil, nil, nil))
 
 	callsTheView := catalog.MigrationOp{
 		Type:         catalog.OpCreateTrigger,
@@ -1026,7 +1078,7 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "t",
 		SQL:          `CREATE TRIGGER "x" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION "public"."v"()`,
 	}
-	require.False(t, opTargetsSelected(callsTheView, selected, nil, nil), "a trigger belongs to its table, not to the function it calls")
+	require.False(t, opTargetsSelected(callsTheView, selected, nil, nil, nil), "a trigger belongs to its table, not to the function it calls")
 }
 
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an

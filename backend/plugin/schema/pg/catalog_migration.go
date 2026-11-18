@@ -474,13 +474,14 @@ func quoteRestoredView(key string) string {
 // attribute, which the release pass rewrites itself.
 func removeCompositeAttributeOps(ops []catalog.MigrationOp, schemaName, compositeName, attributeName string) []catalog.MigrationOp {
 	reference := quoteIdentifier(attributeName)
-	column := quoteQualified(schemaName, compositeName) + "." + reference
 	return slices.DeleteFunc(ops, func(op catalog.MigrationOp) bool {
 		switch op.Type {
 		case catalog.OpAlterType:
 			return op.SchemaName == schemaName && op.ObjectName == compositeName && strings.Contains(op.SQL, "ATTRIBUTE "+reference)
 		case catalog.OpComment:
-			return strings.Contains(op.SQL, column)
+			target, ok := parseCommentTarget(op.SQL)
+			return ok && target.kind == "COLUMN" && len(target.parts) == 3 &&
+				target.parts[0] == schemaName && target.parts[1] == compositeName && target.parts[2] == attributeName
 		default:
 			return false
 		}
@@ -890,7 +891,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 		}
 	}
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
-		return opTargetsSelected(op, dropped, oldMeta, from)
+		return opTargetsSelected(op, dropped, oldMeta, newMeta, from)
 	})
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(dropOrder) - 1; i >= 0; i-- {
@@ -932,10 +933,10 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 // object. Its accessories (comments, indexes, triggers) are omitted because the
 // synthesized create from metadata already carries them. An accessory is matched
 // through its owner, since a trigger or index name alone can equal a view's.
-func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata, from *catalog.Catalog) bool {
+func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, from *catalog.Catalog) bool {
 	switch op.Type {
 	case catalog.OpComment:
-		return commentTargetsSelected(op.SQL, selected, oldMeta)
+		return commentTargetsSelected(op.SQL, selected, oldMeta, newMeta)
 	case catalog.OpCreateView, catalog.OpAlterView, catalog.OpDropView:
 		return selected[objectKey(op.SchemaName, op.ObjectName)]
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
@@ -961,62 +962,93 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	return false
 }
 
+// commentTarget is a parsed COMMENT ON target: the object kind, its identifiers,
+// and for a trigger or policy the relation after ON.
+type commentTarget struct {
+	kind  string
+	parts []string
+	on    []string
+}
+
+// parseCommentTarget reads a COMMENT ON statement's target instead of searching
+// its text, so a comment's value cannot pass for another object's name.
+func parseCommentTarget(sql string) (commentTarget, bool) {
+	rest, ok := strings.CutPrefix(sql, "COMMENT ON ")
+	if !ok {
+		return commentTarget{}, false
+	}
+	var target commentTarget
+	for _, kind := range []string{"MATERIALIZED VIEW", "FOREIGN TABLE", "TABLE", "VIEW", "COLUMN", "INDEX", "TRIGGER"} {
+		if after, found := strings.CutPrefix(rest, kind+" "); found {
+			target.kind, rest = kind, after
+			break
+		}
+	}
+	if target.kind == "" {
+		return commentTarget{}, false
+	}
+	parts, rest, ok := scanIdentifiers(rest)
+	if !ok {
+		return commentTarget{}, false
+	}
+	target.parts = parts
+	rest, found := strings.CutPrefix(rest, "ON ")
+	if !found {
+		return target, true
+	}
+	on, _, ok := scanIdentifiers(rest)
+	if !ok {
+		return commentTarget{}, false
+	}
+	target.on = on
+	return target, true
+}
+
+// scanIdentifiers reads the dotted identifiers at the start of text and returns
+// the remainder, which begins at the first space.
+func scanIdentifiers(text string) ([]string, string, bool) {
+	var parts []string
+	for {
+		name, next, _, ok := scanIdentifier(text, 0)
+		if !ok {
+			return nil, "", false
+		}
+		parts = append(parts, name)
+		if next < len(text) && text[next] == '.' {
+			text = text[next+1:]
+			continue
+		}
+		return parts, strings.TrimSpace(text[next:]), true
+	}
+}
+
 // commentTargetsSelected reports whether a COMMENT ON statement belongs to a
 // selected relation. Its index and trigger comments do too: the synthesized create
 // from metadata carries them.
-func commentTargetsSelected(sql string, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
-	rest, ok := strings.CutPrefix(sql, "COMMENT ON ")
+func commentTargetsSelected(sql string, selected map[string]bool, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) bool {
+	target, ok := parseCommentTarget(sql)
 	if !ok {
 		return false
 	}
-	if target, found := strings.CutPrefix(rest, "INDEX "); found {
-		schemaName, objectName, ok := qualifiedIdentifiers(target)
-		if !ok {
+	switch target.kind {
+	case "INDEX":
+		if len(target.parts) != 2 {
 			return false
 		}
-		return indexNameOwner(oldMeta, schemaName, objectName, selected) != ""
-	}
-	if target, found := strings.CutPrefix(rest, "TRIGGER "); found {
-		_, next, ok := quotedIdentifier(target, 0)
-		if !ok {
+		// A create-only selected relation has its index only in the target.
+		return indexNameOwner(oldMeta, target.parts[0], target.parts[1], selected) != "" ||
+			indexNameOwner(newMeta, target.parts[0], target.parts[1], selected) != ""
+	case "TRIGGER":
+		if len(target.on) != 2 {
 			return false
 		}
-		owner, found := strings.CutPrefix(strings.TrimSpace(target[next:]), "ON ")
-		if !found {
+		return selected[objectKey(target.on[0], target.on[1])]
+	default:
+		if len(target.parts) < 2 {
 			return false
 		}
-		schemaName, objectName, ok := qualifiedIdentifiers(owner)
-		if !ok {
-			return false
-		}
-		return selected[objectKey(schemaName, objectName)]
+		return selected[objectKey(target.parts[0], target.parts[1])]
 	}
-	for _, kind := range []string{"MATERIALIZED VIEW ", "FOREIGN TABLE ", "TABLE ", "VIEW ", "COLUMN "} {
-		if target, found := strings.CutPrefix(rest, kind); found {
-			schemaName, objectName, ok := qualifiedIdentifiers(target)
-			if !ok {
-				return false
-			}
-			return selected[objectKey(schemaName, objectName)]
-		}
-	}
-	return false
-}
-
-// qualifiedIdentifiers returns the schema and object of a qualified identifier.
-func qualifiedIdentifiers(text string) (string, string, bool) {
-	schemaName, next, ok := quotedIdentifier(text, 0)
-	if !ok || next >= len(text) || text[next] != '.' {
-		return "", "", false
-	}
-	objectName, end, ok := quotedIdentifier(text, next+1)
-	if !ok {
-		return "", "", false
-	}
-	if end < len(text) && text[end] != '.' && text[end] != ' ' {
-		return "", "", false
-	}
-	return schemaName, objectName, true
 }
 
 func indexOwnerFromSQL(sql string) (string, string) {
