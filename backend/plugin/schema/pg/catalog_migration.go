@@ -31,11 +31,12 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target schema")
 	}
-	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport); err != nil {
+	sourceDrops := sourceOnlyMissingDrops(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
+	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
 	}
 	diff := catalog.Diff(from, to)
-	if diff.IsEmpty() {
+	if diff.IsEmpty() && len(sourceDrops) == 0 {
 		return "", nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
@@ -53,6 +54,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return "", err
 	}
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
+	plan.Ops = insertSourceOnlyDrops(plan.Ops, sourceDrops)
 	plan = plan.Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
 	})
@@ -911,8 +913,8 @@ func referencedRelation(typeName string, relations map[string]bool, searchPath [
 }
 
 // resolveTypeReference resolves a parsed type name to the object it names. An
-// unqualified name resolves to the first relation in search-path order; without a
-// configured path, the sorted first is a deterministic answer in the absence of one.
+// unqualified name resolves to the first relation in search-path order; an empty
+// path is PostgreSQL's default, which reaches public after any current-user schema.
 func resolveTypeReference(reference typeReference, relations map[string]bool, searchPath []string) (string, bool) {
 	if reference.qualified {
 		for key := range relations {
@@ -923,6 +925,9 @@ func resolveTypeReference(reference typeReference, relations map[string]bool, se
 		}
 		return "", false
 	}
+	if len(searchPath) == 0 {
+		searchPath = []string{"public"}
+	}
 	for _, searchSchema := range searchPath {
 		for key := range relations {
 			schemaName, objectName := splitObjectKey(key)
@@ -931,17 +936,7 @@ func resolveTypeReference(reference typeReference, relations map[string]bool, se
 			}
 		}
 	}
-	var candidates []string
-	for key := range relations {
-		if _, objectName := splitObjectKey(key); reference.object.matches(objectName) {
-			candidates = append(candidates, key)
-		}
-	}
-	if len(candidates) == 0 {
-		return "", false
-	}
-	slices.Sort(candidates)
-	return candidates[0], true
+	return "", false
 }
 
 func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.CompositeTypeMetadata {
@@ -1734,8 +1729,10 @@ func quoteLiteral(text string) string {
 
 // unloadableChanges returns an error naming each object that either load could
 // not install as defined and that the migration would have to write. An object
-// only the source has is dropped, and a stand-in drop needs no definition.
-func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) error {
+// only the source has is dropped, and a drop needs no parsed definition; that
+// covers a stand-in and an object the catalog left out but can still drop from
+// metadata (sourceDrops).
+func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, sourceDrops map[string]catalog.MigrationOp, reports ...*catalog.LoadMetadataReport) error {
 	reasons := make(map[string]error)
 	standIns := make(map[string]bool)
 	for _, report := range reports {
@@ -1757,7 +1754,7 @@ func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, repo
 	oldObjects, newObjects := snapshotObjects(oldMeta), snapshotObjects(newMeta)
 	var changed []string
 	for key, err := range reasons {
-		if standIns[key] && newObjects[key] == nil {
+		if newObjects[key] == nil && (standIns[key] || sourceDrops[key].Type != "") {
 			continue
 		}
 		if !proto.Equal(oldObjects[key], newObjects[key]) {
@@ -1827,6 +1824,198 @@ func routineIdentity(signature, definition string) string {
 		return signature
 	}
 	return definition
+}
+
+// sourceOnlyMissingDrops builds the drops for objects only the source snapshot has
+// and the load left out entirely. The catalog never installed them, so it cannot
+// diff their removal; their metadata still names them, and a drop needs no parsed
+// definition.
+func sourceOnlyMissingDrops(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) map[string]catalog.MigrationOp {
+	missing := make(map[string]bool)
+	for _, report := range reports {
+		for key := range report.Missing {
+			missing[key] = true
+		}
+	}
+	drops := make(map[string]catalog.MigrationOp)
+	if len(missing) == 0 {
+		return drops
+	}
+	newObjects := snapshotObjects(newMeta)
+	add := func(key string, op catalog.MigrationOp) {
+		if !missing[key] || newObjects[key] != nil {
+			return
+		}
+		op.Phase = catalog.PhasePre
+		drops[key] = op
+	}
+	addMissingIndexDrops := func(schemaName, owner string, indexes []*metadatapb.IndexMetadata) {
+		if newObjects["rel:"+schemaName+"."+owner] == nil {
+			return
+		}
+		for _, index := range indexes {
+			key := "idx:" + schemaName + "." + owner + "." + index.GetName()
+			if index.GetIsConstraint() {
+				constraintName := index.GetName()
+				if constraints := index.GetConstraints(); len(constraints) > 0 {
+					constraintName = constraints[0].GetName()
+				}
+				add(key, catalog.MigrationOp{
+					Type:         catalog.OpDropConstraint,
+					SchemaName:   schemaName,
+					ObjectName:   constraintName,
+					ParentObject: owner,
+					SQL:          "ALTER TABLE " + quoteQualified(schemaName, owner) + " DROP CONSTRAINT " + quoteIdentifier(constraintName),
+					ObjType:      'c',
+				})
+				continue
+			}
+			add(key, catalog.MigrationOp{
+				Type:       catalog.OpDropIndex,
+				SchemaName: schemaName,
+				ObjectName: index.GetName(),
+				SQL:        "DROP INDEX " + quoteQualified(schemaName, index.GetName()),
+				ObjType:    'i',
+			})
+		}
+	}
+	addMissingConstraintDrops := func(schemaName, owner string, checks []*metadatapb.CheckConstraintMetadata, excludes []*metadatapb.ExcludeConstraintMetadata, foreignKeys []*metadatapb.ForeignKeyMetadata) {
+		if newObjects["rel:"+schemaName+"."+owner] == nil {
+			return
+		}
+		addConstraint := func(name string) {
+			add("con:"+schemaName+"."+owner+"."+name, catalog.MigrationOp{
+				Type:         catalog.OpDropConstraint,
+				SchemaName:   schemaName,
+				ObjectName:   name,
+				ParentObject: owner,
+				SQL:          "ALTER TABLE " + quoteQualified(schemaName, owner) + " DROP CONSTRAINT " + quoteIdentifier(name),
+				ObjType:      'c',
+			})
+		}
+		for _, check := range checks {
+			addConstraint(check.GetName())
+		}
+		for _, exclude := range excludes {
+			addConstraint(exclude.GetName())
+		}
+		for _, foreignKey := range foreignKeys {
+			addConstraint(foreignKey.GetName())
+		}
+	}
+
+	for _, extension := range oldMeta.GetExtensions() {
+		add("ext:"+extension.GetName(), catalog.MigrationOp{
+			Type:       catalog.OpDropExtension,
+			ObjectName: extension.GetName(),
+			SQL:        "DROP EXTENSION " + quoteIdentifier(extension.GetName()),
+		})
+	}
+	for _, schema := range oldMeta.GetSchemas() {
+		schemaName := schema.GetName()
+		qualified := func(name string) string { return schemaName + "." + name }
+		for _, enum := range schema.GetEnumTypes() {
+			add("type:"+qualified(enum.GetName()), catalog.MigrationOp{
+				Type:       catalog.OpDropType,
+				SchemaName: schemaName,
+				ObjectName: enum.GetName(),
+				SQL:        "DROP TYPE " + quoteQualified(schemaName, enum.GetName()),
+			})
+		}
+		for _, composite := range schema.GetCompositeTypes() {
+			add("type:"+qualified(composite.GetName()), catalog.MigrationOp{
+				Type:       catalog.OpDropType,
+				SchemaName: schemaName,
+				ObjectName: composite.GetName(),
+				SQL:        "DROP TYPE " + quoteQualified(schemaName, composite.GetName()),
+			})
+		}
+		for _, sequence := range schema.GetSequences() {
+			add("seq:"+qualified(sequence.GetName()), catalog.MigrationOp{
+				Type:       catalog.OpDropSequence,
+				SchemaName: schemaName,
+				ObjectName: sequence.GetName(),
+				SQL:        "DROP SEQUENCE " + quoteQualified(schemaName, sequence.GetName()),
+			})
+		}
+		for _, function := range schema.GetFunctions() {
+			key := "func:" + qualified(function.GetName()) + "|" + routineIdentity(function.GetSignature(), function.GetDefinition())
+			add(key, catalog.MigrationOp{
+				Type:       catalog.OpDropFunction,
+				SchemaName: schemaName,
+				ObjectName: function.GetName(),
+				SQL:        "DROP FUNCTION " + quoteQualified(schemaName, function.GetName()) + routineDropArguments(function.GetSignature(), function.GetDefinition()),
+				ObjType:    'f',
+			})
+		}
+		for _, procedure := range schema.GetProcedures() {
+			key := "func:" + qualified(procedure.GetName()) + "|" + routineIdentity(procedure.GetSignature(), procedure.GetDefinition())
+			add(key, catalog.MigrationOp{
+				Type:       catalog.OpDropFunction,
+				SchemaName: schemaName,
+				ObjectName: procedure.GetName(),
+				SQL:        "DROP PROCEDURE " + quoteQualified(schemaName, procedure.GetName()) + routineDropArguments(procedure.GetSignature(), procedure.GetDefinition()),
+				ObjType:    'f',
+			})
+		}
+		for _, table := range schema.GetTables() {
+			addMissingIndexDrops(schemaName, table.GetName(), table.GetIndexes())
+			addMissingConstraintDrops(schemaName, table.GetName(), table.GetCheckConstraints(), table.GetExcludeConstraints(), table.GetForeignKeys())
+			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+				partitionSchema := partition.GetSchema()
+				if partitionSchema == "" {
+					partitionSchema = schemaName
+				}
+				addMissingIndexDrops(partitionSchema, partition.GetName(), partition.GetIndexes())
+				addMissingConstraintDrops(partitionSchema, partition.GetName(), partition.GetCheckConstraints(), partition.GetExcludeConstraints(), nil)
+			})
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			addMissingIndexDrops(schemaName, view.GetName(), view.GetIndexes())
+		}
+	}
+	return drops
+}
+
+// routineDropArguments is the parenthesized argument list a DROP accepts, which
+// names the overload without repeating its name. A routine without one drops by
+// name when its name is unique, as PostgreSQL allows.
+func routineDropArguments(signature, definition string) string {
+	arguments := routineArgumentList(signature)
+	if strings.TrimSpace(arguments) == "" {
+		arguments = routineArgumentList(definition)
+	}
+	if strings.TrimSpace(arguments) == "" {
+		return ""
+	}
+	return "(" + arguments + ")"
+}
+
+// insertSourceOnlyDrops puts the metadata-derived drops after the catalog's own
+// PhasePre drops and before its alterations, so an index or constraint is gone
+// before the column it names changes.
+func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.MigrationOp) []catalog.MigrationOp {
+	if len(drops) == 0 {
+		return ops
+	}
+	keys := make([]string, 0, len(drops))
+	for key := range drops {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	ordered := make([]catalog.MigrationOp, 0, len(drops))
+	for _, key := range keys {
+		ordered = append(ordered, drops[key])
+	}
+	at := 0
+	for at < len(ops) && ops[at].Phase == catalog.PhasePre {
+		at++
+	}
+	result := make([]catalog.MigrationOp, 0, len(ops)+len(ordered))
+	result = append(result, ops[:at]...)
+	result = append(result, ordered...)
+	result = append(result, ops[at:]...)
+	return result
 }
 
 // addTableParts indexes a table's indexes, and maps each of its constraints to the

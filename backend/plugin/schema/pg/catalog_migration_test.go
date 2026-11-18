@@ -286,6 +286,32 @@ func TestSourceOnlyUnloadableObjectsAreDropped(t *testing.T) {
 	require.ErrorContains(t, err, "could not be loaded", "creating an unparseable object is still refused")
 }
 
+// TestSourceOnlyMissingObjectsAreDropped covers an object the catalog cannot
+// install even as a stand-in: a plain index whose expression names no column.
+// Its removal still needs a DROP, which comes from the metadata because the
+// catalog never had the index to diff.
+func TestSourceOnlyMissingObjectsAreDropped(t *testing.T) {
+	snapshot := func(indexes []*metadatapb.IndexMetadata) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:    "t",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+				Indexes: indexes,
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	withIndex := snapshot([]*metadatapb.IndexMetadata{{Name: "t_missing_idx", Expressions: []string{"no_such_column"}, Type: "btree"}})
+	withoutIndex := snapshot(nil)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, withIndex, withoutIndex)
+	require.NoError(t, err)
+	require.Equal(t, `DROP INDEX "public"."t_missing_idx"`, sql)
+
+	_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, withoutIndex, withIndex)
+	require.ErrorContains(t, err, "could not be loaded", "creating an object without a stand-in is still refused")
+}
+
 // TestCockroachMetadataMigrationNoOps pins the cases the old generator covered
 // that produce no migration at all. They have no legacy differential, so they
 // stay out of the cutover fixture.
@@ -870,7 +896,11 @@ func TestCollationChangeRestoresUnloadableView(t *testing.T) {
 // the first visible relation in the search path is the one a type refers to.
 func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	name := "shared"
-	relations := map[string]bool{objectKey("first", name): true, objectKey("second", name): true}
+	relations := map[string]bool{
+		objectKey("first", name):  true,
+		objectKey("second", name): true,
+		objectKey("public", name): true,
+	}
 	require.Equal(t, objectKey("second", name), func() string {
 		key, ok := referencedRelation(name, relations, []string{"second", "first"})
 		require.True(t, ok)
@@ -880,8 +910,10 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, objectKey("first", name), key)
 	key, ok = referencedRelation(name, relations, nil)
-	require.True(t, ok, "without a search path the answer is still deterministic")
-	require.Equal(t, objectKey("first", name), key)
+	require.True(t, ok, "an empty path resolves through the default public schema")
+	require.Equal(t, objectKey("public", name), key)
+	_, ok = referencedRelation(name, map[string]bool{objectKey("first", name): true}, nil)
+	require.False(t, ok, "without public the default path does not choose a schema by key order")
 	key, ok = referencedRelation("first."+name, relations, []string{"second"})
 	require.True(t, ok, "a qualified name ignores the search path")
 	require.Equal(t, objectKey("first", name), key)
