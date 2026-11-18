@@ -49,6 +49,7 @@ package databricks
 import (
 	"context"
 	"io"
+	"strings"
 
 	databricksdriver "github.com/bytebase/omni/databricks/driver"
 	odbdriver "github.com/bytebase/omni/driver"
@@ -150,8 +151,22 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	return d.impl.Execute(ctx, cleaned, odbdriver.ExecuteOptions{
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts},
+		Log:            executeLogger{opts: opts, offset: skippedPrefix(statement, cleaned)},
 	})
+}
+
+// skippedPrefix is the number of bytes the directive removal cut from the head
+// of the caller's script. A task run log with LogCommandStatement off recovers a
+// command's text from the caller's script by range, so the driver's ranges, which
+// name the script it was given, are shifted back by that much.
+func skippedPrefix(script, cleaned string) int32 {
+	if cleaned == "" {
+		return int32(len(script))
+	}
+	if i := strings.Index(script, cleaned); i > 0 {
+		return int32(i)
+	}
+	return 0
 }
 
 // executeLogger reports a script's commands and their responses into the task run
@@ -159,12 +174,16 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // one.
 type executeLogger struct {
 	opts db.ExecuteOptions
+	// offset is the number of bytes the caller's script had before the text the
+	// driver split, so the log's ranges name the caller's script rather than the
+	// cleaned one.
+	offset int32
 }
 
 func (l executeLogger) CommandExecute(command odbdriver.Command) {
 	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart),
-		End:   int32(command.ByteEnd),
+		Start: int32(command.ByteStart) + l.offset,
+		End:   int32(command.ByteEnd) + l.offset,
 	}, command.Text)
 }
 

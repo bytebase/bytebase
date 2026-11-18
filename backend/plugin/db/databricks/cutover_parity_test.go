@@ -349,6 +349,28 @@ func TestCutoverParityExecute(t *testing.T) {
 	}
 }
 
+// A task run log with LogCommandStatement off recovers a command's text from the
+// caller's script by range, so the range must name the script the task ran rather
+// than the one left after the directive line was cut.
+func TestExecuteLogsRangesInTheCallersScript(t *testing.T) {
+	workspace := newParityWorkspace(t)
+	driver := openParityDriver(t, workspace)
+
+	script := "-- txn-mode=off\nINSERT INTO workspace.omni_record.lookup (id, label) VALUES (1, 'x'), (2, 'y')"
+	collector := &parityLogCollector{}
+	_, err := driver.Execute(context.Background(), script, db.ExecuteOptions{CreateTaskRunLog: collector.create})
+	require.NoError(t, err)
+	require.NotEmpty(t, collector.logs)
+
+	var entry storepb.TaskRunLog
+	require.NoError(t, protojson.Unmarshal(collector.logs[0], &entry))
+	command := entry.GetCommandExecute()
+	require.NotNil(t, command)
+	got := script[command.GetRange().GetStart():command.GetRange().GetEnd()]
+	require.NotContains(t, got, "txn-mode")
+	require.Contains(t, got, "INSERT INTO workspace.omni_record.lookup")
+}
+
 func TestCutoverParityDump(t *testing.T) {
 	workspace := newParityWorkspace(t)
 	driver := openParityDriver(t, workspace)
@@ -357,19 +379,16 @@ func TestCutoverParityDump(t *testing.T) {
 	require.NoError(t, driver.Dump(context.Background(), &got, nil))
 	workspace.takeRequests()
 
-	// Known difference: the dump is the server's own SHOW CREATE for every
-	// object, catalogs then schemas then base tables then views in dependency
-	// order, with a view's target catalog-qualified. The old driver's text is in
-	// the record; a materialized view came from DESC FORMATTED, which the
-	// workspace does not accept as a statement.
-	want, err := os.ReadFile(filepath.Join("testdata", "cutover_dump.golden"))
-	require.NoError(t, err)
-	require.Equal(t, string(want), got.String())
-
+	// The dump text is the server's own SHOW CREATE, so its fidelity is
+	// databricks/driver's to test. What this cutover owns is the difference from
+	// the old renderer, whose text is in the record: it wrote the catalog
+	// unquoted and rebuilt a materialized view from DESC FORMATTED, which the
+	// workspace does not accept as a statement, so the old dump did not restore.
 	recording := readParityRecording(t)
 	require.Contains(t, recording.Dump, "CREATE CATALOG workspace\n")
 	require.Contains(t, recording.Dump, "CREATE MATERIALIZED VIEW `workspace`.`omni_record`.`totals`")
 	require.NotContains(t, got.String(), "DESC FORMATTED")
+	require.NotContains(t, got.String(), "CREATE CATALOG workspace\n")
 	require.Contains(t, got.String(), "CREATE VIEW `workspace`.`omni_record`.`recent` AS SELECT id FROM workspace.omni_record.facts")
 }
 
