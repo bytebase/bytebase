@@ -396,7 +396,27 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 }
 
 func containsObjectReference(sql, schema, object string) bool {
-	return strings.Contains(sql, quoteQualified(schema, object)) || strings.Contains(sql, schema+"."+object)
+	if strings.Contains(sql, quoteQualified(schema, object)) {
+		return true
+	}
+	needle := schema + "." + object
+	for start := 0; start < len(sql); {
+		index := strings.Index(sql[start:], needle)
+		if index < 0 {
+			return false
+		}
+		index += start
+		end := index + len(needle)
+		if end == len(sql) || !isIdentifierByte(sql[end]) {
+			return true
+		}
+		start = end
+	}
+	return false
+}
+
+func isIdentifierByte(b byte) bool {
+	return b == '_' || b == '$' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
 
 func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
