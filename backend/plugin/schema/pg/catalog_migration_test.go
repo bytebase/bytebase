@@ -1230,58 +1230,91 @@ func TestDeferredCreatedViewReleasesARetypedAttribute(t *testing.T) {
 
 // TestRestoredViewRefusesRoutinesHoldingItsRowType covers an unchanged routine whose
 // parameter or return type is a restored view's row type: the view drop fails while
-// the routine holds it, and a routine that only mentions the view in its body is
-// not a dependency.
+// the routine holds it. Procedures are routines too, and a routine that only
+// mentions the view in its body is not a dependency.
 func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
-	snapshot := func(columnType string, function *metadatapb.FunctionMetadata) *model.DatabaseMetadata {
-		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+	type world struct {
+		viewName  string
+		function  *metadatapb.FunctionMetadata
+		procedure *metadatapb.ProcedureMetadata
+	}
+	snapshot := func(columnType string, w world) *model.DatabaseMetadata {
+		viewName := w.viewName
+		if viewName == "" {
+			viewName = "v"
+		}
+		schemaMeta := &metadatapb.SchemaMetadata{
 			Name:   "public",
 			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
 			Views: []*metadatapb.ViewMetadata{{
-				Name:       "v",
+				Name:       viewName,
 				Definition: "SELECT FROM",
 				DependencyColumns: []*metadatapb.DependencyColumn{{
 					Schema: "public", Table: "t", Column: "id",
 				}},
 			}},
-			Functions: []*metadatapb.FunctionMetadata{function},
-		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+		}
+		if w.function != nil {
+			schemaMeta.Functions = []*metadatapb.FunctionMetadata{w.function}
+		}
+		if w.procedure != nil {
+			schemaMeta.Procedures = []*metadatapb.ProcedureMetadata{w.procedure}
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{schemaMeta}}, nil, nil, storepb.Engine_COCKROACHDB, true)
 	}
 	tests := []struct {
 		name    string
-		routine *metadatapb.FunctionMetadata
+		world   world
 		refused bool
 	}{
 		{
 			name: "parameter",
-			routine: &metadatapb.FunctionMetadata{
+			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "f",
 				Signature:  "f(public.v)",
 				Definition: "CREATE FUNCTION public.f(public.v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
-			},
+			}},
 			refused: true,
 		},
 		{
 			name: "return type",
-			routine: &metadatapb.FunctionMetadata{
+			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "g",
 				Signature:  "g()",
 				Definition: "CREATE FUNCTION public.g() RETURNS public.v LANGUAGE sql AS $$ SELECT $$",
-			},
+			}},
+			refused: true,
+		},
+		{
+			name: "procedure",
+			world: world{procedure: &metadatapb.ProcedureMetadata{
+				Name:       "p",
+				Signature:  "p(public.v)",
+				Definition: "CREATE PROCEDURE public.p(public.v) LANGUAGE sql AS $$ SELECT 1 $$",
+			}},
+			refused: true,
+		},
+		{
+			name: "partly quoted",
+			world: world{viewName: "V", function: &metadatapb.FunctionMetadata{
+				Name:       "f",
+				Signature:  `f(public."V")`,
+				Definition: `CREATE FUNCTION public.f(public."V") RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$`,
+			}},
 			refused: true,
 		},
 		{
 			name: "body reference",
-			routine: &metadatapb.FunctionMetadata{
+			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",
 				Signature:  "h()",
 				Definition: "CREATE FUNCTION public.h() RETURNS integer LANGUAGE sql AS $$ SELECT 1 FROM public.v $$",
-			},
+			}},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", tc.routine), snapshot("bigint", tc.routine))
+			_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", tc.world), snapshot("bigint", tc.world))
 			if tc.refused {
 				require.ErrorContains(t, err, "uses the row type of view")
 				return

@@ -469,15 +469,27 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
 		for _, schema := range meta.GetSchemas() {
 			for _, function := range schema.GetFunctions() {
-				for key := range restored {
-					schemaName, objectName := splitObjectKey(key)
-					if !namesType(function.GetSignature(), schemaName, objectName) && !namesType(routineReturnClause(function.GetDefinition()), schemaName, objectName) {
-						continue
-					}
-					return errors.Errorf("cannot generate a migration: function %s uses the row type of view %s, which this migration must create", quoteQualified(schema.GetName(), function.GetName()), quoteQualified(schemaName, objectName))
+				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored); err != nil {
+					return err
+				}
+			}
+			for _, procedure := range schema.GetProcedures() {
+				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored); err != nil {
+					return err
 				}
 			}
 		}
+	}
+	return nil
+}
+
+func refuseRoutine(schemaName, name, signature, definition string, restored map[string]bool) error {
+	for key := range restored {
+		viewSchema, viewName := splitObjectKey(key)
+		if !namesType(signature, viewSchema, viewName) && !namesType(routineReturnClause(definition), viewSchema, viewName) {
+			continue
+		}
+		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteQualified(viewSchema, viewName))
 	}
 	return nil
 }
@@ -499,29 +511,33 @@ func routineReturnClause(definition string) string {
 	return rest[:end]
 }
 
-// namesType reports whether text names a relation as a type at an identifier
-// boundary, whether the reference is quoted or not.
+// namesType reports whether text declares a relation as a type. Each qualified
+// identifier is parsed, so a partly quoted reference like `public."V"` matches as
+// well as a fully quoted or unquoted one.
 func namesType(text, schemaName, objectName string) bool {
-	if text == "" {
-		return false
-	}
-	if strings.Contains(text, quoteQualified(schemaName, objectName)) {
-		return true
-	}
-	needle := schemaName + "." + objectName
-	for start := 0; start < len(text); {
-		index := strings.Index(text[start:], needle)
-		if index < 0 {
-			return false
+	for start := 0; start < len(text); start++ {
+		if start > 0 && !startsDeclaration(text[start-1]) {
+			continue
 		}
-		index += start
-		end := index + len(needle)
-		if (index == 0 || !isIdentifierByte(text[index-1])) && (end == len(text) || !isIdentifierByte(text[end])) {
+		reference, ok := parseTypeReference(text[start:])
+		if !ok || !reference.qualified {
+			continue
+		}
+		if reference.schema.matches(schemaName) && reference.object.matches(objectName) {
 			return true
 		}
-		start = end
 	}
 	return false
+}
+
+// startsDeclaration reports whether b can precede a type name in a declaration.
+func startsDeclaration(b byte) bool {
+	switch b {
+	case ' ', '\t', '\n', '\r', '(', ',', ';', '[':
+		return true
+	default:
+		return false
+	}
 }
 
 func quoteRestoredView(key string) string {
