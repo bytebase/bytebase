@@ -900,6 +900,15 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 	require.True(t, opTargetsSelected(onTheView, selected, nil), "a trigger on the selected view belongs to it")
 	view := catalog.MigrationOp{Type: catalog.OpDropView, SchemaName: "public", ObjectName: "v", SQL: `DROP VIEW "public"."v"`}
 	require.True(t, opTargetsSelected(view, selected, nil))
+
+	callsTheView := catalog.MigrationOp{
+		Type:         catalog.OpCreateTrigger,
+		SchemaName:   "public",
+		ObjectName:   "x",
+		ParentObject: "t",
+		SQL:          `CREATE TRIGGER "x" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION "public"."v"()`,
+	}
+	require.False(t, opTargetsSelected(callsTheView, selected, nil), "a trigger belongs to its table, not to the function it calls")
 }
 
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an

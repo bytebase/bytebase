@@ -973,12 +973,9 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 		}
 		return indexNameOwner(oldMeta, op.SchemaName, op.ObjectName, selected) != ""
 	case catalog.OpCreateTrigger, catalog.OpDropTrigger:
-		for key := range selected {
-			schemaName, objectName := splitObjectKey(key)
-			if containsObjectReference(op.SQL, schemaName, objectName) {
-				return true
-			}
-		}
+		// A trigger's owner is its table, which the operation carries; its
+		// statement also names the function it calls.
+		return selected[objectKey(op.SchemaName, op.ParentObject)]
 	default:
 	}
 	return false
