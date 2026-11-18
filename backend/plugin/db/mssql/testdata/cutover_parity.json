@@ -61,6 +61,30 @@
       ]
     },
     {
+      "name": "setup table with a trigger",
+      "script": "CREATE TABLE dbo.cutover_w (id INT PRIMARY KEY, v INT NULL)",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE TABLE dbo.cutover_w (id INT PRIMARY KEY, v INT NULL)\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup instead-of trigger",
+      "script": "CREATE TRIGGER cutover_w_trg ON dbo.cutover_w INSTEAD OF INSERT AS BEGIN INSERT INTO dbo.cutover_w (id, v) SELECT id, v FROM inserted; END",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE TRIGGER cutover_w_trg ON dbo.cutover_w INSTEAD OF INSERT AS BEGIN INSERT INTO dbo.cutover_w (id, v) SELECT id, v FROM inserted; END\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
       "name": "setup procedure",
       "script": "CREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END",
       "affected": 0,
@@ -136,11 +160,11 @@
       "name": "failing statement",
       "script": "INSERT INTO dbo.cutover_t (code) VALUES ('j');\nINSERT INTO dbo.cutover_t (id) VALUES (1);",
       "affected": 0,
-      "error": "failed to execute statement: Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 2\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
+      "error": "failed to execute statement: Msg 544, Level 16, State 1, Server d4e00dd202d9, Line 2\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
       "logs": [
         "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
         "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('j');\\nINSERT INTO dbo.cutover_t (id) VALUES (1);\"}",
-        "type:COMMAND_RESPONSE command_response:{error:\"failed to execute statement: Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 2\\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.\"}",
+        "type:COMMAND_RESPONSE command_response:{error:\"failed to execute statement: Msg 544, Level 16, State 1, Server d4e00dd202d9, Line 2\\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.\"}",
         "type:TRANSACTION_CONTROL transaction_control:{type:ROLLBACK}"
       ]
     }
@@ -476,7 +500,7 @@
           ],
           "rows": [
             [
-              "string_value:\"\u003cShowPlanXML xmlns=\\\"http://schemas.microsoft.com/sqlserver/2004/07/showplan\\\" Version=\\\"1.564\\\" Build=\\\"16.0.4325.4\\\"\u003e\u003cBatchSequence\u003e\u003cBatch\u003e\u003cStatements\u003e\u003cStmtSimple StatementText=\\\"SELECT * FROM dbo.cutover_t\\\" StatementId=\\\"1\\\" StatementCompId=\\\"1\\\" StatementType=\\\"SELECT\\\" RetrievedFromCache=\\\"false\\\" StatementSubTreeCost=\\\"0.0032919\\\" StatementEstRows=\\\"9\\\" SecurityPolicyApplied=\\\"false\\\" StatementOptmLevel=\\\"TRIVIAL\\\" QueryHash=\\\"0x8F117ABB64F41EE6\\\" QueryPlanHash=\\\"0x3315B1E7BC7D74A6\\\" CardinalityEstimationModelVersion=\\\"160\\\"\u003e\u003cStatementSetOptions QUOTED_IDENTIFIER=\\\"true\\\" ARITHABORT=\\\"false\\\" CONCAT_NULL_YIELDS_NULL=\\\"true\\\" ANSI_NULLS=\\\"true\\\" ANSI_PADDING=\\\"true\\\" ANSI_WARNINGS=\\\"true\\\" NUMERIC_ROUNDABORT=\\\"false\\\"\u003e\u003c/StatementSetOptions\u003e\u003cQueryPlan NonParallelPlanReason=\\\"NoParallelPlansInDesktopOrExpressEdition\\\" CachedPlanSize=\\\"16\\\" CompileTime=\\\"0\\\" CompileCPU=\\\"0\\\" CompileMemory=\\\"96\\\"\u003e\u003cMemoryGrantInfo SerialRequiredMemory=\\\"0\\\" SerialDesiredMemory=\\\"0\\\" GrantedMemory=\\\"0\\\" MaxUsedMemory=\\\"0\\\"\u003e\u003c/MemoryGrantInfo\u003e\u003cOptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant=\\\"328550\\\" EstimatedPagesCached=\\\"164275\\\" EstimatedAvailableDegreeOfParallelism=\\\"4\\\" MaxCompileMemory=\\\"14612488\\\"\u003e\u003c/OptimizerHardwareDependentProperties\u003e\u003cTraceFlags IsCompileTime=\\\"1\\\"\u003e\u003cTraceFlag Value=\\\"8017\\\" Scope=\\\"Global\\\"\u003e\u003c/TraceFlag\u003e\u003c/TraceFlags\u003e\u003cRelOp NodeId=\\\"0\\\" PhysicalOp=\\\"Clustered Index Scan\\\" LogicalOp=\\\"Clustered Index Scan\\\" EstimateRows=\\\"9\\\" EstimatedRowsRead=\\\"9\\\" EstimateIO=\\\"0.003125\\\" EstimateCPU=\\\"0.0001669\\\" AvgRowSize=\\\"104\\\" EstimatedTotalSubtreeCost=\\\"0.0032919\\\" TableCardinality=\\\"9\\\" Parallel=\\\"0\\\" EstimateRebinds=\\\"0\\\" EstimateRewinds=\\\"0\\\" EstimatedExecutionMode=\\\"Row\\\"\u003e\u003cOutputList\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/OutputList\u003e\u003cIndexScan Ordered=\\\"0\\\" ForcedIndex=\\\"0\\\" ForceScan=\\\"0\\\" NoExpandHint=\\\"0\\\" Storage=\\\"RowStore\\\"\u003e\u003cDefinedValues\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003c/DefinedValues\u003e\u003cObject Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Index=\\\"[PK__cutover___3213E83FD45949C5]\\\" IndexKind=\\\"Clustered\\\" Storage=\\\"RowStore\\\"\u003e\u003c/Object\u003e\u003c/IndexScan\u003e\u003c/RelOp\u003e\u003c/QueryPlan\u003e\u003c/StmtSimple\u003e\u003c/Statements\u003e\u003c/Batch\u003e\u003c/BatchSequence\u003e\u003c/ShowPlanXML\u003e\""
+              "string_value:\"\u003cShowPlanXML xmlns=\\\"http://schemas.microsoft.com/sqlserver/2004/07/showplan\\\" Version=\\\"1.564\\\" Build=\\\"16.0.4325.4\\\"\u003e\u003cBatchSequence\u003e\u003cBatch\u003e\u003cStatements\u003e\u003cStmtSimple StatementText=\\\"SELECT * FROM dbo.cutover_t\\\" StatementId=\\\"1\\\" StatementCompId=\\\"1\\\" StatementType=\\\"SELECT\\\" RetrievedFromCache=\\\"false\\\" StatementSubTreeCost=\\\"0.0032919\\\" StatementEstRows=\\\"9\\\" SecurityPolicyApplied=\\\"false\\\" StatementOptmLevel=\\\"TRIVIAL\\\" QueryHash=\\\"0x8F117ABB64F41EE6\\\" QueryPlanHash=\\\"0x3315B1E7BC7D74A6\\\" CardinalityEstimationModelVersion=\\\"160\\\"\u003e\u003cStatementSetOptions QUOTED_IDENTIFIER=\\\"true\\\" ARITHABORT=\\\"false\\\" CONCAT_NULL_YIELDS_NULL=\\\"true\\\" ANSI_NULLS=\\\"true\\\" ANSI_PADDING=\\\"true\\\" ANSI_WARNINGS=\\\"true\\\" NUMERIC_ROUNDABORT=\\\"false\\\"\u003e\u003c/StatementSetOptions\u003e\u003cQueryPlan NonParallelPlanReason=\\\"NoParallelPlansInDesktopOrExpressEdition\\\" CachedPlanSize=\\\"16\\\" CompileTime=\\\"0\\\" CompileCPU=\\\"0\\\" CompileMemory=\\\"96\\\"\u003e\u003cMemoryGrantInfo SerialRequiredMemory=\\\"0\\\" SerialDesiredMemory=\\\"0\\\" GrantedMemory=\\\"0\\\" MaxUsedMemory=\\\"0\\\"\u003e\u003c/MemoryGrantInfo\u003e\u003cOptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant=\\\"328550\\\" EstimatedPagesCached=\\\"164275\\\" EstimatedAvailableDegreeOfParallelism=\\\"4\\\" MaxCompileMemory=\\\"17730752\\\"\u003e\u003c/OptimizerHardwareDependentProperties\u003e\u003cTraceFlags IsCompileTime=\\\"1\\\"\u003e\u003cTraceFlag Value=\\\"8017\\\" Scope=\\\"Global\\\"\u003e\u003c/TraceFlag\u003e\u003c/TraceFlags\u003e\u003cRelOp NodeId=\\\"0\\\" PhysicalOp=\\\"Clustered Index Scan\\\" LogicalOp=\\\"Clustered Index Scan\\\" EstimateRows=\\\"9\\\" EstimatedRowsRead=\\\"9\\\" EstimateIO=\\\"0.003125\\\" EstimateCPU=\\\"0.0001669\\\" AvgRowSize=\\\"104\\\" EstimatedTotalSubtreeCost=\\\"0.0032919\\\" TableCardinality=\\\"9\\\" Parallel=\\\"0\\\" EstimateRebinds=\\\"0\\\" EstimateRewinds=\\\"0\\\" EstimatedExecutionMode=\\\"Row\\\"\u003e\u003cOutputList\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/OutputList\u003e\u003cIndexScan Ordered=\\\"0\\\" ForcedIndex=\\\"0\\\" ForceScan=\\\"0\\\" NoExpandHint=\\\"0\\\" Storage=\\\"RowStore\\\"\u003e\u003cDefinedValues\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003c/DefinedValues\u003e\u003cObject Database=\\\"[parity_1794980357417110787]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Index=\\\"[PK__cutover___3213E83FF32FE3AD]\\\" IndexKind=\\\"Clustered\\\" Storage=\\\"RowStore\\\"\u003e\u003c/Object\u003e\u003c/IndexScan\u003e\u003c/RelOp\u003e\u003c/QueryPlan\u003e\u003c/StmtSimple\u003e\u003c/Statements\u003e\u003c/Batch\u003e\u003c/BatchSequence\u003e\u003c/ShowPlanXML\u003e\""
             ]
           ],
           "error": "",
@@ -559,20 +583,20 @@
               "null_value:NULL_VALUE"
             ],
             [
-              "string_value:\"  |--Clustered Index Scan(OBJECT:([parity_1794978390610140815].[dbo].[cutover_t].[PK__cutover___3213E83FD45949C5]))\"",
+              "string_value:\"  |--Clustered Index Scan(OBJECT:([parity_1794980357417110787].[dbo].[cutover_t].[PK__cutover___3213E83FF32FE3AD]))\"",
               "int64_value:1",
               "int64_value:2",
               "int64_value:1",
               "string_value:\"Clustered Index Scan\"",
               "string_value:\"Clustered Index Scan\"",
-              "string_value:\"OBJECT:([parity_1794978390610140815].[dbo].[cutover_t].[PK__cutover___3213E83FD45949C5])\"",
-              "string_value:\"[parity_1794978390610140815].[dbo].[cutover_t].[id], [parity_1794978390610140815].[dbo].[cutover_t].[code], [parity_1794978390610140815].[dbo].[cutover_t].[amount], [parity_1794978390610140815].[dbo].[cutover_t].[at], [parity_1794978390610140815].[dbo].[cutover_t].[flag], [parity_1794978390610140815].[dbo].[cutover_t].[bin], [parity_1794978390610140815].[dbo].[cutover_t].[note]\"",
+              "string_value:\"OBJECT:([parity_1794980357417110787].[dbo].[cutover_t].[PK__cutover___3213E83FF32FE3AD])\"",
+              "string_value:\"[parity_1794980357417110787].[dbo].[cutover_t].[id], [parity_1794980357417110787].[dbo].[cutover_t].[code], [parity_1794980357417110787].[dbo].[cutover_t].[amount], [parity_1794980357417110787].[dbo].[cutover_t].[at], [parity_1794980357417110787].[dbo].[cutover_t].[flag], [parity_1794980357417110787].[dbo].[cutover_t].[bin], [parity_1794980357417110787].[dbo].[cutover_t].[note]\"",
               "double_value:9",
               "double_value:0.0031250000465661287",
               "double_value:0.0001669000048423186",
               "int64_value:104",
               "double_value:0.003291900036856532",
-              "string_value:\"[parity_1794978390610140815].[dbo].[cutover_t].[id], [parity_1794978390610140815].[dbo].[cutover_t].[code], [parity_1794978390610140815].[dbo].[cutover_t].[amount], [parity_1794978390610140815].[dbo].[cutover_t].[at], [parity_1794978390610140815].[dbo].[cutover_t].[flag], [parity_1794978390610140815].[dbo].[cutover_t].[bin], [parity_1794978390610140815].[dbo].[cutover_t].[note]\"",
+              "string_value:\"[parity_1794980357417110787].[dbo].[cutover_t].[id], [parity_1794980357417110787].[dbo].[cutover_t].[code], [parity_1794980357417110787].[dbo].[cutover_t].[amount], [parity_1794980357417110787].[dbo].[cutover_t].[at], [parity_1794980357417110787].[dbo].[cutover_t].[flag], [parity_1794980357417110787].[dbo].[cutover_t].[bin], [parity_1794980357417110787].[dbo].[cutover_t].[note]\"",
               "null_value:NULL_VALUE",
               "string_value:\"PLAN_ROW\"",
               "int64_value:0",
@@ -686,7 +710,7 @@
       "format": "EXPLAIN_FORMAT_UNSPECIFIED",
       "masking": false,
       "max_bytes": 1073741824,
-      "call_error": "Msg 8134, Level 16, State 1, Server 8e26858cf2c9, Line 1\nDivide by zero error encountered.",
+      "call_error": "Msg 8134, Level 16, State 1, Server d4e00dd202d9, Line 1\nDivide by zero error encountered.",
       "results": null
     },
     {
@@ -697,7 +721,7 @@
       "format": "EXPLAIN_FORMAT_UNSPECIFIED",
       "masking": false,
       "max_bytes": 1073741824,
-      "call_error": "Msg 8134, Level 16, State 1, Server 8e26858cf2c9, Line 3\nDivide by zero error encountered.",
+      "call_error": "Msg 8134, Level 16, State 1, Server d4e00dd202d9, Line 3\nDivide by zero error encountered.",
       "results": null
     },
     {
@@ -719,7 +743,7 @@
       "format": "EXPLAIN_FORMAT_UNSPECIFIED",
       "masking": false,
       "max_bytes": 1073741824,
-      "call_error": "Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 1\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
+      "call_error": "Msg 544, Level 16, State 1, Server d4e00dd202d9, Line 1\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
       "results": [
         {
           "statement": "EXEC dbo.cutover_two_sets;",
@@ -776,5 +800,5 @@
       "results": null
     }
   ],
-  "dump": "CREATE TABLE [dbo].[cutover_t] (\n    [id] int IDENTITY(1,1) NOT NULL,\n    [code] varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,\n    [amount] decimal(18, 2),\n    [at] datetimeoffset,\n    [flag] bit DEFAULT ((0)) NOT NULL,\n    [bin] varbinary(10),\n    [note] nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS DEFAULT ('it''s') NOT NULL,\n    CONSTRAINT [PK__cutover___3213E83FD45949C5] PRIMARY KEY CLUSTERED ([id] ASC)\n);\n\nCREATE TABLE [dbo].[cutover_u] (\n    [id] int NOT NULL,\n    [s_id] int NOT NULL,\n    [v] int,\n    CONSTRAINT [PK__cutover___3213E83F8FCFF960] PRIMARY KEY CLUSTERED ([id] ASC),\n    CONSTRAINT [cutover_fk] FOREIGN KEY ([s_id]) REFERENCES [dbo].[cutover_t] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION,\n    CONSTRAINT [cutover_v_check] CHECK ([v]\u003e=(0))\n);\n\nCREATE NONCLUSTERED INDEX [cutover_filtered] ON\n[dbo].[cutover_u] (\n    [s_id] ASC,\n    [v] ASC\n);\n\nGO\n\nCREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code \u003c\u003e '';\n\nGO\n\nCREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;;\n\nGO\n\nCREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END\n\nGO\n\n"
+  "dump": "CREATE TABLE [dbo].[cutover_t] (\n    [id] int IDENTITY(1,1) NOT NULL,\n    [code] varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,\n    [amount] decimal(18, 2),\n    [at] datetimeoffset,\n    [flag] bit DEFAULT ((0)) NOT NULL,\n    [bin] varbinary(10),\n    [note] nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS DEFAULT ('it''s') NOT NULL,\n    CONSTRAINT [PK__cutover___3213E83FF32FE3AD] PRIMARY KEY CLUSTERED ([id] ASC)\n);\n\nCREATE TABLE [dbo].[cutover_w] (\n    [id] int NOT NULL,\n    [v] int,\n    CONSTRAINT [PK__cutover___3213E83F99D7BA22] PRIMARY KEY CLUSTERED ([id] ASC)\n);\n\nCREATE TABLE [dbo].[cutover_u] (\n    [id] int NOT NULL,\n    [s_id] int NOT NULL,\n    [v] int,\n    CONSTRAINT [PK__cutover___3213E83FB52A287B] PRIMARY KEY CLUSTERED ([id] ASC),\n    CONSTRAINT [cutover_fk] FOREIGN KEY ([s_id]) REFERENCES [dbo].[cutover_t] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION,\n    CONSTRAINT [cutover_v_check] CHECK ([v]\u003e=(0))\n);\n\nCREATE NONCLUSTERED INDEX [cutover_filtered] ON\n[dbo].[cutover_u] (\n    [s_id] ASC,\n    [v] ASC\n);\n\nGO\n\nCREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code \u003c\u003e '';\n\nGO\n\nCREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;;\n\nGO\n\nCREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END\n\nGO\n\n"
 }

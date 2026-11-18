@@ -71,6 +71,8 @@ func parityExecuteCorpus() []struct{ name, script string } {
 		{name: "setup filtered index", script: `CREATE INDEX cutover_filtered ON dbo.cutover_u (v) INCLUDE (s_id) WHERE v IS NOT NULL`},
 		{name: "setup view", script: `CREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code <> ''`},
 		{name: "setup view with a semicolon", script: "CREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;"},
+		{name: "setup table with a trigger", script: "CREATE TABLE dbo.cutover_w (id INT PRIMARY KEY, v INT NULL)"},
+		{name: "setup instead-of trigger", script: "CREATE TRIGGER cutover_w_trg ON dbo.cutover_w INSTEAD OF INSERT AS BEGIN INSERT INTO dbo.cutover_w (id, v) SELECT id, v FROM inserted; END"},
 		{name: "setup procedure", script: `CREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END`},
 		{name: "setup sequence", script: `CREATE SEQUENCE dbo.cutover_seq AS DECIMAL(18,0) START WITH 10 INCREMENT BY 5 MINVALUE 1 MAXVALUE 1000 CACHE 20`},
 		{name: "setup rows", script: `INSERT INTO dbo.cutover_t (code, amount, at, bin) VALUES ('a', 1.50, '2024-01-02T03:04:05.1234567+02:00', 0x0102), ('b', NULL, NULL, 0x), ('c', 2.25, NULL, NULL)`},
@@ -283,17 +285,28 @@ func TestCutoverParityAgainstRecordedOldPath(t *testing.T) {
 		})
 	}
 
-	// The dump moves where omni's renderer and sync are better, which
-	// dump_test.go pins; the recording holds what the old renderer wrote, so the
-	// difference is stated rather than compared.
+	// The dump is where the cutover most visibly moves: the recording is what
+	// the old renderer wrote for the same synced schema, and each assertion
+	// below states one difference the new renderer makes. omni's driver suite
+	// owns the rendering's own fidelity; this is the cutover's evidence.
 	require.NotContains(t, golden.Dump, "CREATE SEQUENCE", "the old renderer wrote no sequence")
+	require.NotContains(t, golden.Dump, "CREATE TRIGGER", "the old renderer wrote no trigger")
+	require.NotContains(t, golden.Dump, "datetimeoffset(7)", "the old renderer dropped the precision")
+	require.NotContains(t, golden.Dump, "CONSTRAINT [DF__", "the old renderer dropped a default constraint's name")
 	require.Contains(t, golden.Dump, ";;", "the old renderer doubled a view's semicolon")
 	require.Contains(t, golden.Dump, "[s_id] ASC", "the old renderer made an INCLUDE column a key column")
+	require.NotContains(t, golden.Dump, "WHERE ([v] IS NOT NULL)", "the old renderer dropped the filtered index's predicate")
+
 	var newDump bytes.Buffer
 	metadata, err := opened.SyncDBSchema(ctx)
 	require.NoError(t, err)
 	require.NoError(t, opened.Dump(ctx, &newDump, metadata))
-	require.NotContains(t, newDump.String(), ";;")
-	require.NotContains(t, newDump.String(), "[s_id] ASC")
-	require.Contains(t, newDump.String(), "INCLUDE ([s_id])")
+	dump := newDump.String()
+	require.Contains(t, dump, "CREATE SEQUENCE [dbo].[cutover_seq]")
+	require.Contains(t, dump, "CREATE TRIGGER cutover_w_trg")
+	require.Contains(t, dump, "datetimeoffset(7)")
+	require.Contains(t, dump, "CONSTRAINT [DF__")
+	require.NotContains(t, dump, ";;")
+	require.NotContains(t, dump, "[s_id] ASC")
+	require.Contains(t, dump, ") INCLUDE ([s_id])\nWHERE ([v] IS NOT NULL);")
 }

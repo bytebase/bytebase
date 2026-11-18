@@ -4,99 +4,37 @@
 // The conversation with SQL Server — session setup, metadata sync, the catalog's
 // dump, interactive queries and change scripts — is the driver's.
 //
-// The adapter keeps what is product: the data source to contract conversion
-// (the go-mssqldb parameters the old driver composed, its CA file and its
-// parameter precedence), the Azure login as a Config.TokenProvider,
-// QueryContext/ExecuteOptions mapping, the v1pb conversion and the task-run
-// logger.
+// The adapter keeps what is product: the data source to contract conversion (the
+// go-mssqldb parameters, CA file and parameter precedence), the Azure login as a
+// Config.TokenProvider, QueryContext/ExecuteOptions mapping, the v1pb conversion
+// and the task-run logger.
 //
 // Constraints of the engine and the contract, here rather than at each call:
-//   - GetDB returns nil. The driver owns its pool; db.Driver still requires the
-//     method, and every production caller already guards a nil handle. The one
-//     behaviour that changes with it is the editor's session: QueryConn opens
-//     its own session per call, so a script's statements share a connection
-//     while the separate requests of one editor stream no longer do.
-//   - Config.TLS is not set. The data source's TLS settings are go-mssqldb DSN
-//     parameters, and the client's own parse of them is what the old driver and
-//     its tests described; handing the client a *tls.Config instead would move
-//     certificate verification to util's custom verifier and report different
-//     errors for the same failure. The CA therefore travels as the
-//     `certificate` parameter, which go-mssqldb reads only from a path, so the
-//     adapter writes the data source's CA to a temporary file and removes it on
-//     Close. Mutual TLS is not carried: the old driver did not read ssl_cert or
-//     ssl_key either.
-//   - Config.Dial is not set. The driver this replaced never read the SSH
-//     fields, so an SSH data source connected to the direct host; preserving
-//     that is parity, and adding a tunnel is a behavior change of its own.
-//   - Config.ReadOnly is ignored: SQL Server has no read-only session setting
-//     the driver can open.
-//   - QueryContext.Schema is ignored: unqualified names resolve in the
-//     session's default schema, as they did before.
-//   - QueryContext.Limit is enforced by rewriting a statement that returns
-//     rows, and, for the rows a rewrite cannot reach (a procedure call or an
-//     OUTPUT clause), by the driver reading past the limit.
-//   - Execute parses the `-- txn-mode` directive and ignores `-- txn-isolation`,
-//     which the driver this replaced parsed and then dropped: BeginTx ran with
-//     the server's default isolation. The defect is preserved rather than fixed
-//     here.
-//   - A masked procedure call or OUTPUT clause keeps its rows and sets the
-//     result's error, as before; the driver withholds them and states why.
+//   - GetDB returns nil: omni's driver owns its pool, and every production
+//     caller guards a nil handle. QueryConn opens a session per call, so a
+//     script's statements share a connection and separate requests do not.
+//   - Config.TLS is not set: the data source's TLS settings stay go-mssqldb
+//     parameters, so verification, the CA and the TLS minimum are the client's
+//     parse of them; tlsmin is 1.0 unless a parameter sets it. The CA travels as
+//     the `certificate` parameter, which the client reads only from a path, so
+//     the adapter writes it to a temporary file and removes it on Close.
+//   - Config.Dial is not set: an SSH data source is dialled directly, as it was
+//     before this adapter. Adding the tunnel is a separate change.
+//   - Config.ReadOnly is ignored: SQL Server has no read-only session setting.
+//   - QueryContext.Schema is ignored: unqualified names resolve in the session's
+//     default schema.
+//   - QueryContext.Limit rewrites a statement that returns rows; for rows a
+//     rewrite cannot reach (a procedure call, an OUTPUT clause) it is applied as
+//     they are read.
+//   - Execute parses `-- txn-mode` and ignores `-- txn-isolation`, so a
+//     transaction keeps the server's default isolation, as before.
+//   - A masked procedure call or OUTPUT clause keeps its rows and reports the
+//     result's error.
+//   - A count-only statement's result carries one "Affected Rows" row, and
+//     RowsCount counts it.
 //
-// Known differences from the driver this replaced. The first group was measured
-// by running the old path and this adapter over one corpus on the pinned server
-// (the recording is testdata/cutover_parity.json, replayed by
-// cutover_parity_test.go); the second group is read from the two
-// implementations.
-//
-// Measured:
-//   - The synced metadata is the richer one omni's sync reads: an index keeps
-//     its INCLUDE list and its filtered-index WHERE (the old sync made the
-//     INCLUDE column a key column and dropped the predicate), a DATETIMEOFFSET
-//     column keeps its precision, a sequence keeps its type, start, increment,
-//     bounds, cache and cycle, an INSTEAD OF trigger is read from
-//     is_instead_of_trigger where the old sync called it AFTER, and a
-//     check-constraint and foreign-key comment arrive.
-//   - Dump renders through omni's catalog instead of Bytebase's schema renderer:
-//     sequences and triggers are written at all (the old renderer dropped both,
-//     so its dump could not restore them), a filtered index keeps its INCLUDE
-//     list and predicate, a view definition ends with exactly one `;` where the
-//     old renderer wrote the one the server stored plus its own, and a default
-//     constraint keeps the name the server gave it.
-//   - Execute names the statement the server reported a failure at.
-//   - A lone failing QueryConn statement answers with its error on the result
-//     rather than as the call's error; a failure the driver meets while reading
-//     a batch's rows comes back as the client's own text (mssql: ... (N)) rather
-//     than the server messages the old driver unpacked; and a procedure's later
-//     result sets are still returned after every statement's result when a later
-//     batch fails, where the old driver dropped them.
-//   - An empty, non-NULL binary cell is an empty byte value; the old driver
-//     reported NULL for it because it tested the byte slice's length.
-//   - An explain result carries the plan's format in QueryPlan as well as the
-//     plan's rows. The API already labelled it, so nothing the user sees moves.
-//   - The query-result size cap is byte-accurate and does not stop reading the
-//     result set, where the old driver measured proto size at power-of-two row
-//     counts. The same cap can therefore keep a different number of rows; the
-//     "exceeds max allowed output size" message is unchanged.
-//
-// Read from the two implementations:
-//   - SyncInstance states ORDER BY name and wraps a failed query with the
-//     statement text; the corpus's server returned the name order anyway.
-//   - The sync's row-count query is restricted to the synced schemas, which
-//     changes the statement it sends but not a synced table's count, and a
-//     procedure comment is read where the old sync did not.
-//   - A batch of more than one statement reports no affected-rows rows, because
-//     SQL Server delivers a batch's per-statement counts only through the
-//     client's message loop and the driver reads them for a lone statement. The
-//     statements still run, in order, in one request.
-//   - A statement that reports only its affected rows carries RowsCount 1, the
-//     one row the API shows; the old driver left it at 0. The API and the other
-//     engines read the count as len(rows).
-//   - A RECEIVE or READTEXT result is withheld under masking, where the old
-//     driver could not match its rows to its statement and failed the call.
-//   - CountAffectedRows turns SHOWPLAN_ALL off and reports the server's message;
-//     a database the login may not open is driver.ErrNotFound; and an Azure
-//     credential that cannot be built fails at Open rather than at the first
-//     connection.
+// cutover_parity_test.go replays a recording of the driver this replaced over
+// the same corpus and names the cases whose behavior moved.
 package mssql
 
 import (
