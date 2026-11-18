@@ -239,7 +239,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored, searchPath); err != nil {
 		return err
 	}
-	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored); err != nil {
+	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored, searchPath); err != nil {
 		return err
 	}
 	created := relationSet(newMeta, oldMeta)
@@ -447,16 +447,17 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 // refuseRestoredViewRoutines rejects a routine whose parameter or return type is a
 // restored view's row type: the view cannot be dropped while the routine holds it,
 // and the routine's body mentioning the view is not such a dependency.
-func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool) error {
+func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
 	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
+		objects := typeObjects(meta)
 		for _, schema := range meta.GetSchemas() {
 			for _, function := range schema.GetFunctions() {
-				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored); err != nil {
+				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, objects, searchPath); err != nil {
 					return err
 				}
 			}
 			for _, procedure := range schema.GetProcedures() {
-				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored); err != nil {
+				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, objects, searchPath); err != nil {
 					return err
 				}
 			}
@@ -465,22 +466,49 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 	return nil
 }
 
-func refuseRoutine(schemaName, name, signature, definition string, restored map[string]bool) error {
+// typeObjects is every object a type name can resolve to, including a sequence's
+// row type. An unqualified routine type follows search_path, so a same-named
+// earlier object shadows a restored view instead of standing in for it.
+func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
+	objects := make(map[string]bool)
+	for _, schema := range meta.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			objects[objectKey(schema.GetName(), table.GetName())] = true
+		}
+		for _, view := range schema.GetViews() {
+			objects[objectKey(schema.GetName(), view.GetName())] = true
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			objects[objectKey(schema.GetName(), view.GetName())] = true
+		}
+		for _, enum := range schema.GetEnumTypes() {
+			objects[objectKey(schema.GetName(), enum.GetName())] = true
+		}
+		for _, composite := range schema.GetCompositeTypes() {
+			objects[objectKey(schema.GetName(), composite.GetName())] = true
+		}
+		for _, sequence := range schema.GetSequences() {
+			objects[objectKey(schema.GetName(), sequence.GetName())] = true
+		}
+	}
+	return objects
+}
+
+func refuseRoutine(schemaName, name, signature, definition string, restored, objects map[string]bool, searchPath []string) error {
 	for key := range restored {
-		viewSchema, viewName := splitObjectKey(key)
-		if !parametersNameType(routineArgumentList(signature), viewSchema, viewName) &&
-			!parametersNameType(routineArgumentList(definition), viewSchema, viewName) &&
-			!routineResultNamesType(definition, viewSchema, viewName) {
+		if !parametersNameType(routineArgumentList(signature), key, objects, searchPath) &&
+			!parametersNameType(routineArgumentList(definition), key, objects, searchPath) &&
+			!routineResultNamesType(definition, key, objects, searchPath) {
 			continue
 		}
-		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteQualified(viewSchema, viewName))
+		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteRestoredView(key))
 	}
 	return nil
 }
 
 // parametersNameType reports whether an argument list declares the type as a
 // parameter's type. A default expression is not a declaration, so it is cut.
-func parametersNameType(parameters, schemaName, objectName string) bool {
+func parametersNameType(parameters, key string, objects map[string]bool, searchPath []string) bool {
 	depth, start := 0, 0
 	for i := 0; i <= len(parameters); i++ {
 		atEnd := i == len(parameters)
@@ -510,7 +538,7 @@ func parametersNameType(parameters, schemaName, objectName string) bool {
 		if index := indexOutsideQuotes(declaration, "="); index >= 0 {
 			declaration = declaration[:index]
 		}
-		if namesType(declaration, schemaName, objectName) {
+		if namesType(declaration, key, objects, searchPath) {
 			return true
 		}
 		start = i + 1
@@ -562,12 +590,12 @@ func closingQuote(text string, start int, quote byte) int {
 
 // routineResultNamesType reports whether a routine's result declaration names the
 // type: its RETURNS clause, or the columns of RETURNS TABLE.
-func routineResultNamesType(definition, schemaName, objectName string) bool {
+func routineResultNamesType(definition, key string, objects map[string]bool, searchPath []string) bool {
 	clause := routineReturnClause(definition)
 	if strings.HasPrefix(clause, "TABLE") {
-		return parametersNameType(routineArgumentList(clause), schemaName, objectName)
+		return parametersNameType(routineArgumentList(clause), key, objects, searchPath)
 	}
-	return namesType(clause, schemaName, objectName)
+	return namesType(clause, key, objects, searchPath)
 }
 
 // routineReturnClause is the text between RETURNS and the first clause after it,
@@ -589,8 +617,10 @@ func routineReturnClause(definition string) string {
 
 // namesType reports whether text ends in a declaration of the relation's type.
 // The trailing type is parsed, so a partly quoted reference like `public."V"`
-// matches as well as a fully quoted, unqualified, or unquoted one.
-func namesType(text, schemaName, objectName string) bool {
+// matches as well as a fully quoted, unqualified, or unquoted one. An unqualified
+// name is resolved first, so it names only the relation the search path makes
+// visible, not every relation that shares its name.
+func namesType(text, key string, objects map[string]bool, searchPath []string) bool {
 	text = strings.TrimSpace(text)
 	for start := 0; start < len(text); start++ {
 		if start > 0 && !startsDeclaration(text[start-1]) {
@@ -600,10 +630,7 @@ func namesType(text, schemaName, objectName string) bool {
 		if !ok || strings.TrimSpace(trailingModifier(text[end:])) != "" {
 			continue
 		}
-		if reference.qualified && !reference.schema.matches(schemaName) {
-			continue
-		}
-		if reference.object.matches(objectName) {
+		if resolved, ok := resolveTypeReference(reference, objects, searchPath); ok && resolved == key {
 			return true
 		}
 	}
@@ -880,6 +907,13 @@ func referencedRelation(typeName string, relations map[string]bool, searchPath [
 	if !ok || strings.TrimSpace(trailingModifier(name[end:])) != "" {
 		return "", false
 	}
+	return resolveTypeReference(reference, relations, searchPath)
+}
+
+// resolveTypeReference resolves a parsed type name to the object it names. An
+// unqualified name resolves to the first relation in search-path order; without a
+// configured path, the sorted first is a deterministic answer in the absence of one.
+func resolveTypeReference(reference typeReference, relations map[string]bool, searchPath []string) (string, bool) {
 	if reference.qualified {
 		for key := range relations {
 			schemaName, objectName := splitObjectKey(key)
@@ -889,7 +923,6 @@ func referencedRelation(typeName string, relations map[string]bool, searchPath [
 		}
 		return "", false
 	}
-	// An unqualified name resolves to the first relation in search-path order.
 	for _, searchSchema := range searchPath {
 		for key := range relations {
 			schemaName, objectName := splitObjectKey(key)
@@ -1528,7 +1561,13 @@ func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) a
 			}
 			for _, column := range table.GetColumns() {
 				newColumn := columnByName(newTable, column.GetName())
-				if newColumn != nil && newColumn.GetType() == column.GetType() {
+				// A dependent view sees a column's type and collation. Its other
+				// properties (default, nullability, comment, position, identity and
+				// generation) are altered in place without changing the view's
+				// definition, so they are deliberately not treated as affecting it.
+				if newColumn != nil && newColumn.GetType() == column.GetType() &&
+					newColumn.GetCollation() == column.GetCollation() &&
+					newColumn.GetCollationSchema() == column.GetCollationSchema() {
 					continue
 				}
 				tableKey := objectKey(schema.GetName(), table.GetName())

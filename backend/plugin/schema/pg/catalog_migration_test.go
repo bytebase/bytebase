@@ -836,6 +836,36 @@ func TestRestoredUnloadableViewReleasesRetypedRowTypeAttribute(t *testing.T) {
 	require.Contains(t, sql, `COMMENT ON COLUMN "public"."c"."z" IS 'keep'`, "the re-added unchanged attribute keeps its comment")
 }
 
+// TestCollationChangeRestoresUnloadableView pins the ordering a collation-only
+// column change needs: the view is dropped before the column is altered and
+// recreated after it, even though the column's type does not change.
+func TestCollationChangeRestoresUnloadableView(t *testing.T) {
+	snapshot := func(collation string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "text", Collation: collation})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("C"), snapshot("en_US"))
+	require.NoError(t, err)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	alterColumn := strings.Index(sql, `ALTER TABLE public.t ALTER COLUMN id TYPE text COLLATE "en_US"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	for name, index := range map[string]int{"drop view": dropView, "alter column": alterColumn, "create view": createView} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, dropView, alterColumn, "the view is dropped before the collation change")
+	require.Less(t, alterColumn, createView, "the view is recreated after the collation change")
+}
+
 // TestUnqualifiedTypeFollowsTheSearchPath covers a name two schemas share: only
 // the first visible relation in the search path is the one a type refers to.
 func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
@@ -1493,6 +1523,72 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				return
 			}
 			require.NoError(t, err, "a routine that only mentions the view in its body does not block the drop")
+		})
+	}
+}
+
+// TestUnqualifiedRoutineTypeFollowsTheSearchPath resolves a routine's unqualified
+// parameter or result type the way PostgreSQL does: an earlier same-named view
+// shadows the restored later view, while a search path that reaches the restored
+// view first still refuses the migration.
+func TestUnqualifiedRoutineTypeFollowsTheSearchPath(t *testing.T) {
+	type routine struct {
+		name       string
+		signature  string
+		definition string
+	}
+	tests := []routine{
+		{
+			name:       "parameter type",
+			signature:  "f(v)",
+			definition: "CREATE FUNCTION later.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+		},
+		{
+			name:       "return type",
+			signature:  "f()",
+			definition: "CREATE FUNCTION later.f() RETURNS v LANGUAGE sql AS $$ SELECT 1 $$",
+		},
+	}
+	snapshot := func(columnType, searchPath string, r routine) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: searchPath,
+			Schemas: []*metadatapb.SchemaMetadata{
+				{
+					Name:  "earlier",
+					Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT 1"}},
+				},
+				{
+					Name:   "later",
+					Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+					Views: []*metadatapb.ViewMetadata{{
+						Name:       "v",
+						Definition: "SELECT FROM",
+						DependencyColumns: []*metadatapb.DependencyColumn{{
+							Schema: "later", Table: "t", Column: "id",
+						}},
+					}},
+					Functions: []*metadatapb.FunctionMetadata{{
+						Name:       "f",
+						Signature:  r.signature,
+						Definition: r.definition,
+					}},
+				},
+			},
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+				snapshot("integer", "earlier, later", tc),
+				snapshot("bigint", "earlier, later", tc))
+			require.NoError(t, err, "the routine depends on earlier.v, not the restored later.v")
+			require.Contains(t, sql, `DROP VIEW IF EXISTS "later"."v"`, "the later view is still restored")
+
+			_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB,
+				snapshot("integer", "later, earlier", tc),
+				snapshot("bigint", "later, earlier", tc))
+			require.ErrorContains(t, err, `routine "later"."f" uses the row type of view "later"."v"`, "the search path reaches the restored view first")
 		})
 	}
 }

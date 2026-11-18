@@ -5195,3 +5195,181 @@
   \ ALTER COLUMN id TYPE bigint;\nCREATE VIEW \"public\".\"v\" AS \nSELECT FROM;\n\
   ALTER TYPE \"public\".\"c\" ADD ATTRIBUTE \"r\" public.v;\nALTER TYPE \"public\"\
   .\"c\" ADD ATTRIBUTE \"z\" text;\nCOMMENT ON COLUMN \"public\".\"c\".\"z\" IS 'keep'"
+- description: TestCockroachMetadataDiffRestoredUnloadableViewFollowsColumnCollation
+  difference: the catalog treats a collation-only column change as affecting the unloadable dependent view, so it drops the view before the column alteration and recreates it after; the legacy generator ignored the collation change and produced no migration.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "text",
+                  "collation": "C"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "text",
+                  "collation": "en_US"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: ''
+  catalogExpected: "DROP VIEW IF EXISTS \"public\".\"v\";\nALTER TABLE public.t ALTER COLUMN id TYPE text COLLATE \"en_US\";\nCREATE VIEW \"public\".\"v\" AS \nSELECT FROM"
+- description: TestCockroachMetadataDiffUnqualifiedRoutineTypeFollowsTheSearchPath
+  difference: the catalog resolves the routine's unqualified type through the search path, so it names the earlier view and does not refuse the restored later view; the legacy generator also migrated the view, with CREATE OR REPLACE and different quoting.
+  oldMetadata: |-
+    {
+      "searchPath": "earlier, later",
+      "schemas": [
+        {
+          "name": "earlier",
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT 1"
+            }
+          ]
+        },
+        {
+          "name": "later",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "later",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "f",
+              "signature": "f(v)",
+              "definition": "CREATE FUNCTION later.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$"
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "searchPath": "earlier, later",
+      "schemas": [
+        {
+          "name": "earlier",
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT 1"
+            }
+          ]
+        },
+        {
+          "name": "later",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "later",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "f",
+              "signature": "f(v)",
+              "definition": "CREATE FUNCTION later.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$"
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "later"."v";
+
+    ALTER TABLE "later"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "later"."v" AS SELECT FROM;
+
+  catalogExpected: "DROP VIEW IF EXISTS \"later\".\"v\";\nALTER TABLE later.t ALTER COLUMN id TYPE bigint;\nCREATE VIEW \"later\".\"v\" AS \nSELECT FROM"
