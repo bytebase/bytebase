@@ -1,73 +1,97 @@
-// Package cockroachdb is the plugin for CockroachDB driver.
+// Package cockroachdb is Bytebase's CockroachDB driver: an adapter over
+// github.com/bytebase/omni/cockroachdb/driver that maps Bytebase's connection
+// config onto the driver contract and the contract's results back into the
+// product's. The conversation with the server — connection configuration,
+// session setup, metadata sync, statement classification, execution, result
+// decoding and the plan diagram — is the driver's.
+//
+// CockroachDB is a PostgreSQL fork in Bytebase and its own tree in omni, so the
+// adapter follows pg's shape where the two overlap: Config carries libpq's host
+// and port lists, a TLS func bound to each host the driver dials, and the SSH
+// tunnel as Config.Dial; QueryOptions.Schema is the session's search_path. Two
+// parts of the pg path are not copied: Config.Params stays unset, because this
+// data source has no extra connection parameters, and there is no tenant-mode
+// prelude, because tenant mode does not apply to CockroachDB and its Open takes
+// no engine options.
+//
+// QueryConn runs on one session held for the driver's lifetime and serializes
+// its calls, as the editor stream's one pooled connection did: what a statement
+// sets there (search_path, a temporary table) holds for the stream's next call.
+// The caller's *sql.Conn is unused, so the adapter reports OwnsQuerySession.
+//
+// GetDB, through db.SQLDBProvider, returns the pool the task-run session listing
+// asks for. It is not the query path, which is the driver's session; it is
+// opened on first use, so a driver that never asks holds only the driver's pool.
+//
+// Execute maps the script's transaction directive and passes neither the
+// isolation directive nor MaximumRetries: this engine ignored both, and honoring
+// them would change what a script does.
 package cockroachdb
 
 import (
-	"bytes"
-	"compress/zlib"
 	"context"
+	"crypto/tls"
 	"database/sql"
-	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
-	"regexp"
 	"strings"
-	"time"
-	"unicode"
+	"sync"
 
+	omnicockroach "github.com/bytebase/omni/cockroachdb/driver"
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	crdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
-	// driverName is the driver name that our driver dependence register, now is "pgx".
-	driverName = "pgx"
-
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SQLDBProvider  = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 )
 
 func init() {
 	db.Register(storepb.Engine_COCKROACHDB, newDriver)
 }
 
-// Driver is the Postgres driver.
+// Driver is Bytebase's CockroachDB driver.
 type Driver struct {
-	config db.ConnectionConfig
+	inner         *omnicockroach.Driver
+	config        omnidriver.Config
+	connectionCtx db.ConnectionContext
 
-	db        *sql.DB
+	// sshClient is the tunnel the driver dials through, closed with it.
 	sshClient *ssh.Client
-	// connectionString is the connection string registered by pgx.
-	// Unregister connectionString if we don't need it.
-	connectionString string
-	databaseName     string
-	connectionCtx    db.ConnectionContext
+
+	// sessionMu serializes QueryConn and guards session: the editor keeps one
+	// driver for a stream, and one pooled connection served its statements one
+	// at a time.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
+
+	// poolMu guards the pool GetDB opens on first use.
+	poolMu  sync.Mutex
+	pool    *sql.DB
+	poolSet bool
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Postgres driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	pgxConnConfig, err := getCockroachConnectionConfig(config)
+// Open maps the connection config onto the driver contract. It does not reach
+// the server: Ping does.
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	cfg, err := cockroachConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -78,33 +102,187 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			return nil, err
 		}
 		d.sshClient = sshClient
-
-		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		cfg.Dial = func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return util.DialSSHTunnel(ctx, sshClient, network, addr)
 		}
 	}
 
-	d.databaseName = config.ConnectionContext.DatabaseName
-	if config.ConnectionContext.DatabaseName != "" {
-		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
-	} else if config.DataSource.GetDatabase() != "" {
-		pgxConnConfig.Database = config.DataSource.GetDatabase()
-	} else {
-		pgxConnConfig.Database = "postgres"
-	}
-	d.config = config
-
-	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
-	db, err := sql.Open(driverName, d.connectionString)
+	inner, err := omnicockroach.Open(ctx, cfg)
 	if err != nil {
+		if d.sshClient != nil {
+			_ = d.sshClient.Close()
+			d.sshClient = nil
+		}
 		return nil, err
 	}
-	d.db = db
+	d.inner = inner
+	d.config = cfg
 	d.connectionCtx = config.ConnectionContext
 	return d, nil
 }
 
-// getRoutingIDFromCockroachCloudURL returns the routing ID from the Cockroach Cloud URL, returns empty string if not found.
+// cockroachConfig resolves what Bytebase knows about reaching a server into the
+// plain values the contract's CockroachDB driver takes.
+func cockroachConfig(config db.ConnectionConfig) (omnidriver.Config, error) {
+	dataSource := config.DataSource
+	// The old driver refused half a client certificate whether or not TLS was
+	// asked for, so the mistake is reported here rather than left to a
+	// connection that never presents it.
+	if (dataSource.GetSslCert() == "") != (dataSource.GetSslKey() == "") {
+		return omnidriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
+	}
+	database := config.ConnectionContext.DatabaseName
+	if database == "" {
+		database = dataSource.GetDatabase()
+	}
+	cfg := omnidriver.Config{
+		Host:            dataSource.GetHost(),
+		Port:            dataSource.GetPort(),
+		Database:        database,
+		User:            dataSource.GetUsername(),
+		Password:        config.Password,
+		ApplicationName: applicationName(config.ConnectionContext),
+		ReadOnly:        config.ConnectionContext.ReadOnly,
+		EngineVersion:   config.ConnectionContext.EngineVersion,
+	}
+	if dataSource.GetUseSsl() {
+		// util.GetTLSConfig binds certificate verification to the data source's
+		// host; ApplyPGTLSConfig rebinds it to the host of whichever server the
+		// driver dials, so a multi-host list verifies each host's certificate
+		// against its own name, as the old driver did.
+		cfg.TLS = func(host string) (*tls.Config, error) {
+			tlsConfig, err := util.GetTLSConfig(dataSource)
+			if err != nil {
+				return nil, err
+			}
+			if tlsConfig != nil {
+				util.ApplyPGTLSConfig(tlsConfig, host, nil)
+			}
+			return tlsConfig, nil
+		}
+	}
+	return cfg, nil
+}
+
+// applicationName identifies the connection to the server. A task run names
+// itself so the server's activity views can find it.
+func applicationName(connectionContext db.ConnectionContext) string {
+	if connectionContext.TaskRunUID != nil {
+		return fmt.Sprintf("bytebase-taskrun-%d", *connectionContext.TaskRunUID)
+	}
+	return "bytebase"
+}
+
+func (d *Driver) Close(context.Context) error {
+	d.sessionMu.Lock()
+	session := d.session
+	d.session = nil
+	d.sessionMu.Unlock()
+
+	d.poolMu.Lock()
+	pool := d.pool
+	d.pool = nil
+	d.poolMu.Unlock()
+
+	var err error
+	if session != nil {
+		err = multierr.Append(err, session.Close())
+	}
+	if pool != nil {
+		err = multierr.Append(err, pool.Close())
+	}
+	if d.inner != nil {
+		err = multierr.Append(err, d.inner.Close())
+	}
+	if d.sshClient != nil {
+		err = multierr.Append(err, d.sshClient.Close())
+		d.sshClient = nil
+	}
+	return err
+}
+
+// Ping reaches the server.
+func (d *Driver) Ping(ctx context.Context) error {
+	return d.inner.Ping(ctx)
+}
+
+// GetDB returns the pool db.SQLDB callers ask for: the task-run session listing
+// reads a *sql.DB and has no driver method for CockroachDB's activity. It is not
+// the query path. A mapping error answers nil, which SQLDB callers tolerate.
+func (d *Driver) GetDB() *sql.DB {
+	d.poolMu.Lock()
+	defer d.poolMu.Unlock()
+	if !d.poolSet {
+		d.poolSet = true
+		pool, err := sqlPool(d.config)
+		if err != nil {
+			return nil
+		}
+		d.pool = pool
+	}
+	return d.pool
+}
+
+// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
+// not on a connection a caller opens from GetDB.
+func (*Driver) OwnsQuerySession() {}
+
+// sqlPool opens the pool GetDB returns from the contract's Config. It is a
+// second pool beside the driver's, and only db.SQLDB callers use it.
+func sqlPool(cfg omnidriver.Config) (*sql.DB, error) {
+	dsn := make([]string, 0, 4+len(cfg.Params))
+	if cfg.Host != "" || cfg.Port != "" {
+		hostPort, err := util.PGHostPort(cfg.Host, cfg.Port)
+		if err != nil {
+			return nil, err
+		}
+		dsn = append(dsn, hostPort)
+	}
+	if cfg.TLS != nil {
+		dsn = append(dsn, "sslmode=require")
+	}
+	if routingID := getRoutingIDFromCockroachCloudURL(cfg.Host); routingID != "" {
+		dsn = append(dsn, "options="+util.QuotePGValue("--cluster="+routingID))
+	}
+	for key, value := range cfg.Params {
+		dsn = append(dsn, key+"="+value)
+	}
+	connConfig, err := pgx.ParseConfig(strings.Join(dsn, " "))
+	if err != nil {
+		return nil, err
+	}
+	connConfig.User = cfg.User
+	connConfig.Password = cfg.Password
+	connConfig.Database = cfg.Database
+	if connConfig.Database == "" {
+		connConfig.Database = "postgres"
+	}
+	if cfg.TLS != nil {
+		if connConfig.TLSConfig, err = cfg.TLS(connConfig.Host); err != nil {
+			return nil, err
+		}
+		for _, fallback := range connConfig.Fallbacks {
+			if fallback.TLSConfig, err = cfg.TLS(fallback.Host); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if cfg.Dial != nil {
+		connConfig.DialFunc = cfg.Dial
+	}
+	if cfg.ApplicationName != "" {
+		connConfig.RuntimeParams["application_name"] = cfg.ApplicationName
+	}
+	if cfg.ReadOnly {
+		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
+	}
+	return stdlib.OpenDB(*connConfig), nil
+}
+
+// getRoutingIDFromCockroachCloudURL returns the routing ID a Cockroach Cloud
+// host names in its first label, or the empty string when the host is not one.
+// The server is reached through a shared gateway until the ID is passed as
+// --cluster, so the pool GetDB opens needs it as much as the driver does.
 func getRoutingIDFromCockroachCloudURL(host string) string {
 	host = strings.TrimSpace(host)
 	if !strings.HasSuffix(host, "cockroachlabs.cloud") {
@@ -118,648 +296,44 @@ func getRoutingIDFromCockroachCloudURL(host string) string {
 	return ""
 }
 
-func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
-	if config.DataSource.Username == "" {
-		return nil, errors.Errorf("user must be set")
-	}
-
-	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
-		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
-		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
-	}
-
-	connStr, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
+// SyncInstance reads the server version, its user databases and its roles.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.inner.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if config.DataSource.GetUseSsl() {
-		connStr += fmt.Sprintf(" sslmode=%s", util.GetPGSSLMode(config.DataSource))
+	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
+	for _, role := range instance.Roles {
+		roles = append(roles, &storepb.InstanceRole{Name: role.Name, Attribute: role.Attribute})
 	}
-
-	routingID := getRoutingIDFromCockroachCloudURL(config.DataSource.Host)
-	if routingID != "" {
-		connStr += " options=" + util.QuotePGValue("--cluster="+routingID)
-	}
-
-	connConfig, err := pgx.ParseConfig(connStr)
-	if err != nil {
-		return nil, err
-	}
-	connConfig.User = config.DataSource.Username
-	connConfig.Password = config.Password
-	connConfig.Database = config.ConnectionContext.DatabaseName
-
-	tlscfg, err := util.GetTLSConfig(config.DataSource)
-	if err != nil {
-		return nil, err
-	}
-	if tlscfg != nil {
-		connConfig.TLSConfig = tlscfg
-		util.ApplyPGTLSConfig(tlscfg, connConfig.Host, connConfig.Fallbacks)
-	}
-	appName := "bytebase"
-	if config.ConnectionContext.TaskRunUID != nil {
-		appName = fmt.Sprintf("bytebase-taskrun-%d", *config.ConnectionContext.TaskRunUID)
-	}
-	connConfig.RuntimeParams["application_name"] = appName
-	if config.ConnectionContext.ReadOnly {
-		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
-	}
-
-	return connConfig, nil
-}
-
-// Close closes the driver.
-func (d *Driver) Close(context.Context) error {
-	stdlib.UnregisterConnConfig(d.connectionString)
-	var err error
-	err = multierr.Append(err, d.db.Close())
-	if d.sshClient != nil {
-		err = multierr.Append(err, d.sshClient.Close())
-	}
-	return err
-}
-
-// Ping pings the database.
-func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
-}
-
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
-
-// getDatabases gets all databases of an instance.
-func (d *Driver) getDatabases(ctx context.Context) ([]*metadatapb.DatabaseSchemaMetadata, error) {
-	var databases []*metadatapb.DatabaseSchemaMetadata
-	if err := crdb.Execute(func() error {
-		rows, err := d.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			database := &metadatapb.DatabaseSchemaMetadata{}
-			if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
-				return err
-			}
-			databases = append(databases, database)
-		}
-		err = rows.Err()
-		return err
-	}); err != nil {
-		return nil, err
-	}
-
-	return databases, nil
-}
-
-func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	// https://www.cockroachlabs.com/docs/v25.1/cluster-settings#setting-version
-	query := "SHOW CLUSTER SETTING version;"
-	var version string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&version); err != nil {
-		if err == sql.ErrNoRows {
-			return "", common.FormatDBErrorEmptyRowWithQuery(query)
-		}
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return version, nil
-}
-
-// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
-// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if opts.CreateDatabase {
-		if err := d.createDatabaseExecute(ctx, statement); err != nil {
-			return 0, err
-		}
-		return 0, nil
-	}
-
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	owner, err := d.GetCurrentDatabaseOwner(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	var commands []base.Statement
-	var nonTransactionAndSetRoleStmts []base.Statement
-	var isPlsql bool
-
-	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
-	if err != nil {
-		return 0, err
-	}
-	for _, singleSQL := range singleSQLs {
-		commands = append(commands, base.Statement{Text: singleSQL})
-	}
-
-	// If the statement is a single statement and is a PL/pgSQL block,
-	// we should execute it as a single statement without transaction.
-	// If the statement is a PL/pgSQL block, we should execute it as a single statement.
-	// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-	if len(singleSQLs) == 1 && pgparser.IsPlSQLBlock(singleSQLs[0]) {
-		isPlsql = true
-	}
-
-	var tmpCommands []base.Statement
-	for _, command := range commands {
-		switch {
-		case isSetRoleStatement(command.Text):
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
-		case IsNonTransactionStatement(command.Text):
-			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, command)
-			continue
-		case isSuperuserStatement(command.Text):
-			// Use superuser privilege to run privileged statements.
-			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
-			ct := command.Text
-			if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
-				ct += ";"
-			}
-			command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
-		default:
-			// Regular statements, keep as is
-		}
-		tmpCommands = append(tmpCommands, command)
-	}
-	commands = tmpCommands
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
-	}
-	return d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
-}
-
-func (d *Driver) executeInTransactionMode(
-	ctx context.Context,
-	owner string,
-	statement string,
-	commands []base.Statement,
-	nonTransactionAndSetRoleStmts []base.Statement,
-	opts db.ExecuteOptions,
-	isPlsql bool,
-) (int64, error) {
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
-	}
-	defer conn.Close()
-
-	if isPlsql {
-		// USE SET SESSION ROLE to set the role for the current session.
-		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
-			return err
-		}); err != nil {
-			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
-		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, statement)
-			return err
-		}); err != nil {
-			opts.LogCommandResponse(0, []int64{0}, err.Error())
-			return 0, err
-		}
-		opts.LogCommandResponse(0, []int64{0}, "")
-
-		return 0, nil
-	}
-
-	totalRowsAffected := int64(0)
-
-	totalCommands := len(commands)
-	if totalCommands > 0 {
-		err = conn.Raw(func(driverConn any) error {
-			conn := driverConn.(*stdlib.Conn).Conn()
-
-			tx, err := conn.Begin(ctx)
-			if err != nil {
-				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-				return errors.Wrapf(err, "failed to begin transaction")
-			}
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-			committed := false
-			defer func() {
-				err := tx.Rollback(ctx)
-				if committed {
-					return
-				}
-				var rerr string
-				if err != nil {
-					rerr = err.Error()
-				}
-				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-			}()
-
-			// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
-			if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
-				return err
-			}
-
-			for _, command := range commands {
-				opts.LogCommandExecute(command.Range, command.Text)
-
-				rr := tx.Conn().PgConn().Exec(ctx, command.Text)
-				results, err := rr.ReadAll()
-				if err != nil {
-					opts.LogCommandResponse(0, nil, err.Error())
-
-					return err
-				}
-
-				var rowsAffected int64
-				var allRowsAffected []int64
-				for _, result := range results {
-					ra := result.CommandTag.RowsAffected()
-					allRowsAffected = append(allRowsAffected, ra)
-					rowsAffected += ra
-				}
-				opts.LogCommandResponse(rowsAffected, allRowsAffected, "")
-
-				totalRowsAffected += rowsAffected
-			}
-
-			if err := tx.Commit(ctx); err != nil {
-				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-				return errors.Wrapf(err, "failed to commit transaction")
-			}
-			opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-			committed = true
-
-			return nil
-		})
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	// USE SET SESSION ROLE to set the role for the current session.
-	if err := crdb.Execute(func() error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
-		return err
-	}); err != nil {
-		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-	}
-	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionAndSetRoleStmts {
-		opts.LogCommandExecute(stmt.Range, stmt.Text)
-		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, stmt.Text)
-			return err
-		}); err != nil {
-			opts.LogCommandResponse(0, []int64{0}, err.Error())
-			return 0, err
-		}
-		opts.LogCommandResponse(0, []int64{0}, "")
-	}
-	return totalRowsAffected, nil
-}
-
-func (d *Driver) executeInAutoCommitMode(
-	ctx context.Context,
-	owner string,
-	statement string,
-	commands []base.Statement,
-	nonTransactionAndSetRoleStmts []base.Statement,
-	opts db.ExecuteOptions,
-	isPlsql bool,
-) (int64, error) {
-	// For auto-commit mode, treat all statements as non-transactional
-	nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, commands...)
-
-	conn, err := d.db.Conn(ctx)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get connection")
-	}
-	defer conn.Close()
-
-	if isPlsql {
-		// USE SET SESSION ROLE to set the role for the current session.
-		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
-			return err
-		}); err != nil {
-			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-		}
-		opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-		if err := crdb.Execute(func() error {
-			_, err := conn.ExecContext(ctx, statement)
-			return err
-		}); err != nil {
-			return 0, err
-		}
-		opts.LogCommandResponse(0, []int64{0}, "")
-		return 0, nil
-	}
-
-	// USE SET SESSION ROLE to set the role for the current session.
-	if err := crdb.Execute(func() error {
-		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)) // NOSONAR(go:S2077) owner is from pg_roles system catalog, not user input
-		return err
-	}); err != nil {
-		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
-	}
-
-	totalRowsAffected := int64(0)
-	// Execute all statements individually in auto-commit mode
-	for _, stmt := range nonTransactionAndSetRoleStmts {
-		opts.LogCommandExecute(stmt.Range, stmt.Text)
-
-		if err := crdb.Execute(func() error {
-			sqlResult, err := conn.ExecContext(ctx, stmt.Text)
-			if err != nil {
-				opts.LogCommandResponse(0, []int64{0}, err.Error())
-				return err
-			}
-
-			rowsAffected, err := sqlResult.RowsAffected()
-			if err != nil {
-				// CockroachDB returns error for statements that don't support RowsAffected
-				rowsAffected = 0
-			}
-
-			opts.LogCommandResponse(rowsAffected, []int64{rowsAffected}, "")
-			totalRowsAffected += rowsAffected
-			return nil
-		}); err != nil {
-			return totalRowsAffected, err
-		}
-	}
-
-	return totalRowsAffected, nil
-}
-
-func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
-	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
-	if err != nil {
-		return err
-	}
-	databases, err := d.getDatabases(ctx)
-	if err != nil {
-		return err
-	}
-	for _, database := range databases {
-		if database.Name == databaseName {
-			// Database already exists.
-			return nil
-		}
-	}
-
-	for _, s := range strings.Split(statement, "\n") {
-		if err := crdb.Execute(func() error {
-			_, err := d.db.ExecContext(ctx, s)
-			return err
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-var (
-	// DROP DATABASE cannot run inside a transaction block.
-	// DROP DATABASE [ IF EXISTS ] name [ [ WITH ] ( option [, ...] ) ]。
-	dropDatabaseReg = regexp.MustCompile(`(?i)DROP DATABASE`)
-	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
-	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
-	createIndexReg = regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
-	// DROP INDEX CONCURRENTLY cannot run inside a transaction block.
-	// DROP INDEX [ CONCURRENTLY ] [ IF EXISTS ] name [, ...] [ CASCADE | RESTRICT ].
-	dropIndexReg = regexp.MustCompile(`(?i)DROP(\s+)INDEX(\s+)CONCURRENTLY`)
-	// VACUUM cannot run inside a transaction block.
-	// VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
-	// VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ].
-	vacuumReg = regexp.MustCompile(`(?i)^\s*VACUUM`)
-	// SET ROLE is a special statement that should be run before any other statements containing inside a transaction block or not.
-	setRoleReg = regexp.MustCompile(`(?i)SET\s+((SESSION|LOCAL)\s+)?ROLE`)
-)
-
-func isSetRoleStatement(stmt string) bool {
-	return len(setRoleReg.FindString(stmt)) > 0
-}
-
-func IsNonTransactionStatement(stmt string) bool {
-	if len(dropDatabaseReg.FindString(stmt)) > 0 {
-		return true
-	}
-	if len(createIndexReg.FindString(stmt)) > 0 {
-		return true
-	}
-	if len(dropIndexReg.FindString(stmt)) > 0 {
-		return true
-	}
-	return len(vacuumReg.FindString(stmt)) > 0
-}
-
-func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(strings.TrimLeftFunc(stmt, unicode.IsSpace))
-	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
-		return true
-	}
-	return false
-}
-
-func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
-	raw := strings.TrimRight(createDatabaseStatement, ";")
-	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
-	tokens := strings.Fields(raw)
-	if len(tokens) == 0 {
-		return "", errors.Errorf("database name not found")
-	}
-	databaseName := strings.TrimLeft(tokens[0], `"`)
-	databaseName = strings.TrimRight(databaseName, `"`)
-	return databaseName, nil
-}
-
-// GetCurrentDatabaseOwner gets the role of the current database.
-func (d *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, error) {
-	const query = `
-		SELECT
-			u.rolname
-		FROM
-			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
-		WHERE
-			d.datname = current_database();
-		`
-	var owner string
-	if err := d.db.QueryRowContext(ctx, query).Scan(&owner); err != nil {
-		return "", err
-	}
-	return owner, nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL
-		planAsJSON := false
-		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_COCKROACHDB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			planAsJSON = db.ExplainFormat(queryContext.Option.GetExplainFormat()) == base.ExplainFormatJSON
-			statement = explained
-		} else if queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, queryContext.Limit, "")
-		}
-
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
-		if err != nil {
-			return nil, err
-		}
-
-		// Sanitize the schema name by escaping any quotes.
-		safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
-
-		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
-		if queryContext.Schema != "" {
-			if err := crdb.Execute(func() error {
-				_, err := conn.ExecContext(ctx, fmt.Sprintf(`SET search_path TO "%s";`, safeSchemeName)) // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
-				return err
-			}); err != nil {
-				return nil, err
-			}
-		}
-
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				location := util.PgSessionLocation(conn)
-				var r *v1pb.QueryResult
-				if err := crdb.Execute(func() error {
-					rows, err := conn.QueryContext(ctx, statement)
-					if err != nil {
-						return err
-					}
-					defer rows.Close()
-					r, err = util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
-					if err != nil {
-						return err
-					}
-					err = rows.Err()
-					return err
-				}); err != nil {
-					return nil, err
-				}
-				if planAsJSON {
-					return planDiagram(r)
-				}
-				return r, nil
-			}
-
-			var sqlResult sql.Result
-			if err := crdb.Execute(func() error {
-				var err error
-				sqlResult, err = conn.ExecContext(ctx, statement)
-				return err
-			}); err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
-}
-
-// diagramLink is the line EXPLAIN (DISTSQL) prints after the text plan. What
-// follows the fragment marker is the plan itself, deflated and base64'd.
-var diagramLink = regexp.MustCompile(`https?://\S*#([A-Za-z0-9+/_=-]+)`)
-
-// planDiagram returns the physical plan EXPLAIN (DISTSQL) encodes in the link
-// it prints, as the JSON document the query-plan viewer parses.
-//
-// CockroachDB publishes no plan as a document: every EXPLAIN option of its own
-// returns text, and the one machine-readable form it has is the payload behind
-// this link, which its own diagram page decodes in the browser. Decoding it
-// here is what lets the viewer draw the plan without the browser fetching
-// anything, and it is the same move the Oracle driver makes in rendering the
-// plan table.
-func planDiagram(result *v1pb.QueryResult) (*v1pb.QueryResult, error) {
-	var payload string
-	for _, row := range result.GetRows() {
-		for _, value := range row.GetValues() {
-			if match := diagramLink.FindStringSubmatch(value.GetStringValue()); match != nil {
-				payload = match[1]
-			}
-		}
-	}
-	if payload == "" {
-		return nil, errors.New("the plan carried no diagram to read")
-	}
-	// CockroachDB encodes with the standard alphabet, but the payload rides in
-	// a URL fragment, so accept either spelling of the two bytes that differ.
-	normalized := strings.NewReplacer("-", "+", "_", "/").Replace(strings.TrimRight(payload, "="))
-	deflated, err := base64.RawStdEncoding.DecodeString(normalized)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode the query plan")
-	}
-	reader, err := zlib.NewReader(bytes.NewReader(deflated))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read the query plan")
-	}
-	defer reader.Close()
-	// A plan is small; the bound keeps a corrupt payload from inflating
-	// without end.
-	plan, err := io.ReadAll(io.LimitReader(reader, maxPlanBytes))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read the query plan")
-	}
-
-	return &v1pb.QueryResult{
-		ColumnNames:     []string{"plan"},
-		ColumnTypeNames: []string{"TEXT"},
-		Rows: []*v1pb.QueryRow{{Values: []*v1pb.RowValue{
-			{Kind: &v1pb.RowValue_StringValue{StringValue: string(plan)}},
-		}}},
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata:  &storepb.Instance{Roles: roles},
 	}, nil
 }
 
-// maxPlanBytes bounds the inflated plan. CockroachDB's diagrams run to a few
-// tens of kilobytes; this is far above that and far below anything that would
-// trouble the editor.
-const maxPlanBytes = 8 << 20
+// SyncDBSchema reads the schema of the database the driver was opened on. A
+// database the server no longer has is reported as not found.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	metadata, err := d.inner.SyncDatabase(ctx)
+	if err != nil {
+		if errors.Is(err, omnidriver.ErrNotFound) {
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.connectionCtx.DatabaseName)
+		}
+		return nil, err
+	}
+	return metadata, nil
+}
+
+// Dump writes the server's own DDL for the database. The synced metadata is not
+// rendered and does not narrow what the server states.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.inner.Dump(ctx, out, dbMetadata)
+}
+
+// CountAffectedRows returns the planner's estimate of the rows a statement
+// modifies. plancheck reads it through db.RowEstimator.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.inner.CountAffectedRows(ctx, statement)
+}
