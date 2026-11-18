@@ -34,6 +34,7 @@ var (
 	sharedCassandra    = startOnce(getCassandraContainer)
 	sharedHive         = startOnce(getHiveContainer)
 	sharedCosmos       = startOnce(getCosmosContainer)
+	sharedClickHouse   = startOnce(getClickHouseContainer)
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -141,6 +142,11 @@ func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sha
 
 // SharedCassandraContainer is one Cassandra 5 cluster for the package's tests.
 func SharedCassandraContainer(t testing.TB) *Container { return shared(t, sharedCassandra) }
+
+// SharedClickHouseContainer is one ClickHouse server for the package's tests.
+// It carries no *sql.DB: the driver under test is the only client, and the
+// server's own account is "default" with no password.
+func SharedClickHouseContainer(t testing.TB) *Container { return shared(t, sharedClickHouse) }
 
 // SharedHiveContainer is one HiveServer2 for the package's tests, on the image
 // omni pins. Tests share its databases rather than taking one each, because the

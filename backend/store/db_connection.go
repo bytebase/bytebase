@@ -21,13 +21,14 @@ import (
 
 // DBConnectionManager manages database connections with support for dynamic updates.
 type DBConnectionManager struct {
-	mu          sync.Mutex
-	db          *sql.DB
-	closed      bool
-	cleanup     func() error
-	pgURLOrFile string // Either a PostgreSQL URL or a file path
-	watcher     *fsnotify.Watcher
-	stopWatcher chan struct{}
+	mu                      sync.Mutex
+	db                      *sql.DB
+	customPlanQueryExecMode pgx.QueryExecMode
+	closed                  bool
+	cleanup                 func() error
+	pgURLOrFile             string // Either a PostgreSQL URL or a file path
+	watcher                 *fsnotify.Watcher
+	stopWatcher             chan struct{}
 }
 
 // NewDBConnectionManager creates a new database connection manager.
@@ -69,8 +70,11 @@ func (m *DBConnectionManager) Initialize(ctx context.Context) error {
 		return err
 	}
 
+	m.mu.Lock()
 	m.db = conn.db
+	m.customPlanQueryExecMode = conn.customPlanQueryExecMode
 	m.cleanup = conn.cleanup
+	m.mu.Unlock()
 	return nil
 }
 
@@ -81,6 +85,13 @@ func (m *DBConnectionManager) GetDB() *sql.DB {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.db
+}
+
+// Keep the execution mode paired with its pool across metadata URL reloads.
+func (m *DBConnectionManager) getDBForCustomPlans() (*sql.DB, pgx.QueryExecMode) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.db, m.customPlanQueryExecMode
 }
 
 // Close stops the file watcher and closes the database connection.
@@ -168,6 +179,7 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 	oldDB := m.db
 	oldCleanup := m.cleanup
 	m.db = newConn.db
+	m.customPlanQueryExecMode = newConn.customPlanQueryExecMode
 	m.cleanup = newConn.cleanup
 	m.closed = false
 	m.mu.Unlock()
@@ -249,8 +261,20 @@ func readURLFromFile(path string) (string, error) {
 }
 
 type metadataDBConnection struct {
-	db      *sql.DB
-	cleanup func() error
+	db                      *sql.DB
+	customPlanQueryExecMode pgx.QueryExecMode
+	cleanup                 func() error
+}
+
+func queryExecModeForCustomPlans(config *pgx.ConnConfig) pgx.QueryExecMode {
+	mode := config.DefaultQueryExecMode
+	if mode != pgx.QueryExecModeCacheStatement && mode != pgx.QueryExecModeCacheDescribe {
+		return mode
+	}
+	if config.DescriptionCacheCapacity > 0 {
+		return pgx.QueryExecModeCacheDescribe
+	}
+	return pgx.QueryExecModeDescribeExec
 }
 
 func (c *metadataDBConnection) close() error {
@@ -322,5 +346,9 @@ func createConnectionWithTracer(ctx context.Context, pgURL string) (*metadataDBC
 	}
 	db.SetMaxOpenConns(maxOpenConns)
 
-	return &metadataDBConnection{db: db, cleanup: cleanup}, nil
+	return &metadataDBConnection{
+		db:                      db,
+		customPlanQueryExecMode: queryExecModeForCustomPlans(pgxConfig),
+		cleanup:                 cleanup,
+	}, nil
 }

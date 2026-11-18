@@ -94,7 +94,10 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, sql, args...)
+	// Audit filter selectivity varies widely; avoid generic plans for these searches.
+	db, mode := s.dbConnManager.getDBForCustomPlans()
+	queryArgs := append([]any{mode}, args...)
+	rows, err := db.QueryContext(ctx, sql, queryArgs...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}
