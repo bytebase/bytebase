@@ -27,13 +27,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		d.session = session
 	}
 
-	results, err := d.session.Query(ctx, withoutSQLPlusCommands(statement), omnidriver.QueryOptions{
-		Schema:         queryContext.Schema,
-		Limit:          queryContext.Limit,
-		Explain:        queryContext.Explain,
-		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
-		MaxResultBytes: queryContext.MaximumSQLResultSize,
-	})
+	results, err := d.session.Query(ctx, withoutSQLPlusCommands(statement), queryOptions(queryContext))
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +39,20 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
 	}
 	return converted, nil
+}
+
+// queryOptions maps the product's query context onto the contract's, masking
+// included: a statement whose rows the analyzed span cannot trace must not
+// return them.
+func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return omnidriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
+	}
 }
 
 // explainFormat is the plan format in oracledriver's vocabulary: only JSON

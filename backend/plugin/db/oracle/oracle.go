@@ -168,6 +168,13 @@ func connectionParams(dataSource *storepb.DataSource) map[string]string {
 		}
 		params[option] = value
 	}
+	// An unset dial timeout leaves go-ora to the transport's own, which behind an
+	// unreachable primary can outlast the whole connect check before the next
+	// address in a SERVER list is tried. go-ora reads either spelling, and
+	// upper-cases the keys, so the check is on the upper-cased names.
+	if !named["CONNECTION TIMEOUT"] && !named["CONNECT TIMEOUT"] {
+		params["CONNECTION TIMEOUT"] = "10"
+	}
 	return params
 }
 

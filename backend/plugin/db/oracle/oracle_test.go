@@ -14,6 +14,7 @@ import (
 	"maps"
 	"math/big"
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -140,6 +142,16 @@ func TestConnectionParams(t *testing.T) {
 			extraParameters: map[string]string{"SERVICE_NAME": "OTHER"},
 			want:            map[string]string{"SERVICE_NAME": "OTHER"},
 		},
+		{
+			name:            "an explicit dial timeout is kept",
+			extraParameters: map[string]string{"CONNECT TIMEOUT": "5"},
+			want:            map[string]string{"CONNECT TIMEOUT": "5"},
+		},
+		{
+			name:            "another spelling of the dial timeout is kept",
+			extraParameters: map[string]string{"connection timeout": "5"},
+			want:            map[string]string{"connection timeout": "5"},
+		},
 	}
 
 	for _, test := range tests {
@@ -150,10 +162,44 @@ func TestConnectionParams(t *testing.T) {
 				Sid:                       test.sid,
 				ExtraConnectionParameters: extraParameters,
 			}
-			require.Equal(t, test.want, connectionParams(dataSource))
+			// The dial timeout is the one parameter the adapter supplies: go-ora
+			// otherwise leaves it to the transport, which stalls a connect check
+			// behind an unreachable primary.
+			want := maps.Clone(test.want)
+			hasDialTimeout := false
+			for key := range want {
+				switch strings.ToUpper(key) {
+				case "CONNECTION TIMEOUT", "CONNECT TIMEOUT":
+					hasDialTimeout = true
+				}
+			}
+			if !hasDialTimeout {
+				want["CONNECTION TIMEOUT"] = "10"
+			}
+			require.Equal(t, want, connectionParams(dataSource))
 			require.Equal(t, test.extraParameters, dataSource.GetExtraConnectionParameters(), "the data source must not be changed")
 		})
 	}
+}
+
+// TestQueryOptionsCarriesTheRequest pins the mapping QueryConn hands the driver,
+// masking included: the rows of a statement whose span cannot be traced must not
+// reach the caller.
+func TestQueryOptionsCarriesTheRequest(t *testing.T) {
+	options := queryOptions(db.QueryContext{
+		Schema:               "APP",
+		Limit:                10,
+		Explain:              true,
+		MaximumSQLResultSize: 1024,
+		MaskingEnabled:       true,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.Equal(t, "APP", options.Schema)
+	require.Equal(t, 10, options.Limit)
+	require.True(t, options.Explain)
+	require.Equal(t, "JSON", options.ExplainFormat)
+	require.Equal(t, int64(1024), options.MaxResultBytes)
+	require.True(t, options.MaskingEnabled, "masking reaches the driver")
 }
 
 func TestQueryIgnoresTheSharedDriverCharset(t *testing.T) {
