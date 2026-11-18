@@ -1374,6 +1374,23 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			}},
 		},
 		{
+			name: "unqualified parameter type",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "u",
+				Signature:  "u(v)",
+				Definition: "CREATE FUNCTION public.u(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+			}},
+			refused: true,
+		},
+		{
+			name: "parameter named like the view",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "n",
+				Signature:  "n(text)",
+				Definition: "CREATE FUNCTION public.n(v text) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+			}},
+		},
+		{
 			name: "body reference",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",

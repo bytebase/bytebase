@@ -595,23 +595,61 @@ func routineReturnClause(definition string) string {
 	return rest[:end]
 }
 
-// namesType reports whether text declares a relation as a type. Each qualified
-// identifier is parsed, so a partly quoted reference like `public."V"` matches as
-// well as a fully quoted or unquoted one.
+// namesType reports whether text ends in a declaration of the relation's type.
+// The trailing type is parsed, so a partly quoted reference like `public."V"`
+// matches as well as a fully quoted, unqualified, or unquoted one.
 func namesType(text, schemaName, objectName string) bool {
+	text = strings.TrimSpace(text)
 	for start := 0; start < len(text); start++ {
 		if start > 0 && !startsDeclaration(text[start-1]) {
 			continue
 		}
-		reference, ok := parseTypeReference(text[start:])
-		if !ok || !reference.qualified {
+		reference, end, ok := parseTypeReferenceAt(text, start)
+		if !ok || strings.TrimSpace(trailingModifier(text[end:])) != "" {
 			continue
 		}
-		if reference.schema.matches(schemaName) && reference.object.matches(objectName) {
+		if reference.qualified && !reference.schema.matches(schemaName) {
+			continue
+		}
+		if reference.object.matches(objectName) {
 			return true
 		}
 	}
 	return false
+}
+
+// trailingModifier drops a type modifier such as `(10,2)` that follows the type.
+func trailingModifier(rest string) string {
+	rest = strings.TrimSpace(rest)
+	if strings.HasPrefix(rest, "(") && strings.HasSuffix(rest, ")") {
+		return ""
+	}
+	return rest
+}
+
+// parseTypeReferenceAt parses a type name starting at start and reports where it
+// ends, including any array marker.
+func parseTypeReferenceAt(text string, start int) (typeReference, int, bool) {
+	first, next, firstQuoted, ok := scanIdentifier(text, start)
+	if !ok {
+		return typeReference{}, start, false
+	}
+	if next >= len(text) || text[next] != '.' {
+		end := next
+		for end+1 < len(text) && text[end] == '[' && text[end+1] == ']' {
+			end += 2
+		}
+		return typeReference{object: identifier{name: first, quoted: firstQuoted}}, end, true
+	}
+	second, next, secondQuoted, ok := scanIdentifier(text, next+1)
+	if !ok {
+		return typeReference{}, start, false
+	}
+	end := next
+	for end+1 < len(text) && text[end] == '[' && text[end+1] == ']' {
+		end += 2
+	}
+	return typeReference{schema: identifier{name: first, quoted: firstQuoted}, object: identifier{name: second, quoted: secondQuoted}, qualified: true}, end, true
 }
 
 // startsDeclaration reports whether b can precede a type name in a declaration.
