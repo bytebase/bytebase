@@ -141,6 +141,14 @@
       "query-unmask": "マスキングされていないデータへのアクセスを申請するには?",
       "query-unmask-database": "{{database}} のマスキングされていないデータへのアクセスを申請するには?"
     },
+    "follow-up-queue": {
+      "enqueue": "キューに追加",
+      "input-placeholder": "追加のメッセージを入力",
+      "paused": "一時停止中",
+      "queued-count": "{{count}} 件待機中",
+      "remove": "待機中のメッセージ {{position}} を削除",
+      "resume": "キューを再開"
+    },
     "handoff": {
       "open-data-classification": "データ分類の設定を開く",
       "open-database-catalog": "カラム設定を開く",

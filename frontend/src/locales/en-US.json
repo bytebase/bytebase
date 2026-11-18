@@ -141,6 +141,14 @@
       "query-unmask": "How can I request access to unmasked data?",
       "query-unmask-database": "How can I request unmasked access to {{database}}?"
     },
+    "follow-up-queue": {
+      "enqueue": "Queue",
+      "input-placeholder": "Add a follow-up",
+      "paused": "Paused",
+      "queued-count": "{{count}} queued",
+      "remove": "Remove queued message {{position}}",
+      "resume": "Resume queue"
+    },
     "handoff": {
       "open-data-classification": "Open data classification settings",
       "open-database-catalog": "Open column settings",

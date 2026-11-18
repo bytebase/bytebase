@@ -157,6 +157,24 @@ describe("Agent history eviction candidates", () => {
       },
     },
     {
+      reason: "paused follow-up queue",
+      protect: (state) => {
+        state.followUpQueuesByChatId = {
+          protected: {
+            paused: true,
+            messages: [
+              {
+                id: "follow-up",
+                chatId: "protected",
+                text: "Next request",
+                page: { path: "/", title: "Workspace" },
+              },
+            ],
+          },
+        };
+      },
+    },
+    {
       reason: "incomplete message",
       protect: (state) => {
         state.messagesByChatId.protected[0].metadata = { pending: true };

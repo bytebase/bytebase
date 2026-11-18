@@ -15,6 +15,7 @@ const envelopeKeys = new Set([
   "pendingAskByChatId",
   "draftsByChatId",
   "queuedUserMessagesByChatId",
+  "followUpQueuesByChatId",
   "activeChatIds",
 ]);
 const transientChatKeys = new Set([
@@ -115,6 +116,7 @@ const isStoredState = (value: unknown): value is StoredState => {
     "draftsByChatId",
     "pendingAskByChatId",
     "queuedUserMessagesByChatId",
+    "followUpQueuesByChatId",
   ]) {
     const records = value[key];
     if (records === undefined) continue;
@@ -213,6 +215,7 @@ export function canRetireLegacyAgentState(
     (Array.isArray(source.activeChatIds) && source.activeChatIds.length > 0) ||
     Object.keys(source.pendingAskByChatId ?? {}).length > 0 ||
     Object.keys(source.queuedUserMessagesByChatId ?? {}).length > 0 ||
+    Object.keys(source.followUpQueuesByChatId ?? {}).length > 0 ||
     Object.values(source.messagesByChatId).some((messages) =>
       messages.some(
         (message) => isRecord(message.metadata) && message.metadata.pending

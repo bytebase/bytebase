@@ -1,4 +1,4 @@
-import { Send, Square } from "lucide-react";
+import { ListPlus, Send, Square } from "lucide-react";
 import { type ReactNode, type RefObject, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ interface AgentChatboxProps {
   textareaProps: AgentMentionTextareaProps;
   placeholder: string;
   processing?: boolean;
+  allowQueue?: boolean;
   footer: ReactNode;
   onSend: () => void;
   sendDisabled: boolean;
@@ -42,6 +43,7 @@ export function AgentChatbox({
   textareaProps,
   placeholder,
   processing = false,
+  allowQueue = false,
   footer,
   onSend,
   sendDisabled,
@@ -52,6 +54,7 @@ export function AgentChatbox({
 }: AgentChatboxProps) {
   const { t } = useTranslation();
   const { textareaRef, value } = textareaProps;
+  const queueing = processing && allowQueue;
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -145,29 +148,37 @@ export function AgentChatbox({
     <AgentComposer
       footer={footer}
       action={
-        processing ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="shrink-0 whitespace-nowrap"
-            disabled={stopDisabled}
-            onClick={onStop}
-          >
-            <Square className="size-4" />
-            {t("agent.stop")}
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            className="shrink-0 whitespace-nowrap"
-            data-agent-send
-            disabled={sendDisabled}
-            onClick={onSend}
-          >
-            <Send className="size-4" />
-            {sendLabel ?? t("agent.send")}
-          </Button>
-        )
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {processing && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              disabled={stopDisabled}
+              onClick={onStop}
+            >
+              <Square className="size-4" />
+              {t("agent.stop")}
+            </Button>
+          )}
+          {(!processing || queueing) && (
+            <Button
+              size="sm"
+              className="shrink-0 whitespace-nowrap"
+              data-agent-send
+              disabled={sendDisabled}
+              onClick={onSend}
+            >
+              {queueing ? (
+                <ListPlus className="size-4" />
+              ) : (
+                <Send className="size-4" />
+              )}
+              {sendLabel ??
+                t(queueing ? "agent.follow-up-queue.enqueue" : "agent.send")}
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="relative w-full">
@@ -176,7 +187,9 @@ export function AgentChatbox({
             className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
             data-agent-input-placeholder
           >
-            {processing ? t("agent.input-processing-placeholder") : placeholder}
+            {processing && !queueing
+              ? t("agent.input-processing-placeholder")
+              : placeholder}
           </div>
         )}
         <AgentMentionTextarea

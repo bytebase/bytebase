@@ -141,6 +141,14 @@
       "query-unmask": "¿Cómo puedo solicitar acceso a datos sin enmascarar?",
       "query-unmask-database": "¿Cómo puedo solicitar acceso a los datos sin enmascarar de {{database}}?"
     },
+    "follow-up-queue": {
+      "enqueue": "Poner en cola",
+      "input-placeholder": "Añade un mensaje de seguimiento",
+      "paused": "En pausa",
+      "queued-count": "En cola: {{count}}",
+      "remove": "Quitar el mensaje {{position}} de la cola",
+      "resume": "Reanudar cola"
+    },
     "handoff": {
       "open-data-classification": "Abrir la configuración de clasificación de datos",
       "open-database-catalog": "Abrir la configuración de la columna",
