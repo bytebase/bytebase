@@ -377,25 +377,25 @@ func TestExecuteLogsRangesInTheCallersScript(t *testing.T) {
 // a range that spans a removed line has to drop it rather than show a directive
 // the workspace never received.
 func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
-	for _, script := range []string{
-		"-- txn-mode=off\nINSERT INTO t VALUES (1)",
-		"-- keep\n-- txn-mode=off\nINSERT INTO t VALUES (1)",
-		"-- txn-mode=off\n-- keep\nINSERT INTO t VALUES (1)",
-		"-- keep\n\n-- txn-isolation=serializable\n\nINSERT INTO t VALUES (1)",
-		"INSERT INTO t VALUES (1)",
+	for _, tc := range []struct {
+		script string
+		want   string
+	}{
+		{"-- txn-mode=off\nINSERT INTO t VALUES (1)", "INSERT INTO t VALUES (1)"},
+		{"-- keep\n-- txn-mode=off\nINSERT INTO t VALUES (1)", "INSERT INTO t VALUES (1)"},
+		{"-- txn-mode=off\n-- keep\nINSERT INTO t VALUES (1)", "-- keep\nINSERT INTO t VALUES (1)"},
+		{"-- keep\n\n-- txn-isolation=serializable\n\nINSERT INTO t VALUES (1)", "\nINSERT INTO t VALUES (1)"},
+		{"INSERT INTO t VALUES (1)", "INSERT INTO t VALUES (1)"},
+		// The parser's whole-string trim leaves an indented last line's
+		// indentation alone, so the boundary comparison must not trim it.
+		{"-- txn-mode=off\nSELECT 1;\n  SELECT 2", "SELECT 1;\n  SELECT 2"},
+		{"-- txn-mode=off\nSELECT 1;\n  SELECT 2  ", "SELECT 1;\n  SELECT 2"},
+		{"-- txn-mode=off\n  SELECT 1", "SELECT 1"},
 	} {
-		t.Run(script, func(t *testing.T) {
-			_, cleaned := base.ParseTransactionConfig(script)
-			shift := directiveShift(script, cleaned)
-			at := strings.Index(cleaned, "INSERT")
-			require.NotEqual(t, -1, at)
-			start, _ := shift(at, at)
-			require.Equal(t, strings.Index(script, "INSERT"), start)
-			start, end := shift(0, len(cleaned))
-			rangeText := script[start:end]
-			require.NotContains(t, rangeText, "txn-mode")
-			require.NotContains(t, rangeText, "txn-isolation")
-			require.Contains(t, rangeText, "INSERT INTO t VALUES (1)")
+		t.Run(tc.script, func(t *testing.T) {
+			_, cleaned := base.ParseTransactionConfig(tc.script)
+			start, end := directiveShift(tc.script, cleaned)(0, len(cleaned))
+			require.Equal(t, tc.want, tc.script[start:end])
 		})
 	}
 }

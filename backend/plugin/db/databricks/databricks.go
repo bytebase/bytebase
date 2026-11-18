@@ -50,6 +50,7 @@ import (
 	"context"
 	"io"
 	"strings"
+	"unicode"
 
 	databricksdriver "github.com/bytebase/omni/databricks/driver"
 	odbdriver "github.com/bytebase/omni/driver"
@@ -185,8 +186,8 @@ func directiveShift(script, cleaned string) func(int, int) (int, int) {
 	kept := make([]bool, len(scriptLines))
 	next := 0
 	for i, line := range cleanedLines {
-		boundary := i == 0 || i == len(cleanedLines)-1
-		for next < len(scriptLines) && !sameLine(scriptLines[next], line, boundary) {
+		first, last := i == 0, i == len(cleanedLines)-1
+		for next < len(scriptLines) && !sameLine(scriptLines[next], line, first, last) {
 			next++
 		}
 		if next == len(scriptLines) {
@@ -230,13 +231,18 @@ func directiveShift(script, cleaned string) func(int, int) (int, int) {
 }
 
 // sameLine reports whether a cleaned line is the caller's line. The parser trims
-// the whole text, so the first and last kept lines may have lost surrounding
-// whitespace and the interior lines are copied verbatim.
-func sameLine(scriptLine, cleanedLine string, boundary bool) bool {
-	if boundary {
-		return strings.TrimSpace(scriptLine) == cleanedLine
+// the whole text, so the first kept line may have lost its leading whitespace and
+// the last its trailing whitespace; anything else, including a last line's
+// indentation, is copied verbatim.
+func sameLine(scriptLine, cleanedLine string, first, last bool) bool {
+	candidate := scriptLine
+	if first {
+		candidate = strings.TrimLeftFunc(candidate, unicode.IsSpace)
 	}
-	return scriptLine == cleanedLine
+	if last {
+		candidate = strings.TrimRightFunc(candidate, unicode.IsSpace)
+	}
+	return candidate == cleanedLine
 }
 
 type executeLogger struct {
