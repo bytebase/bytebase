@@ -20,6 +20,59 @@ import (
 	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
+// InstanceLimits bounds non-deleted instances in a workspace. Nil limits are unlimited.
+type InstanceLimits struct {
+	Count     *int
+	Activated *int
+}
+
+// InstanceLimitError indicates that a write would increase usage beyond a limit.
+type InstanceLimitError struct {
+	Activated bool
+	Limit     int
+}
+
+func (e *InstanceLimitError) Error() string {
+	if e.Activated {
+		return fmt.Sprintf("reached the maximum activated instance count %d", e.Limit)
+	}
+	return fmt.Sprintf("reached the maximum instance count %d", e.Limit)
+}
+
+type instanceQuotaUsage struct{ count, activated int }
+
+func instanceQuotaCount(ctx context.Context, tx *sql.Tx, workspace string) (instanceQuotaUsage, error) {
+	var usage instanceQuotaUsage
+	err := tx.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE COALESCE((metadata->>'activation')::boolean, FALSE)) FROM instance WHERE workspace = $1 AND deleted = FALSE`, workspace).Scan(&usage.count, &usage.activated)
+	return usage, err
+}
+
+// Every writer participates even without limits, so licensed and unlimited paths
+// cannot race a quota check in another request. Locks precede all row locks.
+func lockInstanceQuota(ctx context.Context, tx *sql.Tx, workspace string) (instanceQuotaUsage, error) {
+	if err := AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyInstanceQuota, workspace); err != nil {
+		return instanceQuotaUsage{}, err
+	}
+	return instanceQuotaCount(ctx, tx, workspace)
+}
+
+func checkInstanceQuota(ctx context.Context, tx *sql.Tx, workspace string, before instanceQuotaUsage, limits *InstanceLimits) error {
+	if limits == nil {
+		return nil
+	}
+	after, err := instanceQuotaCount(ctx, tx, workspace)
+	if err != nil {
+		return err
+	}
+	if limits.Count != nil && after.count > before.count && after.count > *limits.Count {
+		return &InstanceLimitError{Limit: *limits.Count}
+	}
+	if limits.Activated != nil && after.activated > before.activated && after.activated > *limits.Activated {
+		return &InstanceLimitError{Activated: true, Limit: *limits.Activated}
+	}
+	return nil
+}
+
 // InstanceMessage is the message for instance.
 type InstanceMessage struct {
 	ResourceID    string
@@ -32,6 +85,7 @@ type InstanceMessage struct {
 
 // UpdateInstanceMessage is the message for updating an instance.
 type UpdateInstanceMessage struct {
+	Limits *InstanceLimits
 	// allow batch update
 	ResourceID          *string
 	FindByEnvironmentID *string
@@ -40,6 +94,10 @@ type UpdateInstanceMessage struct {
 	Deleted       *bool
 	EnvironmentID *string
 	Metadata      *storepb.Instance
+	// SyncMetadata replaces only server-observed fields, preserving concurrent
+	// connection and governance changes. It is mutually exclusive with Metadata.
+	SyncMetadata *storepb.Instance
+
 	// MoveDatabasesToProjectID atomically transfers all databases while changing
 	// the instance lifecycle. It is only valid when archiving a resource-scoped
 	// workspace instance.
@@ -204,8 +262,9 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 	return instanceMessages, nil
 }
 
-// CreateInstance creates an instance.
-func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMessage) (*InstanceMessage, error) {
+// CreateInstance creates an instance and optionally enforces workspace limits.
+// Existing unlimited callers still serialize with quota-enforced writes.
+func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMessage, limits ...*InstanceLimits) (*InstanceMessage, error) {
 	if err := validateInstanceDataSources(instanceCreate.Metadata); err != nil {
 		return nil, err
 	}
@@ -228,6 +287,10 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		return nil, err
 	}
 	defer tx.Rollback()
+	before, err := lockInstanceQuota(ctx, tx, instanceCreate.Workspace)
+	if err != nil {
+		return nil, err
+	}
 	if instanceCreate.ProjectID != nil {
 		if common.IsDefaultProject(instanceCreate.Workspace, *instanceCreate.ProjectID) {
 			return nil, errors.Errorf("default project %s cannot own an instance", *instanceCreate.ProjectID)
@@ -264,6 +327,11 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
+	if len(limits) > 0 {
+		if err := checkInstanceQuota(ctx, tx, instanceCreate.Workspace, before, limits[0]); err != nil {
+			return nil, err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -284,6 +352,10 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	if patch.MoveDatabasesToProjectID != nil && (patch.ResourceID == nil || patch.Deleted == nil || !*patch.Deleted) {
 		return nil, errors.New("moving instance databases is only supported while archiving a resource-scoped instance")
 	}
+	if patch.Metadata != nil && patch.SyncMetadata != nil {
+		return nil, errors.New("metadata and sync metadata cannot both be specified")
+	}
+
 	set := qb.Q()
 
 	if v := patch.EnvironmentID; v != nil {
@@ -309,6 +381,19 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		set.Comma("metadata = ?", metadata)
 	}
 
+	if v := patch.SyncMetadata; v != nil {
+		metadata, err := protojson.Marshal(&storepb.Instance{
+			Version:                  v.Version,
+			LastSyncTime:             v.LastSyncTime,
+			MysqlLowerCaseTableNames: v.MysqlLowerCaseTableNames,
+			Roles:                    v.Roles,
+		})
+		if err != nil {
+			return nil, err
+		}
+		set.Comma("metadata = (metadata - 'version' - 'lastSyncTime' - 'mysqlLowerCaseTableNames' - 'roles') || ?::jsonb", metadata)
+	}
+
 	if set.Len() == 0 {
 		return nil, errors.New("no update field specified")
 	}
@@ -328,12 +413,57 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		return nil, errors.Errorf("empty where")
 	}
 
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	scopeQuery, scopeArgs, err := qb.Q().Space("SELECT DISTINCT workspace FROM instance WHERE ? ORDER BY workspace", where).ToSQL()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.QueryContext(ctx, scopeQuery, scopeArgs...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var workspaces []string
+	for rows.Next() {
+		var workspace string
+		if err := rows.Scan(&workspace); err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, workspace)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	before := make(map[string]instanceQuotaUsage)
+	for _, workspace := range workspaces {
+		usage, err := lockInstanceQuota(ctx, tx, workspace)
+		if err != nil {
+			return nil, err
+		}
+		before[workspace] = usage
+	}
+	commit := func() error {
+		for _, workspace := range workspaces {
+			if err := checkInstanceQuota(ctx, tx, workspace, before[workspace], patch.Limits); err != nil {
+				return err
+			}
+		}
+		return tx.Commit()
+	}
+
 	q := qb.Q().Space("UPDATE instance SET ?", set).
 		Space("WHERE ?", where)
 
 	if v := patch.ResourceID; v != nil {
 		if patch.Deleted != nil {
-			return s.updateInstanceLifecycle(ctx, patch, q)
+			return s.updateInstanceLifecycle(ctx, tx, commit, patch, q)
 		}
 		q.Space("RETURNING workspace, project")
 		query, args, err := q.ToSQL()
@@ -342,7 +472,10 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		}
 		var workspace string
 		var project sql.NullString
-		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+			return nil, err
+		}
+		if err := commit(); err != nil {
 			return nil, err
 		}
 		s.instanceCache.Remove(getInstanceCacheKey(*v))
@@ -359,20 +492,15 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return nil, commit()
 }
 
-func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
+func (s *Store) updateInstanceLifecycle(ctx context.Context, tx *sql.Tx, commit func() error, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
 	resourceID := *patch.ResourceID
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin instance lifecycle transaction")
-	}
-	defer tx.Rollback()
 	activeTaskRunCount, err := lockActiveTaskRunsForInstance(ctx, tx, resourceID)
 	if err != nil {
 		return nil, err
@@ -434,7 +562,7 @@ func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstan
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
 		return nil, err
 	}
-	if err := tx.Commit(); err != nil {
+	if err := commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit instance lifecycle transaction")
 	}
 

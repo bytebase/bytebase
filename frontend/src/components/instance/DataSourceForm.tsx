@@ -41,6 +41,7 @@ import {
   DataSourceExternalSecretSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
@@ -202,6 +203,9 @@ export function DataSourceForm({
     needsKeytabResupply,
     dataSourceResetEvent,
   } = ctx;
+
+  const isNeon =
+    basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
 
   const {
     showDatabase,
@@ -654,13 +658,15 @@ export function DataSourceForm({
 
   const onLocalTlsPostureChange = useCallback(
     (posture: LocalTlsPosture) => {
-      setLocalTlsPosture(posture);
       if (posture === LOCAL_TLS_POSTURE_DISABLED) {
+        if (isNeon) return;
+        setLocalTlsPosture(posture);
         setLocalTlsCaSource("SYSTEM_TRUST");
         setLocalTlsClientCertSource(LOCAL_TLS_CLIENT_CERT_SOURCE_NONE);
         update({ ...disableLocalTls(dataSource), updateSsl: true });
         return;
       }
+      setLocalTlsPosture(posture);
 
       const next = applyLocalTlsPosture(dataSource, posture);
       const enablingTls = !dataSource.useSsl;
@@ -685,7 +691,7 @@ export function DataSourceForm({
         }),
       });
     },
-    [dataSource, localTlsClientCertSource, update]
+    [dataSource, isNeon, localTlsClientCertSource, update]
   );
 
   const passwordSourceOptions = [
@@ -2186,6 +2192,7 @@ export function DataSourceForm({
                     })
                   }
                   engineType={basicInfo.engine}
+                  requireTls={isNeon}
                   disabled={!allowEdit}
                 />
               </FormField>
