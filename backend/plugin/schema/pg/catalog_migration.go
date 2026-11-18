@@ -39,13 +39,17 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return "", nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
-	orderTypeAndTableCreates(plan, newSchema.GetProto())
+	searchPath := getConfiguredSearchPath(oldSchema)
+	if len(searchPath) == 0 {
+		searchPath = getConfiguredSearchPath(newSchema)
+	}
+	orderTypeAndTableCreates(plan, newSchema.GetProto(), searchPath)
 	restoreIndexDefinitions(plan, newSchema.GetProto())
 	restored, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err != nil {
 		return "", err
 	}
-	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored); err != nil {
+	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored, searchPath); err != nil {
 		return "", err
 	}
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
@@ -78,7 +82,7 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 // orderTypeAndTableCreates puts a created type, or a created table whose row type
 // a column uses, before the objects that use it, and a created table before a
 // composite attribute that uses its row type.
-func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
+func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata, searchPath []string) {
 	type createNode struct {
 		position int
 		key      string
@@ -86,15 +90,18 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 	}
 	var nodes []createNode
 	byKey := make(map[string]int)
+	created := make(map[string]bool)
 	for i, op := range plan.Ops {
 		switch op.Type {
 		case catalog.OpCreateTable:
 			key := objectKey(op.SchemaName, op.ObjectName)
 			byKey[key] = len(nodes)
+			created[key] = true
 			nodes = append(nodes, createNode{position: i, key: key, relation: true})
 		case catalog.OpCreateType:
 			key := objectKey(op.SchemaName, op.ObjectName)
 			byKey[key] = len(nodes)
+			created[key] = true
 			nodes = append(nodes, createNode{position: i, key: key})
 		default:
 		}
@@ -118,12 +125,11 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 				continue
 			}
 			for _, column := range table.GetColumns() {
-				for key, index := range byKey {
-					if !referencesType(column.GetType(), key) {
-						continue
-					}
-					addEdge(index, tableIndex)
+				key, ok := referencedRelation(column.GetType(), created, searchPath)
+				if !ok {
+					continue
 				}
+				addEdge(byKey[key], tableIndex)
 			}
 		}
 		for _, composite := range schema.GetCompositeTypes() {
@@ -132,12 +138,11 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 				continue
 			}
 			for _, attribute := range composite.GetAttributes() {
-				for key, index := range byKey {
-					if !referencesType(attribute.GetType(), key) {
-						continue
-					}
-					addEdge(index, compositeIndex)
+				key, ok := referencedRelation(attribute.GetType(), created, searchPath)
+				if !ok {
+					continue
 				}
+				addEdge(byKey[key], compositeIndex)
 			}
 		}
 	}
@@ -223,7 +228,7 @@ type typeReference struct {
 // recreated or added by the target. A table column or a composite type that holds
 // one of their row types cannot be ordered around that, so the migration is
 // refused instead.
-func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool) error {
+func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
 	dropped := relationSet(oldMeta, newMeta)
 	if len(dropped) == 0 && len(restored) == 0 {
 		return nil
@@ -231,7 +236,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	for key := range restored {
 		dropped[key] = true
 	}
-	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored); err != nil {
+	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored, searchPath); err != nil {
 		return err
 	}
 	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored); err != nil {
@@ -245,7 +250,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 			if newComposite == nil {
 				continue
 			}
-			releaseCompositeAttributes(plan, schema.GetName(), composite, newComposite, dropped, created, restored)
+			releaseCompositeAttributes(plan, schema.GetName(), composite, newComposite, dropped, created, restored, searchPath)
 		}
 	}
 	return nil
@@ -255,7 +260,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 // re-added when its released type needs a create, or when its target type is a
 // restored view's row type, which the catalog cannot order against the drop. The
 // first such target position fixes where the re-added suffix starts.
-func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, restored map[string]bool) {
+func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, restored map[string]bool, searchPath []string) {
 	compositeName := oldComposite.GetName()
 	firstTarget := -1
 	dropKeys := make(map[string]bool)
@@ -263,10 +268,10 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 		old := attributeByName(oldComposite, target.GetName())
 		dropKey := ""
 		if old != nil {
-			dropKey, _ = referencedRelation(old.GetType(), dropped)
+			dropKey, _ = referencedRelation(old.GetType(), dropped, searchPath)
 		}
-		restoredKey, restoredType := referencedRelation(target.GetType(), restored)
-		if !restoredType && (dropKey == "" || !typeNeedsCreate(target.GetType(), created, restored)) {
+		restoredKey, restoredType := referencedRelation(target.GetType(), restored, searchPath)
+		if !restoredType && (dropKey == "" || !typeNeedsCreate(target.GetType(), created, restored, searchPath)) {
 			continue
 		}
 		if firstTarget < 0 {
@@ -283,7 +288,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 	// catalog's own release only has to move ahead of the relation drop. One the
 	// target removes needs no re-add at all.
 	for _, attribute := range oldComposite.GetAttributes() {
-		dropKey, ok := referencedRelation(attribute.GetType(), dropped)
+		dropKey, ok := referencedRelation(attribute.GetType(), dropped, searchPath)
 		if !ok {
 			continue
 		}
@@ -303,7 +308,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 		if old == nil {
 			continue
 		}
-		if dropKey, ok := referencedRelation(old.GetType(), dropped); ok {
+		if dropKey, ok := referencedRelation(old.GetType(), dropped, searchPath); ok {
 			dropKeys[dropKey] = true
 		}
 	}
@@ -340,7 +345,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 	}
 	anchor := -1
 	for _, target := range suffix {
-		for key := range createKeysFor(target.GetType(), created, restored) {
+		for key := range createKeysFor(target.GetType(), created, restored, searchPath) {
 			if index := findCreateOp(plan.Ops, key); index > anchor {
 				anchor = index
 			}
@@ -378,22 +383,22 @@ func releaseCatalogAttribute(plan *catalog.MigrationPlan, schemaName, compositeN
 
 // typeNeedsCreate reports whether a type name denotes an object this migration
 // creates or recreates, so an attribute of it must be added after that create.
-func typeNeedsCreate(typeName string, created, restored map[string]bool) bool {
-	if _, ok := referencedRelation(typeName, created); ok {
+func typeNeedsCreate(typeName string, created, restored map[string]bool, searchPath []string) bool {
+	if _, ok := referencedRelation(typeName, created, searchPath); ok {
 		return true
 	}
-	_, ok := referencedRelation(typeName, restored)
+	_, ok := referencedRelation(typeName, restored, searchPath)
 	return ok
 }
 
 // createKeysFor returns the objects whose create an attribute of the type needs to
 // follow: a relation created in this migration, including a restored view.
-func createKeysFor(typeName string, created, restored map[string]bool) map[string]bool {
+func createKeysFor(typeName string, created, restored map[string]bool, searchPath []string) map[string]bool {
 	keys := make(map[string]bool)
-	if key, ok := referencedRelation(typeName, created); ok {
+	if key, ok := referencedRelation(typeName, created, searchPath); ok {
 		keys[key] = true
 	}
-	if key, ok := referencedRelation(typeName, restored); ok {
+	if key, ok := referencedRelation(typeName, restored, searchPath); ok {
 		keys[key] = true
 	}
 	return keys
@@ -404,7 +409,7 @@ func createKeysFor(typeName string, created, restored map[string]bool) map[strin
 // column would discard its data, and a created composite type would need the view
 // before its CREATE TYPE. An existing composite's attributes are re-added after
 // the recreation instead.
-func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool) error {
+func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
 	if len(restored) == 0 {
 		return nil
 	}
@@ -412,7 +417,7 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 		for _, schema := range meta.GetSchemas() {
 			for _, table := range schema.GetTables() {
 				for _, column := range table.GetColumns() {
-					key, ok := referencedRelation(column.GetType(), restored)
+					key, ok := referencedRelation(column.GetType(), restored, searchPath)
 					if !ok {
 						continue
 					}
@@ -428,7 +433,7 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 				continue
 			}
 			for _, attribute := range composite.GetAttributes() {
-				key, ok := referencedRelation(attribute.GetType(), restored)
+				key, ok := referencedRelation(attribute.GetType(), restored, searchPath)
 				if !ok {
 					continue
 				}
@@ -463,7 +468,7 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 func refuseRoutine(schemaName, name, signature, definition string, restored map[string]bool) error {
 	for key := range restored {
 		viewSchema, viewName := splitObjectKey(key)
-		if !namesType(signature, viewSchema, viewName) &&
+		if !parametersNameType(routineArgumentList(signature), viewSchema, viewName) &&
 			!parametersNameType(routineArgumentList(definition), viewSchema, viewName) &&
 			!routineResultNamesType(definition, viewSchema, viewName) {
 			continue
@@ -568,7 +573,7 @@ func routineResultNamesType(definition, schemaName, objectName string) bool {
 // routineReturnClause is the text between RETURNS and the first clause after it,
 // which is where a routine's result type is declared.
 func routineReturnClause(definition string) string {
-	index := strings.Index(definition, "RETURNS ")
+	index := indexOutsideQuotes(definition, "RETURNS ")
 	if index < 0 {
 		return ""
 	}
@@ -869,22 +874,41 @@ func isIdentifierByte(b byte) bool {
 	return b == '_' || b == '$' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
 
-func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
+func referencedRelation(typeName string, relations map[string]bool, searchPath []string) (string, bool) {
 	name := strings.TrimSpace(typeName)
 	reference, end, ok := parseTypeReferenceAt(name, 0)
 	if !ok || strings.TrimSpace(trailingModifier(name[end:])) != "" {
 		return "", false
 	}
-	for key := range relations {
-		schemaName, objectName := splitObjectKey(key)
-		if reference.qualified && !reference.schema.matches(schemaName) {
-			continue
+	if reference.qualified {
+		for key := range relations {
+			schemaName, objectName := splitObjectKey(key)
+			if reference.schema.matches(schemaName) && reference.object.matches(objectName) {
+				return key, true
+			}
 		}
-		if reference.object.matches(objectName) {
-			return key, true
+		return "", false
+	}
+	// An unqualified name resolves to the first relation in search-path order.
+	for _, searchSchema := range searchPath {
+		for key := range relations {
+			schemaName, objectName := splitObjectKey(key)
+			if schemaName == searchSchema && reference.object.matches(objectName) {
+				return key, true
+			}
 		}
 	}
-	return "", false
+	var candidates []string
+	for key := range relations {
+		if _, objectName := splitObjectKey(key); reference.object.matches(objectName) {
+			candidates = append(candidates, key)
+		}
+	}
+	if len(candidates) == 0 {
+		return "", false
+	}
+	slices.Sort(candidates)
+	return candidates[0], true
 }
 
 func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.CompositeTypeMetadata {

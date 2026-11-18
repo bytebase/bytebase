@@ -836,6 +836,27 @@ func TestRestoredUnloadableViewReleasesRetypedRowTypeAttribute(t *testing.T) {
 	require.Contains(t, sql, `COMMENT ON COLUMN "public"."c"."z" IS 'keep'`, "the re-added unchanged attribute keeps its comment")
 }
 
+// TestUnqualifiedTypeFollowsTheSearchPath covers a name two schemas share: only
+// the first visible relation in the search path is the one a type refers to.
+func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
+	name := "shared"
+	relations := map[string]bool{objectKey("first", name): true, objectKey("second", name): true}
+	require.Equal(t, objectKey("second", name), func() string {
+		key, ok := referencedRelation(name, relations, []string{"second", "first"})
+		require.True(t, ok)
+		return key
+	}())
+	key, ok := referencedRelation(name, relations, []string{"first"})
+	require.True(t, ok)
+	require.Equal(t, objectKey("first", name), key)
+	key, ok = referencedRelation(name, relations, nil)
+	require.True(t, ok, "without a search path the answer is still deterministic")
+	require.Equal(t, objectKey("first", name), key)
+	key, ok = referencedRelation("first."+name, relations, []string{"second"})
+	require.True(t, ok, "a qualified name ignores the search path")
+	require.Equal(t, objectKey("first", name), key)
+}
+
 // TestTypeNameMatchingKeepsIdentifierBoundaries pins quoted identifier parsing:
 // a dot inside quotes belongs to that identifier, so `"a.b"."c"` and `"a"."b.c"`
 // name different relations.
@@ -853,7 +874,7 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 		{`"a"."b.c"`, dottedSchema},
 		{`"a.b"."c"`, dottedObject},
 	} {
-		_, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true})
+		_, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true}, nil)
 		require.False(t, ok, "%s does not name %s", tc.typeName, tc.key)
 	}
 	for _, tc := range []struct{ typeName, key string }{
@@ -861,7 +882,7 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 		{`"a"."b.c"`, dottedObject},
 		{`"a.b"."c"[]`, dottedSchema},
 	} {
-		key, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true})
+		key, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true}, nil)
 		require.True(t, ok, "%s names %s", tc.typeName, tc.key)
 		require.Equal(t, tc.key, key)
 	}
@@ -872,7 +893,7 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 	require.False(t, referencesType(`"public"."Foo"`, lower), "a quoted identifier matches its case exactly")
 	require.True(t, referencesType("public.foo", lower), "an unquoted identifier folds case")
 	require.True(t, referencesType("public.Foo", lower))
-	_, ok := referencedRelation(`"public"."Foo"`, map[string]bool{lower: true})
+	_, ok := referencedRelation(`"public"."Foo"`, map[string]bool{lower: true}, nil)
 	require.False(t, ok, `"public"."Foo" is not "public"."foo"`)
 	mixedUpper := objectKey("Foo", "bar")
 	mixedLower := objectKey("foo", "bar")
@@ -880,11 +901,11 @@ func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
 	require.False(t, referencesType(`"Foo".bar`, mixedLower), "a quoted schema keeps its case while the object folds")
 	require.False(t, referencesType("public.Foo", upper), "an unquoted reference folds to lower case before resolving")
 	require.True(t, referencesType("public.Foo", lower))
-	_, ok = referencedRelation("public.FOO", map[string]bool{upper: true})
+	_, ok = referencedRelation("public.FOO", map[string]bool{upper: true}, nil)
 	require.False(t, ok, "an unquoted reference does not name a quoted upper-case relation")
 	require.True(t, referencesType(`foo."Bar"`, objectKey("foo", "Bar")))
 	require.False(t, referencesType(`foo."Bar"`, objectKey("foo", "bar")), "a quoted object keeps its case while the schema folds")
-	key, ok := referencedRelation("public.Foo", map[string]bool{lower: true})
+	key, ok := referencedRelation("public.Foo", map[string]bool{lower: true}, nil)
 	require.True(t, ok)
 	require.Equal(t, lower, key)
 }
@@ -939,7 +960,7 @@ func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 // a table called `timestamp`, or the false edge can hide the real order.
 func TestMultiwordTypeIsNotARelationReference(t *testing.T) {
 	require.False(t, referencesType("timestamp without time zone", objectKey("public", "timestamp")))
-	_, referenced := referencedRelation("timestamp without time zone", map[string]bool{objectKey("public", "timestamp"): true})
+	_, referenced := referencedRelation("timestamp without time zone", map[string]bool{objectKey("public", "timestamp"): true}, nil)
 	require.False(t, referenced, "a multiword type does not name a relation")
 	require.False(t, referencesType("character varying(10)", objectKey("public", "character")))
 	require.True(t, referencesType("timestamp", objectKey("public", "timestamp")))
@@ -1435,6 +1456,23 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 				Name:       "w",
 				Signature:  "w()",
 				Definition: `CREATE FUNCTION public.w() RETURNS public."v LANGUAGE suffix" LANGUAGE sql AS $$ SELECT $$`,
+			}},
+			refused: true,
+		},
+		{
+			name: "routine named like the view",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "v",
+				Signature:  "v(integer)",
+				Definition: "CREATE FUNCTION public.v(integer) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+			}},
+		},
+		{
+			name: "returns inside a quoted routine name",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "RETURNS decoy",
+				Signature:  "decoy()",
+				Definition: `CREATE FUNCTION public."RETURNS decoy"() RETURNS public.v LANGUAGE sql AS $$ SELECT $$`,
 			}},
 			refused: true,
 		},
