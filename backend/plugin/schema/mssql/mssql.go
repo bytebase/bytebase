@@ -166,11 +166,11 @@ func restoreLegacyModuleText(rendered string, metadata *metadatapb.DatabaseSchem
 		var end int
 		switch {
 		case rendered[i] == '\'':
-			end = quotedEnd(rendered, i, '\'', '\'')
+			end = quotedEnd(rendered, i, '\'')
 		case rendered[i] == '"':
-			end = quotedEnd(rendered, i, '"', '"')
+			end = quotedEnd(rendered, i, '"')
 		case rendered[i] == '[':
-			end = quotedEnd(rendered, i, '[', ']')
+			end = quotedEnd(rendered, i, ']')
 		case strings.HasPrefix(rendered[i:], "--"):
 			end = lineCommentEnd(rendered, i)
 		case strings.HasPrefix(rendered[i:], "/*"):
@@ -212,14 +212,14 @@ func goLineEnd(text string, i int) (int, bool) {
 
 // quotedEnd returns the position after the closing quote, treating a doubled
 // quote as an escaped quote inside the value.
-func quotedEnd(text string, i int, open, close byte) int {
+func quotedEnd(text string, i int, closing byte) int {
 	j := i + 1
 	for j < len(text) {
-		if text[j] != close {
+		if text[j] != closing {
 			j++
 			continue
 		}
-		if j+1 < len(text) && text[j+1] == close {
+		if j+1 < len(text) && text[j+1] == closing {
 			j += 2
 			continue
 		}
