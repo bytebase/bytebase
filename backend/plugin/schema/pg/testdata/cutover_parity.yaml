@@ -4139,7 +4139,7 @@
     DROP TYPE "s"."addr";
     DROP SCHEMA s CASCADE
 - description: TestCockroachMetadataDiffReleasingRetypeToCreatedTableSplitsDropReadd
-  difference: the catalog retypes the composite attribute directly instead of DROP ATTRIBUTE + ADD ATTRIBUTE, and the old table drop uses CASCADE. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the release is split into DROP ATTRIBUTE before the old table and ADD ATTRIBUTE after the new table; the text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -4212,11 +4212,12 @@
     ALTER TYPE "public"."c" ADD ATTRIBUTE "r" public.new_t;
 
   catalogExpected: |-
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "r";
     DROP TABLE "public"."old_t" CASCADE;
     CREATE TABLE "public"."new_t" (
         "id" integer NOT NULL
     );
-    ALTER TYPE "public"."c" ALTER ATTRIBUTE "r" TYPE new_t
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "r" public.new_t
 - description: TestCockroachMetadataDiffCompositeCreateWaitsForViewRowType
   difference: the composite type is written on one line with the view row type unqualified, after the view. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
@@ -4376,7 +4377,7 @@
     ALTER TYPE "public"."addr" ALTER ATTRIBUTE "s" TYPE text;
     DROP TYPE "public"."status"
 - description: TestCockroachMetadataDiffReleasingAlterPrecedesViewDrop
-  difference: the view drop is emitted before the releasing ALTER TYPE. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the releasing ALTER TYPE precedes the view drop; the text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -4427,8 +4428,8 @@
     DROP VIEW "public"."v";
 
   catalogExpected: |-
-    DROP VIEW "public"."v";
-    ALTER TYPE "public"."c" ALTER ATTRIBUTE "row" TYPE text
+    ALTER TYPE "public"."c" ALTER ATTRIBUTE "row" TYPE text;
+    DROP VIEW "public"."v"
 - description: TestCockroachMetadataDiffCompositeAlterWaitsForCreatedViewRowType
   difference: the added attribute view row type is unqualified. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-

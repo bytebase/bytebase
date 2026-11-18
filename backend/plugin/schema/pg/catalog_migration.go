@@ -68,89 +68,131 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 	return c, report, nil
 }
 
-// releaseCompositeBeforeTableDrop moves an ALTER TYPE that releases a composite
-// attribute from a table's row type ahead of that table's CASCADE drop. The
-// cascade would otherwise remove the attribute or the composite before the
-// release runs.
+// releaseCompositeBeforeTableDrop moves or splits an ALTER TYPE that releases a
+// composite attribute from a table's or view's row type ahead of that object's
+// drop. A CASCADE drop would otherwise remove the attribute first. When the new
+// attribute type needs an object created in this migration, the release is
+// DROP ATTRIBUTE before the drop and ADD ATTRIBUTE after the plan.
 func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) {
-	dropped := make(map[string]bool)
-	created := make(map[string]bool)
-	for _, schema := range oldMeta.GetSchemas() {
-		newSchema := schemaByName(newMeta, schema.GetName())
-		for _, table := range schema.GetTables() {
-			if newSchema == nil || tableByName(newSchema, table.GetName()) == nil {
-				dropped[schema.GetName()+"."+table.GetName()] = true
-			}
-		}
-	}
-	for _, schema := range newMeta.GetSchemas() {
-		oldSchema := schemaByName(oldMeta, schema.GetName())
-		for _, table := range schema.GetTables() {
-			if oldSchema == nil || tableByName(oldSchema, table.GetName()) == nil {
-				created[schema.GetName()+"."+table.GetName()] = true
-			}
-		}
-	}
+	dropped := relationSet(oldMeta, newMeta)
+	created := relationSet(newMeta, oldMeta)
 	if len(dropped) == 0 {
 		return
 	}
 	for _, schema := range oldMeta.GetSchemas() {
 		newSchema := schemaByName(newMeta, schema.GetName())
 		for _, composite := range schema.GetCompositeTypes() {
-			releases := false
+			newComposite := compositeByName(newSchema, composite.GetName())
 			for _, attribute := range composite.GetAttributes() {
-				if !referencedTable(attribute.GetType(), dropped) {
+				dropKey, ok := referencedRelation(attribute.GetType(), dropped)
+				if !ok {
 					continue
 				}
-				newComposite := compositeByName(newSchema, composite.GetName())
 				newType := attributeType(newComposite, attribute.GetName())
 				if newType == attribute.GetType() {
 					continue
 				}
-				if referencedTable(newType, created) {
+				alter := findAlterAttribute(plan, schema.GetName(), composite.GetName(), attribute.GetName())
+				drop := findDropObject(plan, dropKey)
+				if alter < 0 || drop < 0 || alter < drop {
 					continue
 				}
-				releases = true
-				break
-			}
-			if !releases {
-				continue
-			}
-			alter, drop := -1, -1
-			for i, op := range plan.Ops {
-				if alter < 0 && op.Type == catalog.OpAlterType && op.SchemaName == schema.GetName() && op.ObjectName == composite.GetName() {
-					alter = i
+				if _, dependsOnCreated := referencedRelation(newType, created); dependsOnCreated {
+					plan.Ops[alter].SQL = "ALTER TYPE " + quoteQualified(schema.GetName(), composite.GetName()) + " DROP ATTRIBUTE " + quoteIdentifier(attribute.GetName())
+					plan.Ops[alter].Phase = catalog.PhasePre
+					plan.Ops = moveOp(plan.Ops, alter, drop)
+					plan.Ops = append(plan.Ops, catalog.MigrationOp{
+						Type:       catalog.OpAlterType,
+						SchemaName: schema.GetName(),
+						ObjectName: composite.GetName(),
+						SQL:        addAttributeSQL(schema.GetName(), composite.GetName(), attribute, newType),
+						Phase:      catalog.PhaseMain,
+						ObjType:    'r',
+					})
+					continue
 				}
-				if drop < 0 && op.Type == catalog.OpDropTable {
-					drop = i
-				}
+				plan.Ops = moveOp(plan.Ops, alter, drop)
 			}
-			if alter < 0 || drop < 0 || alter < drop {
-				continue
-			}
-			op := plan.Ops[alter]
-			ops := make([]catalog.MigrationOp, 0, len(plan.Ops))
-			ops = append(ops, plan.Ops[:drop]...)
-			ops = append(ops, op)
-			ops = append(ops, plan.Ops[drop:alter]...)
-			ops = append(ops, plan.Ops[alter+1:]...)
-			plan.Ops = ops
 		}
 	}
 }
 
-func referencedTable(typeName string, tables map[string]bool) bool {
+func addAttributeSQL(schema, composite string, attribute *metadatapb.CompositeTypeAttribute, newType string) string {
+	sql := "ALTER TYPE " + quoteQualified(schema, composite) + " ADD ATTRIBUTE " + quoteIdentifier(attribute.GetName()) + " " + newType
+	if attribute.GetCollation() != "" {
+		sql += " COLLATE " + attribute.GetCollation()
+	}
+	return sql
+}
+
+func findAlterAttribute(plan *catalog.MigrationPlan, schema, composite, attribute string) int {
+	for i, op := range plan.Ops {
+		if op.Type == catalog.OpAlterType && op.SchemaName == schema && op.ObjectName == composite && strings.Contains(op.SQL, quoteIdentifier(attribute)) {
+			return i
+		}
+	}
+	return -1
+}
+
+func findDropObject(plan *catalog.MigrationPlan, key string) int {
+	for i, op := range plan.Ops {
+		if op.Type != catalog.OpDropTable && op.Type != catalog.OpDropView {
+			continue
+		}
+		if op.SchemaName+"."+op.ObjectName == key {
+			return i
+		}
+	}
+	return -1
+}
+
+func moveOp(ops []catalog.MigrationOp, from, to int) []catalog.MigrationOp {
+	op := ops[from]
+	rest := make([]catalog.MigrationOp, 0, len(ops)-1)
+	rest = append(rest, ops[:from]...)
+	rest = append(rest, ops[from+1:]...)
+	result := make([]catalog.MigrationOp, 0, len(ops))
+	result = append(result, rest[:to]...)
+	result = append(result, op)
+	result = append(result, rest[to:]...)
+	return result
+}
+
+func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool {
+	result := make(map[string]bool)
+	for _, schema := range left.GetSchemas() {
+		other := schemaByName(right, schema.GetName())
+		for _, table := range schema.GetTables() {
+			if other == nil || tableByName(other, table.GetName()) == nil {
+				result[schema.GetName()+"."+table.GetName()] = true
+			}
+		}
+		for _, view := range schema.GetViews() {
+			if other == nil || viewByName(other, view.GetName()) == nil {
+				result[schema.GetName()+"."+view.GetName()] = true
+			}
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			if other == nil || materializedViewByName(other, view.GetName()) == nil {
+				result[schema.GetName()+"."+view.GetName()] = true
+			}
+		}
+	}
+	return result
+}
+
+func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
 	name := strings.TrimSpace(typeName)
 	for strings.HasSuffix(name, "[]") {
 		name = strings.TrimSuffix(name, "[]")
 	}
 	name = strings.ReplaceAll(name, `"`, "")
-	for key := range tables {
+	for key := range relations {
 		if strings.EqualFold(name, key) {
-			return true
+			return key, true
 		}
 	}
-	return false
+	return "", false
 }
 
 func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.CompositeTypeMetadata {
@@ -166,6 +208,9 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 }
 
 func attributeType(composite *metadatapb.CompositeTypeMetadata, name string) string {
+	if composite == nil {
+		return ""
+	}
 	for _, attribute := range composite.GetAttributes() {
 		if attribute.GetName() == name {
 			return attribute.GetType()
