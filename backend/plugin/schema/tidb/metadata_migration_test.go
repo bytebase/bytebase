@@ -84,3 +84,19 @@ func TestDiffMetadataTiDBColumnAttributes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "ALTER TABLE `t` MODIFY COLUMN `id` bigint NOT NULL", sql)
 }
+
+// TestDiffMetadataRefusesCaseOnlyIdentities covers the catalog's lower-cased
+// relation keys on an object-case-sensitive TiDB instance.
+func TestDiffMetadataRefusesCaseOnlyIdentities(t *testing.T) {
+	table := func(name string) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{Name: name, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
+	}
+	snapshot := func(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
+		return tidbMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "d", Schemas: []*metadatapb.SchemaMetadata{{Tables: tables}}})
+	}
+	_, err := schema.DiffMigration(storepb.Engine_TIDB, snapshot(table("Foo")), snapshot(table("foo")))
+	require.ErrorContains(t, err, "case-only rename")
+
+	_, err = schema.DiffMigration(storepb.Engine_TIDB, snapshot(table("Foo"), table("foo")), snapshot(table("Foo")))
+	require.ErrorContains(t, err, "cannot distinguish")
+}

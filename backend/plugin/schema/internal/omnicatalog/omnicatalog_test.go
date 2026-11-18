@@ -13,9 +13,12 @@ import (
 func TestSnapshotObjectFindsSequences(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
 		Name:      "public",
-		Sequences: []*metadatapb.SequenceMetadata{{Name: "s"}},
+		Sequences: []*metadatapb.SequenceMetadata{{Name: "s", Start: "1", LastValue: "42"}},
 	}}}
 	object := snapshotObject(meta, "sequence:s")
-	require.NotNil(t, object)
-	require.Equal(t, "s", object.(*metadatapb.SequenceMetadata).GetName())
+	sequence, ok := object.(*metadatapb.SequenceMetadata)
+	require.True(t, ok)
+	require.Equal(t, "s", sequence.GetName())
+	require.Equal(t, "1", sequence.GetStart())
+	require.Empty(t, sequence.GetLastValue())
 }

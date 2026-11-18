@@ -40,5 +40,8 @@ var tidbCatalog = omnicatalog.Engine[catalog.Catalog, catalog.LoadMetadataReport
 // refusing one whose changed objects the catalog could not install as defined (see
 // omnicatalog.DiffMetadata).
 func tidbDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	if err := omnicatalog.RejectCaseOnlyIdentities(oldSchema.GetProto(), newSchema.GetProto(), oldSchema.GetIsObjectCaseSensitive(), newSchema.GetIsObjectCaseSensitive()); err != nil {
+		return "", err
+	}
 	return omnicatalog.DiffMetadata(tidbCatalog, oldSchema.GetProto(), newSchema.GetProto())
 }

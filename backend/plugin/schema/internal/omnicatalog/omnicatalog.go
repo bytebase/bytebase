@@ -126,7 +126,9 @@ func snapshotObject(meta *metadatapb.DatabaseSchemaMetadata, key string) proto.M
 		case "sequence":
 			for _, sequence := range s.GetSequences() {
 				if sequence.GetName() == name {
-					return sequence
+					clone := proto.CloneOf(sequence)
+					clone.LastValue = ""
+					return clone
 				}
 			}
 		case "function":
