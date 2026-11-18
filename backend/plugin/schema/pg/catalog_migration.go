@@ -86,11 +86,11 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 	for i, op := range plan.Ops {
 		switch op.Type {
 		case catalog.OpCreateTable:
-			key := op.SchemaName + "." + op.ObjectName
+			key := objectKey(op.SchemaName, op.ObjectName)
 			byKey[key] = len(nodes)
 			nodes = append(nodes, createNode{position: i, key: key, relation: true})
 		case catalog.OpCreateType:
-			key := op.SchemaName + "." + op.ObjectName
+			key := objectKey(op.SchemaName, op.ObjectName)
 			byKey[key] = len(nodes)
 			nodes = append(nodes, createNode{position: i, key: key})
 		default:
@@ -110,7 +110,7 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 	}
 	for _, schema := range meta.GetSchemas() {
 		for _, table := range schema.GetTables() {
-			tableIndex, ok := byKey[schema.GetName()+"."+table.GetName()]
+			tableIndex, ok := byKey[objectKey(schema.GetName(), table.GetName())]
 			if !ok {
 				continue
 			}
@@ -124,7 +124,7 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 			}
 		}
 		for _, composite := range schema.GetCompositeTypes() {
-			compositeIndex, ok := byKey[schema.GetName()+"."+composite.GetName()]
+			compositeIndex, ok := byKey[objectKey(schema.GetName(), composite.GetName())]
 			if !ok {
 				continue
 			}
@@ -179,10 +179,11 @@ func referencesType(typeName, key string) bool {
 		name = strings.TrimSuffix(name, "[]")
 	}
 	name = strings.ReplaceAll(name, `"`, "")
-	if strings.EqualFold(name, key) {
+	schemaName, objectName := splitObjectKey(key)
+	if strings.EqualFold(name, schemaName+"."+objectName) {
 		return true
 	}
-	return !strings.Contains(name, ".") && strings.EqualFold(name, key[strings.LastIndex(key, ".")+1:])
+	return !strings.Contains(name, ".") && strings.EqualFold(name, objectName)
 }
 
 // releaseCompositeBeforeTableDrop moves or splits an ALTER TYPE that releases a
@@ -268,7 +269,7 @@ func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string
 
 func insertAfterObjectCreate(ops []catalog.MigrationOp, key string, op catalog.MigrationOp) []catalog.MigrationOp {
 	for i, existing := range ops {
-		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView || existing.Type == catalog.OpCreateType) && existing.SchemaName+"."+existing.ObjectName == key {
+		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView || existing.Type == catalog.OpCreateType) && objectKey(existing.SchemaName, existing.ObjectName) == key {
 			result := make([]catalog.MigrationOp, 0, len(ops)+1)
 			result = append(result, ops[:i+1]...)
 			result = append(result, op)
@@ -359,7 +360,7 @@ func findDropObject(plan *catalog.MigrationPlan, key string) int {
 		if op.Type != catalog.OpDropTable && op.Type != catalog.OpDropView {
 			continue
 		}
-		if op.SchemaName+"."+op.ObjectName == key {
+		if objectKey(op.SchemaName, op.ObjectName) == key {
 			return i
 		}
 	}
@@ -384,27 +385,27 @@ func relationSet(left, right *metadatapb.DatabaseSchemaMetadata) map[string]bool
 		other := schemaByName(right, schema.GetName())
 		for _, table := range schema.GetTables() {
 			if other == nil || tableByName(other, table.GetName()) == nil {
-				result[schema.GetName()+"."+table.GetName()] = true
+				result[objectKey(schema.GetName(), table.GetName())] = true
 			}
 		}
 		for _, view := range schema.GetViews() {
 			if other == nil || viewByName(other, view.GetName()) == nil {
-				result[schema.GetName()+"."+view.GetName()] = true
+				result[objectKey(schema.GetName(), view.GetName())] = true
 			}
 		}
 		for _, view := range schema.GetMaterializedViews() {
 			if other == nil || materializedViewByName(other, view.GetName()) == nil {
-				result[schema.GetName()+"."+view.GetName()] = true
+				result[objectKey(schema.GetName(), view.GetName())] = true
 			}
 		}
 		for _, enum := range schema.GetEnumTypes() {
 			if other == nil || enumByName(other, enum.GetName()) == nil {
-				result[schema.GetName()+"."+enum.GetName()] = true
+				result[objectKey(schema.GetName(), enum.GetName())] = true
 			}
 		}
 		for _, composite := range schema.GetCompositeTypes() {
 			if other == nil || compositeByName(other, composite.GetName()) == nil {
-				result[schema.GetName()+"."+composite.GetName()] = true
+				result[objectKey(schema.GetName(), composite.GetName())] = true
 			}
 		}
 	}
@@ -456,7 +457,8 @@ func referencedRelation(typeName string, relations map[string]bool) (string, boo
 	}
 	name = strings.ReplaceAll(name, `"`, "")
 	for key := range relations {
-		if strings.EqualFold(name, key) {
+		schemaName, objectName := splitObjectKey(key)
+		if strings.EqualFold(name, schemaName+"."+objectName) {
 			return key, true
 		}
 	}
@@ -515,7 +517,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	for _, schema := range newMeta.GetSchemas() {
 		oldSchema := schemaByName(oldMeta, schema.GetName())
 		for _, view := range schema.GetViews() {
-			key := schema.GetName() + "." + view.GetName()
+			key := objectKey(schema.GetName(), view.GetName())
 			oldView := viewByName(oldSchema, view.GetName())
 			createSQL, err := catalog.ViewDefinition(schema.GetName(), view)
 			if err != nil {
@@ -526,7 +528,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				dropSQL:    "DROP VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
 				createSQL:  trimDefinition(createSQL),
 				newDeps:    dependencyKeys(view.GetDependencyColumns()),
-				unloadable: unloadable["rel:"+key],
+				unloadable: unloadable[reportedRelKey(key)],
 				create:     true,
 			}
 			if oldView != nil {
@@ -537,7 +539,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			candidates = append(candidates, entry)
 		}
 		for _, view := range schema.GetMaterializedViews() {
-			key := schema.GetName() + "." + view.GetName()
+			key := objectKey(schema.GetName(), view.GetName())
 			oldView := materializedViewByName(oldSchema, view.GetName())
 			createSQL, err := catalog.MaterializedViewDefinition(schema.GetName(), view)
 			if err != nil {
@@ -548,7 +550,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				dropSQL:    "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
 				createSQL:  trimDefinition(createSQL),
 				newDeps:    dependencyKeys(view.GetDependencyColumns()),
-				unloadable: unloadable["rel:"+key],
+				unloadable: unloadable[reportedRelKey(key)],
 				create:     true,
 			}
 			if oldView != nil {
@@ -566,7 +568,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				continue
 			}
 			candidates = append(candidates, candidate{
-				key:     oldSchema.GetName() + "." + view.GetName(),
+				key:     objectKey(oldSchema.GetName(), view.GetName()),
 				dropSQL: "DROP VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
 				oldDeps: dependencyKeys(view.GetDependencyColumns()),
 				drop:    true,
@@ -577,7 +579,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				continue
 			}
 			candidates = append(candidates, candidate{
-				key:     oldSchema.GetName() + "." + view.GetName(),
+				key:     objectKey(oldSchema.GetName(), view.GetName()),
 				dropSQL: "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
 				oldDeps: dependencyKeys(view.GetDependencyColumns()),
 				drop:    true,
@@ -639,7 +641,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		}
 	}
 	for key := range selected {
-		if strings.HasPrefix(key, "bbdataarchive.") {
+		if schemaName, _ := splitObjectKey(key); schemaName == "bbdataarchive" {
 			return errors.Errorf("cannot generate a migration: backup-schema view %s depends on an object that must be recreated", key)
 		}
 	}
@@ -703,19 +705,21 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
 	if op.Type == catalog.OpComment {
 		for key := range selected {
-			if op.ObjectName == key || strings.HasPrefix(op.ObjectName, key+".") {
+			schemaName, objectName := splitObjectKey(key)
+			description := schemaName + "." + objectName
+			if op.ObjectName == description || strings.HasPrefix(op.ObjectName, description+".") {
 				return true
 			}
 		}
 		return false
 	}
-	if selected[op.SchemaName+"."+op.ObjectName] {
+	if selected[objectKey(op.SchemaName, op.ObjectName)] {
 		return true
 	}
 	switch op.Type {
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
 		if ownerSchema, ownerObject := indexOwnerFromSQL(op.SQL); ownerSchema != "" {
-			return selected[ownerSchema+"."+ownerObject]
+			return selected[objectKey(ownerSchema, ownerObject)]
 		}
 		return indexNameOwner(oldMeta, op.SchemaName, op.ObjectName, selected) != ""
 	case catalog.OpCreateTrigger, catalog.OpDropTrigger:
@@ -791,7 +795,7 @@ func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexNa
 			if index.GetName() != indexName {
 				continue
 			}
-			key := schemaName + "." + view.GetName()
+			key := objectKey(schemaName, view.GetName())
 			if !selected[key] {
 				continue
 			}
@@ -819,13 +823,22 @@ func unionKeys(left, right []string) []string {
 func dependencyKeys(dependencies []*metadatapb.DependencyColumn) []string {
 	keys := make([]string, 0, len(dependencies))
 	for _, dependency := range dependencies {
-		keys = append(keys, dependency.GetSchema()+"."+dependency.GetTable())
+		keys = append(keys, objectKey(dependency.GetSchema(), dependency.GetTable()))
 	}
 	return keys
 }
 
+func reportedRelKey(key string) string {
+	schemaName, objectName := splitObjectKey(key)
+	return "rel:" + schemaName + "." + objectName
+}
+
+func objectKey(schemaName, objectName string) string {
+	return schemaName + "\x00" + objectName
+}
+
 func splitObjectKey(key string) (string, string) {
-	schemaName, objectName, _ := strings.Cut(key, ".")
+	schemaName, objectName, _ := strings.Cut(key, "\x00")
 	return schemaName, objectName
 }
 
@@ -916,7 +929,7 @@ func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) a
 				if newColumn != nil && newColumn.GetType() == column.GetType() {
 					continue
 				}
-				tableKey := schema.GetName() + "." + table.GetName()
+				tableKey := objectKey(schema.GetName(), table.GetName())
 				if affected[tableKey] == nil {
 					affected[tableKey] = make(map[string]bool)
 				}
@@ -929,7 +942,7 @@ func affectedTableColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) a
 
 func dependsOnAffectedColumn(dependencies []*metadatapb.DependencyColumn, affected affectedColumnSet) bool {
 	for _, dependency := range dependencies {
-		columns, ok := affected[dependency.GetSchema()+"."+dependency.GetTable()]
+		columns, ok := affected[objectKey(dependency.GetSchema(), dependency.GetTable())]
 		if !ok {
 			continue
 		}
@@ -1017,13 +1030,13 @@ func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.
 		case op.Type == catalog.OpComment:
 			commented[op.ObjectName] = true
 		case op.Type == catalog.OpCreateView && strings.Contains(op.SQL, "COMMENT ON"):
-			commented[op.SchemaName+"."+op.ObjectName] = true
+			commented[objectKey(op.SchemaName, op.ObjectName)] = true
 		default:
 		}
 	}
 	for _, schema := range meta.GetSchemas() {
 		for _, view := range schema.GetViews() {
-			key := schema.GetName() + "." + view.GetName()
+			key := objectKey(schema.GetName(), view.GetName())
 			if view.GetComment() != "" && !commented[key] && planCreatesView(plan, key) {
 				plan.Ops = append(plan.Ops, catalog.MigrationOp{
 					Type:          catalog.OpComment,
@@ -1037,7 +1050,7 @@ func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.
 			}
 		}
 		for _, view := range schema.GetMaterializedViews() {
-			key := schema.GetName() + "." + view.GetName()
+			key := objectKey(schema.GetName(), view.GetName())
 			if view.GetComment() != "" && !commented[key] && planCreatesView(plan, key) {
 				plan.Ops = append(plan.Ops, catalog.MigrationOp{
 					Type:          catalog.OpComment,
@@ -1055,7 +1068,7 @@ func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.
 
 func planCreatesView(plan *catalog.MigrationPlan, key string) bool {
 	for _, op := range plan.Ops {
-		if op.Type == catalog.OpCreateView && op.SchemaName+"."+op.ObjectName == key {
+		if op.Type == catalog.OpCreateView && objectKey(op.SchemaName, op.ObjectName) == key {
 			return true
 		}
 	}

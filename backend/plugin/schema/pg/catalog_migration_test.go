@@ -987,3 +987,12 @@ func TestAddedSchemaDependentViewFollowsRestoredView(t *testing.T) {
 	require.GreaterOrEqual(t, createUpper, 0, sql)
 	require.Less(t, createLower, createUpper, sql)
 }
+
+// TestObjectKeyIsUnambiguous covers identifiers containing dots: the key must
+// not collide for schema "a.b"/view "c" and schema "a"/view "b.c".
+func TestObjectKeyIsUnambiguous(t *testing.T) {
+	require.NotEqual(t, objectKey("a.b", "c"), objectKey("a", "b.c"))
+	schemaName, objectName := splitObjectKey(objectKey("a.b", "c"))
+	require.Equal(t, "a.b", schemaName)
+	require.Equal(t, "c", objectName)
+}
