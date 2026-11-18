@@ -15,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-const testDatabase = "bb_clickhouse_cutover"
+const testDatabase = "bb_clickhouse_test"
 
 // TestClickHouseDriver exercises the adapter against a live server: ping, the
 // instance and database syncs, the editor's query path and its read/write
