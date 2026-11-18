@@ -486,12 +486,38 @@ func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetad
 func refuseRoutine(schemaName, name, signature, definition string, restored map[string]bool) error {
 	for key := range restored {
 		viewSchema, viewName := splitObjectKey(key)
-		if !namesType(signature, viewSchema, viewName) && !namesType(routineReturnClause(definition), viewSchema, viewName) {
+		if !namesType(signature, viewSchema, viewName) &&
+			!namesType(routineArgumentList(definition), viewSchema, viewName) &&
+			!namesType(routineReturnClause(definition), viewSchema, viewName) {
 			continue
 		}
 		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteQualified(viewSchema, viewName))
 	}
 	return nil
+}
+
+// routineArgumentList is the parenthesized parameter list of a routine's
+// definition, which also names an OUT parameter's type; the signature carries
+// input arguments only.
+func routineArgumentList(definition string) string {
+	open := strings.Index(definition, "(")
+	if open < 0 {
+		return ""
+	}
+	depth := 0
+	for i := open; i < len(definition); i++ {
+		switch definition[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return definition[open+1 : i]
+			}
+		default:
+		}
+	}
+	return ""
 }
 
 // routineReturnClause is the text between RETURNS and the first clause after it,
