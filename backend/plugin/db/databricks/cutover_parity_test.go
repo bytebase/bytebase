@@ -36,6 +36,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // parityRecording is the shape testdata/cutover_parity.json was written in.
@@ -369,6 +370,28 @@ func TestExecuteLogsRangesInTheCallersScript(t *testing.T) {
 	got := script[command.GetRange().GetStart():command.GetRange().GetEnd()]
 	require.NotContains(t, got, "txn-mode")
 	require.Contains(t, got, "INSERT INTO workspace.omni_record.lookup")
+}
+
+// A directive can follow another leading comment, so the bytes removed are not
+// always a prefix: every range the driver reports has to come back to the
+// caller's script, not just the first statement's.
+func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
+	for _, script := range []string{
+		"-- txn-mode=off\nINSERT INTO t VALUES (1)",
+		"-- keep\n-- txn-mode=off\nINSERT INTO t VALUES (1)",
+		"-- txn-mode=off\n-- keep\nINSERT INTO t VALUES (1)",
+		"-- keep\n\n-- txn-isolation=serializable\n\nINSERT INTO t VALUES (1)",
+		"INSERT INTO t VALUES (1)",
+	} {
+		t.Run(script, func(t *testing.T) {
+			_, cleaned := base.ParseTransactionConfig(script)
+			shift := directiveShift(script, cleaned)
+			at := strings.Index(cleaned, "INSERT")
+			require.NotEqual(t, -1, at)
+			require.Equal(t, strings.Index(script, "INSERT"), shift(at))
+			require.Equal(t, len(script), shift(len(cleaned)))
+		})
+	}
 }
 
 func TestCutoverParityDump(t *testing.T) {

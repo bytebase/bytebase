@@ -151,22 +151,71 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	return d.impl.Execute(ctx, cleaned, odbdriver.ExecuteOptions{
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts, offset: skippedPrefix(statement, cleaned)},
+		Log:            executeLogger{opts: opts, sourceOffset: directiveShift(statement, cleaned)},
 	})
 }
 
-// skippedPrefix is the number of bytes the directive removal cut from the head
-// of the caller's script. A task run log with LogCommandStatement off recovers a
-// command's text from the caller's script by range, so the driver's ranges, which
-// name the script it was given, are shifted back by that much.
-func skippedPrefix(script, cleaned string) int32 {
-	if cleaned == "" {
-		return int32(len(script))
+// directiveShift maps a byte offset in the script the driver ran back to the
+// caller's script, which the task run log reads when LogCommandStatement is off.
+// ParseTransactionConfig removes a directive line from anywhere in the leading
+// comment block, so the cleaned lines are a subsequence of the caller's: walking
+// both line by line gives each cleaned line's byte offset in the caller's script
+// even when a kept comment sits between two removed ones.
+func directiveShift(script, cleaned string) func(int) int {
+	identity := func(at int) int { return at }
+	if cleaned == script {
+		return identity
 	}
-	if i := strings.Index(script, cleaned); i > 0 {
-		return int32(i)
+	scriptLines := strings.Split(script, "\n")
+	scriptStarts := make([]int, len(scriptLines))
+	start := 0
+	for i, line := range scriptLines {
+		scriptStarts[i] = start
+		start += len(line) + 1
 	}
-	return 0
+	cleanedLines := strings.Split(cleaned, "\n")
+	cleanedStarts := make([]int, len(cleanedLines))
+	sourceStarts := make([]int, len(cleanedLines))
+	start = 0
+	for i, line := range cleanedLines {
+		cleanedStarts[i] = start
+		start += len(line) + 1
+	}
+	next := 0
+	for i, line := range cleanedLines {
+		boundary := i == 0 || i == len(cleanedLines)-1
+		for next < len(scriptLines) && !sameLine(scriptLines[next], line, boundary) {
+			next++
+		}
+		if next == len(scriptLines) {
+			return identity
+		}
+		sourceStarts[i] = scriptStarts[next]
+		if i == 0 {
+			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeft(scriptLines[next], " \t"))
+		}
+		next++
+	}
+	return func(at int) int {
+		if at < 0 || at > len(cleaned) {
+			return at
+		}
+		i := 0
+		for i+1 < len(cleanedStarts) && cleanedStarts[i+1] <= at {
+			i++
+		}
+		return sourceStarts[i] + (at - cleanedStarts[i])
+	}
+}
+
+// sameLine reports whether a cleaned line is the caller's line. The parser trims
+// the whole text, so the first and last kept lines may have lost surrounding
+// whitespace and the interior lines are copied verbatim.
+func sameLine(scriptLine, cleanedLine string, boundary bool) bool {
+	if boundary {
+		return strings.TrimSpace(scriptLine) == cleanedLine
+	}
+	return scriptLine == cleanedLine
 }
 
 // executeLogger reports a script's commands and their responses into the task run
@@ -174,16 +223,15 @@ func skippedPrefix(script, cleaned string) int32 {
 // one.
 type executeLogger struct {
 	opts db.ExecuteOptions
-	// offset is the number of bytes the caller's script had before the text the
-	// driver split, so the log's ranges name the caller's script rather than the
-	// cleaned one.
-	offset int32
+	// sourceOffset maps a byte offset in the script the driver ran back to the
+	// caller's script, so the log's ranges name the script the task ran.
+	sourceOffset func(int) int
 }
 
 func (l executeLogger) CommandExecute(command odbdriver.Command) {
 	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(command.ByteStart) + l.offset,
-		End:   int32(command.ByteEnd) + l.offset,
+		Start: int32(l.sourceOffset(command.ByteStart)),
+		End:   int32(l.sourceOffset(command.ByteEnd)),
 	}, command.Text)
 }
 
