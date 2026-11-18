@@ -67,9 +67,11 @@ round trip is lossless for 0 of its 68 blobs.
 
 PostgreSQL registers neither `GenerateMigration` nor `GetDatabaseMetadata`, so it
 has no fixture for either. Its metadata migrations run on omni's catalog and are
-tested in omni's `pg/catalog`, against PostgreSQL. `metadata_migration_test.go`
-covers the generator CockroachDB keeps; its hand-written assertions carry intent
-a golden cannot. Do not convert those.
+tested in omni's `pg/catalog`, against PostgreSQL. CockroachDB shares that
+catalog because its synced metadata is PostgreSQL-shaped and omni has no
+CockroachDB catalog. `testdata/cutover_parity.yaml` records the CockroachDB
+migrations Bytebase's deleted generator produced, so every text change the
+catalog makes stays named.
 
 MySQL's metadata migrations run on omni's catalog, so their goldens live in omni
 (`mysql/catalog/testdata/metadata_migration.yaml`, with omni's own `record` flag

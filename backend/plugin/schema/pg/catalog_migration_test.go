@@ -1,23 +1,62 @@
 package pg
 
 import (
+	"os"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 func pgTable(name string, rows int64, columns ...*metadatapb.ColumnMetadata) *metadatapb.TableMetadata {
 	return &metadatapb.TableMetadata{Name: name, Columns: columns, RowCount: rows}
 }
 
-// TestDiffMigrationRouting proves which generator each engine's metadata diff
-// reaches: PostgreSQL's goes to omni's catalog, and CockroachDB's keeps
-// Bytebase's generator, which quotes every identifier and ends each statement
-// with ";\n\n".
+func newPGDatabaseMetadata(tables []*metadatapb.TableMetadata, views []*metadatapb.ViewMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name:   "public",
+				Tables: tables,
+				Views:  views,
+			},
+		},
+	}, nil, nil, storepb.Engine_POSTGRES, true)
+}
+
+func newCockroachDatabaseMetadata(tables []*metadatapb.TableMetadata, views []*metadatapb.ViewMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name:   "public",
+				Tables: tables,
+				Views:  views,
+			},
+		},
+	}, nil, nil, storepb.Engine_COCKROACHDB, true)
+}
+
+func newCockroachDatabaseMetadataWithFunctions(functions []*metadatapb.FunctionMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name:      "public",
+				Functions: functions,
+			},
+		},
+	}, nil, nil, storepb.Engine_COCKROACHDB, true)
+}
+
+// TestDiffMigrationRouting proves both engines' metadata diffs reach omni's
+// catalog. CockroachDB shares the PostgreSQL catalog; its legacy generator is
+// gone.
 func TestDiffMigrationRouting(t *testing.T) {
 	id := &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}
 	note := &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true}
@@ -30,7 +69,268 @@ func TestDiffMigrationRouting(t *testing.T) {
 
 	sql, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
 	require.NoError(t, err)
-	require.Equal(t, "ALTER TABLE \"public\".\"t\" ADD COLUMN \"note\" text;\n\n", sql)
+	require.Equal(t, "ALTER TABLE public.t ADD COLUMN note text", sql)
+}
+
+// TestPostgresSchemaEntryPoints pins the public schema surface the API uses to
+// omni's pg catalog. This cutover changes only CockroachDB's registration; every
+// Postgres entry point below keeps the implementation it had.
+func TestPostgresSchemaEntryPoints(t *testing.T) {
+	table := &metadatapb.TableMetadata{
+		Name:    "t",
+		Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}},
+		Indexes: []*metadatapb.IndexMetadata{{
+			Name: "t_pkey", Expressions: []string{"id"}, Primary: true, Unique: true, IsConstraint: true,
+		}},
+	}
+	view := &metadatapb.ViewMetadata{Name: "v", Definition: "SELECT id FROM public.t"}
+	materializedView := &metadatapb.MaterializedViewMetadata{Name: "mv", Definition: "SELECT id FROM public.t"}
+	function := &metadatapb.FunctionMetadata{Name: "f", Signature: "f()", Definition: "CREATE FUNCTION public.f() RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$"}
+	sequence := &metadatapb.SequenceMetadata{Name: "s", DataType: "bigint", Start: "1", Increment: "1"}
+	enum := &metadatapb.EnumTypeMetadata{Name: "e", Values: []string{"a", "b"}}
+	schemaMeta := &metadatapb.SchemaMetadata{
+		Name:              "public",
+		Comment:           "app schema",
+		Tables:            []*metadatapb.TableMetadata{table},
+		Views:             []*metadatapb.ViewMetadata{view},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{materializedView},
+		Functions:         []*metadatapb.FunctionMetadata{function},
+		Sequences:         []*metadatapb.SequenceMetadata{sequence},
+		EnumTypes:         []*metadatapb.EnumTypeMetadata{enum},
+	}
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Extensions: []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
+		Schemas:    []*metadatapb.SchemaMetadata{schemaMeta},
+	}
+	ctx := schema.GetDefinitionContext{PrintHeader: true}
+
+	definition, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, ctx, metadata)
+	require.NoError(t, err)
+	require.Contains(t, definition, `CREATE TABLE`)
+	require.Contains(t, definition, `"public"."t"`)
+	require.Contains(t, definition, `CREATE VIEW`)
+	require.Contains(t, definition, `"public"."v"`)
+	require.Contains(t, definition, `CREATE MATERIALIZED VIEW`)
+	require.Contains(t, definition, `"public"."mv"`)
+	require.Contains(t, definition, `CREATE FUNCTION public.f()`)
+	require.Contains(t, definition, `CREATE SEQUENCE`)
+	require.Contains(t, definition, `"public"."s"`)
+	require.Contains(t, definition, `CREATE TYPE`)
+	require.Contains(t, definition, `"public"."e"`)
+	require.Contains(t, definition, `CREATE EXTENSION IF NOT EXISTS "pg_trgm"`)
+
+	schemaDefinition, err := schema.GetSchemaDefinition(storepb.Engine_POSTGRES, schemaMeta)
+	require.NoError(t, err)
+	require.Contains(t, schemaDefinition, `COMMENT ON SCHEMA`)
+	require.Contains(t, schemaDefinition, `CREATE TABLE`)
+	tableDefinition, err := schema.GetTableDefinition(storepb.Engine_POSTGRES, "public", table, []*metadatapb.SequenceMetadata{sequence})
+	require.NoError(t, err)
+	require.Contains(t, tableDefinition, `CREATE TABLE`)
+	require.Contains(t, tableDefinition, `"public"."t"`)
+	viewDefinition, err := schema.GetViewDefinition(storepb.Engine_POSTGRES, "public", view)
+	require.NoError(t, err)
+	require.Contains(t, viewDefinition, `CREATE VIEW`)
+	require.Contains(t, viewDefinition, `"public"."v"`)
+	materializedViewDefinition, err := schema.GetMaterializedViewDefinition(storepb.Engine_POSTGRES, "public", materializedView)
+	require.NoError(t, err)
+	require.Contains(t, materializedViewDefinition, `CREATE MATERIALIZED VIEW`)
+	require.Contains(t, materializedViewDefinition, `"public"."mv"`)
+	functionDefinition, err := schema.GetFunctionDefinition(storepb.Engine_POSTGRES, "public", function)
+	require.NoError(t, err)
+	require.Contains(t, functionDefinition, `CREATE FUNCTION`)
+	require.Contains(t, functionDefinition, `public.f()`)
+	sequenceDefinition, err := schema.GetSequenceDefinition(storepb.Engine_POSTGRES, "public", sequence)
+	require.NoError(t, err)
+	require.Contains(t, sequenceDefinition, `CREATE SEQUENCE`)
+	require.Contains(t, sequenceDefinition, `"public"."s"`)
+
+	multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, ctx, metadata)
+	require.NoError(t, err)
+	require.NotEmpty(t, multiFile.Files)
+
+	db := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, db)
+	require.NoError(t, err)
+	require.NotEmpty(t, sdl)
+	sdlDiff, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sdl, sdl, "")
+	require.NoError(t, err)
+	require.Empty(t, sdlDiff)
+	migration, err := schema.DiffMigration(storepb.Engine_POSTGRES, db, db)
+	require.NoError(t, err)
+	require.Empty(t, migration)
+	advices, err := schema.SDLDropAdvices(storepb.Engine_POSTGRES, "", db, "")
+	require.NoError(t, err)
+	require.NotEmpty(t, advices)
+}
+
+type cutoverParityCase struct {
+	Description     string `yaml:"description"`
+	Difference      string `yaml:"difference"`
+	OldMetadata     string `yaml:"oldMetadata"`
+	NewMetadata     string `yaml:"newMetadata"`
+	LegacyExpected  string `yaml:"legacyExpected"`
+	CatalogExpected string `yaml:"catalogExpected"`
+	CatalogError    string `yaml:"catalogError,omitempty"`
+}
+
+// TestCockroachMigrationCutover replays every CockroachDB metadata-diff case the
+// deleted Bytebase generator covered. The legacy text was captured before the
+// generator was removed, so it is the differential rather than a live second
+// path. Each case names the difference it records; a future catalog that makes a
+// case match its legacy text still has that difference documented here.
+func TestCockroachMigrationCutover(t *testing.T) {
+	const (
+		record   = false
+		filepath = "testdata/cutover_parity.yaml"
+	)
+	content, err := os.ReadFile(filepath)
+	require.NoError(t, err)
+	var cases []cutoverParityCase
+	require.NoError(t, yaml.Unmarshal(content, &cases))
+	require.NotEmpty(t, cases)
+
+	for i, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			require.NotEmpty(t, tc.Difference, "each case names the difference it records")
+			oldDB := parseCockroachMetadata(t, tc.OldMetadata)
+			newDB := parseCockroachMetadata(t, tc.NewMetadata)
+
+			migration, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, oldDB, newDB)
+
+			if record {
+				cases[i].CatalogExpected = migration
+				cases[i].CatalogError = ""
+				if err != nil {
+					cases[i].CatalogExpected = ""
+					cases[i].CatalogError = err.Error()
+				}
+				return
+			}
+			if tc.CatalogError != "" {
+				require.ErrorContains(t, err, tc.CatalogError)
+				require.NotEmpty(t, tc.LegacyExpected, "the legacy generator produced SQL this case no longer does")
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.CatalogExpected, migration)
+			if tc.LegacyExpected != tc.CatalogExpected {
+				require.NotEqual(t, tc.LegacyExpected, migration, tc.Difference)
+			}
+		})
+	}
+
+	if record {
+		yamltest.Record(t, filepath, cases)
+	}
+}
+
+func parseCockroachMetadata(t *testing.T, encoded string) *model.DatabaseMetadata {
+	t.Helper()
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
+	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(encoded), metadata))
+	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
+}
+
+// TestCockroachMetadataMigrationNoOps pins the cases the old generator covered
+// that produce no migration at all. They have no legacy differential, so they
+// stay out of the cutover fixture.
+func TestCockroachMetadataMigrationNoOps(t *testing.T) {
+	unparseableView := &metadatapb.ViewMetadata{Name: "v", Definition: "SELECT @@@omni_unsupported@@@"}
+	composites := []*metadatapb.CompositeTypeMetadata{{
+		Name:    "addr",
+		Comment: "c",
+		Attributes: []*metadatapb.CompositeTypeAttribute{
+			{Name: "street", Type: "text", Collation: `"C"`, Comment: "s"},
+		},
+	}}
+
+	tests := []struct {
+		name   string
+		source *model.DatabaseMetadata
+		target *model.DatabaseMetadata
+	}{
+		{
+			name:   "identical raw view does not load",
+			source: newCockroachDatabaseMetadata(nil, []*metadatapb.ViewMetadata{unparseableView}),
+			target: newCockroachDatabaseMetadata(nil, []*metadatapb.ViewMetadata{unparseableView}),
+		},
+		{
+			name:   "identical composite types",
+			source: newCockroachDatabaseMetadataWithCompositeTypes(composites),
+			target: newCockroachDatabaseMetadataWithCompositeTypes(composites),
+		},
+		{
+			name: "skip-dump composite types",
+			source: newCockroachDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{{
+				Name:     "ext_owned",
+				SkipDump: true,
+				Attributes: []*metadatapb.CompositeTypeAttribute{
+					{Name: "x", Type: "integer"},
+				},
+			}}),
+			target: newCockroachDatabaseMetadataWithCompositeTypes(nil),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, tc.source, tc.target)
+			require.NoError(t, err)
+			require.Empty(t, sql)
+		})
+	}
+}
+
+func newCockroachDatabaseMetadataWithCompositeTypes(compositeTypes []*metadatapb.CompositeTypeMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name:           "public",
+				CompositeTypes: compositeTypes,
+			},
+		},
+	}, nil, nil, storepb.Engine_COCKROACHDB, true)
+}
+
+// TestCockroachMetadataMigrationIgnoresLegacyFunctionComparer records that the
+// schema.FunctionComparer registry no longer governs CockroachDB: the catalog
+// compares the stored definitions itself, so a comparer that declares two
+// different bodies equal cannot suppress the replace.
+func TestCockroachMetadataMigrationIgnoresLegacyFunctionComparer(t *testing.T) {
+	schema.RegisterFunctionComparer(storepb.Engine_COCKROACHDB, &alwaysEqualFunctionComparer{})
+	t.Cleanup(func() {
+		schema.RegisterFunctionComparer(storepb.Engine_COCKROACHDB, &schema.DefaultFunctionComparer{})
+	})
+	source := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
+		newPGFunctionMetadata("SELECT 1"),
+	})
+	target := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
+		newPGFunctionMetadata("SELECT 2"),
+	})
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+
+	require.NoError(t, err)
+	require.Contains(t, sql, "CREATE OR REPLACE FUNCTION")
+	require.Contains(t, sql, "SELECT 2")
+}
+
+func newPGFunctionMetadata(body string) *metadatapb.FunctionMetadata {
+	return &metadatapb.FunctionMetadata{
+		Name:      "calculate_area",
+		Signature: "calculate_area()",
+		Definition: "CREATE FUNCTION public.calculate_area() RETURNS integer LANGUAGE sql AS $$ " +
+			body + " $$",
+	}
+}
+
+type alwaysEqualFunctionComparer struct{}
+
+func (*alwaysEqualFunctionComparer) Equal(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) bool {
+	return true
+}
+
+func (*alwaysEqualFunctionComparer) CompareDetailed(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
+	return nil, nil
 }
 
 func TestOmniDiffMetadataMigrationDiffsAroundAnUnchangedUnloadableView(t *testing.T) {
@@ -38,7 +338,7 @@ func TestOmniDiffMetadataMigrationDiffsAroundAnUnchangedUnloadableView(t *testin
 	note := &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true}
 	view := &metadatapb.ViewMetadata{Name: "v", Definition: "SELECT @@@omni_unsupported@@@"}
 
-	sql, err := omniDiffMetadataMigration(
+	sql, err := diffMetadataMigration(
 		newPGDatabaseMetadata([]*metadatapb.TableMetadata{pgTable("t", 0, id)}, []*metadatapb.ViewMetadata{view}),
 		newPGDatabaseMetadata([]*metadatapb.TableMetadata{pgTable("t", 0, id, note)}, []*metadatapb.ViewMetadata{view}),
 	)
@@ -48,9 +348,9 @@ func TestOmniDiffMetadataMigrationDiffsAroundAnUnchangedUnloadableView(t *testin
 }
 
 func TestOmniDiffMetadataMigrationRefusesAChangedUnloadableObject(t *testing.T) {
-	_, err := omniDiffMetadataMigration(
-		newPGDatabaseMetadataWithView("SELECT @@@old_definition@@@"),
-		newPGDatabaseMetadataWithView("SELECT @@@new_definition@@@"),
+	_, err := diffMetadataMigration(
+		newPGDatabaseMetadata(nil, []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT @@@old_definition@@@"}}),
+		newPGDatabaseMetadata(nil, []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT @@@new_definition@@@"}}),
 	)
 	require.ErrorContains(t, err, "rel:public.v")
 }
@@ -62,7 +362,7 @@ func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnUnloadableTable(t *testin
 	}
 	note := &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true}
 
-	sql, err := omniDiffMetadataMigration(
+	sql, err := diffMetadataMigration(
 		newPGDatabaseMetadata([]*metadatapb.TableMetadata{pgTable("t", 0, id), unparsed(10)}, nil),
 		newPGDatabaseMetadata([]*metadatapb.TableMetadata{pgTable("t", 0, id, note), unparsed(20)}, nil),
 	)

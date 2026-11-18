@@ -13,14 +13,15 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// omniDiffMetadataMigration generates the migration between two synced snapshots
-// with omni's catalog.
+// diffMetadataMigration generates the migration between two synced snapshots
+// with omni's catalog. PostgreSQL and CockroachDB share it: their metadata is
+// PostgreSQL-shaped and omni has no CockroachDB catalog.
 //
 // An object omni cannot install as the snapshot defines it (a stand-in, or one
 // left out) is safe to leave in place only when it is the same on both sides: the
 // two loads then agree on it and the diff skips it. Where it differs, the diff would
 // compare stand-ins, so the migration is refused rather than guessed.
-func omniDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
 	from, fromReport, err := loadMetadataCatalog(oldSchema)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load source schema")
