@@ -34,10 +34,12 @@ describe("query skill", () => {
     expect(guidance).toContain("never append both by default");
   });
 
-  test("offers masking setup only with verified rule-configuration permission", () => {
+  test("offers masking setup from runtime permissions without model-selected policy reads", () => {
     const guidance = getSkill({ name: "query" });
 
-    expect(guidance).toContain("fresh get_masking_overview evidence");
+    expect(guidance).toContain(
+      "runtime confirms current masking-configuration permission and feature availability independently of model tool choices"
+    );
     expect(guidance).toContain(
       'global-masking step has configure.status="allowed"'
     );
@@ -46,7 +48,10 @@ describe("query skill", () => {
       'global-masking and semantic-types steps must also have readAccess.status="allowed"'
     );
     expect(guidance).toContain(
-      'maskingPolicy.status and semanticTypes.status must both be "available"'
+      "This suggestion does not require get_masking_overview or masking-policy reads"
+    );
+    expect(guidance).not.toContain(
+      "Offer masking setup only with fresh get_masking_overview evidence"
     );
     expect(guidance).toContain(
       "Omit it when permission or availability is denied, unknown, missing, stale, or outside the verified scope"
@@ -59,9 +64,18 @@ describe("query skill", () => {
     );
   });
 
-  test("defers query questions to runtime evidence without manufacturing eligibility", () => {
+  test("preserves ordinary query questions while grounding only masking/access suggestions", () => {
     const guidance = getSkill({ name: "query" });
     expect(guidance).toContain(
+      "Preserve contextual analysis questions from the model in their original wording and order"
+    );
+    expect(guidance).toContain(
+      "The runtime filters and rebuilds only masking/access suggestions"
+    );
+    expect(guidance).toContain(
+      "does not replace ordinary questions or add a generic fallback"
+    );
+    expect(guidance).not.toContain(
       "The runtime owns query-result Continue questions"
     );
     expect(guidance).toContain(
@@ -145,6 +159,9 @@ describe("query skill", () => {
     );
     expect(guidance).toContain("preserve its exemption/JIT method choice");
     expect(guidance).toContain("A Continue click asks a question only");
+    expect(guidance).toContain(
+      "Recheck current workflow eligibility after the member clicks"
+    );
     expect(guidance).toContain(
       "never automatically change policy, grant access, open a draft, or rerun the query"
     );

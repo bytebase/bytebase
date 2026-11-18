@@ -23,7 +23,10 @@ import { canRenderAsSelector } from "@/modules/cel/logic/selector";
 import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  GetDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   GetPolicyRequestSchema,
   PolicyType,
@@ -41,6 +44,12 @@ import {
   type MaskingExemptionEditorSnapshot,
 } from "./maskingExemptionDraftTarget";
 import type { MaskingRuleDraftContext } from "./maskingRuleDraft";
+import {
+  createMaskingRuleTargetChecker,
+  type MaskingRuleTargetChecker,
+  MaskingRuleTargetClarificationError,
+  type MaskingRuleTargetEvidence,
+} from "./maskingRuleTarget";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
 export interface MaskingExemptionDraft {
@@ -123,10 +132,16 @@ function parseProposal(raw: unknown): MaskingExemptionDraft {
           "condition",
           "description",
           "expirationTimestamp",
+          "allowUnmatchedTarget",
         ].includes(key)
     )
   )
     throw new Error("Unexpected masking exemption draft fields.");
+  if (
+    value.allowUnmatchedTarget !== undefined &&
+    typeof value.allowUnmatchedTarget !== "boolean"
+  )
+    throw new Error("The unmatched-target acknowledgment must be a boolean.");
   if (!bounded(value.project, 200) || !projectPattern.test(value.project))
     throw new Error("Select an explicit project.");
   const scope = value.scope as Record<string, unknown> | undefined;
@@ -294,10 +309,14 @@ function assertPermissionEvidence(
   );
 }
 
-export async function validateMaskingExemptionDraft(
+async function validateMaskingExemptionDraftWithTarget(
   proposal: MaskingExemptionDraft,
-  context: MaskingRuleDraftContext
-): Promise<MaskingExemptionDraft> {
+  context: MaskingRuleDraftContext,
+  checkTarget?: MaskingRuleTargetChecker
+): Promise<{
+  draft: MaskingExemptionDraft;
+  targetEvidence?: MaskingRuleTargetEvidence;
+}> {
   assertContext(context);
   proposal = parseProposal(proposal);
   const setup = await getMaskingSetup({
@@ -404,6 +423,7 @@ export async function validateMaskingExemptionDraft(
   if (group) collect(group);
   if (proposal.scope.kind === "database")
     databaseNames.add(proposal.scope.database);
+  const verifiedDatabases = new Map<string, Database>();
   for (const name of databaseNames) {
     const database = await databaseServiceClientConnect.getDatabase(
       create(GetDatabaseRequestSchema, { name }),
@@ -417,10 +437,19 @@ export async function validateMaskingExemptionDraft(
       throw new Error(
         "The selected database is unavailable, inactive, or outside the project."
       );
+    verifiedDatabases.set(name, database);
   }
   if (!group && proposal.scope.kind === "project") {
+    const targetEvidence = await checkTarget?.(undefined, {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [],
+    });
     assertContext(context);
-    return { ...proposal, members: [...new Set(members)], condition: "true" };
+    return {
+      draft: { ...proposal, members: [...new Set(members)], condition: "true" },
+      ...(targetEvidence ? { targetEvidence } : {}),
+    };
   }
   const scoped: ConditionGroupExpr =
     proposal.scope.kind === "database" &&
@@ -453,8 +482,27 @@ export async function validateMaskingExemptionDraft(
     )
   )
     throw new Error("The scoped exemption changed during conversion.");
+  const database =
+    proposal.scope.kind === "database"
+      ? verifiedDatabases.get(proposal.scope.database)
+      : verifiedDatabases.size === 1 &&
+          hasDatabaseConjunct(scoped, [...verifiedDatabases.keys()][0])
+        ? [...verifiedDatabases.values()][0]
+        : undefined;
+  const targetEvidence = await checkTarget?.(database, scoped);
   assertContext(context);
-  return { ...proposal, members: [...new Set(members)], condition };
+  return {
+    draft: { ...proposal, members: [...new Set(members)], condition },
+    ...(targetEvidence ? { targetEvidence } : {}),
+  };
+}
+
+export async function validateMaskingExemptionDraft(
+  proposal: MaskingExemptionDraft,
+  context: MaskingRuleDraftContext
+): Promise<MaskingExemptionDraft> {
+  return (await validateMaskingExemptionDraftWithTarget(proposal, context))
+    .draft;
 }
 
 function getEntry(
@@ -480,7 +528,11 @@ export async function prepareMaskingExemptionDraft(
     requireSourceMatch: true;
     source?: MaskingExemptionEditorSnapshot;
   }
-): Promise<{ draftId: string; draft: MaskingExemptionDraft }> {
+): Promise<{
+  draftId: string;
+  draft: MaskingExemptionDraft;
+  targetEvidence?: MaskingRuleTargetEvidence;
+}> {
   const proposal = parseProposal(raw);
   assertContext(context);
   const source = structuredClone(
@@ -495,7 +547,17 @@ export async function prepareMaskingExemptionDraft(
     throw new Error(
       "The masking exemption editor has changed or belongs to another project or chat."
     );
-  const draft = await validateMaskingExemptionDraft(proposal, context);
+  const { draft, targetEvidence } =
+    await validateMaskingExemptionDraftWithTarget(
+      proposal,
+      context,
+      createMaskingRuleTargetChecker()
+    );
+  if (
+    targetEvidence?.status === "no-current-match" &&
+    (raw as Record<string, unknown>).allowUnmatchedTarget !== true
+  )
+    throw new MaskingRuleTargetClarificationError([targetEvidence]);
   if (!isEqual(source, await getMaskingExemptionEditorSnapshot(context)))
     throw new Error(
       "The masking exemption draft has changed. Read the current form again."
@@ -510,7 +572,11 @@ export async function prepareMaskingExemptionDraft(
     source,
     createdAt: Date.now(),
   });
-  return { draftId, draft: structuredClone(draft) };
+  return {
+    draftId,
+    draft: structuredClone(draft),
+    ...(targetEvidence ? { targetEvidence } : {}),
+  };
 }
 export function getMaskingExemptionDraft(
   id: string,

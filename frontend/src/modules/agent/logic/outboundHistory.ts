@@ -612,8 +612,15 @@ const getHistoricalDatabaseIdentity = (
 
 const isMaskingFollowUp = (messages: AgentMessage[]): boolean => {
   const current = messages.findLast((message) => message.role === "user");
-  return /\b(?:mask(?:ing|ed)?|unmask(?:ing|ed)?)\b|脱敏|マスキング|enmascar|che dữ liệu/iu.test(
-    current?.content ?? ""
+  const content = current?.content ?? "";
+  return (
+    /\b(?:mask(?:ing|ed)?|unmask(?:ing|ed)?)\b|脱敏|マスキング|enmascar|che dữ liệu/iu.test(
+      content
+    ) ||
+    (/\bexempt(?:s|ed|ing|ions?)?\b/iu.test(content) &&
+      /\b(?:columns?|tables?|schemas?|databases?|quer(?:y|ies)|data|results?)\b/iu.test(
+        content
+      ))
   );
 };
 

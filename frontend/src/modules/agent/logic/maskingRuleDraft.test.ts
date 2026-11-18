@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppStoreState } from "@/stores/app/types";
@@ -8,7 +9,11 @@ import {
   ExprSchema,
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { DatabaseSchema$ } from "@/types/proto-es/v1/database_service_pb";
+import {
+  DatabaseMetadataSchema,
+  DatabaseSchema$,
+  SyncStatus,
+} from "@/types/proto-es/v1/database_service_pb";
 import { PolicySchema } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { SettingSchema } from "@/types/proto-es/v1/setting_service_pb";
@@ -39,6 +44,7 @@ const mocks = vi.hoisted(() => ({
   getPolicy: vi.fn(),
   getProject: vi.fn(),
   getDatabase: vi.fn(),
+  getDatabaseMetadata: vi.fn(),
   batchParse: vi.fn(),
   batchDeparse: vi.fn(),
   getSnapshot: vi.fn(),
@@ -52,7 +58,10 @@ vi.mock("@/api", () => ({
   settingServiceClientConnect: { getSetting: mocks.getSetting },
   orgPolicyServiceClientConnect: { getPolicy: mocks.getPolicy },
   projectServiceClientConnect: { getProject: mocks.getProject },
-  databaseServiceClientConnect: { getDatabase: mocks.getDatabase },
+  databaseServiceClientConnect: {
+    getDatabase: mocks.getDatabase,
+    getDatabaseMetadata: mocks.getDatabaseMetadata,
+  },
   celServiceClientConnect: {
     batchParse: mocks.batchParse,
     batchDeparse: mocks.batchDeparse,
@@ -87,6 +96,13 @@ const string = (value: string) =>
     exprKind: {
       case: "constExpr",
       value: { constantKind: { case: "stringValue", value } },
+    },
+  });
+const integer = (value: bigint) =>
+  create(ExprSchema, {
+    exprKind: {
+      case: "constExpr",
+      value: { constantKind: { case: "int64Value", value } },
     },
   });
 const call = (fn: string, args: Expr[], target?: Expr) =>
@@ -231,6 +247,268 @@ afterEach(() => {
 });
 
 describe("masking rule drafts", () => {
+  describe("exact target verification", () => {
+    const condition =
+      'resource.table_name == "staff" && resource.column_name == "email"';
+    const exact = () => ({
+      ...input,
+      condition,
+      scope: { kind: "database", project, database },
+    });
+
+    beforeEach(() => {
+      expressions.set(
+        condition,
+        call("_&&_", [
+          equals("resource.table_name", "staff"),
+          equals("resource.column_name", "email"),
+        ])
+      );
+      mocks.getDatabase.mockResolvedValue(
+        create(DatabaseSchema$, {
+          name: database,
+          project,
+          state: State.ACTIVE,
+          syncStatus: SyncStatus.OK,
+          successfulSyncTime: timestampFromDate(new Date()),
+        })
+      );
+      mocks.getDatabaseMetadata.mockResolvedValue(
+        create(DatabaseMetadataSchema, {
+          name: `${database}/metadata`,
+          schemas: [
+            {
+              name: "public",
+              tables: [{ name: "staff", columns: [{ name: "email" }] }],
+            },
+          ],
+        })
+      );
+    });
+
+    it("automatically checks the exact target before returning a usable draft", async () => {
+      const result = await prepareMaskingRuleDraft(exact(), context);
+
+      expect(result).toMatchObject({
+        draftId: expect.any(String),
+        targetEvidence: {
+          status: "found",
+          database,
+          target: { table: "staff", column: "email" },
+        },
+      });
+      expect(mocks.getDatabaseMetadata).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: `${database}/metadata`,
+          filter: 'table.contains("staff")',
+          limit: 20,
+        }),
+        expect.anything()
+      );
+      expect(mocks.getDatabase).toHaveBeenCalledTimes(1);
+    });
+
+    it("requires clarification rather than returning a draft for an unmatched exact target", async () => {
+      mocks.getDatabaseMetadata.mockResolvedValue(
+        create(DatabaseMetadataSchema, {
+          name: `${database}/metadata`,
+          schemas: [],
+        })
+      );
+
+      await expect(
+        prepareMaskingRuleDraft(exact(), context)
+      ).rejects.toMatchObject({
+        targetEvidence: [
+          expect.objectContaining({
+            status: "no-current-match",
+            target: { table: "staff", column: "email" },
+          }),
+        ],
+      });
+    });
+
+    it("allows an explicitly acknowledged future target without persisting the acknowledgment", async () => {
+      mocks.getDatabaseMetadata.mockResolvedValue(
+        create(DatabaseMetadataSchema, {
+          name: `${database}/metadata`,
+          schemas: [],
+        })
+      );
+
+      const result = await prepareMaskingRuleDraft(
+        { ...exact(), allowUnmatchedTarget: true },
+        context
+      );
+
+      expect(result).toMatchObject({
+        draftId: expect.any(String),
+        targetEvidence: { status: "no-current-match" },
+      });
+      expect(result.draft).not.toHaveProperty("allowUnmatchedTarget");
+      expect(getMaskingRuleDraft(result.draftId, context)).not.toHaveProperty(
+        "allowUnmatchedTarget"
+      );
+    });
+
+    it("retains an unverified target without treating a denied metadata read as absence", async () => {
+      mocks.getDatabaseMetadata.mockRejectedValue(
+        new ConnectError("denied", Code.PermissionDenied)
+      );
+
+      expect(await prepareMaskingRuleDraft(exact(), context)).toMatchObject({
+        draftId: expect.any(String),
+        targetEvidence: { status: "unverified" },
+      });
+    });
+
+    it("shares a metadata read within a batch and returns evidence for every rule", async () => {
+      const result = await prepareMaskingRuleDrafts(
+        { rules: [exact(), { ...exact(), title: "Another mask" }] },
+        context
+      );
+
+      expect(result).toMatchObject({
+        targetEvidence: [{ status: "found" }, { status: "found" }],
+      });
+      expect(mocks.getDatabaseMetadata).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not return a partial batch when an exact target needs clarification", async () => {
+      const missing = 'resource.table_name == "missing"';
+      expressions.set(missing, equals("resource.table_name", "missing"));
+      mocks.getDatabaseMetadata.mockImplementation(
+        async ({ filter }: { filter: string }) =>
+          create(DatabaseMetadataSchema, {
+            name: `${database}/metadata`,
+            schemas:
+              filter === 'table.contains("staff")'
+                ? [
+                    {
+                      name: "public",
+                      tables: [{ name: "staff", columns: [{ name: "email" }] }],
+                    },
+                  ]
+                : [],
+          })
+      );
+
+      await expect(
+        prepareMaskingRuleDrafts(
+          { rules: [exact(), { ...exact(), condition: missing }] },
+          context
+        )
+      ).rejects.toMatchObject({
+        targetEvidence: [
+          expect.objectContaining({
+            status: "no-current-match",
+            target: { table: "missing" },
+          }),
+        ],
+      });
+    });
+
+    it("rejects a malformed unmatched-target acknowledgment", async () => {
+      await expect(
+        prepareMaskingRuleDraft(
+          { ...exact(), allowUnmatchedTarget: "true" },
+          context
+        )
+      ).rejects.toThrow();
+    });
+  });
+
+  it.each([
+    {
+      condition:
+        'resource.table_name == "staff" && resource.column_name == "email"',
+      ast: call("_&&_", [
+        equals("resource.table_name", "staff"),
+        equals("resource.column_name", "email"),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.table_name", "staff"],
+        },
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.column_name", "email"],
+        },
+      ],
+    },
+    {
+      condition: 'resource.table_name == "staff"',
+      ast: equals("resource.table_name", "staff"),
+      args: [
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.table_name", "staff"],
+        },
+      ],
+    },
+    {
+      condition:
+        'resource.environment_id == "prod" && resource.column_name == "email"',
+      ast: call("_&&_", [
+        equals("resource.environment_id", "prod"),
+        equals("resource.column_name", "email"),
+      ]),
+      args: [
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.environment_id", "prod"],
+        },
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.column_name", "email"],
+        },
+      ],
+    },
+    {
+      condition: "resource.classification_level >= 3",
+      ast: call("_>=_", [ident("resource.classification_level"), integer(3n)]),
+      args: [
+        {
+          type: "Condition",
+          operator: "_>=_",
+          args: ["resource.classification_level", 3],
+        },
+      ],
+    },
+  ])(
+    "preserves the confirmed resource predicate: $condition",
+    async ({ condition, ast, args }) => {
+      expressions.set(condition, ast);
+
+      const { draft } = await prepareMaskingRuleDraft(
+        { ...input, condition },
+        context
+      );
+
+      expect(draft.scope).toEqual({ kind: "workspace" });
+      expect(await parseMaskingRuleDraftCondition(draft.condition)).toEqual({
+        type: "ConditionGroup",
+        operator: "_&&_",
+        args,
+      });
+    }
+  );
+
+  it("rejects a schema-specific predicate that the global rule selector cannot preserve", async () => {
+    const condition = 'resource.schema_name == "public"';
+    expressions.set(condition, equals("resource.schema_name", "public"));
+
+    await expect(
+      prepareMaskingRuleDraft({ ...input, condition }, context)
+    ).rejects.toThrow(/selector/i);
+  });
+
   it("prepares a built-in rule before the semantic types setting exists", async () => {
     mocks.getSetting.mockRejectedValue(
       new ConnectError("missing", Code.NotFound)
@@ -663,14 +941,17 @@ describe("masking rule drafts", () => {
     }
   );
 
-  it("conjoins database scope outside an OR and does not duplicate it on refresh", async () => {
+  it("retains table predicates and conjoins database scope outside an OR on refresh", async () => {
     const condition =
-      'resource.column_name == "email" || resource.project_id == "other"';
+      'resource.table_name == "staff" && (resource.column_name == "email" || resource.project_id == "other")';
     expressions.set(
       condition,
-      call("_||_", [
-        equals("resource.column_name", "email"),
-        equals("resource.project_id", "other"),
+      call("_&&_", [
+        equals("resource.table_name", "staff"),
+        call("_||_", [
+          equals("resource.column_name", "email"),
+          equals("resource.project_id", "other"),
+        ]),
       ])
     );
     const { draftId, draft } = await prepareMaskingRuleDraft(
@@ -697,6 +978,11 @@ describe("masking rule drafts", () => {
           type: "Condition",
           operator: "_==_",
           args: ["resource.database_name", "app.v2"],
+        },
+        {
+          type: "Condition",
+          operator: "_==_",
+          args: ["resource.table_name", "staff"],
         },
         {
           type: "ConditionGroup",

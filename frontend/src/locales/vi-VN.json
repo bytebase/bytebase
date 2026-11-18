@@ -136,7 +136,6 @@
     },
     "follow-up": {
       "ask-next": "Câu hỏi tiếp theo",
-      "query-analysis": "Làm thế nào để lọc hoặc sắp xếp các kết quả này?",
       "query-mask": "Làm thế nào để che dữ liệu trong các cột này?",
       "query-mask-database": "Làm thế nào để che dữ liệu trong các cột của {{database}}?",
       "query-unmask": "Làm thế nào để yêu cầu quyền truy cập dữ liệu không bị che?",

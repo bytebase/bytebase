@@ -2097,9 +2097,18 @@ describe("AgentChat", () => {
     ];
     const expiryQuestion =
       "When does my masking exemption for private_value in app expire?";
-    const analysisQuestion = enUS.agent["follow-up"]["query-analysis"];
+    const countQuestion = "How many records match this query?";
+    const groupQuestion = "Can you group these results by private_value?";
+    const ordinaryQuestions = [countQuestion, groupQuestion];
+    const maskQuestion = enUS.agent["follow-up"]["query-mask"];
     const unmaskQuestion = enUS.agent["follow-up"]["query-unmask"];
-    const addQueryTurn = (chatId: string, id: string, masked: boolean) => {
+    const addQueryTurn = (
+      chatId: string,
+      id: string,
+      masked: boolean,
+      questions = [countQuestion, expiryQuestion, groupQuestion],
+      queryMaskingEligibility?: { database: string; allowed: boolean }
+    ) => {
       const store = useAgentStore.getState();
       store.addMessage({
         chatId,
@@ -2149,12 +2158,13 @@ describe("AgentChat", () => {
         content: "The query returned one row.",
         metadata: {
           resourceReferences: references,
-          actions: [{ kind: "continue", prompt: expiryQuestion }],
+          ...(queryMaskingEligibility ? { queryMaskingEligibility } : {}),
+          actions: questions.map((prompt) => ({ kind: "continue" as const, prompt })),
         },
       })!;
     };
 
-    test("replaces a saved query's unsupported exemption question without rewriting metadata", () => {
+    test("preserves ordinary saved query questions while removing unsupported exemptions", () => {
       const store = useAgentStore.getState();
       const chat = store.createChat({ context: "projects/sample" });
       const answer = addQueryTurn(chat.id, "query-visible", false);
@@ -2167,9 +2177,37 @@ describe("AgentChat", () => {
           container.querySelectorAll("[data-agent-follow-up-question]"),
           (question) => question.textContent
         );
-        expect(questions).toEqual([analysisQuestion]);
-        expect(analysisQuestion).toMatch(/\?$/);
+        expect(questions).toEqual(ordinaryQuestions);
         expect(container.textContent).not.toContain(expiryQuestion);
+        expect(container.textContent).not.toContain(
+          "How can I filter or sort these results?"
+        );
+        expect(
+          store.getMessages(chat.id).find((message) => message.id === answer.id)
+            ?.metadata
+        ).toEqual(savedMetadata);
+      } finally {
+        unmount();
+      }
+    });
+
+    test("does not invent a fallback when saved questions lack governance evidence", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      const answer = addQueryTurn(chat.id, "query-visible", false, [
+        expiryQuestion,
+        "How can I mask these columns?",
+      ]);
+      const savedMetadata = structuredClone(answer.metadata);
+      const { container, render, unmount } = renderIntoContainer(<AgentChat />);
+      render();
+
+      try {
+        expect(container.querySelector("[data-agent-follow-up]")).toBeNull();
+        expect(container.textContent).not.toContain(expiryQuestion);
+        expect(container.textContent).not.toContain(
+          "How can I filter or sort these results?"
+        );
         expect(
           store.getMessages(chat.id).find((message) => message.id === answer.id)
             ?.metadata
@@ -2201,15 +2239,18 @@ describe("AgentChat", () => {
             followUps[0]!.querySelectorAll("[data-agent-follow-up-question]"),
             (question) => question.textContent
           )
-        ).toEqual([analysisQuestion]);
+        ).toEqual(ordinaryQuestions);
         expect(
           Array.from(
             followUps[1]!.querySelectorAll("[data-agent-follow-up-question]"),
             (question) => question.textContent
           )
-        ).toEqual([analysisQuestion, unmaskQuestion]);
+        ).toEqual([...ordinaryQuestions, unmaskQuestion]);
         expect(unmaskQuestion).toMatch(/\?$/);
         expect(container.textContent).not.toContain(expiryQuestion);
+        expect(container.textContent).not.toContain(
+          "How can I filter or sort these results?"
+        );
         const unmask = Array.from(
           followUps[1]!.querySelectorAll<HTMLButtonElement>(
             "[data-agent-action-continue]"
@@ -2228,6 +2269,50 @@ describe("AgentChat", () => {
                 ?.metadata
           )
         ).toEqual(savedMetadata);
+      } finally {
+        unmount();
+      }
+    });
+
+    test("renders each saved query's runtime masking eligibility without reading policies", () => {
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/sample" });
+      const allowedAnswer = addQueryTurn(chat.id, "query-allowed", false, undefined, {
+        database,
+        allowed: true,
+      });
+      const deniedAnswer = addQueryTurn(chat.id, "query-denied", false, undefined, {
+        database,
+        allowed: false,
+      });
+      const savedMetadata = [allowedAnswer, deniedAnswer].map((message) =>
+        structuredClone(message.metadata)
+      );
+      const onContinueAction = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <AgentChat onContinueAction={onContinueAction} />
+      );
+      render();
+
+      try {
+        const followUps = container.querySelectorAll("[data-agent-follow-up]");
+        expect(followUps).toHaveLength(2);
+        expect(Array.from(
+          followUps[0]!.querySelectorAll("[data-agent-follow-up-question]"),
+          (question) => question.textContent
+        )).toEqual([...ordinaryQuestions, maskQuestion]);
+        expect(Array.from(
+          followUps[1]!.querySelectorAll("[data-agent-follow-up-question]"),
+          (question) => question.textContent
+        )).toEqual(ordinaryQuestions);
+        const mask = Array.from(
+          followUps[0]!.querySelectorAll<HTMLButtonElement>("[data-agent-action-continue]")
+        ).find((button) => button.textContent === maskQuestion);
+        act(() => mask?.click());
+        expect(onContinueAction).toHaveBeenCalledWith(chat.id, maskQuestion, references);
+        expect([allowedAnswer, deniedAnswer].map((answer) =>
+          store.getMessages(chat.id).find((message) => message.id === answer.id)?.metadata
+        )).toEqual(savedMetadata);
       } finally {
         unmount();
       }
@@ -2556,7 +2641,7 @@ describe("AgentChat", () => {
     unmount();
   });
 
-  test("disables the follow-up question when a draft would be replaced", () => {
+  test("keeps the follow-up question enabled without replacing the composer draft", () => {
     const store = useAgentStore.getState();
     const chat = store.createChat({ context: "projects/sample" });
     store.addMessage({
@@ -2568,20 +2653,25 @@ describe("AgentChat", () => {
       },
     });
     store.setDraft(chat.id, { text: "My own question" });
+    const draft = structuredClone(store.getDraft(chat.id));
     const onContinueAction = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
       <AgentChat onContinueAction={onContinueAction} />
     );
     render();
 
-    const question = container.querySelector<HTMLButtonElement>(
-      "[data-agent-action-continue]"
-    );
-    expect(question?.textContent).toContain("What is the impact?");
-    expect(question?.disabled).toBe(true);
-    act(() => question?.click());
-    expect(onContinueAction).not.toHaveBeenCalled();
-    unmount();
+    try {
+      const question = container.querySelector<HTMLButtonElement>(
+        "[data-agent-action-continue]"
+      );
+      expect(question?.textContent).toContain("What is the impact?");
+      expect(question?.disabled).toBe(false);
+      act(() => question?.click());
+      expect(onContinueAction).toHaveBeenCalledWith(chat.id, "What is the impact?", []);
+      expect(store.getDraft(chat.id)).toEqual(draft);
+    } finally {
+      unmount();
+    }
   });
 
   test("renders a member-clicked handoff only on a final answer", () => {

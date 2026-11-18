@@ -136,7 +136,6 @@
     },
     "follow-up": {
       "ask-next": "接着问",
-      "query-analysis": "如何筛选或排序这些结果?",
       "query-mask": "如何对这些列进行脱敏?",
       "query-mask-database": "如何对 {{database}} 中的列进行脱敏?",
       "query-unmask": "如何申请访问未脱敏的数据?",

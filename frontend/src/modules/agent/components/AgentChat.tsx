@@ -921,7 +921,8 @@ export function AgentChat({
                 message.metadata.resourceReferences,
                 message.metadata.resourceReference
               ),
-              t
+              t,
+              message.metadata.queryMaskingEligibility
             )
       );
     }
@@ -1543,7 +1544,6 @@ export function AgentChat({
                             !onContinueAction ||
                             currentChat?.status !== "idle" ||
                             currentChat.archived ||
-                            Boolean(draftText?.trim()) ||
                             Boolean(queuedUserMessage)
                           }
                           onClick={() =>

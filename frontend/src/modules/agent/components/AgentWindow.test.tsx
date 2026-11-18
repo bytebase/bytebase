@@ -14,6 +14,7 @@ import { DEFAULT_AGENT_PREFERENCES, getAgentPreferencesKey } from "../store/pref
 import type { AgentPageResource } from "../logic/chatContext";
 import { openAgentPageHelp } from "../logic/contextualHelp";
 import type { AccessGrantDraft } from "../logic/deniedQueryAccess";
+import type { AgentDraft } from "../logic/types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -3554,7 +3555,7 @@ describe("AgentWindow", () => {
     unmount();
   });
 
-  test("does not replace an existing draft with a response follow-up", () => {
+  test("queues a response follow-up immediately without replacing an existing draft", () => {
     const store = useAgentStore.getState();
     const chat = store.ensureCurrentChat(undefined, "projects/orders");
     store.setDraft(chat.id, { text: "Unfinished question" });
@@ -3569,9 +3570,111 @@ describe("AgentWindow", () => {
         ?.click();
     });
     expect(store.getDraft(chat.id).text).toBe("Unfinished question");
-    expect(getCurrentQueuedUserMessage()).toBeUndefined();
+    expect(getCurrentQueuedUserMessage()).toMatchObject({
+      chatId: chat.id,
+      text: "What should I review next?",
+      runMode: "default",
+    });
     unmount();
   });
+
+  test.each([
+    {
+      name: "project-only",
+      draft: { text: "", project: { name: "projects/analytics", title: "Analytics" } },
+    },
+    {
+      name: "resource-only",
+      draft: {
+        text: "",
+        resource: { kind: "project", name: "projects/analytics", project: "projects/analytics", label: "Analytics" },
+      },
+    },
+    {
+      name: "mention",
+      draft: {
+        text: "@Analytics Unfinished question",
+        mentions: [{
+          resource: { kind: "project", name: "projects/analytics", project: "projects/analytics", label: "Analytics" },
+          range: { start: 0, end: 10 },
+        }],
+      },
+    },
+  ] satisfies { name: string; draft: AgentDraft }[])(
+    "sends a bound response follow-up independently of a $name draft",
+    ({ draft }) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      store.setDraft(chat.id, draft);
+      const originalDraft = structuredClone(store.getDraft(chat.id));
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      render();
+
+      try {
+        act(() => {
+          document.body.querySelector<HTMLButtonElement>(
+            '[data-testid="agent-continue-with-project"]'
+          )?.click();
+        });
+        expect(getCurrentQueuedUserMessage()).toMatchObject({
+          chatId: chat.id,
+          text: "@Orders What should I review next?",
+          runMode: "default",
+          resourceReferences: [{
+            kind: "project",
+            name: "projects/orders",
+            project: "projects/orders",
+            label: "Orders",
+          }],
+        });
+        expect(store.getDraft(chat.id)).toEqual(originalDraft);
+        expect(store.getMessages(chat.id)).toEqual([]);
+      } finally {
+        unmount();
+      }
+    }
+  );
+
+  test.each(["running", "awaiting_user", "archived", "queued"] as const)(
+    "blocks a response follow-up for a %s chat without changing its draft",
+    (state) => {
+      const store = useAgentStore.getState();
+      const chat = store.ensureCurrentChat(undefined, "projects/orders");
+      store.setDraft(chat.id, { text: "Keep this draft" });
+      if (state === "queued") {
+        store.queueUserMessage({
+          chatId: chat.id,
+          text: "An already queued question",
+          page: { path: "/projects/orders", title: "Orders" },
+        });
+      } else {
+        useAgentStore.setState((current) => ({
+          chats: current.chats.map((entry) => entry.id !== chat.id
+            ? entry
+            : state === "archived"
+              ? { ...entry, archived: true }
+              : { ...entry, status: state }),
+        }));
+      }
+      const queued = getCurrentQueuedUserMessage();
+      const draft = structuredClone(store.getDraft(chat.id));
+      const { render, unmount } = renderIntoContainer(<AgentWindow />);
+      render();
+
+      try {
+        act(() => {
+          document.body.querySelector<HTMLButtonElement>(
+            '[data-testid="agent-continue-action"]'
+          )?.click();
+        });
+        expect(getCurrentQueuedUserMessage()).toEqual(queued);
+        expect(store.getDraft(chat.id)).toEqual(draft);
+        expect(store.getMessages(chat.id)).toEqual([]);
+      } finally {
+        unmount();
+      }
+    }
+  );
 
   test("does not replace a queued response follow-up", () => {
     const store = useAgentStore.getState();

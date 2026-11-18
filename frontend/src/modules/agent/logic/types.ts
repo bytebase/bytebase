@@ -168,6 +168,12 @@ export interface AgentResourceReference {
   label: string;
 }
 
+// This snapshot permits a suggestion, not configuration; clicked workflows recheck access.
+export interface AgentQueryMaskingEligibility {
+  database: string;
+  allowed: boolean;
+}
+
 export type AgentDiagnosticCapability = {
   kind: "diagnostic";
   resource: AgentResourceReference;
@@ -206,6 +212,7 @@ export interface AgentMessageMetadata {
   evidence?: AgentAnswerEvidence;
   handoff?: AgentHandoff;
   actions?: AgentResponseAction[];
+  queryMaskingEligibility?: AgentQueryMaskingEligibility;
   maskingRuleDraftHandoff?: {
     draftId: string;
     outcome: "opened" | "applied";

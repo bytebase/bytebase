@@ -71,14 +71,14 @@ If JIT is unavailable, explain the actual blocker; the runtime can offer the exi
 
 After a successful data-query answer, normally offer at most one masking/access question within the existing 2-3 useful Continue questions. Keep useful analysis questions; never append both by default or echo a primary action. Do not add these questions for failed/denied queries, canceled execution, review-only SQL, EXPLAIN, or metadata-only answers.
 
-The runtime owns query-result Continue questions and replaces model-proposed questions with localized, evidence-backed templates. Do not fetch an overview merely to make a suggestion appear. Prepared masking and access-request workflows retain their own follow-ups.
+Preserve contextual analysis questions from the model in their original wording and order. The runtime filters and rebuilds only masking/access suggestions using fresh evidence and localized templates; it does not replace ordinary questions or add a generic fallback. Do not fetch an overview merely to make a suggestion appear. Prepared masking and access-request workflows retain their own follow-ups.
 
 Confirm masking only from nonempty per-column reasons in results[].masked; an array of empty objects is not evidence. Missing metadata, literal asterisks, and SQL-level redaction do not establish policy masking. Use surviving metadata even when rows are omitted or truncated. Never query more rows, inspect row values, or fetch policies merely to generate follow-ups.
 
 - When masking is confirmed, prefer "How can I request access to unmasked data?"; "Why are these values masked?" is an explanation alternative.
 - When protection is relevant from member intent or verified column metadata, offer "How can I mask these columns?" Do not offer setup after every query.
 
-Offer masking setup only with fresh get_masking_overview evidence: the global-masking step has configure.status="allowed" and setup.features.masking="available". The global-masking and semantic-types steps must also have readAccess.status="allowed"; maskingPolicy.status and semanticTypes.status must both be "available". Omit it when permission or availability is denied, unknown, missing, stale, or outside the verified scope. Query access, catalog-edit permission, role names, and sensitive-looking columns are not permission to configure global masking. Existing masking rules or exemptions are not required.
+Offer masking setup only when the runtime confirms current masking-configuration permission and feature availability independently of model tool choices: the global-masking step has configure.status="allowed" and setup.features.masking="available". The global-masking and semantic-types steps must also have readAccess.status="allowed". This suggestion does not require get_masking_overview or masking-policy reads. Omit it when permission or availability is denied, unknown, missing, stale, or outside the verified scope. Query access, catalog-edit permission, role names, and sensitive-looking columns are not permission to configure global masking. Existing masking rules or exemptions are not required.
 
 Offer unmasked-access help only when this Query response confirms masked data. It does not require masking-configuration permission or an existing exemption.
 
@@ -86,7 +86,7 @@ In both the answer and follow-ups, query success or visible values never prove a
 
 Keep the verified database, project, exact SQL, and intended columns as context, not approval. This turn's selected references stay bound to Continue questions; resources discovered only in tool results need a self-contained question within 140 characters identifying the verified database/project. Omit the suggestion if that scope cannot fit. Do not equate an output alias with a physical source column; clarify unresolved scope instead of widening it.
 
-A Continue click asks a question only; never automatically change policy, grant access, open a draft, or rerun the query. When the member pursues masking setup, load get_skill(name="data-masking", section="rule"). For unmasked access, load get_skill(name="data-masking", section="exemption") and preserve its exemption/JIT method choice and fresh eligibility checks.
+A Continue click asks a question only; never automatically change policy, grant access, open a draft, or rerun the query. Recheck current workflow eligibility after the member clicks; a suggestion's permission snapshot is not approval or proof of current settings. When the member pursues masking setup, load get_skill(name="data-masking", section="rule"). For unmasked access, load get_skill(name="data-masking", section="exemption") and preserve its exemption/JIT method choice and fresh eligibility checks.
 
 ## Notes
 

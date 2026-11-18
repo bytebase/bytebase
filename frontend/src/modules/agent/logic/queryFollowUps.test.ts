@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, test } from "vitest";
 import enUS from "@/locales/en-US.json";
+import esES from "@/locales/es-ES.json";
+import jaJP from "@/locales/ja-JP.json";
+import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
+import * as queryFollowUps from "./queryFollowUps";
 import {
   getQueryResponseActions as buildQueryResponseActions,
   getCurrentTurnQueryCalls,
@@ -11,6 +15,7 @@ import {
   omitAgentQueryRows,
 } from "./queryResultRetention";
 import type {
+  AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentResponseAction,
   Message,
@@ -27,11 +32,44 @@ const translator =
     return value.replace("{{database}}", params?.database ?? "");
   };
 const translate = translator(enUS);
+const locales = [
+  { name: "en-US", locale: enUS },
+  { name: "es-ES", locale: esES },
+  { name: "ja-JP", locale: jaJP },
+  { name: "vi-VN", locale: viVN },
+  { name: "zh-CN", locale: zhCN },
+];
+const governanceKeys = [
+  "agent.follow-up.query-mask",
+  "agent.follow-up.query-unmask",
+  "agent.follow-up.query-mask-database",
+  "agent.follow-up.query-unmask-database",
+];
 const getQueryResponseActions = (
   actions: AgentResponseAction[],
   messages: readonly Message[],
+  references: readonly AgentResourceReference[] = [],
+  eligibility?: AgentQueryMaskingEligibility
+) =>
+  buildQueryResponseActions(
+    actions,
+    messages,
+    references,
+    translate,
+    eligibility
+  );
+const getQueryMaskingSetupTarget = (
+  actions: AgentResponseAction[],
+  messages: readonly Message[],
   references: readonly AgentResourceReference[] = []
-) => buildQueryResponseActions(actions, messages, references, translate);
+) => {
+  expect(queryFollowUps.getQueryMaskingSetupTarget).toBeTypeOf("function");
+  return queryFollowUps.getQueryMaskingSetupTarget(
+    actions,
+    messages,
+    references
+  );
+};
 
 const database = "instances/main/databases/orders";
 const project = "projects/orders";
@@ -40,10 +78,6 @@ const reference: AgentResourceReference = {
   name: database,
   project,
   label: "orders",
-};
-const analysis: AgentResponseAction = {
-  kind: "continue",
-  prompt: "How can I filter or sort these results?",
 };
 const setup: AgentResponseAction = {
   kind: "continue",
@@ -61,6 +95,18 @@ const invented: AgentResponseAction = {
 const primary: AgentResponseAction = {
   kind: "open",
   target: { kind: "open-global-masking" },
+};
+const rowCount: AgentResponseAction = {
+  kind: "continue",
+  prompt: "How many rows are in this result?",
+};
+const summary: AgentResponseAction = {
+  kind: "continue",
+  prompt: "Can you summarize these rows?",
+};
+const groups: AgentResponseAction = {
+  kind: "continue",
+  prompt: "Can you group these results by status?",
 };
 
 const tool = (
@@ -189,13 +235,507 @@ describe("getCurrentTurnQueryCalls", () => {
   });
 });
 
+describe("getQueryMaskingSetupTarget", () => {
+  test("targets a successful unmasked Query without a model overview call", () => {
+    expect(
+      getQueryMaskingSetupTarget([rowCount, groups], turn(...query()), [
+        reference,
+      ])
+    ).toBe(database);
+    expect(
+      getQueryMaskingSetupTarget([primary, rowCount], turn(...query()), [
+        reference,
+      ])
+    ).toBe(database);
+  });
+
+  test("counts retained ordinary questions rather than unsupported governance wording", () => {
+    expect(
+      getQueryMaskingSetupTarget(
+        [rowCount, invented, groups],
+        turn(...query()),
+        [reference]
+      )
+    ).toBe(database);
+    expect(
+      getQueryMaskingSetupTarget([invented], turn(...query()), [reference])
+    ).toBe(database);
+  });
+
+  test("accepts verified project-only scope and self-contained discovered database scope", () => {
+    expect(getQueryMaskingSetupTarget([rowCount], turn(...query()))).toBe(
+      database
+    );
+    expect(
+      getQueryMaskingSetupTarget([rowCount], turn(...query()), [
+        {
+          kind: "project",
+          name: project,
+          project,
+          label: "Orders",
+        },
+      ])
+    ).toBe(database);
+  });
+
+  test("accepts empty data results and BigQuery sidecar plans", () => {
+    expect(
+      getQueryMaskingSetupTarget(
+        [rowCount],
+        turn(...query(envelope({ rows: [] }))),
+        [reference]
+      )
+    ).toBe(database);
+    expect(
+      getQueryMaskingSetupTarget(
+        [rowCount],
+        turn(
+          ...query(
+            envelope({
+              queryPlan: {
+                format: "JSON",
+                executed: true,
+                content: '[{"name":"stage"}]',
+              },
+            })
+          )
+        ),
+        [reference]
+      )
+    ).toBe(database);
+  });
+
+  test.each([
+    {
+      name: "masked data",
+      messages: turn(
+        ...query(envelope({ masked: [{ algorithm: "Full mask" }] }))
+      ),
+    },
+    {
+      name: "failed Query",
+      messages: turn(...query(envelope({ error: "failed" }))),
+    },
+    {
+      name: "HTTP failure",
+      messages: turn(...query({ status: 403, response: {} })),
+    },
+    {
+      name: "EXPLAIN",
+      messages: turn(...query(envelope(), { explain: true })),
+    },
+    {
+      name: "row plan",
+      messages: turn(...query(envelope({ queryPlan: { executed: true } }))),
+    },
+    {
+      name: "metadata-only response",
+      messages: turn(...query(envelope({ columnNames: [] }))),
+    },
+    { name: "unanswered Query", messages: turn(query()[0]) },
+    { name: "no Query", messages: turn(...overviewCall()) },
+    {
+      name: "previous-turn Query",
+      messages: [
+        ...turn(...query()),
+        { role: "user" as const, content: "Another request." },
+      ],
+    },
+    {
+      name: "different targets",
+      messages: turn(
+        ...query(),
+        ...query(
+          envelope(),
+          { name: "instances/main/databases/other" },
+          "other"
+        )
+      ),
+    },
+    {
+      name: "mixed failure",
+      messages: turn(
+        ...query(),
+        ...query(envelope({ error: "failed" }), {}, "failed")
+      ),
+    },
+  ])("does not fetch setup eligibility for $name", ({ messages }) => {
+    expect(
+      getQueryMaskingSetupTarget([rowCount, groups], messages, [reference])
+    ).toBeUndefined();
+  });
+
+  test("does not fetch setup eligibility after decline, a prepared workflow, or three ordinary questions", () => {
+    const messages = turn(...query());
+    expect(
+      getQueryMaskingSetupTarget([primary], messages, [reference])
+    ).toBeUndefined();
+    expect(
+      getQueryMaskingSetupTarget(
+        [{ kind: "draft-masking-rule", draftId: "prepared" }, rowCount],
+        messages,
+        [reference]
+      )
+    ).toBeUndefined();
+    expect(
+      getQueryMaskingSetupTarget([rowCount, summary, groups], messages, [
+        reference,
+      ])
+    ).toBeUndefined();
+  });
+
+  test("does not fetch setup eligibility for conflicting or unrelated references", () => {
+    const messages = turn(...query());
+    expect(
+      getQueryMaskingSetupTarget([rowCount], messages, [
+        {
+          ...reference,
+          name: "instances/main/databases/other",
+        },
+      ])
+    ).toBeUndefined();
+    expect(
+      getQueryMaskingSetupTarget([rowCount], messages, [
+        {
+          ...reference,
+          kind: "issue",
+          name: `${project}/issues/1`,
+        },
+      ])
+    ).toBeUndefined();
+    expect(
+      getQueryMaskingSetupTarget(
+        [rowCount],
+        turn(
+          ...query(envelope(), {
+            name: "projects/other/instances/main/databases/orders",
+          })
+        ),
+        [reference]
+      )
+    ).toBeUndefined();
+  });
+});
+
 describe("getQueryResponseActions", () => {
+  test("runtime permission evidence offers masking setup without a model overview call", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups],
+        turn(...query()),
+        [reference],
+        {
+          database,
+          allowed: true,
+        }
+      )
+    ).toEqual([rowCount, groups, setup]);
+  });
+
+  test("fresh runtime denial overrides an older positive overview", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups],
+        turn(...query(), ...overviewCall()),
+        [reference],
+        {
+          database,
+          allowed: false,
+        }
+      )
+    ).toEqual([rowCount, groups]);
+  });
+
+  test.each([
+    { database: "instances/main/databases/other", allowed: true },
+    { database, allowed: "true" },
+    { database },
+    { allowed: true },
+    null,
+    [],
+  ])(
+    "does not accept mismatched or malformed runtime permission evidence: %j",
+    (eligibility) => {
+      for (const messages of [
+        turn(...query()),
+        turn(...query(), ...overviewCall()),
+      ]) {
+        expect(
+          getQueryResponseActions(
+            [rowCount, groups],
+            messages,
+            [reference],
+            eligibility as unknown as AgentQueryMaskingEligibility
+          )
+        ).toEqual([rowCount, groups]);
+      }
+    }
+  );
+
+  test("runtime setup eligibility does not replace positive unmask evidence", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups],
+        turn(
+          ...query(
+            envelope({
+              masked: [{ algorithm: "Full mask" }],
+            })
+          )
+        ),
+        [reference],
+        { database, allowed: false }
+      )
+    ).toEqual([rowCount, groups, unmask]);
+  });
+
+  test("runtime eligibility respects declined follow-ups and the existing ordinary-question limit", () => {
+    const declined = [primary];
+    expect(
+      getQueryResponseActions(declined, turn(...query()), [reference], {
+        database,
+        allowed: true,
+      })
+    ).toBe(declined);
+    expect(
+      getQueryResponseActions(
+        [rowCount, summary, groups],
+        turn(...query()),
+        [reference],
+        { database, allowed: true }
+      )
+    ).toEqual([rowCount, summary, groups]);
+  });
+
+  test("preserves ordinary screenshot questions while removing the invented exemption question", () => {
+    expect(
+      getQueryResponseActions([rowCount, groups, invented], turn(...query()), [
+        reference,
+      ])
+    ).toEqual([rowCount, groups]);
+  });
+
+  test("preserves ordinary wording and order while appending one verified governance question", () => {
+    expect(
+      getQueryResponseActions(
+        [groups, rowCount, invented],
+        turn(...query(envelope({ masked: [{ algorithm: "Full mask" }] }))),
+        [reference]
+      )
+    ).toEqual([groups, rowCount, unmask]);
+    expect(
+      getQueryResponseActions(
+        [groups, rowCount, invented],
+        turn(...query(), ...overviewCall()),
+        [reference]
+      )
+    ).toEqual([groups, rowCount, setup]);
+  });
+
+  test("keeps three ordinary questions instead of displacing one for optional governance", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, summary, groups],
+        turn(...query(envelope({ masked: [{ algorithm: "Full mask" }] }))),
+        [reference]
+      )
+    ).toEqual([rowCount, summary, groups]);
+  });
+
+  test("keeps ordinary questions for failed and ambiguous Query results", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups, invented],
+        turn(...query(envelope({ error: "query failed" }))),
+        [reference]
+      )
+    ).toEqual([rowCount, groups]);
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups, invented],
+        turn(
+          ...query(),
+          ...query(
+            envelope(),
+            { name: "instances/main/databases/other" },
+            "other-query"
+          )
+        ),
+        [reference]
+      )
+    ).toEqual([rowCount, groups]);
+  });
+
+  test("keeps ordinary questions and unmask help for a successful BigQuery data result with a sidecar plan", () => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups, invented],
+        turn(
+          ...query(
+            envelope({
+              masked: [{ algorithm: "Full mask" }],
+              queryPlan: {
+                format: "JSON",
+                executed: true,
+                content: '[{"name":"stage"}]',
+              },
+            })
+          )
+        ),
+        [reference]
+      )
+    ).toEqual([rowCount, groups, unmask]);
+  });
+
+  test("keeps ordinary questions without governance for explicit EXPLAIN and row plans", () => {
+    const sidecar = envelope({
+      masked: [{ algorithm: "Full mask" }],
+      queryPlan: {
+        format: "JSON",
+        executed: true,
+        content: '[{"name":"stage"}]',
+      },
+    });
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups, invented],
+        turn(...query(sidecar, { explain: true })),
+        [reference]
+      )
+    ).toEqual([rowCount, groups]);
+    expect(
+      getQueryResponseActions(
+        [rowCount, groups, invented],
+        turn(
+          ...query(envelope({ queryPlan: { format: "JSON", executed: true } }))
+        ),
+        [reference]
+      )
+    ).toEqual([rowCount, groups]);
+  });
+
+  test.each([
+    "Can you mask these columns?",
+    "Which masks are active?",
+    "Why are these values masked?",
+    "How does masking affect this query?",
+    "Can you unmask these results?",
+    "Who unmasks these values?",
+    "Why were these values unmasked?",
+    "What does unmasking require?",
+    "Does my exemption apply?",
+    "Are my exemptions active?",
+    "Can you MASK these columns?",
+  ])("drops explicit unsupported English governance wording: %s", (prompt) => {
+    expect(
+      getQueryResponseActions(
+        [rowCount, { kind: "continue", prompt }, groups],
+        turn(...query()),
+        [reference]
+      )
+    ).toEqual([rowCount, groups]);
+  });
+
+  test.each([
+    "How can I inspect access to this project?",
+    "Which permissions are needed to export these rows?",
+    "When will the current session expire?",
+    "Which protection settings apply to exports?",
+    "How many tax exemptions are in this table?",
+    "Can you count the tax exemptions by year?",
+    "Can you summarize tax exemptions by category?",
+    "Can you group tax exemptions by application year?",
+    "Can you count tax exemptions by applicant?",
+    "Can you group tax exemptions by grantor?",
+    "Can you summarize the mask_column values?",
+    "Can you summarize the masked_email values?",
+    "Can you group unmasking_total by status?",
+    "Can you summarize exemption_count for each group?",
+    "Can you compare maskColumn values?",
+  ])("preserves unrelated wording and SQL identifiers: %s", (prompt) => {
+    const action: AgentResponseAction = { kind: "continue", prompt };
+    expect(
+      getQueryResponseActions([action], turn(...query()), [reference])
+    ).toEqual([action]);
+  });
+
+  test.each(
+    locales.flatMap(({ name, locale }) =>
+      governanceKeys.map((key) => ({
+        name,
+        locale,
+        key,
+      }))
+    )
+  )(
+    "recognizes previous $name governance template $key without current eligibility",
+    ({ locale, key }) => {
+      const prior = translator(locale)(key, {
+        database: "instances/old/databases/archived",
+      });
+      expect(
+        getQueryResponseActions(
+          [rowCount, { kind: "continue", prompt: prior }, groups],
+          turn(...query()),
+          [reference]
+        )
+      ).toEqual([rowCount, groups]);
+    }
+  );
+
+  test("does not inject a fallback when all proposed questions are unsupported", () => {
+    expect(
+      getQueryResponseActions([invented, setup, unmask], turn(...query()), [
+        reference,
+      ])
+    ).toEqual([]);
+  });
+
+  test("is idempotent while preserving ordinary questions and one verified governance question", () => {
+    const messages = turn(
+      ...query(envelope({ masked: [{ algorithm: "Full mask" }] }))
+    );
+    const once = getQueryResponseActions(
+      [groups, invented, rowCount],
+      messages,
+      [reference]
+    );
+    expect(once).toEqual([groups, rowCount, unmask]);
+    expect(getQueryResponseActions(once, messages, [reference])).toEqual(once);
+  });
+
+  test.each(
+    locales.flatMap(({ name, locale }) =>
+      [false, true].map((bound) => ({ name, locale, bound }))
+    )
+  )(
+    "strips previously eligible $name governance after a language switch and loss of evidence with bound references=$bound",
+    ({ locale, bound }) => {
+      const references = bound ? [reference] : [];
+      for (const earlier of [
+        turn(...query(), ...overviewCall()),
+        turn(...query(envelope({ masked: [{ algorithm: "Full mask" }] }))),
+      ]) {
+        const prior = buildQueryResponseActions(
+          [rowCount],
+          earlier,
+          references,
+          translator(locale)
+        );
+        expect(prior).toHaveLength(2);
+        expect(
+          getQueryResponseActions(prior, turn(...query()), references)
+        ).toEqual([rowCount]);
+      }
+    }
+  );
+
   test("replaces the screenshot's invented exemption question and preserves primary actions", () => {
     expect(
       getQueryResponseActions([primary, invented], turn(...query()), [
         reference,
       ])
-    ).toEqual([primary, analysis]);
+    ).toEqual([primary]);
   });
 
   test("leaves non-Query answers and declined follow-ups unchanged", () => {
@@ -227,7 +767,7 @@ describe("getQueryResponseActions", () => {
           turn(...query(envelope({ masked: [reason] }))),
           [reference]
         )
-      ).toEqual([analysis, unmask]);
+      ).toEqual([unmask]);
     }
   );
 
@@ -253,7 +793,7 @@ describe("getQueryResponseActions", () => {
           ),
           [reference]
         )
-      ).toEqual([analysis]);
+      ).toEqual([]);
     }
   );
 
@@ -276,7 +816,7 @@ describe("getQueryResponseActions", () => {
         getQueryResponseActions([invented], turn(...query(retain(raw))), [
           reference,
         ])
-      ).toEqual([analysis, unmask]);
+      ).toEqual([unmask]);
     }
   );
 
@@ -303,7 +843,7 @@ describe("getQueryResponseActions", () => {
       },
     },
   ])(
-    "removes all query follow-ups when no successful data result is established: %j",
+    "removes unsupported governance questions when no successful data result is established: %j",
     (result) => {
       expect(
         getQueryResponseActions([primary, invented], turn(...query(result)), [
@@ -326,14 +866,14 @@ describe("getQueryResponseActions", () => {
     ).toEqual([]);
   });
 
-  test("keeps empty data results useful and fails closed for ambiguous targets", () => {
+  test("does not invent fallback questions for empty results or ambiguous targets", () => {
     expect(
       getQueryResponseActions(
         [invented],
         turn(...query(envelope({ rows: [] }))),
         [reference]
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
     expect(
       getQueryResponseActions(
         [invented],
@@ -354,7 +894,7 @@ describe("getQueryResponseActions", () => {
         turn(...query(), ...query(envelope(), {}, "same-target")),
         [reference]
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test.each(["failed", "unanswered"])(
@@ -378,14 +918,13 @@ describe("getQueryResponseActions", () => {
     const messages = turn(...query(), ...overviewCall());
     expect(
       getQueryResponseActions([setup, invented], messages, [reference])
-    ).toEqual([analysis, setup]);
+    ).toEqual([setup]);
     expect(getQueryResponseActions([invented], messages, [reference])).toEqual([
-      analysis,
       setup,
     ]);
     expect(
       getQueryResponseActions([setup], turn(...query()), [reference])
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test("does not require catalog-read permission for a verified explicit database", () => {
@@ -396,20 +935,20 @@ describe("getQueryResponseActions", () => {
         turn(...query(), ...overviewCall(value)),
         [reference]
       )
-    ).toEqual([analysis, setup]);
+    ).toEqual([setup]);
     expect(
       getQueryResponseActions(
         [invented],
         turn(...query(), ...tool("get_masking_overview", {}, value)),
         [reference]
       )
-    ).toEqual([analysis, setup]);
+    ).toEqual([setup]);
     expect(
       getQueryResponseActions(
         [invented],
         turn(...query(), ...tool("get_masking_overview", { project }, value))
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test.each([
@@ -448,7 +987,7 @@ describe("getQueryResponseActions", () => {
           turn(...query(), ...overviewCall(value)),
           [reference]
         )
-      ).toEqual([analysis]);
+      ).toEqual([]);
     }
   );
 
@@ -466,7 +1005,7 @@ describe("getQueryResponseActions", () => {
           ),
           [reference]
         )
-      ).toEqual([analysis]);
+      ).toEqual([]);
     }
     expect(
       getQueryResponseActions(
@@ -474,7 +1013,7 @@ describe("getQueryResponseActions", () => {
         [...turn(...overviewCall()), ...turn(...query())],
         [reference]
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test("an unrelated overview does not replace the latest evidence for this database", () => {
@@ -493,7 +1032,7 @@ describe("getQueryResponseActions", () => {
         ),
         [reference]
       )
-    ).toEqual([analysis, setup]);
+    ).toEqual([setup]);
   });
 
   test.each([
@@ -507,14 +1046,14 @@ describe("getQueryResponseActions", () => {
       const messages = turn(...query(), ...overviewCall(), ...mutation);
       expect(
         getQueryResponseActions([invented], messages, [reference])
-      ).toEqual([analysis]);
+      ).toEqual([]);
       expect(
         getQueryResponseActions(
           [invented],
           [...messages, ...overviewCall(overview(), "refreshed")],
           [reference]
         )
-      ).toEqual([analysis, setup]);
+      ).toEqual([setup]);
     }
   );
 
@@ -535,7 +1074,7 @@ describe("getQueryResponseActions", () => {
           turn(...query(), ...overviewCall(value)),
           [reference]
         )
-      ).toEqual([analysis]);
+      ).toEqual([]);
     }
   );
 
@@ -546,7 +1085,7 @@ describe("getQueryResponseActions", () => {
         turn(...query(envelope({ masked: [{ context: "Matched rule" }] }))),
         [reference]
       )
-    ).toEqual([analysis, unmask]);
+    ).toEqual([unmask]);
   });
 
   test("makes discovered-database governance questions self-contained", () => {
@@ -556,7 +1095,6 @@ describe("getQueryResponseActions", () => {
         turn(...query(envelope({ masked: [{ algorithm: "Full mask" }] })))
       )
     ).toEqual([
-      analysis,
       {
         kind: "continue",
         prompt: `How can I request unmasked access to ${database}?`,
@@ -565,7 +1103,6 @@ describe("getQueryResponseActions", () => {
     expect(
       getQueryResponseActions([setup], turn(...query(), ...overviewCall()))
     ).toEqual([
-      analysis,
       { kind: "continue", prompt: `How can I mask columns in ${database}?` },
     ]);
   });
@@ -576,13 +1113,13 @@ describe("getQueryResponseActions", () => {
       getQueryResponseActions([invented], turn(...query(masked)), [
         { ...reference, name: "instances/main/databases/other" },
       ])
-    ).toEqual([analysis]);
+    ).toEqual([]);
     expect(
       getQueryResponseActions([invented], turn(...query(masked)), [
         reference,
         { ...reference, project: "projects/other" },
       ])
-    ).toEqual([analysis]);
+    ).toEqual([]);
     expect(
       getQueryResponseActions(
         [invented],
@@ -592,7 +1129,7 @@ describe("getQueryResponseActions", () => {
           })
         )
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
     expect(
       getQueryResponseActions(
         [invented],
@@ -608,7 +1145,7 @@ describe("getQueryResponseActions", () => {
           },
         ]
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test("uses a self-contained database question for project-only references", () => {
@@ -624,7 +1161,6 @@ describe("getQueryResponseActions", () => {
         selectedProject,
       ])
     ).toEqual([
-      analysis,
       {
         kind: "continue",
         prompt: `How can I request unmasked access to ${database}?`,
@@ -640,12 +1176,12 @@ describe("getQueryResponseActions", () => {
         ),
         [selectedProject]
       )
-    ).toEqual([analysis]);
+    ).toEqual([]);
     expect(
       getQueryResponseActions([invented], turn(...query(masked)), [
         { ...selectedProject, kind: "issue", name: `${project}/issues/1` },
       ])
-    ).toEqual([analysis]);
+    ).toEqual([]);
   });
 
   test("leaves later prepared-draft workflow answers unchanged", () => {
@@ -689,7 +1225,6 @@ describe("getQueryResponseActions", () => {
       expect(
         buildQueryResponseActions(english, messages, references, chinese)
       ).toEqual([
-        { kind: "continue", prompt: chinese("agent.follow-up.query-analysis") },
         {
           kind: "continue",
           prompt: chinese(

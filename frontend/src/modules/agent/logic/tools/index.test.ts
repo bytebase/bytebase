@@ -29,6 +29,7 @@ import {
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import type { MaskingRuleEditorSnapshot } from "../maskingRuleDraftTarget";
+import { MaskingRuleTargetClarificationError } from "../maskingRuleTarget";
 import { getHistoricalMaskingDatabase } from "../outboundHistory";
 import { getMaskingSkillGuidance } from "../skills";
 import type { AgentMessage } from "../types";
@@ -217,6 +218,23 @@ describe.each(["ask_masking_rule_scope", "ask_masking_exemption_scope"])(
         project,
         "workspaces/example"
       );
+    });
+
+    test("prefers an explicit database candidate over historical scope", async () => {
+      const previous = "instances/prod/databases/previous";
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        context: project,
+        workspaceName: "workspaces/example",
+        historicalDatabase: { database: previous },
+      });
+      const result = await execute(toolName, { database }, "scope");
+
+      expect(result.kind).toBe("ask_user");
+      if (result.kind !== "ask_user") throw new Error("Expected scope choices");
+      const values = result.ask.options?.map((option) => option.value);
+      expect(values).toContain(database);
+      expect(values).not.toContain(previous);
+      expect(result.ask.defaultValue).toBeUndefined();
     });
 
     test("does not replace an explicit nonblank invalid candidate with historical scope", async () => {
@@ -1084,6 +1102,42 @@ describe.each(["prepare_masking_rule_draft", "prepare_masking_rule_drafts"])(
       maskingDraftApi.prepareMany.mockClear();
     });
 
+    test("returns structured target clarification without exposing a draft action", async () => {
+      const evidence = {
+        status: "no-current-match" as const,
+        source: "synchronized-table-metadata" as const,
+        checkedAt: "2026-11-17T00:00:00.000Z",
+        database: "instances/prod/databases/app",
+        target: { table: "staff", column: "invalid" },
+        reason: "no-matching-table-metadata",
+      };
+      prepare.mockRejectedValueOnce(
+        new MaskingRuleTargetClarificationError([evidence])
+      );
+      const execute = createToolExecutor({} as AppRouterInstance, {
+        chatId: "chat-1",
+        userName: "users/1",
+        workspaceName: "workspaces/test",
+        context: "projects/sample",
+      });
+
+      const result = await execute(
+        toolName,
+        args({ kind: "project", project: "projects/sample" }),
+        "unmatched"
+      );
+
+      expect(result.kind).toBe("tool_result");
+      if (result.kind !== "tool_result")
+        throw new Error("Expected a tool result");
+      const content = JSON.parse(result.result);
+      expect(content).toMatchObject({
+        needsClarification: true,
+        targetEvidence: [evidence],
+      });
+      expect(content).not.toHaveProperty("draftId");
+    });
+
     describe.each([
       {
         context: "workspaces/test",
@@ -1218,6 +1272,74 @@ test.each([0, 1])(
     expect(maskingDraftApi.prepareMany).not.toHaveBeenCalled();
   }
 );
+
+describe("prepare_masking_exemption_draft target evidence", () => {
+  const options = {
+    chatId: "chat-1",
+    userName: "users/1",
+    workspaceName: "workspaces/test",
+    context: "projects/sample",
+    maskingSections: ["exemption"] as const,
+  };
+  const args = {
+    project: options.context,
+    scope: { kind: "database", database: "instances/prod/databases/app" },
+    members: ["self"],
+    condition:
+      'resource.schema_name == "public" && resource.column_name == "invalid"',
+    description: "Temporary access",
+    expirationTimestamp: null,
+  };
+  const evidence = {
+    status: "no-current-match" as const,
+    source: "synchronized-table-metadata" as const,
+    checkedAt: "2026-11-18T00:00:00.000Z",
+    database: args.scope.database,
+    target: { schema: "public", column: "invalid" },
+    reason: "No exact target observed in synchronized table metadata.",
+  };
+
+  test("returns structured clarification with schema evidence and no draft action", async () => {
+    maskingDraftApi.prepareExemption.mockRejectedValueOnce(
+      new MaskingRuleTargetClarificationError([evidence])
+    );
+    const execute = createToolExecutor({} as AppRouterInstance, options);
+
+    const result = await execute(
+      "prepare_masking_exemption_draft",
+      args,
+      "missing"
+    );
+
+    expect(result.kind).toBe("tool_result");
+    if (result.kind !== "tool_result") throw new Error("Expected tool result");
+    const content = JSON.parse(result.result);
+    expect(content).toMatchObject({
+      needsClarification: true,
+      targetEvidence: [evidence],
+    });
+    expect(content).not.toHaveProperty("draftId");
+  });
+
+  test("exposes a boolean future-target acknowledgment without changing required exemption fields", () => {
+    const tool = getToolDefinitions(options).find(
+      (tool) => tool.name === "prepare_masking_exemption_draft"
+    );
+
+    expect(tool?.parametersSchema).toMatchObject({
+      properties: { allowUnmatchedTarget: { type: "boolean" } },
+      required: [
+        "project",
+        "scope",
+        "members",
+        "condition",
+        "description",
+        "expirationTimestamp",
+      ],
+      additionalProperties: false,
+    });
+  });
+});
 
 describe("done tool", () => {
   test("identifies current unsaved existing-rule fields as review-only", async () => {

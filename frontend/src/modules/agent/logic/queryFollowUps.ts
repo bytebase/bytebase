@@ -1,4 +1,11 @@
+import enUS from "@/locales/en-US.json";
+import esES from "@/locales/es-ES.json";
+import jaJP from "@/locales/ja-JP.json";
+import viVN from "@/locales/vi-VN.json";
+import zhCN from "@/locales/zh-CN.json";
+import { normalizeAgentResponseActions } from "./responseActions";
 import type {
+  AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentResponseAction,
   Message,
@@ -23,6 +30,37 @@ const parseRecord = (raw: string | undefined) => {
 const projectPattern = /^projects\/[A-Za-z0-9_-]+$/;
 const databasePattern =
   /^(?:projects\/[A-Za-z0-9_-]+\/)?instances\/[A-Za-z0-9_-]+\/databases\/[^/\s@?#]+$/;
+const maskingQuestionPattern = /\b(?:un)?mask(?:s|ed|ing)?\b/i;
+const exemptionQuestionPattern = /\bexemptions?\b/i;
+const exemptionOwnershipPattern =
+  /\b(?:my|your|our)\s+(?:(?:current|active|existing)\s+)?exemptions?\b/i;
+const exemptionAccessPattern =
+  /\b(?:expir(?:e[sd]?|ing|ations?|y)|configur(?:e[sd]?|ing|ations?)|request(?:s|ed|ing)?|renew(?:s|ed|ing|als?)?|grant(?:s|ed|ing)?|appl(?:y|ies|ied|ying|icable|icability)|valid(?:ity)?|active|enabl(?:e[sd]?|ing)|eligib(?:le|ility)|access)\b/i;
+// Model questions are English; saved runtime questions may use any supported locale.
+const maskingQuestionTemplates = [enUS, esES, jaJP, viVN, zhCN]
+  .flatMap(({ agent }) => [
+    agent["follow-up"]["query-mask"],
+    agent["follow-up"]["query-mask-database"],
+    agent["follow-up"]["query-unmask"],
+    agent["follow-up"]["query-unmask-database"],
+  ])
+  .map((template) => template.toLowerCase().split("{{database}}"));
+
+function isMaskingQuestion(prompt: string): boolean {
+  if (
+    maskingQuestionPattern.test(prompt) ||
+    (exemptionQuestionPattern.test(prompt) &&
+      (exemptionOwnershipPattern.test(prompt) ||
+        exemptionAccessPattern.test(prompt)))
+  )
+    return true;
+  const question = prompt.trim().toLowerCase();
+  return maskingQuestionTemplates.some(([prefix, suffix]) =>
+    suffix === undefined
+      ? question === prefix
+      : question.startsWith(prefix) && question.endsWith(suffix)
+  );
+}
 
 function getTurnTools(messages: readonly Message[]): ToolObservation[] {
   const lastUser = messages.findLastIndex((message) => message.role === "user");
@@ -113,8 +151,11 @@ function getDataQuery(call: ToolObservation) {
           "syntaxError",
           "permissionDenied",
           "commandError",
-          "queryPlan",
-        ].every((field) => result[field] == null)
+        ].every((field) => result[field] == null) &&
+        (result.queryPlan == null ||
+          (isRecord(result.queryPlan) &&
+            typeof result.queryPlan.content === "string" &&
+            result.queryPlan.content.trim() !== ""))
     )
   )
     return undefined;
@@ -171,6 +212,51 @@ function getScope(
   return { bound: true, project: selected.project };
 }
 
+function getDataQueryContext(
+  tools: ToolObservation[],
+  references: readonly AgentResourceReference[]
+) {
+  const queries = tools.filter(isQuery);
+  if (queries.length === 0) return undefined;
+  const results = queries
+    .map(getDataQuery)
+    .filter((result) => result !== undefined);
+  if (
+    results.length !== queries.length ||
+    new Set(results.map((result) => result.database)).size !== 1
+  )
+    return undefined;
+  const database = results[0].database;
+  const scope = getScope(database, references);
+  return scope
+    ? { database, scope, masked: results.some((result) => result.masked) }
+    : undefined;
+}
+
+const supportsQueryFollowUps = (actions: AgentResponseAction[]) =>
+  actions.some((action) => action.kind === "continue") &&
+  actions.every(
+    (action) => action.kind === "continue" || action.kind === "open"
+  );
+
+export function getQueryMaskingSetupTarget(
+  actions: AgentResponseAction[],
+  turnMessages: readonly Message[],
+  references: readonly AgentResourceReference[] = []
+): string | undefined {
+  if (
+    !supportsQueryFollowUps(actions) ||
+    actions.filter(
+      (action) =>
+        action.kind === "continue" && !isMaskingQuestion(action.prompt)
+    ).length >= 3
+  )
+    return undefined;
+  const context = getDataQueryContext(getTurnTools(turnMessages), references);
+  return context && !context.masked ? context.database : undefined;
+}
+
+// Older answers have no runtime snapshot; retain their original overview-based check.
 function canConfigureMasking(
   tools: ToolObservation[],
   database: string,
@@ -238,55 +324,48 @@ function canConfigureMasking(
   );
 }
 
-// Query-result questions are runtime-owned so model text cannot invent access state.
-// Prepared workflows retain their own actions.
+// Only masking-access suggestions are rebuilt from evidence; ordinary questions
+// and prepared workflows retain their original wording and order.
 export function getQueryResponseActions(
   actions: AgentResponseAction[],
   turnMessages: readonly Message[],
   references: readonly AgentResourceReference[] = [],
-  t: (key: string, params?: { database: string }) => string
+  t: (key: string, params?: { database: string }) => string,
+  maskingEligibility?: AgentQueryMaskingEligibility
 ): AgentResponseAction[] {
-  if (
-    !actions.some((action) => action.kind === "continue") ||
-    actions.some(
-      (action) => action.kind !== "continue" && action.kind !== "open"
-    )
-  )
-    return actions;
+  if (!supportsQueryFollowUps(actions)) return actions;
   const tools = getTurnTools(turnMessages);
-  const queries = tools.filter(isQuery);
-  if (queries.length === 0) return actions;
-  const primary = actions.filter((action) => action.kind !== "continue");
-  const results = queries
-    .map(getDataQuery)
-    .filter((result) => result !== undefined);
-  if (
-    results.length !== queries.length ||
-    new Set(results.map((result) => result.database)).size !== 1
-  )
-    return primary;
-  const database = results[0].database;
+  if (!tools.some(isQuery)) return actions;
+  const retained = actions.filter(
+    (action) => action.kind !== "continue" || !isMaskingQuestion(action.prompt)
+  );
+  const context = getDataQueryContext(tools, references);
+  if (!context) return retained;
+  const { database, scope, masked } = context;
   const followUps: AgentResponseAction[] = [];
   const add = (prompt: string) => {
     if (prompt && prompt.length <= 140 && !/[\r\n]/.test(prompt)) {
       followUps.push({ kind: "continue", prompt });
     }
   };
-  add(t("agent.follow-up.query-analysis"));
-  const scope = getScope(database, references);
-  if (!scope) return [...primary, ...followUps];
-  if (results.some((result) => result.masked)) {
+  if (masked) {
     add(
       scope.bound
         ? t("agent.follow-up.query-unmask")
         : t("agent.follow-up.query-unmask-database", { database })
     );
-  } else if (canConfigureMasking(tools, database, scope)) {
+  } else if (
+    maskingEligibility === undefined
+      ? canConfigureMasking(tools, database, scope)
+      : isRecord(maskingEligibility) &&
+        maskingEligibility.database === database &&
+        maskingEligibility.allowed === true
+  ) {
     add(
       scope.bound
         ? t("agent.follow-up.query-mask")
         : t("agent.follow-up.query-mask-database", { database })
     );
   }
-  return [...primary, ...followUps];
+  return normalizeAgentResponseActions([...retained, ...followUps]);
 }

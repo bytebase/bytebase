@@ -136,7 +136,6 @@
     },
     "follow-up": {
       "ask-next": "Siguiente pregunta",
-      "query-analysis": "¿Cómo puedo filtrar u ordenar estos resultados?",
       "query-mask": "¿Cómo puedo enmascarar estas columnas?",
       "query-mask-database": "¿Cómo puedo enmascarar columnas en {{database}}?",
       "query-unmask": "¿Cómo puedo solicitar acceso a datos sin enmascarar?",

@@ -136,7 +136,6 @@
     },
     "follow-up": {
       "ask-next": "Ask next",
-      "query-analysis": "How can I filter or sort these results?",
       "query-mask": "How can I mask these columns?",
       "query-mask-database": "How can I mask columns in {{database}}?",
       "query-unmask": "How can I request access to unmasked data?",

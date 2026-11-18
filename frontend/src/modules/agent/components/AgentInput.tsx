@@ -69,8 +69,10 @@ import {
 import { buildSystemPrompt } from "../logic/prompt";
 import {
   getCurrentTurnQueryCalls,
+  getQueryMaskingSetupTarget,
   getQueryResponseActions,
 } from "../logic/queryFollowUps";
+import { resolveQueryMaskingEligibility } from "../logic/queryMaskingEligibility";
 import {
   canAddResourceMention,
   formatResourceMention,
@@ -127,6 +129,7 @@ import type {
   AgentHandoff,
   AgentMessage,
   AgentModelCallUsage,
+  AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentRunBindings,
   AgentRunCheckpoint,
@@ -2338,12 +2341,31 @@ export function AgentInput({
             ];
             handoff = undefined;
           }
+          let queryMaskingEligibility: AgentQueryMaskingEligibility | undefined;
           if (outcome.success && !capability && !accessRequestDraft) {
+            const turnMessages = useAgentStore.getState().getMessages(chatId);
+            const maskingSetupTarget = getQueryMaskingSetupTarget(
+              actions,
+              turnMessages,
+              references
+            );
+            if (maskingSetupTarget) {
+              queryMaskingEligibility = await resolveQueryMaskingEligibility(
+                store.workspaceName ?? "",
+                maskingSetupTarget
+              );
+              if (
+                !ownsInvocation() ||
+                useAgentStore.getState().getChat(chatId)?.archived
+              )
+                return;
+            }
             actions = getQueryResponseActions(
               actions,
-              useAgentStore.getState().getMessages(chatId),
+              turnMessages,
               references,
-              t
+              t,
+              queryMaskingEligibility
             );
           }
           useAgentStore.getState().addMessage({
@@ -2356,6 +2378,7 @@ export function AgentInput({
               ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
               ...(handoff ? { handoff } : {}),
               ...(actions.length > 0 ? { actions } : {}),
+              ...(queryMaskingEligibility ? { queryMaskingEligibility } : {}),
               ...(accessRequestDraft ? { accessRequestDraft } : {}),
               ...(actions.some((action) => action.kind === "continue") &&
               references.length > 0

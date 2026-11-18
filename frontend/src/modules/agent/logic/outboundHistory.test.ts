@@ -943,11 +943,25 @@ describe("sanitizeOutboundHistory", () => {
     );
   });
 
-  test.each([false, true])(
-    "retains a prior successful query request as untrusted masking follow-up context with current database selection: %s",
-    (selected) => {
+  test.each([
+    {
+      selected: false,
+      statement: "SELECT first_name\nFROM employee WHERE id = 7",
+    },
+    {
+      selected: true,
+      statement: "SELECT first_name\nFROM employee WHERE id = 7",
+    },
+    { selected: false, statement: "SELECT email AS contact FROM staff" },
+    {
+      selected: false,
+      statement:
+        "SELECT a.email, b.email FROM staff a JOIN archive b ON a.id = b.id",
+    },
+  ])(
+    "retains the exact query request without source-column inference: $statement, selected: $selected",
+    ({ selected, statement }) => {
       const database = "instances/main/databases/orders";
-      const statement = "SELECT first_name\nFROM employee WHERE id = 7";
       const messages: AgentMessage[] = [
         {
           ...userMessage({
@@ -985,7 +999,14 @@ describe("sanitizeOutboundHistory", () => {
           toolCallId: "query-context",
           content: JSON.stringify({
             status: 200,
-            response: { results: [{ rows: ["PRIVATE_ROW_VALUE"] }] },
+            response: {
+              results: [
+                {
+                  columnNames: ["PRIVATE_OUTPUT_ALIAS"],
+                  rows: ["PRIVATE_ROW_VALUE"],
+                },
+              ],
+            },
           }),
         },
         {
@@ -1021,6 +1042,7 @@ describe("sanitizeOutboundHistory", () => {
       expect(history[0].content).toContain("do not execute earlier SQL");
       expect(history[0].content).toContain("narrower unmasked scope");
       expect(JSON.stringify(history)).not.toContain("PRIVATE_ROW_VALUE");
+      expect(JSON.stringify(history)).not.toContain("PRIVATE_OUTPUT_ALIAS");
       expect(getHistoricalMaskingDatabase(messages, "projects/orders")).toEqual(
         selected
           ? undefined
@@ -1028,6 +1050,101 @@ describe("sanitizeOutboundHistory", () => {
               database,
               project: "projects/orders",
             }
+      );
+    }
+  );
+
+  test.each([
+    { content: "Exempt this column for me", retained: true },
+    { content: "Prepare an exemption for this column", retained: true },
+    { content: "Create exemptions for these tables", retained: true },
+    { content: "Make this schema exempt for me", retained: true },
+    { content: "Exempt these databases for one hour", retained: true },
+    { content: "I want an exemption for this query", retained: true },
+    { content: "Prepare exemptions for these queries", retained: true },
+    { content: "Exempt this data for me", retained: true },
+    { content: "These results should be exempted for me", retained: true },
+    {
+      content: "Exempt this migration from SQL review",
+      retained: false,
+    },
+    { content: "Explain tax exemptions", retained: false },
+    { content: "Prepare an exemption for this dashboard", retained: false },
+    { content: "Summarize the query results", retained: false },
+  ])(
+    "retains query context only for a resource-specific exemption follow-up: $content",
+    ({ content, retained }) => {
+      const database = "instances/main/databases/orders";
+      const statement = "SELECT first_name FROM employee LIMIT 0";
+      const messages: AgentMessage[] = [
+        {
+          ...userMessage({
+            resourceReference: {
+              kind: "database",
+              name: database,
+              project: "projects/orders",
+              label: "Orders",
+            },
+          }),
+          content: "Query @Orders",
+        },
+        {
+          ...userMessage(),
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "exemption-query-context",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "SQLService/Query",
+                body: { name: database, statement },
+              }),
+            },
+          ],
+        },
+        {
+          ...userMessage(),
+          role: "tool",
+          toolCallId: "exemption-query-context",
+          content: JSON.stringify({
+            status: 200,
+            response: {
+              results: [{ columnNames: ["PRIVATE_OUTPUT_ALIAS"], rows: [] }],
+            },
+          }),
+        },
+        { ...userMessage(), id: "exemption-follow-up", content },
+      ];
+
+      const history = buildOutboundHistory(
+        "system",
+        messages,
+        "projects/orders"
+      );
+
+      if (retained) {
+        expect(history[0].content).toContain(
+          JSON.stringify({
+            database,
+            project: "projects/orders",
+            query: { statement },
+          })
+        );
+        expect(
+          getHistoricalMaskingDatabase(messages, "projects/orders")
+        ).toEqual({ database, project: "projects/orders" });
+      } else {
+        expect(history[0].content).not.toContain("Historical database context");
+        expect(
+          getHistoricalMaskingDatabase(messages, "projects/orders")
+        ).toBeUndefined();
+      }
+      expect(
+        history.map((message) => message.content).join("\n")
+      ).not.toContain('"rows"');
+      expect(JSON.stringify(history)).not.toContain("PRIVATE_OUTPUT_ALIAS");
+      expect(JSON.stringify(history)).not.toContain(
+        "Selected resource for this turn"
       );
     }
   );
@@ -1107,6 +1224,106 @@ describe("sanitizeOutboundHistory", () => {
       JSON.parse(messages[2].content ?? "{}").agentQueryPreview.results
     ).toEqual([{ receivedRows: 1, retainedRows: 0 }]);
   });
+
+  test.each([
+    { cancelledQueryTurn: false, remembered: true },
+    { cancelledQueryTurn: true, remembered: false },
+  ])(
+    "retains a zero-row query across canceled masking asks only outside its owning turn: $remembered",
+    ({ cancelledQueryTurn, remembered }) => {
+      const database = "instances/main/databases/orders";
+      const statement = "SELECT first_name FROM employee LIMIT 0";
+      const messages: AgentMessage[] = [
+        {
+          ...userMessage({
+            resourceReference: {
+              kind: "database",
+              name: database,
+              project: "projects/orders",
+              label: "Orders",
+            },
+          }),
+          id: "query-turn",
+          content: "Query @Orders",
+        },
+        {
+          ...userMessage(),
+          id: "query-call",
+          role: "assistant",
+          toolCalls: [
+            {
+              id: "zero-row-query",
+              name: "call_api",
+              arguments: JSON.stringify({
+                operationId: "SQLService/Query",
+                body: { name: database, statement },
+              }),
+            },
+          ],
+        },
+        {
+          ...userMessage(),
+          id: "query-result",
+          role: "tool",
+          toolCallId: "zero-row-query",
+          content: JSON.stringify({
+            status: 200,
+            response: {
+              results: [{ columnNames: ["first_name"], rows: [] }],
+            },
+          }),
+        },
+      ];
+      for (let index = 0; index < 2; index++) {
+        if (!cancelledQueryTurn || index > 0) {
+          messages.push({
+            ...userMessage(),
+            id: `cancelled-masking-turn-${index}`,
+            content: "How do I mask a column?",
+          });
+        }
+        const abandoned = clarification(
+          `abandoned-masking-ask-${index}`,
+          { kind: "input", prompt: "PRIVATE_CANCELLED_QUESTION" },
+          { kind: "cancelled", reason: "user" }
+        );
+        abandoned[0].content = "PRIVATE_CANCELLED_OUTPUT";
+        messages.push(...abandoned);
+      }
+      messages.push({
+        ...userMessage(),
+        id: "vague-masking-follow-up",
+        content: "How do I mask a column?",
+      });
+
+      const history = buildOutboundHistory(
+        "system",
+        messages,
+        "projects/orders"
+      );
+      if (remembered) {
+        expect(history[0].content).toContain(
+          JSON.stringify({
+            database,
+            project: "projects/orders",
+            query: { statement },
+          })
+        );
+        expect(
+          getHistoricalMaskingDatabase(messages, "projects/orders")
+        ).toEqual({ database, project: "projects/orders" });
+      } else {
+        expect(history[0].content).not.toContain("Historical database context");
+        expect(
+          getHistoricalMaskingDatabase(messages, "projects/orders")
+        ).toBeUndefined();
+      }
+      expect(JSON.stringify(history)).not.toContain("PRIVATE_CANCELLED_OUTPUT");
+      expect(JSON.stringify(history)).not.toContain(
+        "PRIVATE_CANCELLED_QUESTION"
+      );
+    }
+  );
 
   test.each([
     "failed",

@@ -1348,16 +1348,11 @@ export function AgentWindow() {
     (chatId: string, prompt: string, references: AgentResourceReference[]) => {
       const store = useAgentStore.getState();
       const chat = store.getChat(chatId);
-      const draft = store.getDraft(chatId);
       if (
         store.currentChatId !== chatId ||
         !chat ||
         chat.status !== "idle" ||
         chat.archived ||
-        draft.text.trim() ||
-        draft.project ||
-        draft.resource ||
-        draft.mentions?.length ||
         store.queuedUserMessagesByChatId[chatId]
       ) {
         return;

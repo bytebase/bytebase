@@ -22,7 +22,10 @@ import {
 import { canRenderAsSelector } from "@/modules/cel/logic/selector";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
-import { GetDatabaseRequestSchema } from "@/types/proto-es/v1/database_service_pb";
+import {
+  type Database,
+  GetDatabaseRequestSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import {
   GetPolicyRequestSchema,
   PolicyType,
@@ -47,6 +50,12 @@ import {
   getMaskingRuleEditorSnapshot,
   type MaskingRuleEditorSnapshot,
 } from "./maskingRuleDraftTarget";
+import {
+  createMaskingRuleTargetChecker,
+  type MaskingRuleTargetChecker,
+  MaskingRuleTargetClarificationError,
+  type MaskingRuleTargetEvidence,
+} from "./maskingRuleTarget";
 import { readSemanticTypeSetting } from "./semanticTypeSetting";
 import { getMaskingSetup } from "./tools/maskingSetup";
 
@@ -112,10 +121,22 @@ function parseProposal(raw: unknown): MaskingRuleDraft {
   const value = raw as Record<string, unknown>;
   if (
     Object.keys(value).some(
-      (key) => !["title", "condition", "semanticType", "scope"].includes(key)
+      (key) =>
+        ![
+          "title",
+          "condition",
+          "semanticType",
+          "scope",
+          "allowUnmatchedTarget",
+        ].includes(key)
     )
   )
     throw new Error("Unexpected masking rule draft fields.");
+  if (
+    value.allowUnmatchedTarget !== undefined &&
+    typeof value.allowUnmatchedTarget !== "boolean"
+  )
+    throw new Error("The unmatched-target acknowledgment must be a boolean.");
   if (
     !boundedText(value.title, 200) ||
     !boundedText(value.condition, MAX_CONDITION_LENGTH) ||
@@ -246,11 +267,15 @@ export async function parseMaskingRuleDraftCondition(
   return group;
 }
 
-export async function validateMaskingRuleDraft(
+async function validateMaskingRuleDraftWithTarget(
   proposal: MaskingRuleDraft,
   context: MaskingRuleDraftContext,
-  validation?: { purpose: "review" }
-): Promise<MaskingRuleDraft> {
+  validation?: { purpose: "review" },
+  checkTarget?: MaskingRuleTargetChecker
+): Promise<{
+  draft: MaskingRuleDraft;
+  targetEvidence?: MaskingRuleTargetEvidence;
+}> {
   assertContext(context);
   const scope = proposal.scope;
   const setup = await getMaskingSetup({
@@ -333,6 +358,7 @@ export async function validateMaskingRuleDraft(
       )
     );
   }
+  let database: Database | undefined;
   if (scope.kind === "database") {
     const observed = await databaseServiceClientConnect.getDatabase(
       create(GetDatabaseRequestSchema, { name: scope.database }),
@@ -346,6 +372,7 @@ export async function validateMaskingRuleDraft(
       throw new Error(
         "The selected database is unavailable, inactive, or outside the project."
       );
+    database = observed;
     const match = databasePattern.exec(observed.name)!;
     constraints.push(
       equals(CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID, match[1]),
@@ -384,8 +411,22 @@ export async function validateMaskingRuleDraft(
     )
   )
     throw new Error("The scoped masking rule changed during conversion.");
+  const targetEvidence = await checkTarget?.(database, proposed);
   assertContext(context);
-  return { ...proposal, condition, scope: { ...scope } };
+  return {
+    draft: { ...proposal, condition, scope: { ...scope } },
+    ...(targetEvidence ? { targetEvidence } : {}),
+  };
+}
+
+export async function validateMaskingRuleDraft(
+  proposal: MaskingRuleDraft,
+  context: MaskingRuleDraftContext,
+  validation?: { purpose: "review" }
+): Promise<MaskingRuleDraft> {
+  return (
+    await validateMaskingRuleDraftWithTarget(proposal, context, validation)
+  ).draft;
 }
 
 function purgeExpiredDrafts(): void {
@@ -416,7 +457,11 @@ export async function prepareMaskingRuleDraft(
     requireSourceMatch: true;
     source?: MaskingRuleEditorSnapshot;
   }
-): Promise<{ draftId: string; draft: MaskingRuleDraft }> {
+): Promise<{
+  draftId: string;
+  draft: MaskingRuleDraft;
+  targetEvidence?: MaskingRuleTargetEvidence;
+}> {
   const proposal = parseProposal(raw);
   assertContext(context);
   const observedSource = await getMaskingRuleEditorSnapshot(context);
@@ -430,7 +475,17 @@ export async function prepareMaskingRuleDraft(
     throw new Error("The active masking rule draft belongs to another chat.");
   if (source?.mode === "edit")
     throw new Error("Existing masking rule editors are review-only.");
-  const draft = await validateMaskingRuleDraft(proposal, context);
+  const { draft, targetEvidence } = await validateMaskingRuleDraftWithTarget(
+    proposal,
+    context,
+    undefined,
+    createMaskingRuleTargetChecker()
+  );
+  if (
+    targetEvidence?.status === "no-current-match" &&
+    (raw as Record<string, unknown>).allowUnmatchedTarget !== true
+  )
+    throw new MaskingRuleTargetClarificationError([targetEvidence]);
   const currentSource = await getMaskingRuleEditorSnapshot(context);
   assertContext(context);
   if (!isEqual(source, currentSource))
@@ -447,7 +502,11 @@ export async function prepareMaskingRuleDraft(
     createdAt: Date.now(),
     source: source ? structuredClone(source) : undefined,
   });
-  return { draftId, draft: structuredClone(draft) };
+  return {
+    draftId,
+    draft: structuredClone(draft),
+    ...(targetEvidence ? { targetEvidence } : {}),
+  };
 }
 
 export function getMaskingRuleDraft(
@@ -462,7 +521,11 @@ export async function prepareMaskingRuleDrafts(
   raw: unknown,
   context: MaskingRuleDraftContext,
   options?: { requireSourceMatch: true; source?: MaskingRuleEditorSnapshot }
-): Promise<{ draftId: string; drafts: MaskingRuleDraft[] }> {
+): Promise<{
+  draftId: string;
+  drafts: MaskingRuleDraft[];
+  targetEvidence: MaskingRuleTargetEvidence[];
+}> {
   const value = raw as { rules?: unknown } | null;
   if (
     !value ||
@@ -488,8 +551,29 @@ export async function prepareMaskingRuleDrafts(
       "Close the active masking rule editor before preparing a batch."
     );
   const batch: MaskingRuleDraft[] = [];
-  for (const proposal of proposals)
-    batch.push(await validateMaskingRuleDraft(proposal, context));
+  const targetEvidence: MaskingRuleTargetEvidence[] = [];
+  const unmatched: MaskingRuleTargetEvidence[] = [];
+  const checkTarget = createMaskingRuleTargetChecker();
+  for (const [index, proposal] of proposals.entries()) {
+    const validated = await validateMaskingRuleDraftWithTarget(
+      proposal,
+      context,
+      undefined,
+      checkTarget
+    );
+    batch.push(validated.draft);
+    if (validated.targetEvidence) {
+      targetEvidence.push(validated.targetEvidence);
+      if (
+        validated.targetEvidence.status === "no-current-match" &&
+        (value.rules[index] as Record<string, unknown>).allowUnmatchedTarget !==
+          true
+      )
+        unmatched.push(validated.targetEvidence);
+    }
+  }
+  if (unmatched.length)
+    throw new MaskingRuleTargetClarificationError(unmatched);
   assertContext(context);
   if (await getMaskingRuleEditorSnapshot(context))
     throw new Error(
@@ -505,7 +589,7 @@ export async function prepareMaskingRuleDrafts(
     context: { ...context },
     createdAt: Date.now(),
   });
-  return { draftId, drafts: structuredClone(batch) };
+  return { draftId, drafts: structuredClone(batch), targetEvidence };
 }
 
 export function getMaskingRuleDrafts(
