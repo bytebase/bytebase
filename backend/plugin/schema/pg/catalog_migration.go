@@ -487,13 +487,53 @@ func refuseRoutine(schemaName, name, signature, definition string, restored map[
 	for key := range restored {
 		viewSchema, viewName := splitObjectKey(key)
 		if !namesType(signature, viewSchema, viewName) &&
-			!namesType(routineArgumentList(definition), viewSchema, viewName) &&
+			!parametersNameType(routineArgumentList(definition), viewSchema, viewName) &&
 			!namesType(routineReturnClause(definition), viewSchema, viewName) {
 			continue
 		}
 		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteQualified(viewSchema, viewName))
 	}
 	return nil
+}
+
+// parametersNameType reports whether an argument list declares the type as a
+// parameter's type. A default expression is not a declaration, so it is cut.
+func parametersNameType(parameters, schemaName, objectName string) bool {
+	depth, start := 0, 0
+	for i := 0; i <= len(parameters); i++ {
+		atEnd := i == len(parameters)
+		if !atEnd {
+			switch parameters[i] {
+			case '"', '\'':
+				i = closingQuote(parameters, i, parameters[i])
+				continue
+			case '(':
+				depth++
+				continue
+			case ')':
+				depth--
+				continue
+			case ',':
+				if depth != 0 {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+		declaration := parameters[start:i]
+		if index := indexOutsideQuotes(declaration, "DEFAULT"); index >= 0 {
+			declaration = declaration[:index]
+		}
+		if index := indexOutsideQuotes(declaration, "="); index >= 0 {
+			declaration = declaration[:index]
+		}
+		if namesType(declaration, schemaName, objectName) {
+			return true
+		}
+		start = i + 1
+	}
+	return false
 }
 
 // routineArgumentList is the parenthesized parameter list of a routine's

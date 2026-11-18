@@ -1366,6 +1366,14 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "default mentioning the view",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "d",
+				Signature:  "d(text)",
+				Definition: `CREATE FUNCTION public.d(x text DEFAULT ' public.v') RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$`,
+			}},
+		},
+		{
 			name: "body reference",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",
