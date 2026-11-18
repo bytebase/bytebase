@@ -97,6 +97,11 @@ on every run, so the merge call decides what the thread shows:
 - The priority rises: the comment is written again, and a resolved thread is reopened.
 - The AI review is off: the thread shows the rule's text alone.
 
+A comment stays only when it was written for every database of the rule finding, and this run's
+problems are on every one of them too. The merge call sees no database name, so it cannot tell
+that a problem moved to other databases. A comment that names a part of the databases is written
+again.
+
 ## Storage
 
 No field is added. The text of the AI review is part of the thread's comment.
