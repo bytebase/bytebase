@@ -29,14 +29,15 @@
 //   - A cell the engine states as a timestamp outside google.protobuf.Timestamp
 //     (PostgreSQL allows 4713 BC to 294276 AD) is written as the text the old
 //     conversion wrote; the contract's value cannot carry it.
+//   - A statement that reports no affected-row count (CREATE TABLE, ALTER TABLE,
+//     SET) answers the editor's one "Affected Rows 0" row: the contract leaves
+//     the count nil, and the result shape is the product's.
 //
 // Behaviours that differ from the driver this replaced, each fixed in
 // pg/driver or made by the contract:
 //   - Execute keeps the script's order in auto-commit mode, classifies SET
 //     ROLE, non-transactional and superuser statements by AST, and splits a
 //     CREATE DATABASE script into statements rather than lines.
-//   - A statement that reports no affected-row count (CREATE TABLE, SET) has no
-//     count here; it used to answer a synthetic 0.
 //   - An empty BYTEA cell is empty bytes; it used to answer NULL.
 //   - Tenant mode runs SET ROLE on every pooled connection rather than on
 //     whichever one Open used.

@@ -527,6 +527,25 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
 }
 
+// TestQueryConnReportsAnAffectedRowForAStatementWithoutACount keeps the editor's
+// result shape: a statement that modifies nothing countable still answers one
+// "Affected Rows" row, with 0.
+func TestQueryConnReportsAnAffectedRowForAStatementWithoutACount(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, _ := testcontainer.NewPgDatabase(t)
+	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
+
+	results, err := driver.QueryConn(ctx, nil, "CREATE TABLE counted (id int);", db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 20})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, []string{"Affected Rows"}, results[0].GetColumnNames())
+	require.Equal(t, int64(0), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
+	require.Equal(t, int64(1), results[0].GetRowsCount())
+}
+
 // TestQueryConnHoldsOneSession proves the driver keeps one session across
 // QueryConn calls, as the editor's one pooled connection did: a statement's
 // session state — here a SET, and a temporary table — holds for the next

@@ -50,6 +50,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
 		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+		// The editor's result shape is the product's: a statement that reports no
+		// count (ALTER TABLE, CREATE TABLE, SET) answers one "Affected Rows 0"
+		// row, and the contract leaves the count nil for it.
+		if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil {
+			affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
+			queryResult.ColumnNames = affected.ColumnNames
+			queryResult.ColumnTypeNames = affected.ColumnTypeNames
+			queryResult.Rows = affected.Rows
+			queryResult.RowsCount = 1
+		}
 		if result.Err != nil {
 			queryResult.DetailedError = postgresErrorDetail(result.Err)
 		}
