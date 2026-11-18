@@ -233,6 +233,24 @@ func parseCockroachMetadata(t *testing.T, encoded string) *model.DatabaseMetadat
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
 }
 
+// TestSourceOnlyUnloadableObjectsAreDropped covers removing an object whose stored
+// definition omni cannot parse: a drop needs no definition, so the plan emits it,
+// while adding such an object is still refused.
+func TestSourceOnlyUnloadableObjectsAreDropped(t *testing.T) {
+	unloadable := func() *metadatapb.ViewMetadata {
+		return &metadatapb.ViewMetadata{Name: "v", Definition: "SELECT @@@unsupported@@@"}
+	}
+	withView := newCockroachDatabaseMetadata(nil, []*metadatapb.ViewMetadata{unloadable()})
+	withoutView := newCockroachDatabaseMetadata(nil, nil)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, withView, withoutView)
+	require.NoError(t, err)
+	require.Equal(t, `DROP VIEW "public"."v"`, sql)
+
+	_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, withoutView, withView)
+	require.ErrorContains(t, err, "could not be loaded", "creating an unparseable object is still refused")
+}
+
 // TestCockroachMetadataMigrationNoOps pins the cases the old generator covered
 // that produce no migration at all. They have no legacy differential, so they
 // stay out of the cutover fixture.

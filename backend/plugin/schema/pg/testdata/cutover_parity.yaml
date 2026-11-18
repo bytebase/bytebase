@@ -1907,7 +1907,7 @@
   catalogExpected: ''
   catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: rel:public.active_users_mv: materialized view "active_users_mv": ERROR: syntax error at end of input (SQLSTATE 42601)'
 - description: TestCockroachMetadataDiffMaterializedViewObjectChanges/drop materialized view
-  difference: catalog refuses a changed materialized view whose stored definition it cannot parse; the legacy generator copied the stored definition.
+  difference: the catalog drops a materialized view that only the source has without parsing its stored definition, and the text uses statement terminators and line layout.
   oldMetadata: |-
     {
       "schemas": [
@@ -1933,8 +1933,8 @@
   legacyExpected: |+
     DROP MATERIALIZED VIEW "public"."active_users_mv";
 
-  catalogExpected: ''
-  catalogError: 'cannot generate a migration for objects whose definitions could not be loaded: rel:public.active_users_mv: materialized view "active_users_mv": ERROR: syntax error at end of input (SQLSTATE 42601)'
+  catalogExpected: |-
+    DROP MATERIALIZED VIEW "public"."active_users_mv"
 - description: TestCockroachMetadataDiffMaterializedViewObjectChanges/alter materialized view
   difference: catalog refuses a changed materialized view whose stored definition it cannot parse; the legacy generator copied the stored definition.
   oldMetadata: |-

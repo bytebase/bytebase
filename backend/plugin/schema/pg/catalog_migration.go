@@ -1455,15 +1455,21 @@ func quoteLiteral(text string) string {
 }
 
 // unloadableChanges returns an error naming each object that either load could
-// not install as defined and that differs between the two snapshots.
+// not install as defined and that the migration would have to write. An object
+// only the source has is dropped, and a stand-in drop needs no definition.
 func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) error {
 	reasons := make(map[string]error)
+	standIns := make(map[string]bool)
 	for _, report := range reports {
-		for _, m := range []map[string]error{report.Degraded, report.Missing} {
-			for key, err := range m {
-				if _, seen := reasons[key]; !seen {
-					reasons[key] = err
-				}
+		for key, err := range report.Degraded {
+			if _, seen := reasons[key]; !seen {
+				reasons[key] = err
+			}
+			standIns[key] = true
+		}
+		for key, err := range report.Missing {
+			if _, seen := reasons[key]; !seen {
+				reasons[key] = err
 			}
 		}
 	}
@@ -1473,6 +1479,9 @@ func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, repo
 	oldObjects, newObjects := snapshotObjects(oldMeta), snapshotObjects(newMeta)
 	var changed []string
 	for key, err := range reasons {
+		if standIns[key] && newObjects[key] == nil {
+			continue
+		}
 		if !proto.Equal(oldObjects[key], newObjects[key]) {
 			changed = append(changed, key+": "+err.Error())
 		}
