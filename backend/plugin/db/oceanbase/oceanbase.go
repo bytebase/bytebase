@@ -452,15 +452,25 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		}
 		d.session = session
 	}
+	session := d.session
 
-	results, err := d.session.Query(ctx, statement, odriver.QueryOptions{
+	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Explain:        queryContext.Explain,
 		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
 		Limit:          queryContext.Limit,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		_ = session.Close()
+		d.session = nil
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		_ = session.Close()
+		d.session = nil
 	}
 	if len(results) == 0 {
 		return nil, nil

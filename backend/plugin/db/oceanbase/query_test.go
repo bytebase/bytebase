@@ -3,6 +3,7 @@ package oceanbase
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -59,6 +60,35 @@ func TestQueryConnKeepsTheSession(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, results, 1)
 	require.Contains(t, results[0].Error, "doesn't exist")
+}
+
+// TestQueryConnDiscardsTheSessionAfterACanceledQuery proves a statement whose
+// context ends does not leave the stream a session it cannot use: the client
+// closed the connection under it, so the next statement opens a new one.
+func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
+	server := newOceanBaseTestServer(t)
+	ctx := context.Background()
+	database := "query_cancel"
+	admin := server.openRaw(ctx, t, "")
+	exec(t, admin, "DROP DATABASE IF EXISTS "+database, "CREATE DATABASE "+database)
+	t.Cleanup(func() { exec(t, admin, "DROP DATABASE IF EXISTS "+database) })
+	driver := server.open(ctx, t, database)
+
+	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
+	_, err := driver.QueryConn(ctx, nil, "SET @bytebase_probe = 41", queryContext)
+	require.NoError(t, err)
+
+	canceledCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT SLEEP(10)", queryContext)
+	require.NotNil(t, canceledCtx.Err(), "the statement must have run past its context")
+	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+
+	results, err := driver.QueryConn(ctx, nil, "SELECT 1 AS one", queryContext)
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].Error)
+	require.Equal(t, int64(1), results[0].Rows[0].Values[0].GetInt64Value())
 }
 
 // TestQueryConnMapsTheRequest pins what QueryConn does with a request's
