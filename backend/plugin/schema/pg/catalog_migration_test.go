@@ -939,6 +939,8 @@ func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 // a table called `timestamp`, or the false edge can hide the real order.
 func TestMultiwordTypeIsNotARelationReference(t *testing.T) {
 	require.False(t, referencesType("timestamp without time zone", objectKey("public", "timestamp")))
+	_, referenced := referencedRelation("timestamp without time zone", map[string]bool{objectKey("public", "timestamp"): true})
+	require.False(t, referenced, "a multiword type does not name a relation")
 	require.False(t, referencesType("character varying(10)", objectKey("public", "character")))
 	require.True(t, referencesType("timestamp", objectKey("public", "timestamp")))
 	require.True(t, referencesType("public.t[]", objectKey("public", "t")))

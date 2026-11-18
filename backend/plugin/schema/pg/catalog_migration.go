@@ -210,29 +210,6 @@ type typeReference struct {
 	qualified      bool
 }
 
-func parseTypeReference(typeName string) (typeReference, bool) {
-	name := strings.TrimSpace(typeName)
-	for strings.HasSuffix(name, "[]") {
-		name = strings.TrimSuffix(name, "[]")
-	}
-	first, next, firstQuoted, ok := scanIdentifier(name, 0)
-	if !ok {
-		return typeReference{}, false
-	}
-	if next >= len(name) || name[next] != '.' {
-		return typeReference{object: identifier{name: first, quoted: firstQuoted}}, true
-	}
-	second, _, secondQuoted, ok := scanIdentifier(name, next+1)
-	if !ok {
-		return typeReference{}, false
-	}
-	return typeReference{
-		schema:    identifier{name: first, quoted: firstQuoted},
-		object:    identifier{name: second, quoted: secondQuoted},
-		qualified: true,
-	}, true
-}
-
 // releaseCompositeBeforeTableDrop releases the composite attributes that hold the
 // row type of a relation this migration drops, ahead of that relation's drop. A
 // CASCADE drop would otherwise remove the attribute first.
@@ -893,8 +870,9 @@ func isIdentifierByte(b byte) bool {
 }
 
 func referencedRelation(typeName string, relations map[string]bool) (string, bool) {
-	reference, ok := parseTypeReference(typeName)
-	if !ok {
+	name := strings.TrimSpace(typeName)
+	reference, end, ok := parseTypeReferenceAt(name, 0)
+	if !ok || strings.TrimSpace(trailingModifier(name[end:])) != "" {
 		return "", false
 	}
 	for key := range relations {
