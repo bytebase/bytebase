@@ -33,6 +33,7 @@ var (
 	sharedRedisCluster = startOnce(getRedisClusterContainer)
 	sharedCassandra    = startOnce(getCassandraContainer)
 	sharedCosmos       = startOnce(getCosmosContainer)
+	sharedClickHouse   = startOnce(getClickHouseContainer)
 
 	startedMu sync.Mutex
 	started   []*Container
@@ -140,6 +141,11 @@ func SharedRedisClusterContainer(t testing.TB) *Container { return shared(t, sha
 
 // SharedCassandraContainer is one Cassandra 5 cluster for the package's tests.
 func SharedCassandraContainer(t testing.TB) *Container { return shared(t, sharedCassandra) }
+
+// SharedClickHouseContainer is one ClickHouse server for the package's tests.
+// It carries no *sql.DB: the driver under test is the only client, and the
+// server's own account is "default" with no password.
+func SharedClickHouseContainer(t testing.TB) *Container { return shared(t, sharedClickHouse) }
 
 // SharedCosmosContainer is SharedPgContainer for the Cosmos DB emulator. It
 // carries no *sql.DB, so a test builds its endpoint from GetHost and GetPort
