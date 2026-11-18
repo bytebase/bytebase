@@ -1780,7 +1780,7 @@ export function createToolExecutor(
             })
           );
         }
-        const { actionId } = createPendingApiCall({
+        const { actionId, expiresAt } = createPendingApiCall({
           chatId: options.chatId,
           toolCallId,
           userName: options.userName,
@@ -1799,6 +1799,7 @@ export function createToolExecutor(
             apiPermission: {
               actionId,
               operationId: prepared.call.operationId,
+              expiresAt,
             },
           },
         };

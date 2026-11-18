@@ -135,6 +135,38 @@ describe("AgentChatbox", () => {
     expect(onStop).not.toHaveBeenCalled();
   });
 
+  test("keeps the draft editable and offers both stop and queue during a running chat", () => {
+    const onStop = vi.fn();
+    const onChange = vi.fn();
+    const { container, onSend } = renderChatbox({
+      processing: true,
+      allowQueue: true,
+      placeholder: "Add a follow-up",
+      textareaProps: { textareaRef: createRef(), value: "", onChange },
+      sendLabel: "Queue",
+      onStop,
+    });
+
+    expect(container.querySelector("[data-agent-input-placeholder]")).toHaveTextContent(
+      "Add a follow-up"
+    );
+    const textarea = screen.getByRole("textbox");
+    expect(textarea).toBeEnabled();
+    act(() => fireEvent.change(textarea, { target: { value: "Next question" } }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    act(() => fireEvent.click(screen.getByRole("button", { name: "Queue" })));
+    expect(onSend).toHaveBeenCalledTimes(1);
+    expect(onStop).not.toHaveBeenCalled();
+    act(() => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+    expect(onStop).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([true, false])("keeps stop and queue independently disabled (%s)", (stopDisabled) => {
+    renderChatbox({ processing: true, allowQueue: true, stopDisabled, sendDisabled: !stopDisabled, sendLabel: "Queue" });
+    expect((screen.getByRole("button", { name: "Queue" }) as HTMLButtonElement).disabled).toBe(!stopDisabled);
+    expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(stopDisabled);
+  });
+
   test.each([true, false])("honors the send disabled state %s", (sendDisabled) => {
     const { onSend } = renderChatbox({ sendDisabled, sendLabel: "Reply" });
     const button = screen.getByRole("button", { name: "Reply" }) as HTMLButtonElement;

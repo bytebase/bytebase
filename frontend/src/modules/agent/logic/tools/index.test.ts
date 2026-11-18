@@ -3072,6 +3072,7 @@ describe("agent tools referenced project", () => {
     if (result.kind !== "ask_user" || !result.ask.apiPermission) {
       throw new Error("Expected permission request");
     }
+    expect(result.ask.apiPermission.expiresAt).toBeGreaterThan(Date.now());
     expect(
       getPendingApiCallPreview({
         actionId: result.ask.apiPermission.actionId,
@@ -3080,6 +3081,7 @@ describe("agent tools referenced project", () => {
         userName: "users/me@example.com",
       })
     ).toMatchObject({
+      expiresAt: result.ask.apiPermission.expiresAt,
       issueDecision: {
         issueName: "projects/referenced/issues/12",
         issueTitle: "Change account table",

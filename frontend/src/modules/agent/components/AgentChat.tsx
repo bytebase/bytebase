@@ -116,6 +116,7 @@ interface AgentChatProps {
   onOpenAccessGrantDraft?: (draft: AccessGrantDraft) => boolean;
   className?: string;
   contextLabel?: string;
+  context?: string;
   onRetry?: () => void;
   onFreeSpaceAndRetry?: () => Promise<boolean>;
   onResend?: (messageId: string) => void;
@@ -855,6 +856,7 @@ export function AgentChat({
   onOpenAccessGrantDraft,
   className,
   contextLabel,
+  context,
   onRetry,
   onFreeSpaceAndRetry,
   onResend,
@@ -939,7 +941,7 @@ export function AgentChat({
     prompts?: string;
   }>({ chatId: null });
   const draftText = useAgentStore((s) =>
-    currentChatId ? s.draftsByChatId[currentChatId]?.text : undefined
+    currentChatId ? s.draftsByChatId[currentChatId]?.text : s.landingDraft.text
   );
   const aiEnabled = useAppStore((s) => s.serverInfo?.aiEnabled);
   const allMessages = useAgentStore(selectMessages);
@@ -972,12 +974,14 @@ export function AgentChat({
       ),
     [error, messages]
   );
-  const emptyChatScope = currentChat?.context?.startsWith(projectNamePrefix)
+  const emptyChatContext = currentChat ? currentChat.context : context;
+  const emptyChatScope = emptyChatContext?.startsWith(projectNamePrefix)
     ? "project"
     : "workspace";
   const showEmptyChat =
-    currentChat?.status === "idle" &&
-    !currentChat.archived &&
+    (currentChat
+      ? currentChat.status === "idle" && !currentChat.archived
+      : Boolean(onSelectSuggestion)) &&
     messages.length === 0 &&
     !loading &&
     !error &&
@@ -1172,9 +1176,7 @@ export function AgentChat({
               <Building2 className="size-4 shrink-0" aria-hidden="true" />
             )}
             <span className="min-w-0 truncate">
-              {contextLabel ??
-                currentChat.context ??
-                t("agent.context-workspace")}
+              {contextLabel ?? emptyChatContext ?? t("agent.context-workspace")}
             </span>
           </div>
           <h2 className="mt-3 text-xl font-semibold text-main">
