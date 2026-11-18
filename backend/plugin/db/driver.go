@@ -152,7 +152,6 @@ type Driver interface {
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
-	GetDB() *sql.DB
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
@@ -166,6 +165,26 @@ type Driver interface {
 
 	// Dump dumps the schema of database.
 	Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error
+}
+
+// SQLDBProvider is the capability a driver offers when it still holds a
+// *sql.DB: the handle a caller that must run SQL of its own asks for through
+// SQLDB. A driver whose session is the engine package's is not one, and a
+// caller that needs a pool has to treat SQLDB's nil as the answer rather than
+// keep one of its own.
+type SQLDBProvider interface {
+	GetDB() *sql.DB
+}
+
+// SQLDB returns the driver's *sql.DB, or nil when the driver does not hold
+// one. It replaces the GetDB method db.Driver used to carry: a driver keeps its
+// handle where its engine package does, and the caller names the fallback once.
+func SQLDB(driver Driver) *sql.DB {
+	provider, ok := driver.(SQLDBProvider)
+	if !ok {
+		return nil
+	}
+	return provider.GetDB()
 }
 
 // Register makes a database driver available by the provided type.
