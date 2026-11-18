@@ -292,6 +292,41 @@ func matchModuleSection(rest string, replacements []moduleReplacement) (moduleRe
 	return moduleReplacement{}, false
 }
 
+// stripSkipDump ignores SkipDump transitions in a metadata migration, as the
+// legacy differ did: the flag says whether a dump includes an object, not
+// whether a migration should drop or create it.
+func stripSkipDump(metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
+	if metadata == nil {
+		return nil
+	}
+	out := proto.CloneOf(metadata)
+	for _, schema := range out.GetSchemas() {
+		schema.SkipDump = false
+		for _, table := range schema.GetTables() {
+			table.SkipDump = false
+			for _, trigger := range table.GetTriggers() {
+				trigger.SkipDump = false
+			}
+		}
+		for _, view := range schema.GetViews() {
+			view.SkipDump = false
+			for _, trigger := range view.GetTriggers() {
+				trigger.SkipDump = false
+			}
+		}
+		for _, function := range schema.GetFunctions() {
+			function.SkipDump = false
+		}
+		for _, procedure := range schema.GetProcedures() {
+			procedure.SkipDump = false
+		}
+		for _, sequence := range schema.GetSequences() {
+			sequence.SkipDump = false
+		}
+	}
+	return out
+}
+
 // diffMetadataMigration diffs two synced snapshots with omni's catalog. The
 // catalog stores each snapshot as the sync reported it, so nothing can fail to
 // load; the diff and generator are the decisions.
@@ -315,7 +350,7 @@ func loadCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, error) {
 	c := catalog.New()
 	var metadata *metadatapb.DatabaseSchemaMetadata
 	if d != nil {
-		metadata = d.GetProto()
+		metadata = stripSkipDump(d.GetProto())
 	}
 	if err := c.LoadMetadata(context.Background(), metadata); err != nil {
 		return nil, err
