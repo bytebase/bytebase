@@ -9,7 +9,6 @@ godebug x509negativeserial=1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.4.0
-	cloud.google.com/go/bigquery v1.86.1
 	cloud.google.com/go/cloudsqlconn v1.26.0
 	cloud.google.com/go/secretmanager v1.23.1
 	cloud.google.com/go/spanner v1.96.1
@@ -110,6 +109,7 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.24.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.3.0 // indirect
+	cloud.google.com/go/bigquery v1.86.1 // indirect
 	cloud.google.com/go/compute/metadata v0.10.0 // indirect
 	cloud.google.com/go/iam v1.14.0 // indirect
 	cloud.google.com/go/longrunning v1.3.0 // indirect
