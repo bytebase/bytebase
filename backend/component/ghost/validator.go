@@ -2,6 +2,7 @@ package ghost
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -15,12 +16,34 @@ import (
 type binlogValidationFailureReason string
 
 const (
+	noDirectConnection          binlogValidationFailureReason = "no_direct_connection"
 	binlogStatusInaccessible    binlogValidationFailureReason = "binlog_status_inaccessible"
 	binlogDisabled              binlogValidationFailureReason = "binlog_disabled"
 	missingReplicationPrivilege binlogValidationFailureReason = "missing_replication_privilege"
 	unsupportedBinlogFormat     binlogValidationFailureReason = "unsupported_binlog_format"
 	validationQueryFailed       binlogValidationFailureReason = "validation_query_failed"
 )
+
+// errNoDirectConnection explains why a driver cannot run gh-ost's own queries.
+var errNoDirectConnection = errors.New("gh-ost needs a direct database/sql connection, but this driver does not expose one")
+
+// RequireDirectConnection returns the driver's database/sql pool, or an error
+// when GetDB is nil. gh-ost queries the database itself, so a driver that owns
+// its pool and exposes nothing here cannot run a gh-ost migration.
+func RequireDirectConnection(driver db.Driver) (*sql.DB, error) {
+	sqlDB := driver.GetDB()
+	if sqlDB == nil {
+		return nil, errNoDirectConnection
+	}
+	return sqlDB, nil
+}
+
+// SupportsEngine reports whether gh-ost can drive the engine. gh-ost needs MySQL
+// replication, which only MySQL and MariaDB provide; the frontend offers the
+// ghost directive for these engines only.
+func SupportsEngine(engine storepb.Engine) bool {
+	return engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB
+}
 
 // BinlogValidationResult contains detailed results of binlog access validation
 type BinlogValidationResult struct {
@@ -48,12 +71,23 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 		CurrentGrants:     []string{},
 	}
 
+	sqlDB, err := RequireDirectConnection(driver)
+	if err != nil {
+		result.Valid = false
+		result.FailureReason = noDirectConnection
+		result.Error = err
+		slog.Error("binlog access validation failed: driver exposes no database/sql connection",
+			slog.String("host", adminDataSource.GetHost()),
+			slog.String("user", adminDataSource.GetUsername()))
+		return result
+	}
+
 	// Test 1: Check if we can access binary log status
 	// Try both old and new MySQL commands for compatibility
 	canAccessBinlog := false
-	if _, err := driver.GetDB().ExecContext(ctx, "SHOW MASTER STATUS"); err == nil {
+	if _, err := sqlDB.ExecContext(ctx, "SHOW MASTER STATUS"); err == nil {
 		canAccessBinlog = true
-	} else if _, err := driver.GetDB().ExecContext(ctx, "SHOW BINARY LOG STATUS"); err == nil {
+	} else if _, err := sqlDB.ExecContext(ctx, "SHOW BINARY LOG STATUS"); err == nil {
 		canAccessBinlog = true
 	}
 
@@ -69,7 +103,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 
 	// Test 2: Check if binary logging is enabled
 	var logBin string
-	row := driver.GetDB().QueryRowContext(ctx, "SELECT @@log_bin")
+	row := sqlDB.QueryRowContext(ctx, "SELECT @@log_bin")
 	if err := row.Scan(&logBin); err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
@@ -86,7 +120,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	}
 
 	// Test 3: Check user privileges
-	rows, err := driver.GetDB().QueryContext(ctx, "SHOW GRANTS")
+	rows, err := sqlDB.QueryContext(ctx, "SHOW GRANTS")
 	if err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
@@ -133,7 +167,7 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 	}
 
 	// Test 4: Check binlog format (must be ROW or MIXED, not STATEMENT)
-	row = driver.GetDB().QueryRowContext(ctx, "SELECT @@binlog_format")
+	row = sqlDB.QueryRowContext(ctx, "SELECT @@binlog_format")
 	if err := row.Scan(&result.BinlogFormat); err != nil {
 		result.Valid = false
 		result.FailureReason = validationQueryFailed
@@ -161,6 +195,11 @@ func ValidateBinlogAccess(ctx context.Context, driver db.Driver, adminDataSource
 func (r *BinlogValidationResult) GetUserFriendlyError() (title, content string) {
 	if r.Valid {
 		return "", ""
+	}
+
+	if r.FailureReason == noDirectConnection {
+		return "gh-ost is not supported on this instance",
+			"gh-ost needs a direct database/sql connection, but the database driver for this instance does not expose one."
 	}
 
 	title = "gh-ost migration prerequisites not met"

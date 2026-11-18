@@ -343,3 +343,15 @@ func TestRolloutCreationStoresReleaseState(t *testing.T) {
 	attachReleaseStates(ctx, s, s, missing)
 	require.Nil(t, missing[0].Payload.GetReleaseState())
 }
+
+func TestGetSessionWithoutDirectConnection(t *testing.T) {
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB} {
+		t.Run(engine.String(), func(t *testing.T) {
+			session, err := getSession(context.Background(), engine, nil, "bytebase-taskrun-1")
+			require.Nil(t, session)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "session monitoring")
+			require.Contains(t, err.Error(), "direct database/sql connection")
+		})
+	}
+}

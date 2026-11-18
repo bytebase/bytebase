@@ -60,6 +60,17 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 		return nil, err
 	}
 
+	if engine := instance.Metadata.GetEngine(); !ghost.SupportsEngine(engine) {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.Advice_ERROR,
+				Title:   "gh-ost is not supported for this engine",
+				Content: fmt.Sprintf("gh-ost requires MySQL or MariaDB, not %v.", engine.String()),
+				Code:    common.Internal.Int32(),
+			},
+		}, nil
+	}
+
 	adminDataSource := utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN)
 	if adminDataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %s", instance.ResourceID)
@@ -152,7 +163,11 @@ func (e *GhostSyncExecutor) RunForTarget(ctx context.Context, target *CheckTarge
 				migrationContext.GetChangelogTableName(),
 			)
 
-			if _, err := cleanupDriver.GetDB().ExecContext(cleanupCtx, sql); err != nil {
+			cleanupSQLDB, err := ghost.RequireDirectConnection(cleanupDriver)
+			if err != nil {
+				return err
+			}
+			if _, err := cleanupSQLDB.ExecContext(cleanupCtx, sql); err != nil {
 				return errors.Wrapf(err, "failed to drop gh-ost temp tables")
 			}
 			return nil
