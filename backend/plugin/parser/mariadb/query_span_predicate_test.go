@@ -69,7 +69,7 @@ var predicateCases = []predicateCase{
 	{name: "where case cast", statement: "SELECT 1 FROM t WHERE CASE WHEN b > 1 THEN CAST(c AS CHAR) ELSE '' END = '1'", want: []string{"t.b", "t.c"}},
 	{name: "where null-safe and regexp", statement: "SELECT 1 FROM t WHERE b <=> NULL OR c REGEXP '^1'", want: []string{"t.b", "t.c"}},
 	{name: "where user variable", statement: "SELECT a FROM t WHERE b = @guess", want: []string{"t.b"}},
-	{name: "where json path", statement: "SELECT id FROM j WHERE doc->>'$.k' = 'v'", want: []string{"j.doc"}, skip: map[string]string{"mariadb": "MariaDB has no ->> operator"}},
+	{name: "where json path", statement: "SELECT id FROM j WHERE JSON_UNQUOTE(JSON_EXTRACT(doc, '$.k')) = 'v'", want: []string{"j.doc"}},
 	{name: "where member of", statement: "SELECT id FROM j WHERE 1 MEMBER OF (doc->'$.arr')", want: []string{"j.doc"}, rejected: true, skip: map[string]string{"mariadb": "MariaDB has no MEMBER OF"}},
 	{name: "where database-qualified column", statement: "SELECT t.a FROM t WHERE {db}.t.b = 1", want: []string{"t.b"}},
 	{name: "where column in other case", statement: "SELECT A FROM t WHERE B = 1", want: []string{"t.b"}, results: [][]string{{"t.a"}}},

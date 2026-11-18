@@ -137,12 +137,16 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+COMMENT ON SCHEMA "public" IS 'standard public schema';
+
 SET default_tablespace = '';
 
 CREATE TABLE "public"."book" (
     "id" integer,
     "name" text
 );
+
+ALTER TABLE "public"."book" OWNER TO "postgres";
 
 `,
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
