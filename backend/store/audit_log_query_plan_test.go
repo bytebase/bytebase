@@ -18,12 +18,12 @@ func TestSearchAuditLogsDoesNotCachePreparedPlans(t *testing.T) {
 	for _, dateStyle := range []string{"ISO, MDY", "SQL, DMY"} {
 		t.Run(dateStyle, func(t *testing.T) {
 			t.Parallel()
-			testSearchAuditLogsDoesNotCachePreparedPlans(t, dateStyle)
+			checkAuditLogSearchPlanCaching(t, dateStyle)
 		})
 	}
 }
 
-func testSearchAuditLogsDoesNotCachePreparedPlans(t *testing.T, dateStyle string) {
+func checkAuditLogSearchPlanCaching(t *testing.T, dateStyle string) {
 	t.Helper()
 	ctx := context.Background()
 	db, s, _ := testcontainer.NewMetadataDB(t)
