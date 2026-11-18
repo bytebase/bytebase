@@ -14,9 +14,12 @@ import (
 )
 
 // QueryConn queries a SQL statement in a given connection. The caller's
-// connection is unused: the driver opens one session per call and runs every
-// statement of the request on it, so a request's statements share a connection
-// while two requests in one editor stream do not.
+// connection is unused: the driver holds one server session for the driver's
+// life, and every call of the editor stream runs on it, so a user variable, a
+// SET value or a temporary table a statement establishes is still there for the
+// next one. A statement whose call fails, or whose context ends, drops the
+// session so the next statement opens a new one instead of reusing a dead
+// connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	session, err := d.querySession(ctx)
 	if err != nil {
