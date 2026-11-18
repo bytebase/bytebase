@@ -1,6 +1,7 @@
 package advisor
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -409,7 +411,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 			DBType:                dbType,
 			OriginalMetadata:      originalMetadata,
 			FinalMetadata:         finalMetadata,
-			Driver:                nil,
 			CurrentDatabase:       curDB,
 			DBSchema:              schemaMetadata,
 			IsObjectCaseSensitive: isCaseSensitive,
@@ -456,4 +457,78 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 		require.NoError(t, err)
 		yamltest.Record(t, filepath, tests)
 	}
+}
+
+// ProbeCall records how a rule asked the connection to probe.
+type ProbeCall struct {
+	PreExecutions []string
+	Autocommit    bool
+	Statement     string
+}
+
+// ColumnLookupCall records one catalogue lookup a rule asked for.
+type ColumnLookupCall struct {
+	Database string
+	Table    string
+	Column   string
+}
+
+// ProbeRecorder is a db.Prober for tests. It records the probes, estimates and
+// catalogue lookups a rule asks for, so a rule's statements can be asserted
+// without a server, and answers from the fields a test sets.
+type ProbeRecorder struct {
+	Probes    []ProbeCall
+	Estimates []string
+	Lookups   []ColumnLookupCall
+
+	// ProbeErr makes every probe fail, as a refused statement does.
+	ProbeErr error
+	// Result is what a probe answers. Empty means no rows.
+	Result db.ProbeResult
+	// Rows is the row count an estimate answers.
+	Rows int64
+	// EstimateErr makes every estimate fail.
+	EstimateErr error
+	// Extras is what a catalogue lookup answers, by "database.table.column".
+	Extras map[string]string
+	// LookupErr makes every catalogue lookup fail.
+	LookupErr error
+}
+
+// Probe runs the probe and records it.
+func (r *ProbeRecorder) Probe(_ context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	r.Probes = append(r.Probes, ProbeCall{PreExecutions: pCtx.PreExecutions, Autocommit: pCtx.Autocommit, Statement: statement})
+	if r.ProbeErr != nil {
+		return db.ProbeResult{}, r.ProbeErr
+	}
+	return r.Result, nil
+}
+
+// CountAffectedRows records the statement and answers Rows.
+func (r *ProbeRecorder) CountAffectedRows(_ context.Context, statement string) (int64, error) {
+	r.Estimates = append(r.Estimates, statement)
+	if r.EstimateErr != nil {
+		return 0, r.EstimateErr
+	}
+	return r.Rows, nil
+}
+
+// ColumnExtra records the lookup and answers Extras.
+func (r *ProbeRecorder) ColumnExtra(_ context.Context, database, table, column string) (string, error) {
+	r.Lookups = append(r.Lookups, ColumnLookupCall{Database: database, Table: table, Column: column})
+	if r.LookupErr != nil {
+		return "", r.LookupErr
+	}
+	return r.Extras[database+"."+table+"."+column], nil
+}
+
+// ProbeOnly is the seam with neither capability: a connection that can run a
+// statement but cannot answer what a driver must answer itself.
+type ProbeOnly struct {
+	Recorder *ProbeRecorder
+}
+
+// Probe runs the probe and records it.
+func (p ProbeOnly) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	return p.Recorder.Probe(ctx, pCtx, statement)
 }

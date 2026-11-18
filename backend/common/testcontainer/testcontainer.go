@@ -541,9 +541,22 @@ const RedisClusterSlots = 16384
 // follow the addresses CLUSTER SLOTS reports, so the node is told to announce
 // the host-mapped address rather than its address inside Docker, which a test
 // outside Docker cannot reach.
+func getCassandraContainer(ctx context.Context) (retC *Container, retErr error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "cassandra:5.0.9",
+		Env: map[string]string{
+			"CASSANDRA_CLUSTER_NAME": "bytebase",
+			// One node, small enough to boot on a shared runner.
+			"MAX_HEAP_SIZE": "1G",
+			"HEAP_NEWSIZE":  "200M",
+		},
+		WaitingFor: wait.ForLog("Starting listening for CQL clients").WithStartupTimeout(5 * time.Minute),
+	}, spec{port: "9042/tcp"})
+}
+
 func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr error) {
 	c, err := start(ctx, testcontainers.ContainerRequest{
-		Image: "redis:7.2-alpine",
+		Image: "redis:7.4.12-alpine",
 		Cmd: []string{
 			"redis-server", "--cluster-enabled", "yes",
 			"--cluster-config-file", "/tmp/nodes.conf", "--cluster-node-timeout", "5000",

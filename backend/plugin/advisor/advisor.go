@@ -4,7 +4,6 @@ package advisor
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -48,7 +48,10 @@ type Context struct {
 	Rule             *storepb.SQLReviewRule
 	OriginalMetadata *model.DatabaseMetadata
 	FinalMetadata    *model.DatabaseMetadata
-	Driver           *sql.DB
+	// Prober runs the live probes the rules need. Nil means the review has no
+	// live connection; a rule that needs one reports that it was not checked
+	// (see UnsupportedError) rather than returning no advice.
+	Prober db.Prober
 	// ParsedStatements contains complete per-statement info including text.
 	ParsedStatements []base.ParsedStatement
 
@@ -58,6 +61,10 @@ type Context struct {
 	// Used for size limit checks without needing the full statement text.
 	StatementsTotalSize int
 	// TenantMode indicates whether to use database owner role for PostgreSQL tenant mode.
+	// The probe's role switch belongs to the driver, which reads its own connection
+	// context, so a caller that opens the driver for a review must pass this same value to
+	// it (db.ConnectionContext.TenantMode); this field only decides whether a rule probes
+	// as the owner or trusts the synced schema's owner.
 	TenantMode bool
 
 	// SQL review level fields.

@@ -8,8 +8,8 @@ import (
 	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/v1review"
-	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -22,39 +22,15 @@ func originalSchema(m *model.DatabaseMetadata) v1review.Schema {
 	return v1review.Schema{Metadata: m.GetProto(), ObjectCaseSensitive: m.GetIsObjectCaseSensitive()}
 }
 
-// getExplainSQL returns the query whose result getExplainPlan reads.
+// getExplainSQL returns the query whose JSON plan getAffectedRows and getInsertedRows read.
 func getExplainSQL(statement string) string {
 	return fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", statement)
 }
 
-// getExplainPlan returns the JSON plan from the advisor.Query result of a getExplainSQL query.
-func getExplainPlan(res []any) (string, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return "", errors.Errorf("expected 3 but got %d", len(res))
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return "", errors.Errorf("expected []any but got %T", res[2])
-	}
-	if len(rowList) != 1 {
-		return "", errors.Errorf("expected one plan row but got %d", len(rowList))
-	}
-	row, ok := rowList[0].([]any)
-	if !ok || len(row) != 1 {
-		return "", errors.Errorf("expected one plan column but got %v", rowList[0])
-	}
-	plan, ok := row[0].(string)
-	if !ok {
-		return "", errors.Errorf("expected string but got %T", row[0])
-	}
-	return plan, nil
-}
-
 // getAffectedRows returns the estimated rows a statement and its data-modifying CTEs modify, from
-// the advisor.Query result of its getExplainSQL query.
-func getAffectedRows(res []any) (int64, error) {
-	plan, err := getExplainPlan(res)
+// the probe result of its getExplainSQL query.
+func getAffectedRows(res db.ProbeResult) (int64, error) {
+	plan, err := res.Plan()
 	if err != nil {
 		return 0, err
 	}
@@ -62,9 +38,9 @@ func getAffectedRows(res []any) (int64, error) {
 }
 
 // getInsertedRows returns the estimated rows an INSERT adds, without the rows its data-modifying
-// CTEs change, from the advisor.Query result of its getExplainSQL query.
-func getInsertedRows(res []any) (int64, error) {
-	plan, err := getExplainPlan(res)
+// CTEs change, from the probe result of its getExplainSQL query.
+func getInsertedRows(res db.ProbeResult) (int64, error) {
+	plan, err := res.Plan()
 	if err != nil {
 		return 0, err
 	}

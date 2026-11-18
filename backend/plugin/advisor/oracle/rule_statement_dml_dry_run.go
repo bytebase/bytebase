@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
@@ -43,8 +44,9 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
 		return nil, nil
 	}
-	if checkCtx.Driver == nil {
-		return nil, nil
+	prober, err := advisor.ProbeFor(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
 	var nodes []ast.Node
@@ -66,7 +68,8 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		if n >= common.MaximumLintExplainSize {
 			break
 		}
-		if _, err := advisor.Query(ctx, advisor.QueryContext{}, checkCtx.Driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmts[i].Text)); err != nil {
+		// BEGIN opens a PL/SQL block in Oracle, so the dry run runs alone.
+		if _, err := prober.Probe(ctx, db.ProbeContext{Autocommit: true}, fmt.Sprintf("EXPLAIN PLAN FOR %s", stmts[i].Text)); err != nil {
 			probes[i] = v1review.Probe{Error: err.Error()}
 		} else {
 			probes[i] = v1review.Probe{}

@@ -23,9 +23,9 @@ func init() {
 
 // InsertRowLimitAdvisor is the advisor checking for to limit INSERT rows.
 // omni (pg/v1review.StatementInsertRowLimitProbes) picks the INSERTs whose
-// rows the database must estimate; this adapter EXPLAINs them under the
-// session settings before them, and omni (StatementInsertRowLimit) judges
-// every INSERT.
+// rows the database must estimate; this adapter probes them under the session
+// settings before them and reads the count, and omni (StatementInsertRowLimit)
+// judges every INSERT.
 type InsertRowLimitAdvisor struct {
 }
 
@@ -48,13 +48,20 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	var explains advisor.ExplainBudget
 	l := newLiveStatements(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
-	if checkCtx.Driver != nil {
-		l.probeEach(pgv1review.StatementInsertRowLimitProbes(l.nodes), func(i int, settings []string) {
-			if !explains.Spend(&storepb.Position{Line: l.startLine(i) + int32(l.stmts[i].BaseLine())}) {
-				return
-			}
-			probes[i] = explainRows(ctx, checkCtx.Driver, checkCtx.TenantMode, settings, l.probeText(i), getInsertedRows)
-		})
+	var probeErr error
+	l.probeEach(pgv1review.StatementInsertRowLimitProbes(l.nodes), func(i int, settings []string) {
+		if !explains.Spend(&storepb.Position{Line: l.startLine(i) + int32(l.stmts[i].BaseLine())}) {
+			return
+		}
+		probe, err := explainRows(ctx, checkCtx, settings, l.probeText(i), getInsertedRows)
+		if err != nil {
+			probeErr = err
+			return
+		}
+		probes[i] = probe
+	})
+	if probeErr != nil {
+		return nil, probeErr
 	}
 
 	var adviceList []*storepb.Advice

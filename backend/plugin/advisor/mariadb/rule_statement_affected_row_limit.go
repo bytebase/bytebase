@@ -11,8 +11,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
-	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	mariadbparser "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
 )
 
 var (
@@ -25,8 +23,8 @@ func init() {
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE
 // affected row limit. omni (mariadb/v1review.StatementAffectedRowLimitProbes)
-// picks the statements to estimate; this adapter EXPLAINs and estimates them,
-// and omni (StatementAffectedRowLimit) judges the results.
+// picks the statements to estimate; this adapter asks the driver for their
+// estimate, and omni (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -41,10 +39,6 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, errors.New("number_payload is required for this rule")
 	}
 	maxRow := int(numberPayload.Number)
-	driver := checkCtx.Driver
-	if driver == nil {
-		return nil, nil
-	}
 
 	title := checkCtx.Rule.Type.String()
 	var explains advisor.ExplainBudget
@@ -54,18 +48,11 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		if !explains.Spend(statementStartPosition(stmts[i])) {
 			continue
 		}
-		query := mariadbparser.AffectedRowsQuery(nodes[i], stmts[i].Text)
-		plan, err := mysqldriver.ExplainJSON(ctx, driver, query)
+		probe, err := advisor.Estimate(ctx, checkCtx.DBType, checkCtx.Prober, stmts[i].Text)
 		if err != nil {
-			probes[i] = v1review.Probe{Error: err.Error()}
-			continue
+			return nil, err
 		}
-		rowCount, err := mysqldriver.EstimateAffectedRowsMariaDB(ctx, driver, nodes[i], query, plan)
-		if err != nil {
-			probes[i] = v1review.Probe{CountError: err.Error()}
-			continue
-		}
-		probes[i] = v1review.Probe{Rows: rowCount}
+		probes[i] = probe
 	}
 
 	var advice []*storepb.Advice

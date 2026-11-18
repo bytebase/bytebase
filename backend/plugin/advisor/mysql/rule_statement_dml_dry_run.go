@@ -12,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 var (
@@ -41,14 +42,14 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 		return nil, nil
 	}
 
-	driver := checkCtx.Driver
-	if driver == nil {
-		return nil, nil
+	prober, err := advisor.ProbeFor(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 	nodes, stmts := mysqlNodes(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
 	for n, i := range mysqlv1review.StatementDMLDryRunProbes(nodes) {
-		if _, err := advisor.Query(ctx, advisor.QueryContext{}, driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", dryRunText(stmts[i].Text))); err != nil {
+		if _, err := prober.Probe(ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN %s", dryRunText(stmts[i].Text))); err != nil {
 			probes[i] = v1review.Probe{Error: err.Error()}
 		} else {
 			probes[i] = v1review.Probe{}

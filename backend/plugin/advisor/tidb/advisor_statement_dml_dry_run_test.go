@@ -15,6 +15,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // dryRunFake stands in for TiDB. It records every statement the advisor sends,
@@ -133,7 +134,7 @@ func TestStatementDMLDryRun(t *testing.T) {
 
 			advices, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, rules, advisor.Context{
 				DBType:          storepb.Engine_TIDB,
-				Driver:          db,
+				Prober:          dbutil.NewSQLProber(db),
 				NoAppendBuiltin: true,
 			})
 			require.NoError(t, err)
