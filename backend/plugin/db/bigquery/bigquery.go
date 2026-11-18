@@ -1,30 +1,93 @@
-// Package bigquery is the plugin for BigQuery driver.
+// Package bigquery is Bytebase's BigQuery driver: an adapter over
+// github.com/bytebase/omni/bigquery/driver that maps Bytebase's connection
+// config onto the driver contract and the contract's results back into the
+// product's protos. The job conversation, the statement split, the result
+// decode, the value mapping, the dataset sync queries and the dry run belong to
+// the omni driver.
+//
+// The mapping the adapter owns:
+//
+//   - The Google Cloud project is the data source's project ID, passed as
+//     driver.Config.Params["project"]. The dataset is the database the driver
+//     was opened on, which every statement's job defaults to and SyncDBSchema
+//     reads.
+//   - The credential is the data source's GCP credential JSON. A caller that
+//     resolved one itself passes it as Config.Password, and that one wins.
+//     Empty leaves the Google authentication library's default chain, which is
+//     what the previous driver did with no credential.
+//   - Config.Host and Config.Port are the endpoint override, for a Private
+//     Service Connect endpoint or a proxy. TLS and Dial are not set: the client
+//     library owns its transport and holds no dialer, so a tunnelled data
+//     source is not honoured, which is also what the previous driver did. The
+//     caller's extra connection parameters are not read, as before.
+//   - GetDB returns nil: BigQuery has no database/sql handle. Every Bytebase
+//     caller already tolerates nil there.
+//   - Execute sends the whole script as one job and reports one command
+//     spanning the script, before and after the job, which is the shape the
+//     previous driver logged. A `-- txn-mode` directive is not parsed: BigQuery
+//     has no multi-statement transaction, and the comment reaches the job as
+//     part of the script, as it did before.
+//   - QueryConn runs on one session the adapter holds from Open to Close. The
+//     session carries no state — every statement is a job of its own — and the
+//     caller's *sql.Conn is unused because GetDB returns nil.
+//   - Dump writes nothing: googlesql has no catalog that renders a synced
+//     dataset back into DDL, and the previous driver wrote nothing either.
+//   - SyncInstance reports the project's datasets and no version and no roles:
+//     BigQuery states neither.
+//
+// Known differences from the driver this replaced, kept because they are the
+// driver's own behavior or because reproducing the old one would reimplement it:
+//
+//   - A statement keeps its comments. The previous driver removed every comment
+//     with its own splitter before sending the text.
+//   - An unclosed literal is that statement's error on its own result; the
+//     previous driver failed the whole QueryConn call.
+//   - Which statements return rows is googlesql/analysis.ClassifySQL rather than
+//     a first-keyword test: a parenthesized query returns rows where the old
+//     driver ran it as a command, a CTE-prefixed INSERT does not where the old
+//     driver read it as a query, and SET is a query.
+//   - A query that returns no rows still reports its columns. The previous
+//     driver learned the schema from the first row and reported none.
+//   - The result-size cap is byte-accurate and keeps the row that went over,
+//     reported as Truncated; the previous driver measured only at power-of-two
+//     row counts and a cap of 0 stopped at the first row.
+//   - An explain request (a dry run) stops at the first statement the service
+//     refuses; the previous driver answered every statement.
+//   - No operator_email job label is set. The contract's QueryOptions carries no
+//     operator identity, so the cost-attribution label the previous driver
+//     attached is not reproducible here; adding it is a contract change.
+//   - A NUMERIC and a BIGNUMERIC cell is its exact decimal text, a TIMESTAMP and
+//     a DATETIME are typed timestamps, a RANGE is the half-open literal the
+//     service states, and an ARRAY or a RECORD is its elements in order. The
+//     previous driver returned Go's rendering of the client's values.
+//   - A synced dataset lists its tables in name order rather than the service's;
+//     the INFORMATION_SCHEMA read quotes the dataset as a path; and a column the
+//     view states with no ordinal position (an ingestion-time partitioned
+//     table's _PARTITIONTIME and _PARTITIONDATE) is left out of the sync instead
+//     of failing it.
+//   - A dataset that is not there is the product's not-found error naming it.
+//     The previous driver reported the 403 the INFORMATION_SCHEMA read answered,
+//     which is why a dropped dataset never reached the not-found path. A driver
+//     open on no dataset at all reports the same, where the previous driver sent
+//     a query against an empty dataset name and returned its syntax error.
+//   - The error text of Open and Ping is the driver's: Open names the missing
+//     `project` parameter where the previous driver said "project ID cannot be
+//     empty", and Ping prefixes the client's error with "bigquery: bad
+//     connection:".
 package bigquery
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"fmt"
-	"net"
-	"time"
-	"unicode"
+	"io"
 
-	"cloud.google.com/go/bigquery"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/structpb"
+	bqdriver "github.com/bytebase/omni/bigquery/driver"
+	odriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 )
 
 var (
@@ -35,378 +98,153 @@ func init() {
 	db.Register(storepb.Engine_BIGQUERY, newDriver)
 }
 
-// Driver is the BigQuery driver.
+// Driver is Bytebase's BigQuery driver.
 type Driver struct {
-	config  db.ConnectionConfig
-	connCtx db.ConnectionContext
-	client  *bigquery.Client
+	config db.ConnectionConfig
 
-	// databaseName is the currently connected database name.
-	databaseName string
+	impl    *bqdriver.Driver
+	session odriver.Session
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a BigQuery driver. It must connect to a specific database.
-// If database isn't provided, part of the driver cannot function.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.ProjectId == "" {
-		return nil, errors.New("project ID cannot be empty")
-	}
-	d.config = config
-	d.connCtx = config.ConnectionContext
-	d.databaseName = config.ConnectionContext.DatabaseName
-
-	var o []option.ClientOption
-	if gcpCredential := config.DataSource.GetGcpCredential(); gcpCredential != nil {
-		credOption, err := util.GCPCredentialOption([]byte(gcpCredential.Content))
-		if err != nil {
-			return nil, err
-		}
-		o = append(o, credOption)
-	}
-	// host and port optionally override the default bigquery.googleapis.com
-	// endpoint, e.g. with a Private Service Connect endpoint. A bare host[:port]
-	// is merged with the default endpoint's scheme and path by the client library.
-	if host := config.DataSource.Host; host != "" {
-		endpoint := host
-		if port := config.DataSource.Port; port != "" {
-			endpoint = net.JoinHostPort(host, port)
-		}
-		o = append(o, option.WithEndpoint(endpoint))
-	}
-	client, err := bigquery.NewClient(ctx, config.DataSource.ProjectId, o...)
+// Open opens a BigQuery driver. It must connect to a specific dataset.
+// If the dataset isn't provided, part of the driver cannot function.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	cfg := bigQueryConfig(config)
+	impl, err := bqdriver.Open(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	d.client = client
-	return d, nil
+	// BigQuery has no session state a statement can set, because every statement
+	// runs as a job of its own; the session is the driver. It is opened here so
+	// the driver holds one from Open to Close, as the contract asks.
+	session, err := impl.Session(ctx)
+	if err != nil {
+		_ = impl.Close()
+		return nil, err
+	}
+	return &Driver{config: config, impl: impl, session: session}, nil
 }
 
-// Close closes the driver.
-func (d *Driver) Close(_ context.Context) error {
-	return d.client.Close()
+// bigQueryConfig resolves everything Bytebase knows about reaching the project
+// into the plain values bigquery/driver takes.
+func bigQueryConfig(config db.ConnectionConfig) odriver.Config {
+	ds := config.DataSource
+	cfg := odriver.Config{
+		Host:     ds.GetHost(),
+		Port:     ds.GetPort(),
+		Database: config.ConnectionContext.DatabaseName,
+		Password: config.Password,
+		Params: map[string]string{
+			bqdriver.ParamProject: ds.GetProjectId(),
+		},
+	}
+	// A caller that resolved no credential of its own leaves the data source's,
+	// which is where the product stores the service account's JSON.
+	if cfg.Password == "" {
+		if credential := ds.GetGcpCredential(); credential != nil {
+			cfg.Password = credential.GetContent()
+		}
+	}
+	return cfg
 }
 
-// Ping pings the instance.
+// Close closes the session and the driver's client.
+func (d *Driver) Close(context.Context) error {
+	var err error
+	if d.session != nil {
+		err = d.session.Close()
+		d.session = nil
+	}
+	if d.impl != nil {
+		if closeErr := d.impl.Close(); err == nil {
+			err = closeErr
+		}
+	}
+	return err
+}
+
+// Ping runs one statement as a connectivity check.
 func (d *Driver) Ping(ctx context.Context) error {
-	q := d.client.Query("SELECT 1")
-	if _, err := q.Read(ctx); err != nil {
-		return err
-	}
-	return nil
+	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
+// OwnsQuerySession reports that QueryConn runs on the session the adapter
+// holds rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
-// Execute executes a SQL statement.
+// Execute sends the whole script as one job. BigQuery's scripting runs a
+// multi-statement script as one job whose status states the script and carries
+// no per-statement row count, so the task run log holds one command spanning the
+// script.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	q := d.client.Query(statement)
-	q.DefaultDatasetID = d.databaseName
-
-	// BigQuery submits the whole sheet as one query job, so the task run log
-	// carries one command spanning the entire statement, as snowflake does.
-	// Without these the log holds only the surrounding sync entries and the
-	// engine's error reaches no reader.
-	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
-
-	job, err := q.Run(ctx)
-	if err != nil {
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, err
-	}
-	status, err := job.Wait(ctx)
-	if err != nil {
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, err
-	}
-	if err := status.Err(); err != nil {
-		opts.LogCommandResponse(0, nil, err.Error())
-		return 0, err
-	}
-
-	// NumDMLAffectedRows is 0 for DDL and for a multi-statement script, whose
-	// parent job reports statementType SCRIPT and carries no row count.
-	var affectedRows int64
-	if stats, ok := statisticsOf(status); ok {
-		affectedRows = stats.NumDMLAffectedRows
-	}
-	opts.LogCommandResponse(affectedRows, nil, "")
-	return affectedRows, nil
+	return d.impl.Execute(ctx, statement, odriver.ExecuteOptions{
+		// BigQuery has no transaction that a script's statements share, and no
+		// isolation level to set; the driver ignores both.
+		MaxRetries: opts.MaximumRetries,
+		Log:        executeLogger{opts: opts},
+	})
 }
 
-// statisticsOf returns the query statistics of a finished job.
-// JobStatus.Statistics is nil when the jobs.get response carried no statistics
-// block (Job.setStatistics returns early on that), so the Details assertion
-// alone dereferences nil.
-func statisticsOf(status *bigquery.JobStatus) (*bigquery.QueryStatistics, bool) {
-	if status.Statistics == nil {
-		return nil, false
-	}
-	stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics)
-	return stats, ok
+// executeLogger reports a script's command and its response into the task run
+// log.
+type executeLogger struct {
+	opts db.ExecuteOptions
 }
 
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// For BigQuery, interpret Explain as dry run (BigQuery doesn't support EXPLAIN)
-	if queryContext.Explain {
-		return d.dryRunQuery(ctx, statement, queryContext)
-	}
+func (l executeLogger) CommandExecute(command odriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(command.ByteStart),
+		End:   int32(command.ByteEnd),
+	}, command.Text)
+}
 
-	statements, err := util.SanitizeSQL(statement)
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+// TransactionControl logs nothing: BigQuery has no transaction control step and
+// the previous driver logged none.
+func (executeLogger) TransactionControl(odriver.TransactionOp, error) {}
+
+// Retry logs nothing: this driver never retries.
+func (executeLogger) Retry(error, int, int) {}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// SyncInstance syncs the project's datasets. No version and no roles are
+// reported, because BigQuery states neither.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	var results []*v1pb.QueryResult
-	for _, statement := range statements {
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if util.IsSelect(statement) {
-				if queryContext.Limit > 0 {
-					statement = base.StatementWithResultLimit(storepb.Engine_BIGQUERY, statement, queryContext.Limit, "")
-				}
-				q := d.client.Query(statement)
-				if queryContext.OperatorEmail != "" {
-					q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
-				}
-				q.DefaultDatasetID = d.databaseName
-				it, err := q.Read(ctx)
-				if err != nil {
-					return nil, err
-				}
-
-				result := &v1pb.QueryResult{}
-				readOnce := false
-				var fieldTypes []bigquery.FieldType
-				for {
-					var values []bigquery.Value
-					err := it.Next(&values)
-					if err == iterator.Done {
-						break
-					}
-					if err != nil {
-						return nil, err
-					}
-
-					// Get schema columns.
-					if !readOnce {
-						readOnce = true
-						for _, s := range it.Schema {
-							result.ColumnNames = append(result.ColumnNames, s.Name)
-							result.ColumnTypeNames = append(result.ColumnTypeNames, string(s.Type))
-							fieldTypes = append(fieldTypes, s.Type)
-						}
-					}
-
-					row := &v1pb.QueryRow{}
-					for i, v := range values {
-						row.Values = append(row.Values, convertValue(v, fieldTypes[i]))
-					}
-					result.Rows = append(result.Rows, row)
-					n := len(result.Rows)
-					if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-						result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
-						break
-					}
-				}
-
-				// The job that returned these rows reports the stages it ran as
-				// it goes; BigQuery has no EXPLAIN to ask for them instead.
-				result.QueryPlan = queryPlan(ctx, it.SourceJob())
-				return result, nil
-			}
-
-			q := d.client.Query(statement)
-			q.DefaultDatasetID = d.databaseName
-			job, err := q.Run(ctx)
-			if err != nil {
-				return nil, err
-			}
-			status, err := job.Wait(ctx)
-			if err != nil {
-				return nil, err
-			}
-			if err := status.Err(); err != nil {
-				return nil, err
-			}
-			stats, ok := statisticsOf(status)
-			if !ok {
-				return nil, errors.New("invalid status statistics detail type")
-			}
-			return util.BuildAffectedRowsResult(stats.NumDMLAffectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
+	return &db.InstanceMetadata{Databases: instance.Databases}, nil
 }
 
-// dryRunQuery performs a dry run validation of the query without executing it.
-// Returns validation status and estimated bytes to be processed.
-func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	statements, err := util.SanitizeSQL(statement)
+// SyncDBSchema syncs the dataset the driver was opened on.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	metadata, err := d.impl.SyncDatabase(ctx)
 	if err != nil {
+		if errors.Is(err, odriver.ErrNotFound) {
+			return nil, common.Errorf(common.NotFound, "dataset %q not found", d.config.ConnectionContext.DatabaseName)
+		}
 		return nil, err
 	}
-
-	var results []*v1pb.QueryResult
-	for _, stmt := range statements {
-		startTime := time.Now()
-
-		q := d.client.Query(stmt)
-		q.DefaultDatasetID = d.databaseName
-		q.DryRun = true
-
-		if queryContext.OperatorEmail != "" {
-			q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
-		}
-
-		job, err := q.Run(ctx)
-		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Statement: stmt,
-				Error:     err.Error(),
-				Latency:   durationpb.New(time.Since(startTime)),
-			})
-			continue
-		}
-
-		// For dry run, the job completes immediately - use Status() instead of Wait()
-		status := job.LastStatus()
-		if status == nil {
-			results = append(results, &v1pb.QueryResult{
-				Statement: stmt,
-				Error:     "failed to get job status",
-				Latency:   durationpb.New(time.Since(startTime)),
-			})
-			continue
-		}
-
-		if err := status.Err(); err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Statement: stmt,
-				Error:     err.Error(),
-				Latency:   durationpb.New(time.Since(startTime)),
-			})
-			continue
-		}
-
-		// Extract dry run results
-		result := &v1pb.QueryResult{
-			Statement: stmt,
-			Latency:   durationpb.New(time.Since(startTime)),
-		}
-
-		if stats, ok := statisticsOf(status); ok {
-			bytesProcessed := stats.TotalBytesProcessed
-
-			// Format output similar to bq CLI
-			message := fmt.Sprintf(
-				"Query successfully validated. Assuming the tables are not modified, "+
-					"running this query will process %d bytes (%.2f MB).",
-				bytesProcessed,
-				float64(bytesProcessed)/(1024*1024),
-			)
-
-			result.ColumnNames = []string{"Validation Result"}
-			result.ColumnTypeNames = []string{"STRING"}
-			result.Rows = []*v1pb.QueryRow{
-				{
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: message}},
-					},
-				},
-			}
-			result.RowsCount = 1
-		}
-
-		results = append(results, result)
-	}
-
-	return results, nil
+	return metadata, nil
 }
 
-// encodeOperatorEmail encodes email to valid format of resource label value.
-// https://cloud.google.com/compute/docs/labeling-resources#requirements
-func encodeOperatorEmail(email string) string {
-	var values []rune
-	for _, c := range email {
-		switch {
-		case unicode.IsDigit(c) || c == '_' || c == '-':
-			values = append(values, c)
-		case unicode.IsLetter(c):
-			values = append(values, unicode.ToLower(c))
-		default:
-			values = append(values, '_')
-		}
-	}
-	if len(values) > 63 {
-		return string(values[:63])
-	}
-	return string(values)
-}
-
-func convertValue(v bigquery.Value, fieldType bigquery.FieldType) *v1pb.RowValue {
-	if v == nil {
-		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}
-	}
-	switch fieldType {
-	case bigquery.StringFieldType:
-		if s, ok := v.(string); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: s}}
-		}
-	case bigquery.BytesFieldType:
-		if bytes, ok := v.([]byte); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: bytes}}
-		}
-	case bigquery.IntegerFieldType:
-		if i, ok := v.(int64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: i}}
-		}
-	case bigquery.FloatFieldType:
-		if f, ok := v.(float64); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: f}}
-		}
-	case bigquery.BooleanFieldType:
-		if b, ok := v.(bool); ok {
-			return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: b}}
-		}
-	case bigquery.TimestampFieldType:
-	case bigquery.RecordFieldType:
-	case bigquery.DateFieldType:
-	case bigquery.TimeFieldType:
-	case bigquery.DateTimeFieldType:
-	case bigquery.NumericFieldType:
-	case bigquery.GeographyFieldType:
-	case bigquery.BigNumericFieldType:
-	case bigquery.IntervalFieldType:
-	case bigquery.JSONFieldType:
-	case bigquery.RangeFieldType:
-	default:
-		// Unknown field type, will fall back to string representation
-	}
-
-	// Fall back to string representation.
-	s := fmt.Sprintf("%v", v)
-	return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: s}}
+// Dump writes nothing: the synced metadata does not hold the partitioning,
+// clustering, labels, expiration or view query a dataset's DDL states, and the
+// previous driver wrote nothing either.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, metadata)
 }
