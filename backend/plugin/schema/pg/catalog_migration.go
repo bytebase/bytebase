@@ -257,6 +257,9 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored); err != nil {
 		return err
 	}
+	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored); err != nil {
+		return err
+	}
 	created := relationSet(newMeta, oldMeta)
 	for _, schema := range oldMeta.GetSchemas() {
 		newSchema := schemaByName(newMeta, schema.GetName())
@@ -457,6 +460,68 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 		}
 	}
 	return nil
+}
+
+// refuseRestoredViewRoutines rejects a routine whose parameter or return type is a
+// restored view's row type: the view cannot be dropped while the routine holds it,
+// and the routine's body mentioning the view is not such a dependency.
+func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool) error {
+	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
+		for _, schema := range meta.GetSchemas() {
+			for _, function := range schema.GetFunctions() {
+				for key := range restored {
+					schemaName, objectName := splitObjectKey(key)
+					if !namesType(function.GetSignature(), schemaName, objectName) && !namesType(routineReturnClause(function.GetDefinition()), schemaName, objectName) {
+						continue
+					}
+					return errors.Errorf("cannot generate a migration: function %s uses the row type of view %s, which this migration must create", quoteQualified(schema.GetName(), function.GetName()), quoteQualified(schemaName, objectName))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// routineReturnClause is the text between RETURNS and the first clause after it,
+// which is where a routine's result type is declared.
+func routineReturnClause(definition string) string {
+	index := strings.Index(definition, "RETURNS ")
+	if index < 0 {
+		return ""
+	}
+	rest := definition[index+len("RETURNS "):]
+	end := len(rest)
+	for _, marker := range []string{"\nAS ", "\n AS ", " LANGUAGE ", "\nLANGUAGE ", " IMMUTABLE", " STABLE", " VOLATILE", " STRICT", " SECURITY ", " COST ", " ROWS ", " WINDOW ", "\n"} {
+		if i := strings.Index(rest, marker); i >= 0 && i < end {
+			end = i
+		}
+	}
+	return rest[:end]
+}
+
+// namesType reports whether text names a relation as a type at an identifier
+// boundary, whether the reference is quoted or not.
+func namesType(text, schemaName, objectName string) bool {
+	if text == "" {
+		return false
+	}
+	if strings.Contains(text, quoteQualified(schemaName, objectName)) {
+		return true
+	}
+	needle := schemaName + "." + objectName
+	for start := 0; start < len(text); {
+		index := strings.Index(text[start:], needle)
+		if index < 0 {
+			return false
+		}
+		index += start
+		end := index + len(needle)
+		if (index == 0 || !isIdentifierByte(text[index-1])) && (end == len(text) || !isIdentifierByte(text[end])) {
+			return true
+		}
+		start = end
+	}
+	return false
 }
 
 func quoteRestoredView(key string) string {

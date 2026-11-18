@@ -1228,6 +1228,69 @@ func TestDeferredCreatedViewReleasesARetypedAttribute(t *testing.T) {
 	require.Less(t, createView, add, "the attribute is re-added after the create")
 }
 
+// TestRestoredViewRefusesRoutinesHoldingItsRowType covers an unchanged routine whose
+// parameter or return type is a restored view's row type: the view drop fails while
+// the routine holds it, and a routine that only mentions the view in its body is
+// not a dependency.
+func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
+	snapshot := func(columnType string, function *metadatapb.FunctionMetadata) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+			Functions: []*metadatapb.FunctionMetadata{function},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	tests := []struct {
+		name    string
+		routine *metadatapb.FunctionMetadata
+		refused bool
+	}{
+		{
+			name: "parameter",
+			routine: &metadatapb.FunctionMetadata{
+				Name:       "f",
+				Signature:  "f(public.v)",
+				Definition: "CREATE FUNCTION public.f(public.v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
+			},
+			refused: true,
+		},
+		{
+			name: "return type",
+			routine: &metadatapb.FunctionMetadata{
+				Name:       "g",
+				Signature:  "g()",
+				Definition: "CREATE FUNCTION public.g() RETURNS public.v LANGUAGE sql AS $$ SELECT $$",
+			},
+			refused: true,
+		},
+		{
+			name: "body reference",
+			routine: &metadatapb.FunctionMetadata{
+				Name:       "h",
+				Signature:  "h()",
+				Definition: "CREATE FUNCTION public.h() RETURNS integer LANGUAGE sql AS $$ SELECT 1 FROM public.v $$",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", tc.routine), snapshot("bigint", tc.routine))
+			if tc.refused {
+				require.ErrorContains(t, err, "uses the row type of view")
+				return
+			}
+			require.NoError(t, err, "a routine that only mentions the view in its body does not block the drop")
+		})
+	}
+}
+
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
 // attribute the target adds, out of a restored view's drop: releasing a column
 // would discard its data, and a new attribute would need the view before its
