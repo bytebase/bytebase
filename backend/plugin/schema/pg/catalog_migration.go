@@ -507,6 +507,8 @@ func routineArgumentList(definition string) string {
 	depth := 0
 	for i := open; i < len(definition); i++ {
 		switch definition[i] {
+		case '"', '\'':
+			i = closingQuote(definition, i, definition[i])
 		case '(':
 			depth++
 		case ')':
@@ -518,6 +520,22 @@ func routineArgumentList(definition string) string {
 		}
 	}
 	return ""
+}
+
+// closingQuote returns the index of the quote closing the identifier or literal
+// that starts at start, where a doubled quote is an escape.
+func closingQuote(text string, start int, quote byte) int {
+	for i := start + 1; i < len(text); i++ {
+		if text[i] != quote {
+			continue
+		}
+		if i+1 < len(text) && text[i+1] == quote {
+			i++
+			continue
+		}
+		return i
+	}
+	return len(text) - 1
 }
 
 // routineReturnClause is the text between RETURNS and the first clause after it,

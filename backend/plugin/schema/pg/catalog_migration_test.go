@@ -1348,6 +1348,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "quoted parameter before an out parameter",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "q",
+				Signature:  "q(text)",
+				Definition: `CREATE FUNCTION public.q(")" text, OUT result public.v) RETURNS record LANGUAGE sql AS $$ SELECT $$`,
+			}},
+			refused: true,
+		},
+		{
 			name: "body reference",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "h",
