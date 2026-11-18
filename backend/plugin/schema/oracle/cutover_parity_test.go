@@ -4,11 +4,14 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 // cutoverParityCase records the migration the legacy Bytebase generator emitted
@@ -52,4 +55,43 @@ func TestCutoverParity(t *testing.T) {
 			require.Equal(t, tc.LegacyExpected, migration+"\n")
 		})
 	}
+}
+
+// TestMetadataMigrationKeepsLegacyOmissions pins the migration path to the same
+// compatibility strip as the definition path. The legacy generator emitted no
+// identity clause and no index visibility, so an identity column or an invisible
+// index in the target must not reach the catalog diff.
+func TestMetadataMigrationKeepsLegacyOmissions(t *testing.T) {
+	oldMetadata := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "APP",
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "T",
+			Columns: []*metadatapb.ColumnMetadata{{Name: "ID", Type: "NUMBER", Nullable: false}},
+		}},
+	}}}
+	newMetadata := proto.CloneOf(oldMetadata)
+	table := newMetadata.Schemas[0].Tables[0]
+	table.Columns = append(table.Columns, &metadatapb.ColumnMetadata{
+		Name:               "SEQ",
+		Type:               "NUMBER",
+		Nullable:           false,
+		IsIdentity:         true,
+		IdentityGeneration: metadatapb.ColumnMetadata_ALWAYS,
+		IdentitySeed:       1,
+		IdentityIncrement:  1,
+	})
+	table.Indexes = []*metadatapb.IndexMetadata{{
+		Name:        "IDX_T_ID",
+		Expressions: []string{"ID"},
+		Visible:     false,
+	}}
+
+	source := model.NewDatabaseMetadata(oldMetadata, nil, nil, storepb.Engine_ORACLE, false)
+	target := model.NewDatabaseMetadata(newMetadata, nil, nil, storepb.Engine_ORACLE, false)
+	migration, err := schema.DiffMigration(storepb.Engine_ORACLE, source, target)
+	require.NoError(t, err)
+	require.NotEmpty(t, migration)
+	require.NotContains(t, migration, "IDENTITY")
+	require.NotContains(t, migration, "GENERATED")
+	require.NotContains(t, migration, "INVISIBLE")
 }

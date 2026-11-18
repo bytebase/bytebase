@@ -70,8 +70,9 @@ func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (
 	return catalog.GetProcedureDefinition("", procedure)
 }
 
-// stripIdentity preserves the pre-cutover renderer's output: it never emitted
-// an identity clause, and it never wrote an index's invisible state. Keep both
+// stripUnrenderedFacts preserves the pre-cutover output on both the definition
+// and the migration path: the legacy renderer and generator never emitted an
+// identity clause, and they never wrote an index's invisible state. Keep both
 // defects until a separate change can ship the fixes with their own release note.
 func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
 	if metadata == nil {
@@ -139,7 +140,7 @@ func loadCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, error) {
 	c := catalog.New()
 	var metadata *metadatapb.DatabaseSchemaMetadata
 	if d != nil {
-		metadata = d.GetProto()
+		metadata = stripUnrenderedFacts(d.GetProto())
 	}
 	if _, err := c.LoadMetadata(context.Background(), metadata); err != nil {
 		return nil, err
