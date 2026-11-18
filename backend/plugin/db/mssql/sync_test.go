@@ -28,7 +28,7 @@ func TestSyncUniqueIndex(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedMSSQLContainer(t)
 
-	driver := newSyncTestDatabase(ctx, t, container)
+	driver, _ := newSyncTestDatabase(ctx, t, container)
 	executeBatches(ctx, t, driver, `
 CREATE TABLE dbo.index_kinds (
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -429,7 +429,7 @@ GO
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			driver := newSyncTestDatabase(ctx, t, container)
+			driver, _ := newSyncTestDatabase(ctx, t, container)
 			executeBatches(ctx, t, driver, tc.setupSQL)
 
 			metadata, err := driver.SyncDBSchema(ctx)
@@ -448,7 +448,7 @@ func TestSyncSpatialIndexIsRepeatable(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedMSSQLContainer(t)
 
-	driver := newSyncTestDatabase(ctx, t, container)
+	driver, _ := newSyncTestDatabase(ctx, t, container)
 	executeBatches(ctx, t, driver, `
 CREATE SCHEMA spatial_test;
 GO
@@ -580,7 +580,7 @@ func TestSyncDefaultSchemaAndSynonyms(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedMSSQLContainer(t)
 
-	driver := newSyncTestDatabase(ctx, t, container)
+	driver, database := newSyncTestDatabase(ctx, t, container)
 	executeBatches(ctx, t, driver, `
 CREATE SCHEMA app;
 GO
@@ -606,7 +606,7 @@ GO
 	}, synonyms, protocmp.Transform(), cmpopts.EquateEmpty()))
 
 	// A user that is not sysadmin syncs its own default schema.
-	login := driver.databaseName + "_login"
+	login := database + "_login"
 	const password = "Test123!login"
 	_, err = container.GetDB().ExecContext(ctx, "CREATE LOGIN ["+login+"] WITH PASSWORD = '"+password+"', CHECK_POLICY = OFF")
 	require.NoError(t, err)
@@ -618,10 +618,10 @@ GO
 			Username: login,
 			Host:     container.GetHost(),
 			Port:     container.GetPort(),
-			Database: driver.databaseName,
+			Database: database,
 		},
 		Password:          password,
-		ConnectionContext: db.ConnectionContext{DatabaseName: driver.databaseName},
+		ConnectionContext: db.ConnectionContext{DatabaseName: database},
 	})
 	require.NoError(t, err)
 	defer opened.Close(ctx)
