@@ -151,36 +151,36 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	return d.impl.Execute(ctx, cleaned, odbdriver.ExecuteOptions{
 		CreateDatabase: opts.CreateDatabase,
 		MaxRetries:     opts.MaximumRetries,
-		Log:            executeLogger{opts: opts, sourceOffset: directiveShift(statement, cleaned)},
+		Log:            executeLogger{opts: opts, sourceRange: directiveShift(statement, cleaned)},
 	})
 }
 
-// directiveShift maps a byte offset in the script the driver ran back to the
-// caller's script, which the task run log reads when LogCommandStatement is off.
-// ParseTransactionConfig removes a directive line from anywhere in the leading
-// comment block, so the cleaned lines are a subsequence of the caller's: walking
-// both line by line gives each cleaned line's byte offset in the caller's script
-// even when a kept comment sits between two removed ones.
-func directiveShift(script, cleaned string) func(int) int {
-	identity := func(at int) int { return at }
+// directiveShift maps the range the driver reports on the cleaned script back to
+// the caller's script, which the task run log reads when LogCommandStatement is
+// off. The removed directive lines are dropped from the range as well: the parser
+// removes them from anywhere in the leading comment block, and a contiguous range
+// that spans one would show the directive as if it had been executed.
+func directiveShift(script, cleaned string) func(int, int) (int, int) {
+	identity := func(start, end int) (int, int) { return start, end }
 	if cleaned == script {
 		return identity
 	}
 	scriptLines := strings.Split(script, "\n")
 	scriptStarts := make([]int, len(scriptLines))
-	start := 0
+	cursor := 0
 	for i, line := range scriptLines {
-		scriptStarts[i] = start
-		start += len(line) + 1
+		scriptStarts[i] = cursor
+		cursor += len(line) + 1
 	}
 	cleanedLines := strings.Split(cleaned, "\n")
 	cleanedStarts := make([]int, len(cleanedLines))
 	sourceStarts := make([]int, len(cleanedLines))
-	start = 0
+	cursor = 0
 	for i, line := range cleanedLines {
-		cleanedStarts[i] = start
-		start += len(line) + 1
+		cleanedStarts[i] = cursor
+		cursor += len(line) + 1
 	}
+	kept := make([]bool, len(scriptLines))
 	next := 0
 	for i, line := range cleanedLines {
 		boundary := i == 0 || i == len(cleanedLines)-1
@@ -190,13 +190,20 @@ func directiveShift(script, cleaned string) func(int) int {
 		if next == len(scriptLines) {
 			return identity
 		}
+		kept[next] = true
 		sourceStarts[i] = scriptStarts[next]
 		if i == 0 {
 			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeft(scriptLines[next], " \t"))
 		}
 		next++
 	}
-	return func(at int) int {
+	var removed [][2]int
+	for i, line := range scriptLines {
+		if !kept[i] {
+			removed = append(removed, [2]int{scriptStarts[i], scriptStarts[i] + len(line) + 1})
+		}
+	}
+	sourceOffset := func(at int) int {
 		if at < 0 || at > len(cleaned) {
 			return at
 		}
@@ -205,6 +212,18 @@ func directiveShift(script, cleaned string) func(int) int {
 			i++
 		}
 		return sourceStarts[i] + (at - cleanedStarts[i])
+	}
+	return func(start, end int) (int, int) {
+		sourceStart, sourceEnd := sourceOffset(start), sourceOffset(end)
+		for _, span := range removed {
+			if sourceStart < span[1] && sourceEnd > span[0] && span[1] > sourceStart {
+				sourceStart = span[1]
+			}
+		}
+		if sourceStart > sourceEnd {
+			sourceStart = sourceEnd
+		}
+		return sourceStart, sourceEnd
 	}
 }
 
@@ -218,20 +237,18 @@ func sameLine(scriptLine, cleanedLine string, boundary bool) bool {
 	return scriptLine == cleanedLine
 }
 
-// executeLogger reports a script's commands and their responses into the task run
-// log. Databricks issues no transaction control, so there is nothing to log for
-// one.
 type executeLogger struct {
 	opts db.ExecuteOptions
-	// sourceOffset maps a byte offset in the script the driver ran back to the
-	// caller's script, so the log's ranges name the script the task ran.
-	sourceOffset func(int) int
+	// sourceRange maps the range the driver reports on its script back to the
+	// caller's, which the task run log reads when LogCommandStatement is off.
+	sourceRange func(int, int) (int, int)
 }
 
 func (l executeLogger) CommandExecute(command odbdriver.Command) {
+	start, end := l.sourceRange(command.ByteStart, command.ByteEnd)
 	l.opts.LogCommandExecute(&storepb.Range{
-		Start: int32(l.sourceOffset(command.ByteStart)),
-		End:   int32(l.sourceOffset(command.ByteEnd)),
+		Start: int32(start),
+		End:   int32(end),
 	}, command.Text)
 }
 

@@ -373,8 +373,9 @@ func TestExecuteLogsRangesInTheCallersScript(t *testing.T) {
 }
 
 // A directive can follow another leading comment, so the bytes removed are not
-// always a prefix: every range the driver reports has to come back to the
-// caller's script, not just the first statement's.
+// always a prefix: a reported range has to come back to the caller's script, and
+// a range that spans a removed line has to drop it rather than show a directive
+// the workspace never received.
 func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 	for _, script := range []string{
 		"-- txn-mode=off\nINSERT INTO t VALUES (1)",
@@ -388,8 +389,13 @@ func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 			shift := directiveShift(script, cleaned)
 			at := strings.Index(cleaned, "INSERT")
 			require.NotEqual(t, -1, at)
-			require.Equal(t, strings.Index(script, "INSERT"), shift(at))
-			require.Equal(t, len(script), shift(len(cleaned)))
+			start, _ := shift(at, at)
+			require.Equal(t, strings.Index(script, "INSERT"), start)
+			start, end := shift(0, len(cleaned))
+			rangeText := script[start:end]
+			require.NotContains(t, rangeText, "txn-mode")
+			require.NotContains(t, rangeText, "txn-isolation")
+			require.Contains(t, rangeText, "INSERT INTO t VALUES (1)")
 		})
 	}
 }
