@@ -114,11 +114,13 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 			if err != nil {
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 			}
-			sqlDB := driver.GetDB()
-			if sqlDB != nil {
-				conn, err = sqlDB.Conn(ctx)
-				if err != nil {
-					return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
+			if !db.OwnsQuerySession(driver) {
+				sqlDB := driver.GetDB()
+				if sqlDB != nil {
+					conn, err = sqlDB.Conn(ctx)
+					if err != nil {
+						return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
+					}
 				}
 			}
 		}
@@ -401,14 +403,16 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 	defer driver.Close(ctx)
 
-	sqlDB := driver.GetDB()
 	var conn *sql.Conn
-	if sqlDB != nil {
-		conn, err = sqlDB.Conn(ctx)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
+	if !db.OwnsQuerySession(driver) {
+		sqlDB := driver.GetDB()
+		if sqlDB != nil {
+			conn, err = sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database connection: %v", err))
+			}
+			defer conn.Close()
 		}
-		defer conn.Close()
 	}
 
 	startTime := time.Now()
@@ -1344,14 +1348,16 @@ func doExport(
 	}
 	defer driver.Close(ctx)
 
-	sqlDB := driver.GetDB()
 	var conn *sql.Conn
-	if sqlDB != nil {
-		conn, err = sqlDB.Conn(ctx)
-		if err != nil {
-			return nil, 0, err
+	if !db.OwnsQuerySession(driver) {
+		sqlDB := driver.GetDB()
+		if sqlDB != nil {
+			conn, err = sqlDB.Conn(ctx)
+			if err != nil {
+				return nil, 0, err
+			}
+			defer conn.Close()
 		}
-		defer conn.Close()
 	}
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,

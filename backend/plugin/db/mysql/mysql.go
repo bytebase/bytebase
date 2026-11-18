@@ -84,9 +84,10 @@ import (
 )
 
 var (
-	_ db.Driver       = (*Driver)(nil)
-	_ db.Prober       = (*Driver)(nil)
-	_ db.RowEstimator = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.Prober         = (*Driver)(nil)
+	_ db.RowEstimator   = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 )
 
 func init() {
@@ -134,6 +135,15 @@ func newDriver() db.Driver {
 
 // Open maps the resolved data source onto the contract's Config.
 func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
+	// A driver whose Open fails is discarded without a Close, so Open releases
+	// the tunnel, Cloud SQL dialer and pools it acquired itself.
+	success := false
+	defer func() {
+		if !success {
+			_ = d.Close(ctx)
+		}
+	}()
+
 	dataSource := connCfg.DataSource
 	if dataSource == nil {
 		return nil, errors.New("mysql: a data source is required")
@@ -197,7 +207,6 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 		return nil, errors.Errorf("mysql: unsupported engine %s", dbType)
 	}
 	if err != nil {
-		_ = d.Close(ctx)
 		return nil, err
 	}
 	d.driver = opened
@@ -206,10 +215,10 @@ func (d *Driver) Open(ctx context.Context, dbType storepb.Engine, connCfg db.Con
 	// including the tunnel and TLS config, so gh-ost reaches the same server.
 	sqlDB, err := newSQLDB(cfg)
 	if err != nil {
-		_ = d.Close(ctx)
 		return nil, err
 	}
 	d.sqlDB = sqlDB
+	success = true
 	return d, nil
 }
 
@@ -340,6 +349,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (d *Driver) GetDB() *sql.DB {
 	return d.sqlDB
 }
+
+// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
+// not on a connection a caller opens from GetDB.
+func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance converts the contract's instance into the API's metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {

@@ -168,6 +168,21 @@ type Driver interface {
 	Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error
 }
 
+// SessionQuerier is implemented by a driver whose QueryConn runs on a session
+// the driver holds rather than on the *sql.Conn a caller passes. A caller that
+// opened a conn from GetDB for such a driver would reserve a second server
+// connection no statement uses; it should leave conn nil.
+type SessionQuerier interface {
+	OwnsQuerySession()
+}
+
+// OwnsQuerySession reports whether driver's QueryConn ignores the caller's
+// *sql.Conn and runs on its own session.
+func OwnsQuerySession(driver Driver) bool {
+	_, ok := driver.(SessionQuerier)
+	return ok
+}
+
 // Register makes a database driver available by the provided type.
 // If Register is called twice with the same name or if driver is nil,
 // it panics.
