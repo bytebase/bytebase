@@ -39,6 +39,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return "", nil
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
+	releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto())
 	restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
 	plan = plan.Filter(func(op catalog.MigrationOp) bool {
@@ -65,6 +66,112 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 		return nil, nil, err
 	}
 	return c, report, nil
+}
+
+// releaseCompositeBeforeTableDrop moves an ALTER TYPE that releases a composite
+// attribute from a table's row type ahead of that table's CASCADE drop. The
+// cascade would otherwise remove the attribute or the composite before the
+// release runs.
+func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) {
+	dropped := make(map[string]bool)
+	created := make(map[string]bool)
+	for _, schema := range oldMeta.GetSchemas() {
+		newSchema := schemaByName(newMeta, schema.GetName())
+		for _, table := range schema.GetTables() {
+			if newSchema == nil || tableByName(newSchema, table.GetName()) == nil {
+				dropped[schema.GetName()+"."+table.GetName()] = true
+			}
+		}
+	}
+	for _, schema := range newMeta.GetSchemas() {
+		oldSchema := schemaByName(oldMeta, schema.GetName())
+		for _, table := range schema.GetTables() {
+			if oldSchema == nil || tableByName(oldSchema, table.GetName()) == nil {
+				created[schema.GetName()+"."+table.GetName()] = true
+			}
+		}
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	for _, schema := range oldMeta.GetSchemas() {
+		newSchema := schemaByName(newMeta, schema.GetName())
+		for _, composite := range schema.GetCompositeTypes() {
+			releases := false
+			for _, attribute := range composite.GetAttributes() {
+				if !referencedTable(attribute.GetType(), dropped) {
+					continue
+				}
+				newComposite := compositeByName(newSchema, composite.GetName())
+				newType := attributeType(newComposite, attribute.GetName())
+				if newType == attribute.GetType() {
+					continue
+				}
+				if referencedTable(newType, created) {
+					continue
+				}
+				releases = true
+				break
+			}
+			if !releases {
+				continue
+			}
+			alter, drop := -1, -1
+			for i, op := range plan.Ops {
+				if alter < 0 && op.Type == catalog.OpAlterType && op.SchemaName == schema.GetName() && op.ObjectName == composite.GetName() {
+					alter = i
+				}
+				if drop < 0 && op.Type == catalog.OpDropTable {
+					drop = i
+				}
+			}
+			if alter < 0 || drop < 0 || alter < drop {
+				continue
+			}
+			op := plan.Ops[alter]
+			ops := make([]catalog.MigrationOp, 0, len(plan.Ops))
+			ops = append(ops, plan.Ops[:drop]...)
+			ops = append(ops, op)
+			ops = append(ops, plan.Ops[drop:alter]...)
+			ops = append(ops, plan.Ops[alter+1:]...)
+			plan.Ops = ops
+		}
+	}
+}
+
+func referencedTable(typeName string, tables map[string]bool) bool {
+	name := strings.TrimSpace(typeName)
+	for strings.HasSuffix(name, "[]") {
+		name = strings.TrimSuffix(name, "[]")
+	}
+	name = strings.ReplaceAll(name, `"`, "")
+	for key := range tables {
+		if strings.EqualFold(name, key) {
+			return true
+		}
+	}
+	return false
+}
+
+func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.CompositeTypeMetadata {
+	if schema == nil {
+		return nil
+	}
+	for _, composite := range schema.GetCompositeTypes() {
+		if composite.GetName() == name {
+			return composite
+		}
+	}
+	return nil
+}
+
+func attributeType(composite *metadatapb.CompositeTypeMetadata, name string) string {
+	for _, attribute := range composite.GetAttributes() {
+		if attribute.GetName() == name {
+			return attribute.GetType()
+		}
+	}
+	return ""
 }
 
 // restoreUnloadableDependentViews recreates a view the catalog could not parse

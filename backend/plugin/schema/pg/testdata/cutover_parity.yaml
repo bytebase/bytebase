@@ -3985,7 +3985,7 @@
     ALTER TABLE public.t DROP COLUMN c;
     DROP TYPE "public"."addr"
 - description: TestCockroachMetadataDiffReleasingCompositeAlterPrecedesTableDrop
-  difference: the table drop with CASCADE is emitted before the releasing ALTER TYPE. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
+  difference: the releasing ALTER TYPE precedes the table's CASCADE drop; the text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
     {
       "schemas": [
@@ -4041,8 +4041,8 @@
     DROP TABLE "public"."t";
 
   catalogExpected: |-
-    DROP TABLE "public"."t" CASCADE;
-    ALTER TYPE "public"."c" ALTER ATTRIBUTE "r" TYPE text
+    ALTER TYPE "public"."c" ALTER ATTRIBUTE "r" TYPE text;
+    DROP TABLE "public"."t" CASCADE
 - description: TestCockroachMetadataDiffCompositeArrayColumnOrdersCreate
   difference: array-of-composite types are written with the canonical type[] spelling and one-line layout. The text also uses canonical PostgreSQL identifier quoting and statement terminators.
   oldMetadata: |-
