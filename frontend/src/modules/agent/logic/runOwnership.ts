@@ -5,6 +5,7 @@ export interface AgentRunLease {
 
 const requestedLeases = new Set<string>();
 const heldLeases = new Set<string>();
+const leaseListeners = new Set<() => void>();
 let persistenceDepth = 0;
 let storageBudgetDepth = 0;
 
@@ -16,6 +17,22 @@ export const supportsAgentRunRecovery = (): boolean =>
 
 export const hasAgentRunLease = (scopeKey: string, chatId: string): boolean =>
   heldLeases.has(executionKey(scopeKey, chatId));
+
+export const isAgentRunLeasePending = (
+  scopeKey: string,
+  chatId: string
+): boolean => requestedLeases.has(executionKey(scopeKey, chatId));
+
+export const subscribeAgentRunLeases = (listener: () => void): (() => void) => {
+  leaseListeners.add(listener);
+  return () => {
+    leaseListeners.delete(listener);
+  };
+};
+
+const notifyLeaseListeners = () => {
+  for (const listener of leaseListeners) listener();
+};
 
 export const withAgentRunLease = async <T>(
   scopeKey: string,
@@ -32,6 +49,7 @@ export const withAgentRunLease = async <T>(
     return { acquired: false };
   }
   requestedLeases.add(key);
+  notifyLeaseListeners();
   try {
     return await navigator.locks.request(
       key,
@@ -58,6 +76,7 @@ export const withAgentRunLease = async <T>(
     );
   } finally {
     requestedLeases.delete(key);
+    notifyLeaseListeners();
   }
 };
 

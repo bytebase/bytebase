@@ -157,6 +157,14 @@
       "query-unmask": "Làm thế nào để yêu cầu quyền truy cập dữ liệu không bị che?",
       "query-unmask-database": "Làm thế nào để yêu cầu quyền truy cập dữ liệu không bị che trong {{database}}?"
     },
+    "follow-up-queue": {
+      "enqueue": "Thêm vào hàng đợi",
+      "input-placeholder": "Thêm tin nhắn tiếp theo",
+      "paused": "Đã tạm dừng",
+      "queued-count": "{{count}} tin nhắn đang chờ",
+      "remove": "Xóa tin nhắn thứ {{position}} khỏi hàng đợi",
+      "resume": "Tiếp tục hàng đợi"
+    },
     "handoff": {
       "open-data-classification": "Mở cài đặt phân loại dữ liệu",
       "open-database-catalog": "Mở cài đặt cột",

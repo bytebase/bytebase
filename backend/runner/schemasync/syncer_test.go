@@ -2,19 +2,25 @@ package schemasync
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/productmetrics"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -369,4 +375,147 @@ func setupSyncerStore(ctx context.Context, t *testing.T) *store.Store {
 	require.NoError(t, err)
 
 	return s
+}
+
+func TestSyncInstanceSkipsNeonPostgresDatabase(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, _ := testcontainer.NewPgDatabase(t)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	syncer := NewSyncer(stores, dbfactory.New(stores, licenseService), licenseService, nil)
+
+	adminDataSource := func() *storepb.DataSource {
+		return &storepb.DataSource{
+			Id:       "admin",
+			Type:     storepb.DataSourceType_ADMIN,
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
+			Username: "postgres",
+			Password: "root-password",
+		}
+	}
+	metaNames := func(dbs []*metadatapb.DatabaseSchemaMetadata) []string {
+		names := make([]string, 0, len(dbs))
+		for _, d := range dbs {
+			names = append(names, d.Name)
+		}
+		return names
+	}
+
+	projectID := "project-a"
+	neonInstance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-neon",
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			Vendor:      storepb.Vendor_NEON,
+			DataSources: []*storepb.DataSource{adminDataSource()},
+		},
+	})
+	require.NoError(t, err)
+
+	neonMeta, err := syncer.GetInstanceMeta(ctx, neonInstance)
+	require.NoError(t, err)
+	require.Contains(t, metaNames(neonMeta.Databases), dbName)
+	require.NotContains(t, metaNames(neonMeta.Databases), "postgres")
+
+	_, allNeonDBs, newNeonDBs, err := syncer.SyncInstance(ctx, neonInstance)
+	require.NoError(t, err)
+	require.Contains(t, metaNames(allNeonDBs), dbName)
+	require.NotContains(t, metaNames(allNeonDBs), "postgres")
+	require.True(t, slices.ContainsFunc(newNeonDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == dbName }))
+	require.False(t, slices.ContainsFunc(newNeonDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" }))
+
+	storedNeonDBs, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID:  &neonInstance.ResourceID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.True(t, slices.ContainsFunc(storedNeonDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == dbName && !d.Deleted }))
+	require.False(t, slices.ContainsFunc(storedNeonDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" }))
+
+	allowlistMeta := proto.CloneOf(neonInstance.Metadata)
+	allowlistMeta.SyncDatabases = &storepb.SyncDatabases{Databases: []string{"postgres", dbName}}
+	neonInstance, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &neonInstance.ResourceID,
+		Workspace:  neonInstance.Workspace,
+		Metadata:   allowlistMeta,
+	})
+	require.NoError(t, err)
+
+	_, _, _, err = syncer.SyncInstance(ctx, neonInstance)
+	require.NoError(t, err)
+	storedNeonAllowlistDBs, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID:  &neonInstance.ResourceID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.False(t, slices.ContainsFunc(storedNeonAllowlistDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" }))
+
+	pgInstance, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-pg",
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			Vendor:      storepb.Vendor_VENDOR_UNSPECIFIED,
+			DataSources: []*storepb.DataSource{adminDataSource()},
+		},
+	})
+	require.NoError(t, err)
+
+	pgInstance, _, _, err = syncer.SyncInstance(ctx, pgInstance)
+	require.NoError(t, err)
+
+	storedPgDBs, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID:  &pgInstance.ResourceID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.True(t, slices.ContainsFunc(storedPgDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" && !d.Deleted }))
+	require.True(t, slices.ContainsFunc(storedPgDBs, func(d *store.DatabaseMessage) bool { return d.DatabaseName == dbName && !d.Deleted }))
+
+	updatedMeta := proto.CloneOf(pgInstance.Metadata)
+	updatedMeta.Vendor = storepb.Vendor_NEON
+	pgInstance, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &pgInstance.ResourceID,
+		Workspace:  pgInstance.Workspace,
+		Metadata:   updatedMeta,
+	})
+	require.NoError(t, err)
+
+	pgInstance, _, _, err = syncer.SyncInstance(ctx, pgInstance)
+	require.NoError(t, err)
+
+	storedAfterNeon, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID:  &pgInstance.ResourceID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.True(t, slices.ContainsFunc(storedAfterNeon, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" && d.Deleted }))
+	require.True(t, slices.ContainsFunc(storedAfterNeon, func(d *store.DatabaseMessage) bool { return d.DatabaseName == dbName && !d.Deleted }))
+
+	restoredMeta := proto.CloneOf(pgInstance.Metadata)
+	restoredMeta.Vendor = storepb.Vendor_VENDOR_UNSPECIFIED
+	pgInstance, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &pgInstance.ResourceID,
+		Workspace:  pgInstance.Workspace,
+		Metadata:   restoredMeta,
+	})
+	require.NoError(t, err)
+
+	_, _, _, err = syncer.SyncInstance(ctx, pgInstance)
+	require.NoError(t, err)
+
+	storedAfterRestore, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID:  &pgInstance.ResourceID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.True(t, slices.ContainsFunc(storedAfterRestore, func(d *store.DatabaseMessage) bool { return d.DatabaseName == "postgres" && !d.Deleted }))
+	require.True(t, slices.ContainsFunc(storedAfterRestore, func(d *store.DatabaseMessage) bool { return d.DatabaseName == dbName && !d.Deleted }))
 }

@@ -157,6 +157,14 @@
       "query-unmask": "如何申请访问未脱敏的数据?",
       "query-unmask-database": "如何申请访问 {{database}} 中未脱敏的数据?"
     },
+    "follow-up-queue": {
+      "enqueue": "加入队列",
+      "input-placeholder": "输入后续消息",
+      "paused": "已暂停",
+      "queued-count": "{{count}} 条消息排队中",
+      "remove": "移除队列中的第 {{position}} 条消息",
+      "resume": "继续处理队列"
+    },
     "handoff": {
       "open-data-classification": "打开数据分类设置",
       "open-database-catalog": "打开列设置",

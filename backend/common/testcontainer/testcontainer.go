@@ -235,11 +235,19 @@ func getTLSPgContainer(ctx context.Context) (retC *Container, retErr error) {
 // GetMySQLContainer starts MySQL. Exported for the same reason as GetPgContainer.
 func GetMySQLContainer(ctx context.Context) (*Container, error) {
 	const user, password = "root", "root-password"
-	return start(ctx, testcontainers.ContainerRequest{
-		Image:      "mysql:8.0.33",
+	image := os.Getenv("BB_TEST_MYSQL_IMAGE")
+	if image == "" {
+		image = "mysql:8.0.33"
+	}
+	req := testcontainers.ContainerRequest{
+		Image:      image,
 		Env:        map[string]string{"MYSQL_ROOT_PASSWORD": password},
 		WaitingFor: wait.ForLog("ready for connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
-	}, spec{
+	}
+	if os.Getenv("BB_TEST_MYSQL_LOWER_CASE_TABLE_NAMES") == "1" {
+		req.Cmd = []string{"--lower-case-table-names=1"}
+	}
+	return start(ctx, req, spec{
 		port:     "3306/tcp",
 		username: user,
 		password: password,

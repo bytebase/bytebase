@@ -343,8 +343,8 @@ func TestOpenGivesEachDataSourceItsOwnGoOraDriver(t *testing.T) {
 		return driver
 	}
 	first, second := open(t, "first.example.com"), open(t, "second.example.com")
-	require.NotSame(t, goora.GetDefaultDriver(), first.GetDB().Driver(), "a data source must not share the process-wide go-ora driver")
-	require.NotSame(t, first.GetDB().Driver(), second.GetDB().Driver(), "two data sources must not share a go-ora driver")
+	require.NotSame(t, goora.GetDefaultDriver(), db.SQLDB(first).Driver(), "a data source must not share the process-wide go-ora driver")
+	require.NotSame(t, db.SQLDB(first).Driver(), db.SQLDB(second).Driver(), "two data sources must not share a go-ora driver")
 }
 
 // A character set latched on go-ora's process-wide driver must not reach Bytebase's
@@ -378,7 +378,7 @@ func TestQueryIgnoresTheSharedDriverCharset(t *testing.T) {
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 
-	conn, err := driver.GetDB().Conn(ctx)
+	conn, err := db.SQLDB(driver).Conn(ctx)
 	require.NoError(t, err)
 	defer conn.Close()
 	results, err := driver.QueryConn(ctx, conn, "SELECT C FROM CHARSET_PROBE", db.QueryContext{MaximumSQLResultSize: 1024})
@@ -538,10 +538,10 @@ func TestCurrentSchemaOnNewSessions(t *testing.T) {
 	require.NoError(t, err)
 	defer driver.Close(ctx)
 	// With no idle connection kept, the pool opens a new session for every connection it hands out.
-	driver.GetDB().SetMaxIdleConns(0)
+	db.SQLDB(driver).SetMaxIdleConns(0)
 
 	t.Run("QueryConn", func(t *testing.T) {
-		conn, err := driver.GetDB().Conn(ctx)
+		conn, err := db.SQLDB(driver).Conn(ctx)
 		require.NoError(t, err)
 		defer conn.Close()
 		results, err := driver.QueryConn(ctx, conn, "SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL", db.QueryContext{MaximumSQLResultSize: 1024})
