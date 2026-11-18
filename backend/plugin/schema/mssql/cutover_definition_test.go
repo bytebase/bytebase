@@ -261,3 +261,14 @@ func TestDefinitionDoesNotRewriteModuleTextInsideTableLiteral(t *testing.T) {
 	require.Contains(t, got, catalogView, "the table literal keeps the catalog text")
 	require.Contains(t, got, legacyViewText(view), "the actual view keeps the legacy text")
 }
+
+// TestDefinitionHandlesTrailingBatchWhitespace covers a snapshot whose
+// definition is only a schema batch: the scan must stop at EOF, not index the
+// byte after the trailing blank line.
+func TestDefinitionHandlesTrailingBatchWhitespace(t *testing.T) {
+	got, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "app"}},
+	})
+	require.NoError(t, err)
+	require.Contains(t, got, "CREATE SCHEMA [app]")
+}

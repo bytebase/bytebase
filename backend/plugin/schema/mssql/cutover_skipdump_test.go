@@ -115,3 +115,22 @@ func TestMetadataMigrationSuppressesSkippedTriggerChanges(t *testing.T) {
 		})
 	}
 }
+
+// TestMetadataMigrationMatchesSkippedNamesCaseInsensitively covers SQL Server's
+// default case-insensitive identity: a skipped source "T" and a target "t" are
+// the same object, so the skip must still suppress the change.
+func TestMetadataMigrationMatchesSkippedNamesCaseInsensitively(t *testing.T) {
+	snapshot := func(name string, skip bool, columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "dbo",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:     name,
+				SkipDump: skip,
+				Columns:  []*metadatapb.ColumnMetadata{{Name: "id", Type: columnType}},
+			}},
+		}}}, nil, nil, storepb.Engine_MSSQL, false)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_MSSQL, snapshot("T", true, "int"), snapshot("t", false, "bigint"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}

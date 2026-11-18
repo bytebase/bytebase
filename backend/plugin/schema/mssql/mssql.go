@@ -148,6 +148,9 @@ func restoreLegacyModuleText(rendered string, metadata *metadatapb.DatabaseSchem
 				atLineStart = rendered[i] == '\n'
 				i++
 			}
+			if i == len(rendered) {
+				break
+			}
 			if replacement, ok := matchModuleSection(rendered[i:], replacements); ok {
 				out.WriteString(replacement.legacy)
 				i += len(replacement.catalog)
@@ -296,7 +299,13 @@ func matchModuleSection(rest string, replacements []moduleReplacement) (moduleRe
 // object skipped on either side takes no part in the migration. Both snapshots
 // carry the source object unchanged in that case, or neither carries it when
 // the source lacks it, so the catalog emits neither a drop nor a create/alter.
-func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) (*metadatapb.DatabaseSchemaMetadata, *metadatapb.DatabaseSchemaMetadata) {
+func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, caseSensitive bool) (*metadatapb.DatabaseSchemaMetadata, *metadatapb.DatabaseSchemaMetadata) {
+	normalize := func(name string) string {
+		if caseSensitive {
+			return name
+		}
+		return strings.ToLower(name)
+	}
 	if oldMeta == nil {
 		oldMeta = &metadatapb.DatabaseSchemaMetadata{}
 	}
@@ -305,53 +314,53 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) (*me
 	}
 	oldOut, newOut := proto.CloneOf(oldMeta), proto.CloneOf(newMeta)
 	for _, oldSchema := range oldOut.GetSchemas() {
-		newSchema := schemaByName(newOut, oldSchema.GetName())
+		newSchema := schemaByName(newOut, oldSchema.GetName(), normalize)
 		if newSchema == nil {
 			continue
 		}
 		newSchema.Tables = reconcileObjects(oldSchema.GetTables(), newSchema.GetTables(),
-			func(t *metadatapb.TableMetadata) string { return t.GetName() },
+			func(t *metadatapb.TableMetadata) string { return normalize(t.GetName()) },
 			func(t *metadatapb.TableMetadata) bool { return t.GetSkipDump() },
 			func(t *metadatapb.TableMetadata) { t.SkipDump = false })
 		newSchema.Views = reconcileObjects(oldSchema.GetViews(), newSchema.GetViews(),
-			func(v *metadatapb.ViewMetadata) string { return v.GetName() },
+			func(v *metadatapb.ViewMetadata) string { return normalize(v.GetName()) },
 			func(v *metadatapb.ViewMetadata) bool { return v.GetSkipDump() },
 			func(v *metadatapb.ViewMetadata) { v.SkipDump = false })
 		newSchema.Functions = reconcileObjects(oldSchema.GetFunctions(), newSchema.GetFunctions(),
-			func(f *metadatapb.FunctionMetadata) string { return f.GetName() },
+			func(f *metadatapb.FunctionMetadata) string { return normalize(f.GetName()) },
 			func(f *metadatapb.FunctionMetadata) bool { return f.GetSkipDump() },
 			func(f *metadatapb.FunctionMetadata) { f.SkipDump = false })
 		newSchema.Procedures = reconcileObjects(oldSchema.GetProcedures(), newSchema.GetProcedures(),
-			func(p *metadatapb.ProcedureMetadata) string { return p.GetName() },
+			func(p *metadatapb.ProcedureMetadata) string { return normalize(p.GetName()) },
 			func(p *metadatapb.ProcedureMetadata) bool { return p.GetSkipDump() },
 			func(p *metadatapb.ProcedureMetadata) { p.SkipDump = false })
 		newSchema.Sequences = reconcileObjects(oldSchema.GetSequences(), newSchema.GetSequences(),
-			func(s *metadatapb.SequenceMetadata) string { return s.GetName() },
+			func(s *metadatapb.SequenceMetadata) string { return normalize(s.GetName()) },
 			func(s *metadatapb.SequenceMetadata) bool { return s.GetSkipDump() },
 			func(s *metadatapb.SequenceMetadata) { s.SkipDump = false })
 	}
 	for _, newSchema := range newOut.GetSchemas() {
-		oldSchema := schemaByName(oldOut, newSchema.GetName())
+		oldSchema := schemaByName(oldOut, newSchema.GetName(), normalize)
 		if oldSchema == nil {
 			continue
 		}
 		for _, table := range newSchema.GetTables() {
-			oldTable := tableByName(oldSchema, table.GetName())
+			oldTable := tableByName(oldSchema, table.GetName(), normalize)
 			if oldTable == nil {
 				continue
 			}
 			table.Triggers = reconcileObjects(oldTable.GetTriggers(), table.GetTriggers(),
-				func(t *metadatapb.TriggerMetadata) string { return t.GetName() },
+				func(t *metadatapb.TriggerMetadata) string { return normalize(t.GetName()) },
 				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
 				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
 		}
 		for _, view := range newSchema.GetViews() {
-			oldView := viewByName(oldSchema, view.GetName())
+			oldView := viewByName(oldSchema, view.GetName(), normalize)
 			if oldView == nil {
 				continue
 			}
 			view.Triggers = reconcileObjects(oldView.GetTriggers(), view.GetTriggers(),
-				func(t *metadatapb.TriggerMetadata) string { return t.GetName() },
+				func(t *metadatapb.TriggerMetadata) string { return normalize(t.GetName()) },
 				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
 				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
 		}
@@ -392,27 +401,27 @@ func reconcileObjects[T any](oldObjs, newObjs []T, name func(T) string, skipped 
 	return result
 }
 
-func tableByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
+func tableByName(schema *metadatapb.SchemaMetadata, name string, normalize func(string) string) *metadatapb.TableMetadata {
 	for _, table := range schema.GetTables() {
-		if table.GetName() == name {
+		if normalize(table.GetName()) == normalize(name) {
 			return table
 		}
 	}
 	return nil
 }
 
-func viewByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.ViewMetadata {
+func viewByName(schema *metadatapb.SchemaMetadata, name string, normalize func(string) string) *metadatapb.ViewMetadata {
 	for _, view := range schema.GetViews() {
-		if view.GetName() == name {
+		if normalize(view.GetName()) == normalize(name) {
 			return view
 		}
 	}
 	return nil
 }
 
-func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadatapb.SchemaMetadata {
+func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string, normalize func(string) string) *metadatapb.SchemaMetadata {
 	for _, schema := range meta.GetSchemas() {
-		if schema.GetName() == name {
+		if normalize(schema.GetName()) == normalize(name) {
 			return schema
 		}
 	}
@@ -423,7 +432,8 @@ func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadat
 // catalog stores each snapshot as the sync reported it, so nothing can fail to
 // load; the diff and generator are the decisions.
 func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
-	oldMeta, newMeta := reconcileSkipDump(oldSchema.GetProto(), newSchema.GetProto())
+	caseSensitive := oldSchema.GetIsObjectCaseSensitive() || newSchema.GetIsObjectCaseSensitive()
+	oldMeta, newMeta := reconcileSkipDump(oldSchema.GetProto(), newSchema.GetProto(), caseSensitive)
 	from, err := loadCatalogProto(oldMeta)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load source schema")
