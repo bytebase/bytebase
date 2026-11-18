@@ -630,6 +630,39 @@ func TestSplitCompositeRetypeKeepsTargetAttributeOrder(t *testing.T) {
 	require.Less(t, addA, addB, "split attributes keep the target's attribute order")
 }
 
+// TestSplitCompositeRetypeReaddsUnchangedSuffix covers a split attribute that
+// precedes an unchanged one. ADD ATTRIBUTE appends, so the unchanged attribute
+// must be released and re-added too, or the composite ends up in the wrong order.
+func TestSplitCompositeRetypeReaddsUnchangedSuffix(t *testing.T) {
+	snapshot := func(table string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable(table, 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{
+					{Name: "a", Type: "public." + table},
+					{Name: "z", Type: "text", Comment: "keep"},
+				},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("old_t"), snapshot("new_t"))
+	require.NoError(t, err)
+	dropTable := strings.Index(sql, `DROP TABLE "public"."old_t"`)
+	dropA := strings.Index(sql, `DROP ATTRIBUTE "a"`)
+	dropZ := strings.Index(sql, `DROP ATTRIBUTE "z"`)
+	addA := strings.Index(sql, `ADD ATTRIBUTE "a" public.new_t`)
+	addZ := strings.Index(sql, `ADD ATTRIBUTE "z" text`)
+	for name, index := range map[string]int{"drop table": dropTable, "drop a": dropA, "drop z": dropZ, "add a": addA, "add z": addZ} {
+		require.GreaterOrEqual(t, index, 0, "%s missing from:\n%s", name, sql)
+	}
+	require.Less(t, dropA, dropTable, sql)
+	require.Less(t, dropZ, dropTable, "the unchanged attribute is released before the row type drop")
+	require.Less(t, addA, addZ, "the re-added suffix keeps the target's attribute order")
+	require.Contains(t, sql, `COMMENT ON COLUMN "public"."c"."z" IS 'keep'`, "the re-added attribute keeps its comment")
+}
+
 // TestRestoredUnloadableViewReleasesRowTypeDependents covers an unchanged
 // unloadable view that must be recreated for a column change while an unchanged
 // composite attribute holds its row type: the attribute is dropped before the
@@ -665,17 +698,20 @@ func TestRestoredUnloadableViewReleasesRowTypeDependents(t *testing.T) {
 	require.Less(t, createView, addAttribute, "the attribute is re-added after the view is recreated")
 }
 
-// TestRestoredUnloadableViewRefusesRowTypeColumn keeps a table column out of the
-// release plan: a column cannot be released without discarding its data, so a
-// restored view whose row type it holds is refused instead.
-func TestRestoredUnloadableViewRefusesRowTypeColumn(t *testing.T) {
-	snapshot := func(columnType string) *model.DatabaseMetadata {
+// TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
+// attribute the target adds, out of a restored view's drop: releasing a column
+// would discard its data, and a new attribute would need the view before its
+// ALTER TYPE, so the migration is refused instead.
+func TestRestoredUnloadableViewRefusesRowTypeDependents(t *testing.T) {
+	type world struct {
+		tables         []*metadatapb.TableMetadata
+		compositeTypes []*metadatapb.CompositeTypeMetadata
+	}
+	snapshot := func(columnType string, w world) *model.DatabaseMetadata {
+		tables := append([]*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})}, w.tables...)
 		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
-			Name: "public",
-			Tables: []*metadatapb.TableMetadata{
-				pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType}),
-				pgTable("holds", 0, &metadatapb.ColumnMetadata{Name: "r", Type: "public.v"}),
-			},
+			Name:   "public",
+			Tables: tables,
 			Views: []*metadatapb.ViewMetadata{{
 				Name:       "v",
 				Definition: "SELECT FROM",
@@ -683,10 +719,52 @@ func TestRestoredUnloadableViewRefusesRowTypeColumn(t *testing.T) {
 					Schema: "public", Table: "t", Column: "id",
 				}},
 			}},
+			CompositeTypes: w.compositeTypes,
 		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
 	}
-	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
-	require.ErrorContains(t, err, `column "r" of table "public"."holds" uses the row type of view "public"."v"`)
+	rowTypeColumn := func() *metadatapb.TableMetadata {
+		return pgTable("holds", 0, &metadatapb.ColumnMetadata{Name: "r", Type: "public.v"})
+	}
+	tests := []struct {
+		name   string
+		source world
+		target world
+	}{
+		{
+			name:   "unchanged column",
+			source: world{tables: []*metadatapb.TableMetadata{rowTypeColumn()}},
+			target: world{tables: []*metadatapb.TableMetadata{rowTypeColumn()}},
+		},
+		{
+			name:   "removed column",
+			source: world{tables: []*metadatapb.TableMetadata{rowTypeColumn()}},
+			target: world{tables: []*metadatapb.TableMetadata{pgTable("holds", 0)}},
+		},
+		{
+			name:   "retyped column",
+			source: world{tables: []*metadatapb.TableMetadata{rowTypeColumn()}},
+			target: world{tables: []*metadatapb.TableMetadata{pgTable("holds", 0, &metadatapb.ColumnMetadata{Name: "r", Type: "text"})}},
+		},
+		{
+			name:   "added column",
+			source: world{tables: []*metadatapb.TableMetadata{pgTable("holds", 0)}},
+			target: world{tables: []*metadatapb.TableMetadata{rowTypeColumn()}},
+		},
+		{
+			name:   "added attribute",
+			source: world{},
+			target: world{compositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name:       "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "r", Type: "public.v"}},
+			}}},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", tc.source), snapshot("bigint", tc.target))
+			require.ErrorContains(t, err, "uses the row type of view")
+		})
+	}
 }
 
 // TestLoadableDependentViewFollowsUnloadableView covers a loadable unchanged

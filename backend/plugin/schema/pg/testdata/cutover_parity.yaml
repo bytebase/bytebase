@@ -4814,3 +4814,272 @@
 
   catalogExpected: ''
   catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type of view "public"."v", which must be recreated'
+- description: TestCockroachMetadataDiffSplitAttributeReaddsUnchangedSuffix
+  difference: the catalog releases and re-adds the unchanged attribute that follows the split one, so the composite keeps target order; the legacy generator left it in place, which appended the split attribute after it.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "old_t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "a",
+                  "type": "public.old_t"
+                },
+                {
+                  "name": "z",
+                  "type": "text",
+                  "comment": "keep"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "new_t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "a",
+                  "type": "public.new_t"
+                },
+                {
+                  "name": "z",
+                  "type": "text",
+                  "comment": "keep"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    ALTER TYPE "public"."c" DROP ATTRIBUTE "a";
+
+    DROP TABLE "public"."old_t";
+
+    CREATE TABLE "public"."new_t" (
+        "id" integer NOT NULL
+    );
+
+    ALTER TYPE "public"."c" ADD ATTRIBUTE "a" public.new_t;
+
+  catalogExpected: "ALTER TYPE \"public\".\"c\" DROP ATTRIBUTE \"a\";\nALTER TYPE \"public\".\"c\" DROP\
+  \ ATTRIBUTE \"z\";\nDROP TABLE \"public\".\"old_t\" CASCADE;\nCREATE TABLE \"public\"\
+  .\"new_t\" (\n    \"id\" integer NOT NULL\n);\nALTER TYPE \"public\".\"c\" ADD ATTRIBUTE\
+  \ \"a\" public.new_t;\nALTER TYPE \"public\".\"c\" ADD ATTRIBUTE \"z\" text;\nCOMMENT\
+  \ ON COLUMN \"public\".\"c\".\"z\" IS 'keep'"
+- description: TestCockroachMetadataDiffRestoredUnloadableViewRefusesRemovedRowTypeColumn
+  difference: the catalog refuses the migration because the column holding the view's row type is removed only after the synthesized view drop; the legacy generator dropped the view under the column and produced a migration PostgreSQL rejects.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "name": "holds",
+              "columns": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            },
+            {
+              "name": "holds"
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "public"."v";
+
+    ALTER TABLE "public"."holds" DROP COLUMN "r";
+
+    ALTER TABLE "public"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
+
+  catalogExpected: ''
+  catalogError: 'cannot generate a migration: column "r" of table "public"."holds" uses the row type
+  of view "public"."v", which must be recreated'
+- description: TestCockroachMetadataDiffRestoredUnloadableViewRefusesAddedRowTypeAttribute
+  difference: the catalog refuses the migration because the added attribute needs the view, which is dropped first and recreated after the catalog's ALTER TYPE; the legacy generator placed the type before the recreation and produced a migration PostgreSQL rejects.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "public"."v";
+
+    CREATE TYPE "public"."c" AS (
+        "r" public.v
+    );
+
+    ALTER TABLE "public"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
+
+  catalogExpected: ''
+  catalogError: 'cannot generate a migration: attribute "r" of type "public"."c" uses the row type
+  of view "public"."v", which must be recreated'

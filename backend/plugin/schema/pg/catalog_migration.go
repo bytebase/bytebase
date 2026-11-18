@@ -189,12 +189,18 @@ func referencesType(typeName, key string) bool {
 	return !strings.Contains(name, ".") && strings.EqualFold(name, objectName)
 }
 
-// releaseCompositeBeforeTableDrop moves or splits an ALTER TYPE that releases a
-// composite attribute from a table's or view's row type ahead of that object's
-// drop. A CASCADE drop would otherwise remove the attribute first. When the new
-// attribute type needs an object created, or recreated by the restored-view pass,
-// the release is DROP ATTRIBUTE before the drop and ADD ATTRIBUTE after the
-// object's create. recreated holds the restored views the plan drops and recreates.
+// releaseCompositeBeforeTableDrop releases the composite attributes that hold the
+// row type of a relation this migration drops, ahead of that relation's drop. A
+// CASCADE drop would otherwise remove the attribute first.
+//
+// ADD ATTRIBUTE appends, so re-adding a released attribute after an attribute that
+// stays in place would reorder the composite. Every target attribute from the first
+// released position onward is therefore released and re-added in target order,
+// after the creates their types need.
+//
+// recreated holds the restored views the plan drops and recreates. A table column
+// or a newly added attribute that holds one of their row types cannot be ordered
+// around the drop, so the migration is refused instead.
 func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, recreated map[string]bool) error {
 	dropped := relationSet(oldMeta, newMeta)
 	if len(dropped) == 0 && len(recreated) == 0 {
@@ -203,142 +209,259 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	for key := range recreated {
 		dropped[key] = true
 	}
-	if err := refuseRestoredViewRowTypeColumns(oldMeta, newMeta, recreated); err != nil {
+	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, recreated); err != nil {
 		return err
 	}
 	created := relationSet(newMeta, oldMeta)
-	type attributeAdd struct {
-		createKey, schema, composite string
-		position                     int
-		op                           catalog.MigrationOp
-		attribute                    *metadatapb.CompositeTypeAttribute
-	}
-	var adds []attributeAdd
 	for _, schema := range oldMeta.GetSchemas() {
 		newSchema := schemaByName(newMeta, schema.GetName())
 		for _, composite := range schema.GetCompositeTypes() {
 			newComposite := compositeByName(newSchema, composite.GetName())
-			for _, attribute := range composite.GetAttributes() {
-				dropKey, ok := referencedRelation(attribute.GetType(), dropped)
-				if !ok {
-					continue
-				}
-				drop := findDropObject(plan, dropKey)
-				if drop < 0 {
-					continue
-				}
-				newType := attributeType(newComposite, attribute.GetName())
-				createKey := ""
-				if key, ok := referencedRelation(newType, created); ok {
-					createKey = key
-				} else if key, ok := referencedRelation(newType, recreated); ok && planCreatesObject(plan, key) {
-					createKey = key
-				}
-				alter := findAlterAttribute(plan, schema.GetName(), composite.GetName(), attribute.GetName())
-				if createKey == "" {
-					if alter >= 0 && alter > drop {
-						plan.Ops = moveOp(plan.Ops, alter, drop)
-					}
-					continue
-				}
-				release := catalog.MigrationOp{
-					Type:       catalog.OpAlterType,
-					SchemaName: schema.GetName(),
-					ObjectName: composite.GetName(),
-					SQL:        "ALTER TYPE " + quoteQualified(schema.GetName(), composite.GetName()) + " DROP ATTRIBUTE " + quoteIdentifier(attribute.GetName()),
-					Phase:      catalog.PhasePre,
-					ObjType:    'r',
-				}
-				if alter >= 0 {
-					plan.Ops[alter] = release
-					plan.Ops = moveOp(plan.Ops, alter, drop)
-				} else {
-					plan.Ops = slices.Insert(plan.Ops, drop, release)
-				}
-				adds = append(adds, attributeAdd{
-					createKey: createKey,
-					schema:    schema.GetName(),
-					composite: composite.GetName(),
-					position:  attributePosition(newComposite, attribute.GetName()),
-					attribute: attribute,
-					op: catalog.MigrationOp{
-						Type:       catalog.OpAlterType,
-						SchemaName: schema.GetName(),
-						ObjectName: composite.GetName(),
-						SQL:        addAttributeSQL(schema.GetName(), composite.GetName(), attribute, newType),
-						Phase:      catalog.PhaseMain,
-						ObjType:    'r',
-					},
-				})
+			if newComposite == nil {
+				continue
 			}
-		}
-	}
-	// Attributes split from one create are positional, so they must land in
-	// target attribute order even though each is inserted at the same create.
-	byCreate := make(map[string][]attributeAdd)
-	var createKeys []string
-	for _, add := range adds {
-		if _, ok := byCreate[add.createKey]; !ok {
-			createKeys = append(createKeys, add.createKey)
-		}
-		byCreate[add.createKey] = append(byCreate[add.createKey], add)
-	}
-	for _, key := range createKeys {
-		group := byCreate[key]
-		slices.SortStableFunc(group, func(a, b attributeAdd) int { return a.position - b.position })
-		ops := make([]catalog.MigrationOp, 0, len(group))
-		for _, add := range group {
-			ops = append(ops, add.op)
-		}
-		plan.Ops = insertOpsAfterObjectCreate(plan.Ops, key, ops)
-		for _, add := range group {
-			plan.Ops = restoreAttributeComment(plan.Ops, add.schema, add.composite, add.attribute)
+			releaseCompositeAttributes(plan, schema.GetName(), composite, newComposite, dropped, created, recreated)
 		}
 	}
 	return nil
 }
 
-// refuseRestoredViewRowTypeColumns rejects a table column that holds a restored
-// view's row type. The view cannot be dropped while the column holds the type,
-// and releasing a column would discard its data, so the migration is refused.
-func refuseRestoredViewRowTypeColumns(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, recreated map[string]bool) error {
+// releaseCompositeAttributes handles one composite type. An attribute whose type
+// is the row type of a dropped relation must be released from it. When the
+// attribute stays and its new type needs a create, re-adding it after the target
+// suffix is the only way to keep the composite's order.
+func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, recreated map[string]bool) {
+	compositeName := oldComposite.GetName()
+	// A split is an attribute that stays and whose new type needs a create; the
+	// first one fixes where the re-added suffix starts.
+	firstTarget := -1
+	for _, attribute := range oldComposite.GetAttributes() {
+		if _, ok := referencedRelation(attribute.GetType(), dropped); !ok {
+			continue
+		}
+		position, target, kept := targetAttribute(newComposite, attribute.GetName())
+		if !kept || !typeNeedsCreate(target.GetType(), created, recreated) {
+			continue
+		}
+		if firstTarget < 0 || position < firstTarget {
+			firstTarget = position
+		}
+	}
+	if firstTarget < 0 {
+		// Nothing is re-added, so each release keeps its attribute's position and
+		// only has to move ahead of the relation drop.
+		for _, attribute := range oldComposite.GetAttributes() {
+			if dropKey, ok := referencedRelation(attribute.GetType(), dropped); ok {
+				releaseCatalogAttribute(plan, schemaName, compositeName, attribute.GetName(), dropKey)
+			}
+		}
+		return
+	}
+	// Outside the suffix an attribute keeps its position, so the catalog's own
+	// release only has to move ahead of the relation drop.
+	dropKeys := make(map[string]bool)
+	for _, attribute := range oldComposite.GetAttributes() {
+		dropKey, ok := referencedRelation(attribute.GetType(), dropped)
+		if !ok {
+			continue
+		}
+		if position, _, kept := targetAttribute(newComposite, attribute.GetName()); kept && position >= firstTarget {
+			dropKeys[dropKey] = true
+			continue
+		}
+		releaseCatalogAttribute(plan, schemaName, compositeName, attribute.GetName(), dropKey)
+	}
+	if len(dropKeys) == 0 {
+		return
+	}
+	suffix := newComposite.GetAttributes()[firstTarget:]
+	drop := -1
+	for key := range dropKeys {
+		if index := findDropObject(plan, key); index >= 0 && (drop < 0 || index < drop) {
+			drop = index
+		}
+	}
+	if drop < 0 {
+		return
+	}
+	for _, target := range suffix {
+		plan.Ops = removeCompositeAttributeOps(plan.Ops, schemaName, compositeName, target.GetName())
+	}
+	var releases []catalog.MigrationOp
+	for _, target := range suffix {
+		if attributeByName(oldComposite, target.GetName()) == nil {
+			continue
+		}
+		releases = append(releases, catalog.MigrationOp{
+			Type:       catalog.OpAlterType,
+			SchemaName: schemaName,
+			ObjectName: compositeName,
+			SQL:        "ALTER TYPE " + quoteQualified(schemaName, compositeName) + " DROP ATTRIBUTE " + quoteIdentifier(target.GetName()),
+			Phase:      catalog.PhasePre,
+			ObjType:    'r',
+		})
+	}
+	if len(releases) > 0 {
+		// Removing the catalog's operations can shift the drop.
+		drop = -1
+		for key := range dropKeys {
+			if index := findDropObject(plan, key); index >= 0 && (drop < 0 || index < drop) {
+				drop = index
+			}
+		}
+		if drop < 0 {
+			return
+		}
+		plan.Ops = slices.Insert(plan.Ops, drop, releases...)
+	}
+	anchor := -1
+	for _, target := range suffix {
+		for key := range createKeysFor(target.GetType(), created, recreated) {
+			if index := findCreateOp(plan.Ops, key); index > anchor {
+				anchor = index
+			}
+		}
+	}
+	if anchor < 0 {
+		return
+	}
+	adds := make([]catalog.MigrationOp, 0, len(suffix))
+	for _, target := range suffix {
+		adds = append(adds, catalog.MigrationOp{
+			Type:       catalog.OpAlterType,
+			SchemaName: schemaName,
+			ObjectName: compositeName,
+			SQL:        addAttributeSQL(schemaName, compositeName, target, target.GetType()),
+			Phase:      catalog.PhaseMain,
+			ObjType:    'r',
+		})
+	}
+	plan.Ops = slices.Insert(plan.Ops, anchor+1, adds...)
+	for _, target := range suffix {
+		plan.Ops = restoreAttributeComment(plan.Ops, schemaName, compositeName, target)
+	}
+}
+
+// releaseCatalogAttribute moves the catalog's own release of an attribute ahead of
+// the drop of the relation whose row type it holds.
+func releaseCatalogAttribute(plan *catalog.MigrationPlan, schemaName, compositeName, attributeName, dropKey string) {
+	alter := findAlterAttribute(plan, schemaName, compositeName, attributeName)
+	drop := findDropObject(plan, dropKey)
+	if alter >= 0 && drop >= 0 && alter > drop {
+		plan.Ops = moveOp(plan.Ops, alter, drop)
+	}
+}
+
+// typeNeedsCreate reports whether a type name denotes an object this migration
+// creates or recreates, so an attribute of it must be added after that create.
+func typeNeedsCreate(typeName string, created, recreated map[string]bool) bool {
+	if _, ok := referencedRelation(typeName, created); ok {
+		return true
+	}
+	_, ok := referencedRelation(typeName, recreated)
+	return ok
+}
+
+// createKeysFor returns the objects whose create an attribute of the type needs to
+// follow: a relation created in this migration, or a recreated view.
+func createKeysFor(typeName string, created, recreated map[string]bool) map[string]bool {
+	keys := make(map[string]bool)
+	if key, ok := referencedRelation(typeName, created); ok {
+		keys[key] = true
+	}
+	if key, ok := referencedRelation(typeName, recreated); ok {
+		keys[key] = true
+	}
+	return keys
+}
+
+// refuseRestoredViewRowTypeDependents rejects an object that holds a restored
+// view's row type and cannot be ordered around the view's drop. Releasing a table
+// column would discard its data, and a new attribute would need the recreated view
+// to exist before its ALTER TYPE, which the catalog's plan places first.
+func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, recreated map[string]bool) error {
 	if len(recreated) == 0 {
 		return nil
 	}
-	for _, schema := range oldMeta.GetSchemas() {
-		newSchema := schemaByName(newMeta, schema.GetName())
-		for _, table := range schema.GetTables() {
-			newTable := tableByName(newSchema, table.GetName())
-			if newTable == nil {
-				continue
+	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
+		for _, schema := range meta.GetSchemas() {
+			for _, table := range schema.GetTables() {
+				for _, column := range table.GetColumns() {
+					key, ok := referencedRelation(column.GetType(), recreated)
+					if !ok {
+						continue
+					}
+					return errors.Errorf("cannot generate a migration: column %s of table %s uses the row type of view %s, which must be recreated", quoteIdentifier(column.GetName()), quoteQualified(schema.GetName(), table.GetName()), quoteRestoredView(key))
+				}
 			}
-			for _, column := range table.GetColumns() {
-				newColumn := columnByName(newTable, column.GetName())
-				if newColumn == nil || newColumn.GetType() != column.GetType() {
+		}
+	}
+	for _, schema := range newMeta.GetSchemas() {
+		oldSchema := schemaByName(oldMeta, schema.GetName())
+		for _, composite := range schema.GetCompositeTypes() {
+			oldComposite := compositeByName(oldSchema, composite.GetName())
+			for _, attribute := range composite.GetAttributes() {
+				if attributeByName(oldComposite, attribute.GetName()) != nil {
 					continue
 				}
-				key, ok := referencedRelation(column.GetType(), recreated)
+				key, ok := referencedRelation(attribute.GetType(), recreated)
 				if !ok {
 					continue
 				}
-				schemaName, objectName := splitObjectKey(key)
-				return errors.Errorf("cannot generate a migration: column %s of table %s uses the row type of view %s, which must be recreated", quoteIdentifier(column.GetName()), quoteQualified(schema.GetName(), table.GetName()), quoteQualified(schemaName, objectName))
+				return errors.Errorf("cannot generate a migration: attribute %s of type %s uses the row type of view %s, which must be recreated", quoteIdentifier(attribute.GetName()), quoteQualified(schema.GetName(), composite.GetName()), quoteRestoredView(key))
 			}
 		}
 	}
 	return nil
 }
 
-func attributePosition(composite *metadatapb.CompositeTypeMetadata, name string) int {
-	if composite == nil {
-		return 0
-	}
-	for i, attribute := range composite.GetAttributes() {
-		if attribute.GetName() == name {
-			return i
+func quoteRestoredView(key string) string {
+	schemaName, objectName := splitObjectKey(key)
+	return quoteQualified(schemaName, objectName)
+}
+
+// removeCompositeAttributeOps drops the catalog's operations on one composite
+// attribute, which the release pass rewrites itself.
+func removeCompositeAttributeOps(ops []catalog.MigrationOp, schemaName, compositeName, attributeName string) []catalog.MigrationOp {
+	reference := quoteIdentifier(attributeName)
+	column := quoteQualified(schemaName, compositeName) + "." + reference
+	return slices.DeleteFunc(ops, func(op catalog.MigrationOp) bool {
+		switch op.Type {
+		case catalog.OpAlterType:
+			return op.SchemaName == schemaName && op.ObjectName == compositeName && strings.Contains(op.SQL, "ATTRIBUTE "+reference)
+		case catalog.OpComment:
+			return strings.Contains(op.SQL, column)
+		default:
+			return false
+		}
+	})
+}
+
+func findCreateOp(ops []catalog.MigrationOp, key string) int {
+	for i, op := range ops {
+		switch op.Type {
+		case catalog.OpCreateTable, catalog.OpCreateView, catalog.OpCreateType:
+			if objectKey(op.SchemaName, op.ObjectName) == key {
+				return i
+			}
+		default:
 		}
 	}
-	return 0
+	return -1
+}
+
+func targetAttribute(composite *metadatapb.CompositeTypeMetadata, name string) (int, *metadatapb.CompositeTypeAttribute, bool) {
+	for i, attribute := range composite.GetAttributes() {
+		if attribute.GetName() == name {
+			return i, attribute, true
+		}
+	}
+	return 0, nil, false
+}
+
+func attributeByName(composite *metadatapb.CompositeTypeMetadata, name string) *metadatapb.CompositeTypeAttribute {
+	_, attribute, _ := targetAttribute(composite, name)
+	return attribute
 }
 
 func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string, attribute *metadatapb.CompositeTypeAttribute) []catalog.MigrationOp {
@@ -346,11 +469,6 @@ func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string
 		return ops
 	}
 	target := quoteQualified(schema, composite) + "." + quoteIdentifier(attribute.GetName())
-	for _, op := range ops {
-		if op.Type == catalog.OpComment && strings.Contains(op.SQL, target) {
-			return ops
-		}
-	}
 	comment := catalog.MigrationOp{
 		Type:       catalog.OpComment,
 		SchemaName: schema,
@@ -361,23 +479,10 @@ func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string
 	}
 	for i, op := range ops {
 		if op.Type == catalog.OpAlterType && op.SchemaName == schema && op.ObjectName == composite && strings.Contains(op.SQL, "ADD ATTRIBUTE "+quoteIdentifier(attribute.GetName())) {
-			result := make([]catalog.MigrationOp, 0, len(ops)+1)
-			result = append(result, ops[:i+1]...)
-			result = append(result, comment)
-			result = append(result, ops[i+1:]...)
-			return result
+			return slices.Insert(ops, i+1, comment)
 		}
 	}
 	return append(ops, comment)
-}
-
-func insertOpsAfterObjectCreate(ops []catalog.MigrationOp, key string, add []catalog.MigrationOp) []catalog.MigrationOp {
-	for i, existing := range ops {
-		if (existing.Type == catalog.OpCreateTable || existing.Type == catalog.OpCreateView || existing.Type == catalog.OpCreateType) && objectKey(existing.SchemaName, existing.ObjectName) == key {
-			return slices.Insert(ops, i+1, add...)
-		}
-	}
-	return append(ops, add...)
 }
 
 func restoreIndexDefinitions(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
@@ -575,18 +680,6 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 		}
 	}
 	return nil
-}
-
-func attributeType(composite *metadatapb.CompositeTypeMetadata, name string) string {
-	if composite == nil {
-		return ""
-	}
-	for _, attribute := range composite.GetAttributes() {
-		if attribute.GetName() == name {
-			return attribute.GetType()
-		}
-	}
-	return ""
 }
 
 // restoreUnloadableDependentViews recreates a view the catalog could not parse
