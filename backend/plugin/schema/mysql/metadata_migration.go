@@ -35,5 +35,8 @@ var mysqlCatalog = omnicatalog.Engine[catalog.Catalog, catalog.LoadMetadataRepor
 // with omni's catalog, refusing one whose changed objects the catalog could not
 // install as defined (see omnicatalog.DiffMetadata).
 func omniDiffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string, error) {
+	if err := omnicatalog.RejectCaseOnlyIdentities(oldSchema.GetProto(), newSchema.GetProto(), oldSchema.GetIsObjectCaseSensitive(), newSchema.GetIsObjectCaseSensitive()); err != nil {
+		return "", err
+	}
 	return omnicatalog.DiffMetadata(mysqlCatalog, oldSchema.GetProto(), newSchema.GetProto())
 }

@@ -105,3 +105,16 @@ func TestDiffMetadataColumnAttributes(t *testing.T) {
 		diff(&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL"},
 			&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true}))
 }
+
+// TestDiffMetadataRefusesCaseOnlyIdentities covers the same catalog limit on the
+// OceanBase fork: relation names that fold to one lower-cased key are refused.
+func TestDiffMetadataRefusesCaseOnlyIdentities(t *testing.T) {
+	table := func(name string) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{Name: name, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}}}
+	}
+	_, err := schema.DiffMigration(storepb.Engine_OCEANBASE, oceanBaseSnapshot(table("Foo")), oceanBaseSnapshot(table("foo")))
+	require.ErrorContains(t, err, "case-only rename")
+
+	_, err = schema.DiffMigration(storepb.Engine_OCEANBASE, oceanBaseSnapshot(table("Foo"), table("foo")), oceanBaseSnapshot(table("Foo")))
+	require.ErrorContains(t, err, "cannot distinguish")
+}
