@@ -22,9 +22,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -848,11 +848,10 @@ func (exec *DatabaseMigrateExecutor) backupData(
 		DatabaseName:                 database.DatabaseName,
 	}
 	if database.Engine == storepb.Engine_ORACLE {
-		oracleDriver, ok := driver.(*oracle.Driver)
-		if ok {
-			if version, err := oracleDriver.GetVersion(); err == nil {
-				tc.Version = version
-			}
+		// The transform takes the version from the instance metadata, which is what
+		// the driver was opened with; the driver has no version method of its own.
+		if version, err := plsqlparser.ParseVersion(instance.Metadata.GetVersion()); err == nil {
+			tc.Version = version
 		}
 	}
 
