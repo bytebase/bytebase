@@ -1,0 +1,33 @@
+CREATE CATALOG `workspace`;
+CREATE SCHEMA `workspace`.`omni_record`;
+--
+-- EXTERNAL TABLE structure for `workspace`.`omni_record`.`ext`
+--
+CREATE EXTERNAL TABLE workspace.omni_record.ext (
+  `id` INT
+)
+LOCATION 's3://example-bucket/ext';
+--
+-- MANAGED TABLE structure for `workspace`.`omni_record`.`facts`
+--
+CREATE TABLE workspace.omni_record.facts (
+  `id` BIGINT
+)
+USING DELTA;
+--
+-- MANAGED TABLE structure for `workspace`.`omni_record`.`lookup`
+--
+CREATE TABLE workspace.omni_record.lookup (
+  `id` INT,
+  `label` STRING NOT NULL
+)
+USING delta
+COMMENT 'a synced comment';
+--
+-- VIEW structure for `workspace`.`omni_record`.`recent`
+--
+CREATE VIEW `workspace`.`omni_record`.`recent` AS SELECT id FROM workspace.omni_record.facts;
+--
+-- MATERIALIZED VIEW structure for `workspace`.`omni_record`.`totals`
+--
+CREATE MATERIALIZED VIEW workspace.omni_record.totals AS SELECT id FROM workspace.omni_record.facts;

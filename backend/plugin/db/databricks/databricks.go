@@ -1,278 +1,239 @@
+// Package databricks is Bytebase's Databricks driver: an adapter over
+// github.com/bytebase/omni/databricks/driver that maps Bytebase's connection
+// config onto the driver contract and the contract's results back into the
+// product's protos. The workspace conversation, the script splitter, the
+// EXPLAIN rewrite, the result decode, the Unity Catalog sync and the server-DDL
+// dump belong to the omni driver.
+//
+// The mapping the adapter owns:
+//
+//   - Config.Host is the workspace URL. The personal access token is the data
+//     source's authentication private key, which is where the product stores it;
+//     a caller that resolved a token itself passes it as Config.Password, and it
+//     is used when the data source carries none. Token authentication is all
+//     this driver supports, as before.
+//   - The SQL warehouse is the data source's warehouse ID, passed as
+//     driver.Config.Params["warehouseId"]. The catalog is the database the
+//     driver was opened on: it is the session's catalog and what SyncDBSchema
+//     reads.
+//   - TLS and Dial are not set: the previous driver ignored an SSL data source
+//     and an SSH tunnel, and the SDK's own transport verifies the workspace's
+//     certificate against the system roots. The caller's extra connection
+//     parameters are not read, as before.
+//   - GetDB is not implemented. The previous driver returned nil for it, every
+//     caller reaches the handle through db.SQLDB and branches on its absence, and
+//     no Databricks feature read it. OwnsQuerySession is declared instead,
+//     because QueryConn ignores the caller's *sql.Conn.
+//   - Execute sends the script's statements in order and reports each to the
+//     task run log, with the rows the warehouse states in a num_affected_rows
+//     column. The `-- txn-mode` directive is parsed and removed from the script
+//     as before, and Databricks' Statement Execution API exposes no transaction
+//     control, so the mode changes nothing.
+//   - QueryConn runs on one session the adapter holds from Open to Close, and
+//     passes QueryContext.Schema as the schema each statement runs in.
+//   - SyncInstance reports the SQL release and the workspace's catalog names.
+//     SyncDBSchema reads one catalog's schemas, tables, views, materialized views
+//     and external tables.
+//   - Dump writes the server's own SHOW CREATE TABLE for every object: omni has
+//     no databricks catalog that renders a synced schema as Databricks DDL, so
+//     the metadata argument is not read.
+//
+// Known differences from the driver this replaced, kept because they are the
+// driver's own behavior or because reproducing the old one would reimplement it:
+//
+//   - The session's schema now reaches the statement. The previous driver sent
+//     only the catalog and ran every unqualified name in the catalog's default
+//     schema, so the editor's schema selection had no effect.
+//   - A script's statements are trimmed of their trailing semicolons and leading
+//     whitespace, which is the text the driver runs; the previous driver sent the
+//     splitter's slice, semicolons included.
+//   - A statement that returns no rows still reports its columns and does not
+//     end the script. The previous driver stopped at the first statement whose
+//     data array was empty, dropping that statement's result and every statement
+//     after it.
+//   - A failed statement reports its error on its own result and the statements
+//     before it keep their results; the previous driver returned the call's error
+//     with no results at all.
+//   - The result-size cap is enforced and reported as Truncated, which the
+//     previous driver did not do: it returned every row the warehouse answered,
+//     however large.
+//   - Execute returns the rows the script affected, summed from the
+//     num_affected_rows columns, where the previous driver returned 0 for every
+//     script, and it reports each command and its response to the task run log,
+//     where the previous driver logged nothing.
+//   - A statement the caller wrote as EXPLAIN carries QueryPlan{TEXT}: the
+//     previous driver returned the plan's rows with no plan, so the viewer did
+//     not draw them.
+//   - SyncInstance lists a catalog without its schemas. The previous driver read
+//     every schema and table of every catalog during an instance sync, and the
+//     product reads only each catalog's name from it; SyncDBSchema reads one
+//     catalog's schemas.
+//   - The catalog, schema and table listings, the schemas within a catalog, the
+//     tables within a schema and a view's dependency columns are in name or
+//     position order, which the previous driver kept in the service's order.
+//   - A statement the warehouse refuses is the SDK helper's text
+//     ("FAILED: <code> <message>"), and Execute wraps it with "failed to split
+//     statements"/"failed to execute statement"; the previous driver returned the
+//     bare SDK error.
+//   - A missing workspace, token or warehouse is refused by Open with the
+//     driver's message naming the field, where the previous driver's SDK resolved
+//     what it could from the environment and said "Warehouse ID must be set".
 package databricks
 
 import (
 	"context"
-	"database/sql"
-	"strconv"
-	"time"
+	"io"
 
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
-
-	// Databricks SQL.
-	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
-
-	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	databricksdriver "github.com/bytebase/omni/databricks/driver"
+	odbdriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
-
-func init() {
-	db.Register(storepb.Engine_DATABRICKS, NewDatabricksDriver)
-}
 
 var _ db.Driver = (*Driver)(nil)
 
-type Driver struct {
-	curCatalog  string
-	WarehouseID string
-	Client      *databricks.WorkspaceClient
+func init() {
+	db.Register(storepb.Engine_DATABRICKS, newDriver)
 }
 
-func NewDatabricksDriver() db.Driver {
+// Driver is Bytebase's Databricks driver.
+type Driver struct {
+	config db.ConnectionConfig
+
+	impl    *databricksdriver.Driver
+	session odbdriver.Session
+}
+
+func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Each Databricks driver is associated with a single Databricks Workspace (Workspace -> catalog -> schema -> table).
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// Support Databricks native authentication.
-	// ref: https://github.com/databricks/databricks-sdk-go?tab=readme-ov-file#databricks-native-authentication
-	// only support token authentication.
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  config.DataSource.Host,
-		Token: config.DataSource.GetAuthenticationPrivateKey(),
-	})
+// Open opens a Databricks driver. It does not reach the workspace: Ping does.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	impl, err := databricksdriver.Open(ctx, databricksConfig(config))
 	if err != nil {
 		return nil, err
 	}
-
-	d.Client = client
-	if config.DataSource.GetWarehouseId() == "" {
-		return nil, errors.New("Warehouse ID must be set")
+	// The SQL Statement Execution API has no session state, so the session is the
+	// driver; it is opened here so the driver holds one from Open to Close.
+	session, err := impl.Session(ctx)
+	if err != nil {
+		_ = impl.Close()
+		return nil, err
 	}
-	d.WarehouseID = config.DataSource.GetWarehouseId()
-	d.curCatalog = config.ConnectionContext.DatabaseName
-	return d, nil
+	return &Driver{config: config, impl: impl, session: session}, nil
 }
 
-func (*Driver) Close(_ context.Context) error {
-	return nil
+// databricksConfig resolves everything Bytebase knows about reaching the
+// workspace into the plain values databricks/driver takes.
+func databricksConfig(config db.ConnectionConfig) odbdriver.Config {
+	ds := config.DataSource
+	cfg := odbdriver.Config{
+		Host:     ds.GetHost(),
+		Database: config.ConnectionContext.DatabaseName,
+		// The product stores the personal access token in the data source's
+		// authentication private key; a token a caller resolved itself wins when
+		// the data source carries none.
+		Password: ds.GetAuthenticationPrivateKey(),
+		Params: map[string]string{
+			databricksdriver.ParamWarehouseID: ds.GetWarehouseId(),
+		},
+	}
+	if cfg.Password == "" {
+		cfg.Password = config.Password
+	}
+	return cfg
 }
 
+// Close closes the session. The SDK client keeps no connection of its own.
+func (d *Driver) Close(context.Context) error {
+	if d.session == nil {
+		return nil
+	}
+	err := d.session.Close()
+	d.session = nil
+	return err
+}
+
+// Ping asks the workspace for its root folder, which is Databricks' connectivity
+// check: there is no SQL-level ping.
 func (d *Driver) Ping(ctx context.Context) error {
-	_, err := d.Client.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
-		Path: "/",
+	return d.impl.Ping(ctx)
+}
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
+
+// Execute runs the script's statements in order and returns the rows they
+// affected. Databricks has no transaction control a script can issue, so the
+// transaction mode the product sends changes nothing, which is what the previous
+// driver did.
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	// The directive is removed from the script as before; its mode reaches no
+	// option, because Databricks has no transaction control a script can issue,
+	// and the session's transaction mode is not something the API accepts.
+	_, cleaned := base.ParseTransactionConfig(statement)
+	return d.impl.Execute(ctx, cleaned, odbdriver.ExecuteOptions{
+		CreateDatabase: opts.CreateDatabase,
+		MaxRetries:     opts.MaximumRetries,
+		Log:            executeLogger{opts: opts},
 	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to ping instance")
+}
+
+// executeLogger reports a script's commands and their responses into the task run
+// log. Databricks issues no transaction control, so there is nothing to log for
+// one.
+type executeLogger struct {
+	opts db.ExecuteOptions
+}
+
+func (l executeLogger) CommandExecute(command odbdriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(command.ByteStart),
+		End:   int32(command.ByteEnd),
+	}, command.Text)
+}
+
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (executeLogger) TransactionControl(odbdriver.TransactionOp, error) {}
+
+func (executeLogger) Retry(error, int, int) {}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
 	}
-	return nil
+	return err.Error()
 }
 
-func (*Driver) GetDB() *sql.DB {
-	return nil
-}
-
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	var results []*v1pb.QueryResult
-	stmts, err := base.SplitMultiSQL(storepb.Engine_DATABRICKS, statement)
+// SyncInstance syncs the SQL release and the workspace's catalog names. Roles
+// stay empty: Unity Catalog exposes no role a sync reads.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-	// A blank or comment-only tail is not a statement to run, and on an explain
-	// request it would be planned as one.
-	stmts = base.FilterEmptyStatements(stmts)
-
-	for _, stmt := range stmts {
-		text := stmt.Text
-		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_DATABRICKS, text, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			text = explained
-		}
-		result := &v1pb.QueryResult{}
-		startTime := time.Now()
-		dataArr, colInfo, err := d.execStatementSync(ctx, text, int64(queryContext.Limit))
-		if err != nil {
-			return nil, err
-		}
-		if dataArr == nil || colInfo == nil {
-			break
-		}
-
-		colNames, colTypeNames := toStrColInfo(colInfo)
-		result.ColumnNames = colNames
-		result.ColumnTypeNames = colTypeNames
-
-		// process rows.
-		for _, rowData := range dataArr {
-			queryRow := &v1pb.QueryRow{}
-			// process a single row.
-			for idx, rowVal := range rowData {
-				v1pbRowVal, err := toV1pbRowVal(colInfo[idx].TypeName, rowVal)
-				if err != nil {
-					return nil, err
-				}
-				queryRow.Values = append(queryRow.Values, v1pbRowVal)
-			}
-			result.Rows = append(result.Rows, queryRow)
-		}
-		result.Latency = durationpb.New(time.Since(startTime))
-		result.Statement = text
-		result.RowsCount = int64(len(result.Rows))
-		results = append(results, result)
-	}
-
-	return results, nil
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+	}, nil
 }
 
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	// Databricks has different transaction support based on the target:
-	// - SQL Warehouses: Limited transaction support, primarily for Delta tables
-	// - Unity Catalog: Better transaction support with ACID properties for Delta tables
-	// Since Databricks SQL API doesn't expose direct transaction control (BEGIN/COMMIT/ROLLBACK),
-	// and most DDL operations are auto-committed, we handle this at the statement execution level.
-
-	// For transaction mode "off" or when dealing with non-transactional operations,
-	// we execute statements in auto-commit mode (default behavior).
-	// For transaction mode "on", we note that Databricks will handle transactionality
-	// at the operation level for supported operations (e.g., Delta table operations).
-
-	if transactionMode == transaction.ModeOff {
-		// Execute in auto-commit mode (default Databricks behavior)
-		_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
-		return 0, err
-	}
-
-	// Transaction mode "on": Execute with implicit transaction support
-	// Note: Databricks SQL Warehouses don't support explicit transaction control via the REST API.
-	// Transactions are handled implicitly for supported operations (e.g., Delta table DML).
-	// DDL operations are always auto-committed.
-	_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
-	return 0, err
+// SyncDBSchema syncs the catalog the driver was opened on.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return d.impl.SyncDatabase(ctx)
 }
 
-// Execute SQL statement synchronously and return row data or error.
-// rowLimit caps the result set when > 0; 0 means no limit (used by sync
-// and dump paths). DDL/DML callers should pass 0.
-func (d *Driver) execStatementSync(ctx context.Context, statement string, rowLimit int64) ([][]string, []dbsql.ColumnInfo, error) {
-	// Bind the connected Bytebase database (= Unity Catalog) to the
-	// session, so unqualified `schema.table` references resolve like in
-	// other RDBMSes. Equivalent to issuing `USE CATALOG <name>` first.
-	req := dbsql.ExecuteStatementRequest{
-		Statement:   statement,
-		WarehouseId: d.WarehouseID,
-		Catalog:     d.curCatalog,
-	}
-	// Honor the user-selected row limit (default 1000 from the SQL Editor).
-	// Without it, INLINE results above ~25 MiB are aborted server-side
-	// with no result available — see DispositionExternalLinks for the
-	// large-result path.
-	if rowLimit > 0 {
-		req.RowLimit = rowLimit
-	}
-	resp, err := d.Client.StatementExecution.ExecuteAndWait(ctx, req)
-	if err != nil {
-		return nil, nil, err
-	}
-	if resp.Result == nil {
-		return nil, nil, errors.New("no response")
-	}
-
-	if len(resp.Result.DataArray) != 0 {
-		if resp.Manifest == nil || resp.Manifest.Schema == nil || len(resp.Manifest.Schema.Columns) == 0 {
-			return nil, nil, errors.New("missing column info")
-		}
-		return resp.Result.DataArray, resp.Manifest.Schema.Columns, nil
-	}
-	return nil, nil, nil
-}
-
-// return a column type name array and a column name array.
-func toStrColInfo(colInfo []dbsql.ColumnInfo) ([]string, []string) {
-	colNames := []string{}
-	colTypeNames := []string{}
-	for _, col := range colInfo {
-		colNames = append(colNames, col.Name)
-		colTypeNames = append(colTypeNames, string(col.TypeName))
-	}
-	return colNames, colTypeNames
-}
-
-func toV1pbRowVal(colType dbsql.ColumnInfoTypeName, val string) (*v1pb.RowValue, error) {
-	rowVal := v1pb.RowValue{}
-	if val == "" && colType != dbsql.ColumnInfoTypeNameString {
-		rowVal.Kind = &v1pb.RowValue_NullValue{}
-		return &rowVal, nil
-	}
-
-	switch colType {
-	case dbsql.ColumnInfoTypeNameBoolean:
-		boolVal, err := strconv.ParseBool(val)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_BoolValue{BoolValue: boolVal}
-
-	case dbsql.ColumnInfoTypeNameBinary:
-		rowVal.Kind = &v1pb.RowValue_BytesValue{BytesValue: []byte(val)}
-
-	case dbsql.ColumnInfoTypeNameShort:
-		shortVal, err := strconv.ParseInt(val, 10, 16)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(shortVal)}
-
-	case dbsql.ColumnInfoTypeNameInt:
-		i32Val, err := strconv.ParseInt(val, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(i32Val)}
-
-	case dbsql.ColumnInfoTypeNameLong:
-		i64Val, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_Int64Value{Int64Value: i64Val}
-
-	case dbsql.ColumnInfoTypeNameFloat:
-		floatVal, err := strconv.ParseFloat(val, 32)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(floatVal)}
-
-	case dbsql.ColumnInfoTypeNameDouble:
-		doubleVal, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			return nil, err
-		}
-		rowVal.Kind = &v1pb.RowValue_DoubleValue{DoubleValue: doubleVal}
-
-	default:
-		// convert all remaining types to string.
-		rowVal.Kind = &v1pb.RowValue_StringValue{StringValue: val}
-	}
-
-	return &rowVal, nil
+// Dump writes the server's own DDL for every object in the workspace. The
+// synced metadata is not rendered and does not narrow the dump: omni has no
+// databricks catalog that turns a synced schema back into Databricks DDL.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, metadata)
 }
