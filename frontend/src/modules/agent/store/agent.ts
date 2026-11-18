@@ -186,6 +186,7 @@ export interface QueuedUserMessage {
   page: AgentChatSnapshot;
   runMode?: AgentRunMode;
   starterId?: LandingStarterId;
+  followUpSourceId?: string;
   resourceReference?: AgentResourceReference;
   resourceReferences?: AgentResourceReference[];
 }
@@ -270,12 +271,23 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
+const normalizeFollowUpSourceId = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined;
+  // Dropping an invalid marker would silently restore latest-query fallback.
+  return typeof value === "string" && value.trim() && value.length <= 1000
+    ? value
+    : "";
+};
+
 const normalizeDraft = (raw: unknown): AgentDraft | null => {
   if (!isRecord(raw) || typeof raw.text !== "string") return null;
+  const followUpSourceId = normalizeFollowUpSourceId(raw.followUpSourceId);
+  const provenance = followUpSourceId !== undefined ? { followUpSourceId } : {};
   if (raw.mentions !== undefined) {
     const mentions = normalizeAgentResourceMentions(raw.text, raw.mentions);
     return {
       text: raw.text,
+      ...provenance,
       ...(mentions.length > 0 ? { mentions } : {}),
     };
   }
@@ -302,7 +314,7 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
             label: normalizedProject.title,
           }
         : undefined;
-  if (!resource) return { text: raw.text };
+  if (!resource) return { text: raw.text, ...provenance };
 
   let text = raw.text;
   let mention: AgentMentionRange | null = null;
@@ -314,9 +326,9 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
         mention = candidate;
       }
     }
-    if (!mention) return { text };
+    if (!mention) return { text, ...provenance };
   } else if (raw.mention !== undefined) {
-    return { text };
+    return { text, ...provenance };
   } else {
     const token = formatResourceMention(resource.label);
     let start = text.lastIndexOf(token);
@@ -341,15 +353,16 @@ const normalizeDraft = (raw: unknown): AgentDraft | null => {
         trigger ?? getMentionTriggerRange(prefix, prefix.length),
         resource.label
       );
-      if (!inserted) return { text: raw.text };
+      if (!inserted) return { text: raw.text, ...provenance };
       text = inserted.text;
       mention = inserted.mention;
     }
   }
-  if (!mention) return { text };
+  if (!mention) return { text, ...provenance };
 
   return {
     text,
+    ...provenance,
     ...(normalizedProject ? { project: normalizedProject } : {}),
     resource,
     mention,
@@ -391,6 +404,9 @@ const normalizeQueuedUserMessage = (
       typeof raw.starterId === "string"
         ? (raw.starterId as LandingStarterId)
         : undefined,
+    ...(raw.followUpSourceId !== undefined
+      ? { followUpSourceId: normalizeFollowUpSourceId(raw.followUpSourceId) }
+      : {}),
     ...(raw.resourceReferences === undefined && resourceReferences[0]
       ? { resourceReference: resourceReferences[0] }
       : {}),
@@ -481,6 +497,9 @@ const normalizeMessage = (
     metadata: metadata
       ? {
           ...(metadata as AgentMessage["metadata"]),
+          followUpSourceId: normalizeFollowUpSourceId(
+            metadata.followUpSourceId
+          ),
           interruptionReason: normalizeInterruptionReason(
             metadata.interruptionReason
           ),
@@ -2240,6 +2259,16 @@ export const createAgentStore = () => {
           if (!_getChat(chatId)) return;
           const normalized = normalizeDraft(draft);
           if (!normalized) return;
+          const { followUpSourceId: source, ...previous } =
+            get().getDraft(chatId);
+          const { followUpSourceId: nextSource, ...next } = normalized;
+          if (source !== undefined) {
+            const unchanged = JSON.stringify(previous) === JSON.stringify(next);
+            if (unchanged && nextSource === undefined)
+              normalized.followUpSourceId = source;
+            if (!unchanged && nextSource === source)
+              delete normalized.followUpSourceId;
+          }
           set((state) => {
             if (
               normalized.text ||
@@ -2325,7 +2354,12 @@ export const createAgentStore = () => {
           ) {
             return;
           }
-          const { resourceReference, resourceReferences, ...rest } = message;
+          const {
+            resourceReference,
+            resourceReferences,
+            followUpSourceId,
+            ...rest
+          } = message;
           const normalizedReferences = normalizeAgentResourceReferences(
             resourceReferences,
             resourceReference
@@ -2334,6 +2368,12 @@ export const createAgentStore = () => {
             state.queuedUserMessagesByChatId[message.chatId] = {
               ...rest,
               id: uuidv4(),
+              ...(followUpSourceId !== undefined
+                ? {
+                    followUpSourceId:
+                      normalizeFollowUpSourceId(followUpSourceId),
+                  }
+                : {}),
               ...(resourceReferences === undefined && normalizedReferences[0]
                 ? { resourceReference: normalizedReferences[0] }
                 : {}),
@@ -2399,10 +2439,20 @@ export const createAgentStore = () => {
                 createdTs: Date.now(),
                 role: "user",
                 content: queued.text,
-                metadata: queued.resourceReferences
-                  ? { resourceReferences: queued.resourceReferences }
-                  : queued.resourceReference
-                    ? { resourceReference: queued.resourceReference }
+                metadata:
+                  queued.resourceReferences ||
+                  queued.resourceReference ||
+                  queued.followUpSourceId !== undefined
+                    ? {
+                        ...(queued.resourceReferences
+                          ? { resourceReferences: queued.resourceReferences }
+                          : queued.resourceReference
+                            ? { resourceReference: queued.resourceReference }
+                            : {}),
+                        ...(queued.followUpSourceId !== undefined
+                          ? { followUpSourceId: queued.followUpSourceId }
+                          : {}),
+                      }
                     : undefined,
               };
               chatMessages.push(committed);

@@ -1345,19 +1345,19 @@ export function AgentWindow() {
     [getCurrentPageSnapshot, t]
   );
   const continueResponseAction = useCallback(
-    (chatId: string, prompt: string, references: AgentResourceReference[]) => {
+    (
+      chatId: string,
+      prompt: string,
+      references: AgentResourceReference[],
+      followUpSourceId?: string
+    ) => {
       const store = useAgentStore.getState();
       const chat = store.getChat(chatId);
-      const draft = store.getDraft(chatId);
       if (
         store.currentChatId !== chatId ||
         !chat ||
         chat.status !== "idle" ||
         chat.archived ||
-        draft.text.trim() ||
-        draft.project ||
-        draft.resource ||
-        draft.mentions?.length ||
         store.queuedUserMessagesByChatId[chatId]
       ) {
         return;
@@ -1377,6 +1377,7 @@ export function AgentWindow() {
         text: `${prefix}${prefix ? " " : ""}${action.prompt}`,
         page: getCurrentPageSnapshot(),
         runMode: "default",
+        ...(followUpSourceId !== undefined ? { followUpSourceId } : {}),
         ...(boundReferences.length > 0
           ? { resourceReferences: boundReferences }
           : {}),
@@ -3018,7 +3019,7 @@ function ChatListMenu({
             </Button>
             <Button
               size="sm"
-              variant={archived ? "destructive" : "default"}
+              variant="destructive"
               disabled={disabled}
               onClick={() => {
                 setPendingAction(null);
@@ -3131,6 +3132,7 @@ function ChatRowMenu({
           ) : (
             <AgentDropdownMenuItem
               data-agent-archive-chat
+              className="text-error data-highlighted:bg-error/10"
               onClick={(event) => {
                 event.stopPropagation();
                 skipMenuFinalFocusRef.current = true;
@@ -3167,6 +3169,7 @@ function ChatRowMenu({
             </Button>
             <Button
               size="sm"
+              variant="destructive"
               onClick={() => {
                 setArchiveOpen(false);
                 onArchive();

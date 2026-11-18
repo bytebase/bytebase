@@ -6843,6 +6843,164 @@ describe("useAgentStore (Zustand)", () => {
     ).toBeUndefined();
   });
 
+  test("retains restored follow-up provenance only while draft text and references are unchanged", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const draft = {
+      text: "@App How can I request access to unmasked data?",
+      mentions: [
+        {
+          resource: {
+            kind: "database" as const,
+            name: "instances/main/databases/orders",
+            project: "projects/orders",
+            label: "App",
+          },
+          range: { start: 0, end: 4 },
+        },
+      ],
+      followUpSourceId: "original-answer",
+    };
+    s(store).setDraft(chat.id, draft);
+    s(store).saveState();
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(s(remounted).getDraft(chat.id).followUpSourceId).toBe(
+      draft.followUpSourceId
+    );
+    const { followUpSourceId: _source, ...unchanged } = s(remounted).getDraft(
+      chat.id
+    );
+    s(remounted).setDraft(chat.id, unchanged);
+    expect(s(remounted).getDraft(chat.id).followUpSourceId).toBe(
+      draft.followUpSourceId
+    );
+    s(remounted).setDraft(chat.id, {
+      ...draft,
+      text: `${draft.text} A different question.`,
+    });
+    expect(s(remounted).getDraft(chat.id).followUpSourceId).toBeUndefined();
+    s(remounted).setDraft(chat.id, unchanged);
+    expect(s(remounted).getDraft(chat.id).followUpSourceId).toBeUndefined();
+  });
+
+  test("clears restored follow-up provenance when only the draft's resource changes", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const draft = {
+      text: "@App How can I request access to unmasked data?",
+      mentions: [
+        {
+          resource: {
+            kind: "database" as const,
+            name: "instances/main/databases/orders",
+            project: "projects/orders",
+            label: "App",
+          },
+          range: { start: 0, end: 4 },
+        },
+      ],
+      followUpSourceId: "original-answer",
+    };
+    s(store).setDraft(chat.id, draft);
+    s(store).setDraft(chat.id, {
+      ...draft,
+      mentions: draft.mentions.map((mention) => ({
+        ...mention,
+        resource: {
+          ...mention.resource,
+          name: "instances/main/databases/other",
+        },
+      })),
+    });
+    expect(s(store).getDraft(chat.id).followUpSourceId).toBeUndefined();
+  });
+
+  test("persists a queued follow-up's source through commitment and reload", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    const source = s(store).addMessage({
+      chatId: chat.id,
+      role: "assistant",
+      content: "Original query answer",
+    })!;
+    const reference = {
+      kind: "database" as const,
+      name: "instances/main/databases/orders",
+      project: "projects/orders",
+      label: "Orders",
+    };
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text: "How can I request access to unmasked data?",
+      page: { path: "/projects/orders", title: "Orders" },
+      resourceReferences: [reference],
+      followUpSourceId: source.id,
+    });
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(
+      s(remounted).queuedUserMessagesByChatId[chat.id]?.followUpSourceId
+    ).toBe(source.id);
+    const committed = s(remounted).commitQueuedUserMessage(chat.id);
+    expect(committed?.message.metadata).toMatchObject({
+      followUpSourceId: source.id,
+      resourceReferences: [reference],
+    });
+    const reloaded = createAgentStore();
+    s(reloaded).setWorkspaceName("workspaces/acme");
+    expect(
+      s(reloaded)
+        .getMessages(chat.id)
+        .find((message) => message.id === committed?.message.id)?.metadata
+    ).toMatchObject({
+      followUpSourceId: source.id,
+      resourceReferences: [reference],
+    });
+  });
+
+  test("retains a stale follow-up source marker without silently rebinding it", () => {
+    const store = createAgentStore();
+    s(store).setWorkspaceName("workspaces/acme");
+    const chat = s(store).createChat({ context: "projects/orders" });
+    s(store).queueUserMessage({
+      chatId: chat.id,
+      text: "How can I request access to unmasked data?",
+      page: { path: "/projects/orders", title: "Orders" },
+      followUpSourceId: "deleted-answer",
+    });
+    const remounted = createAgentStore();
+    s(remounted).setWorkspaceName("workspaces/acme");
+    expect(
+      s(remounted).commitQueuedUserMessage(chat.id)?.message.metadata
+        ?.followUpSourceId
+    ).toBe("deleted-answer");
+  });
+
+  test.each([null, {}, "x".repeat(1001)])(
+    "keeps malformed follow-up provenance explicitly unresolved: %j",
+    (source) => {
+      const store = createAgentStore();
+      s(store).setWorkspaceName("workspaces/acme");
+      const chat = s(store).createChat({ context: "projects/orders" });
+      s(store).queueUserMessage({
+        chatId: chat.id,
+        text: "How can I request access to unmasked data?",
+        page: { path: "/projects/orders", title: "Orders" },
+        followUpSourceId: source as unknown as string,
+      });
+      const remounted = createAgentStore();
+      s(remounted).setWorkspaceName("workspaces/acme");
+      expect(
+        s(remounted).commitQueuedUserMessage(chat.id)?.message.metadata
+          ?.followUpSourceId
+      ).toBe("");
+    }
+  );
+
   test("restores an unconsumed queued turn and resumes its committed user turn after reload", () => {
     const store = createAgentStore();
     s(store).setWorkspaceName("workspaces/acme");

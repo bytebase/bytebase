@@ -135,7 +135,11 @@
       "references": "依据"
     },
     "follow-up": {
-      "ask-next": "接着问"
+      "ask-next": "接着问",
+      "query-mask": "如何对这些列进行脱敏?",
+      "query-mask-database": "如何对 {{database}} 中的列进行脱敏?",
+      "query-unmask": "如何申请访问未脱敏的数据?",
+      "query-unmask-database": "如何申请访问 {{database}} 中未脱敏的数据?"
     },
     "handoff": {
       "open-data-classification": "打开数据分类设置",
@@ -389,7 +393,7 @@
       "free-title": "删除其他已保存的 Agent 聊天？",
       "full": "Agent 历史记录存储空间已满。",
       "retention-info": "聊天历史保留",
-      "retention-policy": "需要释放本地存储空间时，较早完成的聊天将被自动删除。进行中的聊天和草稿会被保留。",
+      "retention-policy": "优先清理查询结果预览。如果仍需释放空间，则删除较早完成的聊天，无论是否已归档。已打开的聊天、未完成的运行和草稿会被保留。",
       "retry": "重试",
       "save-failed": "无法保存 Agent 历史记录。请重试。",
       "title": "Agent 历史记录存储"

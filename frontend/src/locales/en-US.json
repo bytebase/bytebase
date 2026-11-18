@@ -135,7 +135,11 @@
       "references": "Evidence"
     },
     "follow-up": {
-      "ask-next": "Ask next"
+      "ask-next": "Ask next",
+      "query-mask": "How can I mask these columns?",
+      "query-mask-database": "How can I mask columns in {{database}}?",
+      "query-unmask": "How can I request access to unmasked data?",
+      "query-unmask-database": "How can I request unmasked access to {{database}}?"
     },
     "handoff": {
       "open-data-classification": "Open data classification settings",
@@ -389,7 +393,7 @@
       "free-title": "Remove other saved Agent chats?",
       "full": "Agent history storage is full.",
       "retention-info": "Chat history retention",
-      "retention-policy": "Older completed chats are automatically removed when needed to free local storage. Active chats and drafts are preserved.",
+      "retention-policy": "Query-result previews are cleared first. If more space is needed, older completed chats, archived or not, are removed. Open chats, unfinished runs, and drafts are kept.",
       "retry": "Retry",
       "save-failed": "Couldn't save Agent history. Try again.",
       "title": "Agent history storage"

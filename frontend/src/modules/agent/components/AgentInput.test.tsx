@@ -43,7 +43,7 @@ const mocks = vi.hoisted(() => ({
   ),
   runAgentLoop: vi.fn(),
   isAgentAIConfigurationError: vi.fn(() => false),
-  buildOutboundHistory: vi.fn(() => []),
+  buildOutboundHistory: vi.fn<typeof import("../logic/outboundHistory").buildOutboundHistory>(() => []),
   buildSystemPrompt: vi.fn(() => "system"),
   executeTool: vi.fn(),
   createToolExecutor: vi.fn(() => mocks.executeTool),
@@ -51,6 +51,7 @@ const mocks = vi.hoisted(() => ({
   getPendingApiCallPreview: vi.fn(),
   resolvePendingApiCall: vi.fn(),
   resolveDeniedQueryAccessDraft: vi.fn(),
+  resolveQueryMaskingEligibility: vi.fn(),
   getRecentActivity: vi.fn(),
   getWorkspaceAttention: vi.fn(),
   getProjectAttention: vi.fn(),
@@ -289,8 +290,13 @@ vi.mock("../logic/tools/pendingApiCall", () => ({
   resolvePendingApiCall: mocks.resolvePendingApiCall,
 }));
 
-vi.mock("../logic/deniedQueryAccess", () => ({
+vi.mock("../logic/deniedQueryAccess", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   resolveDeniedQueryAccessDraft: mocks.resolveDeniedQueryAccessDraft,
+}));
+
+vi.mock("../logic/queryMaskingEligibility", () => ({
+  resolveQueryMaskingEligibility: mocks.resolveQueryMaskingEligibility,
 }));
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -371,6 +377,11 @@ beforeEach(async () => {
   mocks.executeTool.mockReset();
   mocks.resolveDeniedQueryAccessDraft.mockReset();
   mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(undefined);
+  mocks.resolveQueryMaskingEligibility.mockReset();
+  mocks.resolveQueryMaskingEligibility.mockImplementation(async (_workspace, database) => ({
+    database,
+    allowed: false,
+  }));
   mocks.executeTool.mockResolvedValue({
     kind: "tool_result",
     result: JSON.stringify({
@@ -6248,7 +6259,7 @@ describe("AgentInput", () => {
   });
 
   test.each(
-    ["prepared", "denied-query"].flatMap((source) =>
+    ["prepared", "prepared-after-denial"].flatMap((source) =>
       [false, true].flatMap((unmask) =>
         [
           { name: "omitted", reason: undefined },
@@ -6296,6 +6307,8 @@ describe("AgentInput", () => {
           if (execution.kind === "tool_result") {
             await callbacks.onToolResult("jit-reason", execution.result);
           }
+          callbacks.onAssistantMessage({ toolCalls: [{ id: "jit-reason-prepared", name: "prepare_access_grant_draft", arguments: "{}" }] });
+          await callbacks.onToolResult("jit-reason-prepared", JSON.stringify({ status: "unsaved", draft }));
         }
         callbacks.onText("Review the request with its default reason.");
         return { kind: "completed", success: true, totalTokensUsed: 0, actions: [] };
@@ -6370,7 +6383,7 @@ describe("AgentInput", () => {
   });
 
   test.each(
-    ["prepared", "denied-query"].flatMap((source) =>
+    ["prepared", "prepared-after-denial"].flatMap((source) =>
       ["open", "draft-issue-comment", "handoff"].map((primary) => ({ source, primary }))
     )
   )(
@@ -6415,6 +6428,8 @@ describe("AgentInput", () => {
           if (execution.kind === "tool_result") {
             await callbacks.onToolResult("jit-priority", execution.result);
           }
+          callbacks.onAssistantMessage({ toolCalls: [{ id: "jit-priority-prepared", name: "prepare_access_grant_draft", arguments: "{}" }] });
+          await callbacks.onToolResult("jit-priority-prepared", JSON.stringify({ status: "unsaved", draft }));
         }
         callbacks.onText("Review the prepared access request first.", target);
         return {
@@ -6722,6 +6737,94 @@ describe("AgentInput", () => {
     }
   });
 
+  test.each([false, true].flatMap((managed) => [false, true].map((confirmed) => ({ managed, confirmed }))))(
+    "waits for denied-query confirmation before the normal JIT skill, managed=$managed confirmed=$confirmed",
+    async ({ managed, confirmed }) => {
+      if (managed) enableRunRecovery();
+      const { buildOutboundHistory } = await vi.importActual<typeof import("../logic/outboundHistory")>("../logic/outboundHistory");
+      mocks.buildOutboundHistory.mockImplementation(buildOutboundHistory);
+      const database = "instances/prod/databases/app";
+      const statement = "SELECT id FROM orders WHERE id = 42;";
+      const query = { operationId: "SQLService/Query", body: { name: database, statement } };
+      const denied = JSON.stringify({ status: 200, response: { results: [{ error: "Permission denied", permissionDenied: { requiredPermissions: ["bb.sql.select"], resources: [database] } }] } });
+      const ask: AgentPendingAsk = {
+        kind: "confirm",
+        toolCallId: "request-query-access",
+        prompt: "The query failed because you lack bb.sql.select on app. You can request temporary access. Would you like to request it for this query?",
+        confirmLabel: "Request temporary access",
+        cancelLabel: "Not now",
+      };
+      const draft = { kind: "accessGrant", project: "projects/orders", sourceDatabase: database, targets: [database], statement, unmask: false };
+      mocks.executeTool.mockImplementation(async (name) => {
+        if (name === "call_api") return { kind: "tool_result", result: denied };
+        if (name === "ask_user") return { kind: "ask_user", ask };
+        if (name === "prepare_access_grant_draft") return { kind: "tool_result", result: JSON.stringify({ status: "unsaved", draft }) };
+        return { kind: "tool_result", result: JSON.stringify({ justInTime: { eligible: true } }) };
+      });
+      let invocation = 0;
+      mocks.runAgentLoop.mockImplementation(async (history: ReturnType<typeof buildOutboundHistory>, _tools, execute, callbacks, _signal, options) => {
+        invocation++;
+        if (managed) {
+          const reservation = await options.reserveProviderAttempt();
+          expect(reservation.kind).toBe("allowed");
+          await options.onAttemptSettled({ attemptId: reservation.attemptId, ordinal: reservation.ordinal, runId: options.runId, outcome: "response", usage: { purpose: "agent", toolNames: [], totalTokens: 10 } });
+        }
+        const call = async (name: string, args: Record<string, unknown>, id: string) => {
+          callbacks.onAssistantMessage({ toolCalls: [{ id, name, arguments: JSON.stringify(args) }] });
+          const result = await execute(name, args, id);
+          if (result.kind === "tool_result") await callbacks.onToolResult(id, result.result);
+          return result;
+        };
+        if (invocation === 1) {
+          await call("call_api", query, "denied-query");
+          await call("get_just_in_time_overview", { database }, "jit-eligibility");
+          const result = await call("ask_user", { kind: ask.kind, prompt: ask.prompt, confirmLabel: ask.confirmLabel, cancelLabel: ask.cancelLabel }, ask.toolCallId);
+          if (result.kind !== "ask_user") throw new Error("Expected access confirmation");
+          return { kind: "awaiting_user", ask: result.ask, totalTokensUsed: 10 };
+        }
+        expect(JSON.stringify(history)).toContain(statement);
+        expect(JSON.stringify(history)).toContain(database);
+        const response = history.findLast((message) => message.role === "tool" && message.toolCallId === ask.toolCallId);
+        expect(JSON.parse(response?.content ?? "null")).toMatchObject({ kind: "confirm", confirmed });
+        if (confirmed) {
+          await call("get_skill", { name: "just-in-time" }, "jit-skill");
+          await call("get_just_in_time_overview", { database }, "fresh-jit-eligibility");
+          await call("prepare_access_grant_draft", { project: draft.project, database, statement, unmask: false }, "confirmed-jit-draft");
+        }
+        callbacks.onText(confirmed ? "Review the access request draft." : "No access request was prepared.");
+        return { kind: "completed", success: confirmed, actions: [], totalTokensUsed: 10 };
+      });
+      const store = useAgentStore.getState();
+      const page = { path: "/projects/orders", title: "Orders" };
+      const chat = store.createChat({ context: "projects/orders", page });
+      store.queueUserMessage({ chatId: chat.id, text: "Query the order with ID 42.", page });
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => { await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("awaiting_user")); });
+        expect(store.getPendingAsk(chat.id)).toMatchObject(ask);
+        expect(view.container).toHaveTextContent(ask.prompt);
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+        expect(mocks.executeTool.mock.calls.map(([name]) => name)).not.toContain("get_skill");
+        expect(mocks.executeTool.mock.calls.map(([name]) => name)).not.toContain("prepare_access_grant_draft");
+        expect(store.getMessages(chat.id).some((message) => message.metadata?.accessRequestDraft)).toBe(false);
+        expect(mocks.resolveDeniedQueryAccessDraft).not.toHaveBeenCalled();
+        const label = confirmed ? ask.confirmLabel : ask.cancelLabel;
+        const button = [...view.container.querySelectorAll("button")].find((item) => item.textContent === label);
+        expect(button).toBeDefined();
+        await act(async () => { button?.click(); await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle")); });
+        expect(mocks.runAgentLoop).toHaveBeenCalledTimes(2);
+        expect(mocks.executeTool.mock.calls.filter(([name]) => name === "call_api")).toHaveLength(1);
+        expect(mocks.executeTool.mock.calls.filter(([name]) => name === "prepare_access_grant_draft")).toHaveLength(confirmed ? 1 : 0);
+        expect(store.getPendingAsk(chat.id)).toBeNull();
+        const answer = store.getMessages(chat.id).find((message) => message.content === (confirmed ? "Review the access request draft." : "No access request was prepared."));
+        expect(answer?.metadata?.accessRequestDraft).toEqual(confirmed ? { ...draft, reason: "Request temporary query access to app." } : undefined);
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
   test.each([
     { name: "an unsuccessful completion", success: false, denied: true, prepared: false },
     { name: "a successful completion", success: true, denied: true, prepared: false },
@@ -6765,7 +6868,7 @@ describe("AgentInput", () => {
     mocks.executeTool.mockResolvedValue({ kind: "tool_result", result });
     mocks.resolveDeniedQueryAccessDraft.mockResolvedValue(denied ? draft : undefined);
     mocks.runAgentLoop.mockImplementation(
-      async (_history, _tools, executeTool, callbacks) => {
+      async (_history, _tools, executeTool, callbacks, _signal, options) => {
         callbacks.onAssistantMessage({
           role: "assistant",
           toolCalls: [
@@ -6778,8 +6881,9 @@ describe("AgentInput", () => {
         });
         const execution = await executeTool("call_api", args, "query-1");
         if (execution.kind === "tool_result") {
-          callbacks.onToolResult("query-1", execution.result);
+          await callbacks.onToolResult("query-1", execution.result);
         }
+        expect(options.resolveRequestContext().systemGuidance.includes("Request temporary access")).toBe(denied);
         if (prepared) {
           callbacks.onAssistantMessage({
             toolCalls: [{ id: "prepared-jit", name: "prepare_access_grant_draft", arguments: "{}" }],
@@ -6835,14 +6939,150 @@ describe("AgentInput", () => {
     ).toEqual(
       prepared && success
         ? preparedDraft
-        : denied
-          ? { ...draft, reason: prepared ? preparedDraft.reason : "Request temporary query access to app." }
+        : denied && prepared
+          ? { ...draft, reason: preparedDraft.reason }
           : undefined
     );
+    expect(useAgentStore.getState().getPendingAsk(chat.id)).toBeNull();
     view.unmount();
   });
 
-  test.each([false, true])("offers an Access Grant draft when an approved Query is denied and completion success is %s", async (success) => {
+  test.each([
+    { masked: false, allowed: false, invalidation: "none" },
+    { masked: false, allowed: true, invalidation: "none" },
+    { masked: true, allowed: false, invalidation: "none" },
+    { masked: false, allowed: true, invalidation: "run" },
+    { masked: false, allowed: true, invalidation: "archive" },
+  ])("grounds follow-ups in a resumed approved Query, masked=$masked allowed=$allowed invalidation=$invalidation", async ({ masked, allowed, invalidation }) => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) => key.startsWith("agent.follow-up.query-")
+        ? enUS.agent["follow-up"][key.slice("agent.follow-up.".length) as keyof typeof enUS.agent["follow-up"]]
+        : key,
+      i18n: { language: "en-US" },
+    });
+    const countQuestion = "How many records match this query?";
+    const summarizeQuestion = "Can you summarize these results?";
+    const store = useAgentStore.getState();
+    const chatId = store.currentChatId!;
+    const database = "instances/prod/databases/app";
+    let resolveEligibility: ((value: { database: string; allowed: boolean }) => void) | undefined;
+    if (invalidation === "none") {
+      mocks.resolveQueryMaskingEligibility.mockResolvedValue({ database, allowed });
+    } else {
+      mocks.resolveQueryMaskingEligibility.mockImplementation(() => new Promise((resolve) => {
+        resolveEligibility = resolve;
+      }));
+    }
+    const args = {
+      operationId: "SQLService/Query",
+      body: { name: database, statement: "SELECT private_value FROM records" },
+    };
+    const result = JSON.stringify({
+      status: 200,
+      response: {
+        appliedAccessGrant: "projects/orders/accessGrants/123",
+        results: [{
+          columnNames: ["private_value"],
+          rows: [{ values: [{ stringValue: masked ? "******" : "Visible" }] }],
+          masked: [masked ? { algorithm: "full-mask" } : {}],
+        }],
+      },
+    });
+    store.addMessage({
+      chatId,
+      role: "user",
+      content: "Query the records table",
+      metadata: { resourceReferences: [{ kind: "database", name: database, project: "projects/orders", label: "app" }] },
+    });
+    store.addMessage({ chatId, role: "assistant", toolCalls: [{ id: "query-1", name: "call_api", arguments: JSON.stringify(args) }] });
+    useAgentStore.setState({
+      chats: store.chats.map((chat) => chat.id === chatId ? { ...chat, status: "awaiting_user" } : chat),
+      pendingAskByChatId: {
+        [chatId]: {
+          toolCallId: "query-1", prompt: "SQLService/Query", kind: "confirm",
+          apiPermission: { actionId: "action-1", operationId: "SQLService/Query" },
+        },
+      },
+    });
+    mocks.getPendingApiCallPreview.mockReturnValue({ operationId: "SQLService/Query", body: JSON.stringify(args.body), expiresAt: Date.now() + 60_000 });
+    mocks.resolvePendingApiCall.mockResolvedValue(result);
+    mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executeTool, callbacks) => {
+      callbacks.onText("The query returned a preview.");
+      return {
+        kind: "completed", success: true, totalTokensUsed: 0,
+        actions: [
+          { kind: "continue", prompt: countQuestion },
+          { kind: "continue", prompt: "When does my masking exemption for private_value in app expire?" },
+          { kind: "continue", prompt: summarizeQuestion },
+        ],
+      };
+    });
+    const view = renderIntoContainer(<AgentInput />);
+    try {
+      view.render();
+      await act(async () => {
+        const allow = [...view.container.querySelectorAll("button")].find((button) => button.textContent === "agent.api-permission-allow");
+        expect(allow).toBeDefined();
+        allow?.click();
+        if (invalidation === "none") {
+          await vi.waitFor(() => expect(store.getMessages(chatId).some((message) => message.content === "The query returned a preview.")).toBe(true));
+        } else {
+          await vi.waitFor(() => expect(mocks.resolveQueryMaskingEligibility).toHaveBeenCalledOnce());
+        }
+      });
+      if (invalidation !== "none") {
+        await act(async () => {
+          useAgentStore.setState((state) => ({
+            chats: state.chats.map((chat) => chat.id !== chatId
+              ? chat
+              : invalidation === "run"
+                ? { ...chat, runId: "replacement-run" }
+                : { ...chat, archived: true }),
+          }));
+          resolveEligibility?.({ database, allowed });
+          await vi.waitFor(() => expect(useAgentStore.getState().getAbortController(chatId)).toBeNull());
+        });
+        expect(store.getMessages(chatId).find((message) => message.content === "The query returned a preview.")).toBeUndefined();
+        expect(store.getMessages(chatId).some((message) => message.metadata?.queryMaskingEligibility)).toBe(false);
+        expect(mocks.resolvePendingApiCall).toHaveBeenCalledOnce();
+        expect(mocks.executeTool).not.toHaveBeenCalled();
+        return;
+      }
+      const answer = store.getMessages(chatId).find((message) => message.content === "The query returned a preview.");
+      expect(answer?.metadata?.actions).toEqual([
+        { kind: "continue", prompt: countQuestion },
+        { kind: "continue", prompt: summarizeQuestion },
+        ...(masked
+          ? [{ kind: "continue", prompt: "How can I request access to unmasked data?" }]
+          : allowed
+            ? [{ kind: "continue", prompt: "How can I mask these columns?" }]
+            : []),
+      ]);
+      const expectedEligibility = masked ? undefined : { database, allowed };
+      expect(answer?.metadata?.queryMaskingEligibility).toEqual(expectedEligibility);
+      if (masked) {
+        expect(mocks.resolveQueryMaskingEligibility).not.toHaveBeenCalled();
+      } else {
+        expect(mocks.resolveQueryMaskingEligibility).toHaveBeenCalledExactlyOnceWith(
+          "workspaces/demo",
+          database
+        );
+      }
+      expect(await store.flushRunPersistence()).toBe(true);
+      const reloaded = createAgentStore();
+      reloaded.getState().setWorkspaceName("workspaces/demo", "agent@example.com");
+      expect(
+        reloaded.getState().getMessages(chatId).find((message) => message.id === answer?.id)
+          ?.metadata?.queryMaskingEligibility
+      ).toEqual(expectedEligibility);
+      expect(mocks.resolvePendingApiCall).toHaveBeenCalledOnce();
+      expect(mocks.executeTool).not.toHaveBeenCalled();
+    } finally {
+      view.unmount();
+    }
+  });
+
+  test.each([false, true])("does not auto-prepare access when an approved Query is denied and completion success is %s", async (success) => {
     const store = useAgentStore.getState();
     const chatId = store.currentChatId!;
     const args = {
@@ -6938,7 +7178,7 @@ describe("AgentInput", () => {
         .getMessages(chatId)
         .find((message) => message.content === "The API denied the query.")
         ?.metadata?.accessRequestDraft
-    ).toEqual({ ...draft, reason: "Request temporary query access to app." });
+    ).toBeUndefined();
     expect(mocks.resolveDeniedQueryAccessDraft).toHaveBeenCalledWith(
       args,
       boundAgentQueryResult(result)
@@ -8656,6 +8896,54 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test("resends a follow-up with its original source independently of the composer provenance", async () => {
+    mocks.runAgentLoop.mockResolvedValue({ kind: "completed", totalTokensUsed: 0 });
+    mocks.executeTool.mockResolvedValue({ kind: "tool_result", result: '{"project":"projects/orders"}' });
+    const store = useAgentStore.getState();
+    const chat = store.createChat({ context: "projects/orders" });
+    const reference = { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" };
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
+    const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+    const original = store.addMessage({
+      chatId: chat.id,
+      role: "user",
+      content: "@Orders How can I request access to unmasked data?",
+      metadata: { resourceReferences: [reference], followUpSourceId: source.id },
+    })!;
+    store.addMessage({ chatId: chat.id, role: "assistant", content: "Review the original query." });
+    store.addMessage({ chatId: chat.id, role: "user", content: "Query employees" });
+    const newerSource = store.addMessage({ chatId: chat.id, role: "assistant", content: "Employees returned." })!;
+    store.setDraft(chat.id, {
+      text: "@Billing Keep this unsent question.",
+      mentions: [{
+        resource: { kind: "project", name: "projects/billing", project: "projects/billing", label: "Billing" },
+        range: { start: 0, end: 8 },
+      }],
+      followUpSourceId: newerSource.id,
+    });
+    const draft = structuredClone(store.getDraft(chat.id));
+    const resendActionRef = createRef<((messageId: string) => void) | null>();
+    const view = renderIntoContainer(<AgentInput resendActionRef={resendActionRef} />);
+    view.render();
+
+    try {
+      await act(async () => {
+        resendActionRef.current?.(original.id);
+        await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+      });
+      const resent = store.getMessages(chat.id).findLast((message) => message.role === "user");
+      expect(resent?.id).not.toBe(original.id);
+      expect(resent).toMatchObject({
+        content: original.content,
+        metadata: { resourceReference: reference, followUpSourceId: source.id },
+      });
+      expect(resent?.metadata?.followUpSourceId).not.toBe(newerSource.id);
+      expect(store.getDraft(chat.id)).toEqual(draft);
+    } finally {
+      view.unmount();
+    }
+  });
+
   describe("Resend admission", () => {
     test.each(["idle", "error"] as const)("rechecks admission for an %s chat despite prior storage pressure", async (status) => {
       enableRunRecovery();
@@ -9174,6 +9462,117 @@ describe("AgentInput", () => {
     view.unmount();
   });
 
+  test.each([false, true])(
+    "sends a queued follow-up independently of the composer draft, edited during configuration=%s",
+    async (editDuringConfiguration) => {
+      const { buildOutboundHistory } = await vi.importActual<typeof import("../logic/outboundHistory")>("../logic/outboundHistory");
+      mocks.buildOutboundHistory.mockImplementation(buildOutboundHistory);
+      let resolveConfiguration!: (setting: undefined) => void;
+      mocks.getOrFetchSettingByName.mockReturnValue(new Promise<undefined>((resolve) => {
+        resolveConfiguration = resolve;
+      }));
+      let finishRun!: () => void;
+      mocks.runAgentLoop.mockImplementation((_history, _tools, _executor, callbacks: AgentCallbacks) =>
+        new Promise((resolve) => {
+          finishRun = () => {
+            callbacks.onText?.("The queued follow-up completed.");
+            resolve({ kind: "completed", success: true, totalTokensUsed: 0 });
+          };
+        })
+      );
+      const page = { path: "/projects/orders", title: "Orders" };
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders", page });
+      const references = [
+        { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" },
+        { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" },
+      ];
+      mocks.executeTool.mockResolvedValue({
+        kind: "tool_result",
+        result: JSON.stringify({
+          project: "projects/orders",
+          database: { status: "available", name: references[1].name, state: "ACTIVE" },
+        }),
+      });
+      const makeDraft = (databaseName: string, label: string, question: string) => ({
+        text: `@Billing @${label} ${question}`,
+        mentions: [
+          {
+            resource: { kind: "project" as const, name: "projects/billing", project: "projects/billing", label: "Billing" },
+            range: { start: 0, end: 8 },
+          },
+          {
+            resource: { kind: "database" as const, name: databaseName, project: "projects/billing", label },
+            range: { start: 9, end: 10 + label.length },
+          },
+        ],
+      });
+      store.setDraft(chat.id, makeDraft("instances/test/databases/billing", "billing (test)", "Keep my unsent question."));
+      let expectedDraft = structuredClone(store.getDraft(chat.id));
+      const question = "Can you summarize these results?";
+      store.queueUserMessage({ chatId: chat.id, text: question, page, resourceReferences: references });
+      expect(store.getDraft(chat.id)).toEqual(expectedDraft);
+
+      const view = renderIntoContainer(<AgentInput />);
+      try {
+        view.render();
+        await act(async () => { await Promise.resolve(); });
+        expect(resolveConfiguration).toBeTypeOf("function");
+        expect(getQueuedUserMessage(chat.id)?.text).toBe(question);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+        expect(store.getDraft(chat.id)).toEqual(expectedDraft);
+
+        if (editDuringConfiguration) {
+          act(() => store.setDraft(chat.id, makeDraft("instances/test/databases/archive", "archive (test)", "Keep this newer question.")));
+          expectedDraft = structuredClone(store.getDraft(chat.id));
+        }
+        expect(view.container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(expectedDraft.text);
+
+        await act(async () => {
+          resolveConfiguration(undefined);
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        expect(store.getDraft(chat.id)).toEqual(expectedDraft);
+        expect(view.container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(expectedDraft.text);
+        const users = store.getMessages(chat.id).filter((message) => message.role === "user");
+        expect(users).toHaveLength(1);
+        expect(users[0]).toMatchObject({ content: question, metadata: { resourceReferences: references } });
+        const modelUsers = mocks.runAgentLoop.mock.calls[0][0].filter((message: { role: string }) => message.role === "user");
+        expect(modelUsers).toHaveLength(1);
+        expect(modelUsers[0].content).toMatch(/^Can you summarize these results\?\n\n/);
+        for (const { kind, name, project } of references) {
+          expect(modelUsers[0].content).toContain(JSON.stringify({ kind, name, project }));
+        }
+        expect(modelUsers[0].content).not.toContain("projects/billing");
+        expect(modelUsers[0].content).not.toContain("instances/test/databases/");
+        expect(modelUsers[0].content).not.toContain("Keep my unsent question.");
+        expect(modelUsers[0].content).not.toContain("Keep this newer question.");
+        expect(mocks.buildSystemPrompt).toHaveBeenCalledWith(expect.objectContaining({
+          referencedProject: "projects/orders", referencedDatabase: references[1].name,
+        }));
+        expect(mocks.createToolExecutor).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+          referencedProject: "projects/orders", referencedDatabase: references[1].name,
+        }));
+        view.render();
+        await act(async () => { await Promise.resolve(); });
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+
+        await act(async () => {
+          finishRun();
+          await vi.waitFor(() => expect(store.getChat(chat.id)?.status).toBe("idle"));
+        });
+        expect(store.getMessages(chat.id).filter((message) => message.role === "user")).toEqual(users);
+        expect(store.getMessages(chat.id).some((message) => message.content === "The queued follow-up completed.")).toBe(true);
+        expect(store.getDraft(chat.id)).toEqual(expectedDraft);
+        expect(view.container.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(expectedDraft.text);
+        expect(getQueuedUserMessage(chat.id)).toBeUndefined();
+        expect(mocks.runAgentLoop).toHaveBeenCalledOnce();
+      } finally {
+        view.unmount();
+      }
+    }
+  );
+
   test.each(
     (["before", "during"] as const).flatMap((timing) =>
       [false, true].map((hasNewerDraft) => [timing, hasNewerDraft] as const)
@@ -9284,6 +9683,88 @@ describe("AgentInput", () => {
     expect(useAgentStore.getState().getMessages(chat.id)).toHaveLength(0);
     view.unmount();
   });
+
+  test.each(["unchanged", "text", "reference"] as const)(
+    "preserves a blocked follow-up source through manual send only while its draft is unchanged: %s",
+    async (edit) => {
+      mocks.getOrFetchSettingByName.mockResolvedValue({
+        value: { value: { case: "ai", value: { enabled: false } } },
+      });
+      mocks.runAgentLoop.mockImplementation(async (_history, _tools, _executor, callbacks) => {
+        callbacks.onText("The restored follow-up completed.");
+        return { kind: "completed", success: true, totalTokensUsed: 0 };
+      });
+      mocks.executeTool.mockImplementation(async (name, args) => ({
+        kind: "tool_result",
+        result: JSON.stringify({
+          project: "projects/orders",
+          ...(name === "get_database_overview" ? {
+            database: { status: "available", name: args.databaseName, state: "ACTIVE" },
+          } : {}),
+        }),
+      }));
+      const page = { path: "/projects/orders", title: "Orders" };
+      const store = useAgentStore.getState();
+      const chat = store.createChat({ context: "projects/orders", page });
+      const references = [
+        { kind: "project" as const, name: "projects/orders", project: "projects/orders", label: "Orders" },
+        { kind: "database" as const, name: "instances/prod/databases/orders", project: "projects/orders", label: "orders (prod)" },
+      ];
+      store.addMessage({ chatId: chat.id, role: "user", content: "Query contacts" });
+      const source = store.addMessage({ chatId: chat.id, role: "assistant", content: "Contacts returned." })!;
+      const question = "@Orders @orders (prod) How can I request access to unmasked data?";
+      store.queueUserMessage({
+        chatId: chat.id,
+        text: question,
+        page,
+        resourceReferences: references,
+        followUpSourceId: source.id,
+      });
+      const blocked = renderIntoContainer(<AgentInput />);
+      blocked.render();
+      try {
+        await act(async () => {
+          await vi.waitFor(() => expect(getQueuedUserMessage(chat.id)).toBeUndefined());
+        });
+        expect(store.getDraft(chat.id)).toMatchObject({ text: question, followUpSourceId: source.id });
+        expect(store.getDraft(chat.id).mentions?.map(({ resource }) => resource)).toEqual(references);
+        expect(mocks.runAgentLoop).not.toHaveBeenCalled();
+      } finally {
+        blocked.unmount();
+      }
+
+      const restored = store.getDraft(chat.id);
+      if (edit === "text") {
+        store.setDraft(chat.id, { ...restored, text: `${restored.text} Explain the options.` });
+      } else if (edit === "reference") {
+        store.setDraft(chat.id, {
+          ...restored,
+          mentions: restored.mentions?.map((mention) => mention.resource.kind === "database"
+            ? { ...mention, resource: { ...mention.resource, name: "instances/prod/databases/other" } }
+            : mention),
+        });
+      }
+      const submitted = structuredClone(store.getDraft(chat.id));
+      expect(submitted.followUpSourceId).toBe(edit === "unchanged" ? source.id : undefined);
+      mocks.getOrFetchSettingByName.mockResolvedValue(undefined);
+      mocks.aiEnabled = true;
+      const ready = renderIntoContainer(<AgentInput />);
+      ready.render();
+      try {
+        await act(async () => {
+          await vi.waitFor(() => expect(ready.container.querySelector<HTMLButtonElement>("[data-agent-send]")).not.toBeDisabled());
+          ready.container.querySelector<HTMLButtonElement>("[data-agent-send]")?.click();
+          await vi.waitFor(() => expect(mocks.runAgentLoop).toHaveBeenCalledOnce());
+        });
+        const sent = store.getMessages(chat.id).findLast((message) => message.role === "user");
+        expect(sent?.content).toBe(submitted.text);
+        expect(sent?.metadata?.followUpSourceId).toBe(edit === "unchanged" ? source.id : undefined);
+        expect(sent?.metadata?.resourceReferences).toEqual(submitted.mentions?.map(({ resource }) => resource));
+      } finally {
+        ready.unmount();
+      }
+    }
+  );
 
   test("restores both bound references when a queued follow-up is blocked", async () => {
     mocks.getOrFetchSettingByName.mockResolvedValue({
@@ -11876,11 +12357,13 @@ describe("AgentInput", () => {
     expect(inputFooter).toBeInstanceOf(HTMLDivElement);
     expect(inputFooter?.textContent).toContain("Tokens used: 5,678");
     expect(container.textContent).toContain("Continue?");
-    expect(
-      [...container.querySelectorAll("button")].find(
-        (button) => button.textContent === "agent.confirm"
-      )?.classList.contains("h-9")
-    ).toBe(true);
+    for (const label of ["agent.confirm", "agent.cancel"]) {
+      const button = [...container.querySelectorAll("button")].find(
+        (button) => button.textContent === label
+      );
+      expect(button).toHaveClass("h-7", "px-2", "text-xs");
+      expect(button).not.toHaveClass("h-9");
+    }
 
     unmount();
   });

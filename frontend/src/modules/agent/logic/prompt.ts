@@ -70,7 +70,7 @@ Rules:
     ? `- Current instance detail page: ${pageContext.instanceName}. For questions about databases on this instance or their sync status, call get_instance_overview. It includes only databases visible to the member and reads one page; never claim there are no out-of-sync databases across the entire instance. If partial is true, the visible results are also incomplete. Do not inspect another instance or infer from prior conversation.\n`
     : "";
   const maskingDiscoveryInstruction =
-    '- For new rule/unspecified column-masking setup, including "how to mask ...", load get_skill(name="data-masking", section="rule"). Use section="overview" for concepts/catalog/classification, "exemption" for unmasking, or "semantic-type" for custom types. Follow loaded guidance and refresh evidence before claims/handoffs. Never change saved masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM actions. Only member-clicked typed drafts fill local unsaved forms; saving remains the member\'s action. Other settings are guide-only. Never read or query real row values; use synthetic values only.\n';
+    '- For global masking setup, including "how to mask ...", load get_skill(name="data-masking", section="rule") for context-aware target clarification. Use section="overview" for concepts/catalog/classification management, "exemption" for unmasking, or "semantic-type" for custom types. Refresh evidence before claims/handoffs. Never change saved masking rules, semantic types, classifications, catalog metadata, or exemptions via APIs or DOM actions. Only member-clicked typed drafts fill local unsaved forms; saving remains the member\'s action. Other settings are guide-only. Never read or query real row values; use synthetic values only.\n';
   const referencedApiScope = pageContext.referencedIssue
     ? `the referenced project (${pageContext.referencedProject}) for project-scoped requests and ${pageContext.referencedIssue} for Issue-scoped requests`
     : pageContext.referencedDatabase
@@ -87,7 +87,7 @@ Rules:
       ? "- This is a read-only request. Stay on the current page and answer in chat. Do not navigate, call APIs, or use DOM actions. For a request about the user's open Issues in this project, call get_project_open_issues and summarize its result. For a request about what needs the user's attention in the workspace, call get_workspace_attention. For a request about what changed recently in this project, call get_project_recent_activity. For a request about what changed recently in the workspace, call get_workspace_recent_activity. Summarize only the returned events; do not infer details omitted from their safe summaries. Invite the user to send a follow-up message for other work.\n"
       : '- Use navigate for "show me" / "go to" requests. If the exact path is unclear, call navigate(list=true, query="<resource keyword>") to discover matching routes; avoid unfiltered route discovery and never guess paths.\n';
   const interactionInstructions = [
-    "- Use get_skill before multi-step work: query, database-change, grant-permission, or just-in-time (Access Grants).\n",
+    '- Use get_skill before multi-step work. For SQL data queries, load get_skill(name="query") before execution or result follow-ups.\n',
     `- ${sqlEditorPersistenceInstruction} The typed Plan draft handoff remains local and unsaved with its member-click and save boundaries.\n`,
     isReadOnly
       ? ""

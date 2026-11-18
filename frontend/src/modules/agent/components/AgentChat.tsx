@@ -66,6 +66,7 @@ import {
   PlanDraftStorageError,
   prepareAgentPlanDraftRoute,
 } from "../logic/planDraft";
+import { getQueryResponseActions } from "../logic/queryFollowUps";
 import {
   formatResourceMention,
   isResourceMentionRange,
@@ -122,7 +123,8 @@ interface AgentChatProps {
   onContinueAction?: (
     chatId: string,
     prompt: string,
-    references: AgentResourceReference[]
+    references: AgentResourceReference[],
+    followUpSourceId?: string
   ) => void;
 }
 
@@ -900,9 +902,36 @@ export function AgentChat({
   const queuedUserMessage = useAgentStore((s) =>
     s.currentChatId ? s.queuedUserMessagesByChatId[s.currentChatId] : undefined
   );
-  const latestContinuePrompts = messages
-    .at(-1)
-    ?.metadata?.actions?.filter((action) => action.kind === "continue")
+  const responseActionsByMessageId = useMemo(() => {
+    const accepted = new Map<string, AgentResponseAction[]>();
+    let turnMessages: AgentMessage[] = [];
+    for (const message of messages) {
+      if (message.role === "user") turnMessages = [];
+      turnMessages.push(message);
+      if (!message.metadata?.actions) continue;
+      const actions = normalizeAgentResponseActions(message.metadata.actions);
+      // Saved questions must use their own turn, not a later query's evidence.
+      accepted.set(
+        message.id,
+        currentChat?.capability || message.metadata.accessRequestDraft
+          ? actions
+          : getQueryResponseActions(
+              actions,
+              turnMessages,
+              normalizeAgentResourceReferences(
+                message.metadata.resourceReferences,
+                message.metadata.resourceReference
+              ),
+              t,
+              message.metadata.queryMaskingEligibility
+            )
+      );
+    }
+    return accepted;
+  }, [messages, currentChat?.capability, t]);
+  const latestContinuePrompts = responseActionsByMessageId
+    .get(messages.at(-1)?.id ?? "")
+    ?.filter((action) => action.kind === "continue")
     .map((action) => action.prompt)
     .join("\0");
   const previousFollowUp = useRef<{
@@ -1163,8 +1192,8 @@ export function AgentChat({
                   <Button
                     key={starterId}
                     appearance="secondary"
-                    size="md"
-                    className="h-auto w-full min-w-0 justify-between rounded-xs px-3 py-2 text-left whitespace-normal hover:text-accent"
+                    size="sm"
+                    className="h-auto w-full min-w-0 justify-between rounded-xs py-1.5 text-left whitespace-normal hover:text-accent"
                     onClick={() => onSelectSuggestion?.(starterId)}
                     data-agent-empty-suggestion
                     data-starter-id={starterId}
@@ -1172,7 +1201,10 @@ export function AgentChat({
                     <span className="min-w-0 flex-1 break-words">
                       {t(`agent.landing-starters.${starterId}`)}
                     </span>
-                    <ArrowUpRight className="shrink-0" aria-hidden="true" />
+                    <ArrowUpRight
+                      className="size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                   </Button>
                 ))}
               </div>
@@ -1200,7 +1232,7 @@ export function AgentChat({
           !isChatActionBlocked &&
           onRetry;
         const isPending = msg.metadata?.pending === true;
-        const actions = normalizeAgentResponseActions(msg.metadata?.actions);
+        const actions = responseActionsByMessageId.get(msg.id) ?? [];
         const openAction = actions.find((action) => action.kind === "open");
         const proposedHandoff = openAction?.target ?? msg.metadata?.handoff;
         const diagnosticIssueRoute =
@@ -1506,21 +1538,21 @@ export function AgentChat({
                           key={action.prompt}
                           type="button"
                           appearance="secondary"
-                          size="md"
-                          className="h-auto max-w-full justify-start bg-control-bg px-3 py-2 text-left whitespace-normal text-main hover:bg-control-bg-hover"
+                          size="sm"
+                          className="h-auto max-w-full justify-start bg-control-bg py-1.5 text-left whitespace-normal text-main hover:bg-control-bg-hover"
                           data-agent-action-continue
                           disabled={
                             !onContinueAction ||
                             currentChat?.status !== "idle" ||
                             currentChat.archived ||
-                            Boolean(draftText?.trim()) ||
                             Boolean(queuedUserMessage)
                           }
                           onClick={() =>
                             onContinueAction?.(
                               msg.chatId,
                               action.prompt,
-                              boundReferences
+                              boundReferences,
+                              msg.id
                             )
                           }
                         >

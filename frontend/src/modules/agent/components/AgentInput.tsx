@@ -41,7 +41,10 @@ import {
   getCurrentChatContext,
   isAgentMaskingPageResource,
 } from "../logic/chatContext";
-import { resolveDeniedQueryAccessDraft } from "../logic/deniedQueryAccess";
+import {
+  extractDeniedQueryAccessRequest,
+  resolveDeniedQueryAccessDraft,
+} from "../logic/deniedQueryAccess";
 import { normalizeAgentDiagnosticCapability } from "../logic/diagnosticCapability";
 import { acceptAgentHandoff, collectAgentHandoffs } from "../logic/handoff";
 import type { IssueDecisionImpact } from "../logic/issueDecisionImpact";
@@ -64,6 +67,12 @@ import {
   getHistoricalMaskingDatabase,
 } from "../logic/outboundHistory";
 import { buildSystemPrompt } from "../logic/prompt";
+import {
+  getCurrentTurnQueryCalls,
+  getQueryMaskingSetupTarget,
+  getQueryResponseActions,
+} from "../logic/queryFollowUps";
+import { resolveQueryMaskingEligibility } from "../logic/queryMaskingEligibility";
 import {
   canAddResourceMention,
   formatResourceMention,
@@ -96,6 +105,7 @@ import {
   getMaskingSkillGuidance,
   type MaskingSkillSection,
 } from "../logic/skills";
+import { queryAccessRecoveryInstruction } from "../logic/skills/query";
 import { createToolExecutor, getToolDefinitions } from "../logic/tools";
 import { apiCallNeedsConfirmation } from "../logic/tools/apiMethodClass";
 import { extractDatabaseOverviewEvidence } from "../logic/tools/databaseOverview";
@@ -119,6 +129,7 @@ import type {
   AgentHandoff,
   AgentMessage,
   AgentModelCallUsage,
+  AgentQueryMaskingEligibility,
   AgentResourceReference,
   AgentRunBindings,
   AgentRunCheckpoint,
@@ -329,48 +340,6 @@ const hasCurrentTurnDatabaseSchemaRead = (
     }
   }
   return schemaRead;
-};
-
-const getCurrentTurnQueryCalls = (
-  messages: AgentMessage[]
-): { args: Record<string, unknown>; result?: string }[] => {
-  const lastUserIndex = messages.findLastIndex(
-    (message) => message.role === "user"
-  );
-  if (lastUserIndex < 0) return [];
-
-  const queryCalls: { args: Record<string, unknown>; result?: string }[] = [];
-  const callsById = new Map<string, (typeof queryCalls)[number]>();
-  for (const message of messages.slice(lastUserIndex + 1)) {
-    if (message.role === "assistant") {
-      for (const call of message.toolCalls ?? []) {
-        if (call.name !== "call_api") continue;
-        let args: Record<string, unknown>;
-        try {
-          const parsed: unknown = JSON.parse(call.arguments);
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            continue;
-          }
-          args = parsed as Record<string, unknown>;
-        } catch {
-          continue;
-        }
-        if (
-          args.operationId !== "SQLService/Query" &&
-          args.operationId !== "bytebase.v1.SQLService.Query"
-        ) {
-          continue;
-        }
-        const queryCall: (typeof queryCalls)[number] = { args };
-        queryCalls.push(queryCall);
-        callsById.set(call.id, queryCall);
-      }
-    } else if (message.role === "tool" && message.toolCallId) {
-      const queryCall = callsById.get(message.toolCallId);
-      if (queryCall) queryCall.result = message.content;
-    }
-  }
-  return queryCalls;
 };
 
 // ---------------------------------------------------------------------------
@@ -1510,7 +1479,20 @@ export function AgentInput({
         }),
         systemGuidance: capability
           ? ""
-          : getMaskingSkillGuidance([...maskingSections]),
+          : [
+              getMaskingSkillGuidance([...maskingSections]),
+              getCurrentTurnQueryCalls(
+                useAgentStore.getState().getMessages(chatId)
+              ).some(
+                ({ args, result }) =>
+                  result !== undefined &&
+                  extractDeniedQueryAccessRequest(args, result)
+              )
+                ? queryAccessRecoveryInstruction
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
       });
       const tools = resolveRequestContext().tools;
       const executor = createToolExecutor(router, {
@@ -2289,7 +2271,14 @@ export function AgentInput({
                   ? await resolveDeniedQueryAccessDraft(
                       queryCalls[0].args,
                       queryCalls[0].result
-                    ).catch(() => undefined)
+                    )
+                      .then((draft) =>
+                        preparedAccessRequestDraft ||
+                        draft?.kind === "requestRole"
+                          ? draft
+                          : undefined
+                      )
+                      .catch(() => undefined)
                   : undefined
               : undefined,
             preparedAccessRequestDraft
@@ -2352,6 +2341,33 @@ export function AgentInput({
             ];
             handoff = undefined;
           }
+          let queryMaskingEligibility: AgentQueryMaskingEligibility | undefined;
+          if (outcome.success && !capability && !accessRequestDraft) {
+            const turnMessages = useAgentStore.getState().getMessages(chatId);
+            const maskingSetupTarget = getQueryMaskingSetupTarget(
+              actions,
+              turnMessages,
+              references
+            );
+            if (maskingSetupTarget) {
+              queryMaskingEligibility = await resolveQueryMaskingEligibility(
+                store.workspaceName ?? "",
+                maskingSetupTarget
+              );
+              if (
+                !ownsInvocation() ||
+                useAgentStore.getState().getChat(chatId)?.archived
+              )
+                return;
+            }
+            actions = getQueryResponseActions(
+              actions,
+              turnMessages,
+              references,
+              t,
+              queryMaskingEligibility
+            );
+          }
           useAgentStore.getState().addMessage({
             chatId,
             role: "assistant",
@@ -2362,6 +2378,7 @@ export function AgentInput({
               ...(overviewEvidence ? { evidence: overviewEvidence } : {}),
               ...(handoff ? { handoff } : {}),
               ...(actions.length > 0 ? { actions } : {}),
+              ...(queryMaskingEligibility ? { queryMaskingEligibility } : {}),
               ...(accessRequestDraft ? { accessRequestDraft } : {}),
               ...(actions.some((action) => action.kind === "continue") &&
               references.length > 0
@@ -2874,6 +2891,9 @@ export function AgentInput({
                 : message.text;
             store.setDraft(message.chatId, {
               text,
+              ...(message.followUpSourceId !== undefined
+                ? { followUpSourceId: message.followUpSourceId }
+                : {}),
               ...(references.length > 0
                 ? message.resourceReferences
                   ? { mentions }
@@ -3072,6 +3092,9 @@ export function AgentInput({
         content: text,
         metadata: {
           route: currentPage.path,
+          ...(submittedDraft.followUpSourceId !== undefined
+            ? { followUpSourceId: submittedDraft.followUpSourceId }
+            : {}),
           ...(stagedReference ? { resourceReference: stagedReference } : {}),
           ...(references.length > 1 ? { resourceReferences: references } : {}),
         },
@@ -3224,6 +3247,9 @@ export function AgentInput({
               content: messageText,
               metadata: {
                 route: currentPage.path,
+                ...(message.metadata?.followUpSourceId !== undefined
+                  ? { followUpSourceId: message.metadata.followUpSourceId }
+                  : {}),
                 ...(references[0] ? { resourceReference: references[0] } : {}),
                 ...(references.length > 1
                   ? { resourceReferences: references }
@@ -4103,7 +4129,7 @@ export function AgentInput({
           <div className="flex flex-wrap gap-x-2 gap-y-2">
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs bg-accent text-accent-text hover:bg-accent-hover disabled:opacity-50"
               disabled={
                 isCurrentChatRunning || (apiPermission && !apiPermissionPreview)
@@ -4114,7 +4140,7 @@ export function AgentInput({
             </Button>
             <Button
               appearance="secondary"
-              size={apiPermission ? "sm" : "md"}
+              size="sm"
               className="rounded-xs border text-control hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={() => submitConfirmation(false)}

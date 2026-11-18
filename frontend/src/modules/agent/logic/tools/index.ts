@@ -37,6 +37,7 @@ import {
   prepareMaskingRuleDraft,
   prepareMaskingRuleDrafts,
 } from "../maskingRuleDraft";
+import { MaskingRuleTargetClarificationError } from "../maskingRuleTarget";
 import { prepareMaskingExemptionDraft } from "../maskingExemptionDraft";
 import { createJustInTimeTools } from "../justInTime";
 import {
@@ -1032,7 +1033,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "prepare_access_grant_draft",
       description:
-        "Prepare a local unsaved, self-only JIT Access Grant request for an exact user-confirmed query. Freshly verifies eligibility and target ownership; never executes SQL or submits a request. Explicit Unmask applies to the entire query result. Finish with done; runtime attaches the member-clicked draft action. Reason and finite expiration are reviewed in the existing request form.",
+        'Prepare a local unsaved, self-only JIT Access Grant request for an exact user-confirmed query, only after the member requests an Access Grant or chooses JIT. A denied query alone is not opt-in; explain the denial, verify eligibility, and wait for the member to confirm through ask_user(kind="confirm") before starting the normal just-in-time skill. Freshly verifies eligibility and target ownership; never executes SQL or submits a request. Explicit Unmask applies to the entire query result. Finish with done; runtime attaches the member-clicked draft action. Reason and finite expiration are reviewed in the existing request form.',
       parametersSchema: {
         type: "object",
         properties: {
@@ -1082,7 +1083,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "prepare_masking_rule_draft",
       description:
-        "Prepare a NEW unsaved global rule or refine its CREATE editor after confirming database scope. EDIT is review-only. Runtime validates selector-compatible conditions, observed semantic type IDs, scope, permissions, features, and editor revision. No opening or saving occurs; finish with done and the runtime supplies the member-clicked draft action. Follow the loaded rule guide.",
+        "Prepare a NEW unsaved global rule or refine its CREATE editor after confirming database scope. EDIT is review-only. Runtime validates conditions, semantic types, scope, permissions, features, and editor revision, and returns compact target metadata evidence. A current no-match requires member clarification before retrying. No opening or saving occurs; finish with done for the member-clicked draft action. Follow the loaded rule guide.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -1091,12 +1092,17 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
             type: "string",
             maxLength: 20000,
             description:
-              "Selector-compatible predicate for the confirmed columns. Use plain resource fields with equality, in, contains, startsWith, endsWith, matches, &&/|| and parentheses. Never lowerAscii(), arbitrary functions, or raw-only CEL.",
+              "Selector-compatible predicate for the confirmed resources, including table breadth. Supports environment, project, instance, database, table, column and numeric classification-level factors; no named column is required for table-wide or classification rules. Use plain resource fields with equality, in, contains, startsWith, endsWith, matches, &&/|| and parentheses. Never lowerAscii(), arbitrary functions, or raw-only CEL.",
           },
           semanticType: {
             type: "string",
             description:
               "Exact semantic type ID observed in the fresh masking overview.",
+          },
+          allowUnmatchedTarget: {
+            type: "boolean",
+            description:
+              "Set true only after the member explicitly confirms keeping this exact target despite returned no-current-match evidence, such as for a future table or column. Does not change the rule or save it.",
           },
           scope: {
             type: "object",
@@ -1181,7 +1187,7 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
     {
       name: "prepare_masking_exemption_draft",
       description:
-        "Prepare a NEW unsaved project exemption using explicitly confirmed scope, members, condition, and expiration. Runtime revalidates permissions, features, and editor revision. Does not open, apply, or save; finish with done for a member-clicked draft action. Follow the loaded exemption guide.",
+        "Prepare a NEW unsaved project exemption using confirmed scope, members, condition, and expiration. Runtime revalidates permissions, features, editor revision, and returns bounded schema-aware target evidence. A current no-match needs member clarification before retrying. Does not open, apply, or save; finish with done for a member-clicked draft action. Follow the loaded exemption guide.",
       parametersSchema: {
         type: "object",
         properties: {
@@ -1214,6 +1220,11 @@ Use mode="dom" before dom_action to get element refs like [e1]. Use semantic mod
               "Selector-compatible column/table/schema/classification predicate. Runtime adds the confirmed database constraint independently.",
           },
           description: { type: "string", maxLength: 2000 },
+          allowUnmatchedTarget: {
+            type: "boolean",
+            description:
+              "Set true only after the member explicitly confirms keeping this exact future/unmatched target despite returned no-current-match evidence. Explain future unmasked visibility for the confirmed members and expiry. Does not alter or save the exemption.",
+          },
           expirationTimestamp: {
             type: ["string", "null"],
             description:
@@ -1930,6 +1941,12 @@ export function createToolExecutor(
                 error instanceof Error
                   ? error.message
                   : "Unable to verify the masking rule draft.",
+              ...(error instanceof MaskingRuleTargetClarificationError
+                ? {
+                    needsClarification: true,
+                    targetEvidence: error.targetEvidence,
+                  }
+                : {}),
             })
           );
         }
@@ -1997,6 +2014,12 @@ export function createToolExecutor(
                 error instanceof Error
                   ? error.message
                   : "Unable to verify the masking exemption draft.",
+              ...(error instanceof MaskingRuleTargetClarificationError
+                ? {
+                    needsClarification: true,
+                    targetEvidence: error.targetEvidence,
+                  }
+                : {}),
             })
           );
         }

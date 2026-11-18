@@ -155,6 +155,25 @@ describe("resolveSkill", () => {
 });
 
 describe("getSkill", () => {
+  test.each(["query", "just-in-time"])(
+    "%s waits for chat confirmation before starting denied-query recovery",
+    (name) => {
+      const guidance = getSkill({ name });
+      expect(guidance).toContain("Request temporary access");
+      expect(guidance).toContain('ask_user(kind="confirm"');
+      expect(guidance).toContain("Wait for response.confirmed");
+      expect(guidance).toContain(
+        "Do not prepare_access_grant_draft before confirmation"
+      );
+      expect(guidance).toContain(
+        'load get_skill(name="just-in-time") and follow its normal workflow'
+      );
+      expect(guidance).toContain("explicitly requested an Access Grant");
+      expect(guidance).toContain("Network errors, invalid SQL");
+      expect(guidance).toContain("If declined, stop");
+    }
+  );
+
   test("requires member-selected future expiration instead of a fixed date", () => {
     const guidance = getSkill({ name: "grant-permission" });
     expect(guidance).toContain("explicitly selected by the member");
@@ -201,7 +220,7 @@ describe("getSkill", () => {
     const guidance = getSkill({ name: "data-masking", section: "rule" });
 
     expect(guidance).toContain(
-      '"mask email" defaults to resource.column_name == "email"'
+      '"mask email" supplies resource.column_name == "email"'
     );
     expect(guidance).toContain(
       "Preserve named columns through scope/type questions"
@@ -210,7 +229,7 @@ describe("getSkill", () => {
       "Do not ask exact-name versus another pattern merely because broader matches are possible"
     );
     expect(guidance).toContain(
-      "Clarify only genuinely ambiguous categories or conflicting column identities"
+      "Clarify genuinely ambiguous categories, conflicting column identities, or unresolved table breadth"
     );
     expect(guidance).toContain(
       "Never infer suffix, case-insensitive, or semantic-category matching"
@@ -486,7 +505,7 @@ describe("getSkill", () => {
       "Do not substitute manual instructions for an eligible prepared draft"
     );
     expect(guidance).toContain(
-      "If preparation is blocked or unverified, explain the exact reason"
+      "If preparation fails, explain the exact reason"
     );
     expect(guidance).not.toContain("prefer preparing its actual unsaved form");
   });

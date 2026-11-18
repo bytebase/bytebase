@@ -28,6 +28,7 @@ import {
   SubscriptionSchema,
 } from "@/types/proto-es/v1/subscription_service_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import { resolveQueryMaskingEligibility } from "../queryMaskingEligibility";
 import { getMaskingSetup } from "./maskingSetup";
 
 const workspaceName = "workspaces/example";
@@ -157,6 +158,46 @@ beforeEach(() => {
 });
 
 describe("getMaskingSetup", () => {
+  test("supports query masking discovery with only workspace evidence", async () => {
+    mocks.getProject.mockRejectedValue(new Error("project unavailable"));
+    mocks.getIamPolicy.mockRejectedValue(new Error("project IAM unavailable"));
+
+    expect(
+      await resolveQueryMaskingEligibility(workspaceName, databaseName)
+    ).toEqual({ database: databaseName, allowed: true });
+    expect(mocks.fetchCurrentUser).toHaveBeenCalledWith(true);
+    expect(mocks.loadWorkspacePermissionState).toHaveBeenCalledOnce();
+    expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect(mocks.getIamPolicy).not.toHaveBeenCalled();
+    expect(mocks.getOrFetchProjectByName).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    "false",
+    'request.time > timestamp("2999-01-01T00:00:00Z")',
+    'resource.database == "app"',
+  ])(
+    "does not infer query masking eligibility from a coarse grant with condition %s",
+    async (expression) => {
+      const refresh =
+        mocks.loadWorkspacePermissionState.getMockImplementation()!;
+      mocks.loadWorkspacePermissionState.mockImplementation(async () => {
+        await refresh();
+        mocks.state.workspacePolicy!.bindings[0].condition = create(
+          ExprSchema,
+          {
+            expression,
+          }
+        );
+      });
+
+      expect(
+        await resolveQueryMaskingEligibility(workspaceName, databaseName)
+      ).toEqual({ database: databaseName, allowed: false });
+    }
+  );
+
   test.each([
     { cached: false, fresh: true, state: State.ACTIVE, eligible: true },
     { cached: true, fresh: false, state: State.ACTIVE, eligible: false },
