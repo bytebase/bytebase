@@ -679,3 +679,67 @@ func TestChangedDependentViewIsDroppedBeforeUnloadableView(t *testing.T) {
 	require.Less(t, dropUpper, dropLower, sql)
 	require.Less(t, dropLower, recreateUpper, sql)
 }
+
+// TestChangedViewKeepsOldDependencyEdge covers a target definition that stops
+// depending on the unloadable view: the currently installed view still does, so
+// its drop must be ordered before the lower view's drop.
+func TestChangedViewKeepsOldDependencyEdge(t *testing.T) {
+	snapshot := func(columnType, upperDefinition string, upperDeps []*metadatapb.DependencyColumn) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{Name: "upper", Definition: upperDefinition, DependencyColumns: upperDeps},
+				{
+					Name:       "lower",
+					Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "t", Column: "id",
+					}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("integer", "SELECT id FROM public.lower", []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}}),
+		snapshot("bigint", "SELECT 1 AS one", nil))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	dropLower := strings.Index(sql, `DROP VIEW IF EXISTS "public"."lower"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, dropLower, 0, sql)
+	require.Less(t, dropUpper, dropLower, sql)
+}
+
+// TestCommentOnlyViewChangeIsRecreated covers a selected dependent whose only
+// change is its comment: the catalog emits no replacement, so the fallback must
+// synthesize one after the drop.
+func TestCommentOnlyViewChangeIsRecreated(t *testing.T) {
+	snapshot := func(columnType, comment string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{
+					Name: "upper", Definition: "SELECT id FROM public.lower", Comment: comment,
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}},
+				},
+				{
+					Name: "lower", Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("integer", "old comment"), snapshot("bigint", "new comment"))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	createUpper := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, createUpper, 0, sql)
+	require.Less(t, dropUpper, createUpper, sql)
+	require.Contains(t, sql, "COMMENT ON VIEW")
+}

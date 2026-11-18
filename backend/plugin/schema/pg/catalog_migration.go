@@ -344,7 +344,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				key:        key,
 				dropSQL:    "DROP VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
 				createSQL:  trimDefinition(createSQL),
-				deps:       dependencyKeys(view.GetDependencyColumns()),
+				deps:       unionKeys(dependencyKeys(oldView.GetDependencyColumns()), dependencyKeys(view.GetDependencyColumns())),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
 				changed:    !proto.Equal(oldView, view),
@@ -364,7 +364,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 				key:        key,
 				dropSQL:    "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(schema.GetName(), view.GetName()),
 				createSQL:  trimDefinition(createSQL),
-				deps:       dependencyKeys(view.GetDependencyColumns()),
+				deps:       unionKeys(dependencyKeys(oldView.GetDependencyColumns()), dependencyKeys(view.GetDependencyColumns())),
 				unloadable: unloadable["rel:"+key],
 				direct:     dependsOnAffectedColumn(view.GetDependencyColumns(), affected) || dependsOnAffectedColumn(oldView.GetDependencyColumns(), affected),
 				changed:    !proto.Equal(oldView, view),
@@ -392,13 +392,19 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 			}
 		}
 	}
+	recreatedByPlan := make(map[string]bool)
+	for _, op := range plan.Ops {
+		if op.Type == catalog.OpCreateView || op.Type == catalog.OpAlterView {
+			recreatedByPlan[op.SchemaName+"."+op.ObjectName] = true
+		}
+	}
 	var items []restoreItem
 	for _, candidate := range candidates {
 		if !selected[candidate.key] {
 			continue
 		}
 		createSQL := candidate.createSQL
-		if candidate.changed {
+		if candidate.changed && recreatedByPlan[candidate.key] {
 			createSQL = ""
 		}
 		items = append(items, restoreItem{key: candidate.key, dropSQL: candidate.dropSQL, createSQL: createSQL, deps: candidate.deps})
@@ -444,6 +450,18 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		})
 	}
 	plan.Ops = ops
+}
+
+func unionKeys(left, right []string) []string {
+	seen := make(map[string]bool, len(left)+len(right))
+	keys := make([]string, 0, len(left)+len(right))
+	for _, key := range append(left, right...) {
+		if !seen[key] {
+			seen[key] = true
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
 func dependencyKeys(dependencies []*metadatapb.DependencyColumn) []string {
