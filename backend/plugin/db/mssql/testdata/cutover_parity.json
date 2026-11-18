@@ -1,0 +1,780 @@
+{
+  "execute": [
+    {
+      "name": "setup table",
+      "script": "CREATE TABLE dbo.cutover_t (id INT IDENTITY(1,1) PRIMARY KEY, code VARCHAR(20) NOT NULL, amount DECIMAL(18,2) NULL, at DATETIMEOFFSET NULL, flag BIT NOT NULL DEFAULT 0, bin VARBINARY(10) NULL, note NVARCHAR(50) NOT NULL DEFAULT 'it''s')",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE TABLE dbo.cutover_t (id INT IDENTITY(1,1) PRIMARY KEY, code VARCHAR(20) NOT NULL, amount DECIMAL(18,2) NULL, at DATETIMEOFFSET NULL, flag BIT NOT NULL DEFAULT 0, bin VARBINARY(10) NULL, note NVARCHAR(50) NOT NULL DEFAULT 'it''s')\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup referring table",
+      "script": "CREATE TABLE dbo.cutover_u (id INT PRIMARY KEY, s_id INT NOT NULL CONSTRAINT cutover_fk REFERENCES dbo.cutover_t(id), v INT NULL CONSTRAINT cutover_v_check CHECK (v \u003e= 0))",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE TABLE dbo.cutover_u (id INT PRIMARY KEY, s_id INT NOT NULL CONSTRAINT cutover_fk REFERENCES dbo.cutover_t(id), v INT NULL CONSTRAINT cutover_v_check CHECK (v \u003e= 0))\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup filtered index",
+      "script": "CREATE INDEX cutover_filtered ON dbo.cutover_u (v) INCLUDE (s_id) WHERE v IS NOT NULL",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE INDEX cutover_filtered ON dbo.cutover_u (v) INCLUDE (s_id) WHERE v IS NOT NULL\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup view",
+      "script": "CREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code \u003c\u003e ''",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code \u003c\u003e ''\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup view with a semicolon",
+      "script": "CREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup procedure",
+      "script": "CREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup sequence",
+      "script": "CREATE SEQUENCE dbo.cutover_seq AS DECIMAL(18,0) START WITH 10 INCREMENT BY 5 MINVALUE 1 MAXVALUE 1000 CACHE 20",
+      "affected": 0,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"CREATE SEQUENCE dbo.cutover_seq AS DECIMAL(18,0) START WITH 10 INCREMENT BY 5 MINVALUE 1 MAXVALUE 1000 CACHE 20\"}",
+        "type:COMMAND_RESPONSE command_response:{all_affected_rows:0}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "setup rows",
+      "script": "INSERT INTO dbo.cutover_t (code, amount, at, bin) VALUES ('a', 1.50, '2024-01-02T03:04:05.1234567+02:00', 0x0102), ('b', NULL, NULL, 0x), ('c', 2.25, NULL, NULL)",
+      "affected": 3,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code, amount, at, bin) VALUES ('a', 1.50, '2024-01-02T03:04:05.1234567+02:00', 0x0102), ('b', NULL, NULL, 0x), ('c', 2.25, NULL, NULL)\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:3 all_affected_rows:3}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "multi statement batch",
+      "script": "INSERT INTO dbo.cutover_t (code) VALUES ('d');\nUPDATE dbo.cutover_t SET code = 'e' WHERE code = 'd';",
+      "affected": 2,
+      "error": "",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('d');\\nUPDATE dbo.cutover_t SET code = 'e' WHERE code = 'd';\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:2 all_affected_rows:2}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:COMMIT}"
+      ]
+    },
+    {
+      "name": "auto-commit directive",
+      "script": "-- txn-mode = off\nINSERT INTO dbo.cutover_t (code) VALUES ('f');\nINSERT INTO dbo.cutover_t (code) VALUES ('g');",
+      "affected": 2,
+      "error": "",
+      "logs": [
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('f');\\nINSERT INTO dbo.cutover_t (code) VALUES ('g');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:2 all_affected_rows:2}"
+      ]
+    },
+    {
+      "name": "go batches",
+      "script": "-- txn-mode = off\nINSERT INTO dbo.cutover_t (code) VALUES ('h');\nGO\nINSERT INTO dbo.cutover_t (code) VALUES ('i');\nGO 2",
+      "affected": 3,
+      "error": "",
+      "logs": [
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('h');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1 all_affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('i');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1 all_affected_rows:1}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('i');\"}",
+        "type:COMMAND_RESPONSE command_response:{affected_rows:1 all_affected_rows:1}"
+      ]
+    },
+    {
+      "name": "failing statement",
+      "script": "INSERT INTO dbo.cutover_t (code) VALUES ('j');\nINSERT INTO dbo.cutover_t (id) VALUES (1);",
+      "affected": 0,
+      "error": "failed to execute statement: Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 2\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
+      "logs": [
+        "type:TRANSACTION_CONTROL transaction_control:{type:BEGIN}",
+        "type:COMMAND_EXECUTE command_execute:{statement:\"INSERT INTO dbo.cutover_t (code) VALUES ('j');\\nINSERT INTO dbo.cutover_t (id) VALUES (1);\"}",
+        "type:COMMAND_RESPONSE command_response:{error:\"failed to execute statement: Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 2\\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.\"}",
+        "type:TRANSACTION_CONTROL transaction_control:{type:ROLLBACK}"
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "name": "set and a limited select",
+      "script": "SET NOCOUNT OFF;\nSELECT TOP 3 id FROM dbo.cutover_t ORDER BY id;",
+      "limit": 2,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "SET NOCOUNT OFF;",
+          "column_names": null,
+          "column_type_names": null,
+          "rows": [],
+          "error": "",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT TOP 2 id FROM dbo.cutover_t ORDER BY id;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ]
+          ],
+          "error": "",
+          "rows_count": 2,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "declare and use a variable",
+      "script": "DECLARE @x INT;\nSELECT @x = MIN(id) FROM dbo.cutover_t;\nSELECT @x AS x;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "DECLARE @x INT;",
+          "column_names": null,
+          "column_type_names": null,
+          "rows": [],
+          "error": "",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT @x = MIN(id) FROM dbo.cutover_t;",
+          "column_names": null,
+          "column_type_names": null,
+          "rows": [],
+          "error": "",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT @x AS x;",
+          "column_names": [
+            "x"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "procedure extras",
+      "script": "EXEC dbo.cutover_two_sets;",
+      "limit": 2,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ]
+          ],
+          "error": "",
+          "rows_count": 2,
+          "query_plan": ""
+        },
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "s"
+          ],
+          "column_type_names": [
+            "VARCHAR"
+          ],
+          "rows": [
+            [
+              "string_value:\"second\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "procedure extras across go",
+      "script": "EXEC dbo.cutover_two_sets;\nGO\nDECLARE @y INT;\nSELECT @y = MIN(id) FROM dbo.cutover_t;\nSELECT id FROM dbo.cutover_t WHERE id = 1;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ],
+            [
+              "int64_value:3"
+            ],
+            [
+              "int64_value:4"
+            ],
+            [
+              "int64_value:5"
+            ],
+            [
+              "int64_value:6"
+            ],
+            [
+              "int64_value:7"
+            ],
+            [
+              "int64_value:8"
+            ],
+            [
+              "int64_value:9"
+            ]
+          ],
+          "error": "",
+          "rows_count": 9,
+          "query_plan": ""
+        },
+        {
+          "statement": "DECLARE @y INT;",
+          "column_names": null,
+          "column_type_names": null,
+          "rows": [],
+          "error": "",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT @y = MIN(id) FROM dbo.cutover_t;",
+          "column_names": null,
+          "column_type_names": null,
+          "rows": [],
+          "error": "",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT id FROM dbo.cutover_t WHERE id = 1;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        },
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "s"
+          ],
+          "column_type_names": [
+            "VARCHAR"
+          ],
+          "rows": [
+            [
+              "string_value:\"second\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "masking withholds",
+      "script": "EXEC dbo.cutover_two_sets;\nGO\nUPDATE dbo.cutover_t SET code = code OUTPUT inserted.code;\nSELECT id FROM dbo.cutover_t WHERE id = 1;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": true,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [],
+          "error": "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "UPDATE dbo.cutover_t SET code = code OUTPUT inserted.code;",
+          "column_names": [
+            "code"
+          ],
+          "column_type_names": [
+            "VARCHAR"
+          ],
+          "rows": [],
+          "error": "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+          "rows_count": 0,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT id FROM dbo.cutover_t WHERE id = 1;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        },
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "s"
+          ],
+          "column_type_names": [
+            "VARCHAR"
+          ],
+          "rows": [],
+          "error": "Rows returned by a procedure call or an OUTPUT clause are hidden because data masking can't be applied to them.",
+          "rows_count": 0,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "explain xml",
+      "script": "SELECT * FROM dbo.cutover_t;",
+      "limit": 0,
+      "explain": true,
+      "format": "XML",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "SELECT * FROM dbo.cutover_t;",
+          "column_names": [
+            "Microsoft SQL Server 2005 XML Showplan"
+          ],
+          "column_type_names": [
+            "NVARCHAR"
+          ],
+          "rows": [
+            [
+              "string_value:\"\u003cShowPlanXML xmlns=\\\"http://schemas.microsoft.com/sqlserver/2004/07/showplan\\\" Version=\\\"1.564\\\" Build=\\\"16.0.4325.4\\\"\u003e\u003cBatchSequence\u003e\u003cBatch\u003e\u003cStatements\u003e\u003cStmtSimple StatementText=\\\"SELECT * FROM dbo.cutover_t\\\" StatementId=\\\"1\\\" StatementCompId=\\\"1\\\" StatementType=\\\"SELECT\\\" RetrievedFromCache=\\\"false\\\" StatementSubTreeCost=\\\"0.0032919\\\" StatementEstRows=\\\"9\\\" SecurityPolicyApplied=\\\"false\\\" StatementOptmLevel=\\\"TRIVIAL\\\" QueryHash=\\\"0x8F117ABB64F41EE6\\\" QueryPlanHash=\\\"0x3315B1E7BC7D74A6\\\" CardinalityEstimationModelVersion=\\\"160\\\"\u003e\u003cStatementSetOptions QUOTED_IDENTIFIER=\\\"true\\\" ARITHABORT=\\\"false\\\" CONCAT_NULL_YIELDS_NULL=\\\"true\\\" ANSI_NULLS=\\\"true\\\" ANSI_PADDING=\\\"true\\\" ANSI_WARNINGS=\\\"true\\\" NUMERIC_ROUNDABORT=\\\"false\\\"\u003e\u003c/StatementSetOptions\u003e\u003cQueryPlan NonParallelPlanReason=\\\"NoParallelPlansInDesktopOrExpressEdition\\\" CachedPlanSize=\\\"16\\\" CompileTime=\\\"0\\\" CompileCPU=\\\"0\\\" CompileMemory=\\\"96\\\"\u003e\u003cMemoryGrantInfo SerialRequiredMemory=\\\"0\\\" SerialDesiredMemory=\\\"0\\\" GrantedMemory=\\\"0\\\" MaxUsedMemory=\\\"0\\\"\u003e\u003c/MemoryGrantInfo\u003e\u003cOptimizerHardwareDependentProperties EstimatedAvailableMemoryGrant=\\\"328550\\\" EstimatedPagesCached=\\\"164275\\\" EstimatedAvailableDegreeOfParallelism=\\\"4\\\" MaxCompileMemory=\\\"14612488\\\"\u003e\u003c/OptimizerHardwareDependentProperties\u003e\u003cTraceFlags IsCompileTime=\\\"1\\\"\u003e\u003cTraceFlag Value=\\\"8017\\\" Scope=\\\"Global\\\"\u003e\u003c/TraceFlag\u003e\u003c/TraceFlags\u003e\u003cRelOp NodeId=\\\"0\\\" PhysicalOp=\\\"Clustered Index Scan\\\" LogicalOp=\\\"Clustered Index Scan\\\" EstimateRows=\\\"9\\\" EstimatedRowsRead=\\\"9\\\" EstimateIO=\\\"0.003125\\\" EstimateCPU=\\\"0.0001669\\\" AvgRowSize=\\\"104\\\" EstimatedTotalSubtreeCost=\\\"0.0032919\\\" TableCardinality=\\\"9\\\" Parallel=\\\"0\\\" EstimateRebinds=\\\"0\\\" EstimateRewinds=\\\"0\\\" EstimatedExecutionMode=\\\"Row\\\"\u003e\u003cOutputList\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/OutputList\u003e\u003cIndexScan Ordered=\\\"0\\\" ForcedIndex=\\\"0\\\" ForceScan=\\\"0\\\" NoExpandHint=\\\"0\\\" Storage=\\\"RowStore\\\"\u003e\u003cDefinedValues\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"id\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"code\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"amount\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"at\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"flag\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"bin\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003cDefinedValue\u003e\u003cColumnReference Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Column=\\\"note\\\"\u003e\u003c/ColumnReference\u003e\u003c/DefinedValue\u003e\u003c/DefinedValues\u003e\u003cObject Database=\\\"[parity_1794978390610140815]\\\" Schema=\\\"[dbo]\\\" Table=\\\"[cutover_t]\\\" Index=\\\"[PK__cutover___3213E83FD45949C5]\\\" IndexKind=\\\"Clustered\\\" Storage=\\\"RowStore\\\"\u003e\u003c/Object\u003e\u003c/IndexScan\u003e\u003c/RelOp\u003e\u003c/QueryPlan\u003e\u003c/StmtSimple\u003e\u003c/Statements\u003e\u003c/Batch\u003e\u003c/BatchSequence\u003e\u003c/ShowPlanXML\u003e\""
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "explain text",
+      "script": "SELECT * FROM dbo.cutover_t;",
+      "limit": 0,
+      "explain": true,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "SELECT * FROM dbo.cutover_t;",
+          "column_names": [
+            "StmtText",
+            "StmtId",
+            "NodeId",
+            "Parent",
+            "PhysicalOp",
+            "LogicalOp",
+            "Argument",
+            "DefinedValues",
+            "EstimateRows",
+            "EstimateIO",
+            "EstimateCPU",
+            "AvgRowSize",
+            "TotalSubtreeCost",
+            "OutputList",
+            "Warnings",
+            "Type",
+            "Parallel",
+            "EstimateExecutions"
+          ],
+          "column_type_names": [
+            "NVARCHAR",
+            "INT",
+            "INT",
+            "INT",
+            "NVARCHAR",
+            "NVARCHAR",
+            "NVARCHAR",
+            "NVARCHAR",
+            "REAL",
+            "REAL",
+            "REAL",
+            "INT",
+            "REAL",
+            "NVARCHAR",
+            "NVARCHAR",
+            "NVARCHAR",
+            "BIT",
+            "REAL"
+          ],
+          "rows": [
+            [
+              "string_value:\"SELECT * FROM dbo.cutover_t;\"",
+              "int64_value:1",
+              "int64_value:1",
+              "int64_value:0",
+              "null_value:NULL_VALUE",
+              "null_value:NULL_VALUE",
+              "string_value:\"1\"",
+              "null_value:NULL_VALUE",
+              "double_value:9",
+              "null_value:NULL_VALUE",
+              "null_value:NULL_VALUE",
+              "null_value:NULL_VALUE",
+              "double_value:0.003291900036856532",
+              "null_value:NULL_VALUE",
+              "null_value:NULL_VALUE",
+              "string_value:\"SELECT\"",
+              "int64_value:0",
+              "null_value:NULL_VALUE"
+            ],
+            [
+              "string_value:\"  |--Clustered Index Scan(OBJECT:([parity_1794978390610140815].[dbo].[cutover_t].[PK__cutover___3213E83FD45949C5]))\"",
+              "int64_value:1",
+              "int64_value:2",
+              "int64_value:1",
+              "string_value:\"Clustered Index Scan\"",
+              "string_value:\"Clustered Index Scan\"",
+              "string_value:\"OBJECT:([parity_1794978390610140815].[dbo].[cutover_t].[PK__cutover___3213E83FD45949C5])\"",
+              "string_value:\"[parity_1794978390610140815].[dbo].[cutover_t].[id], [parity_1794978390610140815].[dbo].[cutover_t].[code], [parity_1794978390610140815].[dbo].[cutover_t].[amount], [parity_1794978390610140815].[dbo].[cutover_t].[at], [parity_1794978390610140815].[dbo].[cutover_t].[flag], [parity_1794978390610140815].[dbo].[cutover_t].[bin], [parity_1794978390610140815].[dbo].[cutover_t].[note]\"",
+              "double_value:9",
+              "double_value:0.0031250000465661287",
+              "double_value:0.0001669000048423186",
+              "int64_value:104",
+              "double_value:0.003291900036856532",
+              "string_value:\"[parity_1794978390610140815].[dbo].[cutover_t].[id], [parity_1794978390610140815].[dbo].[cutover_t].[code], [parity_1794978390610140815].[dbo].[cutover_t].[amount], [parity_1794978390610140815].[dbo].[cutover_t].[at], [parity_1794978390610140815].[dbo].[cutover_t].[flag], [parity_1794978390610140815].[dbo].[cutover_t].[bin], [parity_1794978390610140815].[dbo].[cutover_t].[note]\"",
+              "null_value:NULL_VALUE",
+              "string_value:\"PLAN_ROW\"",
+              "int64_value:0",
+              "double_value:1"
+            ]
+          ],
+          "error": "",
+          "rows_count": 2,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "size cut",
+      "script": "SELECT TOP 100 name FROM sys.all_objects;\nSELECT 1 AS one;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "SELECT TOP 100 name FROM sys.all_objects;",
+          "column_names": [
+            "name"
+          ],
+          "column_type_names": [
+            "NVARCHAR"
+          ],
+          "rows": [
+            [
+              "string_value:\"all_columns\""
+            ]
+          ],
+          "error": "Output of query exceeds max allowed output size of 0MB",
+          "rows_count": 1,
+          "query_plan": ""
+        },
+        {
+          "statement": "\nSELECT 1 AS one;",
+          "column_names": [
+            "one"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ]
+          ],
+          "error": "Output of query exceeds max allowed output size of 0MB",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "types",
+      "script": "SELECT CAST(0x AS VARBINARY(10)) AS empty_bin, CAST(0x01 AS VARBINARY(10)) AS bin, CAST(1.25 AS DECIMAL(18,2)) AS dec, CAST(1 AS BIT) AS flag, CAST('03:04:05' AS TIME) AS t, CAST('2024-01-02' AS DATE) AS d, CAST('2024-01-02T03:04:05.123+02:00' AS DATETIMEOFFSET) AS dto;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "",
+      "results": [
+        {
+          "statement": "SELECT CAST(0x AS VARBINARY(10)) AS empty_bin, CAST(0x01 AS VARBINARY(10)) AS bin, CAST(1.25 AS DECIMAL(18,2)) AS dec, CAST(1 AS BIT) AS flag, CAST('03:04:05' AS TIME) AS t, CAST('2024-01-02' AS DATE) AS d, CAST('2024-01-02T03:04:05.123+02:00' AS DATETIMEOFFSET) AS dto;",
+          "column_names": [
+            "empty_bin",
+            "bin",
+            "dec",
+            "flag",
+            "t",
+            "d",
+            "dto"
+          ],
+          "column_type_names": [
+            "VARBINARY",
+            "VARBINARY",
+            "DECIMAL",
+            "BIT",
+            "TIME",
+            "DATE",
+            "DATETIMEOFFSET"
+          ],
+          "rows": [
+            [
+              "null_value:NULL_VALUE",
+              "bytes_value:\"\\x01\"",
+              "string_value:\"1.25\"",
+              "int64_value:1",
+              "string_value:\"03:04:05\"",
+              "string_value:\"2024-01-02\"",
+              "timestamp_tz_value:{google_timestamp:{seconds:1704157445 nanos:123000000} offset:7200 accuracy:7}"
+            ]
+          ],
+          "error": "",
+          "rows_count": 1,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "divide by zero alone",
+      "script": "SELECT 1/0 AS x;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "Msg 8134, Level 16, State 1, Server 8e26858cf2c9, Line 1\nDivide by zero error encountered.",
+      "results": null
+    },
+    {
+      "name": "divide by zero in a batch",
+      "script": "SELECT 1 AS one;\nSELECT 1/0 AS x;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "Msg 8134, Level 16, State 1, Server 8e26858cf2c9, Line 3\nDivide by zero error encountered.",
+      "results": null
+    },
+    {
+      "name": "unmatchable procedure",
+      "script": "EXEC dbo.cutover_two_sets;\nSELECT 1 AS one;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "cannot match the batch's result sets to its statements; a procedure call that returns rows must be the only statement in its batch that does, so separate the others with GO",
+      "results": null
+    },
+    {
+      "name": "procedure extras after a failing batch",
+      "script": "EXEC dbo.cutover_two_sets;\nGO\nINSERT INTO dbo.cutover_t (id) VALUES (1);",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "Msg 544, Level 16, State 1, Server 8e26858cf2c9, Line 1\nCannot insert explicit value for identity column in table 'cutover_t' when IDENTITY_INSERT is set to OFF.",
+      "results": [
+        {
+          "statement": "EXEC dbo.cutover_two_sets;",
+          "column_names": [
+            "id"
+          ],
+          "column_type_names": [
+            "INT"
+          ],
+          "rows": [
+            [
+              "int64_value:1"
+            ],
+            [
+              "int64_value:2"
+            ],
+            [
+              "int64_value:3"
+            ],
+            [
+              "int64_value:4"
+            ],
+            [
+              "int64_value:5"
+            ],
+            [
+              "int64_value:6"
+            ],
+            [
+              "int64_value:7"
+            ],
+            [
+              "int64_value:8"
+            ],
+            [
+              "int64_value:9"
+            ]
+          ],
+          "error": "",
+          "rows_count": 9,
+          "query_plan": ""
+        }
+      ]
+    },
+    {
+      "name": "noexec",
+      "script": "SET NOEXEC ON;\nSELECT 1 AS one;",
+      "limit": 0,
+      "explain": false,
+      "format": "EXPLAIN_FORMAT_UNSPECIFIED",
+      "masking": false,
+      "max_bytes": 1073741824,
+      "call_error": "SET NOEXEC is not supported",
+      "results": null
+    }
+  ],
+  "dump": "CREATE TABLE [dbo].[cutover_t] (\n    [id] int IDENTITY(1,1) NOT NULL,\n    [code] varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,\n    [amount] decimal(18, 2),\n    [at] datetimeoffset,\n    [flag] bit DEFAULT ((0)) NOT NULL,\n    [bin] varbinary(10),\n    [note] nvarchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS DEFAULT ('it''s') NOT NULL,\n    CONSTRAINT [PK__cutover___3213E83FD45949C5] PRIMARY KEY CLUSTERED ([id] ASC)\n);\n\nCREATE TABLE [dbo].[cutover_u] (\n    [id] int NOT NULL,\n    [s_id] int NOT NULL,\n    [v] int,\n    CONSTRAINT [PK__cutover___3213E83F8FCFF960] PRIMARY KEY CLUSTERED ([id] ASC),\n    CONSTRAINT [cutover_fk] FOREIGN KEY ([s_id]) REFERENCES [dbo].[cutover_t] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION,\n    CONSTRAINT [cutover_v_check] CHECK ([v]\u003e=(0))\n);\n\nCREATE NONCLUSTERED INDEX [cutover_filtered] ON\n[dbo].[cutover_u] (\n    [s_id] ASC,\n    [v] ASC\n);\n\nGO\n\nCREATE VIEW dbo.cutover_v AS SELECT id, code FROM dbo.cutover_t WHERE code \u003c\u003e '';\n\nGO\n\nCREATE VIEW dbo.cutover_v2 AS SELECT id FROM dbo.cutover_t;;\n\nGO\n\nCREATE PROCEDURE dbo.cutover_two_sets AS BEGIN UPDATE dbo.cutover_t SET flag = flag; SELECT id FROM dbo.cutover_t ORDER BY id; SELECT 'second' AS s; END\n\nGO\n\n"
+}

@@ -5,18 +5,11 @@ import (
 	"io"
 
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-// Dump dumps the database.
-func (*Driver) Dump(_ context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
-	text, err := schema.GetDatabaseDefinition(storepb.Engine_MSSQL, schema.GetDefinitionContext{}, metadata)
-	if err != nil {
-		return errors.Wrap(err, "failed to get database definition")
-	}
-	_, err = out.Write([]byte(text))
-	return err
+// Dump writes the database's DDL. omni's catalog renders the synced metadata,
+// where the driver this replaced called Bytebase's schema renderer: a filtered
+// index keeps its WHERE predicate and a view definition ends with one `;`.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.impl.Dump(ctx, out, dbMetadata)
 }
