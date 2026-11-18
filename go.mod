@@ -9,7 +9,6 @@ godebug x509negativeserial=1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.4.0
-	cloud.google.com/go/bigquery v1.86.1
 	cloud.google.com/go/cloudsqlconn v1.26.0
 	cloud.google.com/go/secretmanager v1.23.1
 	cloud.google.com/go/spanner v1.96.1
@@ -31,12 +30,11 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20261118111718-e65c4bfc2588
+	github.com/bytebase/omni v0.0.0-20261118130520-426aecf60b7e
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
 	github.com/coreos/go-oidc v2.5.0+incompatible
-	github.com/databricks/databricks-sdk-go v0.192.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/github/gh-ost v1.1.11
 	github.com/go-ego/gse v1.3.1
@@ -110,6 +108,7 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.24.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.3.0 // indirect
+	cloud.google.com/go/bigquery v1.86.1 // indirect
 	cloud.google.com/go/compute/metadata v0.10.0 // indirect
 	cloud.google.com/go/iam v1.14.0 // indirect
 	cloud.google.com/go/longrunning v1.3.0 // indirect
@@ -187,6 +186,7 @@ require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
+	github.com/databricks/databricks-sdk-go v0.192.0 // indirect
 	github.com/dave/dst v0.27.2 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.8.2 // indirect
