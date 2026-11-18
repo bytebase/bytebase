@@ -84,6 +84,10 @@
   scrollbar-width: none; /* Firefox */
 }
 
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable both-edges;
+}
+
 @utility thumb-up {
   transform-origin: bottom left;
   animation: thumb-up 1s ease-in-out infinite;

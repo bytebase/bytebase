@@ -1,14 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
-import { DurationSchema } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  Info,
-  Trash2,
-} from "lucide-react";
+import { ExternalLink, Info, Server, Trash2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -18,9 +11,9 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import neonIcon from "@/assets/db/neon.svg";
 import { EngineIcon } from "@/components/EngineIcon";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
-import { FeatureBadge } from "@/components/FeatureBadge";
 import { LabelListEditor } from "@/components/LabelListEditor";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceIdField } from "@/components/ResourceIdField";
@@ -31,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
+  FormError,
   FormFieldGroup,
   FormLabel,
   FormSection,
@@ -68,11 +62,9 @@ import {
   DataSourceType,
   type SyncDatabases as SyncDatabasesMessage,
   SyncDatabasesSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   engineNameV1,
   extractInstanceResourceName,
@@ -83,7 +75,13 @@ import {
   urlfy,
 } from "@/utils";
 import { normalizeAuthenticationType } from "./authentication";
-import type { EditDataSource } from "./common";
+import { CollapsibleTilePicker, TileRadioItem } from "./CollapsibleTilePicker";
+import {
+  type DataSourceEditState,
+  type EditDataSource,
+  extractDataSourceEditState,
+  updateDataSourceSecret,
+} from "./common";
 import {
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
@@ -93,6 +91,12 @@ import { DataSourceForm, RedisSentinelFields } from "./DataSourceForm";
 import { DataSourceSection } from "./DataSourceSection";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
+import {
+  isNeonPooledHost,
+  type NeonConnectionString,
+  parseNeonConnectionString,
+} from "./neon-import";
+import { ScanIntervalInput } from "./ScanIntervalInput";
 import {
   ValidationField as FormField,
   ValidationInput as Input,
@@ -341,179 +345,27 @@ function BigQueryHostInput({
   );
 }
 
-function InstanceEngineRadioGrid({
-  engine,
-  engineList,
-  onEngineChange,
-  isEngineBeta,
+function VendorIcon({
+  vendor,
+  className,
 }: {
-  engine: Engine;
-  engineList: Engine[];
-  onEngineChange: (engine: Engine) => void;
-  isEngineBeta: (engine: Engine) => boolean;
+  vendor: Vendor;
+  className?: string;
 }) {
+  if (vendor === Vendor.NEON) {
+    return (
+      <img
+        src={neonIcon}
+        alt=""
+        className={cn("shrink-0 object-contain", className)}
+      />
+    );
+  }
   return (
-    <div className="w-full grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
-      {engineList.map((eng) => (
-        <Button
-          key={eng}
-          type="button"
-          appearance="outline"
-          size="lg"
-          className={cn(
-            "h-auto justify-start rounded-sm px-3 py-2 text-left",
-            eng === engine
-              ? "border-accent bg-accent/5 ring-1 ring-accent"
-              : "hover:border-accent/50 hover:bg-control-bg"
-          )}
-          onClick={() => onEngineChange(eng)}
-        >
-          <EngineIcon engine={eng} className="size-5" />
-          <span className="truncate">{engineNameV1(eng)}</span>
-          {isEngineBeta(eng) && (
-            <span className="ml-auto shrink-0 rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
-              Beta
-            </span>
-          )}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-const MIN_SCAN_MINUTES = 30;
-
-function ScanIntervalInput({
-  scanInterval,
-  allowEdit,
-  onScanIntervalChange,
-}: {
-  scanInterval: Duration | undefined;
-  allowEdit: boolean;
-  onScanIntervalChange: (interval: Duration | undefined) => void;
-}) {
-  const { t } = useTranslation();
-  const ctx = useInstanceFormContext();
-  const { instance: _instance, hideAdvancedFeatures } = ctx;
-
-  const extractState = (
-    duration: Duration | undefined
-  ): { mode: "DEFAULT" | "CUSTOM"; minutes: number | undefined } => {
-    if (!duration || Number(duration.seconds) === 0) {
-      return { mode: "DEFAULT", minutes: undefined };
-    }
-    return {
-      mode: "CUSTOM",
-      minutes: Math.floor(Number(duration.seconds) / 60),
-    };
-  };
-
-  const [mode, setMode] = useState<"DEFAULT" | "CUSTOM">(
-    () => extractState(scanInterval).mode
-  );
-  const [minutes, setMinutes] = useState<number | undefined>(
-    () => extractState(scanInterval).minutes
-  );
-  const [isValid, setIsValid] = useState(true);
-
-  useEffect(() => {
-    const s = extractState(scanInterval);
-    setMode(s.mode);
-    setMinutes(s.minutes);
-    setIsValid(true);
-  }, [scanInterval]);
-
-  const handleModeChange = (targetMode: "DEFAULT" | "CUSTOM") => {
-    if (targetMode === mode) return;
-    setMode(targetMode);
-    if (targetMode === "DEFAULT") {
-      onScanIntervalChange(create(DurationSchema, { seconds: BigInt(0) }));
-    } else {
-      setMinutes(24 * 60);
-      onScanIntervalChange(
-        create(DurationSchema, { seconds: BigInt(24 * 60 * 60) })
-      );
-    }
-  };
-
-  const handleMinuteChange = (value: string) => {
-    const num = parseInt(value, 10);
-    if (Number.isNaN(num)) {
-      setMinutes(undefined);
-      setIsValid(false);
-      return;
-    }
-    setMinutes(num);
-    if (num < MIN_SCAN_MINUTES) {
-      setIsValid(false);
-      return;
-    }
-    setIsValid(true);
-    onScanIntervalChange(create(DurationSchema, { seconds: BigInt(num * 60) }));
-  };
-
-  if (hideAdvancedFeatures) return null;
-
-  return (
-    <FormField
-      title={
-        <span className="inline-flex items-center gap-x-2">
-          {t("instance.scan-interval.self")}
-          <FeatureBadge
-            feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME}
-          />
-          <Tooltip
-            content={t("instance.scan-interval.description")}
-            popupClassName="max-w-96"
-          >
-            <Button
-              type="button"
-              appearance="link"
-              size="xs"
-              className="-ml-1 w-6 p-0"
-              aria-label={t("instance.scan-interval.self")}
-            >
-              <Info className="size-3.5" />
-            </Button>
-          </Tooltip>
-        </span>
-      }
-    >
-      <div className="flex items-center gap-x-3">
-        <Switch
-          id="customScanInterval"
-          checked={mode === "CUSTOM"}
-          disabled={!allowEdit}
-          onCheckedChange={(checked) =>
-            handleModeChange(checked ? "CUSTOM" : "DEFAULT")
-          }
-        />
-        <FormLabel htmlFor="customScanInterval" className="font-normal!">
-          {t("common.custom")}
-        </FormLabel>
-        {mode === "CUSTOM" && (
-          <>
-            <Input
-              type="number"
-              value={minutes ?? ""}
-              className={`w-16 ${!isValid ? "border-error" : ""}`}
-              placeholder={`>= ${MIN_SCAN_MINUTES}`}
-              disabled={!allowEdit}
-              onChange={(e) => handleMinuteChange(e.target.value)}
-            />
-            {!isValid ? (
-              <span className="text-error text-sm">
-                {t("instance.scan-interval.min-value", {
-                  value: MIN_SCAN_MINUTES,
-                })}
-              </span>
-            ) : (
-              <span className="text-sm">{t("common.minutes")}</span>
-            )}
-          </>
-        )}
-      </div>
-    </FormField>
+    <Server
+      aria-hidden="true"
+      className={cn("shrink-0 text-control-light", className)}
+    />
   );
 }
 
@@ -823,6 +675,105 @@ export function SyncDatabases({
   );
 }
 
+// A string that parses fills the connection fields and is then dropped, so
+// the password it carries is never kept or submitted as text. It is read when
+// pasted or when the field is left, never per keystroke: a hand-typed string
+// already parses before its database name is complete.
+function NeonConnectionStringField({
+  disabled,
+  pooledHost,
+  onParsed,
+}: {
+  disabled: boolean;
+  // The host now in the form is a pooled endpoint.
+  pooledHost: boolean;
+  onParsed: (parsed: NeonConnectionString) => void;
+}) {
+  const { t } = useTranslation();
+  const id = useId();
+  const [value, setValue] = useState("");
+  const [filled, setFilled] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const invalid = checked && value.trim() !== "";
+  const pooled = filled && pooledHost;
+  const noteId = `${id}-note`;
+
+  const read = (text: string) => {
+    const parsed = parseNeonConnectionString(text);
+    if (!parsed) return false;
+    onParsed(parsed);
+    setValue("");
+    setFilled(true);
+    setChecked(false);
+    return true;
+  };
+
+  return (
+    <FormField
+      title={
+        <FormLabel htmlFor={id} className="flex-wrap">
+          {t("instance.neon.manual.connection-string")}{" "}
+          <span className="font-normal text-control-light">
+            {t("instance.neon.optional")}
+          </span>
+        </FormLabel>
+      }
+      description={t("instance.neon.manual.connection-string-help")}
+    >
+      <Input
+        id={id}
+        data-agent-sensitive
+        value={value}
+        disabled={disabled}
+        autoComplete="off"
+        spellCheck={false}
+        aria-invalid={invalid || pooled || undefined}
+        aria-describedby={invalid || pooled || filled ? noteId : undefined}
+        placeholder="postgresql://role:password@ep-example.us-east-2.aws.neon.tech/neondb"
+        onChange={(event) => {
+          setValue(event.target.value);
+          setFilled(false);
+          setChecked(false);
+        }}
+        onPaste={(event) => {
+          if (read(event.clipboardData.getData("text"))) {
+            event.preventDefault();
+          } else {
+            setChecked(true);
+          }
+        }}
+        onBlur={() => {
+          if (value.trim() && !read(value)) setChecked(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || !value.trim()) return;
+          event.preventDefault();
+          if (!read(value)) setChecked(true);
+        }}
+      />
+      {invalid ? (
+        <FormError id={noteId}>
+          {t("instance.neon.manual.connection-string-invalid")}
+        </FormError>
+      ) : pooled ? (
+        <FormError id={noteId}>
+          {t("instance.neon.manual.connection-string-pooled")}
+        </FormError>
+      ) : (
+        filled && (
+          <p
+            id={noteId}
+            role="status"
+            className="text-xs leading-4 text-control-light"
+          >
+            {t("instance.neon.manual.connection-string-filled")}
+          </p>
+        )
+      )}
+    </FormField>
+  );
+}
+
 function AdditionalAddressesFields({
   addresses,
   defaultPort,
@@ -919,6 +870,9 @@ function AdditionalAddressesFields({
 interface InstanceFormBodyProps {
   onOpenInfoPanel?: (section: InfoSection) => void;
   onAskAgent?: () => void;
+  disabled?: boolean;
+  engineOnly?: boolean;
+  hideEngine?: boolean;
 }
 
 // Engines without a host field (or with a non-local default) drop the local
@@ -932,6 +886,9 @@ const clearLocalPlaceholderHost = (ds: EditDataSource) => {
 export function InstanceFormBody({
   onOpenInfoPanel,
   onAskAgent,
+  disabled = false,
+  engineOnly = false,
+  hideEngine = false,
 }: InstanceFormBodyProps) {
   const { t } = useTranslation();
   const ctx = useInstanceFormContext();
@@ -1137,17 +1094,13 @@ export function InstanceFormBody({
         });
         return { ...prev, dataSources };
       });
-      setBasicInfo((prev) => ({ ...prev, engine }));
+      setBasicInfo((prev) => ({
+        ...prev,
+        engine,
+        vendor: Vendor.VENDOR_UNSPECIFIED,
+      }));
     },
     [resetDataSource, setDataSourceEditState, setBasicInfo]
-  );
-
-  const handleSelectInstanceEngine = useCallback(
-    (engine: Engine) => {
-      changeInstanceEngine(engine);
-      setIsEngineSelectorCollapsed(true);
-    },
-    [changeInstanceEngine]
   );
 
   const handleSelectEnvironment = useCallback(
@@ -1330,6 +1283,144 @@ export function InstanceFormBody({
     [setDataSourceEditState]
   );
 
+  const isNeon =
+    basicInfo.engine === Engine.POSTGRES && basicInfo.vendor === Vendor.NEON;
+
+  const fillFromNeonConnectionString = (parsed: NeonConnectionString) => {
+    setDataSourceEditState((prev) => ({
+      ...prev,
+      dataSources: prev.dataSources.map((ds) => {
+        if (ds.id !== prev.editingDataSourceId) return ds;
+        const filled = {
+          ...ds,
+          host: parsed.host,
+          port: parsed.port,
+          username: parsed.role,
+          database: parsed.database,
+        };
+        return parsed.password
+          ? updateDataSourceSecret(filled, "password", parsed.password)
+          : filled;
+      }),
+    }));
+  };
+
+  const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
+  const changeVendor = (vendor: Vendor) => {
+    if (isCreating) {
+      vendorDrafts.current.set(basicInfo.vendor, ctx.dataSourceEditState);
+      let draft = vendorDrafts.current.get(vendor);
+      if (!draft && vendor === Vendor.NEON) {
+        draft = extractDataSourceEditState(undefined);
+        draft.dataSources = draft.dataSources.map((ds) => ({
+          ...ds,
+          host: "",
+          port: "5432",
+          useSsl: true,
+          verifyTlsCertificate: true,
+        }));
+      }
+      if (draft) setDataSourceEditState(draft);
+    }
+    if (vendor === Vendor.NEON) {
+      setIsEngineSelectorCollapsed(true);
+    }
+    updateBasicInfo({ vendor });
+  };
+
+  const engineSelection = (
+    <>
+      {isCreating && (
+        <FormField title={t("database.engine")}>
+          <CollapsibleTilePicker
+            label={t("database.engine")}
+            value={String(basicInfo.engine)}
+            summary={
+              <>
+                <EngineIcon engine={basicInfo.engine} className="size-4" />
+                <span className="truncate">
+                  {engineNameV1(basicInfo.engine)}
+                </span>
+              </>
+            }
+            collapsed={isEngineSelectorCollapsed}
+            onCollapsedChange={setIsEngineSelectorCollapsed}
+            disabled={disabled}
+            onValueChange={(value) =>
+              changeInstanceEngine(Number(value) as Engine)
+            }
+          >
+            {supportedEngineV1List().map((eng) => (
+              <TileRadioItem
+                key={eng}
+                value={String(eng)}
+                icon={<EngineIcon engine={eng} className="size-5" />}
+                badge={
+                  isEngineBeta(eng) ? (
+                    <span className="rounded-xs border border-transparent bg-accent/10 px-1.5 py-0.5 text-xs text-accent">
+                      Beta
+                    </span>
+                  ) : undefined
+                }
+              >
+                {engineNameV1(eng)}
+              </TileRadioItem>
+            ))}
+          </CollapsibleTilePicker>
+        </FormField>
+      )}
+      {isCreating && basicInfo.engine === Engine.POSTGRES && (
+        <FormField title={t("instance.vendor.self")}>
+          <CollapsibleTilePicker
+            label={t("instance.vendor.self")}
+            value={isNeon ? "neon" : "generic"}
+            summary={
+              <>
+                <VendorIcon vendor={basicInfo.vendor} className="size-4" />
+                <span className="truncate">
+                  {isNeon
+                    ? t("instance.vendor.neon")
+                    : t("instance.vendor.generic")}
+                </span>
+              </>
+            }
+            disabled={!allowEdit || disabled}
+            onValueChange={(value) =>
+              changeVendor(
+                value === "neon" ? Vendor.NEON : Vendor.VENDOR_UNSPECIFIED
+              )
+            }
+          >
+            <TileRadioItem
+              value="generic"
+              icon={
+                <VendorIcon
+                  vendor={Vendor.VENDOR_UNSPECIFIED}
+                  className="size-5"
+                />
+              }
+            >
+              {t("instance.vendor.generic")}
+            </TileRadioItem>
+            <TileRadioItem
+              value="neon"
+              icon={<VendorIcon vendor={Vendor.NEON} className="size-5" />}
+            >
+              {t("instance.vendor.neon")}
+            </TileRadioItem>
+          </CollapsibleTilePicker>
+        </FormField>
+      )}
+    </>
+  );
+  if (engineOnly) {
+    return (
+      <FormFieldGroup density="compact" className="w-full max-w-5xl">
+        {engineSelection}
+      </FormFieldGroup>
+    );
+  }
+
   return (
     <ValidationProvider
       className="flex flex-col pb-2"
@@ -1342,37 +1433,7 @@ export function InstanceFormBody({
         {/* Basic Info Card */}
         <FormSection layout="stacked" title={t("instance.section.basic-info")}>
           <div className="flex flex-col gap-4">
-            {isCreating && (
-              <FormField title={t("database.engine")}>
-                <Button
-                  appearance="outline"
-                  className="w-full justify-between"
-                  aria-expanded={!isEngineSelectorCollapsed}
-                  onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
-                >
-                  <span className="flex items-center gap-2">
-                    <EngineIcon engine={basicInfo.engine} className="size-4" />
-                    {engineNameV1(basicInfo.engine)}
-                  </span>
-                  {isEngineSelectorCollapsed ? (
-                    <ChevronRight />
-                  ) : (
-                    <ChevronDown />
-                  )}
-                </Button>
-                <div
-                  hidden={isEngineSelectorCollapsed}
-                  inert={isEngineSelectorCollapsed ? true : undefined}
-                >
-                  <InstanceEngineRadioGrid
-                    engine={basicInfo.engine}
-                    engineList={supportedEngineV1List()}
-                    onEngineChange={handleSelectInstanceEngine}
-                    isEngineBeta={isEngineBeta}
-                  />
-                </div>
-              </FormField>
-            )}
+            {!hideEngine && engineSelection}
 
             {/* Instance Name */}
             <FormField validationField="title">
@@ -1537,7 +1598,7 @@ export function InstanceFormBody({
             )}
 
             {/* Scan Interval (edit mode only) */}
-            {!isCreating && instance && (
+            {!isCreating && instance && !ctx.hideAdvancedFeatures && (
               <ScanIntervalInput
                 scanInterval={basicInfo.syncInterval}
                 allowEdit={allowEdit}
@@ -1578,6 +1639,13 @@ export function InstanceFormBody({
                     </div>
                   </Alert>
                 )}
+                {isNeon && isCreating && (
+                  <NeonConnectionStringField
+                    disabled={!allowEdit}
+                    pooledHost={isNeonPooledHost(connectionDataSource.host)}
+                    onParsed={fillFromNeonConnectionString}
+                  />
+                )}
                 {editingDataSource && (
                   <DataSourceForm
                     authOnly
@@ -1607,6 +1675,9 @@ export function InstanceFormBody({
                 ) : (
                   <FormField
                     validationField="host"
+                    showErrors={
+                      isNeon && isNeonPooledHost(connectionDataSource.host)
+                    }
                     title={
                       <span className="flex items-center gap-1">
                         <FormLabel htmlFor="host">

@@ -15,6 +15,7 @@ import {
   DataSourceType,
   InstanceSchema,
   SyncDatabasesSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -692,4 +693,300 @@ test("Redis connection mode belongs to the selected data source", async () => {
   expect(context.adminDataSource.redisType).not.toBe(
     DataSource_RedisType.CLUSTER
   );
+});
+
+function mountCreate(engine: Engine) {
+  render(
+    <InstanceFormProvider>
+      <Editor />
+    </InstanceFormProvider>
+  );
+  act(() => context.setBasicInfo((previous) => ({ ...previous, engine })));
+}
+const hostingToggle = () =>
+  screen.getByRole("button", { name: /^instance\.vendor\.self/ });
+const hosting = (name: RegExp) => screen.getByRole("radio", { name });
+const selectHosting = (name: RegExp) => {
+  const toggle = hostingToggle();
+  if (toggle.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(toggle);
+  }
+  fireEvent.click(hosting(name));
+};
+
+test("PostgreSQL reveals where it is hosted, with self-managed as the default", () => {
+  mountCreate(Engine.POSTGRES);
+  const toggle = hostingToggle();
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(toggle).toHaveTextContent("instance.vendor.generic");
+  expect(
+    screen.getByRole("radiogroup", { name: "instance.vendor.self" })
+  ).toBeVisible();
+
+  const generic = hosting(/^instance.vendor.generic/);
+  const neon = hosting(/^instance.vendor.neon/);
+  expect(generic).toHaveAttribute("aria-checked", "true");
+  expect(generic.closest("label")).toHaveClass("min-h-9");
+  expect(neon.closest("label")).toHaveClass("min-h-9");
+  expect(generic.closest("label")?.textContent).toBe("instance.vendor.generic");
+  expect(neon.closest("label")?.textContent).toBe("instance.vendor.neon");
+
+  fireEvent.click(neon);
+  expect(context.basicInfo.vendor).toBe(Vendor.NEON);
+  expect(context.basicInfo.engine).toBe(Engine.POSTGRES);
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(toggle).toHaveTextContent("instance.vendor.neon");
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+});
+
+test("does not ask where other engines are hosted", () => {
+  mountCreate(Engine.MYSQL);
+  expect(
+    screen.queryByRole("button", { name: /^instance\.vendor\.self/ })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+});
+
+test("preserves separate self-managed and Neon manual connection drafts", () => {
+  mountCreate(Engine.POSTGRES);
+  const genericDraft = context.dataSourceEditState;
+  selectHosting(/^instance.vendor.neon/);
+  expect(context.adminDataSource.useSsl).toBe(true);
+  expect(context.adminDataSource.verifyTlsCertificate).toBe(true);
+  expect(context.adminDataSource.port).toBe("5432");
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example.neon.tech",
+      })),
+    }))
+  );
+  selectHosting(/^instance.vendor.generic/);
+  expect(context.dataSourceEditState).toBe(genericDraft);
+  selectHosting(/^instance.vendor.neon/);
+  expect(context.adminDataSource.host).toBe("ep-example.neon.tech");
+});
+
+const NEON_STRING =
+  "postgresql://app_owner:example-password@ep-example-123456.us-east-2.aws.neon.tech/storefront?sslmode=require";
+const paste = (field: HTMLElement, text: string) =>
+  fireEvent.paste(field, { clipboardData: { getData: () => text } });
+
+test("a pasted Neon connection string fills the connection fields and is not kept", () => {
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  paste(field, NEON_STRING);
+  expect(context.adminDataSource).toMatchObject({
+    host: "ep-example-123456.us-east-2.aws.neon.tech",
+    port: "5432",
+    username: "app_owner",
+    database: "storefront",
+    updatedPassword: "example-password",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(field).toHaveValue("");
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-filled"
+  );
+});
+
+test("a connection string typed by hand is read when the field is left, not per keystroke", () => {
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  // This prefix already parses, with a one-letter database name.
+  const partial = NEON_STRING.slice(0, NEON_STRING.indexOf("/storefront") + 2);
+  fireEvent.change(field, { target: { value: partial } });
+  expect(field).toHaveValue(partial);
+  expect(context.adminDataSource.database).not.toBe("s");
+  expect(
+    screen.queryByText("instance.neon.manual.connection-string-invalid")
+  ).toBeNull();
+  fireEvent.change(field, { target: { value: NEON_STRING } });
+  expect(field).toHaveValue(NEON_STRING);
+  fireEvent.blur(field);
+  expect(field).toHaveValue("");
+  expect(context.adminDataSource).toMatchObject({
+    username: "app_owner",
+    database: "storefront",
+  });
+});
+
+test("text that is not a connection string is reported once the field is left and stays to be corrected", () => {
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  expect(field).toHaveAttribute("data-agent-sensitive");
+  fireEvent.change(field, { target: { value: "not a connection string" } });
+  expect(
+    screen.queryByText("instance.neon.manual.connection-string-invalid")
+  ).toBeNull();
+  fireEvent.blur(field);
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-invalid"
+  );
+  expect(field).toHaveValue("not a connection string");
+});
+
+test("a pasted pooled connection string says so beside the field until the host is corrected", () => {
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  const field = screen.getByLabelText(/instance.neon.manual.connection-string/);
+  paste(
+    field,
+    NEON_STRING.replace("ep-example-123456", "ep-example-123456-pooler")
+  );
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-pooled"
+  );
+  expect(
+    screen.getByText("instance.validation.neon-pooled-host")
+  ).toBeVisible();
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example-123456.us-east-2.aws.neon.tech",
+      })),
+    }))
+  );
+  expect(field).toHaveAccessibleDescription(
+    "instance.neon.manual.connection-string-filled"
+  );
+});
+
+test("rejects a pooled Neon host and asks for the direct endpoint", () => {
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  act(() =>
+    context.setDataSourceEditState((previous) => ({
+      ...previous,
+      dataSources: previous.dataSources.map((source) => ({
+        ...source,
+        host: "ep-example-123456-pooler.us-east-2.aws.neon.tech",
+      })),
+    }))
+  );
+  expect(
+    screen.getByText("instance.validation.neon-pooled-host")
+  ).toBeVisible();
+  expect(context.getDataSourceErrors(context.adminDataSource).host).toBe(
+    "neon-pooled-host"
+  );
+});
+
+test("editing a Neon instance shows its connection settings without the hosting or setup choices", () => {
+  render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/neon-storefront-main",
+        title: "storefront / main",
+        engine: Engine.POSTGRES,
+        vendor: Vendor.NEON,
+        state: State.ACTIVE,
+        dataSources: [
+          {
+            id: "admin",
+            type: DataSourceType.ADMIN,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            host: "ep-example-123456.us-east-2.aws.neon.tech",
+            port: "5432",
+            useSsl: true,
+            verifyTlsCertificate: true,
+          },
+        ],
+      })}
+    >
+      <Editor />
+    </InstanceFormProvider>
+  );
+  expect(
+    screen.queryByRole("button", { name: /^instance\.vendor\.self/ })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("radiogroup", { name: "instance.vendor.self" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByLabelText(/instance.neon.manual.connection-string/)
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText(/instance.hostname/)).toHaveValue(
+    "ep-example-123456.us-east-2.aws.neon.tech"
+  );
+});
+
+test("Neon TLS mode omits Disabled and allows toggling certificate verification off", async () => {
+  mocks.hasSSL = true;
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const NeonWithOptions = () => {
+      context = useInstanceFormContext();
+      return (
+        <>
+          <InstanceFormBody />
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            optionsOnly
+            onDataSourceChange={(updated) =>
+              context.setDataSourceEditState((previous) => ({
+                ...previous,
+                dataSources: previous.dataSources.map((source) =>
+                  source.id === updated.id ? updated : source
+                ),
+              }))
+            }
+          />
+        </>
+      );
+    };
+    render(
+      <InstanceFormProvider>
+        <NeonWithOptions />
+      </InstanceFormProvider>
+    );
+    act(() =>
+      context.setBasicInfo((previous) => ({
+        ...previous,
+        engine: Engine.POSTGRES,
+      }))
+    );
+    selectHosting(/^instance.vendor.neon/);
+
+    const posture = screen.getByRole("combobox", {
+      name: "data-source.ssl.posture.self",
+    });
+    expect(posture).toHaveTextContent("data-source.ssl.posture.tls");
+    fireEvent.click(posture);
+    expect(
+      await screen.findByRole("option", { name: "data-source.ssl.posture.tls" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", {
+        name: "data-source.ssl.posture.mutual-tls",
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "data-source.ssl.posture.disabled" })
+    ).not.toBeInTheDocument();
+
+    const verifySwitch = screen.getByRole("switch", {
+      name: "data-source.ssl.verify-certificate",
+    });
+    expect(verifySwitch).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(verifySwitch);
+    expect(context.adminDataSource.useSsl).toBe(true);
+    expect(context.adminDataSource.verifyTlsCertificate).toBe(false);
+  } finally {
+    mocks.hasSSL = false;
+  }
 });

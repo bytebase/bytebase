@@ -17,6 +17,7 @@ export function getAgentHistoryEvictionCandidates(
         !chat.runCheckpoint &&
         !state.pendingAskByChatId[chat.id] &&
         !state.queuedUserMessagesByChatId[chat.id] &&
+        !state.followUpQueuesByChatId?.[chat.id]?.messages.length &&
         !(
           draft?.text ||
           draft?.project ||
@@ -58,6 +59,8 @@ export function removeAgentHistoryChats(
   const queuedUserMessagesByChatId = withoutChats(
     state.queuedUserMessagesByChatId
   );
+  const followUpQueuesByChatId =
+    state.followUpQueuesByChatId && withoutChats(state.followUpQueuesByChatId);
   const activeChatIds = state.activeChatIds?.filter((id) => !chatIds.has(id));
   const currentChatId =
     state.currentChatId && chatIds.has(state.currentChatId)
@@ -69,6 +72,7 @@ export function removeAgentHistoryChats(
     draftsByChatId === state.draftsByChatId &&
     pendingAskByChatId === state.pendingAskByChatId &&
     queuedUserMessagesByChatId === state.queuedUserMessagesByChatId &&
+    followUpQueuesByChatId === state.followUpQueuesByChatId &&
     activeChatIds?.length === state.activeChatIds?.length &&
     currentChatId === state.currentChatId
   ) {
@@ -81,6 +85,10 @@ export function removeAgentHistoryChats(
     draftsByChatId,
     pendingAskByChatId,
     queuedUserMessagesByChatId,
+    followUpQueuesByChatId:
+      followUpQueuesByChatId && Object.keys(followUpQueuesByChatId).length
+        ? followUpQueuesByChatId
+        : undefined,
     ...(activeChatIds && {
       activeChatIds:
         activeChatIds.length === state.activeChatIds?.length

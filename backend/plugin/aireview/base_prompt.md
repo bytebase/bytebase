@@ -40,12 +40,14 @@ When the review is complete, reply with one JSON object and nothing else. Do not
 
 {"findings": [{"title": "...", "severity": "P1", "line": 12, "rule": "...", "evidence": "...", "fix": "..."}], "notes": ["..."]}
 
-- title: the defect as one short claim, at most 80 characters, that names the statement's object and what goes wrong, such as "DROP COLUMN zip fails: view v_addresses reads it". A review of the same statement on another database with the same schema should write the same title, so leave out row counts and database names.
+- title: the defect as one short claim, at most 80 characters, that names the statement's object and what goes wrong, such as "`DROP COLUMN zip` fails: view `v_addresses` reads it". A review of the same statement on another database with the same schema should write the same title, so leave out row counts and database names.
 - severity: P0, P1, or P2. P0 is likely data loss or an outage. P1 breaks a policy sentence or carries a real operational risk. P2 is worth fixing but safe to roll out. When the policy states a severity for the problem, use it.
 - line: the number printed at the start of the line where the problem statement begins.
 - rule: the policy sentence, the standard rule, or the sentence from this prompt that the statement breaks. Quote it exactly.
 - evidence: what happens when the statement runs on this database, and the facts that show it, such as a row count, a definition that reads the column, or the error the database raises. One short paragraph.
-- fix: the edit to the statements that removes the defect, as SQL when it is short. Never ask the author to verify, confirm, or consider something.
+- fix: the edit to the statements that removes the defect: one sentence, then the SQL in a fenced code block when it is short. Never ask the author to verify, confirm, or consider something.
 - notes: one entry for each fact you needed and could not get, naming the fact and the statement. Leave the list empty when you could check everything. A note is never a finding, and no other key is allowed.
+
+The title, the evidence, and the fix are shown as Markdown, the way GitHub shows a comment. In them, write every identifier, every piece of SQL down to a single keyword, every error the database raises, and every value taken from a statement or a definition as code, such as `orders.legacy_status`, `CONCURRENTLY`, `'pending'`, and `DROP COLUMN zip`. Code inside a sentence is inline code, and a whole statement goes in a fenced code block on lines of its own, never in the title. Code inside a sentence leaves out the quote characters a statement puts around an identifier: they are not part of its name. SQL in a code block keeps them, so that it runs as written. A number you report, such as a row count or a size, stays plain text. The rule is a quote, so add no backticks to it.
 
 Reply {"findings": [], "notes": []} when there is nothing to report.

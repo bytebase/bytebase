@@ -137,4 +137,18 @@ describe("SecretInput", () => {
     fireEvent.click(screen.getByRole("button", { name: "common.clear" }));
     expect(change).not.toHaveBeenCalled();
   });
+  test("suppresses password-manager overlays and accepts an autocomplete override", () => {
+    render(
+      <SecretInput
+        aria-label="Credential"
+        isCreating
+        autoComplete="off"
+        value=""
+        onValueChange={vi.fn()}
+      />
+    );
+    expect(input()).toHaveAttribute("autocomplete", "off");
+    expect(input()).toHaveAttribute("data-1p-ignore");
+    expect(input()).toHaveAttribute("data-lpignore", "true");
+  });
 });

@@ -3,15 +3,19 @@ package mongodb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/protobuf/testing/protocmp"
+
+	omnidriver "github.com/bytebase/omni/driver"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,161 +23,160 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
-func TestGetMongoDBConnectionURL(t *testing.T) {
+// TestConnectionConfig pins the mapping from a data source onto the driver
+// contract. The connection string the contract builds from it is omni's own
+// TestConnectionURI, whose cases are these.
+func TestConnectionConfig(t *testing.T) {
 	tests := []struct {
+		name       string
 		connConfig db.ConnectionConfig
-		want       string
+		want       omnidriver.Config
+		wantSRV    bool
 	}{
 		{
+			name: "host and port",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:     "localhost",
-					Port:     "27017",
-					Username: "",
-					Password: "",
-				},
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017"},
 			},
-			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin",
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017"},
 		},
 		{
+			name: "direct connection",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:             "localhost",
-					Port:             "27017",
-					Username:         "",
-					Password:         "",
-					DirectConnection: true,
-				},
-				Password: "",
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017", DirectConnection: true},
 			},
-			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
+			want: omnidriver.Config{
+				Host:   "localhost:27017",
+				Port:   "27017",
+				Params: map[string]string{"directConnection": "true"},
+			},
 		},
 		{
+			name: "database",
 			connConfig: db.ConnectionConfig{
-				DataSource: &storepb.DataSource{
-					Host:     "localhost",
-					Port:     "27017",
-					Username: "",
-					Password: "",
-				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "",
+				DataSource:        &storepb.DataSource{Host: "localhost", Port: "27017"},
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
 			},
-			want: "mongodb://localhost:27017/sampleDB?appName=bytebase&authSource=admin",
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017", Database: "sampleDB"},
 		},
 		{
+			name: "srv",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "cluster0.sample.mongodb.net",
-					Port:     "",
 					Username: "bytebase",
-					Password: "passwd",
 					Srv:      true,
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
+			},
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
 				Password: "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
+			name: "connection string options",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "cluster0.sample.mongodb.net",
-					Port:     "",
 					Username: "bytebase",
-					Password: "passwd",
 					Srv:      true,
 					ExtraConnectionParameters: map[string]string{
 						"readPreference":     "secondary",
 						"readPreferenceTags": "dc:ny",
 					},
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin&readPreference=secondary&readPreferenceTags=dc%3Any",
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params: map[string]string{
+					"readPreference":     "secondary",
+					"readPreferenceTags": "dc:ny",
+				},
+			},
 		},
 		{
+			name: "authentication database",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:                   "cluster0.sample.mongodb.net",
-					Port:                   "",
 					Username:               "bytebase",
-					Password:               "passwd",
-					AuthenticationDatabase: "admin",
+					AuthenticationDatabase: "bytebase",
 					Srv:                    true,
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
+			wantSRV: true,
+			want: omnidriver.Config{
+				Host:     "cluster0.sample.mongodb.net",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params:   map[string]string{"authSource": "bytebase"},
+			},
 		},
 		{
+			name: "additional addresses carry their own ports",
 			connConfig: db.ConnectionConfig{
 				DataSource: &storepb.DataSource{
 					Host:     "node1.cluster0.sample.mongodb.net",
 					Port:     "27017",
 					Username: "bytebase",
-					Password: "passwd",
 					AdditionalAddresses: []*storepb.DataSource_Address{
 						{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
-						{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
+						{Host: "node3.cluster0.sample.mongodb.net", Port: "27018"},
 					},
 					ReplicaSet:             "rs0",
 					AuthenticationDatabase: "admin",
 				},
-				ConnectionContext: db.ConnectionContext{
-					DatabaseName: "sampleDB",
-				},
-				Password: "passwd",
+				ConnectionContext: db.ConnectionContext{DatabaseName: "sampleDB"},
+				Password:          "passwd",
 			},
-			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?appName=bytebase&authSource=admin&replicaSet=rs0",
+			want: omnidriver.Config{
+				Host:     "node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27018",
+				Port:     "27017",
+				Database: "sampleDB",
+				User:     "bytebase",
+				Password: "passwd",
+				Params:   map[string]string{"authSource": "admin", "replicaSet": "rs0"},
+			},
+		},
+		{
+			name: "TLS follows use_ssl",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "localhost", Port: "27017", UseSsl: true},
+			},
+			want: omnidriver.Config{Host: "localhost:27017", Port: "27017"},
 		},
 	}
 
 	a := require.New(t)
 	for _, tt := range tests {
-		got := getBasicMongoDBConnectionURI(tt.connConfig)
-		a.Equal(tt.want, got)
-	}
-}
-
-func TestIsSystemCollection(t *testing.T) {
-	tests := []struct {
-		name string
-		want bool
-	}{
-		{
-			name: "users",
-			want: false,
-		},
-		{
-			name: "system.namespaces",
-			want: true,
-		},
-		{
-			name: "system.users",
-			want: true,
-		},
-		{
-			name: "system.buckets.events",
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, isSystemCollection(tt.name))
+		t.Run(tt.name, func(*testing.T) {
+			got, options, err := toDriverConfig(tt.connConfig)
+			a.NoError(err)
+			if tt.connConfig.DataSource.GetUseSsl() {
+				a.NotNil(got.TLS)
+				got.TLS = nil
+			}
+			a.Equal(tt.want, got)
+			a.Equal(tt.wantSRV, options.SRV)
 		})
 	}
+
+	_, _, err := toDriverConfig(db.ConnectionConfig{})
+	a.ErrorContains(err, "a data source is required")
 }
 
 // TestExecuteLogsParseFailure pins BYT-9950: when the statement fails to
@@ -193,8 +196,13 @@ func TestExecuteLogsParseFailure(t *testing.T) {
 			LogCommandStatement: logStatement,
 		}
 
-		d := &Driver{}
-		_, err := d.Execute(context.Background(), statement, opts)
+		// Open does not reach the server, and the parse fails before a
+		// statement is sent, so this test needs none.
+		opened, err := (&Driver{}).Open(context.Background(), storepb.Engine_MONGODB, db.ConnectionConfig{
+			DataSource: &storepb.DataSource{Host: "localhost", Port: "27017"},
+		})
+		require.NoError(t, err)
+		_, err = opened.Execute(context.Background(), statement, opts)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "syntax error")
 
@@ -435,11 +443,16 @@ func TestQueryDoubleNotation(t *testing.T) {
 	err = openedDriver.Ping(ctx)
 	require.NoError(t, err, "Failed to ping MongoDB")
 
-	// Insert through the official driver so the field types are guaranteed
-	// BSON doubles, matching the issue's data shape.
-	mongoDriver, ok := openedDriver.(*Driver)
-	require.True(t, ok)
-	_, err = mongoDriver.client.Database(database).Collection("users").InsertOne(ctx, bson.D{
+	// Insert through a client of the test's own so the field types are
+	// guaranteed BSON doubles, matching the issue's data shape: a mongosh
+	// literal writes an integer as int32 or int64.
+	client, err := mongo.Connect(options.Client().ApplyURI(fmt.Sprintf(
+		"mongodb://%s:%s@%s:%s/?authSource=admin",
+		container.GetUsername(), container.GetPassword(), container.GetHost(), container.GetPort(),
+	)))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Disconnect(context.Background()) })
+	_, err = client.Database(database).Collection("users").InsertOne(ctx, bson.D{
 		{Key: "_id", Value: int32(1129063441)},
 		{Key: "name", Value: "repro user 1"},
 		{Key: "created_at", Value: float64(1779696815227)},
@@ -551,26 +564,13 @@ func TestQueryConnExplain(t *testing.T) {
 	// An ordinary query is no plan at all.
 	require.Nil(t, explain(statement, false).GetQueryPlan())
 
-	// A write has no plan, and planning it would mean running it.
-	_, err = opened.QueryConn(ctx, nil, `db.orders.insertOne({a: 1})`, db.QueryContext{
+	// A write has no plan, and planning it would mean running it. The refusal
+	// is the statement's own result error, as a statement's failure is.
+	refused, err := opened.QueryConn(ctx, nil, `db.orders.insertOne({a: 1})`, db.QueryContext{
 		Explain: true, MaximumSQLResultSize: 1 << 30,
 		Option: &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 	})
-	require.ErrorContains(t, err, "insertOne")
-}
-
-func TestAnnotateUnsupportedServerVersion(t *testing.T) {
-	// Copied verbatim from the driver's compatibility error, which is what the
-	// annotation matches on: reword this and it stops being the case under test.
-	refused := errors.New("server at 10.0.0.1:27017 reports wire version 8, but this version of the Go driver requires at least 9 (MongoDB 4.4)")
-
-	annotated := annotateUnsupportedServerVersion(refused)
-	require.ErrorContains(t, annotated, "MongoDB "+MinSupportedServerVersion+" or later is required")
-	require.ErrorContains(t, annotated, "reports wire version 8")
-	require.ErrorIs(t, annotated, refused)
-
-	require.NoError(t, annotateUnsupportedServerVersion(nil))
-
-	authFailure := errors.New("auth error: sasl conversation error")
-	require.Equal(t, authFailure, annotateUnsupportedServerVersion(authFailure))
+	require.NoError(t, err)
+	require.Len(t, refused, 1)
+	require.Contains(t, refused[0].GetError(), "insertOne")
 }
