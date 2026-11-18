@@ -1,0 +1,730 @@
+{
+  "syncs": [
+    {
+      "name": "sync instance",
+      "requests": [
+        {
+          "method": "GET",
+          "uri": "/dbs",
+          "body": "",
+          "headers": {
+            "X-Ms-Version": "2018-12-31"
+          }
+        }
+      ],
+      "instance": "{\"Version\":\"\",\"Databases\":[{\"name\":\"cutover_parity_db\"},{\"name\":\"aaa-earlier\"}],\"Metadata\":null}",
+      "schema": "",
+      "error": ""
+    },
+    {
+      "name": "sync schema",
+      "requests": [
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls",
+          "body": "",
+          "headers": {
+            "X-Ms-Version": "2018-12-31"
+          }
+        }
+      ],
+      "instance": "",
+      "schema": "{\"name\":\"cutover_parity_db\",\"schemas\":[{\"tables\":[{\"name\":\"cutover_parity_c\"}]}]}",
+      "error": ""
+    },
+    {
+      "name": "ping",
+      "requests": [
+        {
+          "method": "GET",
+          "uri": "/dbs",
+          "body": "",
+          "headers": {
+            "X-Ms-Version": "2018-12-31"
+          }
+        }
+      ],
+      "instance": "",
+      "schema": "",
+      "error": ""
+    },
+    {
+      "name": "sync missing database",
+      "requests": [
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db_missing/colls",
+          "body": "",
+          "headers": {
+            "X-Ms-Version": "2018-12-31"
+          }
+        }
+      ],
+      "instance": "",
+      "schema": "",
+      "error": "failed to list containers: HTTP 404: {\"code\":\"NotFound\",\"message\":\"Message: {\\\"Errors\\\":[\\\"Owner resource does not exist\\\"]}\\r\\nActivityId: 3b288759-09b1-42df-b1b7-38095a088dee, Request URI: /apps/DocDbApp/services/DocDbMaster0/partitions/780e44f4-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, RequestStats: , SDK: Microsoft.Azure.Documents.Common/2.14.0\"}"
+    }
+  ],
+  "queries": [
+    {
+      "name": "select star",
+      "script": "SELECT * FROM c",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT * FROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT * FROM c",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"country\\\":\\\"AE\\\",\\\"id\\\":\\\"AE-0\\\",\\\"name\\\":\\\"city-AE-0\\\",\\\"population\\\":100}\"",
+            "string_value:\"{\\\"country\\\":\\\"AE\\\",\\\"id\\\":\\\"AE-1\\\",\\\"name\\\":\\\"city-AE-1\\\",\\\"population\\\":200}\"",
+            "string_value:\"{\\\"country\\\":\\\"AE\\\",\\\"id\\\":\\\"AE-2\\\",\\\"name\\\":\\\"city-AE-2\\\",\\\"population\\\":300}\"",
+            "string_value:\"{\\\"country\\\":\\\"AE\\\",\\\"id\\\":\\\"AE-3\\\",\\\"name\\\":\\\"city-AE-3\\\",\\\"population\\\":400}\"",
+            "string_value:\"{\\\"country\\\":\\\"US\\\",\\\"id\\\":\\\"US-0\\\",\\\"name\\\":\\\"city-US-0\\\",\\\"population\\\":200}\"",
+            "string_value:\"{\\\"country\\\":\\\"US\\\",\\\"id\\\":\\\"US-1\\\",\\\"name\\\":\\\"city-US-1\\\",\\\"population\\\":400}\"",
+            "string_value:\"{\\\"country\\\":\\\"US\\\",\\\"id\\\":\\\"US-2\\\",\\\"name\\\":\\\"city-US-2\\\",\\\"population\\\":600}\"",
+            "string_value:\"{\\\"country\\\":\\\"US\\\",\\\"id\\\":\\\"US-3\\\",\\\"name\\\":\\\"city-US-3\\\",\\\"population\\\":800}\"",
+            "string_value:\"{\\\"country\\\":\\\"GB\\\",\\\"id\\\":\\\"GB-0\\\",\\\"name\\\":\\\"city-GB-0\\\",\\\"population\\\":300}\"",
+            "string_value:\"{\\\"country\\\":\\\"GB\\\",\\\"id\\\":\\\"GB-1\\\",\\\"name\\\":\\\"city-GB-1\\\",\\\"population\\\":600}\"",
+            "string_value:\"{\\\"country\\\":\\\"GB\\\",\\\"id\\\":\\\"GB-2\\\",\\\"name\\\":\\\"city-GB-2\\\",\\\"population\\\":900}\"",
+            "string_value:\"{\\\"country\\\":\\\"GB\\\",\\\"id\\\":\\\"GB-3\\\",\\\"name\\\":\\\"city-GB-3\\\",\\\"population\\\":1200}\""
+          ],
+          "error": "",
+          "rows_count": 12
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "projection",
+      "script": "SELECT c.name, c.population FROM c ORDER BY c.name",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name, c.population FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name, c.population FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c._rid, [{\\\"item\\\": c.name}] AS orderByItems, {\\\"name\\\": c.name, \\\"population\\\": c.population} AS payload\\nFROM c\\nWHERE (true)\\nORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT c.name, c.population FROM c ORDER BY c.name",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"name\\\":\\\"city-AE-0\\\",\\\"population\\\":100}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-1\\\",\\\"population\\\":200}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-2\\\",\\\"population\\\":300}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-3\\\",\\\"population\\\":400}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-0\\\",\\\"population\\\":300}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-1\\\",\\\"population\\\":600}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-2\\\",\\\"population\\\":900}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-3\\\",\\\"population\\\":1200}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-0\\\",\\\"population\\\":200}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-1\\\",\\\"population\\\":400}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-2\\\",\\\"population\\\":600}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-3\\\",\\\"population\\\":800}\""
+          ],
+          "error": "",
+          "rows_count": 12
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "aggregate",
+      "script": "SELECT COUNT(1) AS n, SUM(c.population) AS total FROM c",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT COUNT(1) AS n, SUM(c.population) AS total FROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT COUNT(1) AS n, SUM(c.population) AS total FROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT {\\\"n\\\": {\\\"item\\\": COUNT(1)}, \\\"total\\\": {\\\"item\\\": SUM(c.population)}} AS payload\\nFROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT COUNT(1) AS n, SUM(c.population) AS total FROM c",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"n\\\":12,\\\"total\\\":6000}\""
+          ],
+          "error": "",
+          "rows_count": 1
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "value aggregate",
+      "script": "SELECT VALUE COUNT(1) FROM c",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT VALUE COUNT(1) FROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT VALUE COUNT(1) FROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT VALUE [{\\\"item\\\": COUNT(1)}]\\nFROM c\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT VALUE COUNT(1) FROM c",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"12\""
+          ],
+          "error": "",
+          "rows_count": 1
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "order by",
+      "script": "SELECT c.name FROM c ORDER BY c.population DESC",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.population DESC\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.population DESC\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c._rid, [{\\\"item\\\": c.population}] AS orderByItems, {\\\"name\\\": c.name} AS payload\\nFROM c\\nWHERE (true)\\nORDER BY c.population DESC\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT c.name FROM c ORDER BY c.population DESC",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"name\\\":\\\"city-GB-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-0\\\"}\""
+          ],
+          "error": "",
+          "rows_count": 12
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "distinct",
+      "script": "SELECT DISTINCT c.country FROM c ORDER BY c.country",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT DISTINCT c.country FROM c ORDER BY c.country\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT DISTINCT c.country FROM c ORDER BY c.country\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c._rid, [{\\\"item\\\": c.country}] AS orderByItems, {\\\"country\\\": c.country} AS payload\\nFROM c\\nWHERE (true)\\nORDER BY c.country\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT DISTINCT c.country FROM c ORDER BY c.country",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"country\\\":\\\"AE\\\"}\"",
+            "string_value:\"{\\\"country\\\":\\\"GB\\\"}\"",
+            "string_value:\"{\\\"country\\\":\\\"US\\\"}\""
+          ],
+          "error": "",
+          "rows_count": 3
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "limit 7",
+      "script": "SELECT c.name FROM c ORDER BY c.name",
+      "container": "cutover_parity_c",
+      "limit": 7,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Max-Item-Count": "7",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Max-Item-Count": "7",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c._rid, [{\\\"item\\\": c.name}] AS orderByItems, {\\\"name\\\": c.name} AS payload\\nFROM c\\nWHERE (true)\\nORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT c.name FROM c ORDER BY c.name",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"name\\\":\\\"city-AE-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-2\\\"}\""
+          ],
+          "error": "",
+          "rows_count": 7
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "limit 1500",
+      "script": "SELECT c.name FROM c ORDER BY c.name",
+      "container": "cutover_parity_c",
+      "limit": 1500,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c.name FROM c ORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Is-Query-Plan-Request": "True",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Cosmos-Supported-Query-Features": "Aggregate,NonValueAggregate,MultipleAggregates,Distinct,DistinctValue,OrderBy,Top,OffsetAndLimit,GroupBy",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "GET",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/pkranges",
+          "body": "",
+          "headers": {
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Version": "2020-11-05"
+          }
+        },
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"SELECT c._rid, [{\\\"item\\\": c.name}] AS orderByItems, {\\\"name\\\": c.name} AS payload\\nFROM c\\nWHERE (true)\\nORDER BY c.name\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Partitionkeyrangeid": "0",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [
+        {
+          "statement": "SELECT c.name FROM c ORDER BY c.name",
+          "column_names": [
+            "result"
+          ],
+          "column_type_names": [
+            "TEXT"
+          ],
+          "rows": [
+            "string_value:\"{\\\"name\\\":\\\"city-AE-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-AE-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-GB-3\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-0\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-1\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-2\\\"}\"",
+            "string_value:\"{\\\"name\\\":\\\"city-US-3\\\"}\""
+          ],
+          "error": "",
+          "rows_count": 12
+        }
+      ],
+      "call_error": ""
+    },
+    {
+      "name": "parse error",
+      "script": "SELECT FROM",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [],
+      "results": [],
+      "call_error": "invalid_argument: support simple SELECT statement for Cosmos DB engine only, err: syntax error at position 7: unexpected token \"FROM\" in expression"
+    },
+    {
+      "name": "missing container",
+      "script": "SELECT * FROM c",
+      "container": "",
+      "limit": 0,
+      "requests": [],
+      "results": [],
+      "call_error": "invalid_argument: container argument is required for CosmosDB"
+    },
+    {
+      "name": "empty",
+      "script": "",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "uri": "/dbs/cutover_parity_db/colls/cutover_parity_c/docs",
+          "body": "{\"query\":\"\"}",
+          "headers": {
+            "Content-Type": "application/query+json",
+            "X-Ms-Cosmos-Sdk-Supportedcapabilities": "1",
+            "X-Ms-Documentdb-Populatequerymetrics": "true",
+            "X-Ms-Documentdb-Query": "True",
+            "X-Ms-Documentdb-Query-Enablecrosspartition": "true",
+            "X-Ms-Version": "2020-11-05"
+          }
+        }
+      ],
+      "results": [],
+      "call_error": "internal: failed to read more items: POST https://127.0.0.1:8081/dbs/cutover_parity_db/colls/cutover_parity_c/docs\n--------------------------------------------------------------------------------\nRESPONSE 400: 400 Bad Request\nERROR CODE: 400 Bad Request\n--------------------------------------------------------------------------------\n{\n  \"code\": \"BadRequest\",\n  \"message\": \"Message: {\\\"errors\\\":[{\\\"severity\\\":\\\"Error\\\",\\\"location\\\":{\\\"start\\\":0,\\\"end\\\":0},\\\"code\\\":\\\"SC1002\\\",\\\"message\\\":\\\"Syntax error, unexpected end-of-file.\\\"}]}\\r\\nActivityId: e179102c-fd97-41a8-6022-cd4fa4cb0723, Microsoft.Azure.Documents.Common/2.14.0\"\n}\n--------------------------------------------------------------------------------\n"
+    },
+    {
+      "name": "trailing semicolon",
+      "script": "SELECT c.name FROM c ORDER BY c.name;",
+      "container": "cutover_parity_c",
+      "limit": 0,
+      "requests": [],
+      "results": [],
+      "call_error": "invalid_argument: support simple SELECT statement for Cosmos DB engine only, err: syntax error at position 36: unexpected character \";\" at position 36"
+    }
+  ]
+}

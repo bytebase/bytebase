@@ -37,9 +37,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
-
-	"github.com/bytebase/bytebase/backend/plugin/db/cosmosdb"
+	omnicosmosdb "github.com/bytebase/omni/cosmosdb/driver"
+	omnidriver "github.com/bytebase/omni/driver"
 )
 
 type testCase struct {
@@ -142,29 +141,25 @@ func main() {
 	db := envOr("COSMOS_DB", "testdb")
 	coll := envOr("COSMOS_CONTAINER", "WorldCities")
 
-	cred, err := azcosmos.NewKeyCredential(key)
+	driver, err := omnicosmosdb.Open(context.Background(), omnidriver.Config{
+		Host:     endpoint,
+		Database: db,
+		Password: key,
+		Params:   map[string]string{omnicosmosdb.ParamAuth: omnicosmosdb.AuthMasterKey},
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "NewKeyCredential: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Open: %v\n", err)
 		os.Exit(1)
 	}
-	client, err := azcosmos.NewClientWithKey(endpoint, cred, nil)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "NewClientWithKey: %v\n", err)
-		os.Exit(1)
-	}
-	container, err := client.NewContainer(db, coll)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "NewContainer: %v\n", err)
-		os.Exit(1)
-	}
+	defer driver.Close()
 
 	fmt.Printf("# Go SDK reproduction — db=%s coll=%s\n", db, coll)
-	fmt.Println("SDK: github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos + backend/plugin/db/cosmosdb/queryengine/gonative")
+	fmt.Println("SDK: github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos + github.com/bytebase/omni/cosmosdb/driver")
 	fmt.Println()
 
 	rows := make([]result, 0, len(cases))
 	for _, tc := range cases {
-		r := runOne(container, tc)
+		r := runOne(driver, coll, tc)
 		rows = append(rows, r)
 		if *verbose {
 			fmt.Printf("[%s] %s  rows=%d  elapsed=%dms\n", r.status, r.id, r.rows, r.elapsedMs)
@@ -203,7 +198,7 @@ func main() {
 	fmt.Printf("**Totals:** %d PASS, %d FAIL out of %d.\n", pass, fail, len(rows))
 }
 
-func runOne(c *azcosmos.ContainerClient, tc testCase) result {
+func runOne(driver *omnicosmosdb.Driver, container string, tc testCase) result {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -212,11 +207,23 @@ func runOne(c *azcosmos.ContainerClient, tc testCase) result {
 	// containers. Matches the .NET harness's ceiling.
 	const rowCap = 10_000
 
-	items, err := cosmosdb.QueryEveryPartition(ctx, c, tc.sql, nil, rowCap)
+	session, err := driver.Session(ctx)
 	if err != nil {
-		return result{id: tc.id, sql: tc.sql, status: "FAIL", rows: len(items), elapsedMs: time.Since(start).Milliseconds(), err: err.Error()}
+		return result{id: tc.id, sql: tc.sql, status: "FAIL", elapsedMs: time.Since(start).Milliseconds(), err: err.Error()}
 	}
-	return result{id: tc.id, sql: tc.sql, status: "PASS", rows: len(items), elapsedMs: time.Since(start).Milliseconds()}
+	defer session.Close()
+	results, err := session.Query(ctx, tc.sql, omnidriver.QueryOptions{Schema: container, Limit: rowCap})
+	rows := 0
+	for _, one := range results {
+		rows += len(one.Rows)
+		if err == nil {
+			err = one.Err
+		}
+	}
+	if err != nil {
+		return result{id: tc.id, sql: tc.sql, status: "FAIL", rows: rows, elapsedMs: time.Since(start).Milliseconds(), err: err.Error()}
+	}
+	return result{id: tc.id, sql: tc.sql, status: "PASS", rows: rows, elapsedMs: time.Since(start).Milliseconds()}
 }
 
 func envOr(key, def string) string {

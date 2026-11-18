@@ -30,11 +30,11 @@ cd scripts/cosmos-repro-go
 go run . --verbose | tee out-go.md
 ```
 
-The harness calls the driver's own `QueryEveryPartition`, which engages the
-pure-Go query engine when the gateway returns its cross-partition sentinel
-error. Queries the gateway can still serve (e.g. single-partition WHERE
-filters, projections, built-ins) incur no extra round-trip — they never leave
-the gateway path.
+The harness runs each query through `github.com/bytebase/omni/cosmosdb/driver`,
+which engages the pure-Go query engine when the gateway returns its
+cross-partition sentinel error. Queries the gateway can still serve (e.g.
+single-partition WHERE filters, projections, built-ins) incur no extra
+round-trip — they never leave the gateway path.
 
 ## Scope
 
