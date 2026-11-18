@@ -305,8 +305,8 @@ vi.mock("./WorkloadIdentitySelect", () => ({
 }));
 
 // Create hands back NEW_CI, as the real dialog does with closeOnCreate.
-vi.mock("@/components/WorkloadIdentityFlow/WorkloadIdentityDialog", () => ({
-  WorkloadIdentityDialog: ({
+vi.mock("@/components/WorkloadIdentityFlow/WorkloadIdentitySheet", () => ({
+  WorkloadIdentitySheet: ({
     open,
     closeOnCreate,
     gitProvidersOnly,

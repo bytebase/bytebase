@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Check, Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
+import { Check, Copy, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -9,18 +9,16 @@ import {
   ProjectPageToolbar,
 } from "@/components/ProjectPageLayout";
 import { RoleSelect } from "@/components/RoleSelect";
-import { UserCell } from "@/components/UserCell";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CopyButton } from "@/components/ui/copy-button";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Sheet,
   SheetBody,
@@ -37,7 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip } from "@/components/ui/tooltip";
 import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
@@ -45,7 +42,6 @@ import {
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { writeTextToClipboard } from "@/lib/clipboard";
-import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -61,21 +57,47 @@ import {
   ServiceAccountSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  AccountCreatedCell,
+  AccountEmptyRow,
+  AccountListToolbar,
+  type AccountMenuItem,
+  AccountNameCell,
+  AccountPageInfo,
+  AccountRoleCell,
+  AccountRowMenu,
+  AccountSkeletonRows,
+  type AccountStateFilter,
+  accountListRequest,
+  accountMatchesList,
+  DeactivateAccountDialog,
+  useAccountRoles,
+} from "./MachineAccountList";
 
 // ============================================================
 // ServiceAccountTable
 // ============================================================
 
+const COLUMNS = 4;
+
 function ServiceAccountTable({
   serviceAccounts,
+  loading,
   project,
+  projectName,
+  filtered,
+  onClearFilters,
   onUpdated,
   onSelected,
 }: {
   serviceAccounts: ServiceAccount[];
+  loading: boolean;
   project?: Project;
+  projectName?: string;
+  filtered: boolean;
+  onClearFilters: () => void;
   onUpdated: (sa: ServiceAccount) => void;
-  onSelected?: (sa: ServiceAccount) => void;
+  onSelected: (sa: ServiceAccount) => void;
 }) {
   const { t } = useTranslation();
   const deleteServiceAccount = useAppStore(
@@ -87,16 +109,28 @@ function ServiceAccountTable({
   const updateServiceAccount = useAppStore(
     (state) => state.updateServiceAccount
   );
+  const rolesOf = useAccountRoles(projectName);
 
-  const handleDeactivate = async (sa: ServiceAccount) => {
-    const confirmed = window.confirm(
-      t("settings.members.action.deactivate-confirm-title")
-    );
-    if (!confirmed) return;
+  const can = (permission: Parameters<typeof hasWorkspacePermissionV2>[0]) =>
+    project
+      ? hasProjectPermissionV2(project, permission)
+      : hasWorkspacePermissionV2(permission);
+  const canOpenDetail = can("bb.serviceAccounts.get");
+  const canDelete = can("bb.serviceAccounts.delete");
+  const canRestore = can("bb.serviceAccounts.undelete");
+  const canUpdate = can("bb.serviceAccounts.update");
 
+  const [deactivating, setDeactivating] = useState<ServiceAccount>();
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const handleDeactivate = async () => {
+    if (!deactivating) return;
+    setIsDeactivating(true);
     try {
-      await deleteServiceAccount(sa.name);
-      onUpdated(create(ServiceAccountSchema, { ...sa, state: State.DELETED }));
+      await deleteServiceAccount(deactivating.name);
+      onUpdated(
+        create(ServiceAccountSchema, { ...deactivating, state: State.DELETED })
+      );
+      setDeactivating(undefined);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -104,6 +138,8 @@ function ServiceAccountTable({
       });
     } catch {
       // error already shown by store
+    } finally {
+      setIsDeactivating(false);
     }
   };
 
@@ -213,6 +249,8 @@ function ServiceAccountTable({
     });
   };
 
+  // Shown only while a new or reset key waits to be copied; the key is
+  // returned once.
   const renderKeyAction = (sa: ServiceAccount) => {
     const feedback = keyFeedback.get(sa.name);
     if (feedback) {
@@ -223,212 +261,125 @@ function ServiceAccountTable({
           disabled
           className="text-success disabled:opacity-100"
         >
-          <Check className="h-3 w-3 mr-1" />
+          <Check className="size-3" />
           {feedback === "reset"
             ? t("settings.members.service-key-reset-and-copied")
             : t("common.copied")}
         </Button>
       );
     }
-    if (sa.serviceKey) {
-      return (
-        <Button
-          appearance="outline"
-          size="xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCopyKey(sa);
-          }}
-        >
-          <Copy className="h-3 w-3 mr-1" />
-          {t("settings.members.copy-service-key")}
-        </Button>
-      );
-    }
+    if (!sa.serviceKey) return null;
     return (
-      <Popover
-        open={resetConfirmSa?.name === sa.name}
-        onOpenChange={(open) => {
-          if (!isResetting) setResetConfirmSa(open ? sa : undefined);
-        }}
+      <Button
+        appearance="outline"
+        size="xs"
+        onClick={() => void handleCopyKey(sa)}
       >
-        <PopoverTrigger
-          render={<Button appearance="outline" size="xs" />}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <KeyRound className="h-3 w-3 mr-1" />
-          {t("settings.members.reset-service-key")}
-        </PopoverTrigger>
-        <PopoverContent
-          aria-label={t("settings.members.reset-service-key")}
-          className="w-80 max-w-[calc(100vw-2rem)]"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <p className="text-control-light">
-            {t("settings.members.reset-service-key-alert")}
-          </p>
-          <div className="mt-3 flex justify-end gap-x-2">
-            <Button
-              appearance="outline"
-              size="sm"
-              disabled={isResetting}
-              onClick={() => setResetConfirmSa(undefined)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={isResetting}
-              onClick={() => void handleResetKey(sa)}
-            >
-              {t("common.reset")}
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+        <Copy className="size-3" />
+        {t("settings.members.copy-service-key")}
+      </Button>
     );
   };
 
+  const menuItems = (sa: ServiceAccount): AccountMenuItem[] => {
+    if (sa.state === State.DELETED) {
+      return canRestore
+        ? [
+            {
+              key: "restore",
+              label: t("common.restore"),
+              onSelect: () => void handleRestore(sa),
+            },
+          ]
+        : [];
+    }
+    const items: AccountMenuItem[] = [];
+    if (canUpdate) {
+      items.push({
+        key: "reset-key",
+        label: t("settings.members.reset-service-key"),
+        onSelect: () => setResetConfirmSa(sa),
+      });
+    }
+    if (canOpenDetail) {
+      items.push({
+        key: "edit",
+        label: t("common.edit"),
+        onSelect: () => onSelected(sa),
+      });
+    }
+    if (canDelete) {
+      items.push({
+        key: "deactivate",
+        label: t("common.deactivate"),
+        destructive: true,
+        onSelect: () => setDeactivating(sa),
+      });
+    }
+    return items;
+  };
+
   return (
-    <div className="border rounded-sm overflow-hidden">
+    <div className="overflow-x-auto rounded-sm border">
       <Table>
         <TableHeader>
           <TableRow className="bg-control-bg">
-            <TableHead className="whitespace-nowrap">
-              {t("settings.members.table.account")}
+            <TableHead className="min-w-50 whitespace-nowrap">
+              {t("common.name")}
             </TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              {t("common.operations")}
+            <TableHead className="whitespace-nowrap">
+              {t("settings.members.table.roles")}
+            </TableHead>
+            <TableHead className="whitespace-nowrap">
+              {t("common.created")}
+            </TableHead>
+            <TableHead>
+              <span className="sr-only">{t("common.actions")}</span>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {serviceAccounts.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={2}
-                className="py-8 text-center text-control-light text-sm"
-              >
-                {t("common.no-data")}
-              </TableCell>
-            </TableRow>
+          {loading ? (
+            <AccountSkeletonRows columns={COLUMNS} />
+          ) : serviceAccounts.length === 0 ? (
+            <AccountEmptyRow
+              colSpan={COLUMNS}
+              filtered={filtered}
+              emptyText={t("account-list.no-service-accounts")}
+              onClearFilters={onClearFilters}
+            />
           ) : (
             serviceAccounts.map((sa) => {
               const isDeleted = sa.state === State.DELETED;
-              const canOpenDetail =
-                !!onSelected &&
-                (project
-                  ? hasProjectPermissionV2(project, "bb.serviceAccounts.get")
-                  : hasWorkspacePermissionV2("bb.serviceAccounts.get"));
-
               return (
-                <TableRow
-                  key={sa.name}
-                  className={cn(
-                    canOpenDetail &&
-                      "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg"
-                  )}
-                  tabIndex={canOpenDetail ? 0 : undefined}
-                  role={canOpenDetail ? "button" : undefined}
-                  aria-label={canOpenDetail ? sa.title || sa.email : undefined}
-                  onClick={canOpenDetail ? () => onSelected(sa) : undefined}
-                  onKeyDown={
-                    canOpenDetail
-                      ? (e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onSelected(sa);
-                          }
-                        }
-                      : undefined
-                  }
-                >
-                  {/* Account column */}
-                  <TableCell>
-                    <div className="flex items-center gap-x-3">
-                      <UserCell
-                        title={sa.title}
-                        subtitle={sa.email}
-                        subtitleAction={<CopyButton content={sa.email} />}
-                        nameClassName={
-                          isDeleted
-                            ? "line-through !text-control-light"
-                            : undefined
-                        }
-                        badges={
-                          <Badge className="text-xs px-1.5 py-0">
-                            {t("settings.members.service-account")}
-                          </Badge>
-                        }
-                      />
-                      {!isDeleted && (
-                        <div className="ml-auto text-xs shrink-0">
-                          {renderKeyAction(sa)}
-                        </div>
-                      )}
-                    </div>
+                <TableRow key={sa.name}>
+                  <TableCell className="w-full max-w-0">
+                    <AccountNameCell
+                      title={sa.title}
+                      email={sa.email}
+                      inactive={isDeleted}
+                      onOpen={
+                        canOpenDetail && !isDeleted
+                          ? () => onSelected(sa)
+                          : undefined
+                      }
+                    />
                   </TableCell>
-
-                  {/* Operations column — destructive/secondary actions only.
-                      The row itself is clickable to open the detail sheet. */}
                   <TableCell>
-                    <div className="flex justify-end gap-x-1">
-                      {!isDeleted &&
-                        (project
-                          ? hasProjectPermissionV2(
-                              project,
-                              "bb.serviceAccounts.delete"
-                            )
-                          : hasWorkspacePermissionV2(
-                              "bb.serviceAccounts.delete"
-                            )) && (
-                          <Tooltip
-                            content={t(
-                              "settings.members.action.deactivate-confirm-title"
-                            )}
-                          >
-                            <Button
-                              appearance="secondary"
-                              size="sm"
-                              className="text-error hover:text-error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeactivate(sa);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
-                      {isDeleted &&
-                        (project
-                          ? hasProjectPermissionV2(
-                              project,
-                              "bb.serviceAccounts.undelete"
-                            )
-                          : hasWorkspacePermissionV2(
-                              "bb.serviceAccounts.undelete"
-                            )) && (
-                          <Tooltip
-                            content={t(
-                              "settings.members.action.reactivate-confirm-title"
-                            )}
-                          >
-                            <Button
-                              appearance="secondary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRestore(sa);
-                              }}
-                            >
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                          </Tooltip>
-                        )}
+                    <AccountRoleCell
+                      roles={rolesOf(getServiceAccountNameInBinding(sa.email))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <AccountCreatedCell createTime={sa.createTime} />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-x-2">
+                      {!isDeleted && renderKeyAction(sa)}
+                      <AccountRowMenu
+                        label={sa.title || sa.email}
+                        items={menuItems(sa)}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -437,6 +388,47 @@ function ServiceAccountTable({
           )}
         </TableBody>
       </Table>
+
+      <AlertDialog
+        open={!!resetConfirmSa}
+        onOpenChange={(open) => {
+          if (!open && !isResetting) setResetConfirmSa(undefined);
+        }}
+      >
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogTitle>
+            {t("settings.members.reset-service-key")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("settings.members.reset-service-key-alert")}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button
+              appearance="outline"
+              disabled={isResetting}
+              onClick={() => setResetConfirmSa(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={isResetting}
+              onClick={() => {
+                if (resetConfirmSa) void handleResetKey(resetConfirmSa);
+              }}
+            >
+              {t("common.reset")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <DeactivateAccountDialog
+        account={deactivating}
+        pending={isDeactivating}
+        onCancel={() => setDeactivating(undefined)}
+        onConfirm={() => void handleDeactivate()}
+      />
     </div>
   );
 }
@@ -749,73 +741,44 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
   const parent = projectName ?? workspaceResourceName;
 
-  const [showInactive, setShowInactive] = useState(false);
+  const [query, setQuery] = useState("");
+  const [stateFilter, setStateFilter] = useState<AccountStateFilter>("active");
   const [showDrawer, setShowDrawer] = useState(false);
   const [editingSa, setEditingSa] = useState<ServiceAccount | undefined>(
     undefined
   );
 
-  // Active service accounts
-  const fetchActive = useCallback(
+  const fetchList = useCallback(
     async (params: { pageSize: number; pageToken: string }) => {
       const response = await listServiceAccounts({
         parent,
         pageSize: params.pageSize,
         pageToken: params.pageToken,
-        showDeleted: false,
+        ...accountListRequest(stateFilter, query),
       });
       return {
         list: response.serviceAccounts,
         nextPageToken: response.nextPageToken,
       };
     },
-    [listServiceAccounts, parent]
+    [listServiceAccounts, parent, stateFilter, query]
   );
 
-  const activeData = usePagedData<ServiceAccount>({
-    sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.active.page-size`,
-    fetchList: fetchActive,
+  const data = usePagedData<ServiceAccount>({
+    sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.page-size`,
+    fetchList,
   });
 
-  // Inactive service accounts
-  const fetchInactive = useCallback(
-    async (params: { pageSize: number; pageToken: string }) => {
-      const response = await listServiceAccounts({
-        parent,
-        pageSize: params.pageSize,
-        pageToken: params.pageToken,
-        showDeleted: true,
-        filter: { state: State.DELETED },
-      });
-      return {
-        list: response.serviceAccounts,
-        nextPageToken: response.nextPageToken,
-      };
-    },
-    [listServiceAccounts, parent]
-  );
-
-  const inactiveData = usePagedData<ServiceAccount>({
-    sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.inactive.page-size`,
-    enabled: showInactive,
-    fetchList: fetchInactive,
-  });
-
-  const handleActiveUpdated = (sa: ServiceAccount) => {
-    if (sa.state === State.DELETED) {
-      activeData.removeCache(sa);
-      inactiveData.updateCache([sa]);
-    } else {
-      activeData.updateCache([sa]);
+  // Keeps a row only while it matches the filters. Removing the last loaded
+  // row refetches, so remaining pages stay reachable.
+  const handleUpdated = (sa: ServiceAccount) => {
+    if (accountMatchesList(sa, stateFilter, query)) {
+      data.updateCache([sa]);
+      return;
     }
-  };
-
-  const handleInactiveUpdated = (sa: ServiceAccount) => {
-    if (sa.state === State.ACTIVE) {
-      inactiveData.removeCache(sa);
-      activeData.updateCache([sa]);
-    } else {
-      inactiveData.updateCache([sa]);
+    data.removeCache(sa);
+    if (data.hasMore && data.dataList.every((row) => row.name === sa.name)) {
+      data.refresh();
     }
   };
 
@@ -824,111 +787,69 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
     setShowDrawer(true);
   };
 
-  const handleCreated = (sa: ServiceAccount) => {
-    activeData.updateCache([sa]);
+  const canCreate = project
+    ? project.state === State.ACTIVE &&
+      hasProjectPermissionV2(project, "bb.serviceAccounts.create")
+    : hasWorkspacePermissionV2("bb.serviceAccounts.create");
+  const openCreate = () => {
+    setEditingSa(undefined);
+    setShowDrawer(true);
   };
-
-  const handleUpdated = (sa: ServiceAccount) => {
-    activeData.updateCache([sa]);
-  };
+  const filtered = query.trim() !== "" || stateFilter !== "active";
 
   const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
   const PageToolbar = projectName ? ProjectPageToolbar : WorkspacePageToolbar;
 
   return (
     <PageLayout>
-      <PageToolbar align="end">
-        <PermissionGuard
-          permissions={["bb.serviceAccounts.create"]}
-          project={project}
-        >
-          <Button
-            disabled={
-              project
-                ? project.state !== State.ACTIVE ||
-                  !hasProjectPermissionV2(project, "bb.serviceAccounts.create")
-                : !hasWorkspacePermissionV2("bb.serviceAccounts.create")
-            }
-            onClick={() => {
-              setEditingSa(undefined);
-              setShowDrawer(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            {t("common.create")}
-          </Button>
-        </PermissionGuard>
+      <AccountPageInfo
+        isProject={!!projectName}
+        description={t("account-list.service-accounts-description")}
+      />
+
+      <PageToolbar>
+        <AccountListToolbar
+          query={query}
+          onQueryChange={setQuery}
+          state={stateFilter}
+          onStateChange={setStateFilter}
+          action={
+            <PermissionGuard
+              permissions={["bb.serviceAccounts.create"]}
+              project={project}
+            >
+              <Button disabled={!canCreate} onClick={openCreate}>
+                <Plus className="size-4" />
+                {t("common.create")}
+              </Button>
+            </PermissionGuard>
+          }
+        />
       </PageToolbar>
 
       <div className="flex flex-col gap-y-4">
-        {/* Active list */}
-        {activeData.isLoading && activeData.dataList.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
-          </div>
-        ) : (
-          <>
-            <ServiceAccountTable
-              serviceAccounts={activeData.dataList}
-              project={project}
-              onUpdated={handleActiveUpdated}
-              onSelected={handleOpenEdit}
-            />
-            <PagedTableFooter
-              pageSize={activeData.pageSize}
-              pageSizeOptions={activeData.pageSizeOptions}
-              onPageSizeChange={activeData.onPageSizeChange}
-              hasMore={activeData.hasMore}
-              isFetchingMore={activeData.isFetchingMore}
-              onLoadMore={activeData.loadMore}
-            />
-          </>
-        )}
-
-        {/* Inactive toggle */}
-        <div className="flex items-center gap-x-2 text-sm">
-          <Checkbox
-            id="show-inactive-service-accounts"
-            checked={showInactive}
-            onCheckedChange={(checked) => setShowInactive(checked)}
+        <ServiceAccountTable
+          serviceAccounts={data.dataList}
+          loading={data.isLoading && data.dataList.length === 0}
+          project={project}
+          projectName={projectName}
+          filtered={filtered}
+          onClearFilters={() => {
+            setQuery("");
+            setStateFilter("active");
+          }}
+          onUpdated={handleUpdated}
+          onSelected={handleOpenEdit}
+        />
+        {(data.dataList.length > 0 || data.hasMore) && (
+          <PagedTableFooter
+            pageSize={data.pageSize}
+            pageSizeOptions={data.pageSizeOptions}
+            onPageSizeChange={data.onPageSizeChange}
+            hasMore={data.hasMore}
+            isFetchingMore={data.isFetchingMore}
+            onLoadMore={data.loadMore}
           />
-          <label
-            className="cursor-pointer textinfolabel"
-            htmlFor="show-inactive-service-accounts"
-          >
-            {t("settings.members.show-inactive")}
-          </label>
-        </div>
-
-        {/* Inactive list */}
-        {showInactive && (
-          <div className="flex flex-col gap-y-4">
-            <h3 className="text-base font-medium">
-              {t("settings.members.inactive-service-accounts")}
-            </h3>
-
-            {inactiveData.isLoading && inactiveData.dataList.length === 0 ? (
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin size-6 border-2 border-accent border-t-transparent rounded-full" />
-              </div>
-            ) : (
-              <>
-                <ServiceAccountTable
-                  serviceAccounts={inactiveData.dataList}
-                  project={project}
-                  onUpdated={handleInactiveUpdated}
-                />
-                <PagedTableFooter
-                  pageSize={inactiveData.pageSize}
-                  pageSizeOptions={inactiveData.pageSizeOptions}
-                  onPageSizeChange={inactiveData.onPageSizeChange}
-                  hasMore={inactiveData.hasMore}
-                  isFetchingMore={inactiveData.isFetchingMore}
-                  onLoadMore={inactiveData.loadMore}
-                />
-              </>
-            )}
-          </div>
         )}
       </div>
 
@@ -940,7 +861,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
           setShowDrawer(false);
           setEditingSa(undefined);
         }}
-        onCreated={handleCreated}
+        onCreated={handleUpdated}
         onUpdated={handleUpdated}
       />
     </PageLayout>

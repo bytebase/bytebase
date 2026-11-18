@@ -1,4 +1,20 @@
 {
+  "account-list": {
+    "deactivate-description": "{{email}} はサインインできなくなります。後で復元できます。",
+    "deactivate-title": "{{name}} を無効にしますか？",
+    "more-actions": "{{name}} のその他の操作",
+    "no-role": "ロールなし",
+    "no-service-accounts": "サービスアカウントはありません",
+    "no-workload-identities": "ワークロード ID はありません",
+    "nothing-matches": "一致する項目はありません",
+    "search-placeholder": "名前またはメールで検索",
+    "service-accounts-description": "サービスアカウントはキーでサインインします。スクリプト、Terraform、API 呼び出しに使用します。GitHub や GitLab の CI では、ワークロード ID なら保存するシークレットは不要です。",
+    "trust-any-environment": "環境で実行されるジョブのみ",
+    "trust-environment": "<code>environment: {{environment}}</code> のジョブのみ",
+    "trust-environment-plain": "environment: {{environment}} のジョブのみ",
+    "trusts": "信頼先",
+    "workload-identities-description": "ワークロード ID を使うと、CI ジョブは自身の短期トークンでサインインできるため、保存するシークレットはありません。それぞれが信頼するジョブと付与するロールを指定します。"
+  },
   "activity": {
     "n-similar-activities": "{{count}} 件の類似アクティビティ",
     "sentence": {
@@ -770,6 +786,7 @@
     "id": "ID",
     "import": "インポート",
     "in-progress": "進行中",
+    "inactive": "無効",
     "info": "情報",
     "input-value-press-enter": "値を入力し、Enter キーを押して確定します",
     "instance": "インスタンス",
@@ -3685,9 +3702,7 @@
         "self": "グループ",
         "workspace-domain-required": "まずワークスペースドメインを設定してください。"
       },
-      "inactive-service-accounts": "非アクティブサービスアカウント",
       "inactive-users": "非アクティブユーザー",
-      "inactive-workload-identities": "非アクティブワークロードID",
       "invite-email-hint": "新しいメンバーに招待メールが送信されます。",
       "pending-invite": "招待済み",
       "reset-service-key": "サービスキーのリセット",
@@ -4797,16 +4812,11 @@
     "optional": "（任意）",
     "rail": {
       "account": "アカウント",
-      "account-description": "メールアドレスとロール",
       "done": "完了",
-      "done-description": "ワークフローで使用",
       "label": "ステップ",
       "repositories": "リポジトリ",
-      "repositories-description": "オーナーとリポジトリを指定",
       "subject": "Subject",
-      "subject-description": "トークンの subject を指定",
-      "token-source": "トークンの発行元",
-      "token-source-description": "CI プロバイダーを選択"
+      "token-source": "トークンの発行元"
     },
     "repositories": {
       "any-environment-warning": "環境内で実行されるジョブのみサインインできます。SQL レビュージョブなど、環境のないジョブは失敗します。",

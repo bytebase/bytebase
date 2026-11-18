@@ -1,4 +1,20 @@
 {
+  "account-list": {
+    "deactivate-description": "{{email}} 将无法再登录。你可以稍后恢复。",
+    "deactivate-title": "停用 {{name}}？",
+    "more-actions": "{{name}} 的更多操作",
+    "no-role": "无角色",
+    "no-service-accounts": "暂无服务账号",
+    "no-workload-identities": "暂无工作负载身份",
+    "nothing-matches": "没有匹配项",
+    "search-placeholder": "按名称或邮箱搜索",
+    "service-accounts-description": "服务账号使用密钥登录。适用于脚本、Terraform 和 API 调用。在 GitHub 或 GitLab 的 CI 中，工作负载身份无需存储密钥。",
+    "trust-any-environment": "仅限在环境中运行的作业",
+    "trust-environment": "仅限 <code>environment: {{environment}}</code> 的作业",
+    "trust-environment-plain": "仅限 environment: {{environment}} 的作业",
+    "trusts": "信任",
+    "workload-identities-description": "工作负载身份让 CI 作业使用自己的短期令牌登录，无需存储任何密钥。每个身份指明它信任的作业以及这些作业获得的角色。"
+  },
   "activity": {
     "n-similar-activities": "{{count}} 条相似活动",
     "sentence": {
@@ -770,6 +786,7 @@
     "id": "ID",
     "import": "导入",
     "in-progress": "进行中",
+    "inactive": "已停用",
     "info": "信息",
     "input-value-press-enter": "输入值，按回车确认",
     "instance": "实例",
@@ -3685,9 +3702,7 @@
         "self": "群组",
         "workspace-domain-required": "请先设置工作空间的域名。"
       },
-      "inactive-service-accounts": "未激活服务账号",
       "inactive-users": "未激活用户",
-      "inactive-workload-identities": "未激活工作负载身份",
       "invite-email-hint": "将向新成员发送邀请邮件。",
       "pending-invite": "已邀请",
       "reset-service-key": "重置 Service Key",
@@ -4797,16 +4812,11 @@
     "optional": "（可选）",
     "rail": {
       "account": "账号",
-      "account-description": "邮箱和角色",
       "done": "完成",
-      "done-description": "在工作流中使用",
       "label": "步骤",
       "repositories": "仓库",
-      "repositories-description": "匹配所有者和仓库",
       "subject": "Subject",
-      "subject-description": "匹配令牌的 subject",
-      "token-source": "令牌来源",
-      "token-source-description": "选择 CI 提供方"
+      "token-source": "令牌来源"
     },
     "repositories": {
       "any-environment-warning": "只有在某个环境中运行的任务可以登录。没有环境的任务（例如 SQL 审核任务）将会失败。",

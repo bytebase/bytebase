@@ -1,4 +1,20 @@
 {
+  "account-list": {
+    "deactivate-description": "{{email}} sẽ không thể đăng nhập nữa. Bạn có thể khôi phục sau.",
+    "deactivate-title": "Vô hiệu hóa {{name}}?",
+    "more-actions": "Thêm thao tác cho {{name}}",
+    "no-role": "Không có vai trò",
+    "no-service-accounts": "Chưa có tài khoản dịch vụ",
+    "no-workload-identities": "Chưa có danh tính khối lượng công việc",
+    "nothing-matches": "Không có kết quả phù hợp",
+    "search-placeholder": "Tìm theo tên hoặc email",
+    "service-accounts-description": "Tài khoản dịch vụ đăng nhập bằng khóa. Dùng chúng cho script, Terraform và lệnh gọi API. Với CI trên GitHub hoặc GitLab, danh tính khối lượng công việc không cần lưu bí mật.",
+    "trust-any-environment": "Chỉ các job chạy trong một môi trường",
+    "trust-environment": "Chỉ các job có <code>environment: {{environment}}</code>",
+    "trust-environment-plain": "Chỉ các job có environment: {{environment}}",
+    "trusts": "Tin cậy",
+    "workload-identities-description": "Danh tính khối lượng công việc cho phép các job CI đăng nhập bằng token ngắn hạn của chính chúng, nên không có bí mật nào cần lưu. Mỗi danh tính chỉ rõ các job nó tin cậy và vai trò chúng nhận được."
+  },
   "activity": {
     "n-similar-activities": "{{count}} hoạt động tương tự",
     "sentence": {
@@ -770,6 +786,7 @@
     "id": "ID",
     "import": "Nhập",
     "in-progress": "Đang thực hiện",
+    "inactive": "Không hoạt động",
     "info": "Thông tin",
     "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
     "instance": "Phiên bản",
@@ -3685,9 +3702,7 @@
         "self": "Nhóm",
         "workspace-domain-required": "Vui lòng thiết lập tên miền không gian làm việc trước."
       },
-      "inactive-service-accounts": "Tài khoản dịch vụ không hoạt động",
       "inactive-users": "Người dùng không hoạt động",
-      "inactive-workload-identities": "Danh tính Workload không hoạt động",
       "invite-email-hint": "Email mời sẽ được gửi đến các thành viên mới.",
       "pending-invite": "Đã mời",
       "reset-service-key": "Đặt lại Khóa Dịch vụ",
@@ -4797,16 +4812,11 @@
     "optional": "(tùy chọn)",
     "rail": {
       "account": "Tài khoản",
-      "account-description": "Email và vai trò",
       "done": "Hoàn tất",
-      "done-description": "Dùng trong workflow của bạn",
       "label": "Các bước",
       "repositories": "Kho mã",
-      "repositories-description": "Khớp chủ sở hữu và kho mã",
       "subject": "Subject",
-      "subject-description": "Khớp subject của token",
-      "token-source": "Nguồn token",
-      "token-source-description": "Chọn nhà cung cấp CI"
+      "token-source": "Nguồn token"
     },
     "repositories": {
       "any-environment-warning": "Chỉ các job chạy trong một môi trường mới đăng nhập được. Job không có môi trường, như job xem xét SQL, sẽ thất bại.",

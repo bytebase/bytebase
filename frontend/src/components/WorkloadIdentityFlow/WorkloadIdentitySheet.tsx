@@ -1,20 +1,21 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { ArrowLeft, XIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { ensureWorkloadIdentityFullName } from "@/stores/app/workloadIdentity";
 import {
@@ -72,7 +73,7 @@ const DEFAULT_ROLE: string = PresetRoleType.GITOPS_SERVICE_AGENT;
 // Letters, digits, ".", "_" and "-", starting and ending with a letter or digit.
 const EMAIL_PREFIX_PATTERN = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/i;
 
-export interface WorkloadIdentityDialogProps {
+export interface WorkloadIdentitySheetProps {
   readonly open: boolean;
   readonly workloadIdentity?: WorkloadIdentity;
   readonly project?: string;
@@ -89,7 +90,7 @@ export interface WorkloadIdentityDialogProps {
   readonly gitProvidersOnly?: boolean;
 }
 
-export function WorkloadIdentityDialog(props: WorkloadIdentityDialogProps) {
+export function WorkloadIdentitySheet(props: WorkloadIdentitySheetProps) {
   const { open, workloadIdentity, onClose } = props;
   // Freeze the entity while open=false so the inner form stays visually
   // stable during the close animation; the key mounts a fresh form for a new
@@ -100,8 +101,8 @@ export function WorkloadIdentityDialog(props: WorkloadIdentityDialogProps) {
   }
   const stableEntity = openEntityRef.current;
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden p-0 sm:h-[min(680px,calc(100dvh-4rem))] sm:max-h-[min(680px,calc(100dvh-4rem))] sm:w-[calc(100vw-8rem)] sm:max-w-4xl">
+    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+      <SheetContent width="wide">
         <WorkloadIdentityFlow
           key={stableEntity?.name ?? "new"}
           workloadIdentity={stableEntity}
@@ -112,8 +113,8 @@ export function WorkloadIdentityDialog(props: WorkloadIdentityDialogProps) {
           closeOnCreate={props.closeOnCreate}
           gitProvidersOnly={props.gitProvidersOnly}
         />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -174,7 +175,7 @@ function WorkloadIdentityFlow({
   onUpdated,
   closeOnCreate,
   gitProvidersOnly,
-}: Omit<WorkloadIdentityDialogProps, "open">) {
+}: Omit<WorkloadIdentitySheetProps, "open">) {
   const { t } = useTranslation();
   const getProjectIamPolicy = useAppStore((state) => state.getProjectIamPolicy);
   const updateProjectIamPolicy = useAppStore(
@@ -617,28 +618,15 @@ function WorkloadIdentityFlow({
   // --- Rendering ---
 
   const isOIDC = providerType === WorkloadIdentityConfig_ProviderType.OIDC;
-  const railSteps = [
+  const steps = [
+    { title: t("workload-identity.rail.token-source") },
     {
-      title: t("workload-identity.rail.token-source"),
-      description: t("workload-identity.rail.token-source-description"),
+      title: isOIDC
+        ? t("workload-identity.rail.subject")
+        : t("workload-identity.rail.repositories"),
     },
-    isOIDC
-      ? {
-          title: t("workload-identity.rail.subject"),
-          description: t("workload-identity.rail.subject-description"),
-        }
-      : {
-          title: t("workload-identity.rail.repositories"),
-          description: t("workload-identity.rail.repositories-description"),
-        },
-    {
-      title: t("workload-identity.rail.account"),
-      description: t("workload-identity.rail.account-description"),
-    },
-    {
-      title: t("workload-identity.rail.done"),
-      description: t("workload-identity.rail.done-description"),
-    },
+    { title: t("workload-identity.rail.account") },
+    { title: t("workload-identity.rail.done") },
   ];
   const onStepClick = saved ? undefined : goTo;
 
@@ -736,22 +724,16 @@ function WorkloadIdentityFlow({
 
   return (
     <>
-      <div className="flex flex-col gap-y-4 px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
-        <div className="flex items-center justify-between gap-x-3">
-          <DialogTitle>
-            {isEditMode
-              ? t("workload-identity.edit-title")
-              : t("workload-identity.create-title")}
-          </DialogTitle>
-          <DialogClose
-            aria-label={t("common.close")}
-            className="shrink-0 cursor-pointer rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <XIcon className="size-5" />
-          </DialogClose>
-        </div>
+      <SheetHeader>
+        <SheetTitle>
+          {isEditMode
+            ? t("workload-identity.edit-title")
+            : t("workload-identity.create-title")}
+        </SheetTitle>
+      </SheetHeader>
+
+      <div className="flex flex-col gap-y-3 border-b border-control-border px-6 py-3">
         {isEditMode && (
-          // Compact, so step 2 still fits the fixed height under the banner.
           <Alert
             variant="info"
             className="py-1.5"
@@ -760,43 +742,21 @@ function WorkloadIdentityFlow({
             })}
           />
         )}
-        <div className="sm:hidden">
+        <nav aria-label={t("workload-identity.rail.label")}>
           <StepIndicator
-            variant="rail"
-            steps={railSteps}
+            steps={steps}
             currentIndex={step}
-            onStepClick={onStepClick}
-          />
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 gap-x-2 sm:px-6 sm:pt-3",
-          isEditMode && "sm:pt-1"
-        )}
-      >
-        <nav
-          aria-label={t("workload-identity.rail.label")}
-          className="-ml-1 hidden w-56 shrink-0 overflow-y-auto pt-1.5 pl-1 sm:block"
-        >
-          <StepIndicator
-            orientation="vertical"
-            steps={railSteps}
-            currentIndex={step}
+            fitOneRow
             onStepClick={onStepClick}
           />
         </nav>
-        <div
-          ref={bodyRef}
-          data-slot="workload-identity-step-body"
-          className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-2 sm:-mx-1 sm:px-1 sm:pt-1"
-        >
-          {body}
-        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-block-border px-4 pt-3 pb-4 sm:border-t-0 sm:px-6 sm:pt-4 sm:pb-6">
+      <SheetBody ref={bodyRef} data-slot="workload-identity-step-body">
+        {body}
+      </SheetBody>
+
+      <SheetFooter className="flex-wrap justify-between gap-2">
         <div>
           {step > TOKEN_SOURCE && !saved && (
             <Button
@@ -829,7 +789,7 @@ function WorkloadIdentityFlow({
             </>
           )}
         </div>
-      </div>
+      </SheetFooter>
     </>
   );
 }

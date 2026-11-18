@@ -1,5 +1,5 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { act, createElement, useState } from "react";
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
+import { act, cloneElement, createElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -7,20 +7,40 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { passThrough } = vi.hoisted(() => ({
+  passThrough: ({ children }: { children?: ReactNode }) => children,
+}));
+
+const pagedState = vi.hoisted(() => ({ hasMore: false, refresh: vi.fn() }));
+
 const {
+  mockDeleteServiceAccount,
   mockPushNotification,
+  mockRemoveCache,
   mockUpdateCache,
   mockUpdateServiceAccount,
   mockWriteTextToClipboard,
 } = vi.hoisted(() => ({
+  mockDeleteServiceAccount: vi.fn(),
   mockPushNotification: vi.fn(),
+  mockRemoveCache: vi.fn(),
   mockUpdateCache: vi.fn(),
   mockUpdateServiceAccount: vi.fn(),
   mockWriteTextToClipboard: vi.fn(),
 }));
 
+
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => undefined },
+  useTranslation: () => ({
+    t: (key: string, values?: Record<string, string>) =>
+      values?.name ? `${key}:${values.name}` : key,
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
+
+vi.mock("@/components/HumanizeTs", () => ({
+  HumanizeTs: ({ tsMs }: { tsMs: number }) => createElement("span", {}, tsMs),
 }));
 
 vi.mock("@/components/PermissionGuard", () => ({
@@ -28,77 +48,28 @@ vi.mock("@/components/PermissionGuard", () => ({
 }));
 
 vi.mock("@/components/ProjectPageLayout", () => ({
-  ProjectPageLayout: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  ProjectPageToolbar: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-}));
-
-vi.mock("@/components/RoleSelect", () => ({
-  RoleSelect: () => null,
-}));
-
-vi.mock("@/components/UserCell", () => ({
-  UserCell: ({ title, subtitle, badges }: { title: string; subtitle: string; badges: ReactNode }) =>
-    createElement("div", {}, title, subtitle, badges),
+  ProjectPageInfo: () => null,
+  ProjectPageLayout: passThrough,
+  ProjectPageToolbar: passThrough,
 }));
 
 vi.mock("@/components/WorkspacePageLayout", () => ({
-  WorkspacePageLayout: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
-  WorkspacePageToolbar: ({ children }: { children: ReactNode }) =>
-    createElement("div", {}, children),
+  WorkspacePageInfo: ({ description }: { description: string }) =>
+    createElement("p", { "data-testid": "page-info" }, description),
+  WorkspacePageLayout: passThrough,
+  WorkspacePageToolbar: passThrough,
 }));
 
-vi.mock("@/components/ui/popover", async () => {
-  const { createContext, createElement, useContext } = await import("react");
-  const { createPortal } = await import("react-dom");
-  const { getLayerRoot } = await import("@/components/ui/layer");
-  const Context = createContext({
-    open: false,
-    onOpenChange: (_open: boolean) => {},
-  });
-  return {
-    Popover: ({
-      open,
-      onOpenChange,
-      children,
-    }: {
-      open: boolean;
-      onOpenChange: (open: boolean) => void;
-      children: ReactNode;
-    }) =>
-      createElement(Context.Provider, { value: { open, onOpenChange } }, children),
-    PopoverTrigger: ({
-      children,
-      onClick,
-    }: {
-      children: ReactNode;
-      onClick?: React.MouseEventHandler<HTMLButtonElement>;
-    }) => {
-      const { open, onOpenChange } = useContext(Context);
-      return createElement(
-        "button",
-        {
-          onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
-            onClick?.(event);
-            onOpenChange(!open);
-          },
-        },
-        children
-      );
-    },
-    PopoverContent: ({ children }: { children: ReactNode }) => {
-      const { open } = useContext(Context);
-      return open
-        ? createPortal(
-            createElement("div", { "data-testid": "reset-popover" }, children),
-            getLayerRoot("overlay")
-          )
-        : null;
-    },
-  };
-});
+vi.mock("@/components/RoleSelect", () => ({ RoleSelect: () => null }));
+
+vi.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ open, children }: { open: boolean; children: ReactNode }) =>
+    open ? createElement("div", { role: "alertdialog" }, children) : null,
+  AlertDialogContent: passThrough,
+  AlertDialogDescription: passThrough,
+  AlertDialogFooter: passThrough,
+  AlertDialogTitle: passThrough,
+}));
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children }: { children: ReactNode }) =>
@@ -116,15 +87,35 @@ vi.mock("@/components/ui/button", () => ({
     appearance?: string;
     size?: string;
     variant?: string;
-  }) => createElement("button", props, children),
+  }) => createElement("button", { type: "button", ...props }, children),
 }));
 
-vi.mock("@/components/ui/checkbox", () => ({
-  Checkbox: () => createElement("input", { type: "checkbox" }),
+vi.mock("@/components/ui/copy-button", () => ({ CopyButton: () => null }));
+
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: passThrough,
+  DropdownMenuContent: ({ children }: { children: ReactNode }) =>
+    createElement("div", { role: "menu" }, children),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: ReactNode;
+    onClick: () => void;
+  }) => createElement("button", { role: "menuitem", onClick }, children),
+  DropdownMenuSeparator: () => createElement("hr"),
+  DropdownMenuTrigger: ({
+    render,
+    children,
+  }: {
+    render: ReactElement;
+    children: ReactNode;
+  }) => cloneElement(render, {}, children),
 }));
 
-vi.mock("@/components/ui/copy-button", () => ({
-  CopyButton: () => null,
+vi.mock("@/components/ui/ellipsis-text", () => ({
+  EllipsisText: ({ text }: { text: string }) =>
+    createElement("span", {}, text),
 }));
 
 vi.mock("@/components/ui/form", () => ({
@@ -133,6 +124,18 @@ vi.mock("@/components/ui/form", () => ({
 
 vi.mock("@/components/ui/input", () => ({
   Input: () => createElement("input"),
+}));
+
+vi.mock("@/components/ui/search-input", () => ({
+  SearchInput: () => createElement("input", { type: "search" }),
+}));
+
+vi.mock("@/components/ui/select", () => ({
+  Select: passThrough,
+  SelectContent: () => null,
+  SelectItem: () => null,
+  SelectTrigger: () => null,
+  SelectValue: () => null,
 }));
 
 vi.mock("@/components/ui/sheet", () => ({
@@ -145,14 +148,20 @@ vi.mock("@/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/components/ui/table", () => ({
-  Table: ({ children }: { children: ReactNode }) => createElement("table", {}, children),
-  TableBody: ({ children }: { children: ReactNode }) => createElement("tbody", {}, children),
-  TableCell: ({ children, ...props }: { children: ReactNode }) =>
-    createElement("td", props, children),
-  TableHead: ({ children }: { children: ReactNode }) => createElement("th", {}, children),
-  TableHeader: ({ children }: { children: ReactNode }) => createElement("thead", {}, children),
-  TableRow: ({ children, ...props }: { children: ReactNode }) =>
-    createElement("tr", props, children),
+  Table: ({ children }: { children: ReactNode }) =>
+    createElement("table", {}, children),
+  TableBody: ({ children }: { children: ReactNode }) =>
+    createElement("tbody", {}, children),
+  TableCell: ({ children }: { children: ReactNode }) =>
+    createElement("td", {}, children),
+  TableEmptyView: ({ children }: { children: ReactNode }) =>
+    createElement("tr", {}, createElement("td", {}, children)),
+  TableHead: ({ children }: { children: ReactNode }) =>
+    createElement("th", {}, children),
+  TableHeader: ({ children }: { children: ReactNode }) =>
+    createElement("thead", {}, children),
+  TableRow: ({ children }: { children: ReactNode }) =>
+    createElement("tr", {}, children),
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
@@ -173,14 +182,15 @@ vi.mock("@/hooks/usePagedData", () => ({
     ]);
     return {
       dataList,
-      hasMore: false,
+      hasMore: pagedState.hasMore,
       isFetchingMore: false,
       isLoading: false,
+      refresh: pagedState.refresh,
       loadMore: vi.fn(),
       onPageSizeChange: vi.fn(),
       pageSize: 20,
       pageSizeOptions: [20],
-      removeCache: vi.fn(),
+      removeCache: mockRemoveCache,
       updateCache: (accounts: typeof dataList) => {
         mockUpdateCache(accounts);
         setDataList(accounts);
@@ -197,21 +207,34 @@ vi.mock("@/lib/clipboard", () => ({
   writeTextToClipboard: mockWriteTextToClipboard,
 }));
 
-vi.mock("@/lib/utils", () => ({ cn: (...classes: unknown[]) => classes.filter(Boolean).join(" ") }));
-
 vi.mock("@/stores", () => ({ pushNotification: mockPushNotification }));
 
 vi.mock("@/stores/app", () => {
   const state = {
     createServiceAccount: vi.fn(),
-    deleteServiceAccount: vi.fn(),
+    deleteServiceAccount: mockDeleteServiceAccount,
+    fetchWorkspaceIamPolicy: vi.fn(),
     getProjectIamPolicy: vi.fn(),
     listServiceAccounts: vi.fn(),
+    loadProjectIamPolicy: vi.fn(),
     patchWorkspaceIamPolicy: vi.fn(),
+    projectPoliciesByName: {},
     projectsByName: {},
     undeleteServiceAccount: vi.fn(),
     updateProjectIamPolicy: vi.fn(),
     updateServiceAccount: mockUpdateServiceAccount,
+    workspacePolicy: {
+      bindings: [
+        {
+          role: "roles/workspaceDBA",
+          members: ["serviceAccount:bot@service.bytebase.com"],
+        },
+        {
+          role: "roles/workspaceMember",
+          members: ["serviceAccount:bot@service.bytebase.com"],
+        },
+      ],
+    },
     workspaceResourceName: () => "workspaces/-",
   };
   return {
@@ -222,7 +245,9 @@ vi.mock("@/stores/app", () => {
   };
 });
 
-vi.mock("@/stores/modules/v1/common", () => ({ projectNamePrefix: "projects/" }));
+vi.mock("@/stores/modules/v1/common", () => ({
+  projectNamePrefix: "projects/",
+}));
 
 vi.mock("@/types", () => ({
   getServiceAccountNameInBinding: (email: string) => `serviceAccount:${email}`,
@@ -234,11 +259,29 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
 }));
 
+vi.mock("@/utils/role", () => ({
+  displayRoleTitle: (role: string) => role.replace("roles/", ""),
+}));
+
+vi.mock("@/utils/v1/iam", () => ({ isBindingPolicyExpired: () => false }));
+
 import { ServiceAccountsPage } from "./ServiceAccountsPage";
 
 describe("ServiceAccountsPage", () => {
   let container: HTMLDivElement;
   let root: ReturnType<typeof createRoot>;
+
+  const menuItem = (label: string) =>
+    Array.from(
+      container.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+    ).find((item) => item.textContent === label);
+
+  const dialogButton = (label: string) =>
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button')
+    ).find((button) => button.textContent === label);
+
+  const tableText = () => container.querySelector("tbody")?.textContent ?? "";
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -252,6 +295,7 @@ describe("ServiceAccountsPage", () => {
       serviceKey: "new-service-key",
     });
     mockWriteTextToClipboard.mockResolvedValue(true);
+    mockDeleteServiceAccount.mockResolvedValue(undefined);
   });
 
   afterEach(async () => {
@@ -261,54 +305,51 @@ describe("ServiceAccountsPage", () => {
     vi.clearAllMocks();
   });
 
-  it("confirms and acknowledges a reset service key in the action", async () => {
+  it("shows the role, the page description and one row menu", async () => {
     await act(async () => root.render(createElement(ServiceAccountsPage)));
 
-    const resetButton = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("tbody button")
-    ).find(
-      (button) =>
-        button.textContent === "settings.members.reset-service-key"
-    );
-    expect(resetButton).toBeDefined();
+    expect(
+      container.querySelector('[data-testid="page-info"]')?.textContent
+    ).toBe("account-list.service-accounts-description");
+    expect(tableText()).toContain("workspaceDBAworkspaceMember");
+    expect(tableText()).not.toContain("settings.members.service-account");
+    expect(
+      Array.from(container.querySelectorAll('[role="menuitem"]')).map(
+        (item) => item.textContent
+      )
+    ).toEqual([
+      "settings.members.reset-service-key",
+      "common.edit",
+      "common.deactivate",
+    ]);
+  });
 
-    await act(async () => resetButton?.click());
-    const popover = document.querySelector('[data-testid="reset-popover"]');
-    expect(popover).not.toBeNull();
-    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-    expect(popover?.textContent).toContain(
+  it("confirms and acknowledges a reset service key", async () => {
+    await act(async () => root.render(createElement(ServiceAccountsPage)));
+
+    await act(async () => menuItem("settings.members.reset-service-key")?.click());
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
       "settings.members.reset-service-key-alert"
     );
-    expect(container.querySelector("tbody")?.textContent).not.toContain(
-      "settings.members.reset-service-key-alert"
-    );
-
-    const confirmButton = Array.from(
-      popover?.querySelectorAll<HTMLButtonElement>("button") ?? []
-    ).find((button) => button.textContent === "common.reset");
-    expect(confirmButton).toBeDefined();
 
     vi.useFakeTimers();
-    await act(async () => confirmButton?.click());
+    await act(async () => dialogButton("common.reset")?.click());
 
     expect(mockUpdateServiceAccount).toHaveBeenCalledOnce();
     expect(mockWriteTextToClipboard).toHaveBeenCalledWith("new-service-key");
-    expect(document.querySelector('[data-testid="reset-popover"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(mockUpdateCache).toHaveBeenCalledWith([
       expect.objectContaining({ serviceKey: "" }),
     ]);
     expect(mockPushNotification).toHaveBeenCalledWith(
       expect.objectContaining({ style: "SUCCESS", title: "common.copied" })
     );
-    expect(container.querySelector("tbody")?.textContent).toContain(
+    expect(tableText()).toContain(
       "settings.members.service-key-reset-and-copied"
     );
 
     await act(async () => vi.advanceTimersByTime(2000));
-    expect(container.querySelector("tbody")?.textContent).toContain(
-      "settings.members.reset-service-key"
-    );
-    expect(container.querySelector("tbody")?.textContent).not.toContain(
+    expect(tableText()).not.toContain(
       "settings.members.service-key-reset-and-copied"
     );
   });
@@ -317,19 +358,8 @@ describe("ServiceAccountsPage", () => {
     mockWriteTextToClipboard.mockResolvedValue(false);
     await act(async () => root.render(createElement(ServiceAccountsPage)));
 
-    const resetButton = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("tbody button")
-    ).find(
-      (button) =>
-        button.textContent === "settings.members.reset-service-key"
-    );
-    expect(resetButton).toBeDefined();
-    await act(async () => resetButton?.click());
-    const popover = document.querySelector('[data-testid="reset-popover"]');
-    const confirmButton = Array.from(
-      popover?.querySelectorAll<HTMLButtonElement>("button") ?? []
-    ).find((button) => button.textContent === "common.reset");
-    await act(async () => confirmButton?.click());
+    await act(async () => menuItem("settings.members.reset-service-key")?.click());
+    await act(async () => dialogButton("common.reset")?.click());
 
     expect(mockUpdateCache).toHaveBeenCalledWith([
       expect.objectContaining({ serviceKey: "new-service-key" }),
@@ -337,31 +367,48 @@ describe("ServiceAccountsPage", () => {
     expect(mockPushNotification).toHaveBeenCalledWith(
       expect.objectContaining({ style: "CRITICAL", title: "common.copy-failed" })
     );
-    expect(container.querySelector("tbody")?.textContent).toContain(
-      "settings.members.copy-service-key"
-    );
+    expect(tableText()).toContain("settings.members.copy-service-key");
   });
 
-  it("closes the confirmation popover without resetting on cancel", async () => {
+  it("closes the reset confirmation without resetting on cancel", async () => {
     await act(async () => root.render(createElement(ServiceAccountsPage)));
-    const resetButton = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("tbody button")
-    ).find(
-      (button) =>
-        button.textContent === "settings.members.reset-service-key"
-    );
-    await act(async () => resetButton?.click());
 
-    const popover = document.querySelector('[data-testid="reset-popover"]');
-    const cancelButton = Array.from(
-      popover?.querySelectorAll<HTMLButtonElement>("button") ?? []
-    ).find((button) => button.textContent === "common.cancel");
-    await act(async () => cancelButton?.click());
+    await act(async () => menuItem("settings.members.reset-service-key")?.click());
+    await act(async () => dialogButton("common.cancel")?.click());
 
-    expect(document.querySelector('[data-testid="reset-popover"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(mockUpdateServiceAccount).not.toHaveBeenCalled();
-    expect(container.querySelector("tbody")?.textContent).toContain(
-      "settings.members.reset-service-key"
+  });
+
+  it("names the account when deactivating and drops it from the active list", async () => {
+    await act(async () => root.render(createElement(ServiceAccountsPage)));
+
+    await act(async () => menuItem("common.deactivate")?.click());
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      "account-list.deactivate-title:bot"
     );
+
+    await act(async () => dialogButton("common.deactivate")?.click());
+
+    expect(mockDeleteServiceAccount).toHaveBeenCalledWith(
+      "serviceAccounts/bot@service.bytebase.com"
+    );
+    expect(mockRemoveCache).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "bot@service.bytebase.com", state: 2 })
+    );
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+
+  it("refetches when deactivating the last loaded row leaves more pages", async () => {
+    pagedState.hasMore = true;
+    try {
+      await act(async () => root.render(createElement(ServiceAccountsPage)));
+      await act(async () => menuItem("common.deactivate")?.click());
+      await act(async () => dialogButton("common.deactivate")?.click());
+      expect(mockRemoveCache).toHaveBeenCalledOnce();
+      expect(pagedState.refresh).toHaveBeenCalledOnce();
+    } finally {
+      pagedState.hasMore = false;
+    }
   });
 });

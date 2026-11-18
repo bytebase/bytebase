@@ -9,7 +9,7 @@ import {
   WorkloadIdentityConfigSchema,
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
-import { WorkloadIdentityDialog } from "./WorkloadIdentityDialog";
+import { WorkloadIdentitySheet } from "./WorkloadIdentitySheet";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -65,17 +65,29 @@ vi.mock("@/components/RoleSelect", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
     open ? <div>{children}</div> : null,
-  DialogContent: ({ children }: { children: React.ReactNode }) => (
+  SheetContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
-  DialogTitle: ({ children }: { children: React.ReactNode }) => (
+  SheetHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetTitle: ({ children }: { children: React.ReactNode }) => (
     <h2>{children}</h2>
   ),
-  DialogClose: ({ children }: { children: React.ReactNode }) => (
-    <button type="button">{children}</button>
+  SheetBody: ({
+    children,
+    ref,
+    ...props
+  }: React.ComponentProps<"div">) => (
+    <div ref={ref} {...props}>
+      {children}
+    </div>
+  ),
+  SheetFooter: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
   ),
 }));
 
@@ -126,7 +138,7 @@ const render = async (props: {
   root = createRoot(container);
   await act(async () => {
     root.render(
-      <WorkloadIdentityDialog
+      <WorkloadIdentitySheet
         open
         onClose={() => undefined}
         onCreated={() => undefined}
@@ -206,7 +218,7 @@ const storedIdentity = (config: {
     }),
   });
 
-describe("WorkloadIdentityDialog", () => {
+describe("WorkloadIdentitySheet", () => {
   beforeEach(() => {
     mocks.canSetRoles = true;
     mocks.serverState = {
@@ -463,7 +475,7 @@ describe("WorkloadIdentityDialog", () => {
     );
     expect(mocks.store.patchWorkspaceIamPolicy).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
-    // The role was granted before the dialog closed.
+    // The role was granted before the sheet closed.
     expect(
       mocks.store.patchWorkspaceIamPolicy.mock.invocationCallOrder[0]
     ).toBeLessThan(onClose.mock.invocationCallOrder[0]);

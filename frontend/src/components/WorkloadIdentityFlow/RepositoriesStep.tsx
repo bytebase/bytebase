@@ -9,7 +9,7 @@ import { Field, InlineCode, StepHeading, TextAction } from "./StepParts";
 import { type SubjectFields, subjectEnvironment } from "./subjectPattern";
 
 // GitHub's announcement of ID-based subjects, which explains why a name alone
-// can be taken over. The one external link in the dialog.
+// can be taken over. The one external link in the sheet.
 const GITHUB_IMMUTABLE_SUBJECT_URL =
   "https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/";
 

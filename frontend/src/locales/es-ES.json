@@ -1,4 +1,20 @@
 {
+  "account-list": {
+    "deactivate-description": "{{email}} ya no podrá iniciar sesión. Puede restaurarla más tarde.",
+    "deactivate-title": "¿Desactivar {{name}}?",
+    "more-actions": "Más acciones para {{name}}",
+    "no-role": "Sin rol",
+    "no-service-accounts": "No hay cuentas de servicio",
+    "no-workload-identities": "No hay identidades de carga de trabajo",
+    "nothing-matches": "No hay coincidencias",
+    "search-placeholder": "Buscar por nombre o correo",
+    "service-accounts-description": "Las cuentas de servicio inician sesión con una clave. Úselas para scripts, Terraform y llamadas a la API. Para CI en GitHub o GitLab, una identidad de carga de trabajo no necesita ningún secreto almacenado.",
+    "trust-any-environment": "Solo trabajos que se ejecutan en un entorno",
+    "trust-environment": "Solo trabajos con <code>environment: {{environment}}</code>",
+    "trust-environment-plain": "Solo trabajos con environment: {{environment}}",
+    "trusts": "Confía en",
+    "workload-identities-description": "Las identidades de carga de trabajo permiten que los trabajos de CI inicien sesión con su propio token de corta duración, sin secretos que almacenar. Cada una indica en qué trabajos confía y qué rol obtienen."
+  },
   "activity": {
     "n-similar-activities": "{{count}} actividades similares",
     "sentence": {
@@ -770,6 +786,7 @@
     "id": "ID",
     "import": "Importar",
     "in-progress": "En progreso",
+    "inactive": "Inactiva",
     "info": "Información",
     "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
     "instance": "Instancia",
@@ -3685,9 +3702,7 @@
         "self": "Grupos",
         "workspace-domain-required": "Primero configure un dominio de espacio de trabajo."
       },
-      "inactive-service-accounts": "Cuentas de servicio inactivas",
       "inactive-users": "Usuarios inactivos",
-      "inactive-workload-identities": "Identidades de carga de trabajo inactivas",
       "invite-email-hint": "Se enviarán correos de invitación a los nuevos miembros.",
       "pending-invite": "Invitado",
       "reset-service-key": "Restablecer Clave de Servicio",
@@ -4797,16 +4812,11 @@
     "optional": "(opcional)",
     "rail": {
       "account": "Cuenta",
-      "account-description": "Correo y rol",
       "done": "Listo",
-      "done-description": "Úsala en tu flujo de trabajo",
       "label": "Pasos",
       "repositories": "Repositorios",
-      "repositories-description": "Indica propietario y repositorio",
       "subject": "Subject",
-      "subject-description": "Indica el subject del token",
-      "token-source": "Origen del token",
-      "token-source-description": "Selecciona el proveedor de CI"
+      "token-source": "Origen del token"
     },
     "repositories": {
       "any-environment-warning": "Solo pueden iniciar sesión los trabajos que se ejecutan en un entorno. Los trabajos sin entorno, como el de revisión de SQL, fallarán.",

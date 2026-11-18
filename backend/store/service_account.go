@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -19,7 +20,8 @@ type ServiceAccountMessage struct {
 	ServiceKeyHash string
 	MemberDeleted  bool
 	// Project is the owning project. NULL for workspace-level service accounts.
-	Project *string
+	Project   *string
+	CreatedAt time.Time
 }
 
 // FindServiceAccountMessage is the message for finding service accounts.
@@ -57,7 +59,7 @@ type UpdateServiceAccountMessage struct {
 // For use by login flow, runners, and GetAccountByEmail (cross-workspace).
 func (s *Store) GetServiceAccountByEmail(ctx context.Context, email string) (*ServiceAccountMessage, error) {
 	q := qb.Q().Space(`
-		SELECT deleted, email, name, workspace, service_key_hash, project
+		SELECT deleted, email, name, workspace, service_key_hash, project, created_at
 		FROM service_account
 		WHERE email = ?
 	`, strings.ToLower(email))
@@ -70,7 +72,7 @@ func (s *Store) GetServiceAccountByEmail(ctx context.Context, email string) (*Se
 	var sa ServiceAccountMessage
 	var project sql.NullString
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&sa.MemberDeleted, &sa.Email, &sa.Name, &sa.Workspace, &sa.ServiceKeyHash, &project,
+		&sa.MemberDeleted, &sa.Email, &sa.Name, &sa.Workspace, &sa.ServiceKeyHash, &project, &sa.CreatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -124,7 +126,8 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			name,
 			workspace,
 			service_key_hash,
-			project
+			project,
+			created_at
 		FROM service_account
 		WHERE ?
 	`, where)
@@ -161,6 +164,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			&sa.Workspace,
 			&sa.ServiceKeyHash,
 			&project,
+			&sa.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -189,6 +193,7 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 			project
 		)
 		VALUES (?, ?, ?, ?, ?)
+		RETURNING created_at
 	`, email, create.Name, create.Workspace, create.ServiceKeyHash, create.Project)
 
 	sqlStr, args, err := q.ToSQL()
@@ -196,17 +201,17 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
-		return nil, err
-	}
-
-	return &ServiceAccountMessage{
+	created := &ServiceAccountMessage{
 		Email:          email,
 		Name:           create.Name,
 		Workspace:      create.Workspace,
 		ServiceKeyHash: create.ServiceKeyHash,
 		Project:        create.Project,
-	}, nil
+	}
+	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(&created.CreatedAt); err != nil {
+		return nil, err
+	}
+	return created, nil
 }
 
 // UpdateServiceAccount updates a service account.
@@ -227,7 +232,7 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 	}
 
 	sqlStr, args, err := qb.Q().Space(`UPDATE service_account SET ? WHERE email = ? AND workspace = ?
-		RETURNING deleted, email, name, workspace, service_key_hash, project`,
+		RETURNING deleted, email, name, workspace, service_key_hash, project, created_at`,
 		set, sa.Email, sa.Workspace).ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
@@ -242,6 +247,7 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 		&updated.Workspace,
 		&updated.ServiceKeyHash,
 		&project,
+		&updated.CreatedAt,
 	); err != nil {
 		return nil, err
 	}
