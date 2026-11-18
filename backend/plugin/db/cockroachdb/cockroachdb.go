@@ -55,6 +55,7 @@ import (
 
 var (
 	_ db.Driver         = (*Driver)(nil)
+	_ db.RowEstimator   = (*Driver)(nil)
 	_ db.SQLDBProvider  = (*Driver)(nil)
 	_ db.SessionQuerier = (*Driver)(nil)
 )
