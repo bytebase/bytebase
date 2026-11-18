@@ -196,7 +196,7 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 				storepb.TaskRun_RUNNING,
 			},
 			ResultProto: &storepb.TaskRunResult{
-				Detail: err.Error(),
+				Detail: common.SanitizeJSONString(err.Error()),
 			},
 		}
 		if _, err := s.store.UpdateTaskRunStatus(ctx, taskRunStatusPatch); err != nil {

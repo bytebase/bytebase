@@ -202,3 +202,9 @@ func Uniq[T comparable](array []T) []T {
 
 	return res
 }
+
+// SanitizeJSONString removes NUL, which PostgreSQL jsonb rejects, and escapes invalid UTF-8,
+// which protojson rejects. AnalyticDB MySQL appends NUL to its error messages.
+func SanitizeJSONString(s string) string {
+	return SanitizeUTF8String(strings.ReplaceAll(s, "\x00", ""))
+}
