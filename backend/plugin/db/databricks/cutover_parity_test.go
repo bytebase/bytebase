@@ -391,6 +391,9 @@ func TestDirectiveShiftMapsEveryRemovedShape(t *testing.T) {
 		{"-- txn-mode=off\nSELECT 1;\n  SELECT 2", "SELECT 1;\n  SELECT 2"},
 		{"-- txn-mode=off\nSELECT 1;\n  SELECT 2  ", "SELECT 1;\n  SELECT 2"},
 		{"-- txn-mode=off\n  SELECT 1", "SELECT 1"},
+		// The parser's TrimSpace removes any Unicode space the first retained
+		// line starts with, so the offset adjustment must use the same set.
+		{"-- txn-mode=off\n\u00a0SELECT 1", "SELECT 1"},
 	} {
 		t.Run(tc.script, func(t *testing.T) {
 			_, cleaned := base.ParseTransactionConfig(tc.script)

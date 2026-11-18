@@ -196,7 +196,7 @@ func directiveShift(script, cleaned string) func(int, int) (int, int) {
 		kept[next] = true
 		sourceStarts[i] = scriptStarts[next]
 		if i == 0 {
-			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeft(scriptLines[next], " \t"))
+			sourceStarts[i] += len(scriptLines[next]) - len(strings.TrimLeftFunc(scriptLines[next], unicode.IsSpace))
 		}
 		next++
 	}
