@@ -142,7 +142,9 @@ func (*Driver) OwnsQuerySession() {}
 //
 // Known difference: the count is the summed num_affected_rows the warehouse
 // states, and each command and its response reach the task run log. The previous
-// driver returned 0 for every script and logged nothing.
+// driver returned 0 for every script and logged nothing. A logged range names the
+// caller's script, with the removed directive lines left out, because a task run
+// log with LogCommandStatement off slices that script by the range.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	// The directive is removed from the script as before; its mode reaches no
 	// option, because Databricks has no transaction control a script can issue,
@@ -239,8 +241,9 @@ func sameLine(scriptLine, cleanedLine string, boundary bool) bool {
 
 type executeLogger struct {
 	opts db.ExecuteOptions
-	// sourceRange maps the range the driver reports on its script back to the
-	// caller's, which the task run log reads when LogCommandStatement is off.
+	// sourceRange maps a range the driver reports on its own script back to the
+	// caller's, where the task run log reads the command from, and drops the
+	// directive lines the parser removed.
 	sourceRange func(int, int) (int, int)
 }
 
