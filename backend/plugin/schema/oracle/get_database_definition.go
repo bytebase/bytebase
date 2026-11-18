@@ -16,11 +16,11 @@ import (
 // database definition GetDatabaseDefinition already renders. Only pg registers a
 // schema definition; MSSQL, MySQL and TiDB have real schemas and do not.
 //
-// SEQUENCE: getSequences in backend/plugin/db/oracle/sync.go selects only
-// SEQUENCE_NAME, so synced sequences carry no Start, Increment, MaxValue or
-// Cycle. Rendering one would emit a bare CREATE SEQUENCE that silently drops the
-// real increment and bounds. Registering it has to wait for the sync to read
-// those columns.
+// SEQUENCE: no Oracle sequence renderer is registered, so GetSchemaString
+// answers nothing for one. The driver's dump does not render sequences here
+// either: it goes through omni's catalog, which writes the server's definition.
+// A sequence's Start, Increment, MaxValue, Cache and Cycle do reach this package
+// through the sync, so registering the object type is a change of its own.
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
