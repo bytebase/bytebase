@@ -292,13 +292,41 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("an aggregate function column explains itself", func(t *testing.T) {
-		// A decode error can leave the client's connection unusable, so this
-		// runs on a driver of its own.
 		fresh := open(testDatabase)
 		results, err := fresh.QueryConn(ctx, nil, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Contains(t, results[0].Error, "finalizeAggregation(col)")
+	})
+
+	t.Run("a decode error does not poison the next statement", func(t *testing.T) {
+		// Reading a block the client cannot decode leaves its connection out of
+		// sync: the adapter drops that session, so the next statement opens a
+		// new one instead of failing with "driver: bad connection".
+		fresh := open(testDatabase)
+		results, err := fresh.QueryConn(ctx, nil, "SELECT * FROM agg", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Contains(t, results[0].Error, "AggregateFunction")
+
+		results, err = fresh.QueryConn(ctx, nil, "SELECT 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Empty(t, results[0].Error)
+	})
+
+	t.Run("a server error keeps the session", func(t *testing.T) {
+		// A statement the server answers with an error leaves its connection in
+		// sync, so the session and what it set survive.
+		fresh := open(testDatabase)
+		_, err := fresh.QueryConn(ctx, nil, "SET max_threads = 4", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		results, err := fresh.QueryConn(ctx, nil, "SELECT nope FROM t", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Contains(t, results[0].Error, "Unknown expression identifier")
+
+		results, err = fresh.QueryConn(ctx, nil, "SELECT toString(getSetting('max_threads'))", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		require.NoError(t, err)
+		require.Empty(t, results[0].Error)
+		require.Equal(t, "4", results[0].Rows[0].Values[0].GetStringValue())
 	})
 
 	t.Run("dump delegates to the driver", func(t *testing.T) {

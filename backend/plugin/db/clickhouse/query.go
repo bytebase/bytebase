@@ -15,9 +15,13 @@ import (
 
 // QueryConn runs each statement of the script in order on the driver's session.
 // The caller's *sql.Conn is unused: GetDB returns nil, so there is no handle to
-// open one from, and the session the adapter holds plays that part.
+// open one from, and the session the adapter holds plays that part. Calls are
+// serialized on that one session, as they were on the editor's connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.querySession(ctx)
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+
+	session, err := d.querySessionLocked(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -28,16 +32,43 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
 	})
 	if err != nil {
-		// The script could not be run at all; the session is not one to keep.
-		d.discardSession(session)
+		// The script could not be run at all; keep nothing from this session.
+		d.discardSessionLocked(session)
 		return nil, err
 	}
 	if ctx.Err() != nil {
-		// The client closes the connection when a statement's context ends, so the
-		// stream's next statement must open a new session.
-		d.discardSession(session)
+		// The client closes the connection when a statement's context ends, so
+		// the next statement must open a new session.
+		d.discardSessionLocked(session)
+	} else if firstError(results) != nil && !sessionAnswers(ctx, session) {
+		// A statement's error does not say whether the client's connection
+		// survived it: a server exception leaves the connection in sync, while a
+		// decode or protocol error leaves it unusable and the next statement
+		// fails with "driver: bad connection". Ask the session.
+		d.discardSessionLocked(session)
 	}
 	return toQueryResults(results, queryContext), nil
+}
+
+// firstError returns the first statement error, or nil.
+func firstError(results []*omnidriver.Result) error {
+	for _, result := range results {
+		if result.Err != nil {
+			return result.Err
+		}
+	}
+	return nil
+}
+
+// sessionAnswers reports whether the session can still run a trivial statement.
+// It is called only after a statement failed, so the round trip is on the error
+// path.
+func sessionAnswers(ctx context.Context, session omnidriver.Session) bool {
+	results, err := session.Query(ctx, "SELECT 1", omnidriver.QueryOptions{})
+	if err != nil || len(results) != 1 {
+		return false
+	}
+	return results[0].Err == nil
 }
 
 // toQueryResults converts the contract's results into the API's, keeping each
