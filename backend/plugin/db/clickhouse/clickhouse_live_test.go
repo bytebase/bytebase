@@ -67,6 +67,7 @@ CREATE TABLE t (
   f32 Float32,
   s String,
   dt64 DateTime64(3),
+  dtz DateTime64(3, 'UTC'),
   tm Time,
   ip4 IPv4,
   ip6 IPv6,
@@ -75,8 +76,8 @@ CREATE TABLE t (
   n Nullable(String)
 ) ENGINE = MergeTree ORDER BY id;
 ALTER TABLE t ADD INDEX idx_s s TYPE bloom_filter GRANULARITY 4;
-INSERT INTO t VALUES (1, -1, 2, 1.5, 'hello', '2026-11-18 07:30:00.123', '07:30:00', '192.168.1.1', '2001:db8::1', [1, 2], (7, 'x'), 'n');
-INSERT INTO t VALUES (2, -2, 3, 2.5, 'world', '2026-11-18 07:30:00.456', '07:30:01', '192.168.1.2', '2001:db8::2', [3], (8, 'y'), NULL);
+INSERT INTO t VALUES (1, -1, 2, 1.5, 'hello', '2026-11-18 07:30:00.123', '2026-11-18 07:30:00.123', '07:30:00', '192.168.1.1', '2001:db8::1', [1, 2], (7, 'x'), 'n');
+INSERT INTO t VALUES (2, -2, 3, 2.5, 'world', '2026-11-18 07:30:00.456', '2026-11-18 07:30:00.456', '07:30:01', '192.168.1.2', '2001:db8::2', [3], (8, 'y'), NULL);
 CREATE TABLE keys (a Int64, b Int64) ENGINE = MergeTree ORDER BY (a, intDiv(b, 2)) PRIMARY KEY a;
 CREATE VIEW v AS SELECT id, s FROM t;
 CREATE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY id AS SELECT id, s FROM t;
@@ -170,7 +171,7 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 	})
 
 	t.Run("typed values", func(t *testing.T) {
-		results, err := database.QueryConn(ctx, nil, "SELECT i8, u32, f32, dt64, tm, ip4, ip6, tup, n FROM t WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+		results, err := database.QueryConn(ctx, nil, "SELECT i8, u32, f32, dt64, dtz, tm, ip4, ip6, tup, n FROM t WHERE id = 1", db.QueryContext{MaximumSQLResultSize: 1 << 20})
 		require.NoError(t, err)
 		require.Len(t, results, 1)
 		require.Empty(t, results[0].Error)
@@ -181,11 +182,15 @@ CREATE TABLE agg (k UInt64, a AggregateFunction(sum, UInt64)) ENGINE = Aggregati
 		// A DateTime64 is a typed timestamp with the precision its type names.
 		require.Equal(t, int32(3), values[3].GetTimestampValue().GetAccuracy())
 		require.Equal(t, "2026-11-18T07:30:00.123Z", values[3].GetTimestampValue().GetGoogleTimestamp().AsTime().Format(time.RFC3339Nano))
-		require.Equal(t, "07:30:00", values[4].GetStringValue())
-		require.Equal(t, "192.168.1.1", values[5].GetStringValue())
-		require.Equal(t, "2001:db8::1", values[6].GetStringValue())
-		require.Equal(t, `[7,"x"]`, values[7].GetStringValue())
-		require.Equal(t, "n", values[8].GetStringValue())
+		// A DateTime64 that names a zone keeps it: the protobuf timestamp value
+		// has no location, so a zoned column uses the zoned variant.
+		require.Equal(t, "UTC", values[4].GetTimestampTzValue().GetZone())
+		require.Equal(t, int32(3), values[4].GetTimestampTzValue().GetAccuracy())
+		require.Equal(t, "07:30:00", values[5].GetStringValue())
+		require.Equal(t, "192.168.1.1", values[6].GetStringValue())
+		require.Equal(t, "2001:db8::1", values[7].GetStringValue())
+		require.Equal(t, `[7,"x"]`, values[8].GetStringValue())
+		require.Equal(t, "n", values[9].GetStringValue())
 	})
 
 	t.Run("a row set that answers with rows is a query", func(t *testing.T) {

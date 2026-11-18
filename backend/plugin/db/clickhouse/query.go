@@ -86,7 +86,8 @@ func planOf(plan *omnidriver.Plan) *v1pb.QueryResult_QueryPlan {
 
 // toRowValue maps one contract value onto the product's row value: a small
 // integer stays 32-bit, a float32 stays a float, a decimal and a UUID are text,
-// and a timestamp is the typed value its ClickHouse type names.
+// a timestamp is the typed value its ClickHouse type names, and a timestamp
+// whose type names a zone keeps that zone and its offset.
 func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 	switch value.Kind {
 	case omnidriver.Null:
@@ -109,10 +110,20 @@ func toRowValue(value omnidriver.Value) *v1pb.RowValue {
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_Uint64Value{Uint64Value: value.Uint64}}
 	case omnidriver.String, omnidriver.Structured:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
-	case omnidriver.Timestamp, omnidriver.TimestampTZ:
+	case omnidriver.Timestamp:
 		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
 			TimestampValue: &v1pb.RowValue_Timestamp{
 				GoogleTimestamp: timestamppb.New(value.Time),
+				Accuracy:        value.Precision,
+			},
+		}}
+	case omnidriver.TimestampTZ:
+		zone, offset := value.Time.Zone()
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampTzValue{
+			TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+				GoogleTimestamp: timestamppb.New(value.Time),
+				Zone:            zone,
+				Offset:          int32(offset),
 				Accuracy:        value.Precision,
 			},
 		}}

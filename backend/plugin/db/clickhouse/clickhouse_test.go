@@ -90,10 +90,14 @@ func TestToRowValue(t *testing.T) {
 			}},
 		},
 		{
-			name:  "a zoned date-time keeps its kind",
-			value: omnidriver.Value{Kind: omnidriver.TimestampTZ, Time: timestamp},
-			want: &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{
-				TimestampValue: &v1pb.RowValue_Timestamp{GoogleTimestamp: timestamppb.New(timestamp)},
+			name:  "a zoned date-time keeps its zone and offset",
+			value: omnidriver.Value{Kind: omnidriver.TimestampTZ, Time: timestamp, Precision: 3},
+			want: &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampTzValue{
+				TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+					GoogleTimestamp: timestamppb.New(timestamp),
+					Zone:            "UTC",
+					Accuracy:        3,
+				},
 			}},
 		},
 		{

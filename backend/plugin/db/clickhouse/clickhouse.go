@@ -30,8 +30,8 @@
 //   - A statement that returns no rows answers with an empty result. Execute
 //     answers 0 because clickhouse-go states no affected count.
 //   - Date, DateTime and DateTime64 are typed timestamps carrying the precision
-//     their type names; Time and Time64 are clock strings; IPv4, IPv6 and
-//     FixedString are their values.
+//     their type names, and a zoned one keeps its zone and offset; Time and
+//     Time64 are clock strings; IPv4, IPv6 and FixedString are their values.
 //   - SHOW, DESCRIBE, DESC, EXISTS and CHECK run as queries, and EXPLAIN
 //     ANALYZE keeps the rows the server returns beside a typed QueryPlan.
 //   - The result-size cap is byte-accurate and MaximumSQLResultSize 0 is no
