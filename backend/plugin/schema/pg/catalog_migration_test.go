@@ -917,6 +917,46 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	key, ok = referencedRelation("first."+name, relations, []string{"second"})
 	require.True(t, ok, "a qualified name ignores the search path")
 	require.Equal(t, objectKey("first", name), key)
+	require.Equal(t, []string{"alice", "public"}, resolveSearchPathUser([]string{"$user", "public"}, "alice"))
+	require.Equal(t, []string{"$user", "public"}, resolveSearchPathUser([]string{"$user", "public"}, ""), "an unknown owner leaves the placeholder unresolved")
+}
+
+// TestUnresolvedSearchPathUserRejectsAmbiguousType covers an unqualified type that
+// needs the unresolved $user entry: public has the type, but the login's schema
+// might shadow it, so assigning the public dependency would be a guess.
+func TestUnresolvedSearchPathUserRejectsAmbiguousType(t *testing.T) {
+	snapshot := func(withHolder bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+					Name:       "shared",
+					Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "value", Type: "text"}},
+				}},
+			},
+		}
+		if withHolder {
+			schemas = append(schemas, &metadatapb.SchemaMetadata{
+				Name:   "app",
+				Tables: []*metadatapb.TableMetadata{pgTable("holder", 0, &metadatapb.ColumnMetadata{Name: "row", Type: "shared"})},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: `"$user", public`,
+			Schemas:    schemas,
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.ErrorContains(t, err, "whose $user search-path resolution is ambiguous")
+
+	owner := func(withHolder bool) *model.DatabaseMetadata {
+		metadata := snapshot(withHolder).GetProto()
+		metadata.Owner = "alice"
+		return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB, owner(false), owner(true))
+	require.NoError(t, err, "the database owner resolves the placeholder")
 }
 
 // TestTypeNameMatchingKeepsIdentifierBoundaries pins quoted identifier parsing:

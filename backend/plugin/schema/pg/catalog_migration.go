@@ -31,6 +31,18 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target schema")
 	}
+	searchPath := getConfiguredSearchPath(oldSchema)
+	owner := ""
+	if oldSchema != nil {
+		owner = oldSchema.GetProto().GetOwner()
+	}
+	if len(searchPath) == 0 {
+		searchPath = getConfiguredSearchPath(newSchema)
+		if newSchema != nil {
+			owner = newSchema.GetProto().GetOwner()
+		}
+	}
+	searchPath = resolveSearchPathUser(searchPath, owner)
 	sourceDrops := sourceOnlyMissingDrops(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
@@ -39,11 +51,10 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if diff.IsEmpty() && len(sourceDrops) == 0 {
 		return "", nil
 	}
-	plan := catalog.GenerateMigration(from, to, diff)
-	searchPath := getConfiguredSearchPath(oldSchema)
-	if len(searchPath) == 0 {
-		searchPath = getConfiguredSearchPath(newSchema)
+	if err := rejectAmbiguousUserTypes(oldSchema.GetProto(), newSchema.GetProto(), searchPath); err != nil {
+		return "", err
 	}
+	plan := catalog.GenerateMigration(from, to, diff)
 	orderTypeAndTableCreates(plan, newSchema.GetProto(), searchPath)
 	restoreIndexDefinitions(plan, newSchema.GetProto())
 	restored, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
@@ -912,6 +923,157 @@ func referencedRelation(typeName string, relations map[string]bool, searchPath [
 	return resolveTypeReference(reference, relations, searchPath)
 }
 
+// resolveSearchPathUser replaces the $user placeholder with the database owner,
+// the role migrations run as, so an unqualified name can resolve.
+func resolveSearchPathUser(searchPath []string, user string) []string {
+	if len(searchPath) == 0 || user == "" || !slices.Contains(searchPath, "$user") {
+		return searchPath
+	}
+	resolved := make([]string, 0, len(searchPath))
+	for _, schema := range searchPath {
+		if schema == "$user" {
+			schema = user
+		}
+		resolved = append(resolved, schema)
+	}
+	return resolved
+}
+
+// rejectAmbiguousUserTypes refuses a migration whose unqualified type depends on
+// an unresolved $user entry: no known schema before it names the object, and some
+// relation does, so whether the user's schema shadows that relation is unknown.
+func rejectAmbiguousUserTypes(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, searchPath []string) error {
+	if !slices.Contains(searchPath, "$user") {
+		return nil
+	}
+	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
+		objects := typeObjects(meta)
+		for _, schema := range meta.GetSchemas() {
+			for _, table := range schema.GetTables() {
+				for _, column := range table.GetColumns() {
+					if ambiguousTypeText(column.GetType(), objects, searchPath) {
+						return errors.Errorf("cannot generate a migration: column %s of table %s has type %s, whose $user search-path resolution is ambiguous", quoteIdentifier(column.GetName()), quoteQualified(schema.GetName(), table.GetName()), column.GetType())
+					}
+				}
+			}
+			for _, composite := range schema.GetCompositeTypes() {
+				for _, attribute := range composite.GetAttributes() {
+					if ambiguousTypeText(attribute.GetType(), objects, searchPath) {
+						return errors.Errorf("cannot generate a migration: attribute %s of type %s has type %s, whose $user search-path resolution is ambiguous", quoteIdentifier(attribute.GetName()), quoteQualified(schema.GetName(), composite.GetName()), attribute.GetType())
+					}
+				}
+			}
+			for _, function := range schema.GetFunctions() {
+				if ambiguousRoutineTypes(function.GetSignature(), function.GetDefinition(), objects, searchPath) {
+					return errors.Errorf("cannot generate a migration: routine %s has a type whose $user search-path resolution is ambiguous", quoteQualified(schema.GetName(), function.GetName()))
+				}
+			}
+			for _, procedure := range schema.GetProcedures() {
+				if ambiguousRoutineTypes(procedure.GetSignature(), procedure.GetDefinition(), objects, searchPath) {
+					return errors.Errorf("cannot generate a migration: routine %s has a type whose $user search-path resolution is ambiguous", quoteQualified(schema.GetName(), procedure.GetName()))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {
+	if ambiguousParameters(routineArgumentList(signature), objects, searchPath) || ambiguousParameters(routineArgumentList(definition), objects, searchPath) {
+		return true
+	}
+	clause := routineReturnClause(definition)
+	if strings.HasPrefix(clause, "TABLE") {
+		return ambiguousParameters(routineArgumentList(clause), objects, searchPath)
+	}
+	return ambiguousTypeText(clause, objects, searchPath)
+}
+
+func ambiguousParameters(parameters string, objects map[string]bool, searchPath []string) bool {
+	depth, start := 0, 0
+	for i := 0; i <= len(parameters); i++ {
+		atEnd := i == len(parameters)
+		if !atEnd {
+			switch parameters[i] {
+			case '"', '\'':
+				i = closingQuote(parameters, i, parameters[i])
+				continue
+			case '(':
+				depth++
+				continue
+			case ')':
+				depth--
+				continue
+			case ',':
+				if depth != 0 {
+					continue
+				}
+			default:
+				continue
+			}
+		}
+		declaration := parameters[start:i]
+		if index := indexOutsideQuotes(declaration, "DEFAULT"); index >= 0 {
+			declaration = declaration[:index]
+		}
+		if index := indexOutsideQuotes(declaration, "="); index >= 0 {
+			declaration = declaration[:index]
+		}
+		if ambiguousTypeText(declaration, objects, searchPath) {
+			return true
+		}
+		start = i + 1
+	}
+	return false
+}
+
+func ambiguousTypeText(text string, objects map[string]bool, searchPath []string) bool {
+	text = strings.TrimSpace(text)
+	for start := 0; start < len(text); start++ {
+		if start > 0 && !startsDeclaration(text[start-1]) {
+			continue
+		}
+		reference, end, ok := parseTypeReferenceAt(text, start)
+		if !ok || strings.TrimSpace(trailingModifier(text[end:])) != "" {
+			continue
+		}
+		if ambiguousSearchPathType(reference, objects, searchPath) {
+			return true
+		}
+	}
+	return false
+}
+
+func ambiguousSearchPathType(reference typeReference, relations map[string]bool, searchPath []string) bool {
+	if reference.qualified {
+		return false
+	}
+	userIndex := -1
+	for i, schema := range searchPath {
+		if schema == "$user" {
+			userIndex = i
+			break
+		}
+	}
+	if userIndex < 0 {
+		return false
+	}
+	for _, searchSchema := range searchPath[:userIndex] {
+		for key := range relations {
+			schemaName, objectName := splitObjectKey(key)
+			if schemaName == searchSchema && reference.object.matches(objectName) {
+				return false
+			}
+		}
+	}
+	for key := range relations {
+		if _, objectName := splitObjectKey(key); reference.object.matches(objectName) {
+			return true
+		}
+	}
+	return false
+}
+
 // resolveTypeReference resolves a parsed type name to the object it names. An
 // unqualified name resolves to the first relation in search-path order; an empty
 // path is PostgreSQL's default, which reaches public after any current-user schema.
@@ -929,6 +1091,12 @@ func resolveTypeReference(reference typeReference, relations map[string]bool, se
 		searchPath = []string{"public"}
 	}
 	for _, searchSchema := range searchPath {
+		if searchSchema == "$user" {
+			// The caller resolves $user with the database owner. An unresolved
+			// placeholder cannot be guessed from schema names, and public is not a
+			// safe answer because the user's schema may shadow it.
+			return "", false
+		}
 		for key := range relations {
 			schemaName, objectName := splitObjectKey(key)
 			if schemaName == searchSchema && reference.object.matches(objectName) {
