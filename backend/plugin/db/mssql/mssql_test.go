@@ -269,7 +269,7 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 			defer driver.Close(ctx)
 
 			var encryptOption string
-			err = driver.GetDB().QueryRowContext(ctx, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID").Scan(&encryptOption)
+			err = db.SQLDB(driver).QueryRowContext(ctx, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID").Scan(&encryptOption)
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return

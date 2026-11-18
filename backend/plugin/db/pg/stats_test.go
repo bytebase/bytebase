@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -28,19 +26,7 @@ func TestCountAffectedRows(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	openedDriver, err := (&Driver{}).Open(ctx, storepb.Engine_POSTGRES, db.ConnectionConfig{
-		DataSource: &storepb.DataSource{
-			Host:     pgContainer.GetHost(),
-			Port:     pgContainer.GetPort(),
-			Username: "postgres",
-		},
-		Password:          "root-password",
-		ConnectionContext: db.ConnectionContext{DatabaseName: dbName},
-	})
-	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
-	driver, ok := openedDriver.(*Driver)
-	require.True(t, ok)
+	driver := pgTestDriver(ctx, t, pgContainer, dbName, nil)
 
 	// Each statement modifies the 1000 big rows joined to the 10 flagged s rows.
 	for _, statement := range []string{
@@ -66,8 +52,8 @@ func TestCountAffectedRows(t *testing.T) {
 		ANALYZE app.only_in_app;
 	`)
 	require.NoError(t, err)
-	// With one connection, the second estimate shows that the search path ended with the first.
-	driver.db.SetMaxOpenConns(1)
+	// The search path is set for the estimate's own transaction and rolled back,
+	// so the next estimate does not see the schema.
 	rows, err := driver.CountAffectedRows(ctx, base.WithSearchPath("DELETE FROM only_in_app;", []string{"app"}))
 	require.NoError(t, err)
 	require.Equal(t, int64(100), rows)

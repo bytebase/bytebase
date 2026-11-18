@@ -28,10 +28,10 @@ const (
 var errNoDirectConnection = errors.New("gh-ost needs a direct database/sql connection, but this driver does not expose one")
 
 // RequireDirectConnection returns the driver's database/sql pool, or an error
-// when GetDB is nil. gh-ost queries the database itself, so a driver that owns
-// its pool and exposes nothing here cannot run a gh-ost migration.
+// when db.SQLDB finds none. gh-ost queries the database itself, so a driver
+// whose session is the engine package's cannot run a gh-ost migration.
 func RequireDirectConnection(driver db.Driver) (*sql.DB, error) {
-	sqlDB := driver.GetDB()
+	sqlDB := db.SQLDB(driver)
 	if sqlDB == nil {
 		return nil, errNoDirectConnection
 	}

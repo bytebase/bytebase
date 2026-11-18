@@ -115,7 +115,7 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 				return connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
 			}
 			if !db.OwnsQuerySession(driver) {
-				sqlDB := driver.GetDB()
+				sqlDB := db.SQLDB(driver)
 				if sqlDB != nil {
 					conn, err = sqlDB.Conn(ctx)
 					if err != nil {
@@ -405,7 +405,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 
 	var conn *sql.Conn
 	if !db.OwnsQuerySession(driver) {
-		sqlDB := driver.GetDB()
+		sqlDB := db.SQLDB(driver)
 		if sqlDB != nil {
 			conn, err = sqlDB.Conn(ctx)
 			if err != nil {
@@ -1350,7 +1350,7 @@ func doExport(
 
 	var conn *sql.Conn
 	if !db.OwnsQuerySession(driver) {
-		sqlDB := driver.GetDB()
+		sqlDB := db.SQLDB(driver)
 		if sqlDB != nil {
 			conn, err = sqlDB.Conn(ctx)
 			if err != nil {
