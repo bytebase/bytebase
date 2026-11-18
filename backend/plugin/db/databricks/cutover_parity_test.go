@@ -364,7 +364,7 @@ func TestExecuteLogsRangesInTheCallersScript(t *testing.T) {
 	require.NotEmpty(t, collector.logs)
 
 	var entry storepb.TaskRunLog
-	require.NoError(t, protojson.Unmarshal(collector.logs[0], &entry))
+	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(collector.logs[0], &entry))
 	command := entry.GetCommandExecute()
 	require.NotNil(t, command)
 	got := script[command.GetRange().GetStart():command.GetRange().GetEnd()]
