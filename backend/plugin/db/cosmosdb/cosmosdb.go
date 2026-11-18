@@ -182,6 +182,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		// no form that opens another one.
 		Schema: queryContext.Container,
 		Limit:  queryContext.Limit,
+		// Known difference: MaxResultBytes stays unset, so MaximumSQLResultSize
+		// is not enforced for this engine; the previous driver returned every
+		// row a statement delivered.
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
@@ -189,6 +192,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	converted := make([]*v1pb.QueryResult, 0, len(results))
 	for _, result := range results {
 		if result.Err != nil {
+			// Known difference: a failed statement is the call's error, not a
+			// result, which is the shape the previous driver answered with.
 			return nil, connect.NewError(connect.CodeInternal, result.Err)
 		}
 		converted = append(converted, util.OmniResultToQueryResult(result, 0))

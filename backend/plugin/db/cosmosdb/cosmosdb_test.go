@@ -83,53 +83,30 @@ func envOrDefault(key, def string) string {
 }
 
 // newLiveDriver opens the omni driver against a live account with its master
-// key. Bytebase's data source config authenticates an account with an app
-// registration, not a key, so the pre-cutover helper bypassed Open the same
-// way: what these tests cover is the query path, which the adapter delegates
-// to this driver unchanged.
-func newLiveDriver(t *testing.T, endpoint, key, dbName string) *omnicosmosdb.Driver {
+// key and wraps it in Bytebase's adapter, so the live suite exercises QueryConn
+// and the result conversion. The key reaches the contract directly because
+// Bytebase's data source config authenticates an account with an app
+// registration, not an account key, and the live fixtures hold only a key.
+func newLiveDriver(t *testing.T, endpoint, key, dbName string) *Driver {
 	t.Helper()
-	driver, err := omnicosmosdb.Open(context.Background(), omnidriver.Config{
+	inner, err := omnicosmosdb.Open(context.Background(), omnidriver.Config{
 		Host:     endpoint,
 		Database: dbName,
 		Password: key,
 		Params:   map[string]string{omnicosmosdb.ParamAuth: omnicosmosdb.AuthMasterKey},
 	})
 	require.NoError(t, err, "Open")
-	return driver
+	return &Driver{inner: inner}
 }
 
-// runLiveQuery runs a single query through the omni driver and returns its
-// emitted rows as a slice of JSON documents.
-func runLiveQuery(t *testing.T, driver *omnicosmosdb.Driver, container, sql string) [][]byte {
+// runQuery runs a single query against container through Bytebase's adapter
+// and returns its emitted rows as a slice of JSON documents (one per Row in the
+// QueryResult).
+func runQuery(t *testing.T, driver *Driver, container, sql string) [][]byte {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	session, err := driver.Session(ctx)
-	require.NoError(t, err, "Session")
-	defer session.Close()
-	results, err := session.Query(ctx, sql, omnidriver.QueryOptions{Schema: container})
-	require.NoError(t, err, "Query: %s", sql)
-	require.Len(t, results, 1, "the driver returns one Result per statement")
-	require.NoError(t, results[0].Err)
-	require.Equal(t, sql, results[0].Statement)
-
-	out := make([][]byte, 0, len(results[0].Rows))
-	for _, row := range results[0].Rows {
-		require.Len(t, row, 1, "each row has exactly one column of JSON text")
-		out = append(out, []byte(row[0].String))
-	}
-	return out
-}
-
-// runQuery runs a single query against the cities fixture through Bytebase's
-// adapter and returns its emitted rows as a slice of JSON documents (one per
-// Row in the QueryResult).
-func runQuery(t *testing.T, driver *Driver, sql string) [][]byte {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: crossPartitionContainer})
+	results, err := driver.QueryConn(ctx, nil, sql, db.QueryContext{Container: container})
 	require.NoError(t, err, "QueryConn: %s", sql)
 	require.Len(t, results, 1, "driver returns exactly one QueryResult per query")
 	require.Equal(t, sql, results[0].Statement)
@@ -187,7 +164,7 @@ func TestIntegration_BYT9239_Stage1Aggregates(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.id, func(t *testing.T) {
-			rows := runLiveQuery(t, driver, container, tc.sql)
+			rows := runQuery(t, driver, container, tc.sql)
 			tc.check(t, rows)
 		})
 	}
@@ -200,7 +177,7 @@ func TestIntegration_BYT9239_Stage2Distinct(t *testing.T) {
 	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("10.1_ObjectDistinct", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT DISTINCT c.country FROM c`)
+		rows := runQuery(t, driver, container, `SELECT DISTINCT c.country FROM c`)
 		require.NotEmpty(t, rows)
 		seen := map[string]bool{}
 		for _, r := range rows {
@@ -214,7 +191,7 @@ func TestIntegration_BYT9239_Stage2Distinct(t *testing.T) {
 	})
 
 	t.Run("10.2_DistinctValue", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT DISTINCT VALUE c.countryRegion FROM c`)
+		rows := runQuery(t, driver, container, `SELECT DISTINCT VALUE c.countryRegion FROM c`)
 		require.NotEmpty(t, rows)
 		seen := map[string]bool{}
 		for _, r := range rows {
@@ -233,13 +210,13 @@ func TestIntegration_BYT9239_Stage3OrderBy(t *testing.T) {
 	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("4.1_Ascending", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT c.name, c.population FROM c ORDER BY c.population ASC`)
+		rows := runQuery(t, driver, container, `SELECT c.name, c.population FROM c ORDER BY c.population ASC`)
 		require.NotEmpty(t, rows)
 		assertOrderedByPopulation(t, rows, true)
 	})
 
 	t.Run("4.2_Descending", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT c.name, c.population FROM c ORDER BY c.population DESC`)
+		rows := runQuery(t, driver, container, `SELECT c.name, c.population FROM c ORDER BY c.population DESC`)
 		require.NotEmpty(t, rows)
 		assertOrderedByPopulation(t, rows, false)
 	})
@@ -251,7 +228,7 @@ func TestIntegration_BYT9239_Stage4Top(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
 	driver := newLiveDriver(t, endpoint, key, dbName)
 
-	rows := runLiveQuery(t, driver, container, `SELECT TOP 10 * FROM c`)
+	rows := runQuery(t, driver, container, `SELECT TOP 10 * FROM c`)
 	assert.Len(t, rows, 10, "TOP 10 must return exactly 10 rows")
 	for i, r := range rows {
 		var obj map[string]any
@@ -268,18 +245,18 @@ func TestIntegration_BYT9239_Stage5OffsetLimit(t *testing.T) {
 	driver := newLiveDriver(t, endpoint, key, dbName)
 
 	t.Run("12.1_OffsetZeroLimitTen", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name OFFSET 0 LIMIT 10`)
+		rows := runQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name OFFSET 0 LIMIT 10`)
 		require.Len(t, rows, 10)
 		assertAscendingByName(t, rows)
 	})
 
 	t.Run("12.2_OffsetTenLimitTen", func(t *testing.T) {
 		// Baseline: full ordered list.
-		all := runLiveQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name`)
+		all := runQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name`)
 		require.NotEmpty(t, all)
 		allNames := assertAscendingByName(t, all)
 
-		rows := runLiveQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name OFFSET 10 LIMIT 10`)
+		rows := runQuery(t, driver, container, `SELECT * FROM c ORDER BY c.name OFFSET 10 LIMIT 10`)
 		names := assertAscendingByName(t, rows)
 
 		start := 10
@@ -296,13 +273,13 @@ func TestIntegration_BYT9239_Stage6GroupBy(t *testing.T) {
 	endpoint, key, dbName, container := skipIfNoAzure(t)
 	driver := newLiveDriver(t, endpoint, key, dbName)
 
-	totalRows := runLiveQuery(t, driver, container, `SELECT VALUE COUNT(1) FROM c`)
+	totalRows := runQuery(t, driver, container, `SELECT VALUE COUNT(1) FROM c`)
 	require.Len(t, totalRows, 1)
 	var total float64
 	require.NoError(t, json.Unmarshal(totalRows[0], &total))
 
 	t.Run("6.1_CountByCountry", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT c.country, COUNT(1) AS cityCount FROM c GROUP BY c.country`)
+		rows := runQuery(t, driver, container, `SELECT c.country, COUNT(1) AS cityCount FROM c GROUP BY c.country`)
 		require.NotEmpty(t, rows)
 		var summed float64
 		seen := map[string]bool{}
@@ -321,7 +298,7 @@ func TestIntegration_BYT9239_Stage6GroupBy(t *testing.T) {
 	})
 
 	t.Run("6.2_MultipleAggregates", func(t *testing.T) {
-		rows := runLiveQuery(t, driver, container, `SELECT c.countryRegion, COUNT(1) AS count, SUM(StringToNumber(c.population)) AS totalPop FROM c GROUP BY c.countryRegion`)
+		rows := runQuery(t, driver, container, `SELECT c.countryRegion, COUNT(1) AS count, SUM(StringToNumber(c.population)) AS totalPop FROM c GROUP BY c.countryRegion`)
 		require.NotEmpty(t, rows)
 		var summed float64
 		seen := map[string]bool{}
@@ -1015,7 +992,7 @@ func TestCrossPartitionAggregates(t *testing.T) {
 			fmt.Sprintf(`{"total":%d,"pop":%d}`, items, sum)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			rows := runQuery(t, driver, tc.sql)
+			rows := runQuery(t, driver, crossPartitionContainer, tc.sql)
 			require.Len(t, rows, 1)
 			assert.JSONEq(t, tc.want, string(rows[0]))
 		})
@@ -1026,7 +1003,7 @@ func TestCrossPartitionDistinct(t *testing.T) {
 	driver := emulatorFixture(t)
 
 	t.Run("value_form", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT DISTINCT VALUE c.country FROM c`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT DISTINCT VALUE c.country FROM c`)
 		got := make([]string, 0, len(rows))
 		for _, row := range rows {
 			var country string
@@ -1037,7 +1014,7 @@ func TestCrossPartitionDistinct(t *testing.T) {
 	})
 
 	t.Run("object_form", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT DISTINCT c.country FROM c`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT DISTINCT c.country FROM c`)
 		assert.Len(t, rows, len(crossPartitionCountries))
 	})
 }
@@ -1046,13 +1023,13 @@ func TestCrossPartitionOrderBy(t *testing.T) {
 	driver := emulatorFixture(t)
 
 	t.Run("ascending", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT c.name, c.population FROM c ORDER BY c.population ASC`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT c.name, c.population FROM c ORDER BY c.population ASC`)
 		require.Len(t, rows, crossPartitionItems())
 		assertOrderedByPopulation(t, rows, true)
 	})
 
 	t.Run("descending", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT c.name, c.population FROM c ORDER BY c.population DESC`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT c.name, c.population FROM c ORDER BY c.population DESC`)
 		require.Len(t, rows, crossPartitionItems())
 		assertOrderedByPopulation(t, rows, false)
 	})
@@ -1060,7 +1037,7 @@ func TestCrossPartitionOrderBy(t *testing.T) {
 
 func TestCrossPartitionTop(t *testing.T) {
 	driver := emulatorFixture(t)
-	rows := runQuery(t, driver, `SELECT TOP 3 * FROM c`)
+	rows := runQuery(t, driver, crossPartitionContainer, `SELECT TOP 3 * FROM c`)
 	assert.Len(t, rows, 3)
 }
 
@@ -1070,16 +1047,16 @@ func TestCrossPartitionTop(t *testing.T) {
 func TestCrossPartitionOffsetLimit(t *testing.T) {
 	driver := emulatorFixture(t)
 
-	all := assertAscendingByName(t, runQuery(t, driver, `SELECT c.name FROM c ORDER BY c.name`))
+	all := assertAscendingByName(t, runQuery(t, driver, crossPartitionContainer, `SELECT c.name FROM c ORDER BY c.name`))
 	require.Len(t, all, crossPartitionItems())
 
-	page := assertAscendingByName(t, runQuery(t, driver, `SELECT c.name FROM c ORDER BY c.name OFFSET 5 LIMIT 5`))
+	page := assertAscendingByName(t, runQuery(t, driver, crossPartitionContainer, `SELECT c.name FROM c ORDER BY c.name OFFSET 5 LIMIT 5`))
 	assert.Equal(t, all[5:10], page)
 }
 
 func TestCrossPartitionGroupBy(t *testing.T) {
 	driver := emulatorFixture(t)
-	rows := runQuery(t, driver,
+	rows := runQuery(t, driver, crossPartitionContainer,
 		`SELECT c.country, COUNT(1) AS cities, SUM(c.population) AS pop FROM c GROUP BY c.country`)
 	require.Len(t, rows, len(crossPartitionCountries))
 
@@ -1107,12 +1084,12 @@ func TestCrossPartitionGatewayServable(t *testing.T) {
 	driver := emulatorFixture(t)
 
 	t.Run("projection", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT * FROM c`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT * FROM c`)
 		assert.Len(t, rows, crossPartitionItems())
 	})
 
 	t.Run("single_partition_filter", func(t *testing.T) {
-		rows := runQuery(t, driver, `SELECT * FROM c WHERE c.country = "US"`)
+		rows := runQuery(t, driver, crossPartitionContainer, `SELECT * FROM c WHERE c.country = "US"`)
 		assert.Len(t, rows, crossPartitionCitiesPerCountry)
 	})
 }
@@ -1403,7 +1380,7 @@ func TestCrossPartitionAggregateWithOffsetLimit(t *testing.T) {
 // validator is in the path too.
 func TestCrossPartitionDistinctWithOrderByThroughTheDriver(t *testing.T) {
 	driver := emulatorFixture(t)
-	rows := runQuery(t, driver, `SELECT DISTINCT c.country FROM c ORDER BY c.country`)
+	rows := runQuery(t, driver, crossPartitionContainer, `SELECT DISTINCT c.country FROM c ORDER BY c.country`)
 	got := make([]string, 0, len(rows))
 	for _, row := range rows {
 		var object struct {
