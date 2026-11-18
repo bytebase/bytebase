@@ -27,10 +27,10 @@
 //
 // Constraints of the engine and the contract, here rather than at each call:
 //
-//   - GetDB returns nil. The editor's *sql.Conn is not the contract's session, so
-//     the adapter holds one session from the first QueryConn call until Close,
-//     under a mutex: a request's statements share a session, as they shared the
-//     caller's connection before.
+//   - db.SQLDB returns nil for this driver, which holds no *sql.DB. The editor's
+//     *sql.Conn is not the contract's session, so the adapter holds one session
+//     from the first QueryConn call until Close, under a mutex: a request's
+//     statements share a session.
 //   - Config.ReadOnly and Config.TokenProvider are not mapped: OceanBase's MySQL
 //     handshake has no read-only session parameter, and its login is a password.
 //   - ExecuteOptions.CreateDatabase and MaximumRetries are not mapped, because the
