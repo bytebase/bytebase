@@ -514,9 +514,6 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	var candidates []candidate
 	for _, schema := range newMeta.GetSchemas() {
 		oldSchema := schemaByName(oldMeta, schema.GetName())
-		if oldSchema == nil {
-			continue
-		}
 		for _, view := range schema.GetViews() {
 			key := schema.GetName() + "." + view.GetName()
 			oldView := viewByName(oldSchema, view.GetName())

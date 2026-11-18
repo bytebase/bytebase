@@ -954,3 +954,36 @@ func TestIndirectUnloadableDependentIsRestored(t *testing.T) {
 	require.GreaterOrEqual(t, createUpper, 0, sql)
 	require.Less(t, dropUpper, createUpper, sql)
 }
+
+// TestAddedSchemaDependentViewFollowsRestoredView covers a view in a target-only
+// schema: it is a create-only candidate and must follow the restored view it
+// references.
+func TestAddedSchemaDependentViewFollowsRestoredView(t *testing.T) {
+	snapshot := func(columnType string, addSchema bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name: "lower", Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+			}},
+		}}
+		if addSchema {
+			schemas = append(schemas, &metadatapb.SchemaMetadata{
+				Name: "extra",
+				Views: []*metadatapb.ViewMetadata{{
+					Name: "upper", Definition: "SELECT id FROM public.lower",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}},
+				}},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: schemas}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
+	require.NoError(t, err)
+	createLower := strings.Index(sql, `CREATE VIEW "public"."lower"`)
+	createUpper := strings.Index(sql, `CREATE VIEW "extra"."upper"`)
+	require.GreaterOrEqual(t, createLower, 0, sql)
+	require.GreaterOrEqual(t, createUpper, 0, sql)
+	require.Less(t, createLower, createUpper, sql)
+}
