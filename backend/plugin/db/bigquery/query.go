@@ -27,8 +27,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		//
 		// Known difference: QueryOptions carries no operator identity, so the
 		// operator_email job label the previous driver attached is not set.
-		Limit:   queryContext.Limit,
-		Explain: queryContext.Explain,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaskingEnabled: queryContext.MaskingEnabled,
 		// Known difference: the cap is byte-accurate and reports Truncated, and 0
 		// is no cap; the previous driver measured at power-of-two row counts and
 		// stopped at the first row for 0.
