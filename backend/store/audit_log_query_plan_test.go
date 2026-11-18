@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"net/url"
 	"testing"
 	"time"
 
@@ -15,18 +16,75 @@ import (
 
 func TestSearchAuditLogsDoesNotCachePreparedPlans(t *testing.T) {
 	t.Parallel()
-	for _, dateStyle := range []string{"ISO, MDY", "SQL, DMY"} {
-		t.Run(dateStyle, func(t *testing.T) {
-			t.Parallel()
-			checkAuditLogSearchPlanCaching(t, dateStyle)
-		})
+	for _, tc := range []struct {
+		name       string
+		parameters map[string]string
+		dateStyles []string
+	}{
+		{
+			name:       "default",
+			dateStyles: []string{"ISO, MDY", "SQL, DMY"},
+		},
+		{
+			name:       "description cache disabled",
+			parameters: map[string]string{"description_cache_capacity": "0"},
+			dateStyles: []string{"ISO, MDY", "SQL, DMY"},
+		},
+		{
+			name: "exec without caches",
+			parameters: map[string]string{
+				"default_query_exec_mode":    "exec",
+				"description_cache_capacity": "0",
+				"statement_cache_capacity":   "0",
+			},
+			dateStyles: []string{"ISO, MDY"},
+		},
+		{
+			name: "simple protocol without caches",
+			parameters: map[string]string{
+				"default_query_exec_mode":    "simple_protocol",
+				"description_cache_capacity": "0",
+				"statement_cache_capacity":   "0",
+			},
+			dateStyles: []string{"ISO, MDY"},
+		},
+		{
+			name: "describe exec without caches",
+			parameters: map[string]string{
+				"default_query_exec_mode":    "describe_exec",
+				"description_cache_capacity": "0",
+				"statement_cache_capacity":   "0",
+			},
+			dateStyles: []string{"ISO, MDY", "SQL, DMY"},
+		},
+	} {
+		for _, dateStyle := range tc.dateStyles {
+			t.Run(tc.name+"/"+dateStyle, func(t *testing.T) {
+				t.Parallel()
+				checkAuditLogSearchPlanCaching(t, dateStyle, tc.parameters)
+			})
+		}
 	}
 }
 
-func checkAuditLogSearchPlanCaching(t *testing.T, dateStyle string) {
+func checkAuditLogSearchPlanCaching(t *testing.T, dateStyle string, parameters map[string]string) {
 	t.Helper()
 	ctx := context.Background()
-	db, s, _ := testcontainer.NewMetadataDB(t)
+	db, s, dsn := testcontainer.NewMetadataDB(t)
+	if len(parameters) > 0 {
+		require.NoError(t, s.Close())
+		metadataURL, err := url.Parse(dsn)
+		require.NoError(t, err)
+		query := metadataURL.Query()
+		for key, value := range parameters {
+			query.Set(key, value)
+		}
+		metadataURL.RawQuery = query.Encode()
+		configuredStore, err := store.New(ctx, metadataURL.String(), false)
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, configuredStore.Close()) })
+		s = configuredStore
+	}
 
 	// Prepared statements belong to a connection; inspect the one used by every search.
 	s.GetDB().SetMaxOpenConns(1)
