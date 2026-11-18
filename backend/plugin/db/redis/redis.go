@@ -1,24 +1,57 @@
-// Package redis implements redis driver
+// Package redis is Bytebase's Redis driver: an adapter over
+// github.com/bytebase/omni/redis/driver that maps Bytebase's connection config
+// onto the driver contract and the contract's results back into the product's
+// protos.
+//
+// Every db.Driver method delegates except for the product seams:
+//
+//   - Open maps the data source onto driver.Config and driver.Options: the
+//     topology, the database index, the master and sentinel logins, a TLS
+//     callback and an SSH Dial. It does not reach the server; Ping does.
+//   - Ping, Close, SyncInstance, SyncDBSchema, Dump, Execute and QueryConn
+//     delegate. GetDB returns nil because Redis has no database/sql handle.
+//   - QueryConn answers QueryOption_ALL_NODES through the contract's
+//     AllNodesQuerier probe on the session, and refuses Explain, which Redis
+//     cannot answer.
+//   - Execute reports each command to the task run's log.
+//
+// Redis has no schema, DDL or SQL: SyncInstance reads INFO server, CONFIG GET
+// databases and INFO keyspace, SyncDBSchema answers the database number, and
+// Dump writes nothing, as before.
+//
+// Behaviour that moves with the driver, all measured in its cutover proof:
+// commands run one per request instead of as one pipeline, so a script pays a
+// round trip per command; the caller's context deadline interrupts a command;
+// a refused command ends the script and carries its error on its own Result
+// (earlier results stand, later commands are not sent) instead of failing the
+// whole call; a per-result latency is the command's own; the result-size cap is
+// byte-accurate rather than proto.Size at power-of-two row counts; an array
+// element that holds no value is a NULL cell rather than the text "<nil>"; a
+// Redis Cluster refuses a non-zero database and a negative index is refused
+// instead of silently running on database 0; a missing port defaults to 6379;
+// `#` is an argument's text rather than the comment the old shell lexer made it;
+// and MaximumSQLResultSize 0 means no cap rather than a zero-byte cap. A missing
+// key is still a NULL row, TLS material is still built once at Open and verified
+// against the data source host, and a refused Explain still answers "Redis does
+// not support EXPLAIN".
 package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
-	"github.com/google/shlex"
+	omniredis "github.com/bytebase/omni/redis/driver"
 	"github.com/pkg/errors"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -27,347 +60,300 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var (
-	_ db.Driver = (*Driver)(nil)
-)
+var _ db.Driver = (*Driver)(nil)
 
 func init() {
 	db.Register(storepb.Engine_REDIS, newDriver)
 }
 
-// Driver is the redis driver.
+// Driver is Bytebase's Redis driver.
 type Driver struct {
-	rdb          redis.UniversalClient
-	sshClient    *ssh.Client
-	databaseName string
+	inner     *omniredis.Driver
+	sshClient *ssh.Client
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens the redis driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	tlscfg, err := util.GetTLSConfig(config.DataSource)
+// Open maps the connection config onto the driver contract. It does not reach
+// the server: Ping does.
+func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	d := &Driver{}
+	dataSource := config.DataSource
+
+	// Old Open built the TLS config once, so invalid TLS material still fails
+	// here rather than on the first connection.
+	tlsConfig, err := util.GetTLSConfig(dataSource)
 	if err != nil {
 		return nil, errors.Wrap(err, "redis: failed to get tls config")
 	}
-	db := 0
-	if config.ConnectionContext.DatabaseName != "" {
-		database, err := strconv.Atoi(config.ConnectionContext.DatabaseName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert database %s to int", config.ConnectionContext.DatabaseName)
-		}
-		db = database
+	var tlsFunc func(host string) (*tls.Config, error)
+	if tlsConfig != nil {
+		tlsFunc = func(string) (*tls.Config, error) { return tlsConfig, nil }
 	}
-	d.databaseName = fmt.Sprintf("%d", db)
-	switch config.DataSource.GetRedisType() {
+
+	// Old Open read the database index before opening the tunnel, so a name that
+	// is not a number still fails without an SSH connection. The driver parses it
+	// again and refuses a negative index.
+	if name := config.ConnectionContext.DatabaseName; name != "" {
+		if _, err := strconv.Atoi(name); err != nil {
+			return nil, errors.Wrapf(err, "failed to convert database %s to int", name)
+		}
+	}
+
+	cfg := omnidriver.Config{
+		Host:     dataSource.Host,
+		Port:     dataSource.Port,
+		Database: config.ConnectionContext.DatabaseName,
+		User:     dataSource.Username,
+		Password: config.Password,
+		TLS:      tlsFunc,
+	}
+	options := omniredis.Options{}
+	switch dataSource.GetRedisType() {
 	case storepb.DataSource_REDIS_TYPE_UNSPECIFIED, storepb.DataSource_STANDALONE:
-		options := &redis.Options{
-			Addr:      fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port),
-			Username:  config.DataSource.Username,
-			Password:  config.Password,
-			TLSConfig: tlscfg,
-			DB:        db,
-			// Pipelines run on the main pool. A driver is opened per request
-			// and runs a single pipeline, so go-redis's dedicated pipeline pool
-			// would only add a connection and its handshake to every request.
-			PipelinePoolSize: -1,
-		}
-		if config.DataSource.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(config.DataSource)
-			if err != nil {
-				return nil, err
-			}
-			d.sshClient = sshClient
-
-			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
-				conn, err := sshClient.Dial(network, addr)
-				if err != nil {
-					return nil, err
-				}
-				return &util.NoDeadlineConn{Conn: conn}, nil
-			}
-		}
-		client := redis.NewClient(options)
-		d.databaseName = fmt.Sprintf("%d", db)
-		d.rdb = client
 	case storepb.DataSource_SENTINEL:
-		sentinelAddrs := make([]string, 0, 1+len(config.DataSource.GetAdditionalAddresses()))
-		sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
-		for _, sentinelAddr := range config.DataSource.GetAdditionalAddresses() {
-			sentinelAddrs = append(sentinelAddrs, fmt.Sprintf("%s:%s", sentinelAddr.Host, sentinelAddr.Port))
-		}
-		options := &redis.FailoverOptions{
-			MasterName:       config.DataSource.GetMasterName(),
-			Username:         config.DataSource.GetMasterUsername(),
-			Password:         config.DataSource.GetMasterPassword(),
-			SentinelUsername: config.DataSource.Username,
+		options = omniredis.Options{
+			Type:             omniredis.Sentinel,
+			MasterName:       dataSource.GetMasterName(),
+			SentinelUser:     dataSource.Username,
 			SentinelPassword: config.Password,
-			SentinelAddrs:    sentinelAddrs,
-			DB:               db,
-			TLSConfig:        tlscfg,
-			PipelinePoolSize: -1,
 		}
-		if config.DataSource.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(config.DataSource)
-			if err != nil {
-				return nil, err
-			}
-			d.sshClient = sshClient
-
-			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
-				conn, err := sshClient.Dial(network, addr)
-				if err != nil {
-					return nil, err
-				}
-				return &util.NoDeadlineConn{Conn: conn}, nil
-			}
-		}
-		d.databaseName = fmt.Sprintf("%d", db)
-		client := redis.NewFailoverClient(options)
-		d.rdb = client
+		cfg.Host = addressList(dataSource)
+		cfg.User = dataSource.GetMasterUsername()
+		cfg.Password = dataSource.GetMasterPassword()
 	case storepb.DataSource_CLUSTER:
-		addrs := make([]string, 0, 1+len(config.DataSource.GetAdditionalAddresses()))
-		addrs = append(addrs, fmt.Sprintf("%s:%s", config.DataSource.Host, config.DataSource.Port))
-		for _, addr := range config.DataSource.GetAdditionalAddresses() {
-			addrs = append(addrs, fmt.Sprintf("%s:%s", addr.Host, addr.Port))
+		options = omniredis.Options{Type: omniredis.Cluster}
+		cfg.Host = addressList(dataSource)
+	default:
+		return nil, errors.Errorf("unsupported redis type %s", dataSource.GetRedisType().String())
+	}
+	if options.Type == "" {
+		cfg.Host = joinAddress(dataSource.Host, dataSource.Port)
+	}
+	if dataSource.GetSshHost() != "" {
+		sshClient, err := util.GetSSHClient(dataSource)
+		if err != nil {
+			return nil, err
 		}
-		options := &redis.ClusterOptions{
-			Addrs:            addrs,
-			Username:         config.DataSource.Username,
-			Password:         config.Password,
-			TLSConfig:        tlscfg,
-			PipelinePoolSize: -1,
-			// go-redis 9.22.0 raised its own default to a minute. A node that
-			// refuses connections does not trigger a reload, so a failover is
-			// only noticed by this periodic one, and a driver that outlives it
-			// keeps routing to the master it has lost.
-			// https://github.com/redis/go-redis/issues/3979
-			ClusterStateReloadInterval: 10 * time.Second,
-		}
-		if config.DataSource.GetSshHost() != "" {
-			sshClient, err := util.GetSSHClient(config.DataSource)
+		d.sshClient = sshClient
+		cfg.Dial = func(_ context.Context, network, address string) (net.Conn, error) {
+			conn, err := sshClient.Dial(network, address)
 			if err != nil {
 				return nil, err
 			}
-			d.sshClient = sshClient
-
-			options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
-				conn, err := sshClient.Dial(network, addr)
-				if err != nil {
-					return nil, err
-				}
-				return &util.NoDeadlineConn{Conn: conn}, nil
-			}
+			return &util.NoDeadlineConn{Conn: conn}, nil
 		}
-		client := redis.NewClusterClient(options)
-		d.rdb = client
-	default:
-		return nil, errors.Errorf("unsupported redis type %s", config.DataSource.GetRedisType().String())
 	}
+
+	inner, err := omniredis.Open(ctx, cfg, options)
+	if err != nil {
+		d.closeSSHClient()
+		return nil, err
+	}
+	d.inner = inner
 	return d, nil
 }
 
-// Close closes the redis driver.
+// addressList is the primary address followed by the additional ones, each in
+// the host:port form the old driver handed its clients.
+func addressList(dataSource *storepb.DataSource) string {
+	addrs := make([]string, 0, 1+len(dataSource.GetAdditionalAddresses()))
+	addrs = append(addrs, joinAddress(dataSource.Host, dataSource.Port))
+	for _, addr := range dataSource.GetAdditionalAddresses() {
+		addrs = append(addrs, joinAddress(addr.Host, addr.Port))
+	}
+	return strings.Join(addrs, ",")
+}
+
+func joinAddress(host, port string) string {
+	return fmt.Sprintf("%s:%s", host, port)
+}
+
+func (d *Driver) closeSSHClient() {
+	if d.sshClient != nil {
+		_ = d.sshClient.Close()
+		d.sshClient = nil
+	}
+}
+
+// Close closes the client and the SSH tunnel, if any.
 func (d *Driver) Close(context.Context) error {
 	var err error
-	err = multierr.Append(err, d.rdb.Close())
+	if d.inner != nil {
+		err = multierr.Append(err, d.inner.Close())
+	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
-// Ping pings the redis server.
+// Ping pings the server.
 func (d *Driver) Ping(ctx context.Context) error {
-	return d.rdb.Ping(ctx).Err()
+	return d.inner.Ping(ctx)
 }
 
-// GetDB gets the database.
+// GetDB returns nil: Redis has no database/sql handle.
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
-// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
+// Execute runs the script's commands in order, reporting each to the task run's
+// log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if opts.CreateDatabase {
-		return 0, errors.New("redis: cannot create database")
-	}
-
-	inputs, _, err := splitCommands(statement)
-	if err != nil {
-		return 0, err
-	}
-	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-		for _, input := range inputs {
-			_ = p.Do(ctx, input...)
-		}
-		return nil
-	}); err != nil && err != redis.Nil {
-		return 0, err
-	}
-
-	return 0, nil
+	return d.inner.Execute(ctx, statement, omnidriver.ExecuteOptions{
+		CreateDatabase: opts.CreateDatabase,
+		Log:            executeLogger{opts: opts},
+	})
 }
 
-// splitCommands reads one command per line, skipping lines that hold none, and
-// returns each command's arguments beside the line it came from. A result is
-// reported per command rather than per line, so the two are built together to
-// keep them aligned.
-func splitCommands(statement string) ([][]any, []string, error) {
-	var inputs [][]any
-	var commands []string
-	for _, line := range strings.Split(statement, "\n") {
-		fields, err := shlex.Split(line)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to split command %s", line)
-		}
-		if len(fields) == 0 {
-			continue
-		}
-		var input []any
-		for _, v := range fields {
-			input = append(input, v)
-		}
-		inputs = append(inputs, input)
-		commands = append(commands, line)
-	}
-	return inputs, commands, nil
-}
-
-// Dump and restore
-// Dump the database, if dbName is empty, then dump all databases.
-// Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
-	return nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
+// QueryConn runs a script, one result per command. ALL_NODES asks the session
+// for the contract's all-nodes probe; every other option runs on one session.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext.Explain {
 		return nil, errors.New("Redis does not support EXPLAIN")
 	}
-
-	startTime := time.Now()
-	inputs, commands, err := splitCommands(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	results := make([]*v1pb.QueryResult, len(inputs))
-	for i := range results {
-		results[i] = &v1pb.QueryResult{
-			ColumnNames:     []string{"#", "Value"},
-			ColumnTypeNames: []string{"INT", "TEXT"},
-			Statement:       commands[i],
-		}
-	}
-
 	switch queryContext.Option.GetRedisRunCommandsOn() {
-	case
-		v1pb.QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED,
-		v1pb.QueryOption_SINGLE_NODE:
-		var cmds []*redis.Cmd
-		if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
-			for _, input := range inputs {
-				cmd := p.Do(ctx, input...)
-				cmds = append(cmds, cmd)
-			}
-			return nil
-		}); err != nil && err != redis.Nil {
-			return nil, err
-		}
-
-		for i, cmd := range cmds {
-			setQueryResultRows(results[i], cmd, queryContext.MaximumSQLResultSize)
-			results[i].Latency = durationpb.New(time.Since(startTime))
-			results[i].RowsCount = int64(len(results[i].Rows))
-		}
-
-	case v1pb.QueryOption_ALL_NODES:
-		cluster, ok := d.rdb.(*redis.ClusterClient)
-		if !ok {
-			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.rdb)
-		}
-
-		// ForEachShard runs the callbacks concurrently and returns once they
-		// have all finished, so the mutex is what orders the appends.
-		var mu sync.Mutex
-		var cmdss [][]*redis.Cmd
-		err := cluster.ForEachShard(ctx, func(ctx context.Context, client *redis.Client) error {
-			var cmds []*redis.Cmd
-			_, _ = client.Pipelined(ctx, func(p redis.Pipeliner) error {
-				for _, input := range inputs {
-					cmd := p.Do(ctx, input...)
-					cmds = append(cmds, cmd)
-				}
-				return nil
-			})
-			mu.Lock()
-			defer mu.Unlock()
-			cmdss = append(cmdss, cmds)
-			return nil
-		})
-		if err != nil && err != redis.Nil {
-			return nil, errors.Wrapf(err, "failed to query for each shard")
-		}
-
-		for _, cmds := range cmdss {
-			for i, cmd := range cmds {
-				setQueryResultRows(results[i], cmd, queryContext.MaximumSQLResultSize)
-				results[i].Latency = durationpb.New(time.Since(startTime))
-				results[i].RowsCount = int64(len(results[i].Rows))
-			}
-		}
+	case v1pb.QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED, v1pb.QueryOption_SINGLE_NODE, v1pb.QueryOption_ALL_NODES:
 	default:
 		return nil, errors.Errorf("unknown RedisRunCommandOn enum %v", queryContext.Option.GetRedisRunCommandsOn())
 	}
 
+	session, err := d.inner.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = session.Close() }()
+
+	options := omnidriver.QueryOptions{MaxResultBytes: queryContext.MaximumSQLResultSize}
+	var innerResults []*omnidriver.Result
+	if queryContext.Option.GetRedisRunCommandsOn() == v1pb.QueryOption_ALL_NODES {
+		probe, ok := session.(omnidriver.AllNodesQuerier)
+		if !ok {
+			return nil, errors.Errorf("expect *redis.ClusterClient, but get %T", d.inner)
+		}
+		innerResults, err = probe.QueryAllNodes(ctx, statement, options)
+	} else {
+		innerResults, err = session.Query(ctx, statement, options)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*v1pb.QueryResult, 0, len(innerResults))
+	for _, result := range innerResults {
+		results = append(results, toQueryResult(result, queryContext.MaximumSQLResultSize))
+	}
 	return results, nil
 }
 
-func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
-	if cmd.Err() == redis.Nil {
-		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
-				{Kind: &v1pb.RowValue_NullValue{}},
-			},
-		})
-		return
+// SyncInstance reads the server version and its database numbers.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.inner.SyncInstance(ctx)
+	if err != nil {
+		return nil, err
 	}
-	if cmd.Err() != nil {
-		result.Rows = append(result.Rows, &v1pb.QueryRow{
-			Values: []*v1pb.RowValue{
-				{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
-				{Kind: &v1pb.RowValue_StringValue{StringValue: cmd.Err().Error()}},
-			},
-		})
-		return
-	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+	}, nil
+}
 
-	val := cmd.Val()
-	l, ok := val.([]any)
-	if ok {
-		for i, v := range l {
-			result.Rows = append(result.Rows, getResultRow(i+1, v))
-			n := len(result.Rows)
-			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
-				result.Error = util.FormatMaximumSQLResultSizeMessage(limit)
-				return
-			}
+// SyncDBSchema answers the database number: Redis keys are not a schema.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return d.inner.SyncDatabase(ctx)
+}
+
+// Dump writes nothing, as before: Redis has no schema to render.
+func (d *Driver) Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
+	return d.inner.Dump(ctx, out, dbMetadata)
+}
+
+// toQueryResult maps one contract result onto the product's result.
+func toQueryResult(result *omnidriver.Result, maxResultBytes int64) *v1pb.QueryResult {
+	converted := &v1pb.QueryResult{
+		Statement: result.Statement,
+		Latency:   durationpb.New(result.Latency),
+	}
+	for _, column := range result.Columns {
+		converted.ColumnNames = append(converted.ColumnNames, column.Name)
+		converted.ColumnTypeNames = append(converted.ColumnTypeNames, column.TypeName)
+	}
+	for _, row := range result.Rows {
+		convertedRow := &v1pb.QueryRow{}
+		for _, value := range row {
+			convertedRow.Values = append(convertedRow.Values, toRowValue(value))
 		}
-	} else {
-		result.Rows = append(result.Rows, getResultRow(1, val))
+		converted.Rows = append(converted.Rows, convertedRow)
+	}
+	converted.RowsCount = int64(len(converted.Rows))
+	if result.Truncated {
+		converted.Error = util.FormatMaximumSQLResultSizeMessage(maxResultBytes)
+	} else if result.Err != nil {
+		converted.Error = result.Err.Error()
+	}
+	return converted
+}
+
+// toRowValue maps one contract value onto the product's row value. Redis
+// reports a command's answer as text (a number included) and a missing key or
+// array element as NULL.
+func toRowValue(value omnidriver.Value) *v1pb.RowValue {
+	switch value.Kind {
+	case omnidriver.Null:
+		return util.NullRowValue
+	case omnidriver.Int32:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.Int64)}}
+	case omnidriver.String:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String}}
+	default:
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: fmt.Sprintf("%v", value)}}
 	}
 }
 
-func getResultRow(i int, v any) *v1pb.QueryRow {
-	s := fmt.Sprintf("%v", v)
-	return &v1pb.QueryRow{Values: []*v1pb.RowValue{
-		{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}},
-		{Kind: &v1pb.RowValue_StringValue{StringValue: s}}},
+// executeLogger reports the driver contract's execute steps to the task run's
+// log.
+type executeLogger struct {
+	opts db.ExecuteOptions
+}
+
+func (l executeLogger) CommandExecute(command omnidriver.Command) {
+	l.opts.LogCommandExecute(&storepb.Range{
+		Start: int32(command.ByteStart),
+		End:   int32(command.ByteEnd),
+	}, command.Text)
+}
+
+func (l executeLogger) CommandResponse(affectedRows int64, perResult []int64, err error) {
+	l.opts.LogCommandResponse(affectedRows, perResult, errorString(err))
+}
+
+func (l executeLogger) TransactionControl(op omnidriver.TransactionOp, err error) {
+	l.opts.LogTransactionControl(transactionControlType(op), errorString(err))
+}
+
+func (l executeLogger) Retry(err error, attempt, _ int) {
+	l.opts.LogRetryInfo(err, attempt)
+}
+
+func transactionControlType(op omnidriver.TransactionOp) storepb.TaskRunLog_TransactionControl_Type {
+	switch op {
+	case omnidriver.Begin:
+		return storepb.TaskRunLog_TransactionControl_BEGIN
+	case omnidriver.Commit:
+		return storepb.TaskRunLog_TransactionControl_COMMIT
+	case omnidriver.Rollback:
+		return storepb.TaskRunLog_TransactionControl_ROLLBACK
+	default:
+		return storepb.TaskRunLog_TransactionControl_TYPE_UNSPECIFIED
 	}
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

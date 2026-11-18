@@ -1,160 +1,204 @@
 package redis
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
-	"github.com/pkg/errors"
+	omnidriver "github.com/bytebase/omni/driver"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func TestSplitCommands(t *testing.T) {
-	tests := []struct {
-		name      string
-		statement string
-		wantArgs  [][]any
-		wantLines []string
-	}{
-		{
-			name:      "one command per line",
-			statement: "GET a\nGET b",
-			wantArgs:  [][]any{{"GET", "a"}, {"GET", "b"}},
-			wantLines: []string{"GET a", "GET b"},
-		},
-		{
-			name:      "a blank line does not shift the commands after it",
-			statement: "GET a\n\nGET b\n   \nGET c",
-			wantArgs:  [][]any{{"GET", "a"}, {"GET", "b"}, {"GET", "c"}},
-			wantLines: []string{"GET a", "GET b", "GET c"},
-		},
-		{
-			name:      "quoted argument",
-			statement: `SET a "two words"`,
-			wantArgs:  [][]any{{"SET", "a", "two words"}},
-			wantLines: []string{`SET a "two words"`},
-		},
-		{
-			name:      "no commands",
-			statement: "\n  \n",
-			wantArgs:  nil,
-			wantLines: nil,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			args, lines, err := splitCommands(tc.statement)
-			require.NoError(t, err)
-			require.Equal(t, tc.wantArgs, args)
-			require.Equal(t, tc.wantLines, lines)
-			require.Len(t, lines, len(args))
-		})
-	}
-}
-
-func TestSplitCommandsRejectsAnUnclosedQuote(t *testing.T) {
-	_, _, err := splitCommands(`SET a "unclosed`)
-	require.Error(t, err)
-}
-
-// TestQueryConnOnAllNodes covers the ALL_NODES query option, whose per-shard
-// replies used to be collected by a goroutine the caller never waited for, so
-// the results were read before any of them had been recorded and every command
-// reported no rows.
-func TestQueryConnOnAllNodes(t *testing.T) {
-	ctx := context.Background()
+func openTestDriver(t *testing.T) db.Driver {
+	t.Helper()
 	container := testcontainer.SharedRedisClusterContainer(t)
-
-	d, err := newDriver().Open(ctx, storepb.Engine_REDIS, db.ConnectionConfig{
+	d, err := newDriver().Open(context.Background(), storepb.Engine_REDIS, db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:      storepb.DataSourceType_ADMIN,
 			Host:      container.GetHost(),
 			Port:      container.GetPort(),
 			RedisType: storepb.DataSource_CLUSTER,
 		},
+		ConnectionContext: db.ConnectionContext{DatabaseName: "0"},
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, d.Close(ctx)) })
+	t.Cleanup(func() { require.NoError(t, d.Close(context.Background())) })
+	return d
+}
 
-	_, err = d.Execute(ctx, "SET allnodes:key allnodes-value", db.ExecuteOptions{})
+// TestLegacyParity replays the corpus recorded from the old driver before this
+// change deleted it: the same setup, sync answers, query results and all-nodes
+// answers. testdata/legacy.json is that recording; the old path ran on the same
+// redis:7.4.12-alpine pin, so the version and database list are comparable.
+func TestLegacyParity(t *testing.T) {
+	ctx := context.Background()
+	d := openTestDriver(t)
+
+	_, err := d.Execute(ctx, "FLUSHALL\nSET greeting \"hello world\"\nRPUSH queue first second", db.ExecuteOptions{})
 	require.NoError(t, err)
 
-	results, err := d.QueryConn(ctx, nil, "GET allnodes:key\nDBSIZE", db.QueryContext{
+	instance, err := d.SyncInstance(ctx)
+	require.NoError(t, err)
+	schema, err := d.SyncDBSchema(ctx)
+	require.NoError(t, err)
+
+	single, err := d.QueryConn(ctx, nil, "GET greeting\n\nGET missing\nLRANGE queue 0 -1\nDBSIZE", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	require.NoError(t, err)
+	for _, result := range single {
+		result.Latency = nil
+	}
+	all, err := d.QueryConn(ctx, nil, "GET greeting\nDBSIZE", db.QueryContext{
 		MaximumSQLResultSize: 1 << 20,
 		Option:               &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_ALL_NODES},
 	})
 	require.NoError(t, err)
-	require.Len(t, results, 2)
-
-	for i, want := range []string{"allnodes-value", "1"} {
-		require.Len(t, results[i].Rows, 1, "statement %q returned no row", results[i].Statement)
-		require.Equal(t, want, results[i].Rows[0].Values[1].GetStringValue())
-		require.Equal(t, int64(1), results[i].RowsCount)
+	for _, result := range all {
+		result.Latency = nil
 	}
+
+	got, err := json.MarshalIndent(map[string]any{
+		"version":   instance.Version,
+		"databases": instance.Databases,
+		"schema":    schema,
+		"single":    envelope(single),
+		"all":       envelope(all),
+	}, "", "  ")
+	require.NoError(t, err)
+	want, err := os.ReadFile(filepath.Join("testdata", "legacy.json"))
+	require.NoError(t, err)
+	require.JSONEq(t, string(want), string(got))
 }
 
-// serverError stands in for an error reply from the server, which go-redis
-// marks with the RedisError method.
-type serverError string
-
-func (e serverError) Error() string { return string(e) }
-func (serverError) RedisError()     {}
-
-func TestDatabasesFromConfigReply(t *testing.T) {
-	tests := []struct {
-		name         string
-		val          map[string]string
-		err          error
-		want         []int
-		wantFailopen bool
-		wantErr      bool
-	}{
-		{
-			name: "configured count",
-			val:  map[string]string{"databases": "3"},
-			want: []int{0, 1, 2},
-		},
-		{
-			name:         "reply without the databases setting",
-			val:          map[string]string{},
-			wantFailopen: true,
-		},
-		{
-			name:         "command removed by the vendor",
-			err:          serverError("ERR unknown command 'CONFIG', with args beginning with: 'GET' 'databases' "),
-			wantFailopen: true,
-		},
-		{
-			name:         "user without permission to run CONFIG",
-			err:          serverError("NOPERM User limited has no permissions to run the 'config|get' command"),
-			wantFailopen: true,
-		},
-		{
-			name:    "connection error",
-			err:     errors.New("dial tcp 127.0.0.1:6379: connect: connection refused"),
-			wantErr: true,
-		},
-		{
-			name:    "count that is not a number",
-			val:     map[string]string{"databases": "many"},
-			wantErr: true,
-		},
+func envelope(results []*v1pb.QueryResult) []json.RawMessage {
+	var out []json.RawMessage
+	for _, result := range results {
+		b, err := protojson.Marshal(proto.Clone(result).(*v1pb.QueryResult))
+		if err != nil {
+			panic(err)
+		}
+		out = append(out, b)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, failopen, err := databasesFromConfigReply(tc.val, tc.err)
-			if tc.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.want, got)
-			require.Equal(t, tc.wantFailopen, failopen)
-		})
+	return out
+}
+
+func TestQueryConnScripts(t *testing.T) {
+	ctx := context.Background()
+	d := openTestDriver(t)
+	_, err := d.Execute(ctx, "FLUSHALL\nSET a \"two words\"\nSET b value", db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	results, err := d.QueryConn(ctx, nil, "GET a\n\nGET b\n   ", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+	for i, want := range []string{"GET a", "GET b"} {
+		require.Equal(t, want, results[i].Statement)
+		require.Equal(t, []string{"#", "Value"}, results[i].ColumnNames)
+		require.Equal(t, []string{"INT", "TEXT"}, results[i].ColumnTypeNames)
+		require.Len(t, results[i].Rows, 1)
+	}
+	require.Equal(t, "two words", results[0].Rows[0].Values[1].GetStringValue())
+	require.Equal(t, "value", results[1].Rows[0].Values[1].GetStringValue())
+
+	_, err = d.QueryConn(ctx, nil, `SET a "unclosed`, db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	require.ErrorContains(t, err, "failed to split command")
+
+	// Known difference: the old shell lexer treated # as the start of a comment,
+	// so this line was GET with no key; Redis has no comment syntax.
+	results, err = d.QueryConn(ctx, nil, "GET #", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, "GET #", results[0].Statement)
+	require.Len(t, results[0].Rows, 1)
+	require.Equal(t, util.NullRowValue, results[0].Rows[0].Values[1])
+}
+
+// TestQueryConnExplainRefused holds the refusal in front of the session, as the
+// old driver had it: an explain never reaches the server.
+func TestQueryConnExplainRefused(t *testing.T) {
+	_, err := (&Driver{}).QueryConn(context.Background(), nil, "GET key", db.QueryContext{Explain: true})
+	require.ErrorContains(t, err, "Redis does not support EXPLAIN")
+}
+
+func TestQueryConnRejectsUnknownOption(t *testing.T) {
+	_, err := (&Driver{}).QueryConn(context.Background(), nil, "GET key", db.QueryContext{
+		Option: &v1pb.QueryOption{RedisRunCommandsOn: v1pb.QueryOption_RedisRunCommandsOn(99)},
+	})
+	require.ErrorContains(t, err, "unknown RedisRunCommandOn enum")
+}
+
+// TestExecuteRefusedStopsScript records a known difference from the pipeline:
+// the old Execute sent every command and failed afterwards; the driver stops at
+// the refused command, so the commands after it do not run.
+func TestExecuteRefusedStopsScript(t *testing.T) {
+	ctx := context.Background()
+	d := openTestDriver(t)
+	_, err := d.Execute(ctx, "FLUSHALL\nSET counter text", db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	_, err = d.Execute(ctx, "INCR counter\nSET after value", db.ExecuteOptions{})
+	require.ErrorContains(t, err, "ERR value is not an integer or out of range")
+
+	results, err := d.QueryConn(ctx, nil, "GET after", db.QueryContext{MaximumSQLResultSize: 1 << 20})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Len(t, results[0].Rows, 1)
+	require.Equal(t, util.NullRowValue, results[0].Rows[0].Values[1])
+}
+
+func TestExecuteCreateDatabaseAndDump(t *testing.T) {
+	ctx := context.Background()
+	d := openTestDriver(t)
+	_, err := d.Execute(ctx, "SET a 1", db.ExecuteOptions{CreateDatabase: true})
+	require.ErrorContains(t, err, "redis: cannot create database")
+
+	var out bytes.Buffer
+	require.NoError(t, d.Dump(ctx, &out, nil))
+	require.Empty(t, out.String())
+}
+
+// TestExecuteLogsItsSteps covers the ExecuteLogger bridge: each command and its
+// response reaches the task run's log with the command's byte range.
+func TestExecuteLogsItsSteps(t *testing.T) {
+	ctx := context.Background()
+	d := openTestDriver(t)
+	var logs []*storepb.TaskRunLog
+	_, err := d.Execute(ctx, "SET a 1\nGET a", db.ExecuteOptions{
+		CreateTaskRunLog: func(_ time.Time, log *storepb.TaskRunLog) error {
+			logs = append(logs, log)
+			return nil
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, logs, 4)
+	for i, want := range []struct {
+		byteStart int32
+		byteEnd   int32
+	}{
+		{0, 7},
+		{0, 0},
+		{8, 13},
+		{0, 0},
+	} {
+		if i%2 == 0 {
+			require.Equal(t, storepb.TaskRunLog_COMMAND_EXECUTE, logs[i].Type)
+			require.Empty(t, logs[i].GetCommandExecute().Statement)
+			require.Equal(t, want.byteStart, logs[i].GetCommandExecute().GetRange().GetStart())
+			require.Equal(t, want.byteEnd, logs[i].GetCommandExecute().GetRange().GetEnd())
+		} else {
+			require.Equal(t, storepb.TaskRunLog_COMMAND_RESPONSE, logs[i].Type)
+		}
 	}
 }
 
@@ -188,4 +232,12 @@ func TestSyncInstanceWithoutConfigPermission(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, instance.Databases, 1)
 	require.Equal(t, "0", instance.Databases[0].Name)
+}
+
+// TestToRowValue holds the contract value shapes Redis reports: an answer is
+// text, an array position is an int, and a missing key is NULL.
+func TestToRowValue(t *testing.T) {
+	require.Equal(t, util.NullRowValue, toRowValue(omnidriver.Value{Kind: omnidriver.Null}))
+	require.Equal(t, int32(2), toRowValue(omnidriver.Value{Kind: omnidriver.Int32, Int64: 2}).GetInt32Value())
+	require.Equal(t, "value", toRowValue(omnidriver.Value{Kind: omnidriver.String, String: "value"}).GetStringValue())
 }
