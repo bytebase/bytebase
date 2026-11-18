@@ -870,11 +870,55 @@ func TestReleaseMovesTheAttributeNamedLikeItsType(t *testing.T) {
 func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 	selected := map[string]bool{objectKey("a.b", "c"): true}
 	other := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a"."b.c" IS 'new'`}
-	require.False(t, opTargetsSelected(other, selected, nil), "the other view's comment is not the selected view's")
+	require.False(t, opTargetsSelected(other, selected, nil, nil), "the other view's comment is not the selected view's")
 	own := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON VIEW "a.b"."c" IS 'new'`}
-	require.True(t, opTargetsSelected(own, selected, nil))
+	require.True(t, opTargetsSelected(own, selected, nil, nil))
 	column := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b.c", SQL: `COMMENT ON COLUMN "a.b"."c"."id" IS 'id'`}
-	require.True(t, opTargetsSelected(column, selected, nil), "an accessory of the selected view belongs to it")
+	require.True(t, opTargetsSelected(column, selected, nil, nil), "an accessory of the selected view belongs to it")
+}
+
+// TestOpTargetsSelectedParsesCommentTargets covers COMMENT ON statements whose
+// text contains a selected view's name without targeting it: an escaped quote can
+// spell another owner, and a function of that name shares the schema.
+func TestOpTargetsSelectedParsesCommentTargets(t *testing.T) {
+	selected := map[string]bool{objectKey("a", "b"): true}
+	tests := []struct {
+		name   string
+		sql    string
+		claims bool
+	}{
+		{name: "view", sql: `COMMENT ON VIEW "a"."b" IS 'z'`, claims: true},
+		{name: "materialized view", sql: `COMMENT ON MATERIALIZED VIEW "a"."b" IS 'z'`, claims: true},
+		{name: "view column", sql: `COMMENT ON COLUMN "a"."b"."c" IS 'z'`, claims: true},
+		{name: "escaped quote", sql: `COMMENT ON VIEW "x""a"."b" IS 'z'`},
+		{name: "function", sql: `COMMENT ON FUNCTION "a"."b"(integer) IS 'z'`},
+		{name: "other schema", sql: `COMMENT ON VIEW "x"."b" IS 'z'`},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			op := catalog.MigrationOp{Type: catalog.OpComment, ObjectName: "a.b", SQL: tc.sql}
+			require.Equal(t, tc.claims, opTargetsSelected(op, selected, nil, nil), tc.sql)
+		})
+	}
+}
+
+// TestIndexNameOwnerIsUnique covers an index name that several of a schema's
+// relations own: CockroachDB allows that, so the name alone claims nothing.
+func TestIndexNameOwnerIsUnique(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{{
+			Name:    "t",
+			Indexes: []*metadatapb.IndexMetadata{{Name: "idx"}},
+		}},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+			Name:    "mv",
+			Indexes: []*metadatapb.IndexMetadata{{Name: "idx"}},
+		}},
+	}}}
+	require.Empty(t, indexNameOwner(meta, "public", "idx", map[string]bool{objectKey("public", "mv"): true}), "an index name owned twice claims neither")
+	require.Empty(t, indexNameOwner(meta, "public", "idx", map[string]bool{objectKey("public", "t"): true}), "an unselected relation keeps its index drop")
+	require.Empty(t, indexNameOwner(meta, "public", "missing", map[string]bool{objectKey("public", "mv"): true}))
 }
 
 // TestOpTargetsSelectedKeepsATriggerNamedLikeTheView keeps a trigger whose name
@@ -889,7 +933,7 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "t",
 		SQL:          `CREATE TRIGGER "v" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
 	}
-	require.False(t, opTargetsSelected(trigger, selected, nil), "a trigger named like the view belongs to its own table")
+	require.False(t, opTargetsSelected(trigger, selected, nil, nil), "a trigger named like the view belongs to its own table")
 	onTheView := catalog.MigrationOp{
 		Type:         catalog.OpCreateTrigger,
 		SchemaName:   "public",
@@ -897,9 +941,9 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "v",
 		SQL:          `CREATE TRIGGER "audit" AFTER INSERT ON "public"."v" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
 	}
-	require.True(t, opTargetsSelected(onTheView, selected, nil), "a trigger on the selected view belongs to it")
+	require.True(t, opTargetsSelected(onTheView, selected, nil, nil), "a trigger on the selected view belongs to it")
 	view := catalog.MigrationOp{Type: catalog.OpDropView, SchemaName: "public", ObjectName: "v", SQL: `DROP VIEW "public"."v"`}
-	require.True(t, opTargetsSelected(view, selected, nil))
+	require.True(t, opTargetsSelected(view, selected, nil, nil))
 
 	callsTheView := catalog.MigrationOp{
 		Type:         catalog.OpCreateTrigger,
@@ -908,7 +952,7 @@ func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
 		ParentObject: "t",
 		SQL:          `CREATE TRIGGER "x" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION "public"."v"()`,
 	}
-	require.False(t, opTargetsSelected(callsTheView, selected, nil), "a trigger belongs to its table, not to the function it calls")
+	require.False(t, opTargetsSelected(callsTheView, selected, nil, nil), "a trigger belongs to its table, not to the function it calls")
 }
 
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an

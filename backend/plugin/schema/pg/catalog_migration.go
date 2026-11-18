@@ -41,7 +41,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	plan := catalog.GenerateMigration(from, to, diff)
 	orderTypeAndTableCreates(plan, newSchema.GetProto())
 	restoreIndexDefinitions(plan, newSchema.GetProto())
-	recreated, err := restoreUnloadableDependentViews(plan, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
+	recreated, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err != nil {
 		return "", err
 	}
@@ -680,28 +680,6 @@ func enumByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.Enum
 	return nil
 }
 
-func containsObjectReference(sql, schema, object string) bool {
-	if strings.Contains(sql, quoteQualified(schema, object)) {
-		return true
-	}
-	needle := schema + "." + object
-	for start := 0; start < len(sql); {
-		index := strings.Index(sql[start:], needle)
-		if index < 0 {
-			return false
-		}
-		index += start
-		end := index + len(needle)
-		beforeBoundary := index == 0 || !isIdentifierByte(sql[index-1])
-		afterBoundary := end == len(sql) || !isIdentifierByte(sql[end])
-		if beforeBoundary && afterBoundary {
-			return true
-		}
-		start = end
-	}
-	return false
-}
-
 func isIdentifierByte(b byte) bool {
 	return b == '_' || b == '$' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
@@ -741,7 +719,7 @@ func compositeByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb
 // the column under a view that must be dropped first. The snapshot's
 // DependencyColumns is the only record of that edge. It returns the views it
 // drops, which releaseCompositeBeforeTableDrop then treats as dropped relations.
-func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) (map[string]bool, error) {
+func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.Catalog, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, reports ...*catalog.LoadMetadataReport) (map[string]bool, error) {
 	affected := affectedTableColumns(oldMeta, newMeta)
 	if len(affected) == 0 {
 		return nil, nil
@@ -912,7 +890,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 		}
 	}
 	plan.Ops = slices.DeleteFunc(plan.Ops, func(op catalog.MigrationOp) bool {
-		return opTargetsSelected(op, dropped, oldMeta)
+		return opTargetsSelected(op, dropped, oldMeta, from)
 	})
 	ops := make([]catalog.MigrationOp, 0, len(plan.Ops)+len(items)*2)
 	for i := len(dropOrder) - 1; i >= 0; i-- {
@@ -954,22 +932,28 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 // object. Its accessories (comments, indexes, triggers) are omitted because the
 // synthesized create from metadata already carries them. An accessory is matched
 // through its owner, since a trigger or index name alone can equal a view's.
-func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
-	if op.Type == catalog.OpComment {
-		for key := range selected {
-			schemaName, objectName := splitObjectKey(key)
-			if containsObjectReference(op.SQL, schemaName, objectName) {
-				return true
-			}
-		}
-		return false
-	}
+func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata, from *catalog.Catalog) bool {
 	switch op.Type {
+	case catalog.OpComment:
+		schemaName, objectName, ok := commentRelationTarget(op.SQL)
+		if !ok {
+			return false
+		}
+		return selected[objectKey(schemaName, objectName)]
 	case catalog.OpCreateView, catalog.OpAlterView, catalog.OpDropView:
 		return selected[objectKey(op.SchemaName, op.ObjectName)]
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
 		if ownerSchema, ownerObject := indexOwnerFromSQL(op.SQL); ownerSchema != "" {
 			return selected[objectKey(ownerSchema, ownerObject)]
+		}
+		// A DROP INDEX statement names only the schema and index, and CockroachDB
+		// allows one index name on several of a schema's relations.
+		if op.Type == catalog.OpDropIndex && from != nil {
+			if index := from.GetIndexByOID(op.ObjOID); index != nil {
+				if relation := from.GetRelationByOID(index.RelOID); relation != nil && relation.Schema != nil {
+					return selected[objectKey(relation.Schema.Name, relation.Name)]
+				}
+			}
 		}
 		return indexNameOwner(oldMeta, op.SchemaName, op.ObjectName, selected) != ""
 	case catalog.OpCreateTrigger, catalog.OpDropTrigger:
@@ -979,6 +963,34 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	default:
 	}
 	return false
+}
+
+// commentRelationTarget returns the relation a COMMENT ON statement targets, so
+// two spelled-out owners cannot overlap in its text.
+func commentRelationTarget(sql string) (string, string, bool) {
+	rest, ok := strings.CutPrefix(sql, "COMMENT ON ")
+	if !ok {
+		return "", "", false
+	}
+	for _, kind := range []string{"MATERIALIZED VIEW ", "FOREIGN TABLE ", "TABLE ", "VIEW ", "COLUMN "} {
+		target, found := strings.CutPrefix(rest, kind)
+		if !found {
+			continue
+		}
+		schemaName, next, ok := quotedIdentifier(target, 0)
+		if !ok || next >= len(target) || target[next] != '.' {
+			return "", "", false
+		}
+		objectName, end, ok := quotedIdentifier(target, next+1)
+		if !ok {
+			return "", "", false
+		}
+		if end < len(target) && target[end] != '.' && target[end] != ' ' {
+			return "", "", false
+		}
+		return schemaName, objectName, true
+	}
+	return "", "", false
 }
 
 func indexOwnerFromSQL(sql string) (string, string) {
@@ -1045,23 +1057,24 @@ func indexNameOwner(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexNa
 	if schema == nil {
 		return ""
 	}
-	found := ""
-	for _, view := range schema.GetMaterializedViews() {
-		for _, index := range view.GetIndexes() {
-			if index.GetName() != indexName {
-				continue
+	owner, owners := "", 0
+	add := func(name string, indexes []*metadatapb.IndexMetadata) {
+		for _, index := range indexes {
+			if index.GetName() == indexName {
+				owner, owners = objectKey(schemaName, name), owners+1
 			}
-			key := objectKey(schemaName, view.GetName())
-			if !selected[key] {
-				continue
-			}
-			if found != "" {
-				return ""
-			}
-			found = key
 		}
 	}
-	return found
+	for _, table := range schema.GetTables() {
+		add(table.GetName(), table.GetIndexes())
+	}
+	for _, view := range schema.GetMaterializedViews() {
+		add(view.GetName(), view.GetIndexes())
+	}
+	if owners != 1 || !selected[owner] {
+		return ""
+	}
+	return owner
 }
 
 func unionKeys(left, right []string) []string {
