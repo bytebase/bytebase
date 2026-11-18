@@ -300,9 +300,18 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			Attribute: role.Attribute,
 		})
 	}
+	databases := make([]*metadatapb.DatabaseSchemaMetadata, 0, len(instance.Databases))
+	for _, database := range instance.Databases {
+		// Neon reserves "postgres" as a service-managed system database, whereas
+		// other PostgreSQL instances commonly use it for application schemas.
+		if d.connectionCtx.Vendor == storepb.Vendor_NEON && database.Name == "postgres" {
+			continue
+		}
+		databases = append(databases, database)
+	}
 	return &db.InstanceMetadata{
 		Version:   instance.Version,
-		Databases: instance.Databases,
+		Databases: databases,
 		Metadata:  &storepb.Instance{Roles: roles},
 	}, nil
 }

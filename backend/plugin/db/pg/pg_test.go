@@ -752,6 +752,41 @@ func TestSyncInstanceAndDump(t *testing.T) {
 	require.NotContains(t, dump, common.BackupDatabaseNameOfEngine(storepb.Engine_POSTGRES), "the dump omits the backup schema")
 }
 
+func TestSyncInstanceSkipsNeonPostgresDatabase(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, _ := testcontainer.NewPgDatabase(t)
+
+	syncDatabaseNames := func(t *testing.T, vendor storepb.Vendor) []string {
+		t.Helper()
+		driver := pgTestDriver(ctx, t, pgContainer, "", func(config *db.ConnectionConfig) {
+			config.ConnectionContext.Vendor = vendor
+		})
+		meta, err := driver.SyncInstance(ctx)
+		require.NoError(t, err)
+
+		names := make([]string, 0, len(meta.Databases))
+		for _, database := range meta.Databases {
+			names = append(names, database.Name)
+		}
+		return names
+	}
+
+	genericNames := syncDatabaseNames(t, storepb.Vendor_VENDOR_UNSPECIFIED)
+	require.Contains(t, genericNames, "postgres")
+	require.Contains(t, genericNames, dbName)
+	require.NotContains(t, genericNames, "template0")
+	require.NotContains(t, genericNames, "template1")
+
+	neonNames := syncDatabaseNames(t, storepb.Vendor_NEON)
+	require.NotContains(t, neonNames, "postgres")
+	require.Contains(t, neonNames, dbName)
+	require.NotContains(t, neonNames, "template0")
+	require.NotContains(t, neonNames, "template1")
+}
+
 func TestPingAMissingDatabase(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
