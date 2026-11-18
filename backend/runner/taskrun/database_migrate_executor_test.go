@@ -2,6 +2,7 @@ package taskrun
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,58 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// staticDriver stands in for an opened driver. Only GetDB is exercised here.
+type staticDriver struct {
+	db.Driver
+	sqlDB *sql.DB
+}
+
+func (d *staticDriver) GetDB() *sql.DB { return d.sqlDB }
+
+func TestRequireGhostConnection(t *testing.T) {
+	tests := []struct {
+		name    string
+		engine  storepb.Engine
+		sqlDB   *sql.DB
+		wantErr string
+	}{
+		{
+			name:   "mysql with a connection",
+			engine: storepb.Engine_MYSQL,
+			sqlDB:  &sql.DB{},
+		},
+		{
+			name:   "mariadb with a connection",
+			engine: storepb.Engine_MARIADB,
+			sqlDB:  &sql.DB{},
+		},
+		{
+			name:    "mysql without a connection",
+			engine:  storepb.Engine_MYSQL,
+			wantErr: "gh-ost needs a direct database/sql connection",
+		},
+		{
+			name:    "engine gh-ost does not drive",
+			engine:  storepb.Engine_SPANNER,
+			wantErr: "gh-ost requires MySQL or MariaDB",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: tt.engine}}
+			sqlDB, err := requireGhostConnection(&staticDriver{sqlDB: tt.sqlDB}, instance)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				require.Nil(t, sqlDB)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, sqlDB)
+		})
+	}
+}
 
 func TestExecuteGhostMigrationUsesContextLogger(t *testing.T) {
 	requireExecuteGhostMigrationContextSignature(t, executeGhostMigration)

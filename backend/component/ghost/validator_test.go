@@ -38,6 +38,25 @@ func TestValidateBinlogAccessWithoutDirectConnection(t *testing.T) {
 	})
 }
 
+func TestSupportsEngine(t *testing.T) {
+	tests := map[storepb.Engine]bool{
+		storepb.Engine_MYSQL:              true,
+		storepb.Engine_MARIADB:            true,
+		storepb.Engine_TIDB:               false,
+		storepb.Engine_OCEANBASE:          false,
+		storepb.Engine_STARROCKS:          false,
+		storepb.Engine_POSTGRES:           false,
+		storepb.Engine_SPANNER:            false,
+		storepb.Engine_COCKROACHDB:        false,
+		storepb.Engine_ENGINE_UNSPECIFIED: false,
+	}
+	for engine, want := range tests {
+		t.Run(engine.String(), func(t *testing.T) {
+			require.Equal(t, want, SupportsEngine(engine))
+		})
+	}
+}
+
 func TestValidateBinlogAccessWithDirectConnection(t *testing.T) {
 	sqlDB := sql.OpenDB(validationConnector{})
 	defer sqlDB.Close()

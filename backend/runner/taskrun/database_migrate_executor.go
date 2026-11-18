@@ -308,11 +308,15 @@ func (exec *DatabaseMigrateExecutor) runStandardMigration(ctx context.Context, d
 }
 
 // requireGhostConnection returns the connection gh-ost queries through, and
-// refuses engines whose driver owns its pool and exposes none.
+// refuses engines gh-ost cannot drive and drivers that expose no pool.
 func requireGhostConnection(driver db.Driver, instance *store.InstanceMessage) (*sql.DB, error) {
+	engine := instance.Metadata.GetEngine()
+	if !ghost.SupportsEngine(engine) {
+		return nil, errors.Errorf("gh-ost migration is not supported for engine %v; gh-ost requires MySQL or MariaDB", engine.String())
+	}
 	sqlDB, err := ghost.RequireDirectConnection(driver)
 	if err != nil {
-		return nil, errors.Wrapf(err, "gh-ost migration is not supported for engine %v", instance.Metadata.GetEngine().String())
+		return nil, errors.Wrapf(err, "gh-ost migration is not supported for engine %v", engine.String())
 	}
 	return sqlDB, nil
 }

@@ -38,6 +38,13 @@ func RequireDirectConnection(driver db.Driver) (*sql.DB, error) {
 	return sqlDB, nil
 }
 
+// SupportsEngine reports whether gh-ost can drive the engine. gh-ost needs MySQL
+// replication, which only MySQL and MariaDB provide; the frontend offers the
+// ghost directive for these engines only.
+func SupportsEngine(engine storepb.Engine) bool {
+	return engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB
+}
+
 // BinlogValidationResult contains detailed results of binlog access validation
 type BinlogValidationResult struct {
 	// Core validation state
