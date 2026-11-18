@@ -330,6 +330,32 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata) (*me
 			func(s *metadatapb.SequenceMetadata) bool { return s.GetSkipDump() },
 			func(s *metadatapb.SequenceMetadata) { s.SkipDump = false })
 	}
+	for _, newSchema := range newOut.GetSchemas() {
+		oldSchema := schemaByName(oldOut, newSchema.GetName())
+		if oldSchema == nil {
+			continue
+		}
+		for _, table := range newSchema.GetTables() {
+			oldTable := tableByName(oldSchema, table.GetName())
+			if oldTable == nil {
+				continue
+			}
+			table.Triggers = reconcileObjects(oldTable.GetTriggers(), table.GetTriggers(),
+				func(t *metadatapb.TriggerMetadata) string { return t.GetName() },
+				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
+				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
+		}
+		for _, view := range newSchema.GetViews() {
+			oldView := viewByName(oldSchema, view.GetName())
+			if oldView == nil {
+				continue
+			}
+			view.Triggers = reconcileObjects(oldView.GetTriggers(), view.GetTriggers(),
+				func(t *metadatapb.TriggerMetadata) string { return t.GetName() },
+				func(t *metadatapb.TriggerMetadata) bool { return t.GetSkipDump() },
+				func(t *metadatapb.TriggerMetadata) { t.SkipDump = false })
+		}
+	}
 	return oldOut, newOut
 }
 
@@ -364,6 +390,24 @@ func reconcileObjects[T any](oldObjs, newObjs []T, name func(T) string, skipped 
 		}
 	}
 	return result
+}
+
+func tableByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
+	for _, table := range schema.GetTables() {
+		if table.GetName() == name {
+			return table
+		}
+	}
+	return nil
+}
+
+func viewByName(schema *metadatapb.SchemaMetadata, name string) *metadatapb.ViewMetadata {
+	for _, view := range schema.GetViews() {
+		if view.GetName() == name {
+			return view
+		}
+	}
+	return nil
 }
 
 func schemaByName(meta *metadatapb.DatabaseSchemaMetadata, name string) *metadatapb.SchemaMetadata {

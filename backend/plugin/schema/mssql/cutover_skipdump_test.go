@@ -83,3 +83,35 @@ func TestMetadataMigrationSuppressesSkippedObjectChanges(t *testing.T) {
 		})
 	}
 }
+
+// TestMetadataMigrationSuppressesSkippedTriggerChanges pins the same rule one
+// level down: a trigger skipped on either side must not produce trigger DDL.
+func TestMetadataMigrationSuppressesSkippedTriggerChanges(t *testing.T) {
+	trigger := func(skip bool, body string) *metadatapb.TriggerMetadata {
+		return &metadatapb.TriggerMetadata{Name: "trg", SkipDump: skip, Body: body}
+	}
+	snapshot := func(trg *metadatapb.TriggerMetadata) *model.DatabaseMetadata {
+		table := &metadatapb.TableMetadata{
+			Name:     "t",
+			Columns:  []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
+			Triggers: []*metadatapb.TriggerMetadata{trg},
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "dbo", Tables: []*metadatapb.TableMetadata{table},
+		}}}, nil, nil, storepb.Engine_MSSQL, false)
+	}
+	for _, tc := range []struct {
+		name     string
+		old, new *model.DatabaseMetadata
+	}{
+		{name: "flag flips on", old: snapshot(trigger(false, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 1")), new: snapshot(trigger(true, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 1"))},
+		{name: "flag flips off", old: snapshot(trigger(true, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 1")), new: snapshot(trigger(false, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 1"))},
+		{name: "body changes while skipped", old: snapshot(trigger(true, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 1")), new: snapshot(trigger(false, "CREATE TRIGGER [dbo].[trg] ON [dbo].[t] AFTER INSERT AS SELECT 2"))},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sql, err := schema.DiffMigration(storepb.Engine_MSSQL, tc.old, tc.new)
+			require.NoError(t, err)
+			require.Empty(t, sql)
+		})
+	}
+}
