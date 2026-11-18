@@ -931,6 +931,53 @@ export function parseConnectionString(
   }
 }
 
+// Oracle requires an explicit Oracle scheme, prefix, or query key here so a
+// schemeless `host:port/db` typo isn't misclassified as Easy Connect.
+export function detectConnectionStringEngine(
+  value: string,
+  excludeEngine?: Engine
+): ConnectionStringEngine | undefined {
+  const unwrapped = stripSurroundingQuotes(value.trim());
+  if (!unwrapped) return undefined;
+
+  if (
+    excludeEngine !== Engine.MYSQL &&
+    /^mysql:\/\//i.test(unwrapped) &&
+    parseMysqlConnectionString(value)
+  ) {
+    return Engine.MYSQL;
+  }
+
+  if (
+    excludeEngine !== Engine.POSTGRES &&
+    (/^(?:postgres(?:ql)?:\/\/|psql\s+)/i.test(unwrapped) ||
+      parseLibpqKeyValue(unwrapped) !== undefined) &&
+    parsePostgresConnectionString(value)
+  ) {
+    return Engine.POSTGRES;
+  }
+
+  if (
+    excludeEngine !== Engine.MSSQL &&
+    (/^sqlserver:\/\//i.test(unwrapped) || unwrapped.includes(";")) &&
+    parseMssqlConnectionString(value)
+  ) {
+    return Engine.MSSQL;
+  }
+
+  if (
+    excludeEngine !== Engine.ORACLE &&
+    (/^(?:oracle|tcps?):\/\//i.test(unwrapped) ||
+      /^sqlplus\s+/i.test(unwrapped) ||
+      /[?&](?:sid|service_name)=/i.test(unwrapped)) &&
+    parseOracleConnectionString(value)
+  ) {
+    return Engine.ORACLE;
+  }
+
+  return undefined;
+}
+
 export function applyParsedConnectionString(
   ds: EditDataSource,
   engine: Engine,

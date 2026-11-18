@@ -11,6 +11,7 @@ import {
 import type { EditDataSource } from "./common";
 import {
   applyParsedConnectionString,
+  detectConnectionStringEngine,
   parseConnectionString,
   supportsConnectionString,
 } from "./connection-string";
@@ -417,5 +418,52 @@ describe("applyParsedConnectionString", () => {
     });
     expect(withSid.sid).toBe("XE");
     expect(withSid.serviceName).toBe("");
+  });
+});
+
+describe("detectConnectionStringEngine", () => {
+  it("identifies unambiguous strings belonging to another supported engine", () => {
+    expect(
+      detectConnectionStringEngine(
+        "postgresql://user:pass@pg.example.com:5432/appdb",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.POSTGRES);
+    expect(
+      detectConnectionStringEngine(
+        "host=pg.example.com port=5432 dbname=appdb user=postgres",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.POSTGRES);
+    expect(
+      detectConnectionStringEngine(
+        "mysql://root:pass@mysql.example.com:3306/app",
+        Engine.POSTGRES
+      )
+    ).toBe(Engine.MYSQL);
+    expect(
+      detectConnectionStringEngine(
+        "Server=tcp:sql.example.com,1433;Database=orders;User ID=sa;Password=secret;",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.MSSQL);
+    expect(
+      detectConnectionStringEngine(
+        "tcps://system:secret@ora.example.com:1522/orclpdb1",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.ORACLE);
+  });
+
+  it("ignores excluded engines and schemeless host:port/db typos", () => {
+    expect(
+      detectConnectionStringEngine(
+        "mysql://root:pass@mysql.example.com:3306/app",
+        Engine.MYSQL
+      )
+    ).toBeUndefined();
+    expect(
+      detectConnectionStringEngine("db.example.com:5432/mydb", Engine.POSTGRES)
+    ).toBeUndefined();
   });
 });

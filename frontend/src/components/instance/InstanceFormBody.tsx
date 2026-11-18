@@ -1,7 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import { ExternalLink, Info, Server, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  ExternalLink,
+  Info,
+  Link2,
+  Server,
+  Trash2,
+} from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -29,7 +37,14 @@ import {
   FormLabel,
   FormSection,
   ResponsiveFormLayout,
+  FormField as SharedFormField,
 } from "@/components/ui/form";
+import { Input as SharedInput } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -85,6 +100,7 @@ import {
 import {
   applyParsedConnectionString,
   type ConnectionStringEngine,
+  detectConnectionStringEngine,
   type ParsedConnectionString,
   parseConnectionString,
   supportsConnectionString,
@@ -787,29 +803,48 @@ const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
   [Engine.POSTGRES]:
     "postgresql://user:password@db.example.com:5432/mydb?sslmode=require",
   [Engine.MSSQL]:
-    "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=...;Encrypt=True;",
+    "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=…;Encrypt=True;",
   [Engine.ORACLE]: "tcps://user:password@db.example.com:1522/orclpdb1",
 };
 
-function ConnectionStringField({
+type ConnectionUrlFillState = "complete" | "missing-password";
+
+function ConnectionStringImportPopover({
   engine,
   disabled,
+  describedById,
+  resolvePasswordInput,
   onParsed,
 }: {
   engine: ConnectionStringEngine;
   disabled: boolean;
-  onParsed: (parsed: ParsedConnectionString) => void;
+  describedById?: string;
+  resolvePasswordInput: () => HTMLInputElement | null;
+  onParsed: (
+    parsed: ParsedConnectionString,
+    fillState: ConnectionUrlFillState
+  ) => void;
 }) {
   const { t } = useTranslation();
-  const id = useId();
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
+  const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
-  const [filledState, setFilledState] = useState<
-    "none" | "complete" | "missing-password"
-  >("none");
   const [checked, setChecked] = useState(false);
+  const [pendingPasswordFocus, setPendingPasswordFocus] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const focusPasswordOnCloseRef = useRef(false);
   const invalid = checked && value.trim() !== "";
-  const filled = filledState !== "none";
-  const noteId = `${id}-note`;
+
+  useEffect(() => {
+    if (open || !pendingPasswordFocus) return;
+    setPendingPasswordFocus(false);
+    const passwordEl = resolvePasswordInput();
+    if (passwordEl && !passwordEl.disabled) {
+      passwordEl.focus();
+    }
+  }, [open, pendingPasswordFocus, resolvePasswordInput]);
 
   const helpText = {
     [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
@@ -825,83 +860,164 @@ function ConnectionStringField({
     [Engine.ORACLE]: t("instance.connection-string.invalid.oracle"),
   }[engine];
 
-  const read = (text: string) => {
+  const detectedEngine = invalid
+    ? detectConnectionStringEngine(value, engine)
+    : undefined;
+  const errorMessage = detectedEngine
+    ? t("instance.connection-string.invalid.engine-mismatch", {
+        detected: engineNameV1(detectedEngine),
+        selected: engineNameV1(engine),
+      })
+    : invalidText;
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setValue("");
+      setChecked(false);
+    }
+  };
+
+  const tryImport = (text: string): boolean => {
     const parsed = parseConnectionString(engine, text);
     if (!parsed) return false;
-    onParsed(parsed);
-    setValue("");
-    setFilledState(
-      parsed.password !== undefined ? "complete" : "missing-password"
-    );
-    setChecked(false);
+    const fillState: ConnectionUrlFillState =
+      parsed.password !== undefined ? "complete" : "missing-password";
+    onParsed(parsed, fillState);
+    if (fillState === "missing-password") {
+      focusPasswordOnCloseRef.current = true;
+      setPendingPasswordFocus(true);
+    }
+    handleOpenChange(false);
     return true;
   };
 
   return (
-    <FormField
-      title={
-        <FormLabel htmlFor={id} className="flex-wrap">
-          {t("instance.connection-string.label")}{" "}
-          <span className="font-normal text-control-light">
-            {t("instance.neon.optional")}
-          </span>
-        </FormLabel>
-      }
-      description={helpText}
-    >
-      <Input
-        id={id}
-        data-agent-sensitive
-        value={value}
-        disabled={disabled}
-        autoComplete="off"
-        spellCheck={false}
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid || filled ? noteId : undefined}
-        placeholder={CONNECTION_STRING_PLACEHOLDERS[engine]}
-        onChange={(event) => {
-          setValue(event.target.value);
-          setFilledState("none");
-          setChecked(false);
-        }}
-        onPaste={(event) => {
-          const pasted = event.clipboardData.getData("text");
-          const target = event.currentTarget;
-          const start = target.selectionStart ?? value.length;
-          const end = target.selectionEnd ?? value.length;
-          const combined = `${value.slice(0, start)}${pasted}${value.slice(end)}`;
-          event.preventDefault();
-          if (!read(combined)) {
-            setValue(combined);
-            setFilledState("none");
-            setChecked(combined.trim() !== "");
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        ref={triggerRef}
+        render={
+          <Button
+            type="button"
+            appearance="outline"
+            size="sm"
+            disabled={disabled}
+            aria-describedby={describedById}
+            className="transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none"
+          />
+        }
+      >
+        <Link2 className="size-4 shrink-0" aria-hidden="true" />
+        <span>{t("instance.connection-string.trigger")}</span>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        initialFocus={() =>
+          typeof window !== "undefined" &&
+          window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches
+            ? false
+            : inputRef.current
+        }
+        finalFocus={() => {
+          if (focusPasswordOnCloseRef.current) {
+            focusPasswordOnCloseRef.current = false;
+            const passwordEl = resolvePasswordInput();
+            if (passwordEl && !passwordEl.disabled) {
+              return passwordEl;
+            }
           }
+          return triggerRef.current;
         }}
-        onBlur={() => {
-          if (value.trim() && !read(value)) setChecked(true);
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || !value.trim()) return;
-          event.preventDefault();
-          if (!read(value)) setChecked(true);
-        }}
-      />
-      {invalid ? (
-        <FormError id={noteId}>{invalidText}</FormError>
-      ) : (
-        filled && (
-          <p
-            id={noteId}
-            role="status"
-            className="text-xs leading-4 text-control-light"
+        className="w-[min(28rem,calc(100vw-2rem))] origin-(--transform-origin) p-4 transition-[transform,opacity] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none"
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!value.trim() || !tryImport(value)) {
+              setChecked(true);
+            }
+          }}
+        >
+          <SharedFormField
+            layout="vertical"
+            title={
+              <FormLabel htmlFor={inputId}>
+                {t("instance.connection-string.label")}
+              </FormLabel>
+            }
+            description={helpText}
           >
-            {filledState === "missing-password"
-              ? t("instance.connection-string.filled-missing-password")
-              : t("instance.connection-string.filled")}
-          </p>
-        )
-      )}
-    </FormField>
+            <SharedInput
+              ref={inputRef}
+              id={inputId}
+              type="text"
+              data-agent-sensitive
+              data-1p-ignore
+              data-lpignore="true"
+              value={value}
+              disabled={disabled}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? errorId : undefined}
+              placeholder={CONNECTION_STRING_PLACEHOLDERS[engine]}
+              className="font-mono"
+              onChange={(event) => {
+                const next = event.target.value;
+                setValue(next);
+                if (
+                  checked &&
+                  (!next.trim() || parseConnectionString(engine, next))
+                ) {
+                  setChecked(false);
+                }
+              }}
+              onPaste={(event) => {
+                const pasted = event.clipboardData.getData("text");
+                const target = event.currentTarget;
+                const start = target.selectionStart ?? value.length;
+                const end = target.selectionEnd ?? value.length;
+                const combined = `${value.slice(0, start)}${pasted}${value.slice(end)}`;
+                event.preventDefault();
+                if (!tryImport(combined)) {
+                  setValue(combined);
+                  setChecked(combined.trim() !== "");
+                }
+              }}
+            />
+            {invalid && (
+              <FormError id={errorId} className="flex items-start gap-1.5">
+                <AlertCircle
+                  className="mt-0.5 size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{errorMessage}</span>
+              </FormError>
+            )}
+          </SharedFormField>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              onClick={() => handleOpenChange(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={disabled || !value.trim()}
+            >
+              {t("common.import")}
+            </Button>
+          </div>
+        </form>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -1436,19 +1552,50 @@ export function InstanceFormBody({
     }));
   };
 
+  const connectionSectionRef = useRef<HTMLElement>(null);
+  const connectionUrlStatusId = useId();
+  const [connectionUrlFill, setConnectionUrlFill] = useState<{
+    engine: ConnectionStringEngine;
+    vendor: Vendor;
+    state: ConnectionUrlFillState;
+  } | null>(null);
+
+  const resolvePasswordInput = useCallback(
+    () =>
+      connectionSectionRef.current?.querySelector<HTMLInputElement>(
+        '[data-agent-sensitive] input[type="password"]'
+      ) ?? null,
+    []
+  );
+
   const fillFromConnectionString = useCallback(
-    (parsed: ParsedConnectionString) => {
+    (parsed: ParsedConnectionString, fillState: ConnectionUrlFillState) => {
+      if (!supportsConnectionString(basicInfo.engine)) return;
+      const currentEngine = basicInfo.engine;
       setDataSourceEditState((prev) => ({
         ...prev,
         dataSources: prev.dataSources.map((ds) =>
           ds.id === prev.editingDataSourceId
-            ? applyParsedConnectionString(ds, basicInfo.engine, parsed)
+            ? applyParsedConnectionString(ds, currentEngine, parsed)
             : ds
         ),
       }));
+      setConnectionUrlFill({
+        engine: currentEngine,
+        vendor: basicInfo.vendor,
+        state: fillState,
+      });
     },
-    [basicInfo.engine, setDataSourceEditState]
+    [basicInfo.engine, basicInfo.vendor, setDataSourceEditState]
   );
+
+  const activeConnectionUrlFill =
+    connectionUrlFill &&
+    connectionUrlFill.engine === basicInfo.engine &&
+    connectionUrlFill.vendor === basicInfo.vendor
+      ? connectionUrlFill.state
+      : null;
+  const showAskAgent = isCreating && !!onAskAgent;
 
   const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
   const changeVendor = (vendor: Vendor) => {
@@ -1755,17 +1902,60 @@ export function InstanceFormBody({
 
         {/* Connection Card */}
         <FormSection
+          ref={connectionSectionRef}
           layout="stacked"
           title={t("instance.section.connection")}
           action={
-            isCreating && onAskAgent ? (
-              <AgentHelpButton
-                type="button"
-                size="sm"
-                onClick={() => onAskAgent()}
-              >
-                {t("instance.ask-agent")}
-              </AgentHelpButton>
+            (isCreating &&
+              !isNeon &&
+              supportsConnectionString(basicInfo.engine)) ||
+            showAskAgent ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {isCreating &&
+                  !isNeon &&
+                  supportsConnectionString(basicInfo.engine) && (
+                    <ConnectionStringImportPopover
+                      key={basicInfo.engine}
+                      engine={basicInfo.engine}
+                      disabled={!allowEdit || disabled}
+                      describedById={
+                        activeConnectionUrlFill
+                          ? connectionUrlStatusId
+                          : undefined
+                      }
+                      resolvePasswordInput={resolvePasswordInput}
+                      onParsed={fillFromConnectionString}
+                    />
+                  )}
+                {showAskAgent && (
+                  <AgentHelpButton
+                    type="button"
+                    size="sm"
+                    onClick={() => onAskAgent()}
+                  >
+                    {t("instance.ask-agent")}
+                  </AgentHelpButton>
+                )}
+                {activeConnectionUrlFill && (
+                  <p
+                    id={connectionUrlStatusId}
+                    role="status"
+                    className="inline-flex items-center gap-1 text-xs leading-4 text-control-light"
+                  >
+                    <Check
+                      className="size-3.5 shrink-0 text-success"
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {activeConnectionUrlFill === "missing-password"
+                        ? t(
+                            "instance.connection-string.filled-missing-password"
+                          )
+                        : t("instance.connection-string.filled")}
+                    </span>
+                  </p>
+                )}
+              </div>
             ) : undefined
           }
         >
@@ -1784,22 +1974,12 @@ export function InstanceFormBody({
                     </div>
                   </Alert>
                 )}
-                {isNeon && isCreating ? (
+                {isNeon && isCreating && (
                   <NeonConnectionStringField
                     disabled={!allowEdit}
                     pooledHost={isNeonPooledHost(connectionDataSource.host)}
                     onParsed={fillFromNeonConnectionString}
                   />
-                ) : (
-                  isCreating &&
-                  supportsConnectionString(basicInfo.engine) && (
-                    <ConnectionStringField
-                      key={basicInfo.engine}
-                      engine={basicInfo.engine}
-                      disabled={!allowEdit}
-                      onParsed={fillFromConnectionString}
-                    />
-                  )
                 )}
                 {editingDataSource && (
                   <DataSourceForm

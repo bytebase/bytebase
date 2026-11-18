@@ -1610,21 +1610,23 @@
       }
     },
     "connection-string": {
-      "filled": "接続文字列から接続項目を入力しました。",
-      "filled-missing-password": "接続項目を入力しました。下にパスワードを入力してください。",
+      "filled": "URL から入力しました",
+      "filled-missing-password": "URL から入力しました。下にパスワードを入力してください。",
       "help": {
-        "mssql": "SQL Server の接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
-        "mysql": "MySQL の接続文字列を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
-        "oracle": "Oracle の接続文字列を貼り付けると、ホスト、ポート、認証情報、サービス名または SID、TLS を自動入力します。",
-        "postgres": "PostgreSQL の接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。"
+        "mssql": "SQL Server の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
+        "mysql": "MySQL の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",
+        "oracle": "Oracle の接続 URL または Easy Connect 文字列を貼り付けると、ホスト、ポート、認証情報、サービス名または SID、TLS を自動入力します。",
+        "postgres": "PostgreSQL の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。"
       },
       "invalid": {
-        "mssql": "有効な Server=...; または sqlserver:// 接続文字列を入力してください。",
-        "mysql": "有効な mysql:// 接続文字列を入力してください。",
-        "oracle": "サービス名または SID を含む有効な Easy Connect または oracle:// 接続文字列を入力してください。",
-        "postgres": "有効な postgresql:// または key=value 接続文字列を入力してください。"
+        "engine-mismatch": "{{detected}} の接続文字列のようです。上でエンジンを {{detected}} に切り替えるか、{{selected}} の接続文字列を入力してください。",
+        "mssql": "有効な sqlserver:// URL または Server=…; 接続文字列を入力してください。",
+        "mysql": "有効な mysql:// 接続 URL を入力してください。",
+        "oracle": "サービス名または SID を含む有効な oracle:// URL または Easy Connect 文字列を入力してください。",
+        "postgres": "有効な postgresql:// URL または key=value 接続文字列を入力してください。"
       },
-      "label": "接続文字列"
+      "label": "接続 URL",
+      "trigger": "URL からインポート"
     },
     "create-failed": "インスタンスの作成に失敗しました",
     "create-gcp-credentials": "認証情報の作成方法については、を参照してください",
