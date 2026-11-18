@@ -135,24 +135,60 @@ func stripUnrenderedFacts(metadata *metadatapb.DatabaseSchemaMetadata) *metadata
 // so replacing that section restores the old text without duplicating any of the
 // catalog's header logic.
 func restoreLegacyModuleText(rendered string, metadata *metadatapb.DatabaseSchemaMetadata) string {
+	replacements := moduleReplacements(metadata)
+	var out strings.Builder
+	out.Grow(len(rendered))
+	for i := 0; i < len(rendered); {
+		// A module section starts the dump or follows a batch separator, and a
+		// match consumes the whole section. Text inside an earlier module's
+		// body therefore cannot be mistaken for a later module's section.
+		if i == 0 || (i >= len("GO\n\n") && rendered[i-len("GO\n\n"):i] == "GO\n\n") {
+			if replacement, ok := matchModuleSection(rendered[i:], replacements); ok {
+				out.WriteString(replacement.legacy)
+				i += len(replacement.catalog)
+				continue
+			}
+		}
+		out.WriteByte(rendered[i])
+		i++
+	}
+	return out.String()
+}
+
+type moduleReplacement struct {
+	catalog string
+	legacy  string
+}
+
+func moduleReplacements(metadata *metadatapb.DatabaseSchemaMetadata) []moduleReplacement {
+	var replacements []moduleReplacement
 	for _, schema := range metadata.GetSchemas() {
 		for _, view := range schema.GetViews() {
 			if omni, err := catalog.GetViewDefinition(view); err == nil {
-				rendered = strings.Replace(rendered, omni, legacyViewText(view), 1)
+				replacements = append(replacements, moduleReplacement{catalog: omni, legacy: legacyViewText(view)})
 			}
 		}
 		for _, function := range schema.GetFunctions() {
 			if omni, err := catalog.GetFunctionDefinition(function); err == nil {
-				rendered = strings.Replace(rendered, omni, legacyFunctionText(function), 1)
+				replacements = append(replacements, moduleReplacement{catalog: omni, legacy: legacyFunctionText(function)})
 			}
 		}
 		for _, procedure := range schema.GetProcedures() {
 			if omni, err := catalog.GetProcedureDefinition(procedure); err == nil {
-				rendered = strings.Replace(rendered, omni, legacyProcedureText(procedure), 1)
+				replacements = append(replacements, moduleReplacement{catalog: omni, legacy: legacyProcedureText(procedure)})
 			}
 		}
 	}
-	return rendered
+	return replacements
+}
+
+func matchModuleSection(rest string, replacements []moduleReplacement) (moduleReplacement, bool) {
+	for _, replacement := range replacements {
+		if strings.HasPrefix(rest, replacement.catalog) {
+			return replacement, true
+		}
+	}
+	return moduleReplacement{}, false
 }
 
 // diffMetadataMigration diffs two synced snapshots with omni's catalog. The

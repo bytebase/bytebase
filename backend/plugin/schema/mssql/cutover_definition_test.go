@@ -208,3 +208,33 @@ EXEC sp_addextendedproperty @name = N'MS_Description', @value = N'ck comment',
 	require.NoError(t, err)
 	require.Empty(t, omniCatalog.Metadata().Schemas[0].Tables[0].Comment)
 }
+
+// TestDefinitionRewritesEachModuleAtItsOwnSection pins replacement to the
+// catalog-emitted section. The function is hoisted because the view names it,
+// and its body returns the catalog's own rendering of that view, so a dump-wide
+// first-match replace would rewrite the function body and leave the view
+// normalized.
+func TestDefinitionRewritesEachModuleAtItsOwnSection(t *testing.T) {
+	view := &metadatapb.ViewMetadata{
+		Name:       "v",
+		Definition: "CREATE VIEW [dbo].[v] AS SELECT [dbo].[f]() AS x;",
+	}
+	catalogView, err := catalog.GetViewDefinition(view)
+	require.NoError(t, err)
+
+	function := &metadatapb.FunctionMetadata{
+		Name: "f",
+		Definition: "CREATE FUNCTION [dbo].[f]() RETURNS nvarchar(max) AS BEGIN RETURN '" +
+			catalogView + "' END",
+	}
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:      "dbo",
+		Views:     []*metadatapb.ViewMetadata{view},
+		Functions: []*metadatapb.FunctionMetadata{function},
+	}}}
+
+	got, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	require.NoError(t, err)
+	require.Contains(t, got, function.Definition, "the hoisted function body is untouched")
+	require.Contains(t, got, legacyViewText(view), "the actual view keeps the legacy text")
+}
