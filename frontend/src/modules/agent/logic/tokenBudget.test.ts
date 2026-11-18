@@ -5,12 +5,27 @@ import {
   getRunTokenBudget,
   increaseRunBudgetLimit,
   mergeModelAttempts,
+  normalizeRunBindings,
   normalizeRunBudget,
   normalizeRunCheckpoint,
   projectChatUsage,
   projectRunBudget,
   reserveRunAttempt,
 } from "./tokenBudget";
+
+test("normalizes the optional page-tool binding on a checkpoint", () => {
+  const bindings = {
+    page: { path: "/original", title: "Original page" },
+    references: [],
+    runMode: "default",
+    pageToolPath: "/approved-navigation",
+  };
+  expect(normalizeRunBindings(bindings)).toEqual(bindings);
+  expect(
+    normalizeRunBindings({ ...bindings, pageToolPath: 42 })
+  ).toBeUndefined();
+});
+
 import type { AgentChat, AgentModelAttempt } from "./types";
 
 const attempt = (ordinal: number, totalTokens?: number): AgentModelAttempt => ({

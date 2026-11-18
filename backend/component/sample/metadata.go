@@ -11,6 +11,7 @@ import (
 
 // Registration contains the ordinary Instance metadata for one sample.
 type Registration struct {
+	Limits            *store.InstanceLimits
 	WorkspaceID       string
 	InstanceProjectID *string
 	EnvironmentID     *string
@@ -100,7 +101,7 @@ func CreateMetadata(ctx context.Context, stores *store.Store, registration Regis
 			},
 			SyncDatabases: &storepb.SyncDatabases{Databases: registration.SyncDatabaseNames},
 		},
-	})
+	}, registration.Limits)
 }
 
 // TransferDatabase transfers one discovered sample database.

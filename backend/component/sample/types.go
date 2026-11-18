@@ -14,6 +14,7 @@ import (
 
 // PrepareRequest identifies the workspace and owning project.
 type PrepareRequest struct {
+	Limits      *store.InstanceLimits
 	WorkspaceID string
 	ProjectID   string
 }

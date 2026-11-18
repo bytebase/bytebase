@@ -8,6 +8,7 @@ import {
   DataSource_AuthenticationType,
   DataSourceType,
   InstanceSchema,
+  Vendor,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { DataSourceEditState, EditDataSource } from "./common";
 import { DataSourceSection } from "./DataSourceSection";
@@ -234,3 +235,44 @@ test.each([Engine.SPANNER, Engine.BIGQUERY])(
     } finally {unmount();}
   }
 );
+
+test("new read-only connection on a Neon instance enables TLS and certificate verification by default", async () => {
+  let state: DataSourceEditState = {
+    dataSources: [adminDataSource],
+    editingDataSourceId: "admin",
+  };
+  mocks.context = {
+    ...mocks.context,
+    basicInfo: create(InstanceSchema, {
+      engine: Engine.POSTGRES,
+      vendor: Vendor.NEON,
+    }),
+    adminDataSource: {
+      ...adminDataSource,
+      host: "ep-example.us-east-2.aws.neon.tech",
+      port: "5432",
+      useSsl: true,
+      verifyTlsCertificate: true,
+    },
+    setDataSourceEditState: (
+      update: (previous: DataSourceEditState) => DataSourceEditState
+    ) => {
+      state = update(state);
+    },
+  };
+  const { container, unmount } = await renderSection();
+  try {
+    const add = container.querySelector("svg.lucide-plus")?.closest("button");
+    expect(add).toBeTruthy();
+    await act(async () => {
+      add!.click();
+    });
+    expect(state.dataSources).toHaveLength(2);
+    const draft = state.dataSources[1];
+    expect(draft.type).toBe(DataSourceType.READ_ONLY);
+    expect(draft.useSsl).toBe(true);
+    expect(draft.verifyTlsCertificate).toBe(true);
+  } finally {
+    unmount();
+  }
+});

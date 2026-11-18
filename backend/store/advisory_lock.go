@@ -30,6 +30,9 @@ const (
 	// resource's IAM policy, including the first write, when there is no policy
 	// row to lock yet.
 	AdvisoryLockKeyIamPolicy AdvisoryLockKey = 1008
+	// AdvisoryLockKeyInstanceQuota is the namespace that serializes instance
+	// writes in one workspace, so a limit check cannot race another write.
+	AdvisoryLockKeyInstanceQuota AdvisoryLockKey = 1009
 )
 
 // AcquirePlanIssueRolloutAdvisoryLock serializes coordinated Plan, linked Issue,

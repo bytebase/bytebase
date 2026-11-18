@@ -470,7 +470,14 @@ const getHistoricalDatabaseIdentity = (
   {
     requireUniqueDatabase = false,
     allowCurrentDatabase = false,
-  }: { requireUniqueDatabase?: boolean; allowCurrentDatabase?: boolean } = {}
+    sourceDepth = 0,
+    sourceMessages = messages,
+  }: {
+    requireUniqueDatabase?: boolean;
+    allowCurrentDatabase?: boolean;
+    sourceDepth?: number;
+    sourceMessages?: AgentMessage[];
+  } = {}
 ): HistoricalDatabaseContext | undefined => {
   const currentIndex = messages.findLastIndex(
     (message) => message.role === "user"
@@ -481,7 +488,12 @@ const getHistoricalDatabaseIdentity = (
   let historyStart = 0;
   let historyEnd = currentIndex;
   if (sourceId !== undefined) {
-    if (typeof sourceId !== "string" || !sourceId || sourceId.length > 1000)
+    if (
+      typeof sourceId !== "string" ||
+      !sourceId ||
+      sourceId.length > 1000 ||
+      sourceDepth >= 100
+    )
       return undefined;
     const sourceIndex = messages.findIndex(
       (message) => message.id === sourceId
@@ -493,7 +505,7 @@ const getHistoricalDatabaseIdentity = (
       source.role !== "assistant" ||
       source.chatId !== current.chatId ||
       isHistoricalAssistantError(source) ||
-      messages.some(
+      sourceMessages.some(
         (message, index) => index !== sourceIndex && message.id === sourceId
       )
     )
@@ -569,6 +581,7 @@ const getHistoricalDatabaseIdentity = (
   const calls = new Map<string, ToolCall>();
   const seenCallIds = new Set<string>();
   const sourceQueries = new Set<string>();
+  let sourceHasQuery = false;
   let invalidSourceQuery = false;
   let interrupted = false;
   const add = (
@@ -626,6 +639,20 @@ const getHistoricalDatabaseIdentity = (
     }
     if (message.role === "assistant") {
       for (const call of message.toolCalls ?? []) {
+        if (sourceId !== undefined && call.name === "call_api") {
+          try {
+            const args = JSON.parse(call.arguments);
+            if (typeof args?.operationId !== "string")
+              invalidSourceQuery = true;
+            else if (
+              args.operationId === "SQLService/Query" ||
+              args.operationId === "bytebase.v1.SQLService.Query"
+            )
+              sourceHasQuery = true;
+          } catch {
+            invalidSourceQuery = true;
+          }
+        }
         if (!call.id) continue;
         if (seenCallIds.has(call.id)) calls.delete(call.id);
         else calls.set(call.id, call);
@@ -662,8 +689,37 @@ const getHistoricalDatabaseIdentity = (
   if (
     sourceId !== undefined &&
     (invalidSourceQuery || sourceQueries.size !== 1)
-  )
-    return undefined;
+  ) {
+    const owningUser = messages[historyStart];
+    if (
+      invalidSourceQuery ||
+      sourceHasQuery ||
+      interrupted ||
+      owningUser.metadata?.followUpSourceId === undefined
+    )
+      return undefined;
+    // Only explanation-only turns may inherit their explicitly linked query.
+    const inherited = getHistoricalDatabaseIdentity(
+      messages.slice(0, historyEnd),
+      chatContext,
+      {
+        allowCurrentDatabase: true,
+        sourceDepth: sourceDepth + 1,
+        sourceMessages,
+      }
+    );
+    if (
+      !inherited?.query ||
+      [...getAnsweredDatabaseChoices(history)].some(
+        (database) => database !== inherited.database
+      )
+    )
+      return undefined;
+    candidates.clear();
+    latest = undefined;
+    add(inherited.database, inherited.project, inherited.query);
+    finishTurn();
+  }
   if (requireUniqueDatabase && completedDatabases.size !== 1) return undefined;
   if (currentDatabase && !latest?.query) return undefined;
   return latest;

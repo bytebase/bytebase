@@ -363,6 +363,8 @@ func TestOpenAppliesTLSSettings(t *testing.T) {
 			require.NoError(t, err)
 			defer driver.Close(ctx)
 
+			// The adapter holds its session and exposes no pool, so the probe runs
+			// through QueryConn rather than db.SQLDB.
 			results, err := driver.QueryConn(ctx, nil, "SELECT encrypt_option FROM sys.dm_exec_connections WHERE session_id = @@SPID", db.QueryContext{MaximumSQLResultSize: 1 << 30})
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
