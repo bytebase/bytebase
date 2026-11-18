@@ -19,14 +19,16 @@
 //   - Dump writes nothing: the synced metadata does not carry the partition
 //     key, indexing policy, unique keys or default TTL that recreate a
 //     container.
-//   - QueryOptions.MaxResultBytes is left unset, so MaximumSQLResultSize is not
-//     enforced for this engine.
+//   - QueryOptions.MaxResultBytes enforces MaximumSQLResultSize: reading stops
+//     at the first row that passes the cap and the result reports Truncated.
 //   - A statement's failure is the call's connect.CodeInternal error rather than
 //     a result, because the API reads one result per query here.
 //   - QueryConn runs one statement scoped to QueryContext.Container, which is the
 //     query's scope, not a schema, and the query language cannot open another.
-//   - An explain request never reaches QueryConn:
-//     db.SupportedExplainFormats(COSMOSDB) is empty, so the API refuses it first.
+//   - An explain request never reaches QueryConn: db.SupportedExplainFormats(COSMOSDB)
+//     is empty, so the API refuses it first. The flag is carried to the driver
+//     for the contract's sake, since the driver answers an explain with the plan
+//     the query engine would run.
 package cosmosdb
 
 import (
@@ -176,16 +178,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 	defer session.Close()
 
-	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
-		// The container is the query's scope, not a schema: a statement reads
-		// the container the caller already opened, and the query language has
-		// no form that opens another one.
-		Schema: queryContext.Container,
-		Limit:  queryContext.Limit,
-		// Known difference: MaxResultBytes stays unset, so MaximumSQLResultSize
-		// is not enforced for this engine; the previous driver returned every
-		// row a statement delivered.
-	})
+	results, err := session.Query(ctx, statement, queryOptions(queryContext))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -196,9 +189,22 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			// result, which is the shape the previous driver answered with.
 			return nil, connect.NewError(connect.CodeInternal, result.Err)
 		}
-		converted = append(converted, util.OmniResultToQueryResult(result, 0))
+		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
 	}
 	return converted, nil
+}
+
+// queryOptions maps the product's query context onto the driver's. The
+// container is the query's scope, not a schema: a statement reads the container
+// the caller already opened, and the query language has no form that opens
+// another one.
+func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
+	return omnidriver.QueryOptions{
+		Schema:         queryContext.Container,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	}
 }
 
 // SyncInstance reads the account's databases, without their containers.

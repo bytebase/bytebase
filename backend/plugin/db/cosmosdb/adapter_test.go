@@ -55,3 +55,19 @@ func TestAdapterBoundaryWithoutAnAccount(t *testing.T) {
 	_, err = driver.QueryConn(context.Background(), nil, "SELECT * FROM c", db.QueryContext{})
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), "a container is required")
 }
+
+// TestQueryOptionsCarriesTheRequest pins the mapping QueryConn hands the driver:
+// the container is the statement's scope, and the row limit and the result-size
+// cap the query policy sets bind what the driver reads back.
+func TestQueryOptionsCarriesTheRequest(t *testing.T) {
+	options := queryOptions(db.QueryContext{
+		Container:            "orders",
+		Limit:                25,
+		Explain:              true,
+		MaximumSQLResultSize: 2048,
+	})
+	require.Equal(t, "orders", options.Schema)
+	require.Equal(t, 25, options.Limit)
+	require.True(t, options.Explain)
+	require.Equal(t, int64(2048), options.MaxResultBytes)
+}
