@@ -31,7 +31,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-var _ db.Driver = (*Driver)(nil)
+var (
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
+)
 
 func init() {
 	db.Register(storepb.Engine_DORIS, newDriver)
@@ -149,6 +152,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance syncs the instance: its release, lower_case_table_names, and its
 // user databases.

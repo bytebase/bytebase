@@ -88,6 +88,7 @@ var (
 	_ db.Prober         = (*Driver)(nil)
 	_ db.RowEstimator   = (*Driver)(nil)
 	_ db.SessionQuerier = (*Driver)(nil)
+	_ db.SQLDBProvider  = (*Driver)(nil)
 )
 
 func init() {

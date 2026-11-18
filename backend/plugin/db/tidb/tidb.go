@@ -62,7 +62,8 @@ import (
 )
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 
 	// applicationName renders the /*app=bytebase*/ comment the old driver
 	// prepended to a query and to a change script's commands.
@@ -183,6 +184,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements under the transaction directive it
 // carries, reporting each step to the task run log.
