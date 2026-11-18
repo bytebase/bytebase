@@ -7,48 +7,30 @@
 // data source's static key pair or the SDK's default chain, then
 // util.AssumeRoleIfNeeded assumes the configured role and caches the assumed
 // keys. The omni driver takes a plain key pair, so this adapter hands it the
-// configured pair, or the assumed role's keys read once at Open. An assumed
-// role's keys therefore no longer refresh for the driver's life; a run longer
-// than the role session needs a caller-side credential source the contract does
-// not have yet.
+// configured pair, or the assumed role's keys read once at Open. The assumed
+// role's keys do not refresh, so a run longer than the role session needs a
+// caller-side credential source the contract does not have yet.
 //
-// The endpoint mapping stays here too. An empty host leaves the AWS SDK's own
+// The endpoint mapping also stays here. An empty host leaves the AWS SDK's own
 // endpoint resolution for the region, which is how real AWS is reached; a host
 // with no scheme is reached over http, and over https when use_ssl is set. An
-// explicit scheme in the host wins, as it did before. The adapter passes a TLS
-// function only when it must make the omni driver choose https for a bare host:
-// that function verifies with the system roots, so verify_tls_certificate is
-// ignored exactly as the old driver ignored it. A data source that sets
-// verify_tls_certificate=false keeps verifying until the product can tell an
-// explicit opt-out from an unset default.
+// explicit scheme in the host wins. TLS verifies against the system roots, so
+// verify_tls_certificate is ignored: the product cannot yet distinguish an
+// explicit opt-out from an unset default. An SSH data source is ignored, and
+// Config.Dial is not mapped.
 //
 // The account ID is the one fact DynamoDB itself does not answer. The omni
 // driver asks STS for it from SyncInstance when Params[accountId] is absent,
-// with the error strings this driver reported. An operator can skip that call
-// by setting the extra connection parameter accountId; the old driver always
-// asked STS.
+// with Bytebase's error strings. An operator can skip that call by setting the
+// extra connection parameter accountId.
 //
-// An SSH data source is still ignored: this driver never opened a tunnel, and
-// the adapter does not add one. Config.Dial is therefore not mapped.
-//
-// Three result shapes move with the contract, each recorded as a known
-// difference rather than fixed silently:
-//
-//   - QueryOptions.Limit now caps the rows of a statement. The old driver
-//     passed it to every ExecuteStatement page, so Limit=1 could return 2 rows.
-//   - MaximumSQLResultSize is now enforced; the old driver read every page and
-//     never truncated.
-//   - A binary value crosses as the contract's Bytes kind instead of a proto
-//     string holding raw bytes, which could fail protojson; a missing attribute
-//     is an explicit NULL instead of a nil row value.
-//
-// SyncDBSchema also reports global and local secondary indexes and their key
-// attributes as columns, and no longer reports an empty RANGE index for a table
-// with no sort key. Both are omni's sync, not this adapter's. A sync failure's
-// text is reported once where the old driver wrapped it twice: a describe
-// failure now reads "failed to describe table: T: ..." instead of the same
-// phrase repeated, and a listing failure reads "failed to list tables: ..."
-// instead of "failed to list all tables: failed to list tables: ...".
+// The contract's result shapes are the driver's: QueryOptions.Limit caps a
+// statement's rows, QueryOptions.MaxResultBytes truncates a result, a binary is
+// the Bytes kind, and a missing attribute is an explicit NULL. SyncDBSchema
+// reports every key attribute of the table and of its secondary indexes as a
+// column, reports GLOBAL and LOCAL SECONDARY indexes, and reports no RANGE
+// index for a table with no sort key. A sync failure names the failed operation
+// once.
 package dynamodb
 
 import (
@@ -89,7 +71,9 @@ func newDriver() db.Driver {
 }
 
 // Open maps the connection config onto the driver contract. It does not reach
-// the DynamoDB endpoint or STS; Ping and SyncInstance do.
+// the DynamoDB endpoint; Ping and SyncInstance do. It reaches STS when the data
+// source configures a role to assume, because AssumeRoleIfNeeded resolves the
+// role's keys here.
 func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dataSource := config.DataSource
 
