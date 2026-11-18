@@ -5083,3 +5083,115 @@
   catalogExpected: ''
   catalogError: 'cannot generate a migration: attribute "r" of type "public"."c" uses the row type
   of view "public"."v", which must be recreated'
+- description: TestCockroachMetadataDiffRestoredUnloadableViewReleasesRetypedRowTypeAttribute
+  difference: the catalog releases the attribute retyped to the view row type before the synthesized drop and re-adds it after the recreation; the legacy generator altered it while the row type was absent.
+  oldMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "integer"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "r",
+                  "type": "text"
+                },
+                {
+                  "name": "z",
+                  "type": "text",
+                  "comment": "keep"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  newMetadata: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "bigint"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v",
+              "definition": "SELECT FROM",
+              "dependencyColumns": [
+                {
+                  "schema": "public",
+                  "table": "t",
+                  "column": "id"
+                }
+              ]
+            }
+          ],
+          "compositeTypes": [
+            {
+              "name": "c",
+              "attributes": [
+                {
+                  "name": "r",
+                  "type": "public.v"
+                },
+                {
+                  "name": "z",
+                  "type": "text",
+                  "comment": "keep"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  legacyExpected: |+
+    DROP VIEW "public"."v";
+
+    ALTER TYPE "public"."c" ALTER ATTRIBUTE "r" TYPE public.v;
+
+    ALTER TABLE "public"."t" ALTER COLUMN "id" TYPE bigint;
+
+    CREATE OR REPLACE VIEW "public"."v" AS SELECT FROM;
+
+  catalogExpected: "ALTER TYPE \"public\".\"c\" DROP ATTRIBUTE \"r\";\nALTER TYPE \"public\".\"c\" DROP\
+  \ ATTRIBUTE \"z\";\nDROP VIEW IF EXISTS \"public\".\"v\";\nALTER TABLE public.t\
+  \ ALTER COLUMN id TYPE bigint;\nCREATE VIEW \"public\".\"v\" AS \nSELECT FROM;\n\
+  ALTER TYPE \"public\".\"c\" ADD ATTRIBUTE \"r\" public.v;\nALTER TYPE \"public\"\
+  .\"c\" ADD ATTRIBUTE \"z\" text;\nCOMMENT ON COLUMN \"public\".\"c\".\"z\" IS 'keep'"

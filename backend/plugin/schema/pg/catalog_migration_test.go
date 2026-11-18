@@ -698,6 +698,77 @@ func TestRestoredUnloadableViewReleasesRowTypeDependents(t *testing.T) {
 	require.Less(t, createView, addAttribute, "the attribute is re-added after the view is recreated")
 }
 
+// TestRestoredUnloadableViewReleasesRetypedRowTypeAttribute covers an existing
+// attribute retyped to a restored view's row type: the catalog cannot order its
+// ALTER TYPE against the drop, so it is released and re-added like a split.
+func TestRestoredUnloadableViewReleasesRetypedRowTypeAttribute(t *testing.T) {
+	snapshot := func(columnType, attributeType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "t", Column: "id",
+				}},
+			}},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{
+					{Name: "r", Type: attributeType},
+					{Name: "z", Type: "text", Comment: "keep"},
+				},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", "text"), snapshot("bigint", "public.v"))
+	require.NoError(t, err)
+	dropAttribute := strings.Index(sql, `ALTER TYPE "public"."c" DROP ATTRIBUTE "r"`)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	addAttribute := strings.Index(sql, `ALTER TYPE "public"."c" ADD ATTRIBUTE "r" public.v`)
+	require.GreaterOrEqual(t, dropAttribute, 0, sql)
+	require.GreaterOrEqual(t, dropView, 0, sql)
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.GreaterOrEqual(t, addAttribute, 0, sql)
+	require.Less(t, dropAttribute, dropView, "the retyped attribute is released before the view is dropped")
+	require.Less(t, createView, addAttribute, "the attribute is re-added after the view is recreated")
+	require.NotContains(t, sql, `ADD ATTRIBUTE "r" text`, "the catalog's own alter is replaced")
+	require.Contains(t, sql, `COMMENT ON COLUMN "public"."c"."z" IS 'keep'`, "the re-added unchanged attribute keeps its comment")
+}
+
+// TestTypeNameMatchingKeepsIdentifierBoundaries pins quoted identifier parsing:
+// a dot inside quotes belongs to that identifier, so `"a.b"."c"` and `"a"."b.c"`
+// name different relations.
+func TestTypeNameMatchingKeepsIdentifierBoundaries(t *testing.T) {
+	dottedSchema := objectKey("a.b", "c")
+	dottedObject := objectKey("a", "b.c")
+	require.True(t, referencesType(`"a.b"."c"`, dottedSchema))
+	require.True(t, referencesType(`"a"."b.c"`, dottedObject))
+	require.False(t, referencesType(`"a"."b.c"`, dottedSchema), `"a"."b.c" is not "a.b"."c"`)
+	require.False(t, referencesType(`"a.b"."c"`, dottedObject))
+	require.True(t, referencesType("c", dottedSchema), "an unqualified name matches the object part")
+	require.False(t, referencesType("c", dottedObject))
+
+	for _, tc := range []struct{ typeName, key string }{
+		{`"a"."b.c"`, dottedSchema},
+		{`"a.b"."c"`, dottedObject},
+	} {
+		_, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true})
+		require.False(t, ok, "%s does not name %s", tc.typeName, tc.key)
+	}
+	for _, tc := range []struct{ typeName, key string }{
+		{`"a.b"."c"`, dottedSchema},
+		{`"a"."b.c"`, dottedObject},
+		{`"a.b"."c"[]`, dottedSchema},
+	} {
+		key, ok := referencedRelation(tc.typeName, map[string]bool{tc.key: true})
+		require.True(t, ok, "%s names %s", tc.typeName, tc.key)
+		require.Equal(t, tc.key, key)
+	}
+}
+
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
 // attribute the target adds, out of a restored view's drop: releasing a column
 // would discard its data, and a new attribute would need the view before its

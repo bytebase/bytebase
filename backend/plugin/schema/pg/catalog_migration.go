@@ -181,12 +181,30 @@ func referencesType(typeName, key string) bool {
 	for strings.HasSuffix(name, "[]") {
 		name = strings.TrimSuffix(name, "[]")
 	}
-	name = strings.ReplaceAll(name, `"`, "")
 	schemaName, objectName := splitObjectKey(key)
-	if strings.EqualFold(name, schemaName+"."+objectName) {
-		return true
+	partSchema, partObject, qualified := splitQualifiedIdentifier(name)
+	if qualified {
+		return strings.EqualFold(partSchema, schemaName) && strings.EqualFold(partObject, objectName)
 	}
-	return !strings.Contains(name, ".") && strings.EqualFold(name, objectName)
+	return strings.EqualFold(partObject, objectName)
+}
+
+// splitQualifiedIdentifier separates a type name's schema and object parts,
+// keeping a quoted identifier's dots with it: `"a.b"."c"` is not `"a"."b.c"`.
+// The object part is the whole name when the type is unqualified.
+func splitQualifiedIdentifier(name string) (string, string, bool) {
+	first, next, ok := quotedIdentifier(name, 0)
+	if !ok {
+		return "", "", false
+	}
+	if next >= len(name) || name[next] != '.' {
+		return "", first, false
+	}
+	second, _, ok := quotedIdentifier(name, next+1)
+	if !ok {
+		return "", "", false
+	}
+	return first, second, true
 }
 
 // releaseCompositeBeforeTableDrop releases the composite attributes that hold the
@@ -226,52 +244,48 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	return nil
 }
 
-// releaseCompositeAttributes handles one composite type. An attribute whose type
-// is the row type of a dropped relation must be released from it. When the
-// attribute stays and its new type needs a create, re-adding it after the target
-// suffix is the only way to keep the composite's order.
+// releaseCompositeAttributes handles one composite type. An attribute is
+// re-added when its released type needs a create, or when its target type is a
+// restored view's row type, which the catalog cannot order against the drop. The
+// first such target position fixes where the re-added suffix starts.
 func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, recreated map[string]bool) {
 	compositeName := oldComposite.GetName()
-	// A split is an attribute that stays and whose new type needs a create; the
-	// first one fixes where the re-added suffix starts.
 	firstTarget := -1
-	for _, attribute := range oldComposite.GetAttributes() {
-		if _, ok := referencedRelation(attribute.GetType(), dropped); !ok {
-			continue
-		}
-		position, target, kept := targetAttribute(newComposite, attribute.GetName())
-		if !kept || !typeNeedsCreate(target.GetType(), created, recreated) {
-			continue
-		}
-		if firstTarget < 0 || position < firstTarget {
-			firstTarget = position
-		}
-	}
-	if firstTarget < 0 {
-		// Nothing is re-added, so each release keeps its attribute's position and
-		// only has to move ahead of the relation drop.
-		for _, attribute := range oldComposite.GetAttributes() {
-			if dropKey, ok := referencedRelation(attribute.GetType(), dropped); ok {
-				releaseCatalogAttribute(plan, schemaName, compositeName, attribute.GetName(), dropKey)
-			}
-		}
-		return
-	}
-	// Outside the suffix an attribute keeps its position, so the catalog's own
-	// release only has to move ahead of the relation drop.
 	dropKeys := make(map[string]bool)
+	for i, target := range newComposite.GetAttributes() {
+		old := attributeByName(oldComposite, target.GetName())
+		dropKey := ""
+		if old != nil {
+			dropKey, _ = referencedRelation(old.GetType(), dropped)
+		}
+		restoredKey, restored := referencedRelation(target.GetType(), recreated)
+		if !restored && (dropKey == "" || !typeNeedsCreate(target.GetType(), created, recreated)) {
+			continue
+		}
+		if firstTarget < 0 {
+			firstTarget = i
+		}
+		if dropKey != "" {
+			dropKeys[dropKey] = true
+		}
+		if restored {
+			dropKeys[restoredKey] = true
+		}
+	}
+	// An attribute outside the re-added suffix keeps its position, so the
+	// catalog's own release only has to move ahead of the relation drop. One the
+	// target removes needs no re-add at all.
 	for _, attribute := range oldComposite.GetAttributes() {
 		dropKey, ok := referencedRelation(attribute.GetType(), dropped)
 		if !ok {
 			continue
 		}
-		if position, _, kept := targetAttribute(newComposite, attribute.GetName()); kept && position >= firstTarget {
-			dropKeys[dropKey] = true
+		if position, _, kept := targetAttribute(newComposite, attribute.GetName()); kept && firstTarget >= 0 && position >= firstTarget {
 			continue
 		}
 		releaseCatalogAttribute(plan, schemaName, compositeName, attribute.GetName(), dropKey)
 	}
-	if len(dropKeys) == 0 {
+	if firstTarget < 0 {
 		return
 	}
 	suffix := newComposite.GetAttributes()[firstTarget:]
@@ -377,8 +391,9 @@ func createKeysFor(typeName string, created, recreated map[string]bool) map[stri
 
 // refuseRestoredViewRowTypeDependents rejects an object that holds a restored
 // view's row type and cannot be ordered around the view's drop. Releasing a table
-// column would discard its data, and a new attribute would need the recreated view
-// to exist before its ALTER TYPE, which the catalog's plan places first.
+// column would discard its data, and a created composite type would need the view
+// before its CREATE TYPE. An existing composite's attributes are re-added after
+// the recreation instead.
 func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, recreated map[string]bool) error {
 	if len(recreated) == 0 {
 		return nil
@@ -399,11 +414,10 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 	for _, schema := range newMeta.GetSchemas() {
 		oldSchema := schemaByName(oldMeta, schema.GetName())
 		for _, composite := range schema.GetCompositeTypes() {
-			oldComposite := compositeByName(oldSchema, composite.GetName())
+			if compositeByName(oldSchema, composite.GetName()) != nil {
+				continue
+			}
 			for _, attribute := range composite.GetAttributes() {
-				if attributeByName(oldComposite, attribute.GetName()) != nil {
-					continue
-				}
 				key, ok := referencedRelation(attribute.GetType(), recreated)
 				if !ok {
 					continue
@@ -660,10 +674,16 @@ func referencedRelation(typeName string, relations map[string]bool) (string, boo
 	for strings.HasSuffix(name, "[]") {
 		name = strings.TrimSuffix(name, "[]")
 	}
-	name = strings.ReplaceAll(name, `"`, "")
+	partSchema, partObject, qualified := splitQualifiedIdentifier(name)
 	for key := range relations {
 		schemaName, objectName := splitObjectKey(key)
-		if strings.EqualFold(name, schemaName+"."+objectName) {
+		if qualified {
+			if strings.EqualFold(partSchema, schemaName) && strings.EqualFold(partObject, objectName) {
+				return key, true
+			}
+			continue
+		}
+		if strings.EqualFold(partObject, objectName) {
 			return key, true
 		}
 	}
