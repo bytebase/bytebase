@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 
 	"cloud.google.com/go/cloudsqlconn"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -97,4 +99,20 @@ func GCPCredentialOption(credJSON []byte) (option.ClientOption, error) {
 	default:
 		return nil, errors.Errorf("unsupported GCP credential type: %q", cred.Type)
 	}
+}
+
+func GetAzureConnectionConfig(connCfg db.ConnectionConfig) (azcore.TokenCredential, error) {
+	if azureCredential := connCfg.DataSource.GetAzureCredential(); azureCredential != nil {
+		c, err := azidentity.NewClientSecretCredential(azureCredential.TenantId, azureCredential.ClientId, azureCredential.ClientSecret, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create client secret credential")
+		}
+		return c, nil
+	}
+
+	c, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to found default Azure credential")
+	}
+	return c, nil
 }
