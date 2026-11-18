@@ -1,4 +1,20 @@
 {
+  "account-list": {
+    "deactivate-description": "{{email}} can no longer sign in. You can restore it later.",
+    "deactivate-title": "Deactivate {{name}}?",
+    "more-actions": "More actions for {{name}}",
+    "no-role": "No role",
+    "no-service-accounts": "No service accounts",
+    "no-workload-identities": "No workload identities",
+    "nothing-matches": "Nothing matches",
+    "search-placeholder": "Search by name or email",
+    "service-accounts-description": "Service accounts sign in with a key. Use them for scripts, Terraform and API calls. For CI on GitHub or GitLab, a workload identity needs no stored secret.",
+    "trust-any-environment": "Only jobs that run in an environment",
+    "trust-environment": "Only jobs with <code>environment: {{environment}}</code>",
+    "trust-environment-plain": "Only jobs with environment: {{environment}}",
+    "trusts": "Trusts",
+    "workload-identities-description": "Workload identities let CI jobs sign in with their own short-lived token, so there is no secret to store. Each one names the jobs it trusts and the role they get."
+  },
   "activity": {
     "n-similar-activities": "{{count}} similar activities",
     "sentence": {
@@ -770,6 +786,7 @@
     "id": "ID",
     "import": "Import",
     "in-progress": "In progress",
+    "inactive": "Inactive",
     "info": "Info",
     "input-value-press-enter": "Input value, press Enter to confirm",
     "instance": "Instance",
@@ -3673,9 +3690,7 @@
         "self": "Groups",
         "workspace-domain-required": "Please set a workspace domain first."
       },
-      "inactive-service-accounts": "Inactive service accounts",
       "inactive-users": "Inactive users",
-      "inactive-workload-identities": "Inactive workload identities",
       "invite-email-hint": "Invitation emails will be sent to new members.",
       "pending-invite": "Invited",
       "reset-service-key": "Reset Service Key",
@@ -4785,16 +4800,11 @@
     "optional": "(optional)",
     "rail": {
       "account": "Account",
-      "account-description": "Email and role",
       "done": "Done",
-      "done-description": "Use it in your workflow",
       "label": "Steps",
       "repositories": "Repositories",
-      "repositories-description": "Match owner and repository",
       "subject": "Subject",
-      "subject-description": "Match the token's subject",
-      "token-source": "Token source",
-      "token-source-description": "Select the CI provider"
+      "token-source": "Token source"
     },
     "repositories": {
       "any-environment-warning": "Only jobs that run in an environment can sign in. Jobs without one, such as the SQL review job, will fail.",
