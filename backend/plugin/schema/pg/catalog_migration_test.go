@@ -2,6 +2,7 @@ package pg
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -368,4 +369,51 @@ func TestOmniDiffMetadataMigrationIgnoresStatisticsOfAnUnloadableTable(t *testin
 	)
 	require.NoError(t, err)
 	require.Contains(t, sql, `ADD COLUMN note text`)
+}
+
+// TestIdentityGenerationBecomesIdentityColumn covers CockroachDB sync, which
+// records identityGeneration without isIdentity. The catalog only installs an
+// identity column from the flag, so the shim sets it before loading.
+func TestIdentityGenerationBecomesIdentityColumn(t *testing.T) {
+	id := &metadatapb.ColumnMetadata{
+		Name:               "id",
+		Type:               "bigint",
+		IdentityGeneration: metadatapb.ColumnMetadata_ALWAYS,
+	}
+	source := newCockroachDatabaseMetadata(nil, nil)
+	target := newCockroachDatabaseMetadata([]*metadatapb.TableMetadata{pgTable("t", 0, id)}, nil)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	require.Contains(t, sql, "GENERATED ALWAYS AS IDENTITY")
+}
+
+// TestRecreatedViewReappliesUnchangedComment covers a dependency-driven view
+// recreation: the comment did not change, so the catalog's comment diff is
+// empty, but the recreated view would otherwise lose it.
+func TestRecreatedViewReappliesUnchangedComment(t *testing.T) {
+	view := func(definition string) *metadatapb.ViewMetadata {
+		return &metadatapb.ViewMetadata{
+			Name:       "v",
+			Definition: definition,
+			Comment:    "ids",
+			DependencyColumns: []*metadatapb.DependencyColumn{{
+				Schema: "public", Table: "t", Column: "id",
+			}},
+		}
+	}
+	source := newCockroachDatabaseMetadata(
+		[]*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+		[]*metadatapb.ViewMetadata{view("SELECT id FROM public.t")},
+	)
+	target := newCockroachDatabaseMetadata(
+		[]*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "bigint"})},
+		[]*metadatapb.ViewMetadata{view("SELECT id::bigint AS id FROM public.t")},
+	)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	require.Contains(t, sql, "DROP VIEW")
+	require.Contains(t, sql, `COMMENT ON VIEW "public"."v" IS 'ids'`)
+	require.Equal(t, 1, strings.Count(sql, "COMMENT ON VIEW"))
 }

@@ -2,6 +2,7 @@ package pg
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -40,6 +41,7 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	plan := catalog.GenerateMigration(from, to, diff).Filter(func(op catalog.MigrationOp) bool {
 		return op.SchemaName != "bbdataarchive"
 	})
+	restoreRecreatedViewComments(plan, newSchema.GetProto())
 	return plan.SQL(), nil
 }
 
@@ -53,7 +55,7 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 			c.SetSearchPath(searchPath)
 		}
 		if p := d.GetProto(); p != nil {
-			meta = p
+			meta = withIdentityColumns(p)
 		}
 	}
 	report, err := c.LoadMetadata(context.Background(), meta, catalog.LoadMetadataOptions{Full: true})
@@ -61,6 +63,91 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 		return nil, nil, err
 	}
 	return c, report, nil
+}
+
+// withIdentityColumns sets the identity flag a CockroachDB snapshot leaves off.
+// Its sync records identityGeneration but not isIdentity, while the catalog only
+// installs an identity column when isIdentity is set; without this, a migration
+// creates an ordinary NOT NULL column and loses generation.
+func withIdentityColumns(meta *metadatapb.DatabaseSchemaMetadata) *metadatapb.DatabaseSchemaMetadata {
+	out := proto.CloneOf(meta)
+	for _, schema := range out.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			markIdentityColumns(table.GetColumns())
+		}
+	}
+	return out
+}
+
+func markIdentityColumns(columns []*metadatapb.ColumnMetadata) {
+	for _, column := range columns {
+		if column.GetIdentityGeneration() != metadatapb.ColumnMetadata_IDENTITY_GENERATION_UNSPECIFIED {
+			column.IsIdentity = true
+		}
+	}
+}
+
+// restoreRecreatedViewComments reapplies a view's stored comment after the plan
+// recreates it because a dependency changed. The catalog only diffs comments
+// that changed, so the recreation silently dropped an unchanged one.
+func restoreRecreatedViewComments(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
+	commented := make(map[string]bool)
+	for _, op := range plan.Ops {
+		if op.Type == catalog.OpComment {
+			commented[op.ObjectName] = true
+		}
+	}
+	for _, schema := range meta.GetSchemas() {
+		for _, view := range schema.GetViews() {
+			key := schema.GetName() + "." + view.GetName()
+			if view.GetComment() != "" && !commented[key] && planCreatesView(plan, key) {
+				plan.Ops = append(plan.Ops, catalog.MigrationOp{
+					Type:          catalog.OpComment,
+					SchemaName:    schema.GetName(),
+					ObjectName:    key,
+					SQL:           fmt.Sprintf("COMMENT ON VIEW %s IS %s", quoteQualified(schema.GetName(), view.GetName()), quoteLiteral(view.GetComment())),
+					Transactional: true,
+					Phase:         catalog.PhaseMain,
+					ObjType:       'r',
+				})
+			}
+		}
+		for _, view := range schema.GetMaterializedViews() {
+			key := schema.GetName() + "." + view.GetName()
+			if view.GetComment() != "" && !commented[key] && planCreatesView(plan, key) {
+				plan.Ops = append(plan.Ops, catalog.MigrationOp{
+					Type:          catalog.OpComment,
+					SchemaName:    schema.GetName(),
+					ObjectName:    key,
+					SQL:           fmt.Sprintf("COMMENT ON MATERIALIZED VIEW %s IS %s", quoteQualified(schema.GetName(), view.GetName()), quoteLiteral(view.GetComment())),
+					Transactional: true,
+					Phase:         catalog.PhaseMain,
+					ObjType:       'r',
+				})
+			}
+		}
+	}
+}
+
+func planCreatesView(plan *catalog.MigrationPlan, key string) bool {
+	for _, op := range plan.Ops {
+		if op.Type == catalog.OpCreateView && op.SchemaName+"."+op.ObjectName == key {
+			return true
+		}
+	}
+	return false
+}
+
+func quoteQualified(schema, name string) string {
+	return quoteIdentifier(schema) + "." + quoteIdentifier(name)
+}
+
+func quoteIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func quoteLiteral(text string) string {
+	return "'" + strings.ReplaceAll(text, "'", "''") + "'"
 }
 
 // unloadableChanges returns an error naming each object that either load could
