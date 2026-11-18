@@ -168,8 +168,8 @@ func TestConnectionParams(t *testing.T) {
 			want := maps.Clone(test.want)
 			hasDialTimeout := false
 			for key := range want {
-				switch strings.ToUpper(key) {
-				case "CONNECTION TIMEOUT", "CONNECT TIMEOUT":
+				option := strings.ToUpper(key)
+				if option == "CONNECTION TIMEOUT" || option == "CONNECT TIMEOUT" {
 					hasDialTimeout = true
 				}
 			}
