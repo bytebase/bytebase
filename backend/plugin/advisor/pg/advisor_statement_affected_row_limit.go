@@ -23,8 +23,8 @@ func init() {
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE/MERGE affected row limit.
 // omni (pg/v1review.StatementAffectedRowLimitProbes) picks the statements to
-// estimate; this adapter EXPLAINs them under the session settings before
-// them, and omni (StatementAffectedRowLimit) judges the results.
+// estimate; this adapter probes them under the session settings before them and
+// reads the count, and omni (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -39,7 +39,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 		return nil, errors.New("number_payload is required for this rule")
 	}
 	maxRow := int(numberPayload.Number)
-	if maxRow <= 0 || checkCtx.Driver == nil {
+	if maxRow <= 0 {
 		return nil, nil
 	}
 
@@ -47,12 +47,21 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	var explains advisor.ExplainBudget
 	l := newLiveStatements(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
+	var probeErr error
 	l.probeEach(pgv1review.StatementAffectedRowLimitProbes(l.nodes), func(i int, settings []string) {
 		if !explains.Spend(&storepb.Position{Line: l.startLine(i) + int32(l.stmts[i].BaseLine())}) {
 			return
 		}
-		probes[i] = explainRows(ctx, checkCtx.Driver, checkCtx.TenantMode, settings, l.probeText(i), getAffectedRows)
+		probe, err := explainRows(ctx, checkCtx, settings, l.probeText(i), getAffectedRows)
+		if err != nil {
+			probeErr = err
+			return
+		}
+		probes[i] = probe
 	})
+	if probeErr != nil {
+		return nil, probeErr
+	}
 
 	var adviceList []*storepb.Advice
 	for _, f := range pgv1review.StatementAffectedRowLimit(l.nodes, probes, maxRow) {

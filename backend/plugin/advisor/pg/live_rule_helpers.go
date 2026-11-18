@@ -2,15 +2,14 @@ package pg
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 
 	pganalysis "github.com/bytebase/omni/pg/analysis"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/v1review"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
@@ -69,18 +68,22 @@ func (l liveStatements) probeEach(want []int, probe func(i int, settings []strin
 }
 
 // explainRows EXPLAINs text with the given session settings and reads its
-// row count with count.
-func explainRows(ctx context.Context, driver *sql.DB, tenantMode bool, settings []string, text string, count func([]any) (int64, error)) v1review.Probe {
-	res, err := advisor.Query(ctx, advisor.QueryContext{
-		TenantMode:    tenantMode,
-		PreExecutions: settings,
-	}, driver, storepb.Engine_POSTGRES, getExplainSQL(text))
+// row count with count. The row limit rules ask for it only where they must
+// estimate, so an absent prober is the statement's problem, not the review's.
+func explainRows(ctx context.Context, checkCtx advisor.Context, settings []string, text string, count func(db.ProbeResult) (int64, error)) (v1review.Probe, error) {
+	prober, err := advisor.ProbeFor(checkCtx)
 	if err != nil {
-		return v1review.Probe{Error: err.Error()}
+		return v1review.Probe{}, err
+	}
+	res, err := prober.Probe(ctx, db.ProbeContext{PreExecutions: settings}, getExplainSQL(text))
+	if err != nil {
+		//nolint:nilerr // a refused statement is the probe finding, reported as advice.
+		return v1review.Probe{Error: err.Error()}, nil
 	}
 	rows, err := count(res)
 	if err != nil {
-		return v1review.Probe{CountError: err.Error()}
+		//nolint:nilerr // an unreadable plan is the probe finding, reported as advice.
+		return v1review.Probe{CountError: err.Error()}, nil
 	}
-	return v1review.Probe{Rows: rows}
+	return v1review.Probe{Rows: rows}, nil
 }

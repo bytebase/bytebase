@@ -23,8 +23,8 @@ func init() {
 
 // InsertRowLimitAdvisor is the advisor checking for insert row limit. omni
 // (oceanbase/v1review.StatementInsertRowLimitProbes) picks the INSERTs whose
-// rows the database must estimate; this adapter EXPLAINs them, and omni
-// (StatementInsertRowLimit) judges every INSERT.
+// rows the database must estimate; this adapter probes their JSON plan and
+// reads the count, and omni (StatementInsertRowLimit) judges every INSERT.
 type InsertRowLimitAdvisor struct {
 }
 
@@ -44,13 +44,15 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 	var explains advisor.ExplainBudget
 	nodes, stmts := oceanbaseNodes(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
-	if checkCtx.Driver != nil {
-		for _, i := range oceanbasev1review.StatementInsertRowLimitProbes(nodes) {
-			if !explains.Spend(nodePosition(stmts[i], nodes[i])) {
-				continue
-			}
-			probes[i] = explainRows(ctx, checkCtx.Driver, stmts[i].Text)
+	for _, i := range oceanbasev1review.StatementInsertRowLimitProbes(nodes) {
+		if !explains.Spend(nodePosition(stmts[i], nodes[i])) {
+			continue
 		}
+		probe, err := explainRows(ctx, checkCtx, stmts[i].Text)
+		if err != nil {
+			return nil, err
+		}
+		probes[i] = probe
 	}
 
 	var adviceList []*storepb.Advice

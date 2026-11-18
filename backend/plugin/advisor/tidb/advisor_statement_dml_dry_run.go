@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -47,11 +47,12 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 	if advisor.ContainsDDL(checkCtx.DBType, checkCtx.ParsedStatements) {
 		return nil, nil
 	}
-	if checkCtx.Driver == nil {
-		return nil, nil
+	probe, err := advisor.ProbeFor(checkCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	prober := &statementDmlDryRunProber{ctx: ctx, driver: checkCtx.Driver}
+	prober := &statementDmlDryRunProber{ctx: ctx, prober: probe}
 	nodes := make([]ast.Node, len(stmts))
 	for i, stmt := range stmts {
 		nodes[i] = stmt.Node
@@ -86,7 +87,7 @@ func (*StatementDmlDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 // statementDmlDryRunProber runs one statement's dry-run queries.
 type statementDmlDryRunProber struct {
 	ctx    context.Context
-	driver *sql.DB
+	prober db.Prober
 }
 
 // probe dry-runs one statement and returns the reason it failed, if it did.
@@ -101,8 +102,7 @@ func (c *statementDmlDryRunProber) probe(ostmt Stmt) (string, bool) {
 	// omni has no statement-level SQL deparse, so the DRY RUN form is derived by
 	// injecting the keyword into the original statement text immediately before
 	// the inner DML (located via the inner DML node's Loc). BATCH DRY RUN
-	// requires auto-commit mode, so we use QueryContext directly instead of
-	// advisor.Query (which wraps in a transaction).
+	// requires auto-commit mode, so the probe runs outside a transaction.
 	if dryRunSQL, ok := dmlDryRunBatchSQL(ostmt, node); ok {
 		if err := c.queryInAutoCommit(dryRunSQL); err != nil {
 			// Don't continue to EXPLAIN if BATCH DRY RUN failed.
@@ -120,25 +120,18 @@ func (c *statementDmlDryRunProber) probe(ostmt Stmt) (string, bool) {
 
 // explain runs EXPLAIN on sql and returns the error's text if it failed.
 func (c *statementDmlDryRunProber) explain(sql string) (string, bool) {
-	if _, err := advisor.Query(c.ctx, advisor.QueryContext{}, c.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
+	if _, err := c.prober.Probe(c.ctx, db.ProbeContext{}, fmt.Sprintf("EXPLAIN %s", sql)); err != nil {
 		return err.Error(), true
 	}
 	return "", false
 }
 
-// queryInAutoCommit runs a query in auto-commit mode (without wrapping in a
+// queryInAutoCommit runs a statement in auto-commit mode (without wrapping in a
 // transaction). Required for TiDB's BATCH DRY RUN, which cannot run inside a
 // transaction.
 func (c *statementDmlDryRunProber) queryInAutoCommit(statement string) error {
-	rows, err := c.driver.QueryContext(c.ctx, statement)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	// Drain the rows to ensure the query completes.
-	for rows.Next() {
-	}
-	return rows.Err()
+	_, err := c.prober.Probe(c.ctx, db.ProbeContext{Autocommit: true}, statement)
+	return err
 }
 
 // dmlDryRunBatchSQL returns a "BATCH ... DRY RUN ..." statement for node.

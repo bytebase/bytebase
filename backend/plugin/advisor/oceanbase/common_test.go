@@ -13,6 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbutil "github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 var (
@@ -104,30 +106,33 @@ func checkTestRowLimitRule(t *testing.T, ruleType storepb.SQLReviewRule_Type, le
 		},
 	}, advisor.Context{
 		DBType:          storepb.Engine_OCEANBASE,
-		Driver:          db,
+		Prober:          dbutil.NewSQLProber(db),
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
 	return adviceList
 }
 
-func TestGetEstimatedRowsFromJSON(t *testing.T) {
+func TestEstimatedRowsFromPlan(t *testing.T) {
 	// OceanBase splits the JSON plan across rows, and EST.ROWS may be fractional.
-	rows, err := getEstimatedRowsFromJSON([]any{
-		[]string{"Query Plan"},
-		[]string{"VARCHAR"},
-		[]any{
-			[]any{`{"ID":0,"OPERATOR":"DISTRIBUTED UPDATE",`},
-			[]any{`"NAME":"","EST.ROWS":41.6,"output":""}`},
+	rows, err := estimatedRowsFromPlan(db.ProbeResult{
+		Columns:     []string{"Query Plan"},
+		ColumnTypes: []string{"VARCHAR"},
+		Rows: [][]any{
+			{`{"ID":0,"OPERATOR":"DISTRIBUTED UPDATE",`},
+			{`"NAME":"","EST.ROWS":41.6,"output":""}`},
 		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, int64(42), rows)
 
-	_, err = getEstimatedRowsFromJSON([]any{
-		[]string{"Query Plan"},
-		[]string{"VARCHAR"},
-		[]any{[]any{`{"ID":0,"OPERATOR":"DISTRIBUTED UPDATE","NAME":""}`}},
+	_, err = estimatedRowsFromPlan(db.ProbeResult{
+		Columns:     []string{"Query Plan"},
+		ColumnTypes: []string{"VARCHAR"},
+		Rows:        [][]any{{`{"ID":0,"OPERATOR":"DISTRIBUTED UPDATE","NAME":""}`}},
 	})
 	require.ErrorContains(t, err, `operator "DISTRIBUTED UPDATE" has no EST.ROWS`)
+
+	_, err = estimatedRowsFromPlan(db.ProbeResult{})
+	require.Error(t, err)
 }

@@ -23,8 +23,8 @@ func init() {
 
 // StatementAffectedRowLimitAdvisor is the advisor checking for UPDATE/DELETE
 // affected row limit. omni (oceanbase/v1review.StatementAffectedRowLimitProbes)
-// picks the statements to estimate; this adapter EXPLAINs them, and omni
-// (StatementAffectedRowLimit) judges the results.
+// picks the statements to estimate; this adapter probes their JSON plan and
+// reads the count, and omni (StatementAffectedRowLimit) judges the results.
 type StatementAffectedRowLimitAdvisor struct {
 }
 
@@ -44,13 +44,15 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 	var explains advisor.ExplainBudget
 	nodes, stmts := oceanbaseNodes(checkCtx.ParsedStatements)
 	probes := make(map[int]v1review.Probe)
-	if checkCtx.Driver != nil {
-		for _, i := range oceanbasev1review.StatementAffectedRowLimitProbes(nodes) {
-			if !explains.Spend(nodePosition(stmts[i], nodes[i])) {
-				continue
-			}
-			probes[i] = explainRows(ctx, checkCtx.Driver, stmts[i].Text)
+	for _, i := range oceanbasev1review.StatementAffectedRowLimitProbes(nodes) {
+		if !explains.Spend(nodePosition(stmts[i], nodes[i])) {
+			continue
 		}
+		probe, err := explainRows(ctx, checkCtx, stmts[i].Text)
+		if err != nil {
+			return nil, err
+		}
+		probes[i] = probe
 	}
 
 	var adviceList []*storepb.Advice

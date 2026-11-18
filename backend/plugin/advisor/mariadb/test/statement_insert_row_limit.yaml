@@ -11,4 +11,10 @@
         line: 2
         column: 0
       endposition: null
+# The rows this INSERT adds are the planner's answer, so it needs the connection.
 - statement: INSERT INTO tech_book SELECT * FROM tech_book;
+  want:
+    - status: 3
+      code: 1
+      title: STATEMENT_INSERT_ROW_LIMIT
+      content: "Rule check failed: MARIADB: the live connection cannot probe the database, so this rule did not run"
