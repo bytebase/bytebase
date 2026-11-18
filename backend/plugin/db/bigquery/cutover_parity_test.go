@@ -190,54 +190,13 @@ func TestQueryResultConversion(t *testing.T) {
 	})
 }
 
-// TestStatementParity is the cutover's differential check: one corpus through the
-// pre-cutover decisions and through the omni decisions the new driver delegates
-// to, requiring the same split, the same query-or-command verdict and the same
-// LIMIT rewrite. The old side calls the functions the previous QueryConn called
-// (util.SanitizeSQL, util.IsSelect, base.StatementWithResultLimit) and the new one
-// calls what bigquery/driver calls (googlesql/parser.SplitFlat,
-// googlesql/analysis.ClassifySQL, StatementWithResultLimit), so a case that moves
-// means the statement the editor sends or the text the server runs has moved.
-//
-// The cases where the two disagree deliberately are in
-// TestStatementParityKnownDifferences rather than here.
-func TestStatementParity(t *testing.T) {
-	for _, script := range []string{
-		"",
-		"   ",
-		"SELECT 1",
-		"SELECT 1;",
-		"SELECT 1; SELECT 2;",
-		"SELECT 1;;SELECT 2",
-		"SELECT ';' AS s",
-		"SELECT '''a;b''' AS s",
-		"SELECT `a;b` FROM t",
-		"SELECT 1; -- tail",
-		"SELECT 1;\n-- tail\n",
-		"  SELECT 1  ",
-		"WITH x AS (SELECT 1) SELECT * FROM x",
-		"INSERT INTO t VALUES (1)",
-		"UPDATE t SET a = 1",
-		"DELETE FROM t",
-		"MERGE t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = 1",
-		"CREATE TABLE t (a INT64)",
-		"SET x = 1",
-		"DECLARE x INT64 DEFAULT 1",
-		"BEGIN TRANSACTION",
-		"SELECT * FROM t WHERE a IN (SELECT b FROM u)",
-		"EXPLAIN SELECT 1",
-	} {
-		t.Run(script, func(t *testing.T) {
-			old, err := oldStatementDecision(script)
-			require.NoError(t, err)
-			require.Equal(t, old, newStatementDecision(script), "the statement decisions moved")
-		})
-	}
-}
-
 // TestStatementParityKnownDifferences pins each case the two sides read
 // differently, both answers included, so the difference stays the one the cutover
-// decided rather than a later drift.
+// decided rather than a later drift. The cases where both sides agree are not
+// re-asserted here: those are bigquery/driver's own dialect tests (its statement,
+// returns-rows and limit suites), and the adapter passes the script through, so a
+// second copy of them in this package would test the dependency rather than the
+// seam.
 func TestStatementParityKnownDifferences(t *testing.T) {
 	t.Run("a comment stays in the statement", func(t *testing.T) {
 		script := "SELECT 1 -- trailing\n"
