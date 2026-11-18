@@ -46,6 +46,11 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		if pganalysis.IsSystemDatabase(database.Name) {
 			continue
 		}
+		// Neon reserves "postgres" as a service-managed system database, whereas
+		// other PostgreSQL instances commonly use it for application schemas.
+		if d.connectionCtx.Vendor == storepb.Vendor_NEON && database.Name == "postgres" {
+			continue
+		}
 		filteredDatabases = append(filteredDatabases, database)
 	}
 
