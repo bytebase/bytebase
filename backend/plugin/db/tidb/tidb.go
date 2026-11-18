@@ -254,7 +254,14 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		MaskingEnabled: queryContext.MaskingEnabled,
 	})
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSession(session)
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSession(session)
 	}
 
 	queryResults := make([]*v1pb.QueryResult, 0, len(results))
@@ -278,6 +285,17 @@ func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
 		return "JSON"
 	}
 	return "TEXT"
+}
+
+// discardSession closes a session a statement took with it, so the stream's
+// next statement opens a new one instead of reusing the dead one.
+func (d *Driver) discardSession(session omnidriver.Session) {
+	_ = session.Close()
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session == session {
+		d.session = nil
+	}
 }
 
 // querySession returns the session QueryConn runs on, opening it on first use.

@@ -409,6 +409,30 @@ func TestQueryConnKeepsOneSession(t *testing.T) {
 	require.Equal(t, int64(42), result.GetRows()[0].GetValues()[0].GetInt64Value())
 }
 
+// TestQueryConnDiscardsTheSessionAfterACanceledQuery pins the session lifetime
+// on the path that ends a statement early: the client closes the connection
+// when the statement's context ends, so the stream's next statement must be
+// given a new session rather than the dead one.
+func TestQueryConnDiscardsTheSessionAfterACanceledQuery(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, _ := testcontainer.NewTiDBDatabase(t)
+	driver := openTestDriver(ctx, t, container)
+	defer func() { require.NoError(t, driver.Close(ctx)) }()
+	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
+
+	_, err := driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	require.NoError(t, err)
+	held := driver.session
+	require.NotNil(t, held, "a statement of its own leaves the session in place")
+
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	require.Nil(t, driver.session, "a statement whose context ended is not one to keep")
+	require.NotNil(t, held)
+}
+
 // TestQueryConnReportsAParseErrorAsAKnownDifference records the error text the
 // product now shows for invalid SQL: omni's parser message rather than
 // Bytebase's parser adapter's "Syntax error at line ..." rendering.
