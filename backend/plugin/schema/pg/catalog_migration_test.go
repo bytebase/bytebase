@@ -877,6 +877,80 @@ func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 	require.True(t, opTargetsSelected(column, selected, nil, nil), "an accessory of the selected view belongs to it")
 }
 
+// TestCreatedTableRowTypeOrdersItsProviderFirst covers two tables created in one
+// migration where one column uses the other's row type: the provider's create
+// must come first, or the type does not exist yet.
+func TestCreatedTableRowTypeOrdersItsProviderFirst(t *testing.T) {
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{
+			pgTable("a_holder", 0, &metadatapb.ColumnMetadata{Name: "row", Type: "public.z_base"}),
+			pgTable("z_base", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}),
+		},
+	}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, source, target)
+	require.NoError(t, err)
+	provider := strings.Index(sql, `CREATE TABLE "public"."z_base"`)
+	user := strings.Index(sql, `CREATE TABLE "public"."a_holder"`)
+	require.GreaterOrEqual(t, provider, 0, sql)
+	require.GreaterOrEqual(t, user, 0, sql)
+	require.Less(t, provider, user, "the table providing the row type is created first")
+}
+
+// TestAccessoryCommentsGoWithTheRestoredView covers an index comment on a
+// restored materialized view and a trigger comment on a restored view: both are
+// carried by the synthesized create, so the plan must not also emit them earlier,
+// while their index and trigger do not exist.
+func TestAccessoryCommentsGoWithTheRestoredView(t *testing.T) {
+	snapshot := func(columnType, indexComment, triggerComment string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{
+					Name:       "lower",
+					Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "t", Column: "id",
+					}},
+				},
+				{
+					Name:       "upper",
+					Definition: "SELECT id FROM public.lower",
+					DependencyColumns: []*metadatapb.DependencyColumn{{
+						Schema: "public", Table: "lower",
+					}},
+					Triggers: []*metadatapb.TriggerMetadata{{
+						Name: "trig", Comment: triggerComment,
+						Body: `CREATE TRIGGER "trig" BEFORE INSERT ON "public"."upper" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
+					}},
+				},
+			},
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+				Name:       "mv",
+				Definition: "SELECT id FROM public.lower",
+				Indexes:    []*metadatapb.IndexMetadata{{Name: "idx_mv", Expressions: []string{"id"}, Comment: indexComment}},
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "lower",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", "old", "old"), snapshot("bigint", "new", "new"))
+	require.NoError(t, err)
+	indexComment := strings.Index(sql, `COMMENT ON INDEX "public"."idx_mv" IS 'new'`)
+	triggerComment := strings.Index(sql, `COMMENT ON TRIGGER "trig" ON "public"."upper" IS 'new'`)
+	require.GreaterOrEqual(t, indexComment, 0, sql)
+	require.GreaterOrEqual(t, triggerComment, 0, sql)
+	require.Equal(t, 1, strings.Count(sql, `COMMENT ON INDEX "public"."idx_mv"`), "the index comment is emitted once, with the recreation")
+	require.Equal(t, 1, strings.Count(sql, `COMMENT ON TRIGGER "trig" ON "public"."upper"`), "the trigger comment is emitted once, with the recreation")
+	require.Less(t, strings.Index(sql, `CREATE MATERIALIZED VIEW "public"."mv"`), indexComment, sql)
+	require.Less(t, strings.Index(sql, `CREATE VIEW "public"."upper"`), triggerComment, sql)
+}
+
 // TestOpTargetsSelectedParsesCommentTargets covers COMMENT ON statements whose
 // text contains a selected view's name without targeting it: an escaped quote can
 // spell another owner, and a function of that name shares the schema.

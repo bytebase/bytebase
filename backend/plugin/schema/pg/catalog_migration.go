@@ -75,9 +75,9 @@ func loadMetadataCatalog(d *model.DatabaseMetadata) (*catalog.Catalog, *catalog.
 	return c, report, nil
 }
 
-// orderTypeAndTableCreates puts a created composite or enum type before the
-// tables that use it, and a created table before a composite attribute that uses
-// its row type.
+// orderTypeAndTableCreates puts a created type, or a created table whose row type
+// a column uses, before the objects that use it, and a created table before a
+// composite attribute that uses its row type.
 func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.DatabaseSchemaMetadata) {
 	type createNode struct {
 		position int
@@ -119,7 +119,7 @@ func orderTypeAndTableCreates(plan *catalog.MigrationPlan, meta *metadatapb.Data
 			}
 			for _, column := range table.GetColumns() {
 				for key, index := range byKey {
-					if nodes[index].relation || !referencesType(column.GetType(), key) {
+					if !referencesType(column.GetType(), key) {
 						continue
 					}
 					addEdge(index, tableIndex)
@@ -935,11 +935,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata, from *catalog.Catalog) bool {
 	switch op.Type {
 	case catalog.OpComment:
-		schemaName, objectName, ok := commentRelationTarget(op.SQL)
-		if !ok {
-			return false
-		}
-		return selected[objectKey(schemaName, objectName)]
+		return commentTargetsSelected(op.SQL, selected, oldMeta)
 	case catalog.OpCreateView, catalog.OpAlterView, catalog.OpDropView:
 		return selected[objectKey(op.SchemaName, op.ObjectName)]
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
@@ -965,32 +961,62 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 	return false
 }
 
-// commentRelationTarget returns the relation a COMMENT ON statement targets, so
-// two spelled-out owners cannot overlap in its text.
-func commentRelationTarget(sql string) (string, string, bool) {
+// commentTargetsSelected reports whether a COMMENT ON statement belongs to a
+// selected relation. Its index and trigger comments do too: the synthesized create
+// from metadata carries them.
+func commentTargetsSelected(sql string, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
 	rest, ok := strings.CutPrefix(sql, "COMMENT ON ")
+	if !ok {
+		return false
+	}
+	if target, found := strings.CutPrefix(rest, "INDEX "); found {
+		schemaName, objectName, ok := qualifiedIdentifiers(target)
+		if !ok {
+			return false
+		}
+		return indexNameOwner(oldMeta, schemaName, objectName, selected) != ""
+	}
+	if target, found := strings.CutPrefix(rest, "TRIGGER "); found {
+		_, next, ok := quotedIdentifier(target, 0)
+		if !ok {
+			return false
+		}
+		owner, found := strings.CutPrefix(strings.TrimSpace(target[next:]), "ON ")
+		if !found {
+			return false
+		}
+		schemaName, objectName, ok := qualifiedIdentifiers(owner)
+		if !ok {
+			return false
+		}
+		return selected[objectKey(schemaName, objectName)]
+	}
+	for _, kind := range []string{"MATERIALIZED VIEW ", "FOREIGN TABLE ", "TABLE ", "VIEW ", "COLUMN "} {
+		if target, found := strings.CutPrefix(rest, kind); found {
+			schemaName, objectName, ok := qualifiedIdentifiers(target)
+			if !ok {
+				return false
+			}
+			return selected[objectKey(schemaName, objectName)]
+		}
+	}
+	return false
+}
+
+// qualifiedIdentifiers returns the schema and object of a qualified identifier.
+func qualifiedIdentifiers(text string) (string, string, bool) {
+	schemaName, next, ok := quotedIdentifier(text, 0)
+	if !ok || next >= len(text) || text[next] != '.' {
+		return "", "", false
+	}
+	objectName, end, ok := quotedIdentifier(text, next+1)
 	if !ok {
 		return "", "", false
 	}
-	for _, kind := range []string{"MATERIALIZED VIEW ", "FOREIGN TABLE ", "TABLE ", "VIEW ", "COLUMN "} {
-		target, found := strings.CutPrefix(rest, kind)
-		if !found {
-			continue
-		}
-		schemaName, next, ok := quotedIdentifier(target, 0)
-		if !ok || next >= len(target) || target[next] != '.' {
-			return "", "", false
-		}
-		objectName, end, ok := quotedIdentifier(target, next+1)
-		if !ok {
-			return "", "", false
-		}
-		if end < len(target) && target[end] != '.' && target[end] != ' ' {
-			return "", "", false
-		}
-		return schemaName, objectName, true
+	if end < len(text) && text[end] != '.' && text[end] != ' ' {
+		return "", "", false
 	}
-	return "", "", false
+	return schemaName, objectName, true
 }
 
 func indexOwnerFromSQL(sql string) (string, string) {
