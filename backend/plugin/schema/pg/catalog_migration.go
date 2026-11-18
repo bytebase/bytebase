@@ -500,7 +500,7 @@ func refuseRoutine(schemaName, name, signature, definition string, restored map[
 // definition, which also names an OUT parameter's type; the signature carries
 // input arguments only.
 func routineArgumentList(definition string) string {
-	open := strings.Index(definition, "(")
+	open := indexOutsideQuotes(definition, "(")
 	if open < 0 {
 		return ""
 	}
