@@ -553,3 +553,34 @@ func TestQueryConnReportsAffectedRows(t *testing.T) {
 	require.Equal(t, int64(1), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
 	require.Equal(t, int64(1), results[0].GetRowsCount())
 }
+
+// TestQueryConnKeepsOneSession pins the session the editor relies on: it keeps
+// one driver for a stream and calls QueryConn once per request, so a session
+// setting and a temporary table one request creates are still there for the
+// next. The driver this replaced ran both on the editor's pooled connection.
+func TestQueryConnKeepsOneSession(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container := testcontainer.SharedMSSQLContainer(t)
+	driver, database := newSyncTestDatabase(ctx, t, container)
+
+	// The first request leaves session state behind.
+	_, err := driver.QueryConn(ctx, nil, "CREATE TABLE #session (id INT);\nINSERT INTO #session VALUES (7);\nSET CONTEXT_INFO 0x0102;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	require.NoError(t, err)
+
+	// The next request sees the temporary table and the context info.
+	results, err := driver.QueryConn(ctx, nil, "SELECT id FROM #session;\nSELECT CONTEXT_INFO() AS context;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	require.NoError(t, err)
+	require.Len(t, results, 2)
+	require.Equal(t, int64(7), results[0].GetRows()[0].GetValues()[0].GetInt64Value())
+	context := results[1].GetRows()[0].GetValues()[0].GetBytesValue()
+	require.Len(t, context, 128)
+	require.Equal(t, []byte{0x01, 0x02}, context[:2])
+
+	// Another driver is another session, even on the same database.
+	otherOpened := openMSSQL(ctx, t, container.GetHost(), container.GetPort(), database)
+	results, err = otherOpened.QueryConn(ctx, nil, "SELECT COUNT(*) AS n FROM #session;", db.QueryContext{MaximumSQLResultSize: 1 << 30})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Contains(t, results[0].GetError(), "#session")
+}

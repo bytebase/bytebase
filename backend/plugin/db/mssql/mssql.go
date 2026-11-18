@@ -11,8 +11,9 @@
 //
 // Constraints of the engine and the contract, here rather than at each call:
 //   - GetDB returns nil: omni's driver owns its pool, and every production
-//     caller guards a nil handle. QueryConn opens a session per call, so a
-//     script's statements share a connection and separate requests do not.
+//     caller guards a nil handle. QueryConn holds one session for the driver's
+//     life, serialized, so a stream's requests see the session state the pooled
+//     connection carried before.
 //   - Config.TLS is not set: the data source's TLS settings stay go-mssqldb
 //     parameters, so verification, the CA and the TLS minimum are the client's
 //     parse of them; tlsmin is 1.0 unless a parameter sets it. The CA travels as
@@ -46,6 +47,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -77,6 +79,14 @@ type Driver struct {
 	// certFilePath is the data source's CA written to disk, because go-mssqldb
 	// reads a certificate only from a path. Close removes it.
 	certFilePath string
+
+	// sessionMu serializes QueryConn on the session it shares.
+	sessionMu sync.Mutex
+	// session is the connection the driver's interactive queries share, opened
+	// on the first QueryConn. The editor keeps one driver for a stream, so its
+	// requests see each other's session state as they did on the pooled
+	// connection this replaced.
+	session odriver.Session
 }
 
 func newDriver() db.Driver {
@@ -248,8 +258,15 @@ func removeCAFile(path string) {
 	}
 }
 
-// Close closes the driver's connections and removes the CA file it wrote.
+// Close closes the driver's connections, the session its queries shared, and
+// the CA file it wrote.
 func (d *Driver) Close(context.Context) error {
+	d.sessionMu.Lock()
+	if d.session != nil {
+		_ = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
 	removeCAFile(d.certFilePath)
 	d.certFilePath = ""
 	if d.impl == nil {

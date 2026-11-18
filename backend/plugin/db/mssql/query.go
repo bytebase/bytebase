@@ -15,17 +15,21 @@ import (
 // QueryConn runs a script for the editor, one result per statement, then the
 // result sets a procedure call returned after its first.
 //
-// The conn the editor holds is not used: the driver opens a session for this
-// call, so the script's statements share a connection and nothing does across
-// calls. A statement that fails ends the script with its error on its result; an
-// error returned means the script could not be run at all, with the results of
-// the batches before it.
+// The conn the editor holds is not used: the driver keeps one session, opened on
+// the first call, so the statements of one script and of the stream's later
+// requests share it, as they did on the pooled connection this replaced. Calls
+// are serialized on it, which is also how a single connection behaved.
+//
+// A statement that fails ends the script with its error on its result; an error
+// returned means the script could not be run at all, with the results of the
+// batches before it.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	session, err := d.impl.Session(ctx)
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	session, err := d.querySession(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer session.Close()
 
 	results, err := session.Query(ctx, statement, odriver.QueryOptions{
 		Limit:          queryContext.Limit,
@@ -38,6 +42,21 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return convertResults(results, queryContext), err
 	}
 	return convertResults(results, queryContext), nil
+}
+
+// querySession returns the session the driver's queries share, opening it on
+// first use. A session is one server connection, so its state (a session
+// setting, a temporary table, an open transaction) carries to the next call.
+func (d *Driver) querySession(ctx context.Context) (odriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
+	}
+	session, err := d.impl.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.session = session
+	return session, nil
 }
 
 // convertResults maps the contract's results onto the product's.
