@@ -4,67 +4,41 @@
 // The conversation with HiveServer2 — session setup, the sync, the server-DDL
 // dump, queries and change scripts — is the driver's.
 //
-// # What this package did before the cutover
+// The adapter keeps what is product: the data source to contract conversion,
+// the Kerberos bootstrap (under util.Lock, held through the first connection
+// because the environment it writes is process-wide), TLS material,
+// QueryContext/ExecuteOptions mapping, the v1pb conversion and the task-run
+// logger.
 //
-// Nothing worked, and no test said so. The driver built a DSN that named no
-// login — gohive's username and password were never set, only "auth" and
-// "service" — so opening any data source ran SASL PLAIN with an empty username
-// and the server answered `Bad SASL negotiation status: 3 (Error validating the
-// login)`, which Open reported as `failed to ping hive server`. SyncDBSchema
-// never got that far: it scanned DESCRIBE FORMATTED's columns into plain
-// strings, and the answer's headings and separator rows hold NULL, so the first
-// table failed with `sql: Scan error ... converting NULL to string` on
-// `data_type`. Dump wrote CREATE INDEX statements for an index list the sync
-// never filled, rendered a materialized view as CREATE MATERIALIZED VIEW ... AS
-// with an empty body, and wrapped every table in a `-- TABLE structure for`
-// header. Anything that did reach the server produced rows; the result-size cap
-// was checked at power-of-two row counts, and a float column came back as text
-// with twenty fractional digits. GetDB handed the product a *sql.DB and no
-// product call site dereferenced it. Extra connection parameters, SSL, and the
-// data source's SSH host were all ignored.
+// Constraints of the engine and the contract, here rather than at each call:
+//   - Config.Dial is unused: gohive v2 keeps its dialer in an unexported
+//     connect configuration, so no caller can hand the driver a tunnel. An SSH
+//     data source is refused with the local-forward instruction; a local
+//     forwarder in db/util would restore it.
+//   - Config.ReadOnly, ApplicationName and EngineVersion are unused: Hive has
+//     no read-only session setting, no application name, and its version comes
+//     from the sync.
+//   - Execute ignores the transaction directive: HiveServer2 4.0 refuses
+//     BEGIN, COMMIT and ROLLBACK, so every statement commits itself.
+//   - QueryContext.Limit is not passed on: there is no hive parser to place a
+//     LIMIT with, so MaximumSQLResultSize is the only cap.
+//   - A plan arrives as rows with no typed QueryPlan, which the API names.
+//   - A failed statement's error is gohive's rendering of Hive's TStatus, whose
+//     fields gohive keeps as pointers it prints as addresses. That is the
+//     engine client's, and the adapter does not hide it.
+//   - Dump does not read the metadata it is given: omni has no hive catalog, so
+//     nothing renders a synced schema back to HiveQL, and the dump is the
+//     server's own SHOW CREATE statements.
 //
-// # What a user of this engine sees differently
-//
-// Error or empty, to working:
-//   - Open: a data source with a username and password authenticates, so every
-//     operation below becomes reachable at all.
-//   - SyncDBSchema: managed tables, external tables, views and materialized
-//     views sync, with columns, comments, row count, data size and partitions;
-//     the NULL-bearing DESCRIBE FORMATTED answer is read as such.
-//   - Dump: the objects restore, because each one is the server's own
-//     SHOW CREATE TABLE statement rather than the renderer's reconstruction.
-//   - The editor's USE: a query's QueryContext.Schema selects the database
-//     before the script runs.
-//   - Extra connection parameters reach the Hive session, SSL is honoured, and
-//     Kerberos maps to auth=KERBEROS/service=<primary> as it did.
-//
-// Shape changes:
-//   - A DOUBLE or FLOAT cell is a Double/Float value rather than text with
-//     twenty fractional digits, so exported CSV says 1.5 where it said
-//     1.50000000000000000000.
-//   - The result-size cap is estimated per row rather than measured with
-//     proto.Size at power-of-two row counts, so a cut can fall one row later.
-//   - A statement that fails in a script ends the script with its error on that
-//     statement's QueryResult; the call itself succeeds, where it used to fail
-//     with no results.
-//   - Execute reports each command to the task run's log.
-//   - GetDB returns nil.
-//   - Dump text: qualified object names, `-- Table structure for`, the
-//     terminator on the last line, and a blank line between objects.
-//   - A database dropped under an open driver fails at its USE, which the
-//     script runs first; the old driver ran from whatever the connection had
-//     selected.
-//   - An SSH data source is refused with the local-forward instruction: gohive
-//     v2's connector keeps its dialer in an unexported field, so no caller can
-//     hand the driver a tunnel. A local forwarder would restore it; Bytebase
-//     has no Hive one, and util.PortFIFO is dead code, not a Hive path.
-//
-// One defect is kept: a failed statement's error is gohive's rendering of
-// Hive's TStatus, whose fields gohive keeps as pointers it prints as addresses,
-// so the message a user sees is unchanged in shape.
-//
-// The metadata Dump is given is not read: omni has no hive catalog, so nothing
-// renders a synced schema back to HiveQL.
+// Known differences from the driver this replaced, which are the fix this
+// cutover is: Open now sends the data source's login, so every operation is
+// reachable; SyncDBSchema reads DESCRIBE FORMATTED's NULL cells, so tables,
+// external tables, views and materialized views sync; Dump restores; a query's
+// schema is selected with USE; extra connection parameters and SSL reach the
+// session; a DOUBLE or FLOAT cell is a number rather than 20-decimal text; a
+// failing statement ends its script with the error on its result instead of
+// failing the call; Execute logs each command; GetDB returns nil; and the dump
+// text is requalified and reordered.
 package hive
 
 import (
@@ -105,7 +79,17 @@ func newDriver() db.Driver {
 // Open maps the connection config onto the driver contract and reaches the
 // server, as the driver this replaced did: a HiveServer2 that cannot be reached
 // or will not accept the login fails here rather than at the first query.
+//
+// Kerberos needs the process-wide krb5.conf and keytab BootKerberosEnv writes,
+// so the lock that guards them is held through the connect and the ping: a
+// second opener that bootstrapped in between would leave this one
+// authenticating against its environment.
 func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	kerberos := hasKerberos(config.DataSource)
+	if kerberos {
+		util.Lock.Lock()
+		defer util.Lock.Unlock()
+	}
 	cfg, err := hiveConfig(config)
 	if err != nil {
 		return nil, err
@@ -122,6 +106,13 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 	return d, nil
 }
 
+// hasKerberos reports whether the data source authenticates with a Kerberos
+// principal.
+func hasKerberos(ds *storepb.DataSource) bool {
+	_, ok := ds.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig)
+	return ok
+}
+
 // hiveConfig resolves what Bytebase knows about reaching a HiveServer2 into the
 // plain values hive/driver's gohive connector takes.
 func hiveConfig(config db.ConnectionConfig) (odriver.Config, error) {
@@ -136,11 +127,9 @@ func hiveConfig(config db.ConnectionConfig) (odriver.Config, error) {
 
 	params := map[string]string{}
 	if t, ok := ds.GetSaslConfig().GetMechanism().(*storepb.SASLConfig_KrbConfig); ok {
-		// Kerberos needs its krb5.conf and keytab in place before gohive
-		// connects; the environment is process-wide, so it is booted under the
-		// same lock every other driver uses.
-		util.Lock.Lock()
-		defer util.Lock.Unlock()
+		// Open holds util.Lock here: the krb5.conf and keytab this writes are
+		// process-wide, and the connection that reads them is established under
+		// the same lock.
 		if err := util.BootKerberosEnv(t); err != nil {
 			return odriver.Config{}, errors.Wrapf(err, "failed to init SASL environment")
 		}
