@@ -16,6 +16,7 @@ import (
 	"database/sql"
 	"io"
 	"net"
+	"sync"
 
 	dorisdriver "github.com/bytebase/omni/doris/driver"
 	omnidriver "github.com/bytebase/omni/driver"
@@ -42,6 +43,12 @@ type Driver struct {
 
 	impl      *dorisdriver.Driver
 	sshClient *ssh.Client
+
+	// sessionMu guards session. The editor keeps one driver for a whole stream,
+	// and a statement's session — its user variables, its SET values — has to
+	// survive between the stream's calls.
+	sessionMu sync.Mutex
+	session   omnidriver.Session
 }
 
 func newDriver() db.Driver {
@@ -118,6 +125,13 @@ func driverConfig(config db.ConnectionConfig) (omnidriver.Config, *ssh.Client, e
 
 // Close closes the driver.
 func (d *Driver) Close(context.Context) error {
+	d.sessionMu.Lock()
+	if d.session != nil {
+		_ = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+
 	var err error
 	err = multierr.Append(err, d.impl.Close())
 	if d.sshClient != nil {

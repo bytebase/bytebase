@@ -18,17 +18,48 @@ import (
 // statement of the request on it, so a request's statements share a connection
 // while two requests in one editor stream do not.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	session, err := d.querySession(ctx)
+	if err != nil {
+		return nil, err
+	}
+	results, err := session.Query(ctx, statement, queryOptions(queryContext))
+	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSession(session)
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSession(session)
+	}
+	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
+}
+
+// querySession returns the session QueryConn runs on, opening it on first use.
+func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session != nil {
+		return d.session, nil
+	}
 	session, err := d.impl.Session(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer session.Close()
+	d.session = session
+	return session, nil
+}
 
-	results, err := session.Query(ctx, statement, queryOptions(queryContext))
-	if err != nil {
-		return nil, err
+// discardSession closes a session a statement took with it, so the stream's next
+// statement opens a new one instead of reusing the dead one.
+func (d *Driver) discardSession(session omnidriver.Session) {
+	_ = session.Close()
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	if d.session == session {
+		d.session = nil
 	}
-	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
 }
 
 // queryOptions maps the product's query context onto the driver's.

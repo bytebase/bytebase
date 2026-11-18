@@ -395,3 +395,41 @@ func logTypes(logs []*storepb.TaskRunLog) []storepb.TaskRunLog_Type {
 	}
 	return types
 }
+
+// TestQueryConnKeepsOneSessionAndDropsItWhenTheContextEnds pins the session
+// seam: the editor sends one statement per call on a driver it keeps, so the
+// statements of a stream share a session, and a statement whose context ends
+// must not leave that dead session to the stream's next statement.
+func TestQueryConnKeepsOneSessionAndDropsItWhenTheContextEnds(t *testing.T) {
+	host := os.Getenv("DORIS_TEST_HOST")
+	if host == "" {
+		t.Skip("DORIS_TEST_HOST is not set: a live Doris server is needed")
+	}
+	port := os.Getenv("DORIS_TEST_PORT")
+	if port == "" {
+		port = "9030"
+	}
+	ctx := context.Background()
+	registered, err := db.Open(ctx, storepb.Engine_DORIS, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{Host: host, Port: port, Username: "root"},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = registered.Close(ctx) })
+	driver, ok := registered.(*Driver)
+	require.True(t, ok, "the registered driver is Bytebase's Doris adapter")
+
+	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
+	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	require.NoError(t, err)
+	held := driver.session
+	require.NotNil(t, held, "the first statement opens the session")
+
+	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
+	require.NoError(t, err)
+	require.True(t, held == driver.session, "the stream's statements share one session")
+
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
+	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+}
