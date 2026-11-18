@@ -313,6 +313,12 @@ func reconcileSkipDump(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, case
 		newMeta = &metadatapb.DatabaseSchemaMetadata{}
 	}
 	oldOut, newOut := proto.CloneOf(oldMeta), proto.CloneOf(newMeta)
+	for _, schema := range oldOut.GetSchemas() {
+		schema.SkipDump = false
+	}
+	for _, schema := range newOut.GetSchemas() {
+		schema.SkipDump = false
+	}
 	for _, oldSchema := range oldOut.GetSchemas() {
 		newSchema := schemaByName(newOut, oldSchema.GetName(), normalize)
 		if newSchema == nil {
