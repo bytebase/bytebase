@@ -335,10 +335,25 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		ruleReviewCovers func(storepb.Engine) bool
-		want             string
+		check            func(t *testing.T, system string)
 	}{
-		{name: "the standard review runs", ruleReviewCovers: ReviewsEngine, want: "- SYNTAX (left to the standard review, P0): "},
-		{name: "SQL Review V2 is off", want: "- SYNTAX (yours, P0): "},
+		{
+			name:             "the standard review runs",
+			ruleReviewCovers: ReviewsEngine,
+			check: func(t *testing.T, system string) {
+				require.Contains(t, system, "- SYNTAX (left to the standard review, P0): ")
+				require.Contains(t, system, "- REQUIRE_WHERE (off): ")
+			},
+		},
+		{
+			// The plan checks' SQL review runs there instead, whatever the
+			// review rule policy says.
+			name: "SQL Review V2 is off",
+			check: func(t *testing.T, system string) {
+				require.NotContains(t, strings.ToLower(system), "standard rule")
+				require.NotContains(t, system, "SYNTAX")
+			},
+		},
 	} {
 		model := &systemPromptModel{}
 		executor := &AIReviewExecutor{
@@ -350,8 +365,7 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 		comments, err := executor.RunOnce(ctx, "p", issues[0])
 		require.NoError(t, err, tc.name)
 		require.Empty(t, comments, tc.name)
-		require.Contains(t, model.system, tc.want, tc.name)
-		require.Contains(t, model.system, "- REQUIRE_WHERE (off): ", tc.name)
+		tc.check(t, model.system)
 	}
 }
 

@@ -42,13 +42,15 @@ import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
+import { usePlanReviewRun } from "../../hooks/useSqlReviewV2";
 import { placementOf } from "../../shared/stores/placementSlice";
 import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import type { PlanChangeReferenceResources } from "../../utils/changeReference";
+import { reviewerName } from "../../utils/reviewLabels";
 import { PlanSpecChangeReference } from "../PlanChangeReference";
 import { CommentThreadCard } from "../threads/CommentThreadCard";
-import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
+import { ReviewerIcon } from "../threads/ReviewResult";
 import { StatementAnchorContext } from "../threads/StatementAnchorContext";
 import {
   type CommentThread,
@@ -76,6 +78,10 @@ export function ReviewActivityTimeline({
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
+  // Beside V1's plan checks the page shows the AI review's runs only where
+  // it reads them.
+  const reviewRun = usePlanReviewRun();
+  const groupReviewRuns = sqlReviewV2Enabled() || reviewRun !== undefined;
   const [expanded, setExpanded] = useState(false);
   const [runToggles, setRunToggles] = useState<ReadonlyMap<string, boolean>>(
     new Map()
@@ -129,11 +135,12 @@ export function ReviewActivityTimeline({
         issueCreateTime: issue.createTime,
         issueDraft: issue.draft,
         comments,
-        sqlReviewV2: sqlReviewV2Enabled(),
+        groupReviewRuns,
         runToggles,
       }),
     [
       comments,
+      groupReviewRuns,
       issue.createTime,
       issue.creator,
       issue.draft,
@@ -414,10 +421,17 @@ function ReviewRunActivityRow({
     />
   );
   if (source.findings.length === 0) {
-    return <ActivityRowShell header={header} icon={icon} isLast={isLast} />;
+    return (
+      <ActivityRowShell
+        header={header}
+        icon={icon}
+        id={source.completionName}
+        isLast={isLast}
+      />
+    );
   }
   return (
-    <ActivityRowFrame icon={icon} isLast={isLast}>
+    <ActivityRowFrame icon={icon} id={source.completionName} isLast={isLast}>
       <div
         className="ml-3 rounded-lg border border-block-border"
         data-testid="review-group"

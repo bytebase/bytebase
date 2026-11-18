@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import type { PlanCheckSummary } from "@/lib/plan/check";
+import { useAppStore } from "@/stores/app";
 import {
   type ReviewRun,
   ReviewRun_State,
@@ -13,6 +14,7 @@ import {
 } from "../components/threads/useUnresolvedThreadCounts";
 import { PROJECT_NAME_PREFIX } from "../shell/constants";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
+import { aiReviewEnabled } from "../utils/reviewRun";
 import {
   type EffectiveStandardRules,
   useEffectiveStandardRules,
@@ -34,19 +36,31 @@ export type SqlReviewV2State = {
   standardRules?: EffectiveStandardRules;
 };
 
-const SqlReviewV2Context = createContext<SqlReviewV2State | undefined>(
-  undefined
-);
+type PlanReviewContextValue = {
+  // Undefined where SQL Review V2 is off or before the plan has an issue.
+  v2?: SqlReviewV2State;
+  // The issue's review run wherever the page shows it: under SQL Review V2,
+  // and beside V1's plan checks, where the review is the AI review alone.
+  // Undefined elsewhere and without permission to read it.
+  review?: ReviewRunState;
+};
 
-// Provides one review run poll for the whole page. The value is undefined
-// where SQL Review V2 is off or before the plan has an issue.
-export function SqlReviewV2Provider({ children }: { children: ReactNode }) {
+const PlanReviewContext = createContext<PlanReviewContextValue>({});
+
+// Provides one review run poll for the whole page. Beside V1's plan checks the
+// server starts the AI review once the issue is submitted for review, so a
+// draft has no run to read.
+export function PlanReviewProvider({ children }: { children: ReactNode }) {
   const page = usePlanDetailContext();
   const projectName = `${PROJECT_NAME_PREFIX}${page.projectId}`;
   const project = useProjectByName(projectName);
-  const enabled = sqlReviewV2Enabled() && !!page.issue;
+  const aiReviewOn = useAppStore((state) => aiReviewEnabled(state.serverInfo));
+  const v2 = sqlReviewV2Enabled();
+  const enabled = v2 && !!page.issue;
+  const aiBesideV1 = !v2 && aiReviewOn && !!page.issue && !page.issue.draft;
   const canReadReview =
-    enabled && hasProjectPermissionV2(project, "bb.reviewRuns.get");
+    (enabled || aiBesideV1) &&
+    hasProjectPermissionV2(project, "bb.reviewRuns.get");
   const updateTime = page.plan.updateTime;
   // The server starts the review whenever the plan's SQL changes.
   const review = useReviewRun({
@@ -58,8 +72,8 @@ export function SqlReviewV2Provider({ children }: { children: ReactNode }) {
   const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   const threadsLoaded = useIssueThreadsLoaded(page.issue?.name);
   const value = useMemo(
-    () =>
-      enabled
+    () => ({
+      v2: enabled
         ? {
             unresolvedThreads,
             threadsLoaded,
@@ -67,6 +81,8 @@ export function SqlReviewV2Provider({ children }: { children: ReactNode }) {
             standardRules,
           }
         : undefined,
+      review: canReadReview ? review : undefined,
+    }),
     [
       canReadReview,
       enabled,
@@ -77,14 +93,23 @@ export function SqlReviewV2Provider({ children }: { children: ReactNode }) {
     ]
   );
   return (
-    <SqlReviewV2Context.Provider value={value}>
+    <PlanReviewContext.Provider value={value}>
       {children}
-    </SqlReviewV2Context.Provider>
+    </PlanReviewContext.Provider>
   );
 }
 
 export const useSqlReviewV2 = (): SqlReviewV2State | undefined =>
-  useContext(SqlReviewV2Context);
+  useContext(PlanReviewContext).v2;
+
+export const usePlanReviewRun = (): ReviewRunState | undefined =>
+  useContext(PlanReviewContext).review;
+
+// Whether the plan checks show among the reviewers in the Review section
+// instead of under the changes: under SQL Review V2, and beside the AI review
+// once V1's page reads its run.
+export const useChecksInReview = (): boolean =>
+  sqlReviewV2Enabled() || usePlanReviewRun() !== undefined;
 
 // The plan checks with the review run counted among them: a queued or running
 // review is a running check, and a failed one a failed check.

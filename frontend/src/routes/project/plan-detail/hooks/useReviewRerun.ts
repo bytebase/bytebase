@@ -20,7 +20,7 @@ import {
   loadedMatchedDatabaseCount,
   reviewRunName,
 } from "../utils/reviewRun";
-import { useSqlReviewV2 } from "./useSqlReviewV2";
+import { usePlanReviewRun } from "./useSqlReviewV2";
 
 // Starts the issue's review again on the saved SQL. The SQL is not the only
 // input: rule settings, the review policy, and the synced schema change what
@@ -32,7 +32,7 @@ import { useSqlReviewV2 } from "./useSqlReviewV2";
 export function useReviewRerun() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const review = useSqlReviewV2()?.review;
+  const review = usePlanReviewRun();
   const serverInfo = useAppStore((state) => state.serverInfo);
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
   const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);

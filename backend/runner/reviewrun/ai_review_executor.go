@@ -68,9 +68,14 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI review policy")
 	}
-	rulePolicy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	// Without a standard rule review the policy of its rules means nothing,
+	// so the AI review states no standard rule.
+	var rulePolicy *storepb.ReviewRulePolicy
+	if e.ruleReviewCovers != nil {
+		rulePolicy, err = e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get review rule policy")
+		}
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)

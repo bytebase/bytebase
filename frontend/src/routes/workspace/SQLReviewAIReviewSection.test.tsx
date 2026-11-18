@@ -151,14 +151,18 @@ const {
   useWorkspaceReviewAIPolicy,
 } = await import("./SQLReviewAIReviewSection");
 
-function Harness() {
+function Harness({ standardRules }: { standardRules?: boolean }) {
   const aiReview = useWorkspaceAIReview();
-  const policy = useWorkspaceReviewAIPolicy(true);
+  const policy = useWorkspaceReviewAIPolicy();
   const [saved, setSaved] = useState<boolean>();
   const [policySaved, setPolicySaved] = useState<boolean>();
   return (
     <>
-      <SQLReviewAIReviewSection aiReview={aiReview} policy={policy} />
+      <SQLReviewAIReviewSection
+        aiReview={aiReview}
+        policy={policy}
+        standardRules={standardRules}
+      />
       <output>{aiReview.isDirty ? "dirty" : "clean"}</output>
       <output>{`saved: ${saved}`}</output>
       <output>{`policy ${policy.isDirty ? "dirty" : "clean"}`}</output>
@@ -338,6 +342,22 @@ describe("SQLReviewAIReviewSection", () => {
       "aria-checked",
       "false"
     );
+  });
+
+  test.each([
+    [true, "sql-review.ai-review.description", "sql-review.ai-review.policy.self", true],
+    [false, "sql-review.ai-review.comments-description", "sql-review.ai-review.policy.ai-review-policy", false],
+  ])("with the standard rules %s, describes the review and its policy for them", async (standardRules, description, policyTitle, hint) => {
+    seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+    render(<Harness standardRules={standardRules} />);
+    await act(async () => {});
+
+    expect(screen.getByText(description)).toBeInTheDocument();
+    expect(screen.getByText(policyTitle)).toBeInTheDocument();
+    expect(
+      screen.queryByText("sql-review.ai-review.policy.standard-rules-hint") !==
+        null
+    ).toBe(hint);
   });
 
   test("hides the policy while AI review is off", async () => {

@@ -255,6 +255,8 @@ interface PlanCheckResultsDrawerProps {
   includeRunFailure?: boolean;
   renderTarget?: (target: string) => ReactNode;
   renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
+  // The level the drawer shows when it opens; every level when unset.
+  initialStatus?: Advice_Level;
 }
 
 export function PlanCheckResultsDrawer({
@@ -265,6 +267,7 @@ export function PlanCheckResultsDrawer({
   includeRunFailure = false,
   renderTarget,
   renderResultAction,
+  initialStatus,
 }: PlanCheckResultsDrawerProps) {
   const { t } = useTranslation();
   const [selectedStatus, setSelectedStatus] = useState<
@@ -275,7 +278,7 @@ export function PlanCheckResultsDrawer({
 
   useEffect(() => {
     if (!open) return;
-    setSelectedStatus(undefined);
+    setSelectedStatus(initialStatus);
     setDisplayCount(PAGE_SIZE);
     if (!onRefreshOnOpen) return;
     let canceled = false;
@@ -291,7 +294,7 @@ export function PlanCheckResultsDrawer({
     return () => {
       canceled = true;
     };
-  }, [open, onRefreshOnOpen]);
+  }, [open, onRefreshOnOpen, initialStatus]);
 
   useEffect(() => {
     setDisplayCount(PAGE_SIZE);

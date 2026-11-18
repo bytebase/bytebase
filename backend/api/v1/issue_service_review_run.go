@@ -90,7 +90,7 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if err := checkReviewable(ctx, s.store, issue); err != nil {
 		return nil, err
 	}
-	if err := s.checkAReviewerRuns(ctx); err != nil {
+	if err := s.checkAReviewerRuns(ctx, issue); err != nil {
 		return nil, err
 	}
 
@@ -109,10 +109,14 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 
 // checkAReviewerRuns refuses a review that no reviewer would run. A server
 // without SQL Review V2 has no standard rule review, so there the AI review
-// has to be on; the error says why it is off.
-func (s *IssueService) checkAReviewerRuns(ctx context.Context) error {
+// has to be on, and the issue submitted for review; the error says which is
+// missing.
+func (s *IssueService) checkAReviewerRuns(ctx context.Context, issue *store.IssueMessage) error {
 	if s.profile.SQLReviewV2 {
 		return nil
+	}
+	if issue.Payload.GetDraft() {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.New("the AI review runs once the issue is submitted for review"))
 	}
 	aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
@@ -161,12 +165,25 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 	return nil
 }
 
-// startReview starts the issue's review where SQL Review V2 is on, at the
-// points the plan's SQL is submitted or changed. It never fails its caller:
-// an issue the review does not apply to is skipped, and a failure is logged.
+// startReview starts the issue's review at the points the plan's SQL is
+// submitted or changed. It never fails its caller: an issue the review does
+// not apply to is skipped, and a failure is logged.
 func startReview(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) {
-	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
+	if issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return
+	}
+	if !profile.SQLReviewV2 {
+		starts, err := aiReviewStarts(ctx, stores, issue)
+		if err != nil {
+			slog.Warn("failed to start the review",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_id", issue.UID),
+				log.BBError(err))
+			return
+		}
+		if !starts {
+			return
+		}
 	}
 	if err := checkReviewable(ctx, stores, issue); err != nil {
 		if connect.CodeOf(err) != connect.CodeFailedPrecondition {
@@ -185,6 +202,29 @@ func startReview(ctx context.Context, profile *config.Profile, stores *store.Sto
 		return
 	}
 	b.ReviewRunTickleChan <- 0
+}
+
+// aiReviewStarts reports whether a server without SQL Review V2, where the
+// review is the AI review beside the plan checks' SQL review, starts the
+// issue's review. It waits until the issue is submitted for review, then
+// starts while the AI review is on, or over an earlier run even when it is
+// off, so the new run resolves that run's findings on the old SQL.
+func aiReviewStarts(ctx context.Context, stores *store.Store, issue *store.IssueMessage) (bool, error) {
+	if issue.Payload.GetDraft() {
+		return false, nil
+	}
+	aiSetting, err := stores.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get AI setting")
+	}
+	if aireview.CheckSetting(aiSetting) == nil {
+		return true, nil
+	}
+	run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get the review run")
+	}
+	return run != nil, nil
 }
 
 // requestRolloutCheck asks the rollout creator to look at the issue's plan

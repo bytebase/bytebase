@@ -116,12 +116,12 @@ import {
   getInstanceResource,
   hasProjectPermissionV2,
 } from "@/utils";
-import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { getStatementSize } from "@/utils/sheet";
 import { extractDatabaseGroupName } from "@/utils/v1/databaseGroup";
 import { sheetNameOfSpec } from "@/utils/v1/issue/plan";
 import { extractSheetUID, getSheetStatement } from "@/utils/v1/sheet";
 import { usePlanChangeReferenceData } from "../hooks/usePlanChangeReferenceData";
+import { useChecksInReview } from "../hooks/useSqlReviewV2";
 import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { derivePlanChangeReference } from "../utils/changeReference";
@@ -208,6 +208,7 @@ export function PlanDetailChangesBranch({
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUser();
+  const checksInReview = useChecksInReview();
   const unresolvedThreadsBySpec = usePlacedUnresolvedThreadCounts(
     page.issue?.name,
     page.plan.specs,
@@ -747,8 +748,9 @@ export function PlanDetailChangesBranch({
         </div>
       </div>
 
-      {/* Under SQL Review V2 the checks are reviewers in the Review section. */}
-      {!page.isCreating && !specHasRelease && !sqlReviewV2Enabled() && (
+      {/* The checks are reviewers in the Review section under SQL Review V2,
+          and beside the AI review on V1. */}
+      {!page.isCreating && !specHasRelease && !checksInReview && (
         <PlanDetailAggregateChecks />
       )}
 

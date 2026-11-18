@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
   ApprovalStatus,
   IssueStatus,
@@ -17,6 +17,9 @@ import {
   isRolloutExpected,
 } from "./phaseSummary";
 import { type AutomatedReviewRow, emptyFindings, reviewRow } from "./planGates";
+
+// The summaries name the reviewers as SQL Review V2 does.
+vi.mock("@/utils/featureGates", () => ({ sqlReviewV2Enabled: () => true }));
 
 const templates: Record<string, string> = {
   "common.and": "and",

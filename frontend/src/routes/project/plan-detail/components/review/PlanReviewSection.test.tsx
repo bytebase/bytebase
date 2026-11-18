@@ -55,6 +55,7 @@ const mocks = vi.hoisted(() => ({
     title: "Me",
   },
   reviewState: undefined as unknown,
+  aiReview: undefined as unknown,
 }));
 
 // ---------------------------------------------------------------------------
@@ -311,11 +312,17 @@ vi.mock("./ReviewActivityTimeline", () => ({
 }));
 
 vi.mock("../../hooks/usePlanReviewState", () => ({
+  useAIReviewBesideV1: () => mocks.aiReview,
   usePlanReviewState: () => mocks.reviewState,
 }));
 
 vi.mock("./AutomatedReviewSection", () => ({
-  AutomatedReviewSection: () => <div data-testid="automated-review" />,
+  AutomatedReviewSection: ({ besideV1 }: { besideV1?: boolean }) => (
+    <div
+      data-beside-v1={String(Boolean(besideV1))}
+      data-testid="automated-review"
+    />
+  ),
 }));
 
 // Import React for JSX — must come after vi.mock calls.
@@ -447,6 +454,7 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(() => {
   mocks.reviewState = undefined;
+  mocks.aiReview = undefined;
   mocks.comments = [];
   mocks.getIssueComments.mockImplementation(() => mocks.comments);
   vi.clearAllMocks();
@@ -677,6 +685,29 @@ describe("PlanReviewSection — five review states", () => {
     );
     expect(container.textContent).not.toContain(
       "plan.review.footer.all-gates-passed"
+    );
+
+    unmount();
+  });
+
+  test("shows the AI review and V1's checks together, once the issue is submitted", () => {
+    mocks.aiReview = { rows: [{ reviewer: "review" }, { reviewer: "policy" }] };
+    const issue = makeIssue({ approvalStatus: ApprovalStatus.PENDING });
+    const { container, render, unmount } = renderIntoContainer(
+      <PlanDetailProvider value={makePageState(issue, makePlan())}>
+        <PlanReviewSection />
+      </PlanDetailProvider>
+    );
+
+    render();
+
+    const section = container.querySelector(
+      "[data-testid='automated-review']"
+    );
+    expect(section?.getAttribute("data-beside-v1")).toBe("true");
+    // V1's footer still says what the rollout waits on.
+    expect(container.textContent).toContain(
+      "plan.review.footer.waiting-on-review"
     );
 
     unmount();

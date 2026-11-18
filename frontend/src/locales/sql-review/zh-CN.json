@@ -3,12 +3,14 @@
   "add-rules": "添加规则",
   "ai-review": {
     "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
+    "comments-description": "工单提交审核后，AI 模型会审核其中的 SQL，并以评论指出发现的风险。这些评论不会阻塞发布。",
     "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "enable": {
       "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
       "self": "使用 AI 审核变更"
     },
     "policy": {
+      "ai-review-policy": "AI 审核策略",
       "cannot-clear": "你的角色无法删除策略，因此不能清空此策略。",
       "description": "此策略定义 AI 审核数据库变更时检查的内容。它适用于工作空间中的每个项目，每个项目都可以添加自己的策略。",
       "load-failed": "审核策略加载失败。",
@@ -69,7 +71,7 @@
   },
   "delete": "删除审核策略",
   "delete-description": "SQL 审核策略及其所有规则将被永久删除，此操作无法撤销。",
-  "description": "SQL 审核策略可以为不同的环境定义不同的 SQL lint 规则集. 它可以帮助团队采用 SQL 最佳使用实践，并在不同的数据库上约束 schema 的一致性。每当您尝试做一个 DDL/DML 变更或者使用 SQL 编辑器来查询数据时， 配置的 SQL 审核规则就会检查相应的执行语句。",
+  "description": "检查每次 SQL 变更和 SQL 编辑器查询的规则。策略作用于它所绑定的环境或项目。",
   "disable-description": "禁用此策略将停止对已关联资源应用规则。您可以稍后重新启用。",
   "disabled": "SQL 审核策略已禁用",
   "enable-description": "启用此策略将开始对已关联资源应用规则。",
@@ -150,6 +152,7 @@
     "warning": "警告"
   },
   "no-permission": "仅管理员或 DBA 有权限创建或更新审核策略。",
+  "policies": "SQL 审核策略",
   "policy-create-failed": "审核策略创建失败",
   "policy-created": "审核策略已创建",
   "policy-removed": "审核策略已删除",

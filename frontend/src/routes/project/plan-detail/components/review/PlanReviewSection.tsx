@@ -4,7 +4,10 @@ import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { usePlanReviewState } from "../../hooks/usePlanReviewState";
+import {
+  useAIReviewBesideV1,
+  usePlanReviewState,
+} from "../../hooks/usePlanReviewState";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { AutomatedReviewSection } from "./AutomatedReviewSection";
 import { ReviewActivityTimeline } from "./ReviewActivityTimeline";
@@ -40,6 +43,10 @@ export function PlanReviewSection() {
   // Under SQL Review V2 the machine reviews run from draft onward, so Review
   // shows them, and Deploy lists what the rollout waits on.
   const reviewState = usePlanReviewState();
+  // Beside V1's plan checks the AI review runs once the issue is submitted,
+  // and the checks join it here.
+  const aiReview = useAIReviewBesideV1();
+  const automatedReview = reviewState ?? aiReview;
 
   if (!issue) return null;
 
@@ -73,7 +80,7 @@ export function PlanReviewSection() {
     </div>
   );
   const generating = issue.approvalStatus === ApprovalStatus.CHECKING;
-  if (generating && !reviewState) return generatingFlow;
+  if (generating && !automatedReview) return generatingFlow;
 
   // The automated reviewers stay reachable while the approval flow is being
   // generated: a failed evaluation is retried by rerunning the plan checks.
@@ -91,7 +98,12 @@ export function PlanReviewSection() {
           <ReviewRejectionBanner comments={comments} issue={issue} />
         </>
       )}
-      {reviewState && <AutomatedReviewSection state={reviewState} />}
+      {automatedReview && (
+        <AutomatedReviewSection
+          besideV1={!reviewState}
+          state={automatedReview}
+        />
+      )}
       <ReviewActivityTimeline
         comments={comments}
         issue={issue}

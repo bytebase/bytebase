@@ -8,6 +8,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   gate: true,
+  serverInfo: { aiEnabled: true, aiSqlReviewEnabled: true } as unknown,
   page: {} as Record<string, unknown>,
   permissions: new Set<string>(),
   review: {
@@ -24,6 +25,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/hooks/useProjectByName", () => ({
   useProjectByName: () => ({ name: "projects/foo" }),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (selector: (state: { serverInfo: unknown }) => unknown) =>
+    selector({ serverInfo: mocks.serverInfo }),
 }));
 
 vi.mock("@/utils", () => ({
@@ -53,18 +59,22 @@ vi.mock("./useReviewRun", () => ({
 }));
 
 import {
-  SqlReviewV2Provider,
+  PlanReviewProvider,
+  usePlanReviewRun,
   useSqlReviewV2,
   withReviewRun,
 } from "./useSqlReviewV2";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <SqlReviewV2Provider>{children}</SqlReviewV2Provider>
+  <PlanReviewProvider>{children}</PlanReviewProvider>
 );
+
+const useBoth = () => ({ v2: useSqlReviewV2(), review: usePlanReviewRun() });
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.gate = true;
+  mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: true };
   mocks.permissions = new Set(["bb.reviewRuns.get"]);
   mocks.threadsLoaded = true;
   mocks.page = {
@@ -76,7 +86,7 @@ beforeEach(() => {
   mocks.useEffectiveStandardRules.mockReturnValue(mocks.standardRules);
 });
 
-describe("SqlReviewV2Provider", () => {
+describe("PlanReviewProvider", () => {
   test("provides the open threads, the review run, and the rules", () => {
     const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
     expect(result.current).toEqual({
@@ -115,11 +125,32 @@ describe("SqlReviewV2Provider", () => {
     expect(result.current?.threadsLoaded).toBe(false);
   });
 
+  test("beside V1's checks, provides the AI review's run once the issue is submitted", () => {
+    mocks.gate = false;
+    const { result } = renderHook(useBoth, { wrapper });
+    expect(result.current).toEqual({ v2: undefined, review: mocks.review });
+    expect(mocks.useReviewRun).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: true })
+    );
+    expect(mocks.useEffectiveStandardRules).toHaveBeenCalledWith(
+      "projects/foo",
+      false
+    );
+  });
+
   test.each([
     [
-      "SQL Review V2 is off",
+      "SQL Review V2 and the AI review are off",
       () => {
         mocks.gate = false;
+        mocks.serverInfo = { aiEnabled: true, aiSqlReviewEnabled: false };
+      },
+    ],
+    [
+      "the issue is a draft beside V1's checks",
+      () => {
+        mocks.gate = false;
+        mocks.page.issue = { name: "projects/foo/issues/7", draft: true };
       },
     ],
     [
@@ -130,8 +161,11 @@ describe("SqlReviewV2Provider", () => {
     ],
   ])("provides nothing when %s", (_, arrange) => {
     arrange();
-    const { result } = renderHook(() => useSqlReviewV2(), { wrapper });
-    expect(result.current).toBeUndefined();
+    const { result } = renderHook(useBoth, { wrapper });
+    expect(result.current).toEqual({ v2: undefined, review: undefined });
+    expect(mocks.useReviewRun).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: false })
+    );
     expect(mocks.useEffectiveStandardRules).toHaveBeenCalledWith(
       "projects/foo",
       false

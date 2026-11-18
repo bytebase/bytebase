@@ -147,7 +147,7 @@ describe("buildTimelineEntries", () => {
         completion("c-r1", 1n, 1),
         finding("r3", 1n),
       ],
-      sqlReviewV2: true,
+      groupReviewRuns: true,
     });
     expect(rowsOf(entries)).toEqual(["run0:r1+r2", "run0:a1", "u", "run1:r3"]);
   });
@@ -159,7 +159,7 @@ describe("buildTimelineEntries", () => {
         finding("kept", 0n),
         completion("c-r1", 1n),
       ],
-      sqlReviewV2: true,
+      groupReviewRuns: true,
     });
     expect(rowsOf(entries)).toEqual(["run0:kept", "run1:"]);
     const last = entries.at(-1);
@@ -177,7 +177,7 @@ describe("buildTimelineEntries", () => {
         completion("c-r1", 1n, 1),
         finding("gone", 1n, true),
       ],
-      sqlReviewV2: true,
+      groupReviewRuns: true,
     });
     expect(
       entries.map((entry) => [rowsOf([entry])[0], Boolean(entry.pinned)])
@@ -200,13 +200,13 @@ describe("buildTimelineEntries", () => {
       ];
       const open = buildTimelineEntries({
         comments,
-        sqlReviewV2: true,
+        groupReviewRuns: true,
         runToggles: new Map([["review-run:c-r0", true]]),
       });
       expect(rowsOf(open)).toEqual(["run0:one+two"]);
       const hidden = buildTimelineEntries({
         comments,
-        sqlReviewV2: true,
+        groupReviewRuns: true,
         runToggles: new Map([["review-run:c-r0", false]]),
       });
       expect(rowsOf(hidden)).toEqual(["run0:"]);
@@ -220,7 +220,7 @@ describe("buildTimelineEntries", () => {
   test("a finding listed before its run's completion still goes in its group", () => {
     const entries = buildTimelineEntries({
       comments: [finding("early", 0n), completion("c-0", 0n, 1)],
-      sqlReviewV2: true,
+      groupReviewRuns: true,
     });
     expect(rowsOf(entries)).toEqual(["run0:early"]);
   });
@@ -228,7 +228,7 @@ describe("buildTimelineEntries", () => {
   test("a finding whose run left no completion stays its own entry", () => {
     const entries = buildTimelineEntries({
       comments: [finding("orphan", 0n)],
-      sqlReviewV2: true,
+      groupReviewRuns: true,
     });
     expect(rowsOf(entries)).toEqual(["orphan"]);
   });

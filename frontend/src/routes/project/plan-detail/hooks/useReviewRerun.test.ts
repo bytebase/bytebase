@@ -59,7 +59,7 @@ vi.mock("../shell/PlanDetailContext", () => ({
 }));
 
 vi.mock("./useSqlReviewV2", () => ({
-  useSqlReviewV2: () => ({ review: { reload: mocks.reload, run: mocks.run } }),
+  usePlanReviewRun: () => ({ reload: mocks.reload, run: mocks.run }),
 }));
 
 import { useReviewRerun } from "./useReviewRerun";

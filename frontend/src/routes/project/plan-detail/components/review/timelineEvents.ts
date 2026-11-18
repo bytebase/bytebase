@@ -17,6 +17,9 @@ export type TimelineSource =
   // holds the findings it posted.
   | {
       type: "review-run";
+      // The name of the completion comment, which the run's line carries as
+      // its id, so the run can be asked for as a comment is.
+      completionName: string;
       completion: IssueComment_ReviewRunCompletion;
       time?: Timestamp;
       findings: IssueComment[];
@@ -44,9 +47,9 @@ export function buildTimelineEntries(input: {
   issueCreateTime?: Timestamp;
   issueDraft?: boolean;
   comments: IssueComment[];
-  // Under SQL Review V2, a completed run is one line heading a group of the
-  // findings it posted.
-  sqlReviewV2?: boolean;
+  // Where the page shows the review, a completed run is one line heading a
+  // group of the findings it posted.
+  groupReviewRuns?: boolean;
   // Runs someone opened or folded, by entry id. The rest follow the default:
   // only the runs with a finding still current are open.
   runToggles?: ReadonlyMap<string, boolean>;
@@ -123,7 +126,7 @@ export function buildTimelineEntries(input: {
       continue;
     }
     if (comment.event.case === "reviewRunCompletion") {
-      if (!input.sqlReviewV2) continue;
+      if (!input.groupReviewRuns) continue;
       const completion = comment.event.value;
       const findings = findingsByRun.get(comment.name) ?? [];
       const id = `review-run:${comment.name}`;
@@ -134,6 +137,7 @@ export function buildTimelineEntries(input: {
         id,
         source: {
           type: "review-run",
+          completionName: comment.name,
           completion,
           time: comment.createTime,
           findings,
@@ -149,7 +153,7 @@ export function buildTimelineEntries(input: {
       });
       continue;
     }
-    if (input.sqlReviewV2 && runOfFinding.has(comment.name)) continue;
+    if (input.groupReviewRuns && runOfFinding.has(comment.name)) continue;
     entries.push({ id: comment.name, source: { type: "comment", comment } });
   }
   return entries;

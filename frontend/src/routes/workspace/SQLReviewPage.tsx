@@ -11,6 +11,7 @@ import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceLink } from "@/components/sql-review/ResourceLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FormSection } from "@/components/ui/form";
 import { SearchInput } from "@/components/ui/search-input";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { Switch } from "@/components/ui/switch";
@@ -24,12 +25,15 @@ import {
 } from "@/components/ui/table";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
-  WorkspacePageInfo,
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
+import {
+  environmentNamePrefix,
+  projectNamePrefix,
+} from "@/stores/modules/v1/common";
 import { useSQLReviewStore } from "@/stores/sqlReview";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, isDev, sqlReviewPolicySlug } from "@/utils";
@@ -44,6 +48,47 @@ import {
   useWorkspaceStandardRules,
 } from "./SQLReviewStandardRulesSection";
 import { SQLReviewVersionSwitch } from "./SQLReviewVersionSwitch";
+
+// The resources a policy is attached to, by kind, on one line: the
+// environment and project names carry their own labels.
+function PolicyResources({ resources }: { resources: string[] }) {
+  const { t } = useTranslation();
+  const groups = [
+    {
+      key: "environments",
+      label: t("common.environments"),
+      resources: resources.filter((resource) =>
+        resource.startsWith(environmentNamePrefix)
+      ),
+    },
+    {
+      key: "projects",
+      label: t("common.projects"),
+      resources: resources.filter((resource) =>
+        resource.startsWith(projectNamePrefix)
+      ),
+    },
+  ].filter((group) => group.resources.length > 0);
+  if (groups.length === 0) {
+    return <span className="text-control-light">-</span>;
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+      {groups.map((group) => (
+        <span className="inline-flex items-center gap-x-2" key={group.key}>
+          <span className="text-xs text-control-light">{group.label}</span>
+          {group.resources.map((resource) => (
+            <ResourceLink
+              key={resource}
+              resource={resource}
+              showResourceType={false}
+            />
+          ))}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 // ============================================================
 // PolicyTable
@@ -99,19 +144,19 @@ function PolicyTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-control-bg">
-              <TableHead className="whitespace-nowrap w-[200px]">
+              <TableHead className="whitespace-nowrap">
                 {t("common.name")}
               </TableHead>
-              <TableHead className="whitespace-nowrap w-[250px]">
+              <TableHead className="whitespace-nowrap">
                 {t("common.resource")}
               </TableHead>
-              <TableHead className="whitespace-nowrap">
+              <TableHead className="whitespace-nowrap text-right">
                 {t("sql-review.enabled-rules")}
               </TableHead>
-              <TableHead className="whitespace-nowrap capitalize w-[7rem]">
+              <TableHead className="whitespace-nowrap">
                 {t("common.enabled")}
               </TableHead>
-              <TableHead className="whitespace-nowrap w-[10rem]">
+              <TableHead className="whitespace-nowrap text-right">
                 {t("common.operations")}
               </TableHead>
             </TableRow>
@@ -123,16 +168,11 @@ function PolicyTable({
                   <HighlightLabelText text={policy.name} keyword={searchText} />
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-2">
-                    {policy.resources.length === 0 && <span>-</span>}
-                    {policy.resources.map((resource) => (
-                      <Badge key={resource} variant="default">
-                        <ResourceLink resource={resource} />
-                      </Badge>
-                    ))}
-                  </div>
+                  <PolicyResources resources={policy.resources} />
                 </TableCell>
-                <TableCell>{policy.ruleList.length}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {policy.ruleList.length}
+                </TableCell>
                 <TableCell>
                   {hasUpdatePermission ? (
                     <Switch
@@ -148,13 +188,40 @@ function PolicyTable({
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-x-2">
+                  <div className="flex items-center justify-end gap-x-2">
+                    <Tooltip
+                      content={
+                        hasUpdatePermission
+                          ? t("common.edit")
+                          : t("common.view")
+                      }
+                    >
+                      <Button
+                        appearance="secondary"
+                        aria-label={
+                          hasUpdatePermission
+                            ? t("common.edit")
+                            : t("common.view")
+                        }
+                        size="sm"
+                        onClick={() => navigateToDetail(policy)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    </Tooltip>
                     {hasDeletePermission &&
                       (confirmingDelete === policy.id ? (
-                        <div className="flex items-center gap-x-1 text-xs">
+                        <div className="flex items-center gap-x-2 text-xs">
                           <span>
                             {t("common.delete")} &apos;{policy.name}&apos;?
                           </span>
+                          <Button
+                            appearance="outline"
+                            size="sm"
+                            onClick={() => setConfirmingDelete(null)}
+                          >
+                            {t("common.cancel")}
+                          </Button>
                           <Button
                             variant="destructive"
                             size="sm"
@@ -165,41 +232,20 @@ function PolicyTable({
                           >
                             {t("common.delete")}
                           </Button>
-                          <Button
-                            appearance="outline"
-                            size="sm"
-                            onClick={() => setConfirmingDelete(null)}
-                          >
-                            {t("common.cancel")}
-                          </Button>
                         </div>
                       ) : (
                         <Tooltip content={t("common.delete")}>
                           <Button
                             appearance="secondary"
+                            aria-label={t("common.delete")}
                             size="sm"
-                            className="text-error hover:text-error"
+                            className="text-control-light hover:text-error"
                             onClick={() => setConfirmingDelete(policy.id)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="size-4" />
                           </Button>
                         </Tooltip>
                       ))}
-                    <Tooltip
-                      content={
-                        hasUpdatePermission
-                          ? t("common.edit")
-                          : t("common.view")
-                      }
-                    >
-                      <Button
-                        appearance="secondary"
-                        size="sm"
-                        onClick={() => navigateToDetail(policy)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </Tooltip>
                   </div>
                 </TableCell>
               </TableRow>
@@ -213,12 +259,8 @@ function PolicyTable({
         {policies.map((policy) => (
           <div key={policy.id} className="py-4">
             <div className="text-md">{policy.name}</div>
-            <div className="flex flex-wrap mt-2 gap-2">
-              {policy.resources.map((resource) => (
-                <Badge key={resource} variant="default" className="text-xs">
-                  <ResourceLink resource={resource} />
-                </Badge>
-              ))}
+            <div className="flex flex-wrap items-center mt-2 gap-2">
+              <PolicyResources resources={policy.resources} />
               {!policy.enforce && (
                 <Badge variant="warning">{t("common.disable")}</Badge>
               )}
@@ -266,7 +308,7 @@ export function SQLReviewPage() {
   const sqlReviewV2 = sqlReviewV2Enabled();
   const standardRules = useWorkspaceStandardRules(sqlReviewV2);
   const aiReview = useWorkspaceAIReview();
-  const aiReviewPolicy = useWorkspaceReviewAIPolicy(sqlReviewV2);
+  const aiReviewPolicy = useWorkspaceReviewAIPolicy();
   const aiReviewPolicyVisible = aiReview.aiEnabled && aiReview.enabled;
   const formParts = [standardRules, aiReview, aiReviewPolicy];
   const saveParts = [
@@ -324,44 +366,56 @@ export function SQLReviewPage() {
           />
         </>
       ) : (
-        <>
-          <WorkspacePageInfo
+        // One content width for both sections, centered: on a wide screen the
+        // short policy list and the AI review form share both edges instead of
+        // spreading across it.
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-y-8">
+          <FormSection
             description={
               <>
                 {t("sql-review.description")}{" "}
                 <LearnMoreLink href="https://docs.bytebase.com/sql-review/review-rules?source=console" />
               </>
             }
-          />
-
-          <WorkspacePageToolbar align="end">
-            <SearchInput
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder={t("common.filter-by-name")}
-              autoFocus
-              wrapperClassName="max-w-full"
-            />
-            {hasCreatePermission && (
-              <Button onClick={navigateToCreate}>
-                <Plus className="w-4 h-4 mr-1" />
-                {t("common.create")}
-              </Button>
-            )}
-          </WorkspacePageToolbar>
-
-          {policyList.length > 0 ? (
-            <PolicyTable
-              policies={filteredList}
-              searchText={searchText}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
-              <span>{t("common.no-data")}</span>
+            layout="single-column"
+            padding="none"
+            title={t("sql-review.policies")}
+          >
+            <div className="flex flex-col gap-y-4">
+              <WorkspacePageToolbar>
+                <SearchInput
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder={t("common.filter-by-name")}
+                  wrapperClassName="max-w-80"
+                />
+                {hasCreatePermission && (
+                  <Button onClick={navigateToCreate}>
+                    <Plus className="size-4" />
+                    {t("common.create")}
+                  </Button>
+                )}
+              </WorkspacePageToolbar>
+              {policyList.length > 0 ? (
+                <PolicyTable
+                  policies={filteredList}
+                  searchText={searchText}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
+                  <span>{t("common.no-data")}</span>
+                </div>
+              )}
             </div>
-          )}
-        </>
+          </FormSection>
+
+          <SQLReviewAIReviewSection
+            aiReview={aiReview}
+            policy={aiReviewPolicy}
+            standardRules={false}
+          />
+        </div>
       )}
 
       {isDirty && (

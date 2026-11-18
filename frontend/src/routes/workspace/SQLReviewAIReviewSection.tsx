@@ -98,24 +98,28 @@ export function useWorkspaceAIReview(): WorkspaceAIReview {
 
 // The workspace policy reaches the review of every project, together with the
 // project's own.
-export function useWorkspaceReviewAIPolicy(
-  enabled: boolean
-): ReviewAIPolicyDraft {
+export function useWorkspaceReviewAIPolicy(): ReviewAIPolicyDraft {
   const workspace = useWorkspaceResourceName();
   return useReviewAIPolicyDraft({
     parentPath: workspace,
     resourceType: PolicyResourceType.WORKSPACE,
     can: hasWorkspacePermissionV2,
-    enabled,
+    enabled: true,
   });
 }
 
+// `standardRules` says whether the standard rules review beside the AI. Beside
+// V1's review policies they do not, and the AI review comments once an issue
+// is submitted for review, and its policy is named apart from the SQL review
+// policies.
 export function SQLReviewAIReviewSection({
   aiReview,
   policy,
+  standardRules = true,
 }: {
   aiReview: WorkspaceAIReview;
   policy: ReviewAIPolicyDraft;
+  standardRules?: boolean;
 }) {
   const { t } = useTranslation();
   const { isSaaSMode } = useServerState();
@@ -132,7 +136,11 @@ export function SQLReviewAIReviewSection({
       layout="single-column"
       padding="none"
       title={t("sql-review.ai-review.self")}
-      description={t("sql-review.ai-review.description")}
+      description={
+        standardRules
+          ? t("sql-review.ai-review.description")
+          : t("sql-review.ai-review.comments-description")
+      }
     >
       {!aiReview.aiEnabled && (
         <Alert
@@ -175,6 +183,12 @@ export function SQLReviewAIReviewSection({
           <ReviewAIPolicyField
             policy={policy}
             placeholder={t("sql-review.ai-review.policy.placeholder")}
+            standardRules={standardRules}
+            title={
+              standardRules
+                ? undefined
+                : t("sql-review.ai-review.policy.ai-review-policy")
+            }
           />
         )}
       </FormFieldGroup>

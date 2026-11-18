@@ -39,7 +39,7 @@ import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
 import { usePlanReviewState } from "./hooks/usePlanReviewState";
 import { PlanSqlFixTargetProvider } from "./hooks/usePlanSqlFixTarget";
-import { SqlReviewV2Provider } from "./hooks/useSqlReviewV2";
+import { PlanReviewProvider } from "./hooks/useSqlReviewV2";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -221,7 +221,7 @@ function ProjectPlanDetailPageInner({
         onSelectedSpecIdChange={setSelectedSpecId}
       >
         <ReleaseFileViewerProvider docked={viewerDocked}>
-          <SqlReviewV2Provider>
+          <PlanReviewProvider>
             <div
               ref={setPageHost}
               data-testid="plan-detail-page"
@@ -302,7 +302,7 @@ function ProjectPlanDetailPageInner({
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-          </SqlReviewV2Provider>
+          </PlanReviewProvider>
         </ReleaseFileViewerProvider>
       </PlanSqlFixTargetProvider>
     </PlanDetailProvider>

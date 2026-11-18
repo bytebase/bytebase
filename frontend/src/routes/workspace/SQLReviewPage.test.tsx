@@ -29,12 +29,12 @@ const mocks = vi.hoisted(() => ({
     revert: vi.fn(),
     save: vi.fn(),
   },
-  aiReviewPolicyEnabled: vi.fn(),
   pushNotification: vi.fn(),
   useUnsavedChangesGuard: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
@@ -52,12 +52,15 @@ vi.mock("./SQLReviewVersionSwitch", () => ({
 }));
 
 vi.mock("./SQLReviewAIReviewSection", () => ({
-  SQLReviewAIReviewSection: () => <div>ai-review-section</div>,
+  SQLReviewAIReviewSection: ({
+    standardRules = true,
+  }: {
+    standardRules?: boolean;
+  }) => (
+    <div data-standard-rules={String(standardRules)}>ai-review-section</div>
+  ),
   useWorkspaceAIReview: () => mocks.aiReview,
-  useWorkspaceReviewAIPolicy: (enabled: boolean) => {
-    mocks.aiReviewPolicyEnabled(enabled);
-    return mocks.aiReviewPolicy;
-  },
+  useWorkspaceReviewAIPolicy: () => mocks.aiReviewPolicy,
 }));
 
 vi.mock("@/stores/sqlReview", () => {
@@ -111,7 +114,6 @@ describe("SQLReviewPage", () => {
     mocks.aiReviewPolicy.error = undefined;
     mocks.aiReview.aiEnabled = true;
     mocks.aiReview.enabled = true;
-    mocks.aiReviewPolicyEnabled.mockReset();
     mocks.pushNotification.mockReset();
     mocks.useUnsavedChangesGuard.mockReset();
   });
@@ -128,7 +130,10 @@ describe("SQLReviewPage", () => {
     expect(screen.queryByText("sql-review.description")).not.toBeInTheDocument();
     expect(screen.queryByText("common.create")).not.toBeInTheDocument();
     expect(mocks.fetchReviewPolicyList).not.toHaveBeenCalled();
-    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
+    expect(screen.getByText("ai-review-section")).toHaveAttribute(
+      "data-standard-rules",
+      "true"
+    );
   });
 
   test("uses the normal workspace page width for SQL Review V2", () => {
@@ -143,18 +148,32 @@ describe("SQLReviewPage", () => {
     ).toContainElement(screen.getByText("standard-rules-section"));
   });
 
-  test("keeps the v1 review policies without SQL Review V2", () => {
+  test("keeps the v1 review policies without SQL Review V2, with the AI review beside them", () => {
     mocks.sqlReviewV2.value = false;
     render(<SQLReviewPage />);
 
     expect(
       screen.queryByText("standard-rules-section")
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("ai-review-section")).not.toBeInTheDocument();
+    expect(screen.getByText("sql-review.policies")).toBeInTheDocument();
     expect(screen.getByText("sql-review.description")).toBeInTheDocument();
     expect(screen.getAllByText("common.create").length).toBeGreaterThan(0);
     expect(mocks.fetchReviewPolicyList).toHaveBeenCalledTimes(1);
-    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(false);
+    expect(screen.getByText("ai-review-section")).toHaveAttribute(
+      "data-standard-rules",
+      "false"
+    );
+  });
+
+  test("the footer saves the AI review beside the v1 review policies", async () => {
+    mocks.sqlReviewV2.value = false;
+    mocks.aiReview.isDirty = true;
+    render(<SQLReviewPage />);
+
+    await update();
+
+    expect(mocks.aiReview.save).toHaveBeenCalledTimes(1);
+    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
   });
 
   test.each([
@@ -173,14 +192,6 @@ describe("SQLReviewPage", () => {
     render(<SQLReviewPage />);
 
     expect(screen.queryByText("version-switch")).not.toBeInTheDocument();
-  });
-
-  test("keeps the review policy draft mounted while AI is unavailable", () => {
-    mocks.sqlReviewV2.value = true;
-    mocks.aiReview.aiEnabled = false;
-    render(<SQLReviewPage />);
-
-    expect(mocks.aiReviewPolicyEnabled).toHaveBeenLastCalledWith(true);
   });
 
   test("the footer saves the AI review policy when only it changed", async () => {
