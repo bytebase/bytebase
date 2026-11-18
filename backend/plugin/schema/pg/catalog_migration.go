@@ -952,7 +952,8 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 
 // opTargetsSelected reports whether an operation belongs to a selected restored
 // object. Its accessories (comments, indexes, triggers) are omitted because the
-// synthesized create from metadata already carries them.
+// synthesized create from metadata already carries them. An accessory is matched
+// through its owner, since a trigger or index name alone can equal a view's.
 func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta *metadatapb.DatabaseSchemaMetadata) bool {
 	if op.Type == catalog.OpComment {
 		for key := range selected {
@@ -963,10 +964,9 @@ func opTargetsSelected(op catalog.MigrationOp, selected map[string]bool, oldMeta
 		}
 		return false
 	}
-	if selected[objectKey(op.SchemaName, op.ObjectName)] {
-		return true
-	}
 	switch op.Type {
+	case catalog.OpCreateView, catalog.OpAlterView, catalog.OpDropView:
+		return selected[objectKey(op.SchemaName, op.ObjectName)]
 	case catalog.OpCreateIndex, catalog.OpDropIndex:
 		if ownerSchema, ownerObject := indexOwnerFromSQL(op.SQL); ownerSchema != "" {
 			return selected[objectKey(ownerSchema, ownerObject)]

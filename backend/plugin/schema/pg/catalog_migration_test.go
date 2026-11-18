@@ -877,6 +877,31 @@ func TestOpTargetsSelectedKeepsDistinctCommentOwners(t *testing.T) {
 	require.True(t, opTargetsSelected(column, selected, nil), "an accessory of the selected view belongs to it")
 }
 
+// TestOpTargetsSelectedKeepsATriggerNamedLikeTheView keeps a trigger whose name
+// equals a selected view's name with the table it belongs to: a trigger operation
+// carries the trigger's name, not the relation's.
+func TestOpTargetsSelectedKeepsATriggerNamedLikeTheView(t *testing.T) {
+	selected := map[string]bool{objectKey("public", "v"): true}
+	trigger := catalog.MigrationOp{
+		Type:         catalog.OpCreateTrigger,
+		SchemaName:   "public",
+		ObjectName:   "v",
+		ParentObject: "t",
+		SQL:          `CREATE TRIGGER "v" BEFORE INSERT ON "public"."t" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
+	}
+	require.False(t, opTargetsSelected(trigger, selected, nil), "a trigger named like the view belongs to its own table")
+	onTheView := catalog.MigrationOp{
+		Type:         catalog.OpCreateTrigger,
+		SchemaName:   "public",
+		ObjectName:   "audit",
+		ParentObject: "v",
+		SQL:          `CREATE TRIGGER "audit" AFTER INSERT ON "public"."v" FOR EACH ROW EXECUTE FUNCTION public.touch()`,
+	}
+	require.True(t, opTargetsSelected(onTheView, selected, nil), "a trigger on the selected view belongs to it")
+	view := catalog.MigrationOp{Type: catalog.OpDropView, SchemaName: "public", ObjectName: "v", SQL: `DROP VIEW "public"."v"`}
+	require.True(t, opTargetsSelected(view, selected, nil))
+}
+
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
 // attribute the target adds, out of a restored view's drop: releasing a column
 // would discard its data, and a new attribute would need the view before its
