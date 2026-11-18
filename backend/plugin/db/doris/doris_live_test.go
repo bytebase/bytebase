@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	omnidriver "github.com/bytebase/omni/driver"
 	metadatapb "github.com/bytebase/omni/metadata"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -372,6 +373,14 @@ func TestDorisDriver(t *testing.T) {
 	})
 }
 
+// heldSession returns the session QueryConn keeps, read under the lock that
+// guards it.
+func heldSession(d *Driver) omnidriver.Session {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	return d.session
+}
+
 // schemaObjects returns a schema's tables, views and materialized views by name,
 // so a restored database can be compared with the one it was dumped from.
 func schemaObjects(schema *metadatapb.DatabaseSchemaMetadata) []string {
@@ -421,15 +430,15 @@ func TestQueryConnKeepsOneSessionAndDropsItWhenTheContextEnds(t *testing.T) {
 	queryContext := db.QueryContext{MaximumSQLResultSize: 1 << 20}
 	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
 	require.NoError(t, err)
-	held := driver.session
+	held := heldSession(driver)
 	require.NotNil(t, held, "the first statement opens the session")
 
 	_, err = driver.QueryConn(ctx, nil, "SELECT 1", queryContext)
 	require.NoError(t, err)
-	require.True(t, held == driver.session, "the stream's statements share one session")
+	require.True(t, held == heldSession(driver), "the stream's statements share one session")
 
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 	_, _ = driver.QueryConn(canceledCtx, nil, "SELECT 1", queryContext)
-	require.Nil(t, driver.session, "a canceled statement's session is not one to keep")
+	require.Nil(t, heldSession(driver), "a canceled statement's session is not one to keep")
 }
