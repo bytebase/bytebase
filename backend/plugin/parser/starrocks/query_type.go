@@ -94,7 +94,7 @@ func astQueryType(node ast.Node) (analysis.QueryType, bool) {
 		}
 		return astQueryType(n.Query)
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
-		*ast.MergeStmt, *ast.TruncateTableStmt:
+		*ast.TruncateTableStmt:
 		return analysis.QueryTypeDML, true
 	case *ast.UseStmt:
 		// USE was rejected as Unknown by the legacy listener — its ACL flow
