@@ -19,18 +19,30 @@ var (
 
 // Probe runs a live review rule's probe: the pre-executions and the statement
 // in one transaction on one session, rolled back afterwards, as the *sql.DB
-// handle it replaced did.
+// handle it replaced did. ProbeContext.Autocommit runs the statement alone,
+// which is what a rule whose statement OceanBase refuses inside a transaction
+// asks for.
 //
 // The session reads SELECT CONNECTION_ID() before the transaction, and the
 // driver prefixes a query with the /*app=bytebase*/ comment the old probe did
 // not carry; a plan's rows are what the driver decoded rather than the raw
 // *sql.Rows.
 func (d *Driver) Probe(ctx context.Context, pCtx db.ProbeContext, statement string) (db.ProbeResult, error) {
+	if pCtx.Autocommit && len(pCtx.PreExecutions) > 0 {
+		return db.ProbeResult{}, errors.New("a probe with pre-executions cannot run outside a transaction")
+	}
+
 	session, err := d.impl.Session(ctx)
 	if err != nil {
 		return db.ProbeResult{}, err
 	}
 	defer session.Close()
+
+	if pCtx.Autocommit {
+		// Autocommit was asked for precisely because the engine refuses the
+		// statement inside a transaction, so no START TRANSACTION here.
+		return runProbeStatement(ctx, session, statement)
+	}
 
 	if _, err := runProbeStatement(ctx, session, "START TRANSACTION"); err != nil {
 		return db.ProbeResult{}, errors.Wrap(err, "failed to begin probe transaction")

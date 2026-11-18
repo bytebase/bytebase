@@ -13,6 +13,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
+// TestProbeRefusesPreExecutionsOutsideATransaction pins the contract's rule:
+// Autocommit exists for a statement the engine refuses inside a transaction, so
+// pre-executions, which need one, are refused rather than run beside it.
+func TestProbeRefusesPreExecutionsOutsideATransaction(t *testing.T) {
+	_, err := (&Driver{}).Probe(context.Background(), db.ProbeContext{
+		Autocommit:    true,
+		PreExecutions: []string{"SET NAMES utf8mb4"},
+	}, "SELECT 1")
+	require.ErrorContains(t, err, "cannot run outside a transaction")
+}
+
 // TestProbeCapabilities runs the three capabilities the advisor seam asks of
 // the driver against a live server: the statement probe the two row-limit rules
 // read a JSON plan from, the dry-run probe, the estimate plancheck asks for, and
