@@ -238,6 +238,8 @@ func mssqlConfig(config db.ConnectionConfig) (odriver.Config, string, error) {
 		params["trustservercertificate"] = "true"
 	}
 
+	// tlsmin stays unset: mssql/driver defaults it to 1.0 for a server that
+	// offers only TLS 1.0, and an Extra Connection Parameter replaces it.
 	cfg := odriver.Config{
 		Host:            host,
 		Port:            port,
