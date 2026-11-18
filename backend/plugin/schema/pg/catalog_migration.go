@@ -146,7 +146,11 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, oldMeta, newMe
 	if len(drops) == 0 {
 		return
 	}
-	plan.Ops = append(drops, append(plan.Ops, creates...)...)
+	ops := make([]catalog.MigrationOp, 0, len(drops)+len(plan.Ops)+len(creates))
+	ops = append(ops, drops...)
+	ops = append(ops, plan.Ops...)
+	ops = append(ops, creates...)
+	plan.Ops = ops
 }
 
 type affectedColumnSet map[string]map[string]bool
