@@ -233,6 +233,41 @@ func parseCockroachMetadata(t *testing.T, encoded string) *model.DatabaseMetadat
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_COCKROACHDB, true)
 }
 
+// TestChangedDegradedProcedureIsRefused covers a procedure the target changes while
+// the catalog cannot parse either stored definition: the two stand-ins look alike,
+// so the comparison has to refuse rather than let the catalog skip the change.
+func TestChangedDegradedProcedureIsRefused(t *testing.T) {
+	snapshot := func(definition string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Procedures: []*metadatapb.ProcedureMetadata{{
+				Name:       "p",
+				Signature:  "p()",
+				Definition: definition,
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("CREATE PROCEDURE public.p() AS @@@old@@@"),
+		snapshot("CREATE PROCEDURE public.p() AS @@@new@@@"))
+	require.ErrorContains(t, err, "func:public.p|p()")
+}
+
+// TestIndexOwnerSkipsQuotedNames covers an index name that contains the owner
+// clause's text: the owner is read after the quoted identifier.
+func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
+	tests := []struct{ sql, schema, object string }{
+		{`CREATE INDEX "x ON y" ON "public"."t" USING btree ("id")`, "public", "t"},
+		{`CREATE UNIQUE INDEX "a"" ON b" ON ONLY "public"."t" ("id")`, "public", "t"},
+		{`CREATE INDEX "idx" ON "public"."mv" (id)`, "public", "mv"},
+	}
+	for _, tc := range tests {
+		schemaName, objectName := indexOwnerFromSQL(tc.sql)
+		require.Equal(t, tc.schema, schemaName, tc.sql)
+		require.Equal(t, tc.object, objectName, tc.sql)
+	}
+}
+
 // TestSourceOnlyUnloadableObjectsAreDropped covers removing an object whose stored
 // definition omni cannot parse: a drop needs no definition, so the plan emits it,
 // while adding such an object is still refused.

@@ -1161,11 +1161,11 @@ func commentTargetsSelected(sql string, selected map[string]bool, oldMeta, newMe
 }
 
 func indexOwnerFromSQL(sql string) (string, string) {
-	index := strings.Index(sql, " ON ")
+	index := indexOutsideQuotes(sql, " ON ")
 	if index < 0 {
 		return "", ""
 	}
-	rest := strings.TrimSpace(sql[index+4:])
+	rest := strings.TrimSpace(sql[index+len(" ON "):])
 	if strings.HasPrefix(rest, "ONLY ") {
 		rest = strings.TrimSpace(strings.TrimPrefix(rest, "ONLY "))
 	}
@@ -1187,6 +1187,30 @@ func scanIdentifier(text string, start int) (string, int, bool, bool) {
 		return "", start, false, false
 	}
 	return name, next, start < len(text) && text[start] == '"', true
+}
+
+// indexOutsideQuotes is strings.Index for needle, skipping quoted identifiers, so
+// an index named `"x ON y"` does not look like the owner clause.
+func indexOutsideQuotes(text, needle string) int {
+	for i := 0; i < len(text); i++ {
+		if text[i] == '"' {
+			for i++; i < len(text); i++ {
+				if text[i] != '"' {
+					continue
+				}
+				if i+1 < len(text) && text[i+1] == '"' {
+					i++
+					continue
+				}
+				break
+			}
+			continue
+		}
+		if strings.HasPrefix(text[i:], needle) {
+			return i
+		}
+	}
+	return -1
 }
 
 func quotedIdentifier(text string, start int) (string, int, bool) {
@@ -1595,11 +1619,10 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 			objects["seq:"+qualified(seq.GetName())] = seq
 		}
 		for _, fn := range s.GetFunctions() {
-			identity := fn.GetSignature()
-			if identity == "" {
-				identity = fn.GetDefinition()
-			}
-			objects["func:"+qualified(fn.GetName())+"|"+identity] = fn
+			objects["func:"+qualified(fn.GetName())+"|"+routineIdentity(fn.GetSignature(), fn.GetDefinition())] = fn
+		}
+		for _, p := range s.GetProcedures() {
+			objects["func:"+qualified(p.GetName())+"|"+routineIdentity(p.GetSignature(), p.GetDefinition())] = p
 		}
 		for _, v := range s.GetViews() {
 			objects["rel:"+qualified(v.GetName())] = v
@@ -1623,6 +1646,14 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 		}
 	}
 	return objects
+}
+
+// routineIdentity distinguishes routine overloads, the way the load report does.
+func routineIdentity(signature, definition string) string {
+	if signature != "" {
+		return signature
+	}
+	return definition
 }
 
 // addTableParts indexes a table's indexes, and maps each of its constraints to the
