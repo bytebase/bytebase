@@ -9813,6 +9813,126 @@ describe("automatic history cleanup integration", () => {
     }
   });
 
+  test.each(["enqueue", "remove"] as const)(
+    "preserves an accepted %s when another tab starts execution before it is saved",
+    async (operation) => {
+      const owner = create();
+      const chatId = s(owner).currentChatId!;
+      const input = {
+        chatId,
+        text: "Existing request",
+        page: { path: "/", title: "Workspace" },
+      };
+      const existing = s(owner).enqueueFollowUp(input)!;
+      const retained = s(owner).enqueueFollowUp({
+        ...input,
+        text: "Keep this",
+      })!;
+      expect(await s(owner).flushRunPersistence()).toBe(true);
+      const follower = create();
+      expect(await s(follower).flushRunPersistence()).toBe(true);
+      const blocked = locks.pauseNextExclusive(
+        `bb-agent-persistence:${JSON.stringify(getAgentStateKey(workspaceName))}`
+      );
+      try {
+        const lease = await withAgentRunLease(
+          getAgentStateKey(workspaceName),
+          chatId,
+          async () => {
+            expect(s(owner).setFollowUpQueuePaused(chatId, false)).toBe(true);
+            s(owner).setChatStatus(chatId, "running");
+            s(owner).setAbortController(chatId, new AbortController());
+            try {
+              await blocked.reached;
+              const accepted =
+                operation === "enqueue"
+                  ? s(follower).enqueueFollowUp({
+                      ...input,
+                      text: "Accepted next question",
+                    })
+                  : s(follower).removeFollowUp(chatId, existing);
+              expect(accepted).toBeTruthy();
+              blocked.resume();
+              expect(await s(owner).flushRunPersistence()).toBe(true);
+              expect(await s(follower).flushRunPersistence()).toBe(true);
+
+              const expected =
+                operation === "enqueue"
+                  ? [existing, retained, accepted as string]
+                  : [retained];
+              const queuedIds = () =>
+                s(follower).followUpQueuesByChatId[chatId]?.messages.map(
+                  ({ id }) => id
+                );
+              expect(queuedIds()).toEqual(expected);
+              expect(
+                persisted().followUpQueuesByChatId?.[chatId]?.messages.map(
+                  ({ id }) => id
+                )
+              ).toEqual(expected);
+              expect(s(follower).followUpQueuesByChatId[chatId]?.paused).toBe(
+                false
+              );
+              expect(s(follower).remoteBusyChatIds[chatId]).toBe(true);
+              s(follower).syncState();
+              s(follower).syncState();
+              expect(queuedIds()).toEqual(expected);
+              expect(
+                s(follower).enqueueFollowUp({ ...input, text: "Not admitted" })
+              ).toBeNull();
+              expect(s(follower).removeFollowUp(chatId, retained)).toBe(false);
+              expect(s(follower).setFollowUpQueuePaused(chatId, true)).toBe(
+                false
+              );
+              expect(s(follower).promoteFollowUp(chatId, retained)).toBeNull();
+              expect(s(follower).getMessages(chatId)).toEqual([]);
+              s(owner).syncState();
+              expect(
+                s(owner).followUpQueuesByChatId[chatId]?.messages.map(
+                  ({ id }) => id
+                )
+              ).toEqual(expected);
+              if (operation === "enqueue") {
+                expect(s(owner).setFollowUpDrainActive(chatId, true)).toBe(
+                  true
+                );
+                s(owner).setChatStatus(chatId, "idle");
+                s(owner).setAbortController(chatId, null);
+                for (const id of expected) {
+                  expect(s(owner).promoteFollowUp(chatId, id)?.id).toBe(id);
+                  expect(
+                    s(owner).commitQueuedUserMessage(chatId)?.message.id
+                  ).toBe(id);
+                  s(owner).finishQueuedUserMessage(chatId);
+                }
+                expect(await s(owner).flushRunPersistence()).toBe(true);
+                s(follower).syncState();
+                expect(queuedIds()).toBeUndefined();
+                expect(
+                  s(follower)
+                    .getMessages(chatId)
+                    .map(({ id }) => id)
+                ).toEqual(expected);
+                expect(await s(follower).flushRunPersistence()).toBe(true);
+                s(owner).syncState();
+                expect(s(owner).followUpQueuesByChatId[chatId]).toBeUndefined();
+              }
+            } finally {
+              blocked.resume();
+              s(owner).setChatStatus(chatId, "idle");
+              s(owner).setAbortController(chatId, null);
+              s(owner).setFollowUpDrainActive(chatId, false);
+              await s(owner).flushRunPersistence();
+            }
+          }
+        );
+        expect(lease.acquired).toBe(true);
+      } finally {
+        blocked.resume();
+      }
+    }
+  );
+
   test("requires a run lease to promote a follow-up and leaves it pending otherwise", async () => {
     const store = create();
     const chatId = s(store).currentChatId!;

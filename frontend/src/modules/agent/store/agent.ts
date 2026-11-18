@@ -2193,25 +2193,15 @@ const rebasePersistedChanges = (
     if (!chat.archived) {
       const remoteQueue = remote.followUpQueuesByChatId?.[id];
       const remoteStartup = remote.queuedUserMessagesByChatId[id];
-      const passive =
-        remoteBusyChatIds[id] ||
-        (!useLocal &&
-          incoming &&
-          (incoming.status === "running" ||
-            incoming.status === "awaiting_user" ||
-            remote.activeChatIds?.includes(id) ||
-            remoteStartup));
-      const queue = passive
-        ? remoteQueue
-        : rebaseFollowUpQueue(
-            base.followUpQueuesByChatId?.[id],
-            local.followUpQueuesByChatId?.[id],
-            remoteQueue,
-            !local.queuedUserMessagesByChatId[id] &&
-              remoteStartup?.fromFollowUpQueue
-              ? remoteStartup.id
-              : undefined
-          );
+      const queue = rebaseFollowUpQueue(
+        base.followUpQueuesByChatId?.[id],
+        local.followUpQueuesByChatId?.[id],
+        remoteQueue,
+        !local.queuedUserMessagesByChatId[id] &&
+          remoteStartup?.fromFollowUpQueue
+          ? remoteStartup.id
+          : undefined
+      );
       if (queue) {
         const claimedIds = new Set(
           result.messagesByChatId[id].map(({ id }) => id)
