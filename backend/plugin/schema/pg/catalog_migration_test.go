@@ -570,3 +570,30 @@ func TestSplitCompositeRetypeAddsAttributeBeforeItsComment(t *testing.T) {
 	require.GreaterOrEqual(t, comment, 0, sql)
 	require.Less(t, add, comment, sql)
 }
+
+// TestSplitCompositeRetypeReappliesUnchangedComment covers the split path when
+// the attribute keeps its comment: DROP ATTRIBUTE deletes it, the catalog sees
+// no comment change, so the add must be followed by the comment.
+func TestSplitCompositeRetypeReappliesUnchangedComment(t *testing.T) {
+	snapshot := func(table, attributeType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable(table, 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+				Name: "c",
+				Attributes: []*metadatapb.CompositeTypeAttribute{{
+					Name: "r", Type: attributeType, Comment: "row comment",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+		snapshot("old_t", "public.old_t"), snapshot("new_t", "public.new_t"))
+	require.NoError(t, err)
+	add := strings.Index(sql, `ADD ATTRIBUTE "r" public.new_t`)
+	comment := strings.Index(sql, `COMMENT ON COLUMN "public"."c"."r" IS 'row comment'`)
+	require.GreaterOrEqual(t, add, 0, sql)
+	require.GreaterOrEqual(t, comment, 0, sql)
+	require.Less(t, add, comment, sql)
+	require.Equal(t, 1, strings.Count(sql, "COMMENT ON COLUMN"), sql)
+}

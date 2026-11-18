@@ -111,12 +111,43 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 						ObjType:    'r',
 					}
 					plan.Ops = insertAfterObjectCreate(plan.Ops, createdKey, add)
+					plan.Ops = restoreAttributeComment(plan.Ops, schema.GetName(), composite.GetName(), attribute)
 					continue
 				}
 				plan.Ops = moveOp(plan.Ops, alter, drop)
 			}
 		}
 	}
+}
+
+func restoreAttributeComment(ops []catalog.MigrationOp, schema, composite string, attribute *metadatapb.CompositeTypeAttribute) []catalog.MigrationOp {
+	if attribute.GetComment() == "" {
+		return ops
+	}
+	target := quoteQualified(schema, composite) + "." + quoteIdentifier(attribute.GetName())
+	for _, op := range ops {
+		if op.Type == catalog.OpComment && strings.Contains(op.SQL, target) {
+			return ops
+		}
+	}
+	comment := catalog.MigrationOp{
+		Type:       catalog.OpComment,
+		SchemaName: schema,
+		ObjectName: composite,
+		SQL:        "COMMENT ON COLUMN " + target + " IS " + quoteLiteral(attribute.GetComment()),
+		Phase:      catalog.PhaseMain,
+		ObjType:    'r',
+	}
+	for i, op := range ops {
+		if op.Type == catalog.OpAlterType && op.SchemaName == schema && op.ObjectName == composite && strings.Contains(op.SQL, "ADD ATTRIBUTE "+quoteIdentifier(attribute.GetName())) {
+			result := make([]catalog.MigrationOp, 0, len(ops)+1)
+			result = append(result, ops[:i+1]...)
+			result = append(result, comment)
+			result = append(result, ops[i+1:]...)
+			return result
+		}
+	}
+	return append(ops, comment)
 }
 
 func insertAfterObjectCreate(ops []catalog.MigrationOp, key string, op catalog.MigrationOp) []catalog.MigrationOp {
