@@ -3,10 +3,42 @@ package store
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
+
+func TestQueryExecModeForCustomPlans(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		mode         pgx.QueryExecMode
+		withCache    pgx.QueryExecMode
+		withoutCache pgx.QueryExecMode
+	}{
+		{pgx.QueryExecModeCacheStatement, pgx.QueryExecModeCacheDescribe, pgx.QueryExecModeDescribeExec},
+		{pgx.QueryExecModeCacheDescribe, pgx.QueryExecModeCacheDescribe, pgx.QueryExecModeDescribeExec},
+		{pgx.QueryExecModeDescribeExec, pgx.QueryExecModeDescribeExec, pgx.QueryExecModeDescribeExec},
+		{pgx.QueryExecModeExec, pgx.QueryExecModeExec, pgx.QueryExecModeExec},
+		{pgx.QueryExecModeSimpleProtocol, pgx.QueryExecModeSimpleProtocol, pgx.QueryExecModeSimpleProtocol},
+	} {
+		for _, capacity := range []int{-1, 0, 512} {
+			t.Run(tc.mode.String()+"/capacity="+strconv.Itoa(capacity), func(t *testing.T) {
+				t.Parallel()
+				config, err := pgx.ParseConfig("postgresql://user:password@127.0.0.1:1/db")
+				require.NoError(t, err)
+				config.DefaultQueryExecMode = tc.mode
+				config.DescriptionCacheCapacity = capacity
+				want := tc.withoutCache
+				if capacity > 0 {
+					want = tc.withCache
+				}
+				require.Equal(t, want, queryExecModeForCustomPlans(config))
+			})
+		}
+	}
+}
 
 func TestIsFilePath(t *testing.T) {
 	t.Parallel()

@@ -1,179 +1,90 @@
 package cockroachdb
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
-	"strings"
-	"time"
 
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	omnidriver "github.com/bytebase/omni/driver"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
-	switch typeName {
-	case "VARCHAR", "TEXT", "UUID":
-		return new(sql.NullString)
-	case "BOOL":
-		return new(sql.NullBool)
-	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
-		return new(sql.NullInt64)
-	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
-		return new(sql.NullFloat64)
-	case "DATE":
-		return new(pgtype.Date)
-	case "TIMESTAMP", "TIMESTAMPTZ":
-		return new(pgtype.Timestamptz)
-	case "BIT", "VARBIT":
-		return new([]byte)
-	default:
-		return new(sql.NullString)
+// QueryConn runs the script on the driver's session, one result per statement,
+// and serializes its calls. The caller's *sql.Conn is unused: the contract's
+// session is the driver's, and it is the one a statement's settings hold on.
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	session, err := d.querySession(ctx)
+	if err != nil {
+		return nil, err
 	}
+	results, err := session.Query(ctx, statement, omnidriver.QueryOptions{
+		Schema:         queryContext.Schema,
+		Limit:          queryContext.Limit,
+		Explain:        queryContext.Explain,
+		ExplainFormat:  explainFormat(queryContext.Option.GetExplainFormat()),
+		MaxResultBytes: queryContext.MaximumSQLResultSize,
+	})
+	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		_ = session.Close()
+		d.session = nil
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		_ = session.Close()
+		d.session = nil
+	}
+	if len(results) == 0 {
+		return nil, nil
+	}
+	converted := make([]*v1pb.QueryResult, 0, len(results))
+	for _, result := range results {
+		queryResult := util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize)
+		// The editor's result shape is the product's: a statement that reports no
+		// count (CREATE TABLE, SET) answers one "Affected Rows 0" row, and the
+		// contract leaves the count nil for it.
+		if len(result.Columns) == 0 && result.AffectedRows == nil && result.Err == nil {
+			affected := util.BuildAffectedRowsResult(0, queryResult.Messages)
+			queryResult.ColumnNames = affected.ColumnNames
+			queryResult.ColumnTypeNames = affected.ColumnTypeNames
+			queryResult.Rows = affected.Rows
+			queryResult.RowsCount = 1
+		}
+		// An explain request asked for one plan, in the format it named; the
+		// driver describes the statement it rewrote, which the caller already
+		// knows.
+		if queryContext.Explain {
+			queryResult.QueryPlan = nil
+		}
+		converted = append(converted, queryResult)
+	}
+	return converted, nil
 }
 
-var timeTzOID = fmt.Sprintf("%d", pgtype.TimetzOID)
-
-// convertValueIn binds the row value converter to the location timestamptz values
-// render in, which the caller reads from the session once per statement.
-func convertValueIn(location *time.Location) func(string, *sql.ColumnType, any) *v1pb.RowValue {
-	return func(typeName string, columnType *sql.ColumnType, value any) *v1pb.RowValue {
-		return convertValue(typeName, columnType, value, location)
+// querySession returns the driver's session, opening it on first use. The caller
+// holds sessionMu.
+func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
+	if d.session != nil {
+		return d.session, nil
 	}
+	session, err := d.inner.Session(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.session = session
+	return session, nil
 }
 
-func convertValue(typeName string, columnType *sql.ColumnType, value any, location *time.Location) *v1pb.RowValue {
-	switch raw := value.(type) {
-	case *sql.NullString:
-		if raw.Valid {
-			// TODO: Fix DatabaseTypeName for 1266, Object ID for TIME WITHOUT TIME ZONE
-			if columnType.DatabaseTypeName() == "TIME" || columnType.DatabaseTypeName() == timeTzOID || columnType.DatabaseTypeName() == "INTERVAL" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: padZeroes(raw.String, 6),
-					},
-				}
-			}
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String,
-				},
-			}
-		}
-	case *sql.NullInt64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_Int64Value{
-					Int64Value: raw.Int64,
-				},
-			}
-		}
-	case *[]byte:
-		if len(*raw) > 0 {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BytesValue{
-					BytesValue: *raw,
-				},
-			}
-		}
-	case *sql.NullBool:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_BoolValue{
-					BoolValue: raw.Bool,
-				},
-			}
-		}
-	case *sql.NullFloat64:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_DoubleValue{
-					DoubleValue: raw.Float64,
-				},
-			}
-		}
-	case *pgtype.Date:
-		if raw.Valid {
-			if raw.InfinityModifier != pgtype.Finite {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.InfinityModifier.String(),
-					},
-				}
-			}
-			if typeName == "DATE" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.Time.Format(time.DateOnly),
-					},
-				}
-			}
-		}
-	case *pgtype.Timestamptz:
-		if raw.Valid {
-			if raw.InfinityModifier != pgtype.Finite {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: raw.InfinityModifier.String(),
-					},
-				}
-			}
-			// pgx v5.13+ reports a temporal column's fractional-seconds precision as its
-			// scale, an unspecified precision already normalized to PostgreSQL's default
-			// of 6 (jackc/pgx#2704).
-			_, scale, ok := columnType.DecimalSize()
-			if !ok {
-				scale = 6
-			}
-			if typeName == "TIMESTAMP" {
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_TimestampValue{
-						TimestampValue: &v1pb.RowValue_Timestamp{
-							GoogleTimestamp: timestamppb.New(raw.Time),
-							Accuracy:        int32(scale),
-						},
-					},
-				}
-			}
-			zone, offset := raw.Time.In(location).Zone()
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampTzValue{
-					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
-						GoogleTimestamp: timestamppb.New(raw.Time),
-						Zone:            zone,
-						Offset:          int32(offset),
-						Accuracy:        int32(scale),
-					},
-				},
-			}
-		}
-	default:
+// explainFormat is the contract's name for the plan the caller asked for.
+// CockroachDB states a plan as text unless DISTSQL's JSON is asked for, so
+// every format but JSON is the plain EXPLAIN the old driver issued.
+func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
+	if format == v1pb.QueryOption_JSON {
+		return "JSON"
 	}
-	return util.NullRowValue
-}
-
-// Padding 0's to nanosecond precision to make sure it's always 6 digits.
-// Since the data cannot be formatted into a time.Time, we need to pad it here.
-// The value arrives as trimmed text (PostgreSQL drops trailing fractional zeros), so the
-// accuracy to pad to is supplied by the caller rather than derived from the value.
-func padZeroes(rawStr string, acc int) string {
-	dotIndex := strings.Index(rawStr, ".")
-	if dotIndex < 0 {
-		return rawStr
-	}
-	// End index is used to cut off the time zone information.
-	endIndex := len(rawStr)
-	if plusIndex := strings.Index(rawStr, "+"); plusIndex >= 0 {
-		endIndex = plusIndex
-	} else if minusIndex := strings.Index(rawStr, "-"); minusIndex >= 0 {
-		endIndex = minusIndex
-	}
-	decimalPart := rawStr[dotIndex+1 : endIndex]
-	if len(decimalPart) < acc {
-		rawStr = rawStr[:endIndex] + strings.Repeat("0", acc-len(decimalPart)) + rawStr[endIndex:]
-	}
-	return rawStr
+	return "TEXT"
 }

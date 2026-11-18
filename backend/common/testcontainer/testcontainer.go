@@ -654,6 +654,22 @@ func getRedisClusterContainer(ctx context.Context) (retC *Container, retErr erro
 	}
 }
 
+// getClickHouseContainer starts ClickHouse. Its native protocol, on 9000, is
+// what the driver speaks. The image disables network access for its default
+// account unless the entrypoint is told not to, so the container starts with
+// CLICKHOUSE_SKIP_USER_SETUP=1: the account tests use is the image's own
+// "default", with no password. The server's stdout carries only the
+// entrypoint's lines, so boot waits for the listening port; the driver's own
+// first query covers the moment between the port and a runnable query.
+func getClickHouseContainer(ctx context.Context) (*Container, error) {
+	return start(ctx, testcontainers.ContainerRequest{
+		Image: "clickhouse/clickhouse-server:26.8.38.9",
+		Env:   map[string]string{"CLICKHOUSE_SKIP_USER_SETUP": "1"},
+		WaitingFor: wait.ForListeningPort("9000/tcp").
+			WithStartupTimeout(2 * time.Minute),
+	}, spec{port: "9000/tcp", username: "default"})
+}
+
 // redisCLI runs redis-cli inside the container, which keeps the cluster
 // bootstrap off the host and out of this package's dependencies. Exec output is
 // a multiplexed Docker stream, so Multiplexed decodes it into plain text.
