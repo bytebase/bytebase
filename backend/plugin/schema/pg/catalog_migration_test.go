@@ -896,3 +896,61 @@ func TestReversedDependentViewsUseSeparateDropAndCreateOrders(t *testing.T) {
 	require.Less(t, createLower, createA, sql)
 	require.Less(t, createA, createB, sql)
 }
+
+// TestAddedDependentViewFollowsRestoredView covers a target-only view above a
+// restored view: it has no drop, but its create must follow the lower create.
+func TestAddedDependentViewFollowsRestoredView(t *testing.T) {
+	snapshot := func(columnType string, addUpper bool) *model.DatabaseMetadata {
+		views := []*metadatapb.ViewMetadata{{
+			Name: "lower", Definition: "SELECT FROM",
+			DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+		}}
+		if addUpper {
+			views = append(views, &metadatapb.ViewMetadata{
+				Name: "upper", Definition: "SELECT id FROM public.lower",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views:  views,
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer", false), snapshot("bigint", true))
+	require.NoError(t, err)
+	createLower := strings.Index(sql, `CREATE VIEW "public"."lower"`)
+	createUpper := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	require.GreaterOrEqual(t, createLower, 0, sql)
+	require.GreaterOrEqual(t, createUpper, 0, sql)
+	require.Less(t, createLower, createUpper, sql)
+	require.NotContains(t, sql, `DROP VIEW IF EXISTS "public"."upper"`)
+}
+
+// TestIndirectUnloadableDependentIsRestored covers an unloadable view whose
+// dependency on the retyped column is through a loadable lower view.
+func TestIndirectUnloadableDependentIsRestored(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{
+				{
+					Name: "lower", Definition: "SELECT id FROM public.t",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+				},
+				{
+					Name: "upper", Definition: "SELECT FROM",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "lower"}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.NoError(t, err)
+	dropUpper := strings.Index(sql, `DROP VIEW IF EXISTS "public"."upper"`)
+	createUpper := strings.Index(sql, `CREATE VIEW "public"."upper"`)
+	require.GreaterOrEqual(t, dropUpper, 0, sql)
+	require.GreaterOrEqual(t, createUpper, 0, sql)
+	require.Less(t, dropUpper, createUpper, sql)
+}
