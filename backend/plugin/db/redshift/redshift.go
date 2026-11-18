@@ -1,107 +1,135 @@
-// Package redshift is the plugin for RedShift driver.
+// Package redshift is Bytebase's Redshift driver: an adapter over
+// github.com/bytebase/omni/redshift/driver that maps a db.ConnectionConfig
+// onto the driver contract and the contract's results back into the product's.
+// The conversation with the server — connection configuration, session setup,
+// metadata sync, statement rewriting and classification, execution, result
+// decoding and the row estimate — is the driver's.
+//
+// The adapter keeps what is product: the data source to contract conversion,
+// the network and TLS path (SSH tunnel, TLS material), the datashare flag,
+// QueryContext/ExecuteOptions mapping, the v1pb result and error shape, and the
+// task-run logger.
+//
+// Constraints of the engine and the contract, here rather than at each call:
+//   - QueryConn takes the caller's *sql.Conn but runs on the driver's own
+//     session: the contract's Querier hands out Sessions, and a driver cannot put
+//     one on a *sql.Conn. The adapter holds that session from the first call
+//     until Close and serializes the calls, so what a statement sets there (the
+//     search_path, a temporary table) holds for the next one. It reports
+//     OwnsQuerySession, so no caller opens a second connection for it.
+//   - The data source's extra connection parameters reach no connection. The
+//     driver this replaced read none of them; the only parameter the contract
+//     takes here is ParamDatashare, which is the datashare flag.
+//   - ApplicationName is not set: the driver this replaced set no
+//     application_name, and the task-run session listing supports PostgreSQL and
+//     CockroachDB only.
+//   - TLS is required only when the data source carries a client certificate,
+//     which is when the driver this replaced built a TLS configuration; a data
+//     source with UseSsl alone leaves libpq's default negotiation in place.
+//   - Dump writes nothing. Redshift's omni driver has no Dumper — redshift/catalog
+//     has no renderer for a synced snapshot — and Bytebase's Dump returned nil, so
+//     the no-op is kept rather than replaced by a renderer no server has checked.
+//
+// Behaviours that differ from the driver this replaced, each made by omni's
+// driver and recorded below or in cutover_parity_test.go:
+//   - The sync reads only user schemas: everything but information_schema whose
+//     name starts with pg_. The old predicates excluded pg_catalog and
+//     information_schema by name, so the sync failed for any non-superuser on
+//     obj_description over Redshift's own pg_auto_copy/pg_internal schemas. It
+//     also orders every read, reads a view's whole definition with SHOW VIEW
+//     (pg_views truncates it at 256 bytes), reads a numeric column's precision
+//     and scale, and keeps a datashare's views out of its table list.
+//   - Execute splits every script with the engine's splitter. The old driver sent
+//     a sheet longer than common.MaxSheetCheckSize, or one with more than
+//     common.MaximumCommands statements, as a single command.
+//   - Execute refuses a transactional script holding a statement Redshift commits
+//     on its own (TRUNCATE, VACUUM, a database statement) or its own transaction
+//     control, naming autocommit mode; the old driver ran it and let the
+//     statement commit the transaction.
+//   - A database-creation step runs one CREATE DATABASE statement and refuses a
+//     script that holds initialization after it; the old driver ran the script's
+//     lines one by one in the admin database.
+//   - Autocommit mode runs every statement on one connection, so a script that
+//     sets session state keeps it; the old driver used a pooled connection per
+//     statement.
+//   - A masked caller does not receive a procedure call's rows, which the
+//     analysis cannot trace to columns; the old driver returned them.
+//   - A datashare statement has the database's name stripped from the relations
+//     it names, not from every occurrence in its text, so a literal that spells
+//     the name keeps it.
+//   - The task-run log records the total affected rows and no per-result list,
+//     as before, though the contract reports both.
+//   - A database missing from the server is driver.ErrNotFound, which the adapter
+//     maps to the product's not-found error. The name it looks for is the one the
+//     connection opened on, which falls back to the data source's database and
+//     then to dev; the old driver compared only the connection context's name, so
+//     a driver opened without one reported not-found for a database that exists.
 package redshift
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"log/slog"
+	"crypto/tls"
+	"io"
 	"net"
-	"strings"
-	"time"
+	"sync"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
+	omndriver "github.com/bytebase/omni/driver"
+	metadatapb "github.com/bytebase/omni/metadata"
+	redshiftdriver "github.com/bytebase/omni/redshift/driver"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
 )
 
 var (
-	excludedDatabaseList = map[string]bool{
-		// Skip internal databases from cloud service providers
-		// aws
-		"padb_harvest":   true,
-		"awsdatacatalog": true,
-		"sys:internal":   true,
-		// system templates.
-		"template0": true,
-		"template1": true,
-	}
-
-	// driverName is the driver name that our driver dependence register, now is "pgx".
-	driverName = "pgx"
-
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.RowEstimator   = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 )
 
 func init() {
 	db.Register(storepb.Engine_REDSHIFT, newDriver)
 }
 
-// Driver is the Postgres driver.
+// Driver is Bytebase's Redshift driver.
 type Driver struct {
-	config db.ConnectionConfig
+	impl *redshiftdriver.Driver
 
-	db        *sql.DB
 	sshClient *ssh.Client
-	// connectionString is the connection string registered by pgx.
-	// Unregister connectionString if we don't need it.
-	connectionString string
-	databaseName     string
-	datashare        bool
+
+	// sessionMu guards session and serializes QueryConn: the editor keeps one
+	// driver for a whole stream, and one connection served those statements one
+	// at a time.
+	sessionMu sync.Mutex
+	session   omndriver.Session
+
+	connectionCtx db.ConnectionContext
 }
 
 func newDriver() db.Driver {
 	return &Driver{}
 }
 
-// Open opens a Postgres driver.
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	if config.DataSource.Username == "" {
-		return nil, errors.Errorf("user must be set")
-	}
-
-	if (config.DataSource.GetSslCert() == "" && config.DataSource.GetSslKey() != "") ||
-		(config.DataSource.GetSslCert() != "" && config.DataSource.GetSslKey() == "") {
-		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
-	}
-
-	hostPort, err := util.PGHostPort(config.DataSource.Host, config.DataSource.Port)
-	if err != nil {
-		return nil, err
-	}
-	pgxConnConfig, err := pgx.ParseConfig(hostPort)
-	if err != nil {
-		return nil, err
-	}
-	pgxConnConfig.User = config.DataSource.Username
-	pgxConnConfig.Password = config.Password
-	if config.ConnectionContext.DatabaseName != "" {
-		pgxConnConfig.Database = config.ConnectionContext.DatabaseName
-	} else if config.DataSource.GetDatabase() != "" {
-		pgxConnConfig.Database = config.DataSource.GetDatabase()
-	} else {
-		pgxConnConfig.Database = "dev"
-	}
-
-	if config.DataSource.GetSslCert() != "" {
-		tlscfg, err := util.GetTLSConfig(config.DataSource)
-		if err != nil {
-			return nil, err
+// Open resolves the data source's network and TLS path into the contract's
+// Config and opens the driver. It reaches the server only on Ping.
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	// A driver whose Open fails is discarded without a Close, so Open releases
+	// what it acquired itself.
+	opened := false
+	defer func() {
+		if !opened {
+			_ = d.Close(ctx)
 		}
-		pgxConnConfig.TLSConfig = tlscfg
+	}()
+
+	cfg, err := redshiftConfig(config)
+	if err != nil {
+		return nil, err
 	}
 	if config.DataSource.GetSshHost() != "" {
 		sshClient, err := util.GetSSHClient(config.DataSource)
@@ -109,343 +137,134 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			return nil, err
 		}
 		d.sshClient = sshClient
-
-		pgxConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return util.DialSSHTunnel(ctx, sshClient, network, addr)
+		cfg.Dial = func(ctx context.Context, network, address string) (net.Conn, error) {
+			return util.DialSSHTunnel(ctx, sshClient, network, address)
 		}
 	}
-	d.databaseName = config.ConnectionContext.DatabaseName
-	d.datashare = config.ConnectionContext.DataShare
-	d.config = config
 
-	// Datashare doesn't support read-only transactions.
-	if config.ConnectionContext.ReadOnly && !d.datashare {
-		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
-	}
-
-	d.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
-	db, err := sql.Open(driverName, d.connectionString)
+	impl, err := redshiftdriver.Open(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	d.db = db
+	d.impl = impl
+	d.connectionCtx = config.ConnectionContext
+	opened = true
 	return d, nil
 }
 
-// Close closes the database and prevents new queries from starting.
-// Close then waits for all queries that have started processing on the server to finish.
+// redshiftConfig maps the data source onto the contract's Config, leaving the
+// network and TLS path to Open.
+func redshiftConfig(config db.ConnectionConfig) (omndriver.Config, error) {
+	dataSource := config.DataSource
+	if dataSource == nil {
+		return omndriver.Config{}, errors.New("a data source is required")
+	}
+	if dataSource.GetUsername() == "" {
+		return omndriver.Config{}, errors.New("user must be set")
+	}
+	if (dataSource.GetSslCert() == "" && dataSource.GetSslKey() != "") ||
+		(dataSource.GetSslCert() != "" && dataSource.GetSslKey() == "") {
+		return omndriver.Config{}, errors.New("ssl-cert and ssl-key must be both set or unset")
+	}
+
+	// An empty Database leaves the contract's own default, dev.
+	database := config.ConnectionContext.DatabaseName
+	if database == "" {
+		database = dataSource.GetDatabase()
+	}
+
+	cfg := omndriver.Config{
+		Host:          dataSource.GetHost(),
+		Port:          dataSource.GetPort(),
+		Database:      database,
+		User:          dataSource.GetUsername(),
+		Password:      config.Password,
+		ReadOnly:      config.ConnectionContext.ReadOnly,
+		EngineVersion: config.ConnectionContext.EngineVersion,
+	}
+	if config.ConnectionContext.DataShare {
+		cfg.Params = map[string]string{redshiftdriver.ParamDatashare: "true"}
+	}
+	if dataSource.GetSslCert() != "" {
+		tlsConfig, err := util.GetTLSConfig(dataSource)
+		if err != nil {
+			return omndriver.Config{}, err
+		}
+		if tlsConfig != nil {
+			cfg.TLS = func(string) (*tls.Config, error) { return tlsConfig, nil }
+		}
+	}
+	return cfg, nil
+}
+
+// Close closes the driver's session and what Open acquired beside it.
 func (d *Driver) Close(context.Context) error {
-	stdlib.UnregisterConnConfig(d.connectionString)
+	d.sessionMu.Lock()
+	if d.session != nil {
+		_ = d.session.Close()
+		d.session = nil
+	}
+	d.sessionMu.Unlock()
+
 	var err error
-	err = multierr.Append(err, d.db.Close())
+	if d.impl != nil {
+		err = multierr.Append(err, d.impl.Close())
+	}
 	if d.sshClient != nil {
 		err = multierr.Append(err, d.sshClient.Close())
 	}
 	return err
 }
 
-// Ping verifies a connection to the database is still alive, establishing a connection if necessary.
+// Ping reaches the server.
 func (d *Driver) Ping(ctx context.Context) error {
-	return d.db.PingContext(ctx)
+	return d.impl.Ping(ctx)
 }
 
-// GetDB gets the database.
-func (d *Driver) GetDB() *sql.DB {
-	return d.db
-}
+// OwnsQuerySession reports that QueryConn runs on the adapter's held session,
+// not on a connection a caller opens for it.
+func (*Driver) OwnsQuerySession() {}
 
-// Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
-// will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
-	if d.datashare {
-		return 0, errors.Errorf("datashare database cannot be updated")
-	}
-	if opts.CreateDatabase {
-		if err := d.createDatabaseExecute(ctx, statement); err != nil {
-			return 0, err
-		}
-		return 0, nil
-	}
-
-	// Parse transaction mode from the script
-	config, cleanedStatement := base.ParseTransactionConfig(statement)
-	statement = cleanedStatement
-	transactionMode := config.Mode
-
-	// Apply default when transaction mode is not specified
-	if transactionMode == transaction.ModeUnspecified {
-		transactionMode = transaction.DefaultMode()
-	}
-
-	var commands []base.Statement
-	oneshot := true
-	if len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := redshiftparser.SplitSQL(statement)
-		if err != nil {
-			return 0, err
-		}
-		commands = base.FilterEmptyStatements(singleSQLs)
-		if len(commands) <= common.MaximumCommands {
-			oneshot = false
-		}
-	}
-	if oneshot {
-		commands = []base.Statement{
-			{
-				Text: statement,
-			},
-		}
-	}
-
-	// Execute based on transaction mode
-	if transactionMode == transaction.ModeOff {
-		return d.executeInAutoCommitMode(ctx, commands, opts)
-	}
-	return d.executeInTransactionMode(ctx, commands, opts)
-}
-
-func (d *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
-	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
-	if err != nil {
-		return err
-	}
-	databases, err := d.getDatabases(ctx)
-	if err != nil {
-		return err
-	}
-	for _, database := range databases {
-		if database.Name == databaseName {
-			// Database already exists.
-			return nil
-		}
-	}
-
-	for _, s := range strings.Split(statement, "\n") {
-		if _, err := d.db.ExecContext(ctx, s); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	totalRowsAffected := int64(0)
-	if len(commands) == 0 {
-		return 0, nil
-	}
-
-	tx, err := d.db.BeginTx(ctx, nil)
-	if err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, err.Error())
-		return 0, err
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_BEGIN, "")
-
-	committed := false
-	defer func() {
-		err := tx.Rollback()
-		if committed {
-			return
-		}
-		var rerr string
-		if err != nil && !errors.Is(err, sql.ErrTxDone) {
-			rerr = err.Error()
-			slog.Debug("failed to rollback transaction", log.BBError(err))
-		}
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
-	}()
-
-	for i, command := range commands {
-		opts.LogCommandExecute(command.Range, command.Text)
-		// Log the query statement in char code to see if there are some control characters that cause issues.
-		var charCode []rune
-		for _, r := range command.Text {
-			charCode = append(charCode, r)
-		}
-		slog.Debug("executing command", slog.Any("command", charCode), slog.Int("index", i))
-		sqlResult, err := tx.ExecContext(ctx, command.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			return 0, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		opts.LogCommandResponse(rowsAffected, nil, "")
-		totalRowsAffected += rowsAffected
-	}
-
-	if err := tx.Commit(); err != nil {
-		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, err.Error())
-		return 0, err
-	}
-	opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_COMMIT, "")
-	committed = true
-
-	return totalRowsAffected, nil
-}
-
-// executeInAutoCommitMode executes statements sequentially in auto-commit mode
-func (d *Driver) executeInAutoCommitMode(ctx context.Context, commands []base.Statement, opts db.ExecuteOptions) (int64, error) {
-	totalRowsAffected := int64(0)
-
-	for i, command := range commands {
-		opts.LogCommandExecute(command.Range, command.Text)
-		// Log the query statement in char code to see if there are some control characters that cause issues.
-		var charCode []rune
-		for _, r := range command.Text {
-			charCode = append(charCode, r)
-		}
-		slog.Debug("executing command", slog.Any("command", charCode), slog.Int("index", i))
-		sqlResult, err := d.db.ExecContext(ctx, command.Text)
-		if err != nil {
-			opts.LogCommandResponse(0, nil, err.Error())
-			// In auto-commit mode, we stop at the first error
-			// The database is left in a partially migrated state
-			return totalRowsAffected, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		opts.LogCommandResponse(rowsAffected, nil, "")
-		totalRowsAffected += rowsAffected
-	}
-
-	return totalRowsAffected, nil
-}
-
-func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (string, error) {
-	raw := strings.TrimRight(createDatabaseStatement, ";")
-	raw = strings.TrimPrefix(raw, "CREATE DATABASE")
-	tokens := strings.Fields(raw)
-	if len(tokens) == 0 {
-		return "", errors.Errorf("database name not found")
-	}
-	databaseName := strings.TrimLeft(tokens[0], `"`)
-	databaseName = strings.TrimRight(databaseName, `"`)
-	return databaseName, nil
-}
-
-// GetCurrentDatabaseOwner returns the current database owner name.
-func (d *Driver) GetCurrentDatabaseOwner() (string, error) {
-	const query = `
-		SELECT
-			u.usename
-		FROM
-			pg_database as d JOIN pg_user as u ON (d.datdba = u.usesysid)
-		WHERE d.datname = current_database();
-	`
-	var owner string
-	rows, err := d.db.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		if err := rows.Scan(&owner); err != nil {
-			return "", err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-	if owner == "" {
-		return "", errors.Errorf("cannot find the current database owner because the query result is empty")
-	}
-	return owner, nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := redshiftparser.SplitSQL(statement)
+// SyncInstance reads the server version, its user databases and its users.
+func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+	instance, err := d.impl.SyncInstance(ctx)
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptyStatements(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
+	roles := make([]*storepb.InstanceRole, 0, len(instance.Roles))
+	for _, role := range instance.Roles {
+		roles = append(roles, &storepb.InstanceRole{
+			Name:      role.Name,
+			Attribute: role.Attribute,
+		})
 	}
+	return &db.InstanceMetadata{
+		Version:   instance.Version,
+		Databases: instance.Databases,
+		Metadata:  &storepb.Instance{Roles: roles},
+	}, nil
+}
 
-	// Sanitize the schema name by escaping any quotes.
-	safeSchemeName := strings.ReplaceAll(queryContext.Schema, "\"", "\"\"")
-
-	// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
-	// Reference: https://docs.aws.amazon.com/redshift/latest/dg/r_search_path.html
-	if queryContext.Schema != "" {
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf(`set search_path to "%s";`, safeSchemeName)); err != nil { // NOSONAR(go:S2077) safeSchemeName is sanitized by escaping double quotes above
-			return nil, err
+// SyncDBSchema reads the schema of the database the driver is open on.
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	metadata, err := d.impl.SyncDatabase(ctx)
+	if err != nil {
+		if errors.Is(err, omndriver.ErrNotFound) {
+			return nil, common.Errorf(common.NotFound, "database %q not found", d.connectionCtx.DatabaseName)
 		}
+		return nil, err
 	}
+	return metadata, nil
+}
 
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
-		if d.datashare {
-			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", d.databaseName), "")
-		}
-		if queryContext.Explain {
-			explained, err := base.ExplainStatement(storepb.Engine_REDSHIFT, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
-			if err != nil {
-				return nil, err
-			}
-			statement = explained
-		} else if queryContext.Limit > 0 {
-			statement = base.StatementWithResultLimit(storepb.Engine_REDSHIFT, statement, queryContext.Limit, "")
-		}
+// Dump writes nothing: the contract has no renderer for a Redshift snapshot, and
+// the driver this replaced wrote nothing either.
+func (*Driver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetadata) error {
+	return nil
+}
 
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_REDSHIFT, statement)
-		if err != nil {
-			return nil, err
-		}
-		startTime := time.Now()
-		queryResult, err := func() (*v1pb.QueryResult, error) {
-			if allQuery {
-				location := util.PgSessionLocation(conn)
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValueIn(location), queryContext.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
-					return nil, err
-				}
-				return r, nil
-			}
-
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-			return util.BuildAffectedRowsResult(affectedRows, nil), nil
-		}()
-		stop := false
-		if err != nil {
-			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
-			}
-			stop = true
-		}
-		queryResult.Statement = statement
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		queryResult.RowsCount = int64(len(queryResult.Rows))
-		results = append(results, queryResult)
-		if stop {
-			break
-		}
-	}
-
-	return results, nil
+// CountAffectedRows returns the planner's estimate of the rows the statement
+// modifies, which plancheck's affected-row limit reads.
+func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
+	return d.impl.CountAffectedRows(ctx, statement)
 }
