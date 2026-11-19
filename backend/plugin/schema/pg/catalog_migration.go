@@ -1581,6 +1581,15 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				typeEnd = i + 2
 			}
 			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
+				if isRegclassType(tokens, i) {
+					if matched, unqualified := literalRelationReference(tokens[typeEnd+1].text, schemaName, objectName); matched {
+						qualified = true
+					} else if unqualified {
+						return false
+					}
+					i = typeEnd + 1
+					continue
+				}
 				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
 				if matched {
 					qualified = true
