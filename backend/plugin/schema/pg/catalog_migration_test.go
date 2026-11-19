@@ -4132,3 +4132,67 @@ func TestViewDependencyQualificationSkipsWithOrdinality(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationSeesPostfixInheritance covers `public.t*`.
+func TestViewDependencyQualificationSeesPostfixInheritance(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t* AS p, t AS q",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestRoutineReturnTypeAllowsWhitespaceAroundDot covers `RETURNS other . v`.
+func TestRoutineReturnTypeAllowsWhitespaceAroundDot(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public", Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})}},
+			{Name: "other", Views: []*metadatapb.ViewMetadata{{
+				Name:              "v",
+				Definition:        "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+			}}},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	snapshotWithFunction := func(columnType string) *model.DatabaseMetadata {
+		db := snapshot(columnType)
+		db.GetProto().Schemas[0].Functions = []*metadatapb.FunctionMetadata{{
+			Name:       "f",
+			Signature:  "f()",
+			Definition: "CREATE FUNCTION public.f() RETURNS other . v LANGUAGE sql AS $$ SELECT $$",
+		}}
+		return model.NewDatabaseMetadata(db.GetProto(), nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshotWithFunction("integer"), snapshotWithFunction("bigint"))
+	require.ErrorContains(t, err, `routine "public"."f" uses the row type of view "other"."v"`)
+}
+
+// TestReleasedRoutineKeysKeepQuotedCase covers f(public."V") vs f(public."v").
+func TestReleasedRoutineKeysKeepQuotedCase(t *testing.T) {
+	oldMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:  "public",
+		Views: []*metadatapb.ViewMetadata{{Name: "V", Definition: "SELECT 1"}},
+		Functions: []*metadatapb.FunctionMetadata{
+			{Name: "f", Signature: `f(public."V")`},
+			{Name: "f", Signature: `f(public."v")`},
+		},
+	}}}
+	sourceDrops := map[string]catalog.MigrationOp{
+		`func:public.f|f(public."V")`: {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "f", SQL: `DROP FUNCTION "public"."f"(public."V")`},
+		`func:public.f|f(public."v")`: {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "f", SQL: `DROP FUNCTION "public"."f"(public."v")`},
+	}
+	ops, _ := releaseRoutineOps(&catalog.MigrationPlan{}, oldMeta, map[string]bool{objectKey("public", "V"): true}, []string{"public"}, sourceDrops)
+	require.Len(t, ops, 1)
+	require.Equal(t, `DROP FUNCTION "public"."f"(public."V")`, ops[0].SQL)
+	require.Contains(t, sourceDrops, `func:public.f|f(public."v")`)
+}

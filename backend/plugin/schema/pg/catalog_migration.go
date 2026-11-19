@@ -821,22 +821,32 @@ func parseTypeReferenceAt(text string, start int) (typeReference, int, bool) {
 	if !ok {
 		return typeReference{}, start, false
 	}
-	if next >= len(text) || text[next] != '.' {
-		end := next
-		for end+1 < len(text) && text[end] == '[' && text[end+1] == ']' {
-			end += 2
-		}
+	dot := skipSQLWhitespace(text, next)
+	if dot >= len(text) || text[dot] != '.' {
+		end := skipTypeArrayMarker(text, next)
 		return typeReference{object: identifier{name: first, quoted: firstQuoted}}, end, true
 	}
-	second, next, secondQuoted, ok := scanIdentifier(text, next+1)
+	secondStart := skipSQLWhitespace(text, dot+1)
+	second, next, secondQuoted, ok := scanIdentifier(text, secondStart)
 	if !ok {
 		return typeReference{}, start, false
 	}
-	end := next
-	for end+1 < len(text) && text[end] == '[' && text[end+1] == ']' {
-		end += 2
-	}
+	end := skipTypeArrayMarker(text, next)
 	return typeReference{schema: identifier{name: first, quoted: firstQuoted}, object: identifier{name: second, quoted: secondQuoted}, qualified: true}, end, true
+}
+
+func skipTypeArrayMarker(text string, end int) int {
+	for {
+		bracket := skipSQLWhitespace(text, end)
+		if bracket+1 >= len(text) || text[bracket] != '[' {
+			return end
+		}
+		closeBracket := skipSQLWhitespace(text, bracket+1)
+		if closeBracket >= len(text) || text[closeBracket] != ']' {
+			return end
+		}
+		end = closeBracket + 1
+	}
 }
 
 // startsDeclaration reports whether b can precede a type name in a declaration.
@@ -1487,7 +1497,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				} else {
 					inRelations = false
 				}
-			case ',':
+			case ',', '*':
 			default:
 				inRelations = false
 			}
@@ -3497,7 +3507,37 @@ func routineArgs(signature, definition string) string {
 }
 
 func routineKey(schemaName, name, args string) string {
-	return schemaName + "\x00" + name + "\x00" + strings.ToLower(strings.Join(strings.Fields(args), ""))
+	return schemaName + "\x00" + name + "\x00" + normalizeRoutineArgs(args)
+}
+
+func normalizeRoutineArgs(args string) string {
+	var result strings.Builder
+	inDouble, inSingle := false, false
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case '"':
+			if !inSingle {
+				inDouble = !inDouble
+			}
+			result.WriteByte(args[i])
+		case '\'':
+			if !inDouble {
+				inSingle = !inSingle
+			}
+			result.WriteByte(args[i])
+		case ' ', '\t', '\n', '\r':
+			if inDouble || inSingle {
+				result.WriteByte(args[i])
+			}
+		default:
+			if inDouble || inSingle {
+				result.WriteByte(args[i])
+			} else {
+				result.WriteByte(byte(unicode.ToLower(rune(args[i]))))
+			}
+		}
+	}
+	return result.String()
 }
 
 // routineIdentity distinguishes routine overloads, the way the load report does.
