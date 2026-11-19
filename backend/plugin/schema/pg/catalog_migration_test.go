@@ -3960,3 +3960,42 @@ func TestViewDependencyQualificationSeesUnicodeEscapedIdentifier(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestPrefixedLiteralRegclass covers E't'::regclass.
+func TestPrefixedLiteralRegclass(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT E't'::regclass, 'public.t'::regclass FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestUnicodeEscapedIdentifierDecodes covers U&"\0074" and UESCAPE.
+func TestUnicodeEscapedIdentifierDecodes(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT * FROM public.t p, U&"\0074" q`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = `SELECT * FROM public.t p, U&"!0074" UESCAPE '!' q`
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+}

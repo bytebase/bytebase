@@ -1135,6 +1135,62 @@ func startsUnquotedIdentifier(text string, index int) bool {
 	return isIdentifierRune(r)
 }
 
+func decodeUnicodeIdentifier(text string, escape rune) (string, bool) {
+	var result strings.Builder
+	for i := 0; i < len(text); {
+		r, size := utf8.DecodeRuneInString(text[i:])
+		if r != escape {
+			result.WriteString(text[i : i+size])
+			i += size
+			continue
+		}
+		i += size
+		if i < len(text) {
+			next, nextSize := utf8.DecodeRuneInString(text[i:])
+			if next == escape {
+				result.WriteRune(escape)
+				i += nextSize
+				continue
+			}
+		}
+		digits := 4
+		if i < len(text) && text[i] == '+' {
+			digits = 6
+			i++
+		}
+		if i+digits > len(text) {
+			return "", false
+		}
+		value := 0
+		for j := 0; j < digits; j++ {
+			digit := hexValue(text[i+j])
+			if digit < 0 {
+				return "", false
+			}
+			value = value*16 + digit
+		}
+		if !utf8.ValidRune(rune(value)) {
+			return "", false
+		}
+		result.WriteRune(rune(value))
+		i += digits
+	}
+	return result.String(), true
+}
+
+func hexValue(b byte) int {
+	switch {
+	case b >= '0' && b <= '9':
+		return int(b - '0')
+	case b >= 'a' && b <= 'f':
+		return int(b-'a') + 10
+	case b >= 'A' && b <= 'F':
+		return int(b-'A') + 10
+	default:
+		return -1
+	}
+}
+
 func isIdentifierRune(r rune) bool {
 	return r == '_' || r == '$' || unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsMark(r)
 }
@@ -1790,7 +1846,7 @@ func definitionTokens(text string) []definitionToken {
 			i = end + 1
 		case (text[i] == 'E' || text[i] == 'e' || text[i] == 'B' || text[i] == 'b' || text[i] == 'X' || text[i] == 'x' || text[i] == 'N' || text[i] == 'n') && i+1 < len(text) && text[i+1] == '\'':
 			end := closingQuote(text, i+1, '\'')
-			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+2:end], "''", "'"), literal: true})
+			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+2:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
 			i = end + 1
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '"':
 			name, next, ok := quotedIdentifier(text, i+2)
@@ -1798,11 +1854,26 @@ func definitionTokens(text string) []definitionToken {
 				i++
 				continue
 			}
+			escape := '\\'
+			if escapeIndex := skipSQLWhitespace(text, next); hasKeywordPrefix(text[escapeIndex:], "UESCAPE") {
+				escapeIndex = skipSQLWhitespace(text, escapeIndex+len("UESCAPE"))
+				if escapeIndex < len(text) && text[escapeIndex] == '\'' {
+					escapeEnd := closingQuote(text, escapeIndex, '\'')
+					content := text[escapeIndex+1 : escapeEnd]
+					if runes := []rune(content); len(runes) == 1 {
+						escape = runes[0]
+					}
+					next = escapeEnd + 1
+				}
+			}
+			if decoded, ok := decodeUnicodeIdentifier(name, escape); ok {
+				name = decoded
+			}
 			tokens = append(tokens, definitionToken{text: name, quoted: true})
 			i = next
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '\'':
 			end := closingQuote(text, i+2, '\'')
-			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+3:end], "''", "'"), literal: true})
+			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+3:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
 			i = end + 1
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
