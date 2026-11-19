@@ -159,6 +159,40 @@ func TestConnectionConfig(t *testing.T) {
 			},
 			want: omnidriver.Config{Host: "localhost:27017", Port: "27017"},
 		},
+		{
+			name: "IPv6 host with port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "2001:db8::1", Port: "27017"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017", Port: "27017"},
+		},
+		{
+			name: "already-bracketed IPv6 host with port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "[2001:db8::1]", Port: "27017"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017", Port: "27017"},
+		},
+		{
+			name: "IPv6 host without port",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{Host: "2001:db8::1"},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]"},
+		},
+		{
+			name: "multi-host IPv6 addresses",
+			connConfig: db.ConnectionConfig{
+				DataSource: &storepb.DataSource{
+					Host: "2001:db8::1",
+					Port: "27017",
+					AdditionalAddresses: []*storepb.DataSource_Address{
+						{Host: "2001:db8::2", Port: "27018"},
+					},
+				},
+			},
+			want: omnidriver.Config{Host: "[2001:db8::1]:27017,[2001:db8::2]:27018", Port: "27017"},
+		},
 	}
 
 	a := require.New(t)

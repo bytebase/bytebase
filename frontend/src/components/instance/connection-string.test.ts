@@ -778,11 +778,28 @@ describe("parseConnectionString - CockroachDB and Redshift", () => {
 });
 
 describe("parseConnectionString - MongoDB", () => {
-  it("parses mongodb+srv:// without forcing useSsl and preserves explicit authSource", () => {
+  it("parses mongodb+srv:// without forcing useSsl and falls back to path auth database", () => {
     expect(
       parseConnectionString(
         Engine.MONGODB,
         "mongodb+srv://app:<db_password>@cluster0.example.mongodb.net/storefront?retryWrites=true&w=majority"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: undefined,
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: "storefront",
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:<db_password>@cluster0.example.mongodb.net/?retryWrites=true"
       )
     ).toEqual({
       host: "cluster0.example.mongodb.net",
@@ -811,6 +828,42 @@ describe("parseConnectionString - MongoDB", () => {
       directConnection: false,
       authenticationDatabase: "admin",
       tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb://app:secret@db.example.com/my%20authdb"
+      )
+    ).toEqual({
+      host: "db.example.com",
+      port: "27017",
+      username: "app",
+      password: "secret",
+      srv: false,
+      additionalAddresses: [],
+      replicaSet: undefined,
+      directConnection: false,
+      authenticationDatabase: "my authdb",
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb://user:secret@[2001:db8::1]:27017,[2001:db8::2]:27018/storefront"
+      )
+    ).toEqual({
+      host: "2001:db8::1",
+      port: "27017",
+      username: "user",
+      password: "secret",
+      srv: false,
+      additionalAddresses: [{ host: "2001:db8::2", port: "27018" }],
+      replicaSet: undefined,
+      directConnection: false,
+      authenticationDatabase: "storefront",
+      tls: undefined,
     });
 
     expect(

@@ -196,3 +196,10 @@ func TestExecuteLoggerIsSilentWithoutACallback(t *testing.T) {
 		logger.Retry(nil, 1, 1)
 	})
 }
+
+func TestFormatAddress(t *testing.T) {
+	require.Equal(t, "node1.example.com:9042", formatAddress("node1.example.com", "9042"))
+	require.Equal(t, "node1.example.com", formatAddress("node1.example.com", ""))
+	require.Equal(t, "[2001:db8::1]:9042", formatAddress("2001:db8::1", "9042"))
+	require.Equal(t, "[2001:db8::1]:9042", formatAddress("[2001:db8::1]", "9042"))
+}

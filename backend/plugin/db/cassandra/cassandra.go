@@ -386,5 +386,6 @@ func formatAddress(host, port string) string {
 	if port == "" {
 		return host
 	}
-	return host + ":" + port
+	bare := strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	return net.JoinHostPort(bare, port)
 }

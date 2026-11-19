@@ -1290,7 +1290,11 @@ function parseMongoConnectionString(
   const username = (cliUsername ?? uri.username)?.trim() || undefined;
   const password = normalizePassword(cliPassword ?? uri.password);
   const authenticationDatabase =
-    (cliAuthDb ?? uri.query.get("authsource"))?.trim() || undefined;
+    (
+      cliAuthDb ??
+      uri.query.get("authsource") ??
+      (uri.path ? decodePercent(uri.path) : undefined)
+    )?.trim() || undefined;
 
   // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` is explicit:
   // `util.GetTLSConfig` verifies certificates against the SRV hostname rather
