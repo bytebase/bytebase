@@ -3087,6 +3087,8 @@ func TestBuiltinMultiwordTypeIsCaseInsensitive(t *testing.T) {
 	require.True(t, builtinMultiwordType("timestamp WITHOUT TIME ZONE"))
 	require.True(t, builtinMultiwordType("timestamp(3) with time zone"))
 	require.True(t, builtinMultiwordType("time(6) without time zone"))
+	require.True(t, builtinMultiwordType("interval day to second"))
+	require.True(t, builtinMultiwordType("interval year to month"))
 	require.False(t, builtinMultiwordType("public.PRECISION"))
 }
 

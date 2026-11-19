@@ -825,6 +825,19 @@ func builtinMultiwordType(text string) bool {
 		"time without time zone",
 		"timestamp with time zone",
 		"timestamp without time zone",
+		"interval year",
+		"interval month",
+		"interval day",
+		"interval hour",
+		"interval minute",
+		"interval second",
+		"interval year to month",
+		"interval day to hour",
+		"interval day to minute",
+		"interval day to second",
+		"interval hour to minute",
+		"interval hour to second",
+		"interval minute to second",
 	} {
 		if text == multiword || strings.HasSuffix(text, " "+multiword) {
 			return true
