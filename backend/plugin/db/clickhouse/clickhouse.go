@@ -71,7 +71,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-var _ db.Driver = (*Driver)(nil)
+var (
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
+)
 
 func init() {
 	db.Register(storepb.Engine_CLICKHOUSE, newDriver)
@@ -187,6 +190,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
 // Execute runs the script's statements, reporting each to the task run's log.
 // ClickHouse cannot roll back, so a script still logs the BEGIN and ROLLBACK

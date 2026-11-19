@@ -48,11 +48,18 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 }
 
 // queryOptions maps the product's query context onto the driver's.
+//
+// MaskingEnabled is carried because this engine is a MySQL fork and MySQL's
+// driver withholds the rows of a statement masking cannot trace: a stored
+// procedure call answers with rows no column of the statement names. This
+// driver classifies a CALL as a command, so it returns no such rows today and
+// the flag changes nothing until the withholding lands here.
 func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
 	return omnidriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
 	}
 }
 

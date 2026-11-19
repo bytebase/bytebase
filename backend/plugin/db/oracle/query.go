@@ -27,9 +27,17 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		d.session = session
 	}
 
-	results, err := d.session.Query(ctx, withoutSQLPlusCommands(statement), queryOptions(queryContext))
+	session := d.session
+	results, err := session.Query(ctx, withoutSQLPlusCommands(statement), queryOptions(queryContext))
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSessionLocked(session)
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// next statement must open a new session.
+		d.discardSessionLocked(session)
 	}
 	if len(results) == 0 {
 		return nil, nil
@@ -39,6 +47,16 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		converted = append(converted, util.OmniResultToQueryResult(result, queryContext.MaximumSQLResultSize))
 	}
 	return converted, nil
+}
+
+// discardSessionLocked closes a session a statement took with it, so the next
+// statement opens a new one instead of reusing a dead one. The caller holds
+// sessionMu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
+	}
 }
 
 // queryOptions maps the product's query context onto the contract's, masking

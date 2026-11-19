@@ -80,7 +80,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-var _ db.Driver = (*Driver)(nil)
+var (
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
+)
 
 func init() {
 	db.Register(storepb.Engine_OCEANBASE, newDriver)
@@ -380,6 +383,10 @@ func (d *Driver) Ping(ctx context.Context) error {
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
+
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
 
 // SyncInstance reads the server version, lower_case_table_names, accounts with
 // their global grants, and the non-system databases.

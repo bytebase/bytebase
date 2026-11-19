@@ -62,7 +62,8 @@ import (
 )
 
 var (
-	_ db.Driver = (*Driver)(nil)
+	_ db.Driver         = (*Driver)(nil)
+	_ db.SessionQuerier = (*Driver)(nil)
 
 	// applicationName renders the /*app=bytebase*/ comment the old driver
 	// prepended to a query and to a change script's commands.
@@ -80,9 +81,10 @@ type Driver struct {
 	// sshClient is the tunnel an SSH data source opened; Close closes it.
 	sshClient *ssh.Client
 
-	// sessionMu guards session. A driver is opened per request, and its
-	// QueryConn callers are sequential, but the adapter keeps the session for
-	// the driver's lifetime so it must not be shared by two calls at once.
+	// sessionMu guards session. A driver is opened per request, and the editor
+	// asks for one statement at a time, but the session is one server
+	// connection: the lock covers acquisition, the query and teardown so two
+	// calls can never interleave their statements on it.
 	sessionMu sync.Mutex
 	session   omnidriver.Session
 }
@@ -184,6 +186,10 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
+// OwnsQuerySession reports that QueryConn runs on the session the adapter holds
+// rather than on the *sql.Conn a caller passes, which is unused.
+func (*Driver) OwnsQuerySession() {}
+
 // Execute runs the script's statements under the transaction directive it
 // carries, reporting each step to the task run log.
 func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
@@ -241,7 +247,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	if queryContext.MaximumSQLResultSize <= 0 {
 		return nil, errors.New("maximum SQL result size must be positive")
 	}
-	session, err := d.querySession(ctx)
+	d.sessionMu.Lock()
+	defer d.sessionMu.Unlock()
+	session, err := d.querySessionLocked(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -255,13 +263,13 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	})
 	if err != nil {
 		// The script could not be run at all; the session is not one to keep.
-		d.discardSession(session)
+		d.discardSessionLocked(session)
 		return nil, err
 	}
 	if ctx.Err() != nil {
 		// The client closes the connection when a statement's context ends, so the
 		// stream's next statement must open a new session.
-		d.discardSession(session)
+		d.discardSessionLocked(session)
 	}
 
 	queryResults := make([]*v1pb.QueryResult, 0, len(results))
@@ -287,21 +295,19 @@ func explainFormat(format v1pb.QueryOption_ExplainFormat) string {
 	return "TEXT"
 }
 
-// discardSession closes a session a statement took with it, so the stream's
-// next statement opens a new one instead of reusing the dead one.
-func (d *Driver) discardSession(session omnidriver.Session) {
+// discardSessionLocked closes a session a statement took with it, so the
+// stream's next statement opens a new one instead of reusing the dead one. The
+// caller holds sessionMu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
 	_ = session.Close()
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
 	if d.session == session {
 		d.session = nil
 	}
 }
 
-// querySession returns the session QueryConn runs on, opening it on first use.
-func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
-	d.sessionMu.Lock()
-	defer d.sessionMu.Unlock()
+// querySessionLocked returns the session QueryConn runs on, opening it on first
+// use. The caller holds sessionMu.
+func (d *Driver) querySessionLocked(ctx context.Context) (omnidriver.Session, error) {
 	if d.session != nil {
 		return d.session, nil
 	}

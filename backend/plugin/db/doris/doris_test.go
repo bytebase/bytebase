@@ -341,3 +341,20 @@ EwEB/wQFMAMBAf8wJwYDVR0RBCAwHoIJbG9jYWxob3N0ghFkb3Jpcy5leGFtcGxl
 LmNvbTAKBggqhkjOPQQDAgNJADBGAiEAw0gLqM7TOqf0j0p7tjhsH1UKCceIVCQY
 /BQBsf/k7fgCIQDKZ/on64l/759Dj5nDzziQ2LjnT/6ScLS7W65WXAUv5Q==
 -----END CERTIFICATE-----`
+
+// TestQueryOptionsCarriesTheRequest pins the mapping QueryConn hands the
+// driver, masking included: a masked caller's rows must be withheld by the
+// engine that returns a statement's untraced rows, and the adapter's job is to
+// say that masking is on.
+func TestQueryOptionsCarriesTheRequest(t *testing.T) {
+	options := queryOptions(db.QueryContext{
+		Limit:                10,
+		Explain:              true,
+		MaximumSQLResultSize: 1024,
+		MaskingEnabled:       true,
+	})
+	require.Equal(t, 10, options.Limit)
+	require.True(t, options.Explain)
+	require.Equal(t, int64(1024), options.MaxResultBytes)
+	require.True(t, options.MaskingEnabled)
+}

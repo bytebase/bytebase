@@ -28,9 +28,25 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	results, err := session.Query(ctx, statement, queryOptions(queryContext))
 	if err != nil {
+		// The script could not be run at all; the session is not one to keep.
+		d.discardSessionLocked(session)
 		return nil, err
 	}
+	if ctx.Err() != nil {
+		// The client closes the connection when a statement's context ends, so the
+		// stream's next statement must open a new session.
+		d.discardSessionLocked(session)
+	}
 	return toQueryResults(results, queryContext.MaximumSQLResultSize), nil
+}
+
+// discardSessionLocked closes a session a statement took with it, so the next
+// statement opens a new one instead of reusing a dead one. The caller holds mu.
+func (d *Driver) discardSessionLocked(session omnidriver.Session) {
+	_ = session.Close()
+	if d.session == session {
+		d.session = nil
+	}
 }
 
 // querySession returns the session QueryConn runs on, opening it on first use.
@@ -48,11 +64,18 @@ func (d *Driver) querySession(ctx context.Context) (omnidriver.Session, error) {
 }
 
 // queryOptions maps the product's query context onto the driver's.
+//
+// MaskingEnabled is carried because this engine is a MySQL fork and MySQL's
+// driver withholds the rows of a statement masking cannot trace: a stored
+// procedure call answers with rows no column of the statement names. This
+// driver classifies a CALL as a command, so it returns no such rows today and
+// the flag changes nothing until the withholding lands here.
 func queryOptions(queryContext db.QueryContext) omnidriver.QueryOptions {
 	return omnidriver.QueryOptions{
 		Limit:          queryContext.Limit,
 		Explain:        queryContext.Explain,
 		MaxResultBytes: queryContext.MaximumSQLResultSize,
+		MaskingEnabled: queryContext.MaskingEnabled,
 	}
 }
 
