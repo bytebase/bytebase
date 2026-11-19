@@ -4541,6 +4541,10 @@ func TestViewDependencyQualificationSeesParenthesizedRegclassCasts(t *testing.T)
 		"SELECT regclass(('t')), 'public.t'::regclass FROM public.t",
 		"SELECT ARRAY['t', 'public.t']::regclass[] FROM public.t",
 		"SELECT '{t,public.t}'::regclass[] FROM public.t",
+		"SELECT '[0:0]={t}'::regclass[], 'public.t'::regclass FROM public.t",
+		"SELECT '[1:1][1:1]={{t}}'::regclass[], 'public.t'::regclass FROM public.t",
+		`SELECT '{"\"t\""}'::regclass[], 'public.t'::regclass FROM public.t`,
+		"SELECT 't' /*c*/ :: /*c*/ regclass, 'public.t'::regclass FROM public.t",
 		"SELECT CAST(ARRAY['t'] AS regclass[]), 'public.t'::regclass FROM public.t",
 	} {
 		meta := &metadatapb.DatabaseSchemaMetadata{

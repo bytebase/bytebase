@@ -2120,17 +2120,11 @@ func skipParenthesized(tokens []definitionToken, index int) int {
 }
 
 func relationTypeToken(text string, index int) (string, bool, bool) {
-	skip := func(i int) int {
-		for i < len(text) && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r') {
-			i++
-		}
-		return i
-	}
-	index = skip(index)
+	index = skipSQLWhitespace(text, index)
 	if !strings.HasPrefix(text[index:], "::") {
 		return "", false, false
 	}
-	index = skip(index + 2)
+	index = skipSQLWhitespace(text, index+2)
 	first, next, firstQuoted, ok := scanIdentifier(text, index)
 	if !ok {
 		return "", false, false
@@ -2166,6 +2160,11 @@ func isRelationTypeName(name string, quoted bool) bool {
 
 func literalRelationReference(text, schemaName, objectName string) (bool, bool) {
 	text = strings.TrimSpace(text)
+	if strings.HasPrefix(text, "[") {
+		if eq := strings.IndexByte(text, '='); eq >= 0 {
+			text = strings.TrimSpace(text[eq+1:])
+		}
+	}
 	if strings.HasPrefix(text, "{") && strings.HasSuffix(text, "}") {
 		qualified, unqualified := false, false
 		for _, element := range splitRelationLiteralElements(text[1 : len(text)-1]) {
@@ -2179,15 +2178,16 @@ func literalRelationReference(text, schemaName, objectName string) (bool, bool) 
 	if !ok {
 		return false, false
 	}
-	if next < len(text) && text[next] == '.' {
-		second, next, secondQuoted, ok := scanIdentifier(text, next+1)
-		if !ok || next != len(text) {
+	dot := skipSQLWhitespace(text, next)
+	if dot < len(text) && text[dot] == '.' {
+		second, end, secondQuoted, ok := scanIdentifier(text, skipSQLWhitespace(text, dot+1))
+		if !ok || skipSQLWhitespace(text, end) != len(text) {
 			return false, false
 		}
 		return (identifier{name: first, quoted: firstQuoted}).matches(schemaName) &&
 			(identifier{name: second, quoted: secondQuoted}).matches(objectName), false
 	}
-	if next != len(text) {
+	if skipSQLWhitespace(text, next) != len(text) {
 		return false, false
 	}
 	return false, (identifier{name: first, quoted: firstQuoted}).matches(objectName)
@@ -2198,6 +2198,7 @@ func splitRelationLiteralElements(text string) []string {
 	start := 0
 	inQuote := false
 	escaped := false
+	braceDepth := 0
 	for i := 0; i < len(text); i++ {
 		switch {
 		case escaped:
@@ -2206,13 +2207,42 @@ func splitRelationLiteralElements(text string) []string {
 			escaped = true
 		case text[i] == '"':
 			inQuote = !inQuote
-		case text[i] == ',' && !inQuote:
-			elements = append(elements, strings.TrimSpace(text[start:i]))
+		case !inQuote && text[i] == '{':
+			braceDepth++
+		case !inQuote && text[i] == '}' && braceDepth > 0:
+			braceDepth--
+		case text[i] == ',' && !inQuote && braceDepth == 0:
+			elements = append(elements, unquoteArrayElement(text[start:i]))
 			start = i + 1
 		default:
 		}
 	}
-	return append(elements, strings.TrimSpace(text[start:]))
+	return append(elements, unquoteArrayElement(text[start:]))
+}
+
+func unquoteArrayElement(raw string) string {
+	s := strings.TrimSpace(raw)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		var b strings.Builder
+		escaped := false
+		for i := 1; i < len(s)-1; i++ {
+			if escaped {
+				b.WriteByte(s[i])
+				escaped = false
+				continue
+			}
+			if s[i] == '\\' {
+				escaped = true
+				continue
+			}
+			b.WriteByte(s[i])
+		}
+		return b.String()
+	}
+	if strings.EqualFold(s, "NULL") {
+		return ""
+	}
+	return s
 }
 
 func stripSQLComments(text string) string {
