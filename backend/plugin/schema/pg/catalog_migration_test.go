@@ -4478,6 +4478,24 @@ func TestUnqualifiedRegclassRespectsSearchPath(t *testing.T) {
 
 // TestViewDependencyQualificationScansRowsFromColumnTypes covers a column
 // definition list inside ROWS FROM.
+func TestViewDependencyQualificationSeesRegclassArrayElement(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT '{t}'::regclass[], 'public.t'::regclass FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
 func TestViewDependencyQualificationScansRowsFromColumnTypes(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		SearchPath: `"$user", public`,

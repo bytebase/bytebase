@@ -1987,6 +1987,15 @@ func isRelationTypeName(name string, quoted bool) bool {
 
 func literalRelationReference(text, schemaName, objectName string) (bool, bool) {
 	text = strings.TrimSpace(text)
+	if strings.HasPrefix(text, "{") && strings.HasSuffix(text, "}") {
+		qualified, unqualified := false, false
+		for _, element := range splitRelationLiteralElements(text[1 : len(text)-1]) {
+			elementQualified, elementUnqualified := literalRelationReference(element, schemaName, objectName)
+			qualified = qualified || elementQualified
+			unqualified = unqualified || elementUnqualified
+		}
+		return qualified, unqualified
+	}
 	first, next, firstQuoted, ok := scanIdentifier(text, 0)
 	if !ok {
 		return false, false
@@ -2003,6 +2012,28 @@ func literalRelationReference(text, schemaName, objectName string) (bool, bool) 
 		return false, false
 	}
 	return false, (identifier{name: first, quoted: firstQuoted}).matches(objectName)
+}
+
+func splitRelationLiteralElements(text string) []string {
+	var elements []string
+	start := 0
+	inQuote := false
+	escaped := false
+	for i := 0; i < len(text); i++ {
+		switch {
+		case escaped:
+			escaped = false
+		case text[i] == '\\':
+			escaped = true
+		case text[i] == '"':
+			inQuote = !inQuote
+		case text[i] == ',' && !inQuote:
+			elements = append(elements, strings.TrimSpace(text[start:i]))
+			start = i + 1
+		default:
+		}
+	}
+	return append(elements, strings.TrimSpace(text[start:]))
 }
 
 func stripSQLComments(text string) string {
