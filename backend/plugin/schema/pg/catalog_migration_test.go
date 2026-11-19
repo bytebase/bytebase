@@ -3221,3 +3221,22 @@ func TestViewDependencyQualificationSkipsDerivedTableAlias(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationSkipsTablesample covers TABLESAMPLE after a
+// qualified relation: the sampling method is not a relation reference.
+func TestViewDependencyQualificationSkipsTablesample(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("system", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT * FROM public."system" TABLESAMPLE SYSTEM (10)`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "system"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

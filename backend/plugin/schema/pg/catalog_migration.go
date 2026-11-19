@@ -1594,9 +1594,13 @@ func skipRelationAlias(tokens []definitionToken, index int) int {
 	next := tokens[index+1]
 	if !next.quoted {
 		upper := strings.ToUpper(next.text)
+		if upper == "TABLESAMPLE" {
+			return skipTablesampleClause(tokens, index+1)
+		}
 		if upper == "AS" {
 			if index+2 < len(tokens) && tokens[index+2].punct == 0 {
-				return skipAliasColumnList(tokens, index+2)
+				alias := skipAliasColumnList(tokens, index+2)
+				return skipTablesampleClause(tokens, alias+1)
 			}
 			return index + 1
 		}
@@ -1604,7 +1608,30 @@ func skipRelationAlias(tokens []definitionToken, index int) int {
 			return index
 		}
 	}
-	return skipAliasColumnList(tokens, index+1)
+	alias := skipAliasColumnList(tokens, index+1)
+	return skipTablesampleClause(tokens, alias+1)
+}
+
+// skipTablesampleClause consumes TABLESAMPLE method [(args)] [REPEATABLE (args)]
+// starting at after and returns the last token index. Without TABLESAMPLE it
+// returns after-1.
+func skipTablesampleClause(tokens []definitionToken, after int) int {
+	if after >= len(tokens) || tokens[after].punct != 0 || tokens[after].quoted || !strings.EqualFold(tokens[after].text, "TABLESAMPLE") {
+		return after - 1
+	}
+	i := after + 1
+	if i < len(tokens) && tokens[i].punct == 0 {
+		i++
+	}
+	if i < len(tokens) && tokens[i].punct == '(' {
+		i = skipParenthesized(tokens, i) + 1
+	}
+	if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "REPEATABLE") {
+		if i+1 < len(tokens) && tokens[i+1].punct == '(' {
+			i = skipParenthesized(tokens, i+1) + 1
+		}
+	}
+	return i - 1
 }
 
 func relationClauseKeyword(upper string) bool {
