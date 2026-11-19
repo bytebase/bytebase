@@ -3543,3 +3543,26 @@ func TestViewDependencyQualificationSeesIsOf(t *testing.T) {
 	meta.Schemas[0].Views[0].Definition = "SELECT NULL::public.t IS OF (public.t) FROM public.t"
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationSeesTypedConstant covers `type 'literal'`
+// typed-constant expressions outside relation lists.
+func TestViewDependencyQualificationSeesTypedConstant(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT NULL::public.t, t '(1)' FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT NULL::public.t, public.t '(1)' FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

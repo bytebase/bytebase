@@ -1364,6 +1364,21 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 				i = ofEnd
 			}
 		}
+		if token.punct == 0 {
+			typeEnd := i
+			if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
+				typeEnd = i + 2
+			}
+			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
+				if matched, unqualified := typeReferenceAfter(tokens, i, schemaName, objectName); matched {
+					qualified = true
+				} else if unqualified {
+					return false
+				}
+				i = typeEnd
+				continue
+			}
+		}
 		if !inRelations {
 			continue
 		}
