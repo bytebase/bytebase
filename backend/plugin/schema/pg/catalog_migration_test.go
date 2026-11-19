@@ -1978,6 +1978,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "returns followed by external security",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "re",
+				Signature:  "re()",
+				Definition: "CREATE FUNCTION public.re() RETURNS public.v EXTERNAL SECURITY DEFINER LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
@@ -4075,4 +4084,42 @@ func TestViewDependencyQualificationSeesDollarTypedConstant(t *testing.T) {
 	paths := []string{"$user", "public"}
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestViewDependencyQualificationScansTablesampleArguments covers a subquery in
+// a TABLESAMPLE argument.
+func TestViewDependencyQualificationScansTablesampleArguments(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t TABLESAMPLE system ((SELECT 1 FROM t LIMIT 1))",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}
+
+// TestViewDependencyQualificationSkipsWithOrdinality covers WITH ORDINALITY.
+func TestViewDependencyQualificationSkipsWithOrdinality(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("ordinality", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.ordinality o CROSS JOIN unnest(ARRAY[1]) WITH ORDINALITY AS u",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "ordinality"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
