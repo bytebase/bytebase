@@ -2509,18 +2509,18 @@ func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.M
 	return result
 }
 
-// addTableParts indexes a table's indexes, and maps each of its constraints to the
-// table itself.
+// addTableParts indexes a table's indexes and constraints by their own metadata,
+// so an unchanged unloadable object does not refuse an unrelated table change.
 func addTableParts(objects map[string]proto.Message, table string, t *metadatapb.TableMetadata) {
 	for _, idx := range t.GetIndexes() {
 		objects["idx:"+table+"."+idx.GetName()] = idx
-		objects["con:"+table+"."+idx.GetName()] = t
+		objects["con:"+table+"."+idx.GetName()] = idx
 	}
 	for _, c := range t.GetCheckConstraints() {
-		objects["con:"+table+"."+c.GetName()] = t
+		objects["con:"+table+"."+c.GetName()] = c
 	}
 	for _, c := range t.GetExcludeConstraints() {
-		objects["con:"+table+"."+c.GetName()] = t
+		objects["con:"+table+"."+c.GetName()] = c
 	}
 	for _, fk := range t.GetForeignKeys() {
 		objects["con:"+table+"."+fk.GetName()] = fk

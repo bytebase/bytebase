@@ -290,6 +290,30 @@ func TestUnchangedUnloadableForeignKeyDoesNotRefuseUnrelatedTableChange(t *testi
 	require.Contains(t, sql, "ADD COLUMN note text")
 }
 
+// TestUnchangedUnloadableCheckDoesNotRefuseUnrelatedTableChange is the CHECK
+// counterpart: an unsupported check expression must not make every unrelated
+// change to its table unmigratable.
+func TestUnchangedUnloadableCheckDoesNotRefuseUnrelatedTableChange(t *testing.T) {
+	snapshot := func(withNote bool) *model.DatabaseMetadata {
+		columns := []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}
+		if withNote {
+			columns = append(columns, &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:             "t",
+				Columns:          columns,
+				CheckConstraints: []*metadatapb.CheckConstraintMetadata{{Name: "t_missing_check", Expression: "missing <> ''"}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.NoError(t, err)
+	require.Contains(t, sql, "ADD COLUMN note text")
+}
+
 // TestRestoreIndexDefinitionsFindsPartitionIndexes covers an index owned by a table
 // partition: its stored definition has to replace the generated one.
 func TestRestoreIndexDefinitionsFindsPartitionIndexes(t *testing.T) {
