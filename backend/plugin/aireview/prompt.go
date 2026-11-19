@@ -5,12 +5,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"text/template"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 //go:embed base_prompt.md
-var basePrompt string
+var basePromptSource string
+
+// The base prompt names the standard rules only where some are on: with none,
+// such as on a server whose SQL review is the plan checks', it would point the
+// model at a section that is not there.
+var (
+	basePromptTemplate     = template.Must(template.New("base_prompt.md").Parse(basePromptSource))
+	basePrompt             = renderBasePrompt(true)
+	basePromptWithoutRules = renderBasePrompt(false)
+)
+
+func renderBasePrompt(standardRules bool) string {
+	var b strings.Builder
+	if err := basePromptTemplate.Execute(&b, struct{ StandardRules bool }{standardRules}); err != nil {
+		panic(err)
+	}
+	return strings.TrimSpace(b.String())
+}
 
 // standardFindingsPrompt is the section of the system message that says what
 // to do with the standard findings on the target, which the user message
@@ -47,7 +65,8 @@ type SchemaSummary struct {
 // prefix cache holds it across the reviews of one project: the system message
 // changes only with the policies, the standard rules that are on, and whether
 // the standard review runs on the target's engine, and the user message
-// carries the target and the statements.
+// carries the target and the statements. With no standard rule on, the system
+// message states none.
 func buildMessages(request *Request, numberedStatement string, nonce string, hasTools bool) []*v1pb.AIChatMessage {
 	return []*v1pb.AIChatMessage{
 		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, buildSystemPrompt(request)),
@@ -61,8 +80,13 @@ func textMessage(role v1pb.AIChatMessageRole, content string) *v1pb.AIChatMessag
 
 func buildSystemPrompt(request *Request) string {
 	var b strings.Builder
-	_, _ = b.WriteString(strings.TrimSpace(basePrompt))
-	writeStandardRules(&b, request)
+	if len(request.StandardRules) > 0 {
+		_, _ = b.WriteString(basePrompt)
+		writeStandardRules(&b, request)
+	} else {
+		_, _ = b.WriteString(basePromptWithoutRules)
+		_, _ = b.WriteString("\n")
+	}
 	if len(request.StandardFindings) > 0 {
 		_, _ = b.WriteString("\n" + strings.TrimSpace(standardFindingsPrompt) + "\n")
 	}

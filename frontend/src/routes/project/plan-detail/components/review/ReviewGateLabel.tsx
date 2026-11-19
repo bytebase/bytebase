@@ -1,14 +1,18 @@
 import { Trans, useTranslation } from "react-i18next";
+import { levelPriority } from "@/components/sql-review/LevelPriorityBadge";
 import type { AutomatedReviewRow } from "../../utils/planGates";
 import { isPlanCheckRow, reviewerLabel } from "../../utils/reviewLabels";
 import { PriorityCounts } from "./PriorityCounts";
 
 // A reviewer's open findings: the review's by priority, a plan check's as a
-// count of errors.
+// count of its errors, which show as P0.
 function OpenFindings({ row }: { row: AutomatedReviewRow }) {
   const { t } = useTranslation();
   return isPlanCheckRow(row) ? (
-    t("plan.automated-review.n-errors", { count: row.findings.open })
+    t("plan.findings.n-priority", {
+      count: row.findings.open,
+      priority: levelPriority("error"),
+    })
   ) : (
     <PriorityCounts findings={row.findings} />
   );

@@ -68,7 +68,6 @@ import {
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
-import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
@@ -80,6 +79,7 @@ import {
   setSheetStatement,
 } from "@/utils/v1/sheet";
 import { useRegisterPlanSqlFixEditor } from "../hooks/usePlanSqlFixTarget";
+import { useChecksInReview } from "../hooks/useSqlReviewV2";
 import { usePlanDetailStore } from "../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import { affectedRowsSummary } from "../utils/affectedRows";
@@ -275,12 +275,12 @@ export function PlanDetailStatementSection({
     () => getSQLAdviceMarkers(planCheckRuns),
     [planCheckRuns]
   );
-  // Under SQL Review V2 the statement report is not a check; its estimate
-  // sits under the SQL it describes.
+  // Where the checks are reviewers the statement report is not one; its
+  // estimate sits under the SQL it describes.
+  const checksInReview = useChecksInReview();
   const affectedRows = useMemo(
-    () =>
-      sqlReviewV2Enabled() ? affectedRowsSummary(planCheckRuns) : undefined,
-    [planCheckRuns]
+    () => (checksInReview ? affectedRowsSummary(planCheckRuns) : undefined),
+    [checksInReview, planCheckRuns]
   );
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
@@ -108,13 +109,18 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 }
 
 // checkAReviewerRuns refuses a review that no reviewer would run. A server
-// without SQL Review V2 has no standard rule review, so there the AI review
-// has to be on; the error says why it is off.
+// without SQL Review V2 has no standard rule review, so there the workspace's
+// plan has to include the AI review, and the AI review has to be on; the error
+// says which is missing.
 func (s *IssueService) checkAReviewerRuns(ctx context.Context) error {
 	if s.profile.SQLReviewV2 {
 		return nil
 	}
-	aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW); err != nil {
+		return connect.NewError(connect.CodePermissionDenied, err)
+	}
+	aiSetting, err := s.store.GetAISettingUncached(ctx, workspaceID)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 	}
@@ -161,12 +167,25 @@ func checkReviewable(ctx context.Context, stores *store.Store, issue *store.Issu
 	return nil
 }
 
-// startReview starts the issue's review where SQL Review V2 is on, at the
-// points the plan's SQL is submitted or changed. It never fails its caller:
-// an issue the review does not apply to is skipped, and a failure is logged.
-func startReview(ctx context.Context, profile *config.Profile, stores *store.Store, b *bus.Bus, issue *store.IssueMessage) {
-	if !profile.SQLReviewV2 || issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
+// startReview starts the issue's review at the points the plan's SQL is
+// submitted or changed. It never fails its caller: an issue the review does
+// not apply to is skipped, and a failure is logged.
+func startReview(ctx context.Context, profile *config.Profile, stores *store.Store, licenseService *enterprise.LicenseService, b *bus.Bus, issue *store.IssueMessage) {
+	if issue == nil || issue.Type != storepb.Issue_DATABASE_CHANGE {
 		return
+	}
+	if !profile.SQLReviewV2 {
+		starts, err := aiReviewStarts(ctx, stores, licenseService, issue)
+		if err != nil {
+			slog.Warn("failed to start the review",
+				slog.String("project", issue.ProjectID),
+				slog.Int64("issue_id", issue.UID),
+				log.BBError(err))
+			return
+		}
+		if !starts {
+			return
+		}
 	}
 	if err := checkReviewable(ctx, stores, issue); err != nil {
 		if connect.CodeOf(err) != connect.CodeFailedPrecondition {
@@ -187,9 +206,33 @@ func startReview(ctx context.Context, profile *config.Profile, stores *store.Sto
 	b.ReviewRunTickleChan <- 0
 }
 
+// aiReviewStarts reports whether a server without SQL Review V2, where the
+// review is the AI review beside the plan checks' SQL review, starts the
+// issue's review. Like SQL Review V2 it reviews a draft too. It starts while
+// the plan includes the AI review and it is on, or over an earlier run even
+// when it is not, so the new run resolves that run's findings on the old SQL.
+func aiReviewStarts(ctx context.Context, stores *store.Store, licenseService *enterprise.LicenseService, issue *store.IssueMessage) (bool, error) {
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	aiSetting, err := stores.GetAISettingUncached(ctx, workspaceID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get AI setting")
+	}
+	// The plan is read only while the switch is on: a review the switch keeps
+	// off needs no license.
+	if aireview.CheckSetting(aiSetting) == nil &&
+		licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil {
+		return true, nil
+	}
+	run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get the review run")
+	}
+	return run != nil, nil
+}
+
 // requestRolloutCheck asks the rollout creator to look at the issue's plan
-// again. Under SQL Review V2 open threads hold the automatic rollout, so
-// resolving one can release it.
+// again. Open threads hold the automatic rollout, so resolving one can release
+// it.
 func requestRolloutCheck(ctx context.Context, stores *store.Store, b *bus.Bus, projectID string, issueUID int64) {
 	issue, err := stores.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
 	if err != nil {

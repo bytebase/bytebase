@@ -57,7 +57,7 @@ func TestBuildMessages(t *testing.T) {
 
 	require.Equal(t, roleSystem, messages[0].GetRole())
 	system := messages[0].GetContent()
-	require.True(t, strings.HasPrefix(system, strings.TrimSpace(basePrompt)), "the base prompt comes first so the vendor cache holds it")
+	require.True(t, strings.HasPrefix(system, basePromptWithoutRules), "the base prompt comes first so the vendor cache holds it")
 	require.Contains(t, system, "When the two conflict, the project policy wins.")
 	require.Contains(t, system, "## Workspace policy\n\nNo TRUNCATE in production.\n")
 	require.Contains(t, system, "## Project policy\n\n(none)\n")
@@ -108,9 +108,9 @@ func TestBuildMessagesStatesTheStandardRules(t *testing.T) {
 			},
 		},
 		{
-			name:    "every rule is off when the standard review is switched off",
-			request: &Request{StandardReviewRuns: true},
-			want:    []string{"- SYNTAX (off): ", "- REQUIRE_WHERE (off): ", "- DISALLOW_TRUNCATE (off): "},
+			name:    "the rules that are not on are off",
+			request: &Request{StandardRules: on[:1], StandardReviewRuns: true},
+			want:    []string{"- SYNTAX (yours, P0): ", "- REQUIRE_WHERE (off): ", "- DISALLOW_TRUNCATE (off): "},
 		},
 	}
 	for _, tc := range tests {
@@ -123,12 +123,29 @@ func TestBuildMessagesStatesTheStandardRules(t *testing.T) {
 				require.Contains(t, system, want)
 			}
 			section := strings.Index(system, "\n# Standard rules\n")
-			require.Greater(t, section, len(strings.TrimSpace(basePrompt)), "the standard rules follow the base prompt")
+			require.True(t, strings.HasPrefix(system, basePrompt), "the base prompt that names the standard rules comes first")
+			require.Greater(t, section, len(basePrompt), "the standard rules follow the base prompt")
 			require.Less(t, section, strings.Index(system, "\n# Policy\n"), "the policy, which decides over the rules, comes last")
 			require.Equal(t, len(standardRuleSentences), strings.Count(system[section:], "\n- ")-strings.Count(standardRulesPrompt, "\n- "), "every rule the prompt states has one line")
 			require.NotContains(t, system, "ONLINE_MIGRATION", "the review does not see the change's options")
 			require.NotContains(t, messages[1].GetContent(), "# Standard rules")
 		})
+	}
+}
+
+// With no standard rule on, as on a server whose SQL review is the plan
+// checks', the prompt names no standard rule, so none of them is left out of
+// the review and none is the model's to check.
+func TestBuildMessagesNamesNoStandardRuleWhenNoneIsOn(t *testing.T) {
+	t.Parallel()
+
+	for _, request := range []*Request{{}, {StandardReviewRuns: true}} {
+		system := buildMessages(request, "1\tUPDATE orders SET status = 'x';", "NONCE", true)[0].GetContent()
+		require.True(t, strings.HasPrefix(system, basePromptWithoutRules))
+		require.NotContains(t, strings.ToLower(system), "standard rule")
+		require.NotContains(t, system, "REQUIRE_WHERE")
+		require.Contains(t, system, "against what to look for, and each policy sentence.")
+		require.Contains(t, system, "\n\n# Policy\n\n", "the policy keeps its own section")
 	}
 }
 

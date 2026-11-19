@@ -13296,6 +13296,7 @@ PlanFeature represents the available features in Bytebase
 | FEATURE_EMAIL_SUPPORT | 70 |  |
 | FEATURE_DEDICATED_SUPPORT_WITH_SLA | 71 |  |
 | FEATURE_SHAREPOINT_EXPORT | 72 | Upload exports to SharePoint. |
+| FEATURE_AI_SQL_REVIEW | 73 | An AI model reviews the SQL of an issue. |
 
 
 

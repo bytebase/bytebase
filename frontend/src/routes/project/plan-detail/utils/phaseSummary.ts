@@ -1,3 +1,4 @@
+import { levelPriority } from "@/components/sql-review/LevelPriorityBadge";
 import {
   getPlanCheckSummaryWithFallback,
   type PlanCheckSummary,
@@ -131,11 +132,22 @@ export const buildChangesSummary = (
     if (checks.success > 0) {
       checkParts.push(t("plan.summary.n-passed", { n: checks.success }));
     }
-    if (checks.warning > 0) {
-      checkParts.push(t("plan.summary.n-warning", { n: checks.warning }));
-    }
+    // Errors and warnings read as the review priorities they show as.
     if (checks.error > 0) {
-      checkParts.push(t("plan.summary.n-error", { n: checks.error }));
+      checkParts.push(
+        t("plan.findings.n-priority", {
+          count: checks.error,
+          priority: levelPriority("error"),
+        })
+      );
+    }
+    if (checks.warning > 0) {
+      checkParts.push(
+        t("plan.findings.n-priority", {
+          count: checks.warning,
+          priority: levelPriority("warning"),
+        })
+      );
     }
     if (checkParts.length > 0) {
       parts.push(checkParts.join(", "));

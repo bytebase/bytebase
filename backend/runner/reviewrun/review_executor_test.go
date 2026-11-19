@@ -15,6 +15,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/code"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/ai"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/store"
@@ -124,7 +125,7 @@ func TestReviewExecutorPutsBothReviewersResultsInReadingOrder(t *testing.T) {
 		require.Equal(t, int32(1), rule.calls.Load(), "the rules run before the AI review")
 	}
 
-	results, err := (&ReviewExecutor{store: stores, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	results, err := (&ReviewExecutor{store: stores, license: licenseStub{}, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
 	require.Equal(t, []string{"1 P2 AI", "3 P0 AI", "3 P1 RULE"}, places(results), "by line, then by priority")
 	require.Equal(t, int32(1), aiReview.calls.Load())
@@ -137,14 +138,14 @@ func TestReviewExecutorPostsNothingWhenAReviewerFails(t *testing.T) {
 
 	rule := &stubRules{err: errors.New("the rules failed")}
 	aiReview := &stubAIReview{}
-	results, err := (&ReviewExecutor{store: stores, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	results, err := (&ReviewExecutor{store: stores, license: licenseStub{}, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.ErrorContains(t, err, "the rules failed")
 	require.Nil(t, results)
 	require.Zero(t, aiReview.calls.Load(), "a failure of the rules costs no model call")
 
 	rule = &stubRules{results: []*ruleResult{ruleResultAt(1, storepb.ReviewRuleType_REQUIRE_WHERE)}}
 	aiReview = &stubAIReview{err: errors.New("the model failed")}
-	results, err = (&ReviewExecutor{store: stores, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	results, err = (&ReviewExecutor{store: stores, license: licenseStub{}, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.ErrorContains(t, err, "the model failed")
 	require.Nil(t, results, "the rules' results do not post without the AI review's")
 }
@@ -157,7 +158,7 @@ func TestReviewExecutorSkipsAnAIReviewThatIsOff(t *testing.T) {
 
 	setAIReview(ctx, t, stores, false)
 	aiReview := &stubAIReview{}
-	results, err := (&ReviewExecutor{store: stores, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	results, err := (&ReviewExecutor{store: stores, license: licenseStub{}, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
 	require.Equal(t, []string{"1 P1 RULE"}, places(results))
 	require.Zero(t, aiReview.calls.Load())
@@ -166,10 +167,33 @@ func TestReviewExecutorSkipsAnAIReviewThatIsOff(t *testing.T) {
 	setAIReview(ctx, t, stores, true)
 	aiReview = &stubAIReview{err: errors.New("AI SQL review is not enabled")}
 	aiReview.onRun = func() { setAIReview(ctx, t, stores, false) }
-	results, err = (&ReviewExecutor{store: stores, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	results, err = (&ReviewExecutor{store: stores, license: licenseStub{}, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err, "a review switched off in flight is skipped like one that was off from the start")
 	require.Equal(t, []string{"1 P1 RULE"}, places(results))
 	require.Equal(t, int32(1), aiReview.calls.Load())
+}
+
+// licenseStub is a workspace plan: err is why it lacks every feature, and nil
+// gives it all of them.
+type licenseStub struct{ err error }
+
+func (l licenseStub) IsFeatureEnabled(context.Context, string, v1pb.PlanFeature) error {
+	return l.err
+}
+
+var withoutEnterprise = licenseStub{err: errors.New("feature FEATURE_AI_SQL_REVIEW is a ENTERPRISE feature, please upgrade to access it")}
+
+func TestReviewExecutorSkipsTheAIReviewWithoutThePlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	rule := &stubRules{results: []*ruleResult{ruleResultAt(1, storepb.ReviewRuleType_SYNTAX)}}
+	aiReview := &stubAIReview{}
+
+	results, err := (&ReviewExecutor{store: stores, license: withoutEnterprise, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	require.Equal(t, []string{"1 P0 RULE"}, places(results))
+	require.Zero(t, aiReview.calls.Load())
 }
 
 func TestReviewExecutorWithoutTheStandardRules(t *testing.T) {
@@ -178,7 +202,7 @@ func TestReviewExecutorWithoutTheStandardRules(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	aiResults := []*store.IssueCommentMessage{aiResultAt(1, storepb.IssueCommentPayload_ReviewMetadata_P1)}
 
-	results, err := (&ReviewExecutor{store: stores, ai: &stubAIReview{results: aiResults}}).RunOnce(ctx, "p", issues[0])
+	results, err := (&ReviewExecutor{store: stores, license: licenseStub{}, ai: &stubAIReview{results: aiResults}}).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
 	require.Equal(t, aiResults, results)
 }
@@ -203,7 +227,7 @@ func TestReviewRunKeepsBothReviewersThreadsAcrossRuns(t *testing.T) {
 			ctx := context.Background()
 			stores, issues := setupReviewFixture(ctx, t, 1)
 			model := &findingModel{}
-			executor := NewReviewExecutor(stores,
+			executor := NewReviewExecutor(stores, licenseStub{},
 				&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
 					storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
 						every := make([]int, len(targets))
@@ -219,6 +243,7 @@ func TestReviewRunKeepsBothReviewersThreadsAcrossRuns(t *testing.T) {
 					},
 				}},
 				&AIReviewExecutor{
+					license:  licenseStub{},
 					store:    stores,
 					newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 					slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -308,7 +333,7 @@ func TestReviewPutsTheAIReviewProblemInTheRulesThread(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	model := &findingModel{}
 	model.onOperation.Store(true)
-	executor := NewReviewExecutor(stores,
+	executor := NewReviewExecutor(stores, licenseStub{},
 		&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
 			storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
 				every := make([]int, len(targets))
@@ -324,6 +349,7 @@ func TestReviewPutsTheAIReviewProblemInTheRulesThread(t *testing.T) {
 			},
 		}},
 		&AIReviewExecutor{
+			license:  licenseStub{},
 			store:    stores,
 			newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 			slots:    semaphore.NewWeighted(aiReviewServerConcurrency),

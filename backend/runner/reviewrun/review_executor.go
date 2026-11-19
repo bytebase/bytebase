@@ -7,10 +7,17 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/code"
 
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/ai"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// LicenseChecker reports why a workspace's plan lacks a feature, or nil when
+// it has it. enterprise.LicenseService implements it.
+type LicenseChecker interface {
+	IsFeatureEnabled(ctx context.Context, workspaceID string, f v1pb.PlanFeature) error
+}
 
 // ReviewExecutor runs an issue's review as one job: the standard rules, then
 // the AI review while the workspace allows it. The results of both post
@@ -18,7 +25,8 @@ import (
 // ends the job before any model call, and the AI review's problems on the
 // operations the rules flag join the rules' results.
 type ReviewExecutor struct {
-	store *store.Store
+	store   *store.Store
+	license LicenseChecker
 	// rule is nil where SQL Review V2 is off: no standard rule review runs
 	// there, and the review is the AI review alone.
 	rule ruleReviewer
@@ -40,8 +48,8 @@ type aiReviewer interface {
 
 // NewReviewExecutor creates the executor of the review. rule is nil where SQL
 // Review V2 is off.
-func NewReviewExecutor(s *store.Store, rule *RuleExecutor, ai *AIReviewExecutor) *ReviewExecutor {
-	e := &ReviewExecutor{store: s, ai: ai}
+func NewReviewExecutor(s *store.Store, license LicenseChecker, rule *RuleExecutor, ai *AIReviewExecutor) *ReviewExecutor {
+	e := &ReviewExecutor{store: s, license: license, ai: ai}
 	// A nil *RuleExecutor in the interface would not compare equal to nil.
 	if rule != nil {
 		e.rule = rule
@@ -93,14 +101,16 @@ func (e *ReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID
 	return results, nil
 }
 
-// aiReviewOn reports whether the workspace AI setting allows the AI review.
-// It reads past the setting cache, as the AI review does.
+// aiReviewOn reports whether the workspace AI setting and the workspace's
+// plan allow the AI review. It reads past the setting cache, as the AI review
+// does.
 func (e *ReviewExecutor) aiReviewOn(ctx context.Context, workspace string) (bool, error) {
 	setting, err := e.store.GetAISettingUncached(ctx, workspace)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get AI setting")
 	}
-	return aireview.CheckSetting(setting) == nil, nil
+	return aireview.CheckSetting(setting) == nil &&
+		e.license.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil, nil
 }
 
 // errorCode is the canonical code of the failure that ended a run, for a

@@ -45,6 +45,17 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 
+// The project follows the workspace: these tests switch the AI review
+// through the server info.
+vi.mock("./useAIReviewOn", () => ({
+  useAIReviewOn: () => {
+    const info = mocks.serverInfo as
+      | { aiEnabled?: boolean; aiSqlReviewEnabled?: boolean }
+      | undefined;
+    return Boolean(info?.aiEnabled && info.aiSqlReviewEnabled);
+  },
+}));
+
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({ serverInfo: mocks.serverInfo, ...mocks.groups }),
@@ -59,7 +70,7 @@ vi.mock("../shell/PlanDetailContext", () => ({
 }));
 
 vi.mock("./useSqlReviewV2", () => ({
-  useSqlReviewV2: () => ({ review: { reload: mocks.reload, run: mocks.run } }),
+  usePlanReviewRun: () => ({ reload: mocks.reload, run: mocks.run }),
 }));
 
 import { useReviewRerun } from "./useReviewRerun";

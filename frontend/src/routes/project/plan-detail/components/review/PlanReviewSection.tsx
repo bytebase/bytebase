@@ -4,7 +4,10 @@ import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { usePlanReviewState } from "../../hooks/usePlanReviewState";
+import {
+  useAIReviewBesideV1,
+  usePlanReviewState,
+} from "../../hooks/usePlanReviewState";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { AutomatedReviewSection } from "./AutomatedReviewSection";
 import { ReviewActivityTimeline } from "./ReviewActivityTimeline";
@@ -37,26 +40,27 @@ export function PlanReviewSection() {
   const comments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_COMMENTS
   );
-  // Under SQL Review V2 the machine reviews run from draft onward, so Review
-  // shows them, and Deploy lists what the rollout waits on.
+  // The machine reviews run from draft onward, so Review shows them; under
+  // SQL Review V2 Deploy also lists what the rollout waits on.
   const reviewState = usePlanReviewState();
+  // Beside V1's plan checks the AI review, and the checks join it here.
+  const aiReview = useAIReviewBesideV1();
+  const automatedReview = reviewState ?? aiReview;
 
   if (!issue) return null;
 
   if (issue.draft) {
     return (
       <div className="flex flex-col">
-        {reviewState && (
-          <div className="flex flex-col gap-y-1 px-4 pt-3">
-            <h3 className="text-base font-medium text-main">
-              {t("issue.approval-flow.self")}
-            </h3>
-            <p className="text-sm text-control-light">
-              {t("plan.review.approval-after-submit")}
-            </p>
-          </div>
-        )}
-        {reviewState && <AutomatedReviewSection state={reviewState} />}
+        <div className="flex flex-col gap-y-1 px-4 pt-3">
+          <h3 className="text-base font-medium text-main">
+            {t("issue.approval-flow.self")}
+          </h3>
+          <p className="text-sm text-control-light">
+            {t("plan.review.approval-after-submit")}
+          </p>
+        </div>
+        {automatedReview && <AutomatedReviewSection state={automatedReview} />}
         <ReviewActivityTimeline
           comments={comments}
           issue={issue}
@@ -73,7 +77,7 @@ export function PlanReviewSection() {
     </div>
   );
   const generating = issue.approvalStatus === ApprovalStatus.CHECKING;
-  if (generating && !reviewState) return generatingFlow;
+  if (generating && !automatedReview) return generatingFlow;
 
   // The automated reviewers stay reachable while the approval flow is being
   // generated: a failed evaluation is retried by rerunning the plan checks.
@@ -91,7 +95,7 @@ export function PlanReviewSection() {
           <ReviewRejectionBanner comments={comments} issue={issue} />
         </>
       )}
-      {reviewState && <AutomatedReviewSection state={reviewState} />}
+      {automatedReview && <AutomatedReviewSection state={automatedReview} />}
       <ReviewActivityTimeline
         comments={comments}
         issue={issue}

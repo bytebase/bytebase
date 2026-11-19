@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -89,9 +90,9 @@ func TestValidateReviewAIPolicyPayload(t *testing.T) {
 }
 
 // TestReviewAIPolicyService walks the REVIEW_AI policy through the service
-// against a real store at both levels: NotFound on a missing row, create,
-// get, list, update, validation, enforce, and delete. The effective lookup
-// is the store's behavior and is tested there.
+// against a real store at both levels: NotFound on a missing row, the plan it
+// needs, create, get, list, update, validation, enforce, and delete. The
+// effective lookup is the store's behavior and is tested there.
 func TestReviewAIPolicyService(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -99,7 +100,9 @@ func TestReviewAIPolicyService(t *testing.T) {
 	stores := setupIssueServiceTestStore(ctx, t)
 	iamManager, err := iam.NewManager(stores, nil, false)
 	a.NoError(err)
-	service := NewOrgPolicyService(stores, nil, iamManager)
+	freeLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	a.NoError(err)
+	service := NewOrgPolicyService(stores, freeLicenseService, iamManager)
 
 	const projectName = "projects/project-a"
 	projectPolicyName := projectName + "/policies/review_ai"
@@ -124,6 +127,15 @@ func TestReviewAIPolicyService(t *testing.T) {
 	// No row: NotFound. A missing policy has no default, unlike the rule policy.
 	_, err = get(projectPolicyName)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	// The AI review is an Enterprise feature.
+	_, err = service.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{
+		Parent: projectName,
+		Policy: reviewAI("Every table has a primary key."),
+	}))
+	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+	a.ErrorContains(err, "FEATURE_AI_SQL_REVIEW")
+	service = NewOrgPolicyService(stores, newEnterpriseLicenseService(ctx, t, stores), iamManager)
 
 	// Create on the project.
 	const projectText = "Every new column on orders has a comment."

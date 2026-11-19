@@ -15,6 +15,7 @@ import type { RuleTemplateV2 } from "@/types/sqlReview";
 
 let RuleEditDialog: typeof import("./RuleComponents").RuleEditDialog;
 let RuleLevelSwitch: typeof import("./RuleComponents").RuleLevelSwitch;
+let RuleLevelBadge: typeof import("./RuleComponents").RuleLevelBadge;
 let RuleConfig: typeof import("./RuleComponents").RuleConfig;
 
 vi.mock("react-i18next", () => ({
@@ -131,9 +132,8 @@ const maximumSQLSizeRule = (): RuleTemplateV2 => ({
 });
 
 beforeEach(async () => {
-  ({ RuleConfig, RuleEditDialog, RuleLevelSwitch } = await import(
-    "./RuleComponents"
-  ));
+  ({ RuleConfig, RuleEditDialog, RuleLevelBadge, RuleLevelSwitch } =
+    await import("./RuleComponents"));
 });
 
 describe("RuleLevelSwitch", () => {
@@ -148,10 +148,46 @@ describe("RuleLevelSwitch", () => {
     render();
 
     const errorButton = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "sql-review.level.error"
+      (button) => button.textContent === "P0"
     );
     expect(errorButton).toBeTruthy();
     expect(errorButton?.className).toContain("z-10");
+
+    unmount();
+  });
+
+  test("shows an error as P0 and a warning as P1", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleLevelSwitch
+        level={SQLReviewRule_Level.WARNING}
+        onLevelChange={vi.fn()}
+      />
+    );
+
+    render();
+
+    expect(
+      [...container.querySelectorAll("button")].map(
+        (button) => button.textContent
+      )
+    ).toEqual(["P0", "P1"]);
+
+    unmount();
+  });
+});
+
+describe("RuleLevelBadge", () => {
+  test.each([
+    [SQLReviewRule_Level.ERROR, "P0 (3)"],
+    [SQLReviewRule_Level.WARNING, "P1 (3)"],
+  ])("shows level %s as its priority", (level, text) => {
+    const { container, render, unmount } = renderIntoContainer(
+      <RuleLevelBadge level={level} suffix="(3)" />
+    );
+
+    render();
+
+    expect(container.textContent).toBe(text);
 
     unmount();
   });

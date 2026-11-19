@@ -338,7 +338,7 @@ func TestReviewExecutorSortsTheRulesResults(t *testing.T) {
 		}, nil
 	}
 	// No AI setting is stored, so the review is the rules alone.
-	executor := NewReviewExecutor(stores, &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{storepb.Engine_POSTGRES: secondFirst}}, nil)
+	executor := NewReviewExecutor(stores, licenseStub{}, &RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{storepb.Engine_POSTGRES: secondFirst}}, nil)
 	comments, err := executor.RunOnce(ctx, "p", issue.UID)
 	require.NoError(t, err)
 	var messages []string

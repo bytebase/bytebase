@@ -51,9 +51,9 @@ import {
   ReviewerIcon,
   ReviewHeading,
   ReviewTargets,
-  reviewerName,
 } from "../../plan-detail/components/threads/ReviewResult";
 import { usePlanChangeReferenceData } from "../../plan-detail/hooks/usePlanChangeReferenceData";
+import { reviewerName } from "../../plan-detail/utils/reviewLabels";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 // Stable empty reference for the no-issue branch of the comments selector.

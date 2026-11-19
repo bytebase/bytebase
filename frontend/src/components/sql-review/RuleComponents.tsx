@@ -2,7 +2,10 @@ import { CircleHelpIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EngineIcon } from "@/components/EngineIcon";
-import { Badge } from "@/components/ui/badge";
+import {
+  LevelPriorityBadge,
+  levelPriority,
+} from "@/components/sql-review/LevelPriorityBadge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -76,13 +79,9 @@ export function RuleLevelSwitch({
   editable = true,
   onLevelChange,
 }: RuleLevelSwitchProps) {
-  const { t } = useTranslation();
   const levelOptions = [
-    { level: SQLReviewRule_Level.ERROR, label: t("sql-review.level.error") },
-    {
-      level: SQLReviewRule_Level.WARNING,
-      label: t("sql-review.level.warning"),
-    },
+    { level: SQLReviewRule_Level.ERROR, label: levelPriority("error") },
+    { level: SQLReviewRule_Level.WARNING, label: levelPriority("warning") },
   ];
 
   const activeClass = (opt: SQLReviewRule_Level) => {
@@ -129,19 +128,13 @@ interface RuleLevelBadgeProps {
 }
 
 export function RuleLevelBadge({ level, suffix }: RuleLevelBadgeProps) {
-  const { t } = useTranslation();
-  const variant =
-    level === SQLReviewRule_Level.ERROR ? "destructive" : "warning";
-  const label =
-    level === SQLReviewRule_Level.ERROR
-      ? t("sql-review.level.error")
-      : t("sql-review.level.warning");
-
   return (
-    <Badge variant={variant} className="text-xs">
-      {label}
+    <LevelPriorityBadge
+      className="text-xs"
+      level={level === SQLReviewRule_Level.ERROR ? "error" : "warning"}
+    >
       {suffix && ` ${suffix}`}
-    </Badge>
+    </LevelPriorityBadge>
   );
 }
 

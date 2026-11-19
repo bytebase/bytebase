@@ -33,6 +33,10 @@
         "desc": "AI駆動のクエリ提案とインデックス推奨を取得します。",
         "title": "AIクエリ提案"
       },
+      "FEATURE_AI_SQL_REVIEW": {
+        "desc": "AI モデルがポリシーに沿って各 Issue の SQL をレビューし、見つけたリスクをコメントします。",
+        "title": "AI SQL レビュー"
+      },
       "FEATURE_API_INTEGRATION_GUIDANCE": {
         "desc": "API統合のドキュメントとガイダンス。",
         "title": "API統合ガイダンス"

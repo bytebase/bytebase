@@ -41,6 +41,7 @@ func TestCISampleBoundsBothReviewers(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -88,6 +89,7 @@ func TestAIReviewRunsShareTheServerLimit(t *testing.T) {
 	model := &blockingModel{entered: make(chan struct{}, total), release: make(chan struct{})}
 	slots := &observedSlots{Weighted: semaphore.NewWeighted(limit), waiting: make(chan struct{}, total)}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    slots,
@@ -133,6 +135,7 @@ func TestAIReviewKeepsTheThreadOfAProblemReportedAgain(t *testing.T) {
 	stores, issues := setupReviewFixture(ctx, t, 1)
 	model := &findingModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -358,13 +361,29 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 	for _, tc := range []struct {
 		name             string
 		ruleReviewCovers func(storepb.Engine) bool
-		want             string
+		check            func(t *testing.T, system string)
 	}{
-		{name: "the standard review runs", ruleReviewCovers: ReviewsEngine, want: "- SYNTAX (left to the standard review, P0): "},
-		{name: "SQL Review V2 is off", want: "- SYNTAX (yours, P0): "},
+		{
+			name:             "the standard review runs",
+			ruleReviewCovers: ReviewsEngine,
+			check: func(t *testing.T, system string) {
+				require.Contains(t, system, "- SYNTAX (left to the standard review, P0): ")
+				require.Contains(t, system, "- REQUIRE_WHERE (off): ")
+			},
+		},
+		{
+			// The plan checks' SQL review runs there instead, whatever the
+			// review rule policy says.
+			name: "SQL Review V2 is off",
+			check: func(t *testing.T, system string) {
+				require.NotContains(t, strings.ToLower(system), "standard rule")
+				require.NotContains(t, system, "SYNTAX")
+			},
+		},
 	} {
 		model := &systemPromptModel{}
 		executor := &AIReviewExecutor{
+			license:          licenseStub{},
 			store:            stores,
 			newModel:         func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 			slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -373,8 +392,7 @@ func TestAIReviewStatesTheStandardRules(t *testing.T) {
 		comments, err := executor.reviewWith(ctx, "p", issues[0], nil)
 		require.NoError(t, err, tc.name)
 		require.Empty(t, comments, tc.name)
-		require.Contains(t, model.system, tc.want, tc.name)
-		require.Contains(t, model.system, "- REQUIRE_WHERE (off): ", tc.name)
+		tc.check(t, model.system)
 	}
 }
 
@@ -399,6 +417,7 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 		_, switchOffErr = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
 	}}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
@@ -410,6 +429,24 @@ func TestAIReviewStopsWhenSwitchedOffBeforeItPosts(t *testing.T) {
 	require.Empty(t, comments)
 }
 
+func TestAIReviewNeedsTheEnterprisePlan(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	model := &findingModel{}
+	executor := &AIReviewExecutor{
+		store:    stores,
+		license:  withoutEnterprise,
+		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+	}
+	comments, err := executor.reviewWith(ctx, "p", issues[0], nil)
+	require.NoError(t, err, "a plan without the AI review is the review switched off")
+	require.Empty(t, comments)
+	require.Zero(t, model.calls.Load())
+	require.ErrorContains(t, executor.checkAISetting(ctx, "ws"), "ENTERPRISE", "a run in flight stops at its next model call")
+}
+
 func TestReviewExecutorSortsTheAIReviewResults(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -417,11 +454,12 @@ func TestReviewExecutorSortsTheAIReviewResults(t *testing.T) {
 	// One database: no merge and no summary, so each finding is a result.
 	setCISamplingSize(ctx, t, stores, 1)
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return advisoryFirstModel{} },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
 	}
-	comments, err := NewReviewExecutor(stores, nil, executor).RunOnce(ctx, "p", issues[0])
+	comments, err := NewReviewExecutor(stores, licenseStub{}, nil, executor).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
 	var priorities []storepb.IssueCommentPayload_ReviewMetadata_Priority
 	for _, comment := range comments {
@@ -440,11 +478,12 @@ func TestAIReviewPostsTheMostImportantProblems(t *testing.T) {
 	setCISamplingSize(ctx, t, stores, 2)
 	model := &overLimitModel{}
 	executor := &AIReviewExecutor{
+		license:  licenseStub{},
 		store:    stores,
 		newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 		slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
 	}
-	comments, err := NewReviewExecutor(stores, nil, executor).RunOnce(ctx, "p", issues[0])
+	comments, err := NewReviewExecutor(stores, licenseStub{}, nil, executor).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
 	require.Len(t, comments, maxAIReviewProblems)
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, comments[0].Payload.ReviewMetadata.Priority, "the problem reported last posts, since it is P0")
@@ -614,7 +653,7 @@ func TestAIReviewExecutorChecksTheSettingAgain(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	executor := NewAIReviewExecutor(stores, ReviewsEngine)
+	executor := NewAIReviewExecutor(stores, licenseStub{}, ReviewsEngine)
 
 	// Switched off, the run ends with no finding before it reaches the
 	// target, which does not exist in this fixture.

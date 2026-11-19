@@ -52,7 +52,7 @@ type Request struct {
 	ProjectPolicy   string
 	// StandardRules is the standard review's rules that are on for the
 	// project. The prompt leaves the others unchecked unless the policy names
-	// them.
+	// them. With none on, the prompt names no standard rule at all.
 	StandardRules []StandardRule
 	// StandardReviewRuns is true when the standard review runs on the
 	// target's engine. The prompt says so, since a rule it does not evaluate

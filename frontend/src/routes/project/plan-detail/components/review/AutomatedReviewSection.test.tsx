@@ -42,6 +42,8 @@ import {
 
 const mocks = vi.hoisted(() => ({
   comments: [] as unknown[],
+  drawerStatus: undefined as unknown,
+  requestActivityFocus: vi.fn(),
   focusInStatement: vi.fn(),
   setWalkerFilter: vi.fn(),
   runChecks: vi.fn(async () => undefined),
@@ -111,22 +113,37 @@ vi.mock("@/components/HumanizeTs", async () => ({
 vi.mock("@/components/plan-check/PlanCheckSection", async () => {
   const { getFilteredResultGroups } = await import("@/lib/plan/check");
   return {
-    PlanCheckResultsDrawer: ({ open, planCheckRuns, renderResultAction }: {
+    PlanCheckResultsDrawer: ({ open, planCheckRuns, renderResultAction, initialStatus }: {
       open: boolean;
       planCheckRuns: PlanCheckRun[];
       renderResultAction?: (result: PlanCheckRun_Result) => ReactNode;
-    }) => open ? (
+      initialStatus?: Advice_Level;
+    }) => {
+      if (open) mocks.drawerStatus = initialStatus;
+      return open ? (
       <div data-testid="checks-drawer">
-        {getFilteredResultGroups({ includeRunFailure: true, planCheckRuns,
+        {getFilteredResultGroups({ includeRunFailure: true, planCheckRuns, selectedStatus: initialStatus,
           runFailureTitle: "common.failed", runFailureContent: "common.failed",
           runCanceledTitle: "common.canceled", runCanceledContent: "common.canceled",
         }).flatMap((group) => group.results).map((result, index) => (
           <div key={index}>{renderResultAction?.(result)}</div>
         ))}
       </div>
-    ) : null,
+    ) : null;
+    },
   };
 });
+
+// The project follows the workspace: these tests switch the AI review
+// through the server info.
+vi.mock("../../hooks/useAIReviewOn", () => ({
+  useAIReviewOn: () => {
+    const info = mocks.serverInfo as
+      | { aiEnabled?: boolean; aiSqlReviewEnabled?: boolean }
+      | undefined;
+    return Boolean(info?.aiEnabled && info.aiSqlReviewEnabled);
+  },
+}));
 
 vi.mock("@/stores/app", () => {
   const getState = () => ({
@@ -164,6 +181,7 @@ vi.mock("../../hooks/useFocusThread", () => ({
 }));
 
 vi.mock("../../hooks/useSqlReviewV2", () => ({
+  usePlanReviewRun: () => mocks.review,
   useSqlReviewV2: () => ({
     review: mocks.review,
     standardRules: mocks.rules,
@@ -173,6 +191,7 @@ vi.mock("../../hooks/useSqlReviewV2", () => ({
 vi.mock("../../shared/stores/usePlanDetailStore", () => {
   const state = {
     reviewRowRequest: undefined,
+    requestActivityFocus: mocks.requestActivityFocus,
     setWalkerFilter: mocks.setWalkerFilter,
   };
   return {
@@ -256,9 +275,7 @@ const row = (
 });
 
 const renderSection = (rows: AutomatedReviewRow[]) =>
-  render(
-    <AutomatedReviewSection state={{ rows, gates: [], openDiscussions: 0 }} />
-  );
+  render(<AutomatedReviewSection state={{ rows }} />);
 
 const failedReview = () =>
   create(ReviewRunSchema, {
@@ -404,7 +421,7 @@ describe("AutomatedReviewSection", () => {
     })];
     if (scenario === "invalid-plan") mocks.planName = "projects/p/plans/create";
     if (scenario === "linked-plan") mocks.issuePlan = "projects/p/plans/43";
-    renderSection([row("checks", "running")]);
+    renderSection([row("checks", "failed")]);
     fireEvent.click(screen.getByText("plan.automated-review.details"));
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
   });
@@ -414,9 +431,11 @@ describe("AutomatedReviewSection", () => {
       name: "projects/p/plans/42/planCheckRun", status: PlanCheckRun_Status.DONE,
       results: [{ status, title: "Check evidence", content: "Unsafe statement", type: PlanCheckRun_Result_Type.STATEMENT_ADVISE, target: "instances/i/databases/hr_test" }],
     })];
-    renderSection([row("policy", "open")]);
+    renderSection([row("policy", "open", findings({ open: 1, p0: 1 }), { warnings: 1 })]);
     expect(screen.queryByRole("button", { name: "agent.diagnostic-help.ask-agent" })).toBeNull();
-    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    // The mocked t drops the priority, so the badge tells the two counts apart.
+    const priority = status === Advice_Level.ERROR ? "P0" : "P1";
+    fireEvent.click(screen.getAllByRole("button", { name: "plan.findings.n-priority:1" }).find((button) => button.textContent === `${priority}1`)!);
     fireEvent.click(screen.getByRole("button", { name: "agent.diagnostic-help.ask-agent" }));
     const snapshot = diagnosticSnapshot();
     expect(snapshot.kind).toBe("sql-check");
@@ -751,6 +770,33 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runReview).not.toHaveBeenCalled();
   });
 
+  test("beside V1 shows the AI review with the checks, and the project SQL Review page", () => {
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    render(
+      <AutomatedReviewSection
+        state={{
+          rows: [
+            row("review", "open", findings({ open: 1, p1: 1 })),
+            row("policy", "open", findings({ open: 1, p0: 1 }), {
+              warnings: 14,
+            }),
+          ],
+        }}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "common.configure" })
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("automated-review-policy")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "common.more" })
+    ).toBeInTheDocument();
+  });
+
   const rerunAll = async () => {
     fireEvent.click(screen.getByRole("button", { name: "common.more" }));
     await act(async () => {
@@ -832,12 +878,75 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runChecks).toHaveBeenCalledOnce();
   });
 
-  test("a plan check row opens the check details", () => {
+  test("a plan check's counts read as the review's priorities and open the check details", () => {
     renderSection([
+      row("policy", "open", findings({ open: 1, p0: 1 }), {
+        targets: 1,
+        warnings: 14,
+      }),
+    ]);
+    const policy = screen.getByTestId("automated-review-policy");
+    expect(policy).toHaveTextContent("P01");
+    expect(policy).toHaveTextContent("P114");
+    fireEvent.click(
+      screen.getByRole("button", { name: "plan.findings.n-priority:14" })
+    );
+    expect(screen.getByTestId("checks-drawer")).toBeDefined();
+    expect(mocks.drawerStatus).toBe(Advice_Level.WARNING);
+  });
+
+  test("every row offers Details before Rerun: the review's latest run in Activity, or the check results", () => {
+    mocks.comments = [
+      create(IssueCommentSchema, {
+        name: "projects/p/issues/1/issueComments/run-1",
+        event: { case: "reviewRunCompletion", value: {} },
+      }),
+      create(IssueCommentSchema, {
+        name: "projects/p/issues/1/issueComments/run-2",
+        event: { case: "reviewRunCompletion", value: {} },
+      }),
+    ];
+    mocks.review = {
+      loadFailed: false,
+      reload: mocks.reload,
+      run: reviewRun(ReviewRun_State.SUCCEEDED),
+    };
+    renderSection([
+      row("review", "open", findings({ open: 1, p1: 1 })),
       row("policy", "open", findings({ open: 1, p0: 1 }), { targets: 1 }),
     ]);
-    expect(screen.getByText("plan.automated-review.n-errors:1")).toBeDefined();
-    fireEvent.click(screen.getByText("plan.automated-review.details"));
+    for (const reviewer of ["review", "policy"]) {
+      const buttons = within(
+        screen.getByTestId(`automated-review-${reviewer}`)
+      ).getAllByRole("button");
+      const labels = buttons.map((button) => button.textContent);
+      const details = labels.indexOf("plan.automated-review.details");
+      expect(details).toBeGreaterThanOrEqual(0);
+      expect(labels.slice(details + 1).join()).toMatch(
+        /plan\.automated-review\.rerun/
+      );
+    }
+    fireEvent.click(
+      within(screen.getByTestId("automated-review-review")).getByText(
+        "plan.automated-review.details"
+      )
+    );
+    expect(mocks.requestActivityFocus).toHaveBeenCalledWith(
+      "projects/p/issues/1/issueComments/run-2"
+    );
+    fireEvent.click(
+      within(screen.getByTestId("automated-review-policy")).getByText(
+        "plan.automated-review.details"
+      )
+    );
     expect(screen.getByTestId("checks-drawer")).toBeDefined();
+    expect(mocks.drawerStatus).toBeUndefined();
+  });
+
+  test("the review offers no Details before it has a run to show", () => {
+    renderSection([row("review", "running")]);
+    expect(
+      screen.queryByText("plan.automated-review.details")
+    ).not.toBeInTheDocument();
   });
 });

@@ -238,7 +238,7 @@ func (m *factsModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb
 // factsExecutor reviews with a rule that flags the whole sheet as "no WHERE"
 // on every database, and with model as the AI review.
 func factsExecutor(stores *store.Store, model aireview.Model) *ReviewExecutor {
-	return NewReviewExecutor(stores,
+	return NewReviewExecutor(stores, licenseStub{},
 		&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
 			storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
 				every := make([]int, len(targets))
@@ -254,6 +254,7 @@ func factsExecutor(stores *store.Store, model aireview.Model) *ReviewExecutor {
 			},
 		}},
 		&AIReviewExecutor{
+			license:  licenseStub{},
 			store:    stores,
 			newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
 			slots:    semaphore.NewWeighted(aiReviewServerConcurrency),

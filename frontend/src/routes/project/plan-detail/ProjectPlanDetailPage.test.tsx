@@ -642,6 +642,33 @@ describe("ProjectPlanDetailPage", () => {
     expect(container.textContent).not.toContain("common.not-started");
   });
 
+  it("without SQL Review V2 a draft opens Review too, for its AI review and comments", async () => {
+    const page = buildPage();
+    page.isCreating = false;
+    page.planId = "1";
+    page.plan.name = "projects/foo/plans/1";
+    page.plan.issue = "projects/foo/issues/1";
+    page.activePhases = new Set(["changes", "review"]);
+    page.issue = {
+      name: "projects/foo/issues/1",
+      draft: true,
+      status: IssueStatus.OPEN,
+    } as PlanDetailPageState["issue"];
+    mocks.usePlanDetailPage.mockReturnValue(page);
+    mocks.reviewState = undefined;
+
+    await act(async () => {
+      root.render(
+        <ProjectPlanDetailPage planId="1" projectId="foo" specId="spec-1" />
+      );
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-testid='plan-review-section']")).not.toBeNull();
+    expect(container.textContent).not.toContain("plan.phase.review-description");
+    expect(container.querySelector("[data-testid='deploy-waiting']")).toBeNull();
+  });
+
   it("under SQL Review V2 a draft opens Review and Deploy lists what it waits on", async () => {
     const page = buildPage();
     page.isCreating = false;

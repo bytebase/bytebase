@@ -459,6 +459,13 @@ func TestUpdateExportSettingRejectedInSaaS(t *testing.T) {
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
+func TestTurnsOnAIReview(t *testing.T) {
+	t.Parallel()
+	require.True(t, turnsOnAIReview(&storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.sql_review_enabled"}))
+	require.False(t, turnsOnAIReview(&storepb.AISetting{}, []string{"value.ai.sql_review_enabled"}), "switching it off needs no plan")
+	require.False(t, turnsOnAIReview(&storepb.AISetting{SqlReviewEnabled: true}, []string{"value.ai.model"}), "a field the mask leaves out is not written")
+}
+
 func TestCanUpdateAISettingInSaaS(t *testing.T) {
 	t.Parallel()
 

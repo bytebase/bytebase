@@ -20,6 +20,10 @@ import { PROJECT_V1_ROUTE_SQL_REVIEW } from "@/app/router/handles";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { PlanCheckResultsDrawer } from "@/components/plan-check/PlanCheckSection";
 import {
+  LevelPriorityBadge,
+  levelPriority,
+} from "@/components/sql-review/LevelPriorityBadge";
+import {
   STANDARD_RULE_TYPES,
   standardRuleText,
 } from "@/components/sql-review/standardRules";
@@ -59,11 +63,12 @@ import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { engineNameV1 } from "@/utils/v1/instance";
+import { useAIReviewOn } from "../../hooks/useAIReviewOn";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanCheckActions } from "../../hooks/usePlanCheckActions";
 import type { PlanReviewState } from "../../hooks/usePlanReviewState";
 import { useReviewRerun } from "../../hooks/useReviewRerun";
-import { useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
+import { usePlanReviewRun, useSqlReviewV2 } from "../../hooks/useSqlReviewV2";
 import {
   usePlanDetailStore,
   usePlanDetailStoreApi,
@@ -76,10 +81,8 @@ import {
   type FindingPriority,
   findingTitle,
 } from "../../utils/planGates";
-import { reviewerLabel } from "../../utils/reviewLabels";
-import { aiReviewEnabled } from "../../utils/reviewRun";
+import { reviewerLabel, reviewerName } from "../../utils/reviewLabels";
 import { reviewScope } from "../../utils/reviewScope";
-import { ReviewerIcon, reviewerName } from "../threads/ReviewResult";
 import {
   FINDING_PRIORITIES,
   findingPriorityStyle,
@@ -109,13 +112,18 @@ function diagnosticPlanResource(planName: string, projectId: string) {
 // Activity: the conclusion, the open findings by priority, what people
 // resolved, and what the review covered on hover. The findings themselves
 // live in the editor; every count opens it there.
-export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
+export function AutomatedReviewSection({
+  state,
+}: {
+  state: Pick<PlanReviewState, "rows">;
+}) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const { allowRunChecks, isRunningChecks, runChecks } = usePlanCheckActions();
   const rerun = useReviewRerun();
   const { rows } = state;
   const [checksDrawerOpen, setChecksDrawerOpen] = useState(false);
+  const [checksDrawerLevel, setChecksDrawerLevel] = useState<Advice_Level>();
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
   const requestRerunChecks = () => void runChecks();
   // Running the checks does not start the review, so Re-run all starts both.
@@ -237,13 +245,17 @@ export function AutomatedReviewSection({ state }: { state: PlanReviewState }) {
           <ReviewerRow
             key={row.reviewer}
             onRerunChecks={requestRerunChecks}
-            onViewChecks={() => setChecksDrawerOpen(true)}
+            onViewChecks={(level) => {
+              setChecksDrawerLevel(level);
+              setChecksDrawerOpen(true);
+            }}
             row={row}
           />
         ))}
       </div>
       <PlanCheckResultsDrawer
         includeRunFailure
+        initialStatus={checksDrawerLevel}
         onOpenChange={setChecksDrawerOpen}
         open={checksDrawerOpen}
         planCheckRuns={page.planCheckRuns}
@@ -311,13 +323,14 @@ function ReviewerRow({
 }: {
   row: AutomatedReviewRow;
   onRerunChecks: () => void;
-  onViewChecks: () => void;
+  // Opens the check results, at a level when one is given.
+  onViewChecks: (level?: Advice_Level) => void;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const storeApi = usePlanDetailStoreApi();
   const { focusInStatement } = useFocusThread();
-  const review = useSqlReviewV2()?.review;
+  const review = usePlanReviewRun();
   const { allowRunChecks, isRunningChecks } = usePlanCheckActions();
   const rerun = useReviewRerun();
   const isReview = row.reviewer === "review";
@@ -344,14 +357,7 @@ function ReviewerRow({
     focusInStatement(first);
   };
 
-  const name: ReactNode = isReview ? (
-    <>
-      <ReviewerIcon className="size-4 shrink-0 text-control-light" />
-      {reviewerName(t)}
-    </>
-  ) : (
-    reviewerLabel(t, row.reviewer)
-  );
+  const name = isReview ? reviewerName(t) : reviewerLabel(t, row.reviewer);
 
   const actions: ReactNode[] = [];
   const reviewRun = review?.run;
@@ -441,6 +447,31 @@ function ReviewerRow({
       );
     }
   }
+  // Details sits before Rerun on every row, so both line up down the rows:
+  // the review's latest run in Activity, which lists its findings, or the
+  // check results.
+  const latestRun = isReview
+    ? comments.findLast(
+        (comment) => comment.event.case === "reviewRunCompletion"
+      )
+    : undefined;
+  if (!isReview || latestRun) {
+    actions.unshift(
+      <Button
+        appearance="link"
+        className="text-control-light"
+        key="details"
+        onClick={() =>
+          latestRun
+            ? storeApi.getState().requestActivityFocus(latestRun.name)
+            : onViewChecks()
+        }
+        size="xs"
+      >
+        {t("plan.automated-review.details")}
+      </Button>
+    );
+  }
   // Plan checks run together. The review has its own Rerun.
   if (!isReview && allowRunChecks && row.conclusion !== "running") {
     actions.push(
@@ -450,19 +481,6 @@ function ReviewerRow({
         key="run"
         onClick={onRerunChecks}
       />
-    );
-  }
-  if (!isReview) {
-    actions.push(
-      <Button
-        appearance="link"
-        className="text-control-light"
-        key="details"
-        onClick={onViewChecks}
-        size="xs"
-      >
-        {t("plan.automated-review.details")}
-      </Button>
     );
   }
 
@@ -486,7 +504,12 @@ function ReviewerRow({
       </span>
       {/* Below the name on a narrow screen, lined up with it. */}
       <span className="order-last flex min-w-0 basis-full flex-wrap items-center gap-x-1.5 gap-y-1 pl-7 text-control sm:order-none sm:flex-1 sm:pl-0">
-        <ConclusionText comments={comments} onOpen={openGroup} row={row}>
+        <ConclusionText
+          comments={comments}
+          onOpen={openGroup}
+          onOpenChecks={onViewChecks}
+          row={row}
+        >
           {isReview && hasResult && <ScopeInfo />}
           {diagnosticHelp}
         </ConclusionText>
@@ -671,11 +694,13 @@ function ConclusionText({
   row,
   comments,
   onOpen,
+  onOpenChecks,
   children,
 }: {
   row: AutomatedReviewRow;
   comments: readonly IssueComment[];
   onOpen: (group: FindingGroup) => void;
+  onOpenChecks: (level: Advice_Level) => void;
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -806,7 +831,12 @@ function ConclusionText({
       );
       if (row.warnings) {
         parts.push(
-          t("plan.automated-review.n-warnings", { count: row.warnings })
+          <AdviceCounts
+            errors={0}
+            key="advice"
+            onOpen={onOpenChecks}
+            warnings={row.warnings}
+          />
         );
       }
       break;
@@ -814,15 +844,13 @@ function ConclusionText({
     case "resolved":
       if (!isReview) {
         parts.push(
-          <span className="font-medium text-main" key="errors">
-            {t("plan.automated-review.n-errors", { count: row.findings.open })}
-          </span>
+          <AdviceCounts
+            errors={row.findings.open}
+            key="advice"
+            onOpen={onOpenChecks}
+            warnings={row.warnings ?? 0}
+          />
         );
-        if (row.warnings) {
-          parts.push(
-            t("plan.automated-review.n-warnings", { count: row.warnings })
-          );
-        }
         break;
       }
       parts.push(...findingParts());
@@ -847,8 +875,53 @@ function ConclusionText({
   );
 }
 
-// The priority badge each finding carries, then how many are open. Only the
-// count underlines on hover: a link's underline would run through the badge.
+// A plan check's errors and warnings as the priorities they show as, each a
+// badge then its count, drawn as the review's findings are. Only the count
+// underlines on hover: a link's underline would run through the badge. Each
+// opens the check results at its level.
+function AdviceCounts({
+  errors,
+  warnings,
+  onOpen,
+}: {
+  errors: number;
+  warnings: number;
+  onOpen: (level: Advice_Level) => void;
+}) {
+  const { t } = useTranslation();
+  const levels = [
+    { level: Advice_Level.ERROR, reviewLevel: "error", count: errors },
+    { level: Advice_Level.WARNING, reviewLevel: "warning", count: warnings },
+  ] as const;
+  return (
+    <span className="flex items-center gap-x-3">
+      {levels
+        .filter(({ count }) => count > 0)
+        .map(({ level, reviewLevel, count }) => (
+          <Button
+            appearance="link"
+            aria-label={t("plan.findings.n-priority", {
+              count,
+              priority: levelPriority(reviewLevel),
+            })}
+            className="group h-auto p-0 font-normal hover:no-underline"
+            key={level}
+            onClick={() => onOpen(level)}
+            size="xs"
+          >
+            <span className="inline-flex items-center gap-x-1">
+              <LevelPriorityBadge level={reviewLevel} />
+              <span className="text-sm text-control-light underline-offset-2 group-hover:text-main group-hover:underline">
+                {count}
+              </span>
+            </span>
+          </Button>
+        ))}
+    </span>
+  );
+}
+
+// The priority badge each finding carries, then how many are open.
 function PriorityCountLink({
   priority,
   count,
@@ -881,17 +954,19 @@ function PriorityCountLink({
 
 // What the review covered, on hover: a pass over three databases says very
 // little without it. The review reads a sample when the project sets a sample
-// size, and the AI review reads engines the standard rules do not.
+// size, and the AI review reads engines the standard rules do not. Beside
+// V1's plan checks no standard rule runs.
 function ScopeInfo() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const rules = useSqlReviewV2()?.standardRules;
-  const aiReviewOn = useAppStore((s) => aiReviewEnabled(s.serverInfo));
+  const sqlReviewV2 = useSqlReviewV2();
+  const rules = sqlReviewV2?.standardRules;
+  const aiReviewOn = useAIReviewOn();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const dbGroupViewByName = useAppStore((s) => s.dbGroupViewByName);
   // Rules not known yet count as on.
-  const rulesOn = !rules || rules.rules.length > 0;
+  const rulesOn = !!sqlReviewV2 && (!rules || rules.rules.length > 0);
   const scope = useMemo(
     () =>
       reviewScope(page.plan, {

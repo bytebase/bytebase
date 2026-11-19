@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
@@ -27,6 +28,7 @@ import (
 // more call for each other merged problem it posts writes its comment.
 type AIReviewExecutor struct {
 	store    *store.Store
+	license  LicenseChecker
 	newModel func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model
 	// slots bounds the reviews in flight across every run of the executor.
 	slots reviewSlots
@@ -38,9 +40,10 @@ type AIReviewExecutor struct {
 
 // NewAIReviewExecutor creates the AI review executor. The server creates one,
 // so aiReviewServerConcurrency bounds the reviews of every run on the server.
-func NewAIReviewExecutor(s *store.Store, ruleReviewCovers func(storepb.Engine) bool) *AIReviewExecutor {
+func NewAIReviewExecutor(s *store.Store, license LicenseChecker, ruleReviewCovers func(storepb.Engine) bool) *AIReviewExecutor {
 	return &AIReviewExecutor{
 		store:            s,
+		license:          license,
 		newModel:         aireview.NewModel,
 		slots:            semaphore.NewWeighted(aiReviewServerConcurrency),
 		ruleReviewCovers: ruleReviewCovers,
@@ -60,22 +63,30 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 		return nil, err
 	}
 	// The review skips an AI review that is off, but the switch can change
-	// before this read. Switched off, the AI review reaches no provider and
-	// reports no finding, so the rules' results post as they are.
+	// before this read. Switched off, or on a plan without it, the AI review
+	// reaches no provider and reports no finding, so the rules' results post
+	// as they are.
 	aiSetting, err := e.store.GetAISettingUncached(ctx, project.Workspace)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI setting")
 	}
-	if allowed := aireview.CheckSetting(aiSetting) == nil; !allowed {
+	allowed := aireview.CheckSetting(aiSetting) == nil &&
+		e.license.IsFeatureEnabled(ctx, project.Workspace, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil
+	if !allowed {
 		return ruleResultComments(projectID, issueUID, rules), nil
 	}
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI review policy")
 	}
-	rulePolicy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get review rule policy")
+	// Without a standard rule review the policy of its rules means nothing,
+	// so the AI review states no standard rule.
+	var rulePolicy *storepb.ReviewRulePolicy
+	if e.ruleReviewCovers != nil {
+		rulePolicy, err = e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get review rule policy")
+		}
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
@@ -271,16 +282,19 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 	return append(aiReviewComments(projectID, issueUID, problems), ruleResultComments(projectID, issueUID, rules)...), nil
 }
 
-// checkAISetting reports why the workspace AI setting does not allow the
-// review, if it does not. It reads past the setting cache, which only this
-// process's writes refresh, so a switch-off written anywhere else stops the
-// review too.
+// checkAISetting reports why the workspace AI setting or the workspace's plan
+// does not allow the review, if they do not. It reads past the setting cache,
+// which only this process's writes refresh, so a switch-off written anywhere
+// else stops the review too.
 func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) error {
 	setting, err := e.store.GetAISettingUncached(ctx, workspace)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get AI setting")
 	}
-	return aireview.CheckSetting(setting)
+	if err := aireview.CheckSetting(setting); err != nil {
+		return err
+	}
+	return e.license.IsFeatureEnabled(ctx, workspace, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW)
 }
 
 // earlierResults returns, for each sheet with findings, the results earlier

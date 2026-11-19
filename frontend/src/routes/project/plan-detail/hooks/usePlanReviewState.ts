@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAppStore } from "@/stores/app";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import { deriveSteps } from "../components/review/ReviewApprovalFlow";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
@@ -18,11 +19,11 @@ import {
   statementReportFails,
 } from "../utils/planGates";
 import {
-  aiReviewEnabled,
   hasReviewableSQL,
   loadedMatchedDatabaseCount,
 } from "../utils/reviewRun";
-import { useSqlReviewV2 } from "./useSqlReviewV2";
+import { useAIReviewOn } from "./useAIReviewOn";
+import { usePlanReviewRun, useSqlReviewV2 } from "./useSqlReviewV2";
 
 const NO_COMMENTS: IssueComment[] = [];
 
@@ -42,9 +43,9 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     issue ? state.getIssueComments(issue.name) : NO_COMMENTS
   );
   const review = sqlReview?.review;
-  // The review is off when the project applies no standard rule and the
-  // workspace has no AI review. Rules not known yet count as on.
-  const aiReviewOn = useAppStore((state) => aiReviewEnabled(state.serverInfo));
+  // The review is off when the project applies no standard rule and gets no
+  // AI review. Rules not known yet count as on.
+  const aiReviewOn = useAIReviewOn();
   const off = sqlReview?.standardRules?.rules.length === 0 && !aiReviewOn;
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
   const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
@@ -83,12 +84,7 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     } else if (findings.open + resolvedByPeople(findings) > 0) {
       rows.push(findingsRow(findings));
     }
-    for (const reviewer of ["policy", "ghost"] as const) {
-      const row = planCheckRow(reviewer, page.planCheckRuns);
-      if (row) rows.push(row);
-    }
-    const runRow = planCheckRunRow(page.planCheckRuns);
-    if (runRow) rows.push(runRow);
+    rows.push(...planCheckRows(page.planCheckRuns));
     const openDiscussions = countOpenDiscussions(comments);
     return {
       rows,
@@ -111,4 +107,62 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     reviewsSQL,
     sqlReview,
   ]);
+}
+
+// The plan checks' rows: the SQL review advice and the gh-ost dry run by
+// their results, and the run itself while it has none to show.
+function planCheckRows(
+  planCheckRuns: readonly PlanCheckRun[]
+): AutomatedReviewRow[] {
+  const rows: AutomatedReviewRow[] = [];
+  for (const reviewer of ["policy", "ghost"] as const) {
+    const row = planCheckRow(reviewer, planCheckRuns);
+    if (row) rows.push(row);
+  }
+  const runRow = planCheckRunRow(planCheckRuns);
+  if (runRow) rows.push(runRow);
+  return rows;
+}
+
+// The AI review and the plan checks beside it on V1's page, once the page
+// reads the AI review's run. Its findings are comments that hold nothing, so
+// there are no gates: V1's footer says what the rollout waits on. Undefined
+// under SQL Review V2, where `usePlanReviewState` has the rows.
+export function useAIReviewBesideV1():
+  | Pick<PlanReviewState, "rows">
+  | undefined {
+  const page = usePlanDetailContext();
+  const sqlReview = useSqlReviewV2();
+  const review = usePlanReviewRun();
+  const issue = page.issue;
+  const comments = useAppStore((state) =>
+    issue ? state.getIssueComments(issue.name) : NO_COMMENTS
+  );
+  const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
+  const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
+  const reviewsSQL = useMemo(
+    () =>
+      hasReviewableSQL(
+        page.plan,
+        loadedMatchedDatabaseCount({ dbGroupsByName, dbGroupViewByName })
+      ),
+    [dbGroupViewByName, dbGroupsByName, page.plan]
+  );
+  return useMemo(() => {
+    if (sqlReview || !review) return undefined;
+    const rows: AutomatedReviewRow[] = [];
+    if (reviewApplies(review.run, reviewsSQL)) {
+      rows.push(
+        reviewRow({
+          run: review.run,
+          stale: review.stale,
+          loadFailed: review.loadFailed,
+          findings: countFindings(comments),
+          off: false,
+        })
+      );
+    }
+    rows.push(...planCheckRows(page.planCheckRuns));
+    return { rows };
+  }, [comments, page.planCheckRuns, review, reviewsSQL, sqlReview]);
 }

@@ -186,6 +186,41 @@ describe("FeatureAttention", () => {
     unmount();
   });
 
+  test("compact names only what the plan requires, with a short action", () => {
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string) => translateFromDynamicEn(key),
+    });
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} compact />
+    );
+
+    render();
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert).toBeTruthy();
+    expect(alert?.querySelector("h5")).toBeNull();
+    expect(container.textContent).toContain(
+      "subscription.required-plan-with-trial"
+    );
+    expect(container.textContent).not.toContain(
+      translateFromDynamicEn("dynamic.subscription.features.FEATURE_AUDIT_LOG.desc")
+    );
+    const actionButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "subscription.try-for-free"
+    );
+    expect(actionButton).toBeTruthy();
+    act(() => {
+      actionButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+    expect(openSpy).toHaveBeenCalledWith(ENTERPRISE_INQUIRE_LINK, "_blank");
+
+    openSpy.mockRestore();
+    unmount();
+  });
+
   test("starts an eligible SaaS trial from the feature attention", async () => {
     mocks.useSubscriptionState.mockReturnValue({
       canStartTrial: true,
