@@ -1177,6 +1177,9 @@ func ambiguousParameters(parameters string, objects map[string]bool, searchPath 
 
 func ambiguousTypeText(text string, objects map[string]bool, searchPath []string) bool {
 	text = strings.TrimSpace(text)
+	if builtinMultiwordType(text) {
+		return false
+	}
 	for start := 0; start < len(text); start++ {
 		if start > 0 && !startsDeclaration(text[start-1]) {
 			continue

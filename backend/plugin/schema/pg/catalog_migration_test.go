@@ -1061,6 +1061,34 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	require.Equal(t, objectKey("first", name), key)
 }
 
+// TestAmbiguityCheckSkipsMultiwordBuiltins covers a built-in spelled with several
+// words: its last word cannot be the type a $user shadow would decide.
+func TestAmbiguityCheckSkipsMultiwordBuiltins(t *testing.T) {
+	snapshot := func(withHolder bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+					Name:       "precision",
+					Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "value", Type: "text"}},
+				}},
+			},
+		}
+		if withHolder {
+			schemas = append(schemas, &metadatapb.SchemaMetadata{
+				Name:   "app",
+				Tables: []*metadatapb.TableMetadata{pgTable("holder", 0, &metadatapb.ColumnMetadata{Name: "value", Type: "double precision"})},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: `"$user", public`,
+			Schemas:    schemas,
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.NoError(t, err, "double precision is a built-in, not a reference to public.precision")
+}
+
 // TestUnresolvedSearchPathUserRejectsAmbiguousType covers an unqualified type that
 // needs the unresolved $user entry: public has the type, but the login's schema
 // might shadow it, so assigning the public dependency would be a guess.
