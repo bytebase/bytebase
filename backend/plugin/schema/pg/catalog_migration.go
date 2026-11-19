@@ -545,6 +545,18 @@ func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	return objects
 }
 
+// viewDependencyObjects is every relation a view can name, including a sequence:
+// a sequence has no named row type, but a view can still select from it.
+func viewDependencyObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
+	objects := typeObjects(meta)
+	for _, schema := range meta.GetSchemas() {
+		for _, sequence := range schema.GetSequences() {
+			objects[objectKey(schema.GetName(), sequence.GetName())] = true
+		}
+	}
+	return objects
+}
+
 func refuseRoutine(schemaName, name, signature, definition string, restored, objects map[string]bool, searchPath []string) error {
 	if key, ok := routineUsesType(signature, definition, restored, objects, searchPath); ok {
 		return errors.Errorf("cannot generate a migration: routine %s uses the row type of view %s, which this migration must create", quoteQualified(schemaName, name), quoteRestoredView(key))
@@ -1163,7 +1175,7 @@ func rejectAmbiguousViewReferences(meta *metadatapb.DatabaseSchemaMetadata, sear
 	if !slices.Contains(searchPath, "$user") {
 		return nil
 	}
-	objects := typeObjects(meta)
+	objects := viewDependencyObjects(meta)
 	for _, schema := range meta.GetSchemas() {
 		for _, view := range schema.GetViews() {
 			if err := ambiguousViewDependencies(schema.GetName(), view.GetName(), view.GetDefinition(), view.GetDependencyColumns(), objects, searchPath); err != nil {
@@ -1204,71 +1216,136 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 	return nil
 }
 
-// definitionQualifies reports whether every occurrence of the relation's name
-// outside literals and comments is schema-qualified. A single unqualified
-// occurrence can bind through the unresolved $user schema, so finding one
-// qualified reference is not enough.
+// definitionQualifies reports whether every relation reference to the object is
+// schema-qualified. It scans FROM/JOIN relation lists, skipping aliases and
+// literals, so `FROM public.t AS t` is safe while `FROM public.t JOIN t` is not.
 func definitionQualifies(definition, schemaName, objectName string) bool {
+	tokens := definitionTokens(definition)
 	qualified := false
-	for i := 0; i < len(definition); {
-		switch {
-		case definition[i] == '\'':
-			i = closingQuote(definition, i, '\'') + 1
-		case definition[i] == '$':
-			if end, ok := dollarQuoteEnd(definition, i); ok {
-				i = end + 1
-			} else {
-				i++
+	inRelations := false
+	for i := 0; i < len(tokens); i++ {
+		token := tokens[i]
+		if token.punct != 0 {
+			if token.punct != ',' {
+				inRelations = false
 			}
-		case strings.HasPrefix(definition[i:], "--"):
-			end := strings.IndexByte(definition[i+2:], '\n')
-			if end < 0 {
-				return qualified
-			}
-			i += 2 + end + 1
-		case strings.HasPrefix(definition[i:], "/*"):
-			end := strings.Index(definition[i+2:], "*/")
-			if end < 0 {
-				return qualified
-			}
-			i += 2 + end + 2
-		case definition[i] == '"' || (isIdentifierByte(definition[i]) && identifierBoundary(definition, i)):
-			first, next, firstQuoted, ok := scanIdentifier(definition, i)
-			if !ok {
-				i++
-				continue
-			}
-			if next < len(definition) && definition[next] == '.' {
-				second, next, secondQuoted, ok := scanIdentifier(definition, next+1)
-				if !ok {
-					return false
-				}
-				if next < len(definition) && definition[next] == '.' {
-					return false
-				}
-				if (identifier{name: first, quoted: firstQuoted}).matches(schemaName) && (identifier{name: second, quoted: secondQuoted}).matches(objectName) {
-					qualified = true
-				}
-				i = next
-				continue
-			}
-			if (identifier{name: first, quoted: firstQuoted}).matches(objectName) {
-				return false
-			}
-			i = next
-		default:
-			i++
+			continue
 		}
+		if !token.quoted {
+			switch strings.ToUpper(token.text) {
+			case "FROM", "JOIN", "UPDATE", "INTO":
+				inRelations = true
+				continue
+			case "ONLY", "LATERAL":
+				if inRelations {
+					continue
+				}
+			case "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET":
+				inRelations = false
+				continue
+			default:
+			}
+		}
+		if !inRelations {
+			continue
+		}
+		first := identifier{name: token.text, quoted: token.quoted}
+		if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
+			second := identifier{name: tokens[i+2].text, quoted: tokens[i+2].quoted}
+			if first.matches(schemaName) && second.matches(objectName) {
+				qualified = true
+			}
+			i = skipRelationAlias(tokens, i+2)
+			continue
+		}
+		if first.matches(objectName) {
+			return false
+		}
+		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
 }
 
-func identifierBoundary(text string, index int) bool {
-	if index == 0 {
-		return true
+// definitionToken is an identifier or a punctuation byte outside literals and
+// comments.
+type definitionToken struct {
+	text   string
+	quoted bool
+	punct  byte
+}
+
+func definitionTokens(text string) []definitionToken {
+	var tokens []definitionToken
+	for i := 0; i < len(text); {
+		switch {
+		case text[i] == '\'':
+			i = closingQuote(text, i, '\'') + 1
+		case text[i] == '$':
+			if end, ok := dollarQuoteEnd(text, i); ok {
+				i = end + 1
+			} else if isIdentifierByte(text[i]) {
+				name, next, quoted, ok := scanIdentifier(text, i)
+				if !ok {
+					i++
+					continue
+				}
+				tokens = append(tokens, definitionToken{text: name, quoted: quoted})
+				i = next
+			} else {
+				i++
+			}
+		case strings.HasPrefix(text[i:], "--"):
+			end := strings.IndexByte(text[i+2:], '\n')
+			if end < 0 {
+				return tokens
+			}
+			i += 2 + end + 1
+		case strings.HasPrefix(text[i:], "/*"):
+			end := strings.Index(text[i+2:], "*/")
+			if end < 0 {
+				return tokens
+			}
+			i += 2 + end + 2
+		case text[i] == '"' || isIdentifierByte(text[i]):
+			name, next, quoted, ok := scanIdentifier(text, i)
+			if !ok {
+				i++
+				continue
+			}
+			tokens = append(tokens, definitionToken{text: name, quoted: quoted})
+			i = next
+		case strings.ContainsRune(".,()[]", rune(text[i])):
+			tokens = append(tokens, definitionToken{punct: text[i]})
+			i++
+		default:
+			i++
+		}
 	}
-	previous := text[index-1]
-	return !isIdentifierByte(previous) && previous != '.' && previous != '$' && previous != '"'
+	return tokens
+}
+
+// skipRelationAlias returns the last token index of a relation's alias, if one
+// follows the relation token at index.
+func skipRelationAlias(tokens []definitionToken, index int) int {
+	if index+1 >= len(tokens) || tokens[index+1].punct != 0 {
+		return index
+	}
+	next := tokens[index+1]
+	if !next.quoted {
+		upper := strings.ToUpper(next.text)
+		if upper == "AS" {
+			if index+2 < len(tokens) && tokens[index+2].punct == 0 {
+				return index + 2
+			}
+			return index + 1
+		}
+		switch upper {
+		case "FROM", "JOIN", "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
+			return index
+		default:
+		}
+	}
+	return index + 1
 }
 
 func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {

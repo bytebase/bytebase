@@ -2791,3 +2791,47 @@ func TestUnresolvedUserRejectsOneUnqualifiedOccurrence(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestUnresolvedUserAllowsAliasedQualifiedRelation covers an alias equal to the
+// relation name: only the FROM reference is a relation, so a qualified relation
+// with `AS t` is not ambiguous.
+func TestUnresolvedUserAllowsAliasedQualifiedRelation(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t AS t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+
+	meta.Schemas[0].Views[0].Definition = "SELECT * FROM public.t t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), "a bare alias is not a relation reference")
+}
+
+// TestViewDependencySeesSequences covers a view selecting from a sequence: the
+// sequence is absent from the type universe but still participates in the
+// unresolved $user ambiguity check.
+func TestViewDependencySeesSequences(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:      "public",
+			Sequences: []*metadatapb.SequenceMetadata{{Name: "s", DataType: "bigint", Start: "1", Increment: "1"}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT last_value FROM s",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "s"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."s"`)
+}
