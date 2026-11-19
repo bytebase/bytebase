@@ -268,66 +268,6 @@ func TestIndexOwnerSkipsQuotedNames(t *testing.T) {
 	}
 }
 
-// TestSearchPathPerSnapshotResolvesRoutineTypes covers the two snapshots having
-// different search paths: an unqualified routine type names the view each side's
-// path makes visible, so both views block the drop.
-func TestSearchPathPerSnapshotResolvesRoutineTypes(t *testing.T) {
-	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
-		{
-			Name:  "earlier",
-			Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT FROM"}},
-			Functions: []*metadatapb.FunctionMetadata{{
-				Name:       "f",
-				Signature:  "f(v)",
-				Definition: "CREATE FUNCTION earlier.f(x v) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$",
-			}},
-		},
-		{Name: "later", Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT FROM"}}},
-	}}
-	swapped := searchPaths{from: []string{"earlier", "later"}, to: []string{"later", "earlier"}}
-	require.ErrorContains(t, refuseRestoredViewRoutines(meta, meta, map[string]bool{objectKey("earlier", "v"): true}, swapped),
-		"uses the row type of view", "the source path resolves v to earlier.v")
-	require.ErrorContains(t, refuseRestoredViewRoutines(meta, meta, map[string]bool{objectKey("later", "v"): true}, swapped),
-		"uses the row type of view", "the target path resolves v to later.v")
-	require.NoError(t, refuseRestoredViewRoutines(meta, meta, map[string]bool{objectKey("later", "v"): true},
-		searchPaths{from: []string{"earlier", "later"}, to: []string{"earlier", "later"}}),
-		"with one path the routine names earlier.v on both sides")
-}
-
-// TestCreateOrderUsesTargetSearchPath covers create ordering, which reads target
-// metadata only: the provider is the relation the target path makes visible.
-func TestCreateOrderUsesTargetSearchPath(t *testing.T) {
-	createTable := func(schema, name string) catalog.MigrationOp {
-		return catalog.MigrationOp{Type: catalog.OpCreateTable, SchemaName: schema, ObjectName: name}
-	}
-	plan := &catalog.MigrationPlan{Ops: []catalog.MigrationOp{
-		createTable("later", "consumer"),
-		createTable("later", "v"),
-		createTable("earlier", "v"),
-	}}
-	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
-		{Name: "earlier", Tables: []*metadatapb.TableMetadata{pgTable("v", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})}},
-		{Name: "later", Tables: []*metadatapb.TableMetadata{
-			pgTable("v", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"}),
-			pgTable("consumer", 0, &metadatapb.ColumnMetadata{Name: "row", Type: "v"}),
-		}},
-	}}
-	orderTypeAndTableCreates(plan, meta, []string{"later", "earlier"})
-	provider, consumer := -1, -1
-	for i, op := range plan.Ops {
-		switch {
-		case op.SchemaName == "later" && op.ObjectName == "v":
-			provider = i
-		case op.ObjectName == "consumer":
-			consumer = i
-		default:
-		}
-	}
-	require.GreaterOrEqual(t, provider, 0)
-	require.GreaterOrEqual(t, consumer, 0)
-	require.Less(t, provider, consumer, "the consumer follows the provider the target path names")
-}
-
 // TestSourceOnlyUnloadableObjectsAreDropped covers removing an object whose stored
 // definition omni cannot parse: a drop needs no definition, so the plan emits it,
 // while adding such an object is still refused.
@@ -1202,6 +1142,40 @@ func TestCreatedTableRowTypeOrdersItsProviderFirst(t *testing.T) {
 // restored materialized view and a trigger comment on a restored view: both are
 // carried by the synthesized create, so the plan must not also emit them earlier,
 // while their index and trigger do not exist.
+// TestTargetSearchPathOrdersCreatedTypes covers a type name two schemas share
+// while the source and target search paths differ: target create ordering must
+// resolve it through the target path. The false provider depends on the consumer,
+// so resolving through the source path would form a cycle and leave the real
+// provider after its consumer.
+func TestTargetSearchPathOrdersCreatedTypes(t *testing.T) {
+	composite := func(name, attributeType string) *metadatapb.CompositeTypeMetadata {
+		return &metadatapb.CompositeTypeMetadata{
+			Name:       name,
+			Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "v", Type: attributeType}},
+		}
+	}
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "afirst", CompositeTypes: []*metadatapb.CompositeTypeMetadata{composite("shared", "app.holder")}},
+		{Name: "app", CompositeTypes: []*metadatapb.CompositeTypeMetadata{composite("holder", "shared")}},
+		{Name: "zprovider", CompositeTypes: []*metadatapb.CompositeTypeMetadata{composite("shared", "integer")}},
+	}}
+	plan := &catalog.MigrationPlan{Ops: []catalog.MigrationOp{
+		{Type: catalog.OpCreateType, SchemaName: "app", ObjectName: "holder"},
+		{Type: catalog.OpCreateType, SchemaName: "afirst", ObjectName: "shared"},
+		{Type: catalog.OpCreateType, SchemaName: "zprovider", ObjectName: "shared"},
+	}}
+
+	orderTypeAndTableCreates(plan, meta, []string{"zprovider", "afirst"})
+
+	positions := make(map[string]int, len(plan.Ops))
+	for i, op := range plan.Ops {
+		positions[objectKey(op.SchemaName, op.ObjectName)] = i
+	}
+	provider := positions[objectKey("zprovider", "shared")]
+	consumer := positions[objectKey("app", "holder")]
+	require.Less(t, provider, consumer, "the target search path makes zprovider.shared the provider")
+}
+
 func TestAccessoryCommentsGoWithTheRestoredView(t *testing.T) {
 	snapshot := func(columnType, indexComment, triggerComment string) *model.DatabaseMetadata {
 		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
@@ -1761,6 +1735,19 @@ func TestUnqualifiedRoutineTypeFollowsTheSearchPath(t *testing.T) {
 			require.ErrorContains(t, err, `routine "later"."f" uses the row type of view "later"."v"`, "the search path reaches the restored view first")
 		})
 	}
+
+	t.Run("target search path", func(t *testing.T) {
+		tc := tests[0]
+		_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB,
+			snapshot("integer", "earlier, later", tc),
+			snapshot("bigint", "later, earlier", tc))
+		require.ErrorContains(t, err, `routine "later"."f" uses the row type of view "later"."v"`, "the target routine resolves through the target path")
+
+		_, err = schema.DiffMigration(storepb.Engine_COCKROACHDB,
+			snapshot("integer", "later, earlier", tc),
+			snapshot("bigint", "earlier, later", tc))
+		require.ErrorContains(t, err, `routine "later"."f" uses the row type of view "later"."v"`, "the source routine still resolves through the source path")
+	})
 }
 
 // TestRestoredUnloadableViewRefusesRowTypeDependents keeps a table column, or an
