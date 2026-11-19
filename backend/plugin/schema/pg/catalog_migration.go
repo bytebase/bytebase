@@ -1241,6 +1241,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 	inRelations := false
 	var relationState, derivedState []bool
 	afterDerivedTable := false
+	pendingFunctionArgs := false
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		if afterDerivedTable {
@@ -1301,7 +1302,12 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 		if token.punct != 0 {
 			switch token.punct {
 			case '(':
-				parenthesized := parenthesizedRelationGroup(tokens, i+1)
+				parenthesized := false
+				if pendingFunctionArgs {
+					pendingFunctionArgs = false
+				} else {
+					parenthesized = parenthesizedRelationGroup(tokens, i+1)
+				}
 				derived := inRelations && !parenthesized
 				relationState = append(relationState, inRelations)
 				derivedState = append(derivedState, derived)
@@ -1387,8 +1393,8 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			secondIndex := i + 2
 			if secondIndex+2 < len(tokens) && tokens[secondIndex+1].punct == '.' && tokens[secondIndex+2].punct == 0 {
 				if secondIndex+3 < len(tokens) && tokens[secondIndex+3].punct == '(' {
-					i = skipParenthesized(tokens, secondIndex+3)
-					i = skipRelationAlias(tokens, i)
+					pendingFunctionArgs = true
+					i = secondIndex + 2
 					continue
 				}
 				schema := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
@@ -1400,8 +1406,8 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				continue
 			}
 			if secondIndex+1 < len(tokens) && tokens[secondIndex+1].punct == '(' {
-				i = skipParenthesized(tokens, secondIndex+1)
-				i = skipRelationAlias(tokens, i)
+				pendingFunctionArgs = true
+				i = secondIndex
 				continue
 			}
 			second := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
@@ -1412,8 +1418,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			continue
 		}
 		if i+1 < len(tokens) && tokens[i+1].punct == '(' {
-			i = skipParenthesized(tokens, i+1)
-			i = skipRelationAlias(tokens, i)
+			pendingFunctionArgs = true
 			continue
 		}
 		if first.matches(objectName) && !isCTEReference(ctes, first, i) {
