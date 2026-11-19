@@ -3511,31 +3511,31 @@ func routineKey(schemaName, name, args string) string {
 }
 
 func normalizeRoutineArgs(args string) string {
+	tokens := definitionTokens(args)
 	var result strings.Builder
-	inDouble, inSingle := false, false
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case '"':
-			if !inSingle {
-				inDouble = !inDouble
-			}
-			result.WriteByte(args[i])
-		case '\'':
-			if !inDouble {
-				inSingle = !inSingle
-			}
-			result.WriteByte(args[i])
-		case ' ', '\t', '\n', '\r':
-			if inDouble || inSingle {
-				result.WriteByte(args[i])
-			}
-		default:
-			if inDouble || inSingle {
-				result.WriteByte(args[i])
-			} else {
-				result.WriteByte(byte(unicode.ToLower(rune(args[i]))))
-			}
+	previousWord := false
+	for _, token := range tokens {
+		if token.punct != 0 {
+			result.WriteByte(token.punct)
+			previousWord = false
+			continue
 		}
+		if previousWord {
+			result.WriteByte(' ')
+		}
+		if token.literal {
+			result.WriteString(token.text)
+			previousWord = true
+			continue
+		}
+		if token.quoted {
+			result.WriteByte('"')
+			result.WriteString(strings.ReplaceAll(token.text, `"`, `""`))
+			result.WriteByte('"')
+		} else {
+			result.WriteString(strings.ToLower(token.text))
+		}
+		previousWord = true
 	}
 	return result.String()
 }

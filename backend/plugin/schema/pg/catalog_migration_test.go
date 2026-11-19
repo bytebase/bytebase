@@ -4196,3 +4196,42 @@ func TestReleasedRoutineKeysKeepQuotedCase(t *testing.T) {
 	require.Equal(t, `DROP FUNCTION "public"."f"(public."V")`, ops[0].SQL)
 	require.Contains(t, sourceDrops, `func:public.f|f(public."v")`)
 }
+
+// TestReleasedRoutineKeysKeepMultiwordBoundaries covers f(double precision) vs
+// f(doubleprecision).
+func TestReleasedRoutineKeysKeepMultiwordBoundaries(t *testing.T) {
+	oldMeta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name:  "public",
+		Views: []*metadatapb.ViewMetadata{{Name: "doubleprecision", Definition: "SELECT 1"}},
+		Functions: []*metadatapb.FunctionMetadata{
+			{Name: "f", Signature: "f(double precision)"},
+			{Name: "f", Signature: "f(doubleprecision)"},
+		},
+	}}}
+	sourceDrops := map[string]catalog.MigrationOp{
+		`func:public.f|f(double precision)`: {Type: catalog.OpDropFunction, SchemaName: "public", ObjectName: "f", SQL: `DROP FUNCTION "public"."f"(double precision)`},
+	}
+	ops, moved := releaseRoutineOps(&catalog.MigrationPlan{}, oldMeta, map[string]bool{objectKey("public", "doubleprecision"): true}, []string{"public"}, sourceDrops)
+	require.Empty(t, ops)
+	require.Empty(t, moved)
+	require.Contains(t, sourceDrops, `func:public.f|f(double precision)`)
+}
+
+// TestViewDependencyQualificationSkipsFunctionAlias covers a bare alias after a
+// table function.
+func TestViewDependencyQualificationSkipsFunctionAlias(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("g", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.g base CROSS JOIN unnest(ARRAY[1]) g",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "g"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
