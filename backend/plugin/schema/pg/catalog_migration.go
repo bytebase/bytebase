@@ -1664,11 +1664,12 @@ func isRegclassType(tokens []definitionToken, index int) bool {
 	if index >= len(tokens) || tokens[index].punct != 0 {
 		return false
 	}
-	last := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
+	first := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
 	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
-		last = identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
+		last := identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
+		return first.matches("pg_catalog") && isRelationTypeName(last.name, last.quoted)
 	}
-	return isRelationTypeName(last.name, last.quoted)
+	return isRelationTypeName(first.name, first.quoted)
 }
 
 func topLevelCastAS(tokens []definitionToken, start, end int) int {
@@ -1907,18 +1908,19 @@ func isRegclassToken(text string, index int) bool {
 		return false
 	}
 	index = skip(index + 2)
-	last, next, lastQuoted, ok := scanIdentifier(text, index)
+	first, next, firstQuoted, ok := scanIdentifier(text, index)
 	if !ok {
 		return false
 	}
 	dot := skipSQLWhitespace(text, next)
 	if dot < len(text) && text[dot] == '.' {
-		last, _, lastQuoted, ok = scanIdentifier(text, skipSQLWhitespace(text, dot+1))
+		last, _, lastQuoted, ok := scanIdentifier(text, skipSQLWhitespace(text, dot+1))
 		if !ok {
 			return false
 		}
+		return (identifier{name: first, quoted: firstQuoted}).matches("pg_catalog") && isRelationTypeName(last, lastQuoted)
 	}
-	return isRelationTypeName(last, lastQuoted)
+	return isRelationTypeName(first, firstQuoted)
 }
 
 func isRelationTypeName(name string, quoted bool) bool {
