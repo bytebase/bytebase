@@ -253,6 +253,43 @@ func TestChangedDegradedProcedureIsRefused(t *testing.T) {
 	require.ErrorContains(t, err, "func:public.p|p()")
 }
 
+// TestUnchangedUnloadableForeignKeyDoesNotRefuseUnrelatedTableChange covers a
+// foreign key the catalog cannot install because its referenced key is not
+// unique: when the key itself is unchanged, an unrelated change to its table must
+// still migrate. The report key must compare the constraint, not the whole table.
+func TestUnchangedUnloadableForeignKeyDoesNotRefuseUnrelatedTableChange(t *testing.T) {
+	snapshot := func(withNote bool) *model.DatabaseMetadata {
+		columns := []*metadatapb.ColumnMetadata{
+			{Name: "id", Type: "integer", Nullable: false},
+			{Name: "parent_id", Type: "integer", Nullable: false},
+		}
+		if withNote {
+			columns = append(columns, &metadatapb.ColumnMetadata{Name: "note", Type: "text", Nullable: true})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{
+				{Name: "parent", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}},
+				{
+					Name:    "child",
+					Columns: columns,
+					ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
+						Name:              "child_parent_id_fkey",
+						Columns:           []string{"parent_id"},
+						ReferencedSchema:  "public",
+						ReferencedTable:   "parent",
+						ReferencedColumns: []string{"id"},
+					}},
+				},
+			},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.NoError(t, err)
+	require.Contains(t, sql, "ADD COLUMN note text")
+}
+
 // TestRestoreIndexDefinitionsFindsPartitionIndexes covers an index owned by a table
 // partition: its stored definition has to replace the generated one.
 func TestRestoreIndexDefinitionsFindsPartitionIndexes(t *testing.T) {

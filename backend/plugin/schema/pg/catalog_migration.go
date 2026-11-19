@@ -2523,7 +2523,7 @@ func addTableParts(objects map[string]proto.Message, table string, t *metadatapb
 		objects["con:"+table+"."+c.GetName()] = t
 	}
 	for _, fk := range t.GetForeignKeys() {
-		objects["con:"+table+"."+fk.GetName()] = t
+		objects["con:"+table+"."+fk.GetName()] = fk
 	}
 }
 
