@@ -43,7 +43,12 @@ const allowed = {
 };
 const setup = () => ({
   project: { name: "projects/sample", state: State.ACTIVE },
-  justInTime: { eligible: true },
+  justInTime: {
+    eligible: true,
+    enabled: true,
+    feature: "available",
+    create: { ...allowed },
+  },
   features: { masking: "available" },
   scopeAccess: {
     project: { ...allowed },
@@ -81,7 +86,133 @@ test("offers both eligible unmask methods with no selection or default", async (
   expect(result).not.toHaveProperty("defaultValue");
   expect(result.project).toBe("projects/sample");
   expect(result.needsScope).toBe(false);
+  expect(result).not.toHaveProperty("methodExplanation");
 });
+test("explains the use case, scope, recipients, and expiration of each method", async () => {
+  const { options } = await getUnmaskMethodChoices(methodContext);
+  expect(options).toEqual([
+    {
+      value: "masking-exemption",
+      label: "Masking exemption",
+      description:
+        "For access to selected data across different queries, for yourself or selected members. Choose an expiration or no expiration. Existing query access is still required.",
+    },
+    {
+      value: "just-in-time",
+      label: "Access Grant",
+      description:
+        "For a short task or investigation. Request access for yourself to one exact read-only query until expiration, under the project's approval policy. Unmask covers its entire result.",
+    },
+  ]);
+});
+test.each([
+  {
+    blocked: "query access",
+    reason:
+      "A masking exemption cannot grant the query access you are missing.",
+  },
+  {
+    blocked: "permission",
+    reason:
+      "You do not have all permissions required to prepare a masking exemption.",
+  },
+  {
+    blocked: "read permission",
+    reason:
+      "You do not have all permissions required to prepare a masking exemption.",
+  },
+  {
+    blocked: "feature",
+    reason: "Data masking is not available under the current subscription.",
+  },
+  {
+    blocked: "unknown permission",
+    reason: "Masking exemption availability could not be verified.",
+  },
+  {
+    blocked: "unknown feature",
+    reason: "Masking exemption availability could not be verified.",
+  },
+])(
+  "explains why an exemption is excluded by $blocked",
+  async ({ blocked, reason }) => {
+    const state = setup();
+    if (blocked === "permission") state.steps[2].configure.status = "denied";
+    if (blocked === "read permission")
+      state.steps[2].readAccess.status = "denied";
+    if (blocked === "feature") state.features.masking = "unavailable";
+    if (blocked === "unknown permission")
+      state.steps[2].configure.status = "unknown";
+    if (blocked === "unknown feature") state.features.masking = "unknown";
+    mocks.setup.mockResolvedValue(state);
+
+    const result = await getUnmaskMethodChoices({
+      ...methodContext,
+      queryAccessMissing: blocked === "query access",
+    });
+
+    expect(result.options.map(({ value }) => value)).toEqual(["just-in-time"]);
+    expect(result).toHaveProperty("methodExplanation", {
+      label: result.options[0].label,
+      description: result.options[0].description,
+      alternativeReason: reason,
+    });
+  }
+);
+test.each([
+  {
+    blocked: "another member",
+    reason: "Access Grants can only be requested for yourself.",
+  },
+  {
+    blocked: "project setting",
+    reason: "Access Grants are disabled in this project.",
+  },
+  {
+    blocked: "permission",
+    reason:
+      "You do not have permission to request an Access Grant in this project.",
+  },
+  {
+    blocked: "feature",
+    reason: "Access Grants are not available under the current subscription.",
+  },
+  {
+    blocked: "unknown permission",
+    reason: "Access Grant availability could not be verified.",
+  },
+  {
+    blocked: "unknown feature",
+    reason: "Access Grant availability could not be verified.",
+  },
+])(
+  "explains why an Access Grant is excluded by $blocked",
+  async ({ blocked, reason }) => {
+    const state = setup();
+    state.justInTime.eligible = false;
+    if (blocked === "project setting") state.justInTime.enabled = false;
+    if (blocked === "permission") state.justInTime.create.status = "denied";
+    if (blocked === "feature") state.justInTime.feature = "unavailable";
+    if (blocked === "unknown permission")
+      state.justInTime.create.status = "unknown";
+    if (blocked === "unknown feature") state.justInTime.feature = "unknown";
+    mocks.setup.mockResolvedValue(state);
+
+    const result = await getUnmaskMethodChoices({
+      ...methodContext,
+      forCurrentUser: blocked !== "another member",
+    });
+
+    expect(result.options.map(({ value }) => value)).toEqual([
+      "masking-exemption",
+    ]);
+    expect(result).toHaveProperty("methodExplanation", {
+      label: result.options[0].label,
+      description: result.options[0].description,
+      alternativeReason: reason,
+    });
+  }
+);
 test.each(["denied", "unknown"])(
   "excludes exemption with %s configure access",
   async (status) => {
@@ -142,11 +273,13 @@ test("returns blockers instead of unusable choices when neither method is eligib
   });
   expect(result.options).toEqual([]);
   expect(result.setup.justInTime.eligible).toBe(false);
+  expect(result).not.toHaveProperty("methodExplanation");
 });
 test("requires project scope before choosing a method", async () => {
   const result = await getUnmaskMethodChoices(context);
   expect(result.needsScope).toBe(true);
   expect(result.options).toEqual([]);
+  expect(result).not.toHaveProperty("methodExplanation");
 });
 test("does not offer either method for a deleted project", async () => {
   const state = setup();

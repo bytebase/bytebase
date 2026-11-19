@@ -235,9 +235,18 @@
       },
       "unmask-method": {
         "exemption": "Miễn trừ che dữ liệu",
-        "exemption-description": "Bỏ che dữ liệu cho các tài nguyên đã chọn. Cần có sẵn quyền truy vấn.",
+        "exemption-description": "Để bạn hoặc các thành viên được chọn truy cập dữ liệu đã chọn qua nhiều truy vấn khác nhau. Chọn thời hạn hoặc không hết hạn. Vẫn cần có sẵn quyền truy vấn.",
+        "exemption-feature-unavailable": "Tính năng che dữ liệu không khả dụng trong gói đăng ký hiện tại.",
+        "exemption-permission-denied": "Bạn chưa có đủ các quyền cần thiết để chuẩn bị miễn trừ che dữ liệu.",
+        "exemption-query-access-required": "Miễn trừ che dữ liệu không thể cấp quyền truy vấn mà bạn đang thiếu.",
+        "exemption-unverified": "Không thể xác minh tính khả dụng của miễn trừ che dữ liệu.",
         "jit": "Cấp quyền truy cập",
-        "jit-description": "Yêu cầu quyền truy cập tạm thời cho chính bạn vào một truy vấn chỉ đọc cụ thể, với tính năng bỏ che dữ liệu được bật.",
+        "jit-description": "Dành cho tác vụ ngắn hoặc hoạt động điều tra. Yêu cầu quyền truy cập cho chính bạn vào một truy vấn chỉ đọc cụ thể đến khi hết hạn, theo chính sách phê duyệt của dự án. Bỏ che dữ liệu áp dụng cho toàn bộ kết quả truy vấn.",
+        "jit-disabled": "Tính năng cấp quyền truy cập đã bị tắt trong dự án này.",
+        "jit-feature-unavailable": "Tính năng cấp quyền truy cập không khả dụng trong gói đăng ký hiện tại.",
+        "jit-permission-denied": "Bạn không có quyền yêu cầu cấp quyền truy cập trong dự án này.",
+        "jit-self-only": "Bạn chỉ có thể yêu cầu cấp quyền truy cập cho chính mình.",
+        "jit-unverified": "Không thể xác minh tính khả dụng của việc cấp quyền truy cập.",
         "question": "Bạn muốn truy cập dữ liệu chưa che bằng cách nào?"
       }
     },

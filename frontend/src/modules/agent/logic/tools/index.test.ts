@@ -513,7 +513,16 @@ describe("unmask method choices", () => {
         toolCallId: "method",
         kind: "choose",
         prompt: "How would you like to access unmasked data?",
-        options: [{ value: "masking-exemption" }, { value: "just-in-time" }],
+        options: [
+          {
+            value: "masking-exemption",
+            description: expect.stringContaining("across different queries"),
+          },
+          {
+            value: "just-in-time",
+            description: expect.stringContaining("one exact read-only query"),
+          },
+        ],
       },
     });
     if (result.kind !== "ask_user") throw new Error("Expected method choices");
@@ -551,6 +560,14 @@ describe("unmask method choices", () => {
         method,
         project,
         setup: { justInTime: { eligible: true } },
+        methodExplanation: {
+          label:
+            method === "just-in-time" ? "Access Grant" : "Masking exemption",
+          description: expect.any(String),
+          alternativeReason: args.queryAccessMissing
+            ? "A masking exemption cannot grant the query access you are missing."
+            : "Access Grants can only be requested for yourself.",
+        },
       });
     }
   );
