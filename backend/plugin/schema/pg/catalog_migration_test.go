@@ -3919,3 +3919,44 @@ func TestBackupTypeAmbiguityIsIgnored(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestRoutineReturnTypeNamedLikeClauseKeyword covers `RETURNS public.cost COST 1`.
+func TestRoutineReturnTypeNamedLikeClauseKeyword(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "cost",
+				Definition:        "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+			}},
+			Functions: []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f()",
+				Definition: "CREATE FUNCTION public.f() RETURNS public.cost COST 1 LANGUAGE sql AS $$ SELECT $$",
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.ErrorContains(t, err, `routine "public"."f" uses the row type of view "public"."cost"`)
+}
+
+// TestViewDependencyQualificationSeesUnicodeEscapedIdentifier covers U&"t".
+func TestViewDependencyQualificationSeesUnicodeEscapedIdentifier(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT * FROM public.t p, U&"t" q`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}

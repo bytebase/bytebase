@@ -720,10 +720,22 @@ func routineReturnClause(definition string) string {
 		return ""
 	}
 	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
+	searchStart := 0
+	typeStart := skipSQLWhitespace(rest, 0)
+	for _, prefix := range []string{"SETOF", "VARIADIC"} {
+		if hasKeywordPrefix(rest[typeStart:], prefix) {
+			typeStart = skipSQLWhitespace(rest, typeStart+len(prefix))
+			break
+		}
+	}
+	if _, typeEnd, ok := parseTypeReferenceAt(rest, typeStart); ok {
+		searchStart = typeEnd
+	}
+	tail := rest[searchStart:]
 	end := len(rest)
 	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET", "CALLED", "RETURNS", "NOT"} {
-		if i := indexOutsideQuotesKeyword(rest, keyword); i >= 0 && i < end {
-			end = i
+		if i := indexOutsideQuotesKeyword(tail, keyword); i >= 0 && searchStart+i < end {
+			end = searchStart + i
 		}
 	}
 	return rest[:end]
@@ -1780,6 +1792,14 @@ func definitionTokens(text string) []definitionToken {
 			end := closingQuote(text, i+1, '\'')
 			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+2:end], "''", "'"), literal: true})
 			i = end + 1
+		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '"':
+			name, next, ok := quotedIdentifier(text, i+2)
+			if !ok {
+				i++
+				continue
+			}
+			tokens = append(tokens, definitionToken{text: name, quoted: true})
+			i = next
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '\'':
 			end := closingQuote(text, i+2, '\'')
 			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+3:end], "''", "'"), literal: true})
@@ -2706,7 +2726,7 @@ func indexOutsideQuotesKeyword(text, keyword string) int {
 		}
 		if i > 0 {
 			previous, _ := utf8.DecodeLastRuneInString(text[:i])
-			if isIdentifierRune(previous) {
+			if isIdentifierRune(previous) || previous == '.' {
 				continue
 			}
 		}
