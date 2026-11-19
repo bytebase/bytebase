@@ -1911,8 +1911,9 @@ func isRegclassToken(text string, index int) bool {
 	if !ok {
 		return false
 	}
-	if next < len(text) && text[next] == '.' {
-		last, _, lastQuoted, ok = scanIdentifier(text, next+1)
+	dot := skipSQLWhitespace(text, next)
+	if dot < len(text) && text[dot] == '.' {
+		last, _, lastQuoted, ok = scanIdentifier(text, skipSQLWhitespace(text, dot+1))
 		if !ok {
 			return false
 		}
