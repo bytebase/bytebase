@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 
-// SQL Review V1 levels are shown as the AI review's priorities: an error is
-// P0, the SQL must change; a warning is P1, a person must accept it. Configs
-// and results keep their levels; only the display changes.
+// SQL Review V1 levels are shown as the AI review's priorities, an error as P0
+// and a warning as P1. Only the display changes: an error still holds the
+// rollout and a warning does not, and configs and results keep their levels.
 export type ReviewLevel = "error" | "warning";
 
 const PRIORITIES: Record<
