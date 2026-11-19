@@ -487,6 +487,13 @@ func typeObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]bool {
 	for _, schema := range meta.GetSchemas() {
 		for _, table := range schema.GetTables() {
 			objects[objectKey(schema.GetName(), table.GetName())] = true
+			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+				partitionSchema := partition.GetSchema()
+				if partitionSchema == "" {
+					partitionSchema = schema.GetName()
+				}
+				objects[objectKey(partitionSchema, partition.GetName())] = true
+			})
 		}
 		for _, view := range schema.GetViews() {
 			objects[objectKey(schema.GetName(), view.GetName())] = true
@@ -1748,6 +1755,22 @@ func indexNameOwners(meta *metadatapb.DatabaseSchemaMetadata, schemaName, indexN
 	}
 	for _, table := range schema.GetTables() {
 		add(table.GetName(), table.GetIndexes())
+	}
+	// A partition keeps its metadata under its parent table, which can live in
+	// another schema.
+	for _, parent := range meta.GetSchemas() {
+		for _, table := range parent.GetTables() {
+			forEachPartition(table.GetPartitions(), func(partition *metadatapb.TablePartitionMetadata) {
+				partitionSchema := partition.GetSchema()
+				if partitionSchema == "" {
+					partitionSchema = parent.GetName()
+				}
+				if partitionSchema != schemaName {
+					return
+				}
+				add(partition.GetName(), partition.GetIndexes())
+			})
+		}
 	}
 	for _, view := range schema.GetMaterializedViews() {
 		add(view.GetName(), view.GetIndexes())

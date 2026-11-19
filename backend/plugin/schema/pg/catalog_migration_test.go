@@ -310,6 +310,27 @@ func TestPartitionIndexInAnotherSchema(t *testing.T) {
 	require.Equal(t, definition, plan.Ops[0].SQL)
 }
 
+// TestPartitionsAreTypeObjectsAndIndexOwners covers a partition as a relation of its
+// own: a type name can resolve to it, and its index can own a comment.
+func TestPartitionsAreTypeObjectsAndIndexOwners(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "main",
+		Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{
+				Name:    "t_p",
+				Schema:  "parted",
+				Indexes: []*metadatapb.IndexMetadata{{Name: "idx_p"}},
+			}},
+		}},
+	}, {Name: "parted"}}}
+	require.True(t, typeObjects(meta)[objectKey("parted", "t_p")], "a partition provides a row type")
+
+	selected := map[string]bool{objectKey("parted", "t_p"): true}
+	require.Equal(t, objectKey("parted", "t_p"), indexNameOwner(meta, "parted", "idx_p", selected),
+		"the partition owns the index its comment names")
+}
+
 // TestSameNamedPartitionsKeepTheirSchema covers same-named partitions held under
 // parents in other schemas: the global lookup must keep the owner clause's schema.
 func TestSameNamedPartitionsKeepTheirSchema(t *testing.T) {
