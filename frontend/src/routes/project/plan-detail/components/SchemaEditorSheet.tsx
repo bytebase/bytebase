@@ -259,7 +259,6 @@ function SchemaEditorSheetBody({
                 clearable={false}
                 size="sm"
                 className="w-56"
-                portal
               />
             </div>
           )}

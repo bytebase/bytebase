@@ -5,6 +5,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -187,16 +188,20 @@ export function SelectionActionBar({
     />
   );
 
-  return (
+  const placementClass =
+    placement === "viewport"
+      ? cn(
+          "fixed bottom-6 w-fit max-w-full -translate-x-1/2",
+          LAYER_SURFACE_CLASS
+        )
+      : "absolute right-2 bottom-3 left-2 z-10 max-w-none";
+  const bar = (
     <div
       className={cn(
-        placement === "viewport"
-          ? "fixed bottom-6 w-fit max-w-full -translate-x-1/2"
-          : "absolute right-2 bottom-3 left-2 max-w-none",
+        placementClass,
         "flex items-center justify-center rounded-full bg-background border border-control-border shadow-lg",
         placement === "container" ? "flex-wrap" : "flex-nowrap",
-        compact ? "gap-x-1.5 gap-y-1 px-2 py-1.5" : "gap-x-3 px-4 py-2",
-        LAYER_SURFACE_CLASS
+        compact ? "gap-x-1.5 gap-y-1 px-2 py-1.5" : "gap-x-3 px-4 py-2"
       )}
       style={fixedStyle}
     >
@@ -305,4 +310,10 @@ export function SelectionActionBar({
       </div>
     </div>
   );
+
+  // The container bar floats over its host's rows only; the viewport bar
+  // floats over the page and so mounts into the overlay layer.
+  return placement === "viewport"
+    ? createPortal(bar, getLayerRoot("overlay"))
+    : bar;
 }

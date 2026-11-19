@@ -86,7 +86,6 @@ export function WorkloadIdentityStep({
         <Field label={t("gitops.setup.identity.label")}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <WorkloadIdentitySelect
-              portal
               projectName={projectName}
               value={identityName}
               placeholder={t("gitops.setup.identity.placeholder")}

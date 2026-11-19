@@ -23,7 +23,6 @@ export interface InstanceSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  portal?: boolean;
   /** Only show instances with these engines */
   engines?: Engine[];
   /** Also offer this project's project instances, listed before workspace instances */
@@ -49,7 +48,6 @@ export function InstanceSelect({
   placeholder,
   disabled,
   className,
-  portal,
   engines,
   project,
 }: InstanceSelectProps) {
@@ -150,7 +148,6 @@ export function InstanceSelect({
       onLoadMore={loadMore}
       disabled={disabled}
       className={className}
-      portal={portal}
       renderValue={(opt) => {
         const inst = instances.find((i) => i.name === opt.value);
         if (!inst) return opt.label;

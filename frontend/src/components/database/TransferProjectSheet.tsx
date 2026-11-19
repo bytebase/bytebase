@@ -85,7 +85,6 @@ export function TransferProjectSheet({
               <ProjectSelect
                 value={selectedProject}
                 onChange={(name) => setSelectedProject(name)}
-                portal
               />
             </div>
           )}
