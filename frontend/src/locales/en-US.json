@@ -1611,7 +1611,7 @@
     },
     "connection-string": {
       "filled": "Filled from URL",
-      "filled-missing-password": "Filled from URL. Enter password below.",
+      "filled-missing-password": "Filled from URL. Enter the database password.",
       "help": {
         "mssql": "Paste a SQL Server connection URL or string to autofill host, port, credentials, database, and TLS.",
         "mysql": "Paste a MySQL connection URL to autofill host, port, credentials, and TLS.",

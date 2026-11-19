@@ -1611,7 +1611,7 @@
     },
     "connection-string": {
       "filled": "Rellenado desde URL",
-      "filled-missing-password": "Rellenado desde URL. Introduce la contraseña abajo.",
+      "filled-missing-password": "Rellenado desde URL. Introduce la contraseña de la base de datos.",
       "help": {
         "mssql": "Pega una URL o cadena de conexión de SQL Server para rellenar el host, el puerto, las credenciales, la base de datos y TLS.",
         "mysql": "Pega una URL de conexión de MySQL para rellenar el host, el puerto, las credenciales y TLS.",

@@ -1611,7 +1611,7 @@
     },
     "connection-string": {
       "filled": "Đã điền từ URL",
-      "filled-missing-password": "Đã điền từ URL. Hãy nhập mật khẩu bên dưới.",
+      "filled-missing-password": "Đã điền từ URL. Hãy nhập mật khẩu cơ sở dữ liệu.",
       "help": {
         "mssql": "Dán URL hoặc chuỗi kết nối SQL Server để tự động điền máy chủ, cổng, thông tin xác thực, cơ sở dữ liệu và TLS.",
         "mysql": "Dán URL kết nối MySQL để tự động điền máy chủ, cổng, thông tin xác thực và TLS.",

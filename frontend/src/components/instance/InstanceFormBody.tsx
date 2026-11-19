@@ -3,10 +3,9 @@ import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
 import {
   AlertCircle,
-  Check,
   ExternalLink,
   Info,
-  Link2,
+  Link,
   Server,
   Trash2,
 } from "lucide-react";
@@ -812,13 +811,11 @@ type ConnectionUrlFillState = "complete" | "missing-password";
 function ConnectionStringImportPopover({
   engine,
   disabled,
-  describedById,
   resolvePasswordInput,
   onParsed,
 }: {
   engine: ConnectionStringEngine;
   disabled: boolean;
-  describedById?: string;
   resolvePasswordInput: () => HTMLInputElement | null;
   onParsed: (
     parsed: ParsedConnectionString,
@@ -899,15 +896,17 @@ function ConnectionStringImportPopover({
         render={
           <Button
             type="button"
-            appearance="outline"
+            appearance="soft"
             size="sm"
             disabled={disabled}
-            aria-describedby={describedById}
-            className="transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none"
+            className="group relative gap-1.5 pl-2 pr-2.5 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] data-[popup-open]:bg-control-bg-hover data-[popup-open]:text-control-hover after:absolute after:-inset-y-2 after:inset-x-0 motion-reduce:transition-none"
           />
         }
       >
-        <Link2 className="size-4 shrink-0" aria-hidden="true" />
+        <Link
+          className="size-3.5 shrink-0 text-control-light transition-colors duration-150 ease-out group-hover:text-control group-data-[popup-open]:text-control motion-reduce:transition-none"
+          aria-hidden="true"
+        />
         <span>{t("instance.connection-string.trigger")}</span>
       </PopoverTrigger>
       <PopoverContent
@@ -929,7 +928,7 @@ function ConnectionStringImportPopover({
           }
           return triggerRef.current;
         }}
-        className="w-[min(28rem,calc(100vw-2rem))] origin-(--transform-origin) p-4 transition-[transform,opacity] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none"
+        className="w-[min(28rem,calc(100vw-2rem))] origin-(--transform-origin) p-4 transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:duration-100 data-[ending-style]:ease-in data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none"
       >
         <form
           className="flex flex-col gap-3"
@@ -1553,12 +1552,6 @@ export function InstanceFormBody({
   };
 
   const connectionSectionRef = useRef<HTMLElement>(null);
-  const connectionUrlStatusId = useId();
-  const [connectionUrlFill, setConnectionUrlFill] = useState<{
-    engine: ConnectionStringEngine;
-    vendor: Vendor;
-    state: ConnectionUrlFillState;
-  } | null>(null);
 
   const resolvePasswordInput = useCallback(
     () =>
@@ -1580,21 +1573,18 @@ export function InstanceFormBody({
             : ds
         ),
       }));
-      setConnectionUrlFill({
-        engine: currentEngine,
-        vendor: basicInfo.vendor,
-        state: fillState,
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title:
+          fillState === "missing-password"
+            ? t("instance.connection-string.filled-missing-password")
+            : t("instance.connection-string.filled"),
       });
     },
-    [basicInfo.engine, basicInfo.vendor, setDataSourceEditState]
+    [basicInfo.engine, setDataSourceEditState, t]
   );
 
-  const activeConnectionUrlFill =
-    connectionUrlFill &&
-    connectionUrlFill.engine === basicInfo.engine &&
-    connectionUrlFill.vendor === basicInfo.vendor
-      ? connectionUrlFill.state
-      : null;
   const showAskAgent = isCreating && !!onAskAgent;
 
   const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
@@ -1918,34 +1908,10 @@ export function InstanceFormBody({
                       key={basicInfo.engine}
                       engine={basicInfo.engine}
                       disabled={!allowEdit || disabled}
-                      describedById={
-                        activeConnectionUrlFill
-                          ? connectionUrlStatusId
-                          : undefined
-                      }
                       resolvePasswordInput={resolvePasswordInput}
                       onParsed={fillFromConnectionString}
                     />
                   )}
-                {activeConnectionUrlFill && (
-                  <p
-                    id={connectionUrlStatusId}
-                    role="status"
-                    className="inline-flex items-center gap-1 text-xs leading-4 text-control-light"
-                  >
-                    <Check
-                      className="size-3.5 shrink-0 text-success"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {activeConnectionUrlFill === "missing-password"
-                        ? t(
-                            "instance.connection-string.filled-missing-password"
-                          )
-                        : t("instance.connection-string.filled")}
-                    </span>
-                  </p>
-                )}
                 {showAskAgent && (
                   <AgentHelpButton
                     type="button"

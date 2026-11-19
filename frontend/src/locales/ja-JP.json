@@ -1611,7 +1611,7 @@
     },
     "connection-string": {
       "filled": "URL から入力しました",
-      "filled-missing-password": "URL から入力しました。下にパスワードを入力してください。",
+      "filled-missing-password": "URL から入力しました。データベースのパスワードを入力してください。",
       "help": {
         "mssql": "SQL Server の接続 URL または接続文字列を貼り付けると、ホスト、ポート、認証情報、データベース、TLS を自動入力します。",
         "mysql": "MySQL の接続 URL を貼り付けると、ホスト、ポート、認証情報、TLS を自動入力します。",

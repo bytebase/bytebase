@@ -27,6 +27,32 @@ describe("buttonVariants", () => {
     expect(classes).not.toContain("border");
   });
 
+  test("uses a borderless tinted surface for soft buttons", () => {
+    const neutral = buttonVariants({ appearance: "soft" }).split(" ");
+    expect(neutral).toEqual(
+      expect.arrayContaining([
+        "bg-control-bg",
+        "text-control",
+        "hover:bg-control-bg-hover",
+        "hover:text-control-hover",
+      ])
+    );
+    expect(neutral).not.toContain("border");
+
+    const destructive = buttonVariants({
+      variant: "destructive",
+      appearance: "soft",
+    }).split(" ");
+    expect(destructive).toEqual(
+      expect.arrayContaining([
+        "bg-error/10",
+        "text-error",
+        "hover:bg-error/15",
+      ])
+    );
+    expect(destructive).not.toContain("border");
+  });
+
   test.each([
     ["default", "h-9", "px-3", "text-sm", "gap-1.5"],
     ["xs", "h-6", "px-1.5", "text-xs", "gap-1"],

@@ -1611,7 +1611,7 @@
     },
     "connection-string": {
       "filled": "已从 URL 填充",
-      "filled-missing-password": "已从 URL 填充，请在下方输入密码。",
+      "filled-missing-password": "已从 URL 填充，请输入数据库密码。",
       "help": {
         "mssql": "粘贴 SQL Server 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
         "mysql": "粘贴 MySQL 连接 URL 以自动填充主机、端口、凭据和 TLS。",

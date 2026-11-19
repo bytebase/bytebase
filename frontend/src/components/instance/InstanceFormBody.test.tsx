@@ -267,7 +267,10 @@ function mount(engine: Engine) {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.pushNotification.mockClear();
+});
 
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -313,6 +316,9 @@ test("places general Agent help beside the connection section heading", () => {
 
   expect(headingRow?.contains(askAgentButton)).toBe(true);
   expect(headingRow?.contains(importUrlButton)).toBe(true);
+  expect(importUrlButton).toHaveClass("h-7", "bg-control-bg", "text-control");
+  expect(importUrlButton).not.toHaveClass("border");
+  expect(importUrlButton.querySelector(".lucide-link")).not.toBeNull();
   expect(askAgentButton).toHaveClass("ml-auto");
   expect(
     importUrlButton.compareDocumentPosition(askAgentButton) &
@@ -1017,9 +1023,9 @@ const openImportUrlPopover = () => {
   };
 };
 
-test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste and closes without keeping secrets", () => {
+test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste and notifies via toast without keeping secrets", () => {
   mountCreate(Engine.MYSQL);
-  let { trigger, field } = openImportUrlPopover();
+  let { field } = openImportUrlPopover();
   expect(field).toHaveAttribute("data-agent-sensitive");
   expect(field).toHaveAttribute("data-1p-ignore");
   paste(
@@ -1039,9 +1045,12 @@ test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste an
     screen.queryByLabelText("instance.connection-string.label")
   ).not.toBeInTheDocument();
   expect(document.body.textContent).not.toContain("s3cr3t");
-  expect(trigger).toHaveAccessibleDescription(
-    "instance.connection-string.filled"
-  );
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled",
+  });
 
   act(() =>
     context.setBasicInfo((previous) => ({
@@ -1049,7 +1058,7 @@ test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste an
       engine: Engine.POSTGRES,
     }))
   );
-  ({ trigger, field } = openImportUrlPopover());
+  ({ field } = openImportUrlPopover());
   paste(
     field,
     "postgresql://pguser:pgpass@pg.example.com:5433/appdb?sslmode=require"
@@ -1066,6 +1075,11 @@ test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste an
   expect(
     screen.queryByLabelText("instance.connection-string.label")
   ).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled",
+  });
 
   act(() =>
     context.setBasicInfo((previous) => ({
@@ -1073,7 +1087,7 @@ test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste an
       engine: Engine.MSSQL,
     }))
   );
-  ({ trigger, field } = openImportUrlPopover());
+  ({ field } = openImportUrlPopover());
   paste(
     field,
     "Server=tcp:sql.example.com,1433;Initial Catalog=orders;User ID=sa;Password={your_password};Encrypt=True;TrustServerCertificate=False;"
@@ -1088,9 +1102,12 @@ test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste an
     useSsl: true,
     verifyTlsCertificate: true,
   });
-  expect(trigger).toHaveAccessibleDescription(
-    "instance.connection-string.filled-missing-password"
-  );
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled-missing-password",
+  });
 });
 
 test("Import from URL supports form submission for typed strings and discards drafts on cancel", () => {
