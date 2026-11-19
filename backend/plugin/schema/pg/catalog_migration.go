@@ -710,6 +710,9 @@ func builtinMultiwordType(text string) bool {
 	for _, prefix := range []string{"SETOF ", "VARIADIC "} {
 		text = strings.TrimSpace(strings.TrimPrefix(text, prefix))
 	}
+	for strings.HasSuffix(text, "[]") {
+		text = strings.TrimSpace(strings.TrimSuffix(text, "[]"))
+	}
 	if index := strings.LastIndex(text, "("); index >= 0 && strings.HasSuffix(text, ")") {
 		text = strings.TrimSpace(text[:index])
 	}
@@ -1257,6 +1260,10 @@ func resolveTypeReference(reference typeReference, relations map[string]bool, se
 				return key, true
 			}
 		}
+		return "", false
+	}
+	if !reference.object.quoted && builtinType(reference.object.name) {
+		// pg_catalog comes first, so an unqualified built-in names no relation.
 		return "", false
 	}
 	if len(searchPath) == 0 {

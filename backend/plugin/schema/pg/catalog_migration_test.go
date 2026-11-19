@@ -1082,6 +1082,18 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	require.Equal(t, objectKey("first", name), key)
 }
 
+// TestPgCatalogTypesNameNoRelation covers an unqualified built-in type: pg_catalog
+// is searched first, so `text` is not a reference to a relation named text.
+func TestPgCatalogTypesNameNoRelation(t *testing.T) {
+	relations := map[string]bool{objectKey("public", "text"): true}
+	_, ok := referencedRelation("text", relations, []string{"public"})
+	require.False(t, ok, "the built-in is not public.text")
+	_, ok = referencedRelation(`"text"`, relations, []string{"public"})
+	require.True(t, ok, "a quoted name is the user relation")
+	require.True(t, builtinMultiwordType("double precision[]"), "an array marker does not hide the built-in")
+	require.False(t, builtinMultiwordType("public.precision"))
+}
+
 // TestAmbiguityCheckSkipsPgCatalogTypes covers a pg_catalog type that a user schema
 // also names: pg_catalog is searched first, so the reference is the built-in.
 func TestAmbiguityCheckSkipsPgCatalogTypes(t *testing.T) {
