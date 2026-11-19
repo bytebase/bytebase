@@ -229,9 +229,28 @@ func (f *standardFinding) prompt() aireview.StandardFinding {
 }
 
 // statesProblem reports whether the comment of a rule result holds a problem
-// of the AI review, which always ends in its fix.
+// of the AI review, which always ends in its fix. A merged result indents the
+// fix under its item.
 func statesProblem(comment string) bool {
-	return strings.Contains(comment, aiReviewFixLabel)
+	label := strings.TrimLeft(aiReviewFixLabel, "\n")
+	for _, line := range strings.Split(comment, "\n") {
+		if strings.HasPrefix(strings.TrimLeft(line, " "), label) {
+			return true
+		}
+	}
+	return false
+}
+
+// dropAIReview leaves the rule results as the standard rules gave them, for a
+// review that ends without the AI review's results.
+func dropAIReview(rules []*ruleResult) {
+	for _, rule := range rules {
+		rule.keepsEarlier = false
+		for _, member := range rule.members {
+			member.facts, member.folded = "", nil
+			member.raised = storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED
+		}
+	}
 }
 
 // holdsFactsOnly reports whether the comment an earlier run left on a rule

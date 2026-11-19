@@ -204,6 +204,8 @@ type factsModel struct {
 	summaries atomic.Int32
 	// listed counts the reviews that were told a standard finding.
 	listed atomic.Int32
+	// onSummary runs during a facts summary, when set.
+	onSummary func()
 }
 
 func (m *factsModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
@@ -218,6 +220,9 @@ func (m *factsModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb
 		}
 	case strings.Contains(user, "\n# Facts\n"):
 		m.summaries.Add(1)
+		if m.onSummary != nil {
+			m.onSummary()
+		}
 		var ids []string
 		for _, match := range summaryDatabaseID.FindAllStringSubmatch(user, -1) {
 			if id := `"` + match[1] + `"`; !slices.Contains(ids, id) {
@@ -230,16 +235,10 @@ func (m *factsModel) Chat(_ context.Context, request *v1pb.AIChatRequest) (*v1pb
 	return &v1pb.AIChatResponse{Content: &content}, nil
 }
 
-// TestReviewAddsFactsToTheRulesThread drives the real reviewers through runs
-// in which the AI review finds no problem: each review is told the rule
-// finding on its database, the facts they add post in the rule's thread, and
-// an unchanged re-run keeps the comment without another summary.
-func TestReviewAddsFactsToTheRulesThread(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	stores, issues := setupReviewFixture(ctx, t, 1)
-	model := &factsModel{}
-	executor := NewReviewExecutor(stores,
+// factsExecutor reviews with a rule that flags the whole sheet as "no WHERE"
+// on every database, and with model as the AI review.
+func factsExecutor(stores *store.Store, model aireview.Model) *ReviewExecutor {
+	return NewReviewExecutor(stores,
 		&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
 			storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
 				every := make([]int, len(targets))
@@ -260,6 +259,18 @@ func TestReviewAddsFactsToTheRulesThread(t *testing.T) {
 			slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
 		},
 	)
+}
+
+// TestReviewAddsFactsToTheRulesThread drives the real reviewers through runs
+// in which the AI review finds no problem: each review is told the rule
+// finding on its database, the facts they add post in the rule's thread, and
+// an unchanged re-run keeps the comment without another summary.
+func TestReviewAddsFactsToTheRulesThread(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	model := &factsModel{}
+	executor := factsExecutor(stores, model)
 	run := func() []*store.IssueCommentMessage {
 		t.Helper()
 		results, err := executor.RunOnce(ctx, "p", issues[0])
@@ -298,4 +309,59 @@ func TestReviewAddsFactsToTheRulesThread(t *testing.T) {
 	third := run()
 	require.Len(t, third, 1)
 	require.Equal(t, "no WHERE", third[0].Payload.Comment, "a run without the AI review posts the rule's text alone")
+}
+
+func TestReviewPostsTheRulesTextWhenSwitchedOffDuringTheFacts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	stores, issues := setupReviewFixture(ctx, t, 1)
+	var switchOffErr error
+	model := &factsModel{}
+	model.onSummary = func() {
+		_, switchOffErr = stores.UpsertSetting(ctx, &store.SettingMessage{Name: storepb.SettingName_AI, Workspace: "ws", Value: &storepb.AISetting{Enabled: true}})
+	}
+	results, err := factsExecutor(stores, model).RunOnce(ctx, "p", issues[0])
+	require.NoError(t, err)
+	require.NoError(t, switchOffErr)
+	require.Equal(t, int32(1), model.summaries.Load())
+	require.Len(t, results, 1)
+	require.Equal(t, "no WHERE", results[0].Payload.Comment, "the review ends with the rules' results, which carry nothing of the AI review")
+}
+
+func TestDropAIReview(t *testing.T) {
+	t.Parallel()
+
+	rule := dropRule()
+	bare := rule.payload()
+	rule.earlier = &ruleThread{Comment: "Drops column `legacy_status`.\n\nThe column held 3 values.", Priority: storepb.IssueCommentPayload_ReviewMetadata_P0}
+	rule.keepsEarlier = true
+	rule.members[0].facts = "The column is empty."
+	rule.members[0].folded = []string{"v_orders reads it."}
+	rule.members[0].raised = storepb.IssueCommentPayload_ReviewMetadata_P0
+	dropAIReview([]*ruleResult{rule})
+	require.Equal(t, bare, rule.payload())
+}
+
+func TestStatesProblem(t *testing.T) {
+	t.Parallel()
+
+	require.False(t, statesProblem("Drops column `legacy_status`.\n\nThe column is empty."))
+	require.True(t, statesProblem("Drops column `legacy_status`.\n\nv_orders reads it.\n\nSuggested fix: Drop v_orders first."))
+
+	// A merged result lists its findings, with what the AI review adds
+	// indented under each item.
+	merged := &ruleResult{statements: mergeAtStatements}
+	for line := int32(1); line <= mergeAtStatements; line++ {
+		member := *dropRule().members[0]
+		member.statement = int(line)
+		member.anchor = &storepb.IssueCommentPayload_StatementAnchor{StartPosition: &storepb.Position{Line: line}, EndPosition: &storepb.Position{Line: line}}
+		merged.members = append(merged.members, &member)
+	}
+	merged.members[1].folded = []string{"v_orders reads it." + aiReviewFixLabel + "Drop v_orders first."}
+	comment := merged.payload().Comment
+	require.NotContains(t, comment, aiReviewFixLabel, "the fix is indented under its item")
+	require.True(t, statesProblem(comment))
+	merged.earlier = &ruleThread{Comment: comment}
+	merged.members[1].folded = nil
+	require.False(t, holdsFactsOnly(merged), "a comment that states a problem is written again once the problem is gone")
 }

@@ -238,7 +238,7 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 	}
 	foldAIReviewProblems(problems)
 	keepFactsOnlyComments(rules, problems)
-	if err := addRuleFacts(ctx, func(ctx context.Context, request *aireview.FactsRequest) (*aireview.FactsSummary, error) {
+	err = addRuleFacts(ctx, func(ctx context.Context, request *aireview.FactsRequest) (*aireview.FactsSummary, error) {
 		// A summary is a model call like a review, so it takes a slot too.
 		if err := e.slots.Acquire(ctx, 1); err != nil {
 			return nil, err
@@ -256,13 +256,16 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 			slog.Int("model_calls", summary.Calls),
 			slog.Int("tokens", summary.TotalTokens))
 		return summary, nil
-	}, standard, results, sheets); err != nil {
-		return nil, err
-	}
+	}, standard, results, sheets)
 	// The merge and the summaries fall back when a model call fails, the call
 	// that a switch-off refused included, so the setting is read again before
 	// the results post.
-	if err := e.checkAISetting(ctx, project.Workspace); err != nil {
+	if err == nil {
+		err = e.checkAISetting(ctx, project.Workspace)
+	}
+	if err != nil {
+		// The caller posts the rule results alone when the AI review is off.
+		dropAIReview(rules)
 		return nil, err
 	}
 	return append(aiReviewComments(projectID, issueUID, problems), ruleResultComments(projectID, issueUID, rules)...), nil
