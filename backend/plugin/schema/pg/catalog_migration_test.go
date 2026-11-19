@@ -3202,3 +3202,22 @@ func TestViewDependencyQualificationSeesRegclass(t *testing.T) {
 	meta.Schemas[0].Views[0].Definition = "SELECT nextval('s'::regclass)"
 	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."s"`)
 }
+
+// TestViewDependencyQualificationSkipsDerivedTableAlias covers a bare alias on a
+// derived table: the alias `t` is not a second relation reference.
+func TestViewDependencyQualificationSkipsDerivedTableAlias(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t base, (SELECT 1) t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

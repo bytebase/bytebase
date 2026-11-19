@@ -1239,9 +1239,24 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 	ctes := definitionCTEs(tokens)
 	qualified := false
 	inRelations := false
-	var relationState []bool
+	var relationState, derivedState []bool
+	afterDerivedTable := false
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
+		if afterDerivedTable {
+			afterDerivedTable = false
+			if token.punct == 0 {
+				if !token.quoted && strings.EqualFold(token.text, "AS") {
+					if i+1 < len(tokens) && tokens[i+1].punct == 0 {
+						i = skipAliasColumnList(tokens, i+1)
+						continue
+					}
+				} else if token.quoted || !relationClauseKeyword(strings.ToUpper(token.text)) {
+					i = skipAliasColumnList(tokens, i)
+					continue
+				}
+			}
+		}
 		if token.literal {
 			if token.regclass {
 				if matched, unqualified := literalRelationReference(token.text, schemaName, objectName); matched {
@@ -1255,12 +1270,19 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		if token.punct != 0 {
 			switch token.punct {
 			case '(':
+				parenthesized := parenthesizedRelationGroup(tokens, i+1)
+				derived := inRelations && !parenthesized
 				relationState = append(relationState, inRelations)
-				inRelations = inRelations && parenthesizedRelationGroup(tokens, i+1)
+				derivedState = append(derivedState, derived)
+				inRelations = inRelations && parenthesized
 			case ')':
 				if len(relationState) > 0 {
 					inRelations = relationState[len(relationState)-1]
 					relationState = relationState[:len(relationState)-1]
+					if len(derivedState) > 0 {
+						afterDerivedTable = derivedState[len(derivedState)-1]
+						derivedState = derivedState[:len(derivedState)-1]
+					}
 				} else {
 					inRelations = false
 				}
@@ -1578,13 +1600,20 @@ func skipRelationAlias(tokens []definitionToken, index int) int {
 			}
 			return index + 1
 		}
-		switch upper {
-		case "FROM", "JOIN", "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
+		if relationClauseKeyword(upper) {
 			return index
-		default:
 		}
 	}
 	return skipAliasColumnList(tokens, index+1)
+}
+
+func relationClauseKeyword(upper string) bool {
+	switch upper {
+	case "FROM", "JOIN", "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
+		return true
+	default:
+		return false
+	}
 }
 
 func skipAliasColumnList(tokens []definitionToken, alias int) int {
