@@ -741,9 +741,12 @@ func offersEarlier(rule *ruleResult) bool {
 	if !holdsFactsOnly(rule) {
 		return false
 	}
-	var targets []string
+	// The names are those addRuleFacts gives the databases of each finding.
+	names := make(map[string]bool)
 	for _, member := range rule.members {
-		targets = append(targets, member.targets...)
+		for _, label := range databaseLabels(member.targets) {
+			names[label] = true
+		}
 	}
 	own := strings.Split(rule.ruleText(), "\n")
 	for _, line := range strings.Split(rule.earlier.Comment, "\n") {
@@ -751,8 +754,8 @@ func offersEarlier(rule *ruleResult) bool {
 		if slices.Contains(own, line) {
 			continue
 		}
-		for _, label := range databaseLabels(targets) {
-			if strings.Contains(line, label) {
+		for name := range names {
+			if strings.Contains(line, name) {
 				return false
 			}
 		}

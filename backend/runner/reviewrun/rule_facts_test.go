@@ -365,3 +365,27 @@ func TestStatesProblem(t *testing.T) {
 	merged.members[1].folded = nil
 	require.False(t, holdsFactsOnly(merged), "a comment that states a problem is written again once the problem is gone")
 }
+
+func TestOffersEarlierFactsThatNameNoDatabase(t *testing.T) {
+	t.Parallel()
+
+	// Three statements of one rule on the same two databases post as one
+	// merged result, with each finding's facts under its item.
+	merged := func(facts string) *ruleResult {
+		rule := &ruleResult{statements: mergeAtStatements}
+		for line := int32(1); line <= mergeAtStatements; line++ {
+			member := *dropRule().members[0]
+			member.statement = int(line)
+			member.targets = []string{"instances/prod/databases/db1", "instances/prod/databases/db2"}
+			member.anchor = &storepb.IssueCommentPayload_StatementAnchor{StartPosition: &storepb.Position{Line: line}, EndPosition: &storepb.Position{Line: line}}
+			rule.members = append(rule.members, &member)
+		}
+		rule.members[1].facts = facts
+		rule.earlier = &ruleThread{Comment: rule.payload().Comment}
+		rule.members[1].facts = ""
+		return rule
+	}
+	require.True(t, offersEarlier(merged("The column is empty.")))
+	require.False(t, offersEarlier(merged("db1: The column is empty.")), "facts of db1 say nothing about a problem on db2")
+	require.False(t, offersEarlier(merged("")), "the rules' text alone has nothing to compare")
+}
