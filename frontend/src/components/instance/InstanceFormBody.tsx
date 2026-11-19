@@ -1,7 +1,14 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { isEqual, omit } from "lodash-es";
-import { ExternalLink, Info, Server, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  ExternalLink,
+  Info,
+  Link,
+  Server,
+  Trash2,
+} from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -29,7 +36,14 @@ import {
   FormLabel,
   FormSection,
   ResponsiveFormLayout,
+  FormField as SharedFormField,
 } from "@/components/ui/form";
+import { Input as SharedInput } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -82,6 +96,14 @@ import {
   extractDataSourceEditState,
   updateDataSourceSecret,
 } from "./common";
+import {
+  applyParsedConnectionString,
+  type ConnectionStringEngine,
+  detectConnectionStringEngine,
+  type ParsedConnectionString,
+  parseConnectionString,
+  supportsConnectionString,
+} from "./connection-string";
 import {
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
@@ -774,6 +796,230 @@ function NeonConnectionStringField({
   );
 }
 
+const CONNECTION_STRING_PLACEHOLDERS: Record<ConnectionStringEngine, string> = {
+  [Engine.MYSQL]:
+    "mysql://user:password@db.example.com:3306/mydb?ssl-mode=REQUIRED",
+  [Engine.POSTGRES]:
+    "postgresql://user:password@db.example.com:5432/mydb?sslmode=require",
+  [Engine.MSSQL]:
+    "Server=tcp:db.example.com,1433;Initial Catalog=mydb;User ID=sa;Password=…;Encrypt=True;",
+  [Engine.ORACLE]: "tcps://user:password@db.example.com:1522/orclpdb1",
+};
+
+type ConnectionUrlFillState = "complete" | "missing-password";
+
+function ConnectionStringImportPopover({
+  engine,
+  disabled,
+  resolvePasswordInput,
+  onParsed,
+}: {
+  engine: ConnectionStringEngine;
+  disabled: boolean;
+  resolvePasswordInput: () => HTMLInputElement | null;
+  onParsed: (
+    parsed: ParsedConnectionString,
+    fillState: ConnectionUrlFillState
+  ) => void;
+}) {
+  const { t } = useTranslation();
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [pendingPasswordFocus, setPendingPasswordFocus] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const focusPasswordOnCloseRef = useRef(false);
+  const invalid = checked && value.trim() !== "";
+
+  useEffect(() => {
+    if (open || !pendingPasswordFocus) return;
+    setPendingPasswordFocus(false);
+    const passwordEl = resolvePasswordInput();
+    if (passwordEl && !passwordEl.disabled) {
+      passwordEl.focus();
+    }
+  }, [open, pendingPasswordFocus, resolvePasswordInput]);
+
+  const helpText = {
+    [Engine.MYSQL]: t("instance.connection-string.help.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.help.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.help.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.help.oracle"),
+  }[engine];
+
+  const invalidText = {
+    [Engine.MYSQL]: t("instance.connection-string.invalid.mysql"),
+    [Engine.POSTGRES]: t("instance.connection-string.invalid.postgres"),
+    [Engine.MSSQL]: t("instance.connection-string.invalid.mssql"),
+    [Engine.ORACLE]: t("instance.connection-string.invalid.oracle"),
+  }[engine];
+
+  const detectedEngine = invalid
+    ? detectConnectionStringEngine(value, engine)
+    : undefined;
+  const errorMessage = detectedEngine
+    ? t("instance.connection-string.invalid.engine-mismatch", {
+        detected: engineNameV1(detectedEngine),
+        selected: engineNameV1(engine),
+      })
+    : invalidText;
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setValue("");
+      setChecked(false);
+    }
+  };
+
+  const tryImport = (text: string): boolean => {
+    const parsed = parseConnectionString(engine, text);
+    if (!parsed) return false;
+    const fillState: ConnectionUrlFillState =
+      parsed.password !== undefined ? "complete" : "missing-password";
+    onParsed(parsed, fillState);
+    if (fillState === "missing-password") {
+      focusPasswordOnCloseRef.current = true;
+      setPendingPasswordFocus(true);
+    }
+    handleOpenChange(false);
+    return true;
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        ref={triggerRef}
+        render={
+          <Button
+            type="button"
+            appearance="soft"
+            size="sm"
+            disabled={disabled}
+            className="group relative gap-1.5 pl-2 pr-2.5 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] data-[popup-open]:bg-control-bg-hover data-[popup-open]:text-control-hover after:absolute after:-inset-y-2 after:inset-x-0 motion-reduce:transition-none"
+          />
+        }
+      >
+        <Link
+          className="size-3.5 shrink-0 text-control-light transition-colors duration-150 ease-out group-hover:text-control group-data-[popup-open]:text-control motion-reduce:transition-none"
+          aria-hidden="true"
+        />
+        <span>{t("instance.connection-string.trigger")}</span>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        initialFocus={() =>
+          typeof window !== "undefined" &&
+          window.matchMedia?.("(hover: none) and (pointer: coarse)")?.matches
+            ? false
+            : inputRef.current
+        }
+        finalFocus={() => {
+          if (focusPasswordOnCloseRef.current) {
+            focusPasswordOnCloseRef.current = false;
+            const passwordEl = resolvePasswordInput();
+            if (passwordEl && !passwordEl.disabled) {
+              return passwordEl;
+            }
+          }
+          return triggerRef.current;
+        }}
+        className="w-[min(28rem,calc(100vw-2rem))] origin-(--transform-origin) p-4 transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:duration-100 data-[ending-style]:ease-in data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none"
+      >
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!value.trim() || !tryImport(value)) {
+              setChecked(true);
+            }
+          }}
+        >
+          <SharedFormField
+            layout="vertical"
+            title={
+              <FormLabel htmlFor={inputId}>
+                {t("instance.connection-string.label")}
+              </FormLabel>
+            }
+            description={helpText}
+          >
+            <SharedInput
+              ref={inputRef}
+              id={inputId}
+              type="text"
+              data-agent-sensitive
+              data-1p-ignore
+              data-lpignore="true"
+              value={value}
+              disabled={disabled}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? errorId : undefined}
+              placeholder={CONNECTION_STRING_PLACEHOLDERS[engine]}
+              className="font-mono"
+              onChange={(event) => {
+                const next = event.target.value;
+                setValue(next);
+                if (
+                  checked &&
+                  (!next.trim() || parseConnectionString(engine, next))
+                ) {
+                  setChecked(false);
+                }
+              }}
+              onPaste={(event) => {
+                const pasted = event.clipboardData.getData("text");
+                const target = event.currentTarget;
+                const start = target.selectionStart ?? value.length;
+                const end = target.selectionEnd ?? value.length;
+                const combined = `${value.slice(0, start)}${pasted}${value.slice(end)}`;
+                event.preventDefault();
+                if (!tryImport(combined)) {
+                  setValue(combined);
+                  setChecked(combined.trim() !== "");
+                }
+              }}
+            />
+            {invalid && (
+              <FormError id={errorId} className="flex items-start gap-1.5">
+                <AlertCircle
+                  className="mt-0.5 size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+                <span>{errorMessage}</span>
+              </FormError>
+            )}
+          </SharedFormField>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              onClick={() => handleOpenChange(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={disabled || !value.trim()}
+            >
+              {t("common.import")}
+            </Button>
+          </div>
+        </form>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function AdditionalAddressesFields({
   addresses,
   defaultPort,
@@ -1305,6 +1551,42 @@ export function InstanceFormBody({
     }));
   };
 
+  const connectionSectionRef = useRef<HTMLElement>(null);
+
+  const resolvePasswordInput = useCallback(
+    () =>
+      connectionSectionRef.current?.querySelector<HTMLInputElement>(
+        '[data-agent-sensitive] input[type="password"]'
+      ) ?? null,
+    []
+  );
+
+  const fillFromConnectionString = useCallback(
+    (parsed: ParsedConnectionString, fillState: ConnectionUrlFillState) => {
+      if (!supportsConnectionString(basicInfo.engine)) return;
+      const currentEngine = basicInfo.engine;
+      setDataSourceEditState((prev) => ({
+        ...prev,
+        dataSources: prev.dataSources.map((ds) =>
+          ds.id === prev.editingDataSourceId
+            ? applyParsedConnectionString(ds, currentEngine, parsed)
+            : ds
+        ),
+      }));
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title:
+          fillState === "missing-password"
+            ? t("instance.connection-string.filled-missing-password")
+            : t("instance.connection-string.filled"),
+      });
+    },
+    [basicInfo.engine, setDataSourceEditState, t]
+  );
+
+  const showAskAgent = isCreating && !!onAskAgent;
+
   const vendorDrafts = useRef(new Map<Vendor, DataSourceEditState>());
   const changeVendor = (vendor: Vendor) => {
     if (isCreating) {
@@ -1610,17 +1892,37 @@ export function InstanceFormBody({
 
         {/* Connection Card */}
         <FormSection
+          ref={connectionSectionRef}
           layout="stacked"
           title={t("instance.section.connection")}
           action={
-            isCreating && onAskAgent ? (
-              <AgentHelpButton
-                type="button"
-                size="sm"
-                onClick={() => onAskAgent()}
-              >
-                {t("instance.ask-agent")}
-              </AgentHelpButton>
+            (isCreating &&
+              !isNeon &&
+              supportsConnectionString(basicInfo.engine)) ||
+            showAskAgent ? (
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                {isCreating &&
+                  !isNeon &&
+                  supportsConnectionString(basicInfo.engine) && (
+                    <ConnectionStringImportPopover
+                      key={basicInfo.engine}
+                      engine={basicInfo.engine}
+                      disabled={!allowEdit || disabled}
+                      resolvePasswordInput={resolvePasswordInput}
+                      onParsed={fillFromConnectionString}
+                    />
+                  )}
+                {showAskAgent && (
+                  <AgentHelpButton
+                    type="button"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => onAskAgent()}
+                  >
+                    {t("instance.ask-agent")}
+                  </AgentHelpButton>
+                )}
+              </div>
             ) : undefined
           }
         >

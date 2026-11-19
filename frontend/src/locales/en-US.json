@@ -1617,6 +1617,25 @@
         "title": "Check database engine support"
       }
     },
+    "connection-string": {
+      "filled": "Filled from URL",
+      "filled-missing-password": "Filled from URL. Enter the database password.",
+      "help": {
+        "mssql": "Paste a SQL Server connection URL or string to autofill host, port, credentials, database, and TLS.",
+        "mysql": "Paste a MySQL connection URL to autofill host, port, credentials, and TLS.",
+        "oracle": "Paste an Oracle connection URL or Easy Connect string to autofill host, port, credentials, service name or SID, and TLS.",
+        "postgres": "Paste a PostgreSQL connection URL or string to autofill host, port, credentials, database, and TLS."
+      },
+      "invalid": {
+        "engine-mismatch": "This looks like a {{detected}} connection string. Switch Engine to {{detected}} above, or enter a {{selected}} string.",
+        "mssql": "Enter a valid sqlserver:// URL or Server=…; connection string.",
+        "mysql": "Enter a valid mysql:// connection URL.",
+        "oracle": "Enter a valid oracle:// URL or Easy Connect string with a service name or SID.",
+        "postgres": "Enter a valid postgresql:// URL or key=value connection string."
+      },
+      "label": "Connection URL",
+      "trigger": "Import from URL"
+    },
     "create-failed": "Instance creation failed",
     "create-gcp-credentials": "To create credentials, see",
     "database-region": "Database Region",

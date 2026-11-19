@@ -1617,6 +1617,25 @@
         "title": "Revisar soporte del motor de base de datos"
       }
     },
+    "connection-string": {
+      "filled": "Rellenado desde URL",
+      "filled-missing-password": "Rellenado desde URL. Introduce la contraseña de la base de datos.",
+      "help": {
+        "mssql": "Pega una URL o cadena de conexión de SQL Server para rellenar el host, el puerto, las credenciales, la base de datos y TLS.",
+        "mysql": "Pega una URL de conexión de MySQL para rellenar el host, el puerto, las credenciales y TLS.",
+        "oracle": "Pega una URL de conexión o cadena Easy Connect de Oracle para rellenar el host, el puerto, las credenciales, el nombre de servicio o SID y TLS.",
+        "postgres": "Pega una URL o cadena de conexión de PostgreSQL para rellenar el host, el puerto, las credenciales, la base de datos y TLS."
+      },
+      "invalid": {
+        "engine-mismatch": "Parece una cadena de conexión de {{detected}}. Cambia el motor a {{detected}} arriba o introduce una cadena de {{selected}}.",
+        "mssql": "Introduce una URL sqlserver:// o cadena de conexión Server=…; válida.",
+        "mysql": "Introduce una URL de conexión mysql:// válida.",
+        "oracle": "Introduce una URL oracle:// o cadena Easy Connect válida con nombre de servicio o SID.",
+        "postgres": "Introduce una URL postgresql:// o cadena de conexión key=value válida."
+      },
+      "label": "URL de conexión",
+      "trigger": "Importar desde URL"
+    },
     "create-failed": "Error al crear la instancia",
     "create-gcp-credentials": "Para crear credenciales, consulte",
     "database-region": "Región de la base de datos",

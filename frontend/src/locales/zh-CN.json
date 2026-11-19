@@ -1617,6 +1617,25 @@
         "title": "检查数据库引擎支持"
       }
     },
+    "connection-string": {
+      "filled": "已从 URL 填充",
+      "filled-missing-password": "已从 URL 填充，请输入数据库密码。",
+      "help": {
+        "mssql": "粘贴 SQL Server 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。",
+        "mysql": "粘贴 MySQL 连接 URL 以自动填充主机、端口、凭据和 TLS。",
+        "oracle": "粘贴 Oracle 连接 URL 或 Easy Connect 字符串以自动填充主机、端口、凭据、服务名或 SID 以及 TLS。",
+        "postgres": "粘贴 PostgreSQL 连接 URL 或连接字符串以自动填充主机、端口、凭据、数据库和 TLS。"
+      },
+      "invalid": {
+        "engine-mismatch": "这看起来是 {{detected}} 连接字符串。请在上方将数据库引擎切换为 {{detected}}，或输入 {{selected}} 连接字符串。",
+        "mssql": "请输入有效的 sqlserver:// URL 或 Server=…; 连接字符串。",
+        "mysql": "请输入有效的 mysql:// 连接 URL。",
+        "oracle": "请输入包含服务名或 SID 的有效 oracle:// URL 或 Easy Connect 字符串。",
+        "postgres": "请输入有效的 postgresql:// URL 或 key=value 连接字符串。"
+      },
+      "label": "连接 URL",
+      "trigger": "从 URL 导入"
+    },
     "create-failed": "实例创建失败",
     "create-gcp-credentials": "创建凭据的方法见",
     "database-region": "数据库区域",

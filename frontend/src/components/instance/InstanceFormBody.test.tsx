@@ -31,6 +31,9 @@ const mocks = vi.hoisted(() => ({
   isSaaSMode: false,
   hasSSL: false,
   hasExtraParameters: false,
+  RealDataSourceForm: null as
+    | typeof import("./DataSourceForm")["DataSourceForm"]
+    | null,
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -52,18 +55,20 @@ vi.mock("@/components/ResourceIdField", () => ({
 }));
 vi.mock("@/components/RouterLink", () => ({ RouterLink: () => null }));
 vi.mock("./DataSourceForm", () => ({
-  DataSourceForm: ({
-    dataSource,
-    authOnly,
-    hideAuthentication,
-    onDataSourceChange,
-  }: {
+  DataSourceForm: (props: {
     dataSource: EditDataSource;
     authOnly?: boolean;
     hideAuthentication?: boolean;
+    optionsOnly?: boolean;
     onDataSourceChange: (value: EditDataSource) => void;
-  }) =>
-    authOnly ? (
+  }) => {
+    if (mocks.RealDataSourceForm) {
+      const Real = mocks.RealDataSourceForm;
+      return <Real {...props} />;
+    }
+    const { dataSource, authOnly, hideAuthentication, onDataSourceChange } =
+      props;
+    return authOnly ? (
       <button
         type="button"
         onClick={() =>
@@ -82,7 +87,8 @@ vi.mock("./DataSourceForm", () => ({
         data-source={dataSource.id}
         data-hide-auth={hideAuthentication}
       />
-    ),
+    );
+  },
   RedisSentinelFields: () => null,
 }));
 
@@ -261,7 +267,10 @@ function mount(engine: Engine) {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  mocks.pushNotification.mockClear();
+});
 
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -301,8 +310,20 @@ test("places general Agent help beside the connection section heading", () => {
   const askAgentButton = screen.getByRole("button", {
     name: "instance.ask-agent",
   });
+  const importUrlButton = screen.getByRole("button", {
+    name: "instance.connection-string.trigger",
+  });
 
   expect(headingRow?.contains(askAgentButton)).toBe(true);
+  expect(headingRow?.contains(importUrlButton)).toBe(true);
+  expect(importUrlButton).toHaveClass("h-7", "bg-control-bg", "text-control");
+  expect(importUrlButton).not.toHaveClass("border");
+  expect(importUrlButton.querySelector(".lucide-link")).not.toBeNull();
+  expect(askAgentButton).toHaveClass("ml-auto");
+  expect(
+    importUrlButton.compareDocumentPosition(askAgentButton) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+  ).toBeTruthy();
   expect(connectionTitle).toHaveStyle({ width: "fit-content" });
   expect(askAgentButton.querySelector(".lucide-bot")).not.toBeNull();
   expect(askAgentButton).toHaveClass("h-7", "bg-transparent", "text-accent");
@@ -987,6 +1008,237 @@ test("Neon TLS mode omits Disabled and allows toggling certificate verification 
     expect(context.adminDataSource.useSsl).toBe(true);
     expect(context.adminDataSource.verifyTlsCertificate).toBe(false);
   } finally {
+    mocks.hasSSL = false;
+  }
+});
+
+const openImportUrlPopover = () => {
+  const trigger = screen.getByRole("button", {
+    name: "instance.connection-string.trigger",
+  });
+  fireEvent.click(trigger);
+  return {
+    trigger,
+    field: screen.getByLabelText("instance.connection-string.label"),
+  };
+};
+
+test("Import from URL popover autofills MySQL, PostgreSQL, and MSSQL on paste and notifies via toast without keeping secrets", () => {
+  mountCreate(Engine.MYSQL);
+  let { field } = openImportUrlPopover();
+  expect(field).toHaveAttribute("data-agent-sensitive");
+  expect(field).toHaveAttribute("data-1p-ignore");
+  paste(
+    field,
+    "mysql://admin:s3cr3t@mysql.example.com:25060/ignored_db?ssl-mode=VERIFY_IDENTITY"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "mysql.example.com",
+    port: "25060",
+    username: "admin",
+    updatedPassword: "s3cr3t",
+    database: "",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
+  expect(document.body.textContent).not.toContain("s3cr3t");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled",
+  });
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.POSTGRES,
+    }))
+  );
+  ({ field } = openImportUrlPopover());
+  paste(
+    field,
+    "postgresql://pguser:pgpass@pg.example.com:5433/appdb?sslmode=require"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "pg.example.com",
+    port: "5433",
+    username: "pguser",
+    updatedPassword: "pgpass",
+    database: "appdb",
+    useSsl: true,
+    verifyTlsCertificate: false,
+  });
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled",
+  });
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.MSSQL,
+    }))
+  );
+  ({ field } = openImportUrlPopover());
+  paste(
+    field,
+    "Server=tcp:sql.example.com,1433;Initial Catalog=orders;User ID=sa;Password={your_password};Encrypt=True;TrustServerCertificate=False;"
+  );
+  expect(context.adminDataSource).toMatchObject({
+    host: "sql.example.com",
+    port: "1433",
+    username: "sa",
+    updatedPassword: "",
+    useEmptyPassword: false,
+    database: "orders",
+    useSsl: true,
+    verifyTlsCertificate: true,
+  });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "instance.connection-string.filled-missing-password",
+  });
+});
+
+test("Import from URL supports form submission for typed strings and discards drafts on cancel", () => {
+  mountCreate(Engine.MYSQL);
+  let { field } = openImportUrlPopover();
+  fireEvent.change(field, {
+    target: { value: "mysql://typed:secret@typed.example.com:3307/app" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
+  expect(context.adminDataSource.host).not.toBe("typed.example.com");
+
+  ({ field } = openImportUrlPopover());
+  expect(field).toHaveValue("");
+  fireEvent.change(field, {
+    target: { value: "mysql://typed:secret@typed.example.com:3307/app" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "common.import" }));
+  expect(context.adminDataSource).toMatchObject({
+    host: "typed.example.com",
+    port: "3307",
+    username: "typed",
+    updatedPassword: "secret",
+  });
+});
+
+test("Import from URL flags engine mismatches, clears errors on fix, and resets when switching engines", () => {
+  mountCreate(Engine.POSTGRES);
+  const { field } = openImportUrlPopover();
+  paste(field, "mysql://root:pass@mysql.example.com:3306/app");
+  expect(field).toHaveValue("mysql://root:pass@mysql.example.com:3306/app");
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.engine-mismatch"
+  );
+
+  paste(field, "");
+  fireEvent.change(field, { target: { value: "not-a-valid-string" } });
+  fireEvent.submit(field.closest("form") as HTMLFormElement);
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.postgres"
+  );
+
+  fireEvent.change(field, {
+    target: { value: "postgresql://pg.example.com:5432/app" },
+  });
+  expect(field).not.toHaveAttribute("aria-invalid");
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.MYSQL,
+    }))
+  );
+  expect(
+    screen.queryByLabelText("instance.connection-string.label")
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
+test("Import from URL trigger is hidden for unsupported engines, Neon vendor, and edit mode", () => {
+  mountCreate(Engine.MARIADB);
+  expect(
+    screen.queryByRole("button", {
+      name: "instance.connection-string.trigger",
+    })
+  ).not.toBeInTheDocument();
+
+  cleanup();
+  mountCreate(Engine.POSTGRES);
+  selectHosting(/^instance.vendor.neon/);
+  expect(
+    screen.queryByRole("button", {
+      name: "instance.connection-string.trigger",
+    })
+  ).not.toBeInTheDocument();
+
+  cleanup();
+  render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/prod-mysql",
+        title: "Prod MySQL",
+        engine: Engine.MYSQL,
+        state: State.ACTIVE,
+        dataSources: [
+          {
+            id: "admin",
+            type: DataSourceType.ADMIN,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            host: "mysql.example.com",
+            port: "3306",
+          },
+        ],
+      })}
+    >
+      <Editor />
+    </InstanceFormProvider>
+  );
+  expect(
+    screen.queryByRole("button", {
+      name: "instance.connection-string.trigger",
+    })
+  ).not.toBeInTheDocument();
+});
+
+test("importing an Oracle SID URL updates OracleConnectionFields, TLS controls, and focuses password when omitted", async () => {
+  mocks.hasSSL = true;
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    mocks.RealDataSourceForm = DataSourceForm;
+    mountCreate(Engine.ORACLE);
+
+    const { field } = openImportUrlPopover();
+    paste(field, "oracle://system@ora.example.com:1522?SID=XE&SSL=true");
+
+    expect(screen.getByRole("radio", { name: "instance.sid" })).toBeChecked();
+    expect(
+      screen.getByRole("textbox", { name: /^instance\.sid/ })
+    ).toHaveValue("XE");
+    expect(
+      screen.getByRole("combobox", { name: "data-source.ssl.posture.self" })
+    ).toHaveTextContent("data-source.ssl.posture.tls");
+    await waitFor(() => {
+      expect(screen.getByLabelText("common.password")).toHaveFocus();
+    });
+  } finally {
+    mocks.RealDataSourceForm = null;
     mocks.hasSSL = false;
   }
 });
