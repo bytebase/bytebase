@@ -43,7 +43,10 @@ import {
   wasDeniedQueryRequestDraftDelivered,
 } from "@/modules/sql-editor/model/accessGrantDraft";
 import { useAppStore } from "@/stores/app";
-import { isAgentApiAttemptUncertain } from "../logic/apiAttempt";
+import {
+  type AgentApiAttempt,
+  isAgentApiAttemptUncertain,
+} from "../logic/apiAttempt";
 import {
   type AccessGrantDraft,
   type DeniedQueryRequestDraft,
@@ -80,6 +83,7 @@ import {
 import { getAgentRunContinuation } from "../logic/runCheckpoint";
 import { getAgentRunFeedback } from "../logic/runFeedback";
 import { supportsAgentRunRecovery } from "../logic/runOwnership";
+import { getApiMethodDescriptor } from "../logic/tools/apiMethodClass";
 import type {
   AgentAnswerEvidence,
   AgentEvidence,
@@ -1046,66 +1050,123 @@ export function AgentChat({
       ? getAgentRunContinuation(currentChat, messages)
       : undefined;
 
-  function getToolResult(
-    messageId: string,
-    toolCallId: string,
-    duplicateIndex = 0
-  ): string | undefined {
-    const fullIndex = allMessages.findIndex(
-      (message) => message.id === messageId
-    );
-    if (fullIndex < 0) return undefined;
-
-    let matchingResultIndex = 0;
-    for (let index = fullIndex + 1; index < allMessages.length; index++) {
-      const message = allMessages[index];
-      if (message.role === "tool" && message.toolCallId === toolCallId) {
-        if (matchingResultIndex === duplicateIndex) {
-          return message.content;
+  const toolCallViews = useMemo(() => {
+    type Occurrence = {
+      message: AgentMessage;
+      toolCall: ToolCall;
+      rootUserMessageId?: string;
+      operationId?: string;
+      result?: AgentMessage;
+      missingResultAttempt?: AgentApiAttempt;
+    };
+    const byMessageId = new Map<string, Occurrence[]>();
+    const occurrences: Occurrence[] = [];
+    const linkedAttemptIds = new Set<string>();
+    let rootUserMessageId: string | undefined;
+    for (const [index, message] of allMessages.entries()) {
+      if (message.role === "tool" && message.metadata?.apiAttemptId) {
+        linkedAttemptIds.add(message.metadata.apiAttemptId);
+      }
+      if (message.role === "user") rootUserMessageId = message.id;
+      if (message.role !== "assistant" || !message.toolCalls?.length) continue;
+      const results = new Map<string, AgentMessage[]>();
+      for (let next = index + 1; next < allMessages.length; next++) {
+        const row = allMessages[next];
+        if (row.role === "assistant" || row.role === "user") break;
+        if (row.role === "tool" && row.toolCallId) {
+          const rows = results.get(row.toolCallId) ?? [];
+          rows.push(row);
+          results.set(row.toolCallId, rows);
         }
-        matchingResultIndex++;
       }
+      const duplicateIndexes = new Map<string, number>();
+      const views = message.toolCalls.map((toolCall): Occurrence => {
+        const duplicateIndex = duplicateIndexes.get(toolCall.id) ?? 0;
+        duplicateIndexes.set(toolCall.id, duplicateIndex + 1);
+        let operationId: string | undefined;
+        if (toolCall.name === "call_api") {
+          try {
+            const operation: unknown = JSON.parse(
+              toolCall.arguments
+            ).operationId;
+            const method =
+              typeof operation === "string"
+                ? getApiMethodDescriptor(operation)
+                : undefined;
+            if (method)
+              operationId = `${method.parent.typeName}.${method.name}`;
+          } catch {
+            /* Unreadable arguments cannot identify a receipt's operation. */
+          }
+        }
+        return {
+          message,
+          toolCall,
+          rootUserMessageId,
+          operationId,
+          result: results.get(toolCall.id)?.[duplicateIndex],
+        };
+      });
+      byMessageId.set(message.id, views);
+      occurrences.push(...views);
+    }
+    const pendingMessageId = pendingAsk?.apiPermission
+      ? occurrences.findLast(
+          (occurrence) =>
+            occurrence.rootUserMessageId === latestUserMessageId &&
+            occurrence.toolCall.id === pendingAsk.toolCallId
+        )?.message.id
+      : undefined;
+    const candidatesByOccurrence = new Map<Occurrence, AgentApiAttempt[]>();
+    const occurrencesByAttempt = new Map<AgentApiAttempt, Occurrence[]>();
+    for (const attempt of currentChat?.apiAttempts ?? []) {
+      if (linkedAttemptIds.has(attempt.id)) continue;
+      const matches = occurrences.filter(
+        (occurrence) =>
+          !occurrence.result &&
+          occurrence.toolCall.name === "call_api" &&
+          occurrence.message.id !== pendingMessageId &&
+          occurrence.toolCall.id === attempt.toolCallId &&
+          occurrence.rootUserMessageId === attempt.rootUserMessageId &&
+          occurrence.operationId === attempt.operationId &&
+          (!occurrence.message.metadata?.runId ||
+            occurrence.message.metadata.runId === attempt.runId)
+      );
+      occurrencesByAttempt.set(attempt, matches);
+      for (const occurrence of matches) {
+        const candidates = candidatesByOccurrence.get(occurrence) ?? [];
+        candidates.push(attempt);
+        candidatesByOccurrence.set(occurrence, candidates);
+      }
+    }
+    const inlineAttemptIds = new Set<string>();
+    for (const [occurrence, candidates] of candidatesByOccurrence) {
+      const attempt = candidates[0];
+      // Provider call IDs are reusable; only an unambiguous receipt belongs on a card.
       if (
-        message.role === "assistant" &&
-        message.content &&
-        !message.toolCalls?.length
+        candidates.length !== 1 ||
+        occurrencesByAttempt.get(attempt)?.length !== 1
+      )
+        continue;
+      if (
+        attempt.phase === "settled" ||
+        attempt.runId !== currentChat?.runId ||
+        (!loading && !hasActiveController)
       ) {
-        break;
+        occurrence.missingResultAttempt = attempt;
+        inlineAttemptIds.add(attempt.id);
       }
     }
-    return undefined;
-  }
-
-  function getToolCallDuplicateIndex(
-    toolCalls: ToolCall[],
-    currentToolCallIndex: number
-  ): number {
-    const currentToolCall = toolCalls[currentToolCallIndex];
-    let duplicateIndex = 0;
-    for (let index = 0; index < currentToolCallIndex; index++) {
-      if (toolCalls[index]?.id === currentToolCall.id) {
-        duplicateIndex++;
-      }
-    }
-    return duplicateIndex;
-  }
-
-  function getMissingResultAttempt(message: AgentMessage, toolCallId: string) {
-    const index = allMessages.findIndex(
-      (candidate) => candidate.id === message.id
-    );
-    const root = allMessages
-      .slice(0, index + 1)
-      .findLast((candidate) => candidate.role === "user");
-    return currentChat?.apiAttempts?.find(
-      (attempt) =>
-        attempt.toolCallId === toolCallId &&
-        attempt.rootUserMessageId === root?.id &&
-        (attempt.phase === "settled" ||
-          attempt.runId !== currentChat.runId ||
-          (!loading && !hasActiveController))
-    );
-  }
+    return { byMessageId, inlineAttemptIds, linkedAttemptIds };
+  }, [
+    allMessages,
+    currentChat?.apiAttempts,
+    currentChat?.runId,
+    pendingAsk,
+    latestUserMessageId,
+    loading,
+    hasActiveController,
+  ]);
 
   function hasAccessGrantDraftAfter(toolCallMessage: AgentMessage): boolean {
     const fullIndex = allMessages.findIndex(
@@ -1523,19 +1584,17 @@ export function AgentChat({
                       )}
                     </div>
                   ) : null}
-                  {msg.toolCalls?.map((toolCall, index, toolCalls) => (
+                  {msg.toolCalls?.map((toolCall, index) => (
                     <ToolCallCard
                       key={`${msg.id}:${toolCall.id}:${index}`}
                       toolCall={toolCall}
-                      result={getToolResult(
-                        msg.id,
-                        toolCall.id,
-                        getToolCallDuplicateIndex(toolCalls, index)
-                      )}
+                      result={
+                        toolCallViews.byMessageId.get(msg.id)?.[index]?.result
+                          ?.content
+                      }
                       missingResultAttempt={
-                        toolCall.name === "call_api"
-                          ? getMissingResultAttempt(msg, toolCall.id)
-                          : undefined
+                        toolCallViews.byMessageId.get(msg.id)?.[index]
+                          ?.missingResultAttempt
                       }
                       hasRecoveryDraft={
                         toolCall.name === "done" &&
@@ -1643,22 +1702,8 @@ export function AgentChat({
             (attempt) =>
               attempt.rootUserMessageId === latestUserMessageId &&
               isAgentApiAttemptUncertain(attempt) &&
-              !messages.some(
-                (message) =>
-                  message.role === "tool" &&
-                  message.metadata?.apiAttemptId === attempt.id
-              ) &&
-              !messages
-                .slice(
-                  messages.findIndex(
-                    (message) => message.id === latestUserMessageId
-                  )
-                )
-                .some((message) =>
-                  message.toolCalls?.some(
-                    (toolCall) => toolCall.id === attempt.toolCallId
-                  )
-                )
+              !toolCallViews.linkedAttemptIds.has(attempt.id) &&
+              !toolCallViews.inlineAttemptIds.has(attempt.id)
           )
           .map((attempt) => (
             <AgentApiRecovery

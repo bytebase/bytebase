@@ -364,6 +364,177 @@ test("a diagnostic read with a reused tool ID survives reload and resume", async
   }
 });
 
+test("a later write with a reused tool ID never borrows an earlier acknowledgment", async ({
+  page,
+  context,
+}, info) => {
+  const env = loadTestEnv();
+  await env.api.login(env.adminEmail, env.adminPassword);
+  const original = (await env.api.getDatabase(env.database)).labels ?? {};
+  const firstLabels = { ...original, "e2e-recovery": "first-acknowledged" };
+  const secondLabels = { ...original, "e2e-recovery": "second-uncertain" };
+  const bodies = [firstLabels, secondLabels].map((labels) => ({
+    database: { name: env.database, labels },
+    updateMask: "labels",
+  }));
+  const toolCallId = "reused-sequential-write";
+  const provider = new DeterministicProvider();
+  await provider.install(context);
+  for (const body of bodies)
+    provider.respond(
+      toolCall(toolCallId, "call_api", {
+        operationId: "bytebase.v1.DatabaseService.UpdateDatabase",
+        body,
+      }),
+    );
+  const secondCommitted = latch();
+  const secondDelivery = latch();
+  let posts = 0;
+  let forwards = 0;
+  await context.route(
+    /\/bytebase\.v1\.DatabaseService\/UpdateDatabase(?:\?|$)/,
+    async (route) => {
+      const index = posts++;
+      if (index > 1) return route.abort();
+      expect(route.request().method()).toBe("POST");
+      expect(route.request().postDataJSON()).toEqual(bodies[index]);
+      forwards++;
+      const upstream = await route.fetch({ maxRedirects: 0, maxRetries: 0 });
+      expect(upstream.status()).toBe(200);
+      if (index === 0) {
+        try {
+          await route.fulfill({ response: upstream });
+        } finally {
+          await upstream.dispose();
+        }
+        return;
+      }
+      await upstream.dispose();
+      secondCommitted.release();
+      await secondDelivery.promise;
+      await route.abort("failed");
+    },
+  );
+  const calls = windowOf(page).getByRole("button", { name: /^call_api\b/ });
+  try {
+    await open(page, env.baseURL);
+    await send(page, "Label QA acknowledge the first write, then change it again");
+    const approve = button(page, "Allow once");
+    await expect(approve).toBeEnabled();
+    await expect(
+      windowOf(page).locator("pre").filter({
+        hasText: '"e2e-recovery": "first-acknowledged"',
+      }),
+    ).toBeVisible();
+    expect(posts).toBe(0);
+    await approve.click();
+    await expect(calls.first()).toContainText("RPC acknowledged");
+    await expect(approve).toBeEnabled();
+    await expect(
+      windowOf(page).locator("pre").filter({
+        hasText: '"e2e-recovery": "second-uncertain"',
+      }),
+    ).toBeVisible();
+    expect(posts).toBe(1);
+    expect(forwards).toBe(1);
+    expect((await env.api.getDatabase(env.database)).labels ?? {}).toEqual(
+      firstLabels,
+    );
+    await approve.click();
+    await secondCommitted.promise;
+    expect((await env.api.getDatabase(env.database)).labels ?? {}).toEqual(
+      secondLabels,
+    );
+    const before = await page.evaluate(() => {
+      const key = Object.keys(localStorage).find((key) =>
+        key.startsWith("bb-agent-state-v3."),
+      );
+      const state = JSON.parse(localStorage.getItem(key!)!);
+      const chat = state.chats.find(
+        (chat: { id: string }) => chat.id === state.currentChatId,
+      );
+      const messages = state.messagesByChatId[chat.id] ?? [];
+      return {
+        chatId: chat.id as string,
+        runId: chat.runId as string,
+        attempts: chat.apiAttempts.map(
+          (attempt: {
+            id: string;
+            rootUserMessageId: string;
+            toolCallId: string;
+            phase: string;
+            execution?: { result: string };
+          }) => ({
+            id: attempt.id,
+            rootUserMessageId: attempt.rootUserMessageId,
+            toolCallId: attempt.toolCallId,
+            phase: attempt.phase,
+            result: attempt.execution?.result,
+          }),
+        ),
+        userMessages: messages.filter(
+          (message: { role: string }) => message.role === "user",
+        ).length,
+      };
+    });
+    expect(before.chatId).toBeTruthy();
+    expect(before.runId).toBeTruthy();
+    expect(before.userMessages).toBe(1);
+    expect(before.attempts).toHaveLength(2);
+    expect(before.attempts[0].toolCallId).toBe(toolCallId);
+    expect(before.attempts[1].toolCallId).toBe(toolCallId);
+    expect(before.attempts[0].id).not.toBe(before.attempts[1].id);
+    expect(before.attempts[0].rootUserMessageId).toBe(
+      before.attempts[1].rootUserMessageId,
+    );
+    expect(before.attempts[0]).toMatchObject({
+      phase: "settled",
+      result: "succeeded",
+    });
+    expect(before.attempts[1].phase).toBe("dispatching");
+    expect(posts).toBe(2);
+    expect(forwards).toBe(2);
+
+    await page.reload();
+    secondDelivery.release();
+    if (!(await windowOf(page).isVisible()))
+      await page.getByRole("button", { name: "Agent", exact: true }).click();
+    const row = windowOf(page).locator(
+      `[data-agent-chat-row="${before.chatId}"]`,
+    );
+    if (!(await row.isVisible())) await button(page, "Chats").first().click();
+    await row.click();
+    await expect(calls).toHaveCount(2);
+    await expect(calls.nth(0)).toContainText("RPC acknowledged");
+    await expect(calls.nth(1)).toContainText("Outcome unknown");
+    await expect(calls.nth(1)).not.toContainText("RPC acknowledged");
+    await expect(approve).toBeHidden();
+    await expectNoRecoveryActions(page);
+    await expect(recovery(page)).toBeHidden();
+    expect(provider.calls).toBe(2);
+    expect(provider.unexpectedCalls).toBe(0);
+    expect(posts).toBe(2);
+    expect(forwards).toBe(2);
+    for (const [device, width, height] of [
+      ["desktop", 1440, 960],
+      ["mobile", 390, 844],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(calls.nth(0)).toBeInViewport();
+      await expect(calls.nth(1)).toBeInViewport();
+      const path = info.outputPath(`sequential-write-outcomes-${device}.png`);
+      await page.screenshot({ path });
+      await info.attach(device, { path, contentType: "image/png" });
+    }
+  } finally {
+    secondDelivery.release();
+    if (forwards) await env.api.updateDatabaseLabels(env.database, original);
+    expect((await env.api.getDatabase(env.database)).labels ?? {}).toEqual(
+      original,
+    );
+  }
+});
+
 for (const fault of [
   "commit-drop",
   "reload-before-settlement",
