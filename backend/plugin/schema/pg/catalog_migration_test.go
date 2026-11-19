@@ -4358,3 +4358,31 @@ func TestViewDependencyQualificationIgnoresQualifiedRegclassType(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestUnqualifiedRegclassRespectsSearchPath covers a user-defined regclass type
+// before pg_catalog: the unqualified cast is not the built-in relation type.
+func TestUnqualifiedRegclassRespectsSearchPath(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `types, "$user", public, pg_catalog`,
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "types",
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+					Name:       "regclass",
+					Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "x", Type: "text"}},
+				}},
+			},
+			{
+				Name:   "public",
+				Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+				Views: []*metadatapb.ViewMetadata{{
+					Name:              "w",
+					Definition:        "SELECT 't'::regclass FROM public.t",
+					DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+				}},
+			},
+		},
+	}
+	paths := []string{"types", "$user", "public", "pg_catalog"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

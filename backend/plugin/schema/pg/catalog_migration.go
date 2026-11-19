@@ -1450,7 +1450,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			}
 		}
 		if token.literal {
-			if token.regclass {
+			if token.regclass && (token.regclassQualified || builtinTypeWins(typeReference{object: identifier{name: token.regclassName}}, objects, searchPath)) {
 				if matched, unqualified := literalRelationReference(token.text, schemaName, objectName); matched {
 					qualified = true
 				} else if unqualified {
@@ -1462,7 +1462,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 		if !token.quoted && strings.EqualFold(token.text, "CAST") && i+1 < len(tokens) && tokens[i+1].punct == '(' {
 			castEnd := skipParenthesized(tokens, i+1)
 			if asIndex := topLevelCastAS(tokens, i+2, castEnd); asIndex >= 0 {
-				if isRegclassType(tokens, asIndex+1) {
+				if name, relationType, isRelationType := relationTypeAt(tokens, asIndex+1); isRelationType && (relationType || builtinTypeWins(typeReference{object: identifier{name: name}}, objects, searchPath)) {
 					if asIndex > i+2 && tokens[asIndex-1].literal {
 						if matched, unqualified := literalRelationReference(tokens[asIndex-1].text, schemaName, objectName); matched {
 							qualified = true
@@ -1581,7 +1581,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				typeEnd = i + 2
 			}
 			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
-				if isRegclassType(tokens, i) {
+				if name, relationType, isRelationType := relationTypeAt(tokens, i); isRelationType && (relationType || builtinTypeWins(typeReference{object: identifier{name: name}}, objects, searchPath)) {
 					if matched, unqualified := literalRelationReference(tokens[typeEnd+1].text, schemaName, objectName); matched {
 						qualified = true
 					} else if unqualified {
@@ -1660,16 +1660,22 @@ func hasKeywordPrefix(text, keyword string) bool {
 	return !isIdentifierRune(next)
 }
 
-func isRegclassType(tokens []definitionToken, index int) bool {
+func relationTypeAt(tokens []definitionToken, index int) (string, bool, bool) {
 	if index >= len(tokens) || tokens[index].punct != 0 {
-		return false
+		return "", false, false
 	}
 	first := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
 	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
 		last := identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
-		return first.matches("pg_catalog") && isRelationTypeName(last.name, last.quoted)
+		if first.matches("pg_catalog") && isRelationTypeName(last.name, last.quoted) {
+			return last.name, true, true
+		}
+		return "", false, false
 	}
-	return isRelationTypeName(first.name, first.quoted)
+	if isRelationTypeName(first.name, first.quoted) {
+		return first.name, false, true
+	}
+	return "", false, false
 }
 
 func topLevelCastAS(tokens []definitionToken, start, end int) int {
@@ -1896,7 +1902,7 @@ func skipParenthesized(tokens []definitionToken, index int) int {
 	return len(tokens) - 1
 }
 
-func isRegclassToken(text string, index int) bool {
+func relationTypeToken(text string, index int) (string, bool, bool) {
 	skip := func(i int) int {
 		for i < len(text) && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r') {
 			i++
@@ -1905,22 +1911,33 @@ func isRegclassToken(text string, index int) bool {
 	}
 	index = skip(index)
 	if !strings.HasPrefix(text[index:], "::") {
-		return false
+		return "", false, false
 	}
 	index = skip(index + 2)
 	first, next, firstQuoted, ok := scanIdentifier(text, index)
 	if !ok {
-		return false
+		return "", false, false
 	}
 	dot := skipSQLWhitespace(text, next)
 	if dot < len(text) && text[dot] == '.' {
 		last, _, lastQuoted, ok := scanIdentifier(text, skipSQLWhitespace(text, dot+1))
 		if !ok {
-			return false
+			return "", false, false
 		}
-		return (identifier{name: first, quoted: firstQuoted}).matches("pg_catalog") && isRelationTypeName(last, lastQuoted)
+		if (identifier{name: first, quoted: firstQuoted}).matches("pg_catalog") && isRelationTypeName(last, lastQuoted) {
+			return last, true, true
+		}
+		return "", false, false
 	}
-	return isRelationTypeName(first, firstQuoted)
+	if isRelationTypeName(first, firstQuoted) {
+		return first, false, true
+	}
+	return "", false, false
+}
+
+func newLiteralToken(content, text string, index int) definitionToken {
+	name, qualified, ok := relationTypeToken(text, index)
+	return definitionToken{text: content, literal: true, regclass: ok, regclassName: name, regclassQualified: qualified}
 }
 
 func isRelationTypeName(name string, quoted bool) bool {
@@ -1973,11 +1990,13 @@ func blockCommentEnd(text string, start int) int {
 // definitionToken is an identifier or a punctuation byte outside literals and
 // comments.
 type definitionToken struct {
-	text     string
-	quoted   bool
-	literal  bool
-	regclass bool
-	punct    byte
+	text              string
+	quoted            bool
+	literal           bool
+	regclass          bool
+	regclassName      string
+	regclassQualified bool
+	punct             byte
 }
 
 func definitionTokens(text string) []definitionToken {
@@ -1986,7 +2005,7 @@ func definitionTokens(text string) []definitionToken {
 		switch {
 		case text[i] == '\'':
 			end := closingQuote(text, i, '\'')
-			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
+			tokens = append(tokens, newLiteralToken(strings.ReplaceAll(text[i+1:end], "''", "'"), text, end+1))
 			i = end + 1
 		case (text[i] == 'E' || text[i] == 'e' || text[i] == 'B' || text[i] == 'b' || text[i] == 'X' || text[i] == 'x' || text[i] == 'N' || text[i] == 'n') && i+1 < len(text) && text[i+1] == '\'':
 			end := closingQuote(text, i+1, '\'')
@@ -1994,7 +2013,7 @@ func definitionTokens(text string) []definitionToken {
 			if text[i] == 'E' || text[i] == 'e' {
 				content = decodeEscapeString(content)
 			}
-			tokens = append(tokens, definitionToken{text: content, literal: true, regclass: isRegclassToken(text, end+1)})
+			tokens = append(tokens, newLiteralToken(content, text, end+1))
 			i = end + 1
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '"':
 			name, next, ok := quotedIdentifier(text, i+2)
@@ -2037,7 +2056,7 @@ func definitionTokens(text string) []definitionToken {
 			if decoded, ok := decodeUnicodeIdentifier(content, escape); ok {
 				content = decoded
 			}
-			tokens = append(tokens, definitionToken{text: content, literal: true, regclass: isRegclassToken(text, next)})
+			tokens = append(tokens, newLiteralToken(content, text, next))
 			i = next
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
@@ -2049,7 +2068,7 @@ func definitionTokens(text string) []definitionToken {
 				tagLength := openEnd - i
 				contentEnd := end - tagLength + 1
 				if openEnd <= contentEnd {
-					tokens = append(tokens, definitionToken{text: text[openEnd:contentEnd], literal: true, regclass: isRegclassToken(text, end+1)})
+					tokens = append(tokens, newLiteralToken(text[openEnd:contentEnd], text, end+1))
 				}
 				i = end + 1
 			} else if isIdentifierByte(text[i]) {
@@ -3016,6 +3035,19 @@ func indexOutsideQuotesKeyword(text, keyword string) int {
 			if end, ok := dollarQuoteEnd(text, i); ok {
 				i = end
 				continue
+			}
+		case '/':
+			if strings.HasPrefix(text[i:], "/*") {
+				i = blockCommentEnd(text, i) - 1
+				continue
+			}
+		case '-':
+			if strings.HasPrefix(text[i:], "--") {
+				if end := strings.IndexByte(text[i+2:], '\n'); end >= 0 {
+					i += 2 + end
+					continue
+				}
+				return -1
 			}
 		default:
 		}
