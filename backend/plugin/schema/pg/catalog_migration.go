@@ -721,7 +721,7 @@ func routineReturnClause(definition string) string {
 	}
 	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
 	end := len(rest)
-	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW"} {
+	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW", "PARALLEL", "LEAKPROOF", "SUPPORT", "TRANSFORM", "SET"} {
 		if i := indexOutsideQuotesKeyword(rest, keyword); i >= 0 && i < end {
 			end = i
 		}

@@ -1933,6 +1933,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "returns followed by another clause",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rp",
+				Signature:  "rp()",
+				Definition: "CREATE FUNCTION public.rp() RETURNS public.v PARALLEL SAFE LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
