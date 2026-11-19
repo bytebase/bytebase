@@ -1082,6 +1082,34 @@ func TestUnqualifiedTypeFollowsTheSearchPath(t *testing.T) {
 	require.Equal(t, objectKey("first", name), key)
 }
 
+// TestAmbiguityCheckSkipsPgCatalogTypes covers a pg_catalog type that a user schema
+// also names: pg_catalog is searched first, so the reference is the built-in.
+func TestAmbiguityCheckSkipsPgCatalogTypes(t *testing.T) {
+	snapshot := func(withHolder bool) *model.DatabaseMetadata {
+		schemas := []*metadatapb.SchemaMetadata{
+			{
+				Name: "public",
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{{
+					Name:       "text",
+					Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "value", Type: "integer"}},
+				}},
+			},
+		}
+		if withHolder {
+			schemas = append(schemas, &metadatapb.SchemaMetadata{
+				Name:   "app",
+				Tables: []*metadatapb.TableMetadata{pgTable("holder", 0, &metadatapb.ColumnMetadata{Name: "value", Type: "text"})},
+			})
+		}
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			SearchPath: `"$user", public`,
+			Schemas:    schemas,
+		}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot(false), snapshot(true))
+	require.NoError(t, err, "text is a pg_catalog type, not a reference to public.text")
+}
+
 // TestAmbiguityCheckSkipsMultiwordBuiltins covers a built-in spelled with several
 // words: its last word cannot be the type a $user shadow would decide.
 func TestAmbiguityCheckSkipsMultiwordBuiltins(t *testing.T) {

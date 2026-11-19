@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
@@ -1206,6 +1207,10 @@ func ambiguousSearchPathType(reference typeReference, relations map[string]bool,
 	if reference.qualified {
 		return false
 	}
+	if !reference.object.quoted && builtinType(reference.object.name) {
+		// pg_catalog is searched first, so a built-in type is never shadowed.
+		return false
+	}
 	userIndex := -1
 	for i, schema := range searchPath {
 		if schema == "$user" {
@@ -1231,6 +1236,15 @@ func ambiguousSearchPathType(reference typeReference, relations map[string]bool,
 	}
 	return false
 }
+
+// builtinType reports whether pg_catalog defines a type of that name, which its
+// implicit first position in the search path can never be shadowed out of.
+func builtinType(name string) bool {
+	_, _, err := builtinCatalog().ResolveType(catalog.TypeName{Name: name, TypeMod: -1})
+	return err == nil
+}
+
+var builtinCatalog = sync.OnceValue(catalog.New)
 
 // resolveTypeReference resolves a parsed type name to the object it names. An
 // unqualified name resolves to the first relation in search-path order; an empty
