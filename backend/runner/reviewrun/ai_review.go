@@ -1218,7 +1218,6 @@ func aiReviewComments(projectID string, issueUID int64, problems []*aiReviewProb
 					EndPosition:   &storepb.Position{Line: line},
 				},
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:     storepb.ReviewRun_AI,
 					Priority:    aiReviewPriority(lead.Finding.Severity),
 					Targets:     targets,
 					Fingerprint: fingerprint,

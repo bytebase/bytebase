@@ -363,7 +363,7 @@ CREATE TABLE issue_comment (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
     -- NULL on review results and review run completions, which the review
-    -- posts, never a person. A result's payload names the reviewer.
+    -- posts, never a person.
     creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),

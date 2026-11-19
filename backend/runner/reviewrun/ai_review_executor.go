@@ -313,11 +313,9 @@ func (e *AIReviewExecutor) earlierResults(ctx context.Context, projectID string,
 		if metadata.GetSuperseded() || metadata.GetFingerprint() == "" || root.ThreadState == nil {
 			continue
 		}
-		if metadata.GetRunType() == storepb.ReviewRun_RULE {
+		// A result of a standard rule is the one that names its rule.
+		if metadata.GetRuleType() != storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
 			threads[metadata.GetFingerprint()] = &ruleThread{Comment: root.Payload.GetComment(), Priority: metadata.GetPriority()}
-			continue
-		}
-		if metadata.GetRunType() != storepb.ReviewRun_AI {
 			continue
 		}
 		key, ok := bySpec[anchor.GetSpecId()]

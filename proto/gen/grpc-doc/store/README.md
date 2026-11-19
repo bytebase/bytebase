@@ -127,13 +127,6 @@
 - [store/review_rule.proto](#store_review_rule-proto)
     - [ReviewRuleType](#bytebase-store-ReviewRuleType)
   
-- [store/review_run.proto](#store_review_run-proto)
-    - [ReviewRun](#bytebase-store-ReviewRun)
-    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
-  
-    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
-    - [ReviewRun.Type](#bytebase-store-ReviewRun-Type)
-  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
@@ -216,6 +209,12 @@
   
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
+  
+- [store/review_run.proto](#store_review_run-proto)
+    - [ReviewRun](#bytebase-store-ReviewRun)
+    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
+  
+    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
@@ -2179,79 +2178,6 @@ on every stored comment that used it.
 
 
 
-<a name="store_review_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/review_run.proto
-
-
-
-<a name="bytebase-store-ReviewRun"></a>
-
-### ReviewRun
-ReviewRun is the status slot of the review on one issue. Results live in
-issue comments; the run carries none.
-
-
-
-
-
-
-<a name="bytebase-store-ReviewRunPayload"></a>
-
-### ReviewRunPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
-| approval_input_version | [int64](#int64) |  | The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the version of the plan&#39;s SQL this run reviews. Completion keeps it. |
-| code | [google.rpc.Code](#google-rpc-Code) |  | The kind of failure behind `error`, for the FAILED status. Unset when the failure fits no more specific code. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ReviewRun-Status"></a>
-
-### ReviewRun.Status
-Strictly 1:1 with the status CHECK constraint — no unpersisted values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| AVAILABLE | 1 |  |
-| RUNNING | 2 |  |
-| DONE | 3 |  |
-| FAILED | 4 |  |
-
-
-
-<a name="bytebase-store-ReviewRun-Type"></a>
-
-### ReviewRun.Type
-The reviewer that found a result. One run holds every reviewer, so the
-type is recorded on each result, not on the run.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2351,8 +2277,7 @@ transaction that posts the new results.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer that found the result. One run holds the results of every reviewer. |
-| rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set on a result of a standard rule, and on no result that the AI review posts on its own. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 | superseded | [bool](#bool) |  | A later run has completed without reporting the result again, so the latest review does not hold it. Set by that run whatever the thread state, and never cleared. |
@@ -2376,7 +2301,6 @@ transaction that posts the run&#39;s results.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | Set on a completion from before an issue had one review run, and on no later one. |
 | attempt | [int64](#int64) |  | The run&#39;s review_run.attempt; its new results carry the same ReviewMetadata.attempt. |
 | posted_count | [int32](#int32) |  | Results the run posted as new threads. |
 | kept_count | [int32](#int32) |  | Earlier results the run reported again, which kept their threads. |
@@ -3514,6 +3438,65 @@ The severity level for SQL review rules.
 | BUILTIN_WALK_THROUGH_CHECK | 110 |  |
 | STATEMENT_DISALLOW_TRUNCATE | 111 |  |
 | BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE | 112 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_run.proto
+
+
+
+<a name="bytebase-store-ReviewRun"></a>
+
+### ReviewRun
+ReviewRun is the status slot of the review on one issue. Results live in
+issue comments; the run carries none.
+
+
+
+
+
+
+<a name="bytebase-store-ReviewRunPayload"></a>
+
+### ReviewRunPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+| approval_input_version | [int64](#int64) |  | The plan&#39;s PlanConfig.approval_input_version when the slot was reset: the version of the plan&#39;s SQL this run reviews. Completion keeps it. |
+| code | [google.rpc.Code](#google-rpc-Code) |  | The kind of failure behind `error`, for the FAILED status. Unset when the failure fits no more specific code. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
 
 
  

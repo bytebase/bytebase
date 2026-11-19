@@ -31,7 +31,6 @@ func reviewResult(projectID string, message string, rule storepb.ReviewRuleType)
 				EndPosition:   &storepb.Position{Line: 1},
 			},
 			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-				RunType:  storepb.ReviewRun_RULE,
 				RuleType: rule,
 				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
 				Targets:  []string{"instances/i/databases/db"},
@@ -68,9 +67,7 @@ func listReviewComments(t *testing.T, fixture *storePostgresFixture, projectID s
 
 // aiReviewResult is a result the AI review found: it names no rule.
 func aiReviewResult(projectID string, message string) *store.IssueCommentMessage {
-	r := reviewResult(projectID, message, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
-	r.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
-	return r
+	return reviewResult(projectID, message, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
 }
 
 // TestCompleteReviewRunPostsResults completes runs on two projects whose issue
@@ -124,15 +121,14 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	}
 	runDefault, runOther := byProject["default"], byProject["other"]
 
-	// Results must belong to the claimed run and name the reviewer that found
-	// them.
+	// Results must belong to the claimed run and carry review metadata.
 	_, err = s.CompleteReviewRun(ctx, runDefault, "replica-1", storepb.ReviewRun_DONE, nil,
 		[]*store.IssueCommentMessage{reviewResult("other", "wrong project", storepb.ReviewRuleType_SYNTAX)})
 	require.Error(t, err)
-	noReviewer := reviewResult("default", "no reviewer", storepb.ReviewRuleType_SYNTAX)
-	noReviewer.Payload.ReviewMetadata.RunType = storepb.ReviewRun_TYPE_UNSPECIFIED
-	_, err = s.CompleteReviewRun(ctx, runDefault, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{noReviewer})
-	require.Error(t, err)
+	noMetadata := reviewResult("default", "no metadata", storepb.ReviewRuleType_SYNTAX)
+	noMetadata.Payload.ReviewMetadata = nil
+	_, err = s.CompleteReviewRun(ctx, runDefault, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{noMetadata})
+	require.ErrorContains(t, err, "a review result carries review metadata")
 	_, err = s.CompleteReviewRun(ctx, runDefault, "replica-1", storepb.ReviewRun_FAILED, nil,
 		[]*store.IssueCommentMessage{reviewResult("default", "failed with results", storepb.ReviewRuleType_SYNTAX)})
 	require.Error(t, err)
@@ -497,7 +493,6 @@ func listReviewRunCompletions(t *testing.T, fixture *storePostgresFixture, proje
 		payload := &storepb.IssueCommentPayload{}
 		require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(raw, payload))
 		c := payload.GetReviewRunCompletion()
-		require.Equal(t, storepb.ReviewRun_TYPE_UNSPECIFIED, c.GetRunType(), "one run holds every reviewer")
 		out = append(out, reviewRunCompletion{
 			Attempt: c.GetAttempt(),
 			Posted:  c.GetPostedCount(), Kept: c.GetKeptCount(), Superseded: c.GetSupersededCount(),
@@ -683,4 +678,35 @@ func TestCompleteReviewRunSupersedesEarlierResults(t *testing.T) {
 		{Comment: "dismissed", ThreadState: "RESOLVED", Superseded: true},
 		{Comment: "second", ThreadState: "RESOLVED", Superseded: true},
 	}, final)
+}
+
+// TestListIssueCommentReadsRowsThatHoldRunType reads a result and a
+// completion event as they were stored while both carried run_type. The field
+// is removed with no migration, so such rows keep the key.
+func TestListIssueCommentReadsRowsThatHoldRunType(t *testing.T) {
+	t.Parallel()
+	fixture := newStorePostgresFixture(t, `
+		INSERT INTO issue (id, creator, project, name, status, type)
+		VALUES (301, 'admin@example.com', 'default', 'Issue', 'OPEN', 'DATABASE_CHANGE');
+		INSERT INTO issue_comment (project, issue_id, payload, thread_state) VALUES
+			('default', 301, '{"comment":"rule","reviewMetadata":{"runType":"RULE","ruleType":"REQUIRE_WHERE","priority":"P1","fingerprint":"f1"}}', 'OPEN'),
+			('default', 301, '{"comment":"ai","reviewMetadata":{"runType":"AI","priority":"P0","title":"Title","fingerprint":"f2"}}', 'OPEN');
+		INSERT INTO issue_comment (project, issue_id, payload) VALUES
+			('default', 301, '{"reviewRunCompletion":{"runType":"AI","attempt":"2","postedCount":1}}');`)
+	issue := reviewResultIssue
+	comments, err := fixture.store.ListIssueComment(fixture.ctx, &store.FindIssueCommentMessage{ProjectID: "default", IssueUID: &issue})
+	require.NoError(t, err)
+	require.Len(t, comments, 3)
+	byComment := make(map[string]*storepb.IssueCommentPayload)
+	for _, c := range comments {
+		byComment[c.Payload.Comment] = c.Payload
+	}
+	require.Equal(t, storepb.ReviewRuleType_REQUIRE_WHERE, byComment["rule"].ReviewMetadata.RuleType, "a rule's result is told by its rule")
+	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P1, byComment["rule"].ReviewMetadata.Priority)
+	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, byComment["ai"].ReviewMetadata.RuleType)
+	require.Equal(t, "Title", byComment["ai"].ReviewMetadata.Title)
+	require.Equal(t, "f2", byComment["ai"].ReviewMetadata.Fingerprint)
+	completion := byComment[""].GetReviewRunCompletion()
+	require.Equal(t, int64(2), completion.GetAttempt())
+	require.Equal(t, int32(1), completion.GetPostedCount())
 }

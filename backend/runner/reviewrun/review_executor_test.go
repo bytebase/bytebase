@@ -77,9 +77,18 @@ func aiResultAt(line int32, priority storepb.IssueCommentPayload_ReviewMetadata_
 				StartPosition: &storepb.Position{Line: line},
 				EndPosition:   &storepb.Position{Line: line},
 			},
-			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{RunType: storepb.ReviewRun_AI, Priority: priority},
+			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{Priority: priority},
 		},
 	}
+}
+
+// reviewerOf names the reviewer that posted a result: a result of a standard
+// rule names its rule, and one of the AI review names none.
+func reviewerOf(result *store.IssueCommentMessage) string {
+	if result.Payload.GetReviewMetadata().GetRuleType() != storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
+		return "RULE"
+	}
+	return "AI"
 }
 
 // places lists results as "line priority reviewer", in order.
@@ -87,7 +96,7 @@ func places(results []*store.IssueCommentMessage) []string {
 	var out []string
 	for _, result := range results {
 		metadata := result.Payload.GetReviewMetadata()
-		out = append(out, fmt.Sprintf("%d %s %s", result.Payload.GetStatementAnchor().GetStartPosition().GetLine(), metadata.GetPriority(), metadata.GetRunType()))
+		out = append(out, fmt.Sprintf("%d %s %s", result.Payload.GetStatementAnchor().GetStartPosition().GetLine(), metadata.GetPriority(), reviewerOf(result)))
 	}
 	return out
 }
@@ -177,82 +186,114 @@ func TestReviewExecutorWithoutTheStandardRules(t *testing.T) {
 // TestReviewRunKeepsBothReviewersThreadsAcrossRuns drives the real reviewers
 // through one job and its completion: a run posts the results of both, a
 // re-run keeps both threads, and a run with the AI review off supersedes the
-// AI review's result.
+// AI review's result. It does so for rows as they are written now, and for
+// rows that still hold run_type, which results carried until it was removed.
 func TestReviewRunKeepsBothReviewersThreadsAcrossRuns(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	stores, issues := setupReviewFixture(ctx, t, 1)
-	model := &findingModel{}
-	executor := NewReviewExecutor(stores,
-		&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
-			storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
-				every := make([]int, len(targets))
-				for i := range targets {
-					every[i] = i
+	for _, test := range []struct {
+		name string
+		// withRunType writes the removed key back into the stored results.
+		withRunType bool
+	}{
+		{name: "rows as they are written now"},
+		{name: "rows that still hold the removed run_type", withRunType: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			stores, issues := setupReviewFixture(ctx, t, 1)
+			model := &findingModel{}
+			executor := NewReviewExecutor(stores,
+				&RuleExecutor{store: stores, reviewFuncs: map[storepb.Engine]review.ReviewFunc{
+					storepb.Engine_POSTGRES: func(_ context.Context, sql string, _ review.Options, targets []review.Target) (*review.Result, error) {
+						every := make([]int, len(targets))
+						for i := range targets {
+							every[i] = i
+						}
+						whole := review.Range{Start: 0, End: len(sql)}
+						return &review.Result{
+							Statements: []review.Range{whole},
+							Bodies:     []review.Range{whole},
+							Findings:   []review.Finding{{Rule: review.RequireWhere, Statement: 0, Message: "no WHERE", Targets: every}},
+						}, nil
+					},
+				}},
+				&AIReviewExecutor{
+					store:    stores,
+					newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
+					slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
+				},
+			)
+			run := func() {
+				t.Helper()
+				results, err := executor.RunOnce(ctx, "p", issues[0])
+				require.NoError(t, err)
+				_, err = stores.CreateReviewRun(ctx, "p", issues[0])
+				require.NoError(t, err)
+				claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
+				require.NoError(t, err)
+				require.Len(t, claimed, 1)
+				updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, results)
+				require.NoError(t, err)
+				require.True(t, updated)
+			}
+			// The review results on the issue, by the reviewer that found each.
+			roots := func() map[string]*store.IssueCommentMessage {
+				t.Helper()
+				comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "p", IssueUID: &issues[0], TopLevelOnly: true})
+				require.NoError(t, err)
+				comments = slices.DeleteFunc(comments, func(c *store.IssueCommentMessage) bool { return c.Payload.GetReviewMetadata() == nil })
+				require.Len(t, comments, 2, "one result of each reviewer, never posted twice")
+				byReviewer := make(map[string]*store.IssueCommentMessage)
+				for _, c := range comments {
+					byReviewer[reviewerOf(c)] = c
 				}
-				whole := review.Range{Start: 0, End: len(sql)}
-				return &review.Result{
-					Statements: []review.Range{whole},
-					Bodies:     []review.Range{whole},
-					Findings:   []review.Finding{{Rule: review.RequireWhere, Statement: 0, Message: "no WHERE", Targets: every}},
-				}, nil
-			},
-		}},
-		&AIReviewExecutor{
-			store:    stores,
-			newModel: func(*storepb.AISetting, ...aireview.ModelOption) aireview.Model { return model },
-			slots:    semaphore.NewWeighted(aiReviewServerConcurrency),
-		},
-	)
-	run := func() {
-		t.Helper()
-		results, err := executor.RunOnce(ctx, "p", issues[0])
-		require.NoError(t, err)
-		_, err = stores.CreateReviewRun(ctx, "p", issues[0])
-		require.NoError(t, err)
-		claimed, err := stores.ClaimAvailableReviewRuns(ctx, "replica-1")
-		require.NoError(t, err)
-		require.Len(t, claimed, 1)
-		updated, err := stores.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, results)
-		require.NoError(t, err)
-		require.True(t, updated)
-	}
-	// The review results on the issue, by the reviewer that found each.
-	roots := func() map[storepb.ReviewRun_Type]*store.IssueCommentMessage {
-		t.Helper()
-		comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: "p", IssueUID: &issues[0], TopLevelOnly: true})
-		require.NoError(t, err)
-		comments = slices.DeleteFunc(comments, func(c *store.IssueCommentMessage) bool { return c.Payload.GetReviewMetadata() == nil })
-		require.Len(t, comments, 2, "one result of each reviewer, never posted twice")
-		byReviewer := make(map[storepb.ReviewRun_Type]*store.IssueCommentMessage)
-		for _, c := range comments {
-			byReviewer[c.Payload.ReviewMetadata.RunType] = c
-		}
-		require.Len(t, byReviewer, 2)
-		return byReviewer
-	}
+				require.Len(t, byReviewer, 2)
+				return byReviewer
+			}
+			// The number of stored results that hold the removed key.
+			holdRunType := func() int {
+				t.Helper()
+				var n int
+				require.NoError(t, stores.GetDB().QueryRowContext(ctx, `
+					SELECT count(*) FROM issue_comment
+					WHERE project = 'p' AND issue_id = $1 AND payload->'reviewMetadata' ? 'runType'`, issues[0]).Scan(&n))
+				return n
+			}
 
-	run()
-	first := roots()
-	require.Equal(t, storepb.ReviewRuleType_REQUIRE_WHERE, first[storepb.ReviewRun_RULE].Payload.ReviewMetadata.RuleType)
-	require.Equal(t, "Backfill note", first[storepb.ReviewRun_AI].Payload.ReviewMetadata.Title)
-	resolved := store.ThreadStateResolved
-	require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "p", ResourceID: first[storepb.ReviewRun_AI].ResourceID, ThreadState: &resolved}))
+			run()
+			first := roots()
+			require.Equal(t, storepb.ReviewRuleType_REQUIRE_WHERE, first["RULE"].Payload.ReviewMetadata.RuleType)
+			require.Equal(t, "Backfill note", first["AI"].Payload.ReviewMetadata.Title)
+			require.Zero(t, holdRunType(), "a result is no longer written with the key")
+			resolved := store.ThreadStateResolved
+			require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "p", ResourceID: first["AI"].ResourceID, ThreadState: &resolved}))
+			if test.withRunType {
+				_, err := stores.GetDB().ExecContext(ctx, `
+					UPDATE issue_comment
+					SET payload = jsonb_set(payload, '{reviewMetadata,runType}',
+						to_jsonb(CASE WHEN payload->'reviewMetadata' ? 'ruleType' THEN 'RULE' ELSE 'AI' END))
+					WHERE project = 'p' AND issue_id = $1 AND payload ? 'reviewMetadata'`, issues[0])
+				require.NoError(t, err)
+				require.Equal(t, 2, holdRunType())
+			}
 
-	run()
-	second := roots()
-	for reviewer, root := range second {
-		require.Equal(t, first[reviewer].ResourceID, root.ResourceID, "%s result keeps its thread", reviewer)
-		require.False(t, root.Payload.ReviewMetadata.Superseded)
+			run()
+			second := roots()
+			for reviewer, root := range second {
+				require.Equal(t, first[reviewer].ResourceID, root.ResourceID, "%s result keeps its thread", reviewer)
+				require.False(t, root.Payload.ReviewMetadata.Superseded)
+			}
+			require.Equal(t, store.ThreadStateOpen, *second["RULE"].ThreadState)
+			require.Equal(t, store.ThreadStateResolved, *second["AI"].ThreadState, "the person's resolution stays")
+
+			setAIReview(ctx, t, stores, false)
+			run()
+			third := roots()
+			require.False(t, third["RULE"].Payload.ReviewMetadata.Superseded)
+			require.True(t, third["AI"].Payload.ReviewMetadata.Superseded, "a run without the AI review no longer reports its result")
+		})
 	}
-	require.Equal(t, store.ThreadStateOpen, *second[storepb.ReviewRun_RULE].ThreadState)
-	require.Equal(t, store.ThreadStateResolved, *second[storepb.ReviewRun_AI].ThreadState, "the person's resolution stays")
-
-	setAIReview(ctx, t, stores, false)
-	run()
-	third := roots()
-	require.False(t, third[storepb.ReviewRun_RULE].Payload.ReviewMetadata.Superseded)
-	require.True(t, third[storepb.ReviewRun_AI].Payload.ReviewMetadata.Superseded, "a run without the AI review no longer reports its result")
 }
 
 // TestReviewPutsTheAIReviewProblemInTheRulesThread drives the real reviewers
@@ -307,8 +348,9 @@ func TestReviewPutsTheAIReviewProblemInTheRulesThread(t *testing.T) {
 		comments = slices.DeleteFunc(comments, func(c *store.IssueCommentMessage) bool {
 			return c.Payload.GetReviewMetadata() == nil || c.Payload.GetReviewMetadata().GetSuperseded()
 		})
+		// The rule's result first.
 		slices.SortStableFunc(comments, func(a, b *store.IssueCommentMessage) int {
-			return cmp.Compare(a.Payload.ReviewMetadata.RunType, b.Payload.ReviewMetadata.RunType)
+			return cmp.Compare(reviewerOf(b), reviewerOf(a))
 		})
 		return comments
 	}
@@ -347,7 +389,7 @@ func TestReviewPutsTheAIReviewProblemInTheRulesThread(t *testing.T) {
 	require.Equal(t, thread, fourth[0].ResourceID)
 	require.Equal(t, "no WHERE", fourth[0].Payload.Comment)
 	require.Equal(t, p1, fourth[0].Payload.ReviewMetadata.Priority)
-	require.Equal(t, storepb.ReviewRun_AI, fourth[1].Payload.ReviewMetadata.RunType)
+	require.Equal(t, "AI", reviewerOf(fourth[1]))
 
 	model.onOperation.Store(true)
 	fifth := run()

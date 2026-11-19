@@ -136,7 +136,7 @@ func TestReviewResultComments(t *testing.T) {
 		require.Equal(t, "p", c.ProjectID)
 		require.Equal(t, int64(101), c.IssueUID)
 		require.Empty(t, c.CreatorEmail)
-		require.Equal(t, storepb.ReviewRun_RULE, c.Payload.ReviewMetadata.RunType)
+		require.NotEqual(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, c.Payload.ReviewMetadata.RuleType, "a rule's result names its rule")
 	}
 
 	whole := comments[0]

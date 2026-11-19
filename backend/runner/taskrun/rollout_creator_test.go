@@ -440,7 +440,6 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 			Payload: &storepb.IssueCommentPayload{
 				Comment: "UPDATE without WHERE",
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_RULE,
 					RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
 					Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
 				},
@@ -452,7 +451,6 @@ func TestTryCreateRolloutWaitsForTheReview(t *testing.T) {
 			Payload: &storepb.IssueCommentPayload{
 				Comment: "A view reads the dropped column.",
 				ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-					RunType:  storepb.ReviewRun_AI,
 					Priority: storepb.IssueCommentPayload_ReviewMetadata_P0,
 					Title:    "DROP COLUMN breaks a view",
 				},
@@ -575,7 +573,6 @@ func TestReviewRestartsWhenThePlanLosesItsSQL(t *testing.T) {
 		Payload: &storepb.IssueCommentPayload{
 			Comment: "UPDATE without WHERE",
 			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-				RunType:  storepb.ReviewRun_RULE,
 				RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
 				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
 			},
