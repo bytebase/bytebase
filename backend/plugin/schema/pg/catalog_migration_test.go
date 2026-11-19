@@ -2997,3 +2997,37 @@ func TestViewDependencyQualificationSeesTableQuery(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestProviderRelationDropRestoresUnloadableView covers an unloadable view that
+// depends on a materialized view whose definition changes: the catalog drops the
+// materialized view, so the dependent view must be restored around that drop even
+// though no column or routine changed.
+func TestProviderRelationDropRestoresUnloadableView(t *testing.T) {
+	snapshot := func(materializedDefinition string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
+				Name:       "mv",
+				Definition: materializedDefinition,
+			}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:       "v",
+				Definition: "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{
+					Schema: "public", Table: "mv",
+				}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("SELECT 1"), snapshot("SELECT 2"))
+	require.NoError(t, err)
+	dropView := strings.Index(sql, `DROP VIEW IF EXISTS "public"."v"`)
+	dropProvider := strings.Index(sql, `DROP MATERIALIZED VIEW`)
+	createView := strings.Index(sql, `CREATE VIEW "public"."v"`)
+	require.GreaterOrEqual(t, dropView, 0, sql)
+	require.GreaterOrEqual(t, dropProvider, 0, sql)
+	require.GreaterOrEqual(t, createView, 0, sql)
+	require.Less(t, dropView, dropProvider, sql)
+	require.Less(t, dropProvider, createView, sql)
+}

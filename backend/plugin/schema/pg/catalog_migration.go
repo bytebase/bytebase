@@ -1718,6 +1718,20 @@ func planChangesRoutines(plan *catalog.MigrationPlan) bool {
 	return false
 }
 
+// planDropsRelations reports whether the plan drops a relation an unloadable
+// view may depend on without a catalog edge: a table, view, materialized view or
+// sequence. The view must be restored around that drop.
+func planDropsRelations(plan *catalog.MigrationPlan) bool {
+	for _, op := range plan.Ops {
+		switch op.Type {
+		case catalog.OpDropTable, catalog.OpDropView, catalog.OpDropSequence:
+			return true
+		default:
+		}
+	}
+	return false
+}
+
 // releaseRoutineOps moves routine drops and replacements that hold a dropped
 // view's row type ahead of the view drops. Target routines that still hold the
 // type are refused elsewhere; a source-only or changed-away routine can be
@@ -1778,15 +1792,16 @@ func releaseRoutineOps(plan *catalog.MigrationPlan, oldMeta *metadatapb.Database
 // creation the plan defers, which releaseCompositeBeforeTableDrop treats as
 // recreated relations; a view the target adds is one of them.
 func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.Catalog, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, sourceSearchPath []string, sourceDrops map[string]catalog.MigrationOp, reports ...*catalog.LoadMetadataReport) (map[string]bool, map[string]bool, error) {
-	forced := planChangesRoutines(plan)
-	if !forced {
+	routineForced := planChangesRoutines(plan)
+	if !routineForced {
 		for _, op := range sourceDrops {
 			if op.Type == catalog.OpDropFunction {
-				forced = true
+				routineForced = true
 				break
 			}
 		}
 	}
+	forced := routineForced || planDropsRelations(plan)
 	affected := affectedTableColumns(oldMeta, newMeta)
 	if len(affected) == 0 && !forced {
 		return nil, nil, nil
@@ -1863,8 +1878,8 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 				key:        objectKey(oldSchema.GetName(), view.GetName()),
 				dropSQL:    "DROP VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
 				oldDeps:    dependencyKeys(view.GetDependencyColumns()),
-				unloadable: forced,
-				direct:     forced,
+				unloadable: routineForced,
+				direct:     routineForced,
 				drop:       true,
 			})
 		}
@@ -1876,8 +1891,8 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 				key:        objectKey(oldSchema.GetName(), view.GetName()),
 				dropSQL:    "DROP MATERIALIZED VIEW IF EXISTS " + quoteQualified(oldSchema.GetName(), view.GetName()),
 				oldDeps:    dependencyKeys(view.GetDependencyColumns()),
-				unloadable: forced,
-				direct:     forced,
+				unloadable: routineForced,
+				direct:     routineForced,
 				drop:       true,
 			})
 		}
