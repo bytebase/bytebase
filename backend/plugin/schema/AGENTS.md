@@ -6,11 +6,14 @@ adds to it.
 
 ## What these packages test
 
-Each engine package owns three conversions, and a test covers exactly one:
+Each engine package owns two conversions, and a test covers exactly one:
 
 - `GetDatabaseMetadata` — schema text to metadata.
 - `GetDatabaseDefinition` — metadata to DDL.
-- `schema.GetDatabaseSchemaDiff` plus the package's `generateMigration`.
+
+A metadata diff is not one of them. `schema.DiffMigration` dispatches to the
+engine's registered metadata diff, and every engine that supports one runs on its
+own omni catalog; Bytebase has no shared differ to test.
 
 Do not call `driver.SyncDBSchema` here, and never use a live server's answer as
 the expected value: whether our output matches what an engine stores is engine
@@ -65,8 +68,8 @@ from a real Oracle, where every other engine's are `oldSchema`/`newSchema`
 schema text. Converting them would rewrite all 34 cases: a metadata/DDL/metadata
 round trip is lossless for 0 of its 68 blobs.
 
-PostgreSQL registers neither `GenerateMigration` nor `GetDatabaseMetadata`, so it
-has no fixture for either. Its metadata migrations run on omni's catalog and are
+PostgreSQL registers no `GetDatabaseMetadata`, so it has no fixture for it. Its
+metadata migrations run on omni's catalog and are
 tested in omni's `pg/catalog`, against PostgreSQL. CockroachDB shares that
 catalog because its synced metadata is PostgreSQL-shaped and omni has no
 CockroachDB catalog. `testdata/cutover_parity.yaml` records the CockroachDB
