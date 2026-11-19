@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -35,6 +36,7 @@ const mocks = vi.hoisted(() => ({
   deletePolicy: vi.fn(),
   fetchPolicy: vi.fn(),
   pushNotification: vi.fn(),
+  sqlReviewV2: true,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -59,6 +61,10 @@ vi.mock("@/utils", () => ({
     mocks.permissions[permission] ?? true,
   hasWorkspacePermissionV2: (permission: string) =>
     mocks.workspacePermissions[permission] ?? true,
+}));
+
+vi.mock("@/utils/featureGates", () => ({
+  sqlReviewV2Enabled: () => mocks.sqlReviewV2,
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
@@ -179,14 +185,18 @@ const reviewRulePolicy = (
     },
   });
 
-const reviewAIPolicy = (parent: string, content: string): Policy =>
+const reviewAIPolicy = (
+  parent: string,
+  content: string,
+  enabled?: boolean
+): Policy =>
   create(PolicySchema, {
     name: aiName(parent),
     type: PolicyType.REVIEW_AI,
     enforce: true,
     policy: {
       case: "reviewAiPolicy",
-      value: create(ReviewAIPolicySchema, { content }),
+      value: create(ReviewAIPolicySchema, { content, enabled }),
     },
   });
 
@@ -214,6 +224,22 @@ const ruleSwitch = (rule: string) =>
     name: `sql-review.standard-rules.rule.${rule}.title`,
   });
 
+// The Standard rules section; the AI review section has switches of its own.
+const rulesSection = () =>
+  screen
+    .getByRole("heading", { name: "sql-review.standard-rules.self" })
+    .closest<HTMLElement>('[data-slot="form-section"]')!;
+
+const aiCustomize = () =>
+  screen.findByRole("switch", { name: "sql-review.ai-review.customize.self" });
+
+// The switch is disabled until the project's AI review policy is read.
+const loadedAICustomize = async () => {
+  const customize = await aiCustomize();
+  await waitFor(() => expect(customize).not.toHaveAttribute("data-disabled"));
+  return customize;
+};
+
 const updateButton = () =>
   screen.queryByRole("button", { name: "common.update" });
 
@@ -236,6 +262,7 @@ describe("ProjectSQLReviewPage", () => {
     mocks.deletePolicy.mockReset();
     mocks.fetchPolicy.mockReset();
     mocks.pushNotification.mockReset();
+    mocks.sqlReviewV2 = true;
     seedPolicies({ [WORKSPACE]: workspacePolicy() });
     seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
   });
@@ -247,24 +274,20 @@ describe("ProjectSQLReviewPage", () => {
         .parentElement!
     );
 
-  test("shows the AI review as on when the workspace has it on and AI is on", async () => {
+  test("a project without a switch of its own shows the workspace's AI review switch", async () => {
     seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
     await renderLoaded();
 
     expect(
       aiReviewRow().getByText("sql-review.standard-rules.on")
     ).toBeInTheDocument();
-    expect(
-      aiReviewRow().getByText("sql-review.ai-review.set-for-workspace", {
-        exact: false,
-      })
-    ).toBeInTheDocument();
+    expect(aiReviewRow().queryByRole("switch")).not.toBeInTheDocument();
+    expect(await aiCustomize()).toHaveAttribute("aria-checked", "false");
     expect(
       await screen.findByRole("link", {
         name: "sql-review.ai-review.view-workspace-setting",
       })
     ).toBeInTheDocument();
-    expect(aiReviewRow().queryByRole("switch")).not.toBeInTheDocument();
   });
 
   test("uses the normal project page width for SQL Review", async () => {
@@ -309,7 +332,112 @@ describe("ProjectSQLReviewPage", () => {
     mocks.workspacePermissions["bb.policies.get"] = false;
     await renderLoaded();
 
-    expect(aiReviewRow().queryByRole("link")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", {
+        name: "sql-review.ai-review.view-workspace-setting",
+      })
+    ).not.toBeInTheDocument();
+  });
+
+  describe("the project's own AI review switch", () => {
+    const aiSwitch = () =>
+      screen.getByRole("switch", { name: "sql-review.ai-review.enable.self" });
+    const savedAIPolicy = () => {
+      const call = mocks.upsertPolicy.mock.calls.find(
+        ([params]) => params.policy.type === PolicyType.REVIEW_AI
+      );
+      return call?.[0];
+    };
+
+    test("starts as the workspace's and saves in the project policy", async () => {
+      seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      fireEvent.click(await loadedAICustomize());
+      expect(aiSwitch()).toHaveAttribute("aria-checked", "true");
+      fireEvent.click(aiSwitch());
+      await update();
+
+      const { parentPath, policy } = savedAIPolicy();
+      expect(parentPath).toBe(PROJECT);
+      expect(policy.resourceType).toBe(PolicyResourceType.PROJECT);
+      expect(policy.policy.value).toMatchObject({ content: "", enabled: false });
+    });
+
+    test("turns the AI review on for a project while the workspace has it off", async () => {
+      seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: false });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      fireEvent.click(await loadedAICustomize());
+      expect(aiSwitch()).toHaveAttribute("aria-checked", "false");
+      expect(
+        screen.queryByRole("textbox", {
+          name: "sql-review.ai-review.policy.project-self",
+        })
+      ).not.toBeInTheDocument();
+      fireEvent.click(aiSwitch());
+      expect(await policyEditor()).toBeInTheDocument();
+      await update();
+
+      expect(savedAIPolicy().policy.policy.value.enabled).toBe(true);
+    });
+
+    test("a project switched off shows the AI review as off", async () => {
+      seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: true });
+      seedPolicies({
+        [WORKSPACE]: workspacePolicy(),
+        ai: reviewAIPolicy(PROJECT, "", false),
+      });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      expect(await aiCustomize()).toHaveAttribute("aria-checked", "true");
+      expect(aiSwitch()).toHaveAttribute("aria-checked", "false");
+      expect(
+        screen.queryByRole("textbox", {
+          name: "sql-review.ai-review.policy.project-self",
+        })
+      ).not.toBeInTheDocument();
+    });
+
+    test("following the workspace again keeps the project's text", async () => {
+      seedPolicies({
+        [WORKSPACE]: workspacePolicy(),
+        ai: reviewAIPolicy(PROJECT, "No DROP.", true),
+      });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      fireEvent.click(await loadedAICustomize());
+      await update();
+
+      expect(mocks.deletePolicy).not.toHaveBeenCalled();
+      const { value } = savedAIPolicy().policy.policy;
+      expect(value.content).toBe("No DROP.");
+      expect(value.enabled).toBeUndefined();
+    });
+
+    test("following the workspace again with no text deletes the project policy", async () => {
+      seedPolicies({
+        [WORKSPACE]: workspacePolicy(),
+        ai: reviewAIPolicy(PROJECT, "", true),
+      });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      fireEvent.click(await loadedAICustomize());
+      await update();
+
+      expect(mocks.deletePolicy).toHaveBeenCalledWith(aiName(PROJECT));
+      expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    });
+
+    test("cannot be customized while AI is off for the workspace", async () => {
+      seedServerInfo({ aiEnabled: false, aiSqlReviewEnabled: true });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      expect(
+        screen.getByText("sql-review.ai-review.ai-off")
+      ).toBeInTheDocument();
+      expect(await aiCustomize()).toHaveAttribute("data-disabled");
+    });
   });
 
   test("uses the shared project policy editor without duplicating the workspace policy", async () => {
@@ -339,7 +467,7 @@ describe("ProjectSQLReviewPage", () => {
 
     expect(customize).toHaveAttribute("aria-checked", "false");
     // Only the customize control is a switch; the rules are read-only.
-    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    expect(within(rulesSection()).getAllByRole("switch")).toHaveLength(1);
     expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(3);
     // Nine rules, and the AI review row below them.
     expect(screen.getAllByText("sql-review.standard-rules.off")).toHaveLength(
@@ -390,7 +518,7 @@ describe("ProjectSQLReviewPage", () => {
 
     fireEvent.click(customize);
     // Back to the workspace rules, shown as text again.
-    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    expect(within(rulesSection()).getAllByRole("switch")).toHaveLength(1);
     await update();
 
     expect(mocks.upsertPolicy).not.toHaveBeenCalled();
@@ -503,7 +631,7 @@ describe("ProjectSQLReviewPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "sql-review.standard-rules.load-failed"
     );
-    expect(screen.queryAllByRole("switch")).toHaveLength(0);
+    expect(within(rulesSection()).queryAllByRole("switch")).toHaveLength(0);
 
     mocks.unreadable.clear();
     fireEvent.click(
@@ -585,7 +713,7 @@ describe("ProjectSQLReviewPage", () => {
     );
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(screen.queryAllByRole("switch")).toHaveLength(0);
+    expect(within(rulesSection()).queryAllByRole("switch")).toHaveLength(0);
     expect(mocks.fetchPolicy).toHaveBeenLastCalledWith({
       parentPath: WORKSPACE,
       policyType: PolicyType.REVIEW_RULE,
@@ -612,7 +740,7 @@ describe("ProjectSQLReviewPage", () => {
 
     // Customizing starts from every rule, as nothing else is known.
     fireEvent.click(customize);
-    expect(screen.getAllByRole("switch")).toHaveLength(12);
+    expect(within(rulesSection()).getAllByRole("switch")).toHaveLength(12);
     expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
       "aria-checked",
       "true"
@@ -803,5 +931,56 @@ describe("ProjectSQLReviewPage", () => {
       await screen.findByText("sql-review.ai-review.policy.project-none")
     ).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+  describe("beside SQL Review V1", () => {
+    beforeEach(() => {
+      mocks.sqlReviewV2 = false;
+    });
+
+    test("is the AI review alone, and reads no standard rules", async () => {
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      expect(await policyEditor()).toBeInTheDocument();
+      expect(
+        screen.queryByRole("heading", { name: "sql-review.standard-rules.self" })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("sql-review.ai-review.policy.standard-rules-hint")
+      ).not.toBeInTheDocument();
+      expect(
+        mocks.fetchPolicy.mock.calls.map(([find]) => find.policyType)
+      ).not.toContain(PolicyType.REVIEW_RULE);
+    });
+
+    test("saves the project AI review policy from the footer", async () => {
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      fireEvent.change(await policyEditor(), {
+        target: { value: "No DROP in this project." },
+      });
+      await update();
+
+      expect(mocks.upsertPolicy).toHaveBeenCalledOnce();
+      const { parentPath, policy } = mocks.upsertPolicy.mock.calls[0][0];
+      expect(parentPath).toBe(PROJECT);
+      expect(policy.type).toBe(PolicyType.REVIEW_AI);
+      expect(policy.resourceType).toBe(PolicyResourceType.PROJECT);
+      expect(updateButton()).not.toBeInTheDocument();
+      expect(mocks.pushNotification).toHaveBeenCalledOnce();
+    });
+
+    test("shows the AI review as off, with no policy, when the workspace has it off", async () => {
+      seedServerInfo({ aiEnabled: true, aiSqlReviewEnabled: false });
+      render(<ProjectSQLReviewPage projectId="p" />);
+
+      expect(
+        aiReviewRow().getByText("sql-review.standard-rules.off")
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("textbox", {
+          name: "sql-review.ai-review.policy.project-self",
+        })
+      ).not.toBeInTheDocument();
+    });
   });
 });

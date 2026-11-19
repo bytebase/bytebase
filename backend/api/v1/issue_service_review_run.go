@@ -118,11 +118,11 @@ func (s *IssueService) checkAReviewerRuns(ctx context.Context, issue *store.Issu
 	if issue.Payload.GetDraft() {
 		return connect.NewError(connect.CodeFailedPrecondition, errors.New("the AI review runs once the issue is submitted for review"))
 	}
-	aiSetting, err := s.store.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	aiSetting, projectEnabled, err := s.store.GetAIReviewSwitches(ctx, common.GetWorkspaceIDFromContext(ctx), issue.ProjectID)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
+		return connect.NewError(connect.CodeInternal, err)
 	}
-	if err := aireview.CheckSetting(aiSetting); err != nil {
+	if err := aireview.CheckSetting(aiSetting, projectEnabled); err != nil {
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	}
 	return nil
@@ -213,11 +213,11 @@ func aiReviewStarts(ctx context.Context, stores *store.Store, issue *store.Issue
 	if issue.Payload.GetDraft() {
 		return false, nil
 	}
-	aiSetting, err := stores.GetAISettingUncached(ctx, common.GetWorkspaceIDFromContext(ctx))
+	aiSetting, projectEnabled, err := stores.GetAIReviewSwitches(ctx, common.GetWorkspaceIDFromContext(ctx), issue.ProjectID)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to get AI setting")
+		return false, err
 	}
-	if aireview.CheckSetting(aiSetting) == nil {
+	if aireview.CheckSetting(aiSetting, projectEnabled) == nil {
 		return true, nil
 	}
 	run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)

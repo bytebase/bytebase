@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
 import {
+  type Policy,
   PolicyResourceType,
   PolicyType,
   ReviewAIPolicySchema,
@@ -24,6 +25,16 @@ const isBlank = (content: string) => /^\p{White_Space}*$/u.test(content);
 // The server measures the text in UTF-8 bytes, not characters.
 const utf8Bytes = (content: string) => new TextEncoder().encode(content).length;
 
+// A project's own switch for the AI review, or undefined when the project
+// follows the workspace's. A policy that is not enforced counts as absent, as
+// on the server.
+export const projectAIReviewSwitch = (
+  policy: Policy | undefined
+): boolean | undefined =>
+  policy?.enforce && policy.policy.case === "reviewAiPolicy"
+    ? policy.policy.value.enabled
+    : undefined;
+
 export interface ReviewAIPolicyDraft {
   // False until the policy has been read.
   loaded: boolean;
@@ -32,6 +43,11 @@ export interface ReviewAIPolicyDraft {
   // The policy text, or the unsaved edit; empty when there is no policy.
   content: string;
   setContent: (content: string) => void;
+  // A project's own switch for the AI review, or the unsaved choice;
+  // undefined while the project follows the workspace. A workspace's switch is
+  // its AI setting, so a workspace draft leaves this undefined.
+  enabled: boolean | undefined;
+  setEnabled: (enabled: boolean | undefined) => void;
   // A policy paused through the API is kept but not read by the AI review.
   paused: boolean;
   canEdit: boolean;
@@ -46,7 +62,8 @@ export interface ReviewAIPolicyDraft {
 }
 
 // The page owns the draft so the policy saves from the page's one sticky
-// footer. Blank text saves as no policy, since the server rejects a blank one.
+// footer. Blank text with no switch of the project's own saves as no policy,
+// since the server rejects such a policy.
 export function useReviewAIPolicyDraft({
   parentPath,
   resourceType,
@@ -66,6 +83,10 @@ export function useReviewAIPolicyDraft({
     })
   );
   const [draft, setDraft] = useState<string>();
+  // Wrapped, since following the workspace is an undefined switch.
+  const [enabledDraft, setEnabledDraft] = useState<{
+    value: boolean | undefined;
+  }>();
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
@@ -75,6 +96,7 @@ export function useReviewAIPolicyDraft({
     let active = true;
     // The route component is reused when moving to another project.
     setDraft(undefined);
+    setEnabledDraft(undefined);
     setLoaded(false);
     setReadFailed(false);
     void useAppStore
@@ -103,11 +125,21 @@ export function useReviewAIPolicyDraft({
   const stored = policy?.policy.case === "reviewAiPolicy" ? policy : undefined;
   const storedContent =
     policy?.policy.case === "reviewAiPolicy" ? policy.policy.value.content : "";
+  const storedEnabled =
+    policy?.policy.case === "reviewAiPolicy"
+      ? policy.policy.value.enabled
+      : undefined;
   const content = draft ?? storedContent;
+  const ownSwitch = enabledDraft ? enabledDraft.value : storedEnabled;
   const isDirty =
-    draft !== undefined &&
-    (isBlank(draft) ? stored !== undefined : draft !== storedContent);
-  const clearing = isDirty && isBlank(content);
+    (draft !== undefined &&
+      (isBlank(draft) ? !isBlank(storedContent) : draft !== storedContent)) ||
+    (enabledDraft !== undefined && enabledDraft.value !== storedEnabled);
+  const clearing =
+    isDirty &&
+    stored !== undefined &&
+    isBlank(content) &&
+    ownSwitch === undefined;
   const size = utf8Bytes(content);
   // Clearing an existing policy deletes it and any other edit updates it, so
   // a role with only one of the two may make only that change.
@@ -129,7 +161,7 @@ export function useReviewAIPolicyDraft({
       if (clearing && stored) {
         await store.deletePolicy(stored.name);
       } else {
-        // The update mask names only the text, so a paused policy stays
+        // The update mask names only the payload, so a paused policy stays
         // paused; a new policy is created enforced.
         await store.upsertPolicy({
           parentPath,
@@ -139,12 +171,16 @@ export function useReviewAIPolicyDraft({
             enforce: true,
             policy: {
               case: "reviewAiPolicy",
-              value: create(ReviewAIPolicySchema, { content }),
+              value: create(ReviewAIPolicySchema, {
+                content,
+                enabled: ownSwitch,
+              }),
             },
           },
         });
       }
       setDraft(undefined);
+      setEnabledDraft(undefined);
       return true;
     } catch {
       return false;
@@ -159,6 +195,8 @@ export function useReviewAIPolicyDraft({
     reload: () => setAttempt((n) => n + 1),
     content,
     setContent: setDraft,
+    enabled: ownSwitch,
+    setEnabled: (value) => setEnabledDraft({ value }),
     paused: stored !== undefined && !stored.enforce,
     canEdit: stored
       ? can("bb.policies.update") || can("bb.policies.delete")
@@ -167,7 +205,10 @@ export function useReviewAIPolicyDraft({
     size,
     isDirty,
     saving,
-    revert: () => setDraft(undefined),
+    revert: () => {
+      setDraft(undefined);
+      setEnabledDraft(undefined);
+    },
     save,
   };
 }

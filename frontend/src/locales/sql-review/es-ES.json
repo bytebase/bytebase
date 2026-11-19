@@ -4,6 +4,10 @@
   "ai-review": {
     "ai-off": "La IA está desactivada en el espacio de trabajo, por lo que no se ejecuta ninguna revisión con IA.",
     "comments-description": "Un modelo de IA revisa el SQL de una incidencia una vez enviada a revisión y comenta los riesgos que encuentra. Sus comentarios no bloquean el despliegue.",
+    "customize": {
+      "description": "Cuando está desactivado, este proyecto sigue la configuración del espacio de trabajo.",
+      "self": "Personalizar para este proyecto"
+    },
     "description": "Un modelo de IA que revisa el SQL de un issue en busca de riesgos que las reglas estándar no pueden ver.",
     "enable": {
       "description": "Cada revisión envía al proveedor de IA las sentencias tal como están escritas, y puede enviar el esquema de las bases de datos de destino y las estadísticas de sus tablas. No lee ninguna fila de las bases de datos.",
@@ -26,9 +30,8 @@
       "standard-rules-hint": "La revisión con IA no repite las reglas estándar y omite las que están desactivadas. Para que compruebe alguna de todos modos, nómbrala en la política, por ejemplo: \"Todo UPDATE necesita una cláusula WHERE\".",
       "too-large": "La política ocupa {{size}} bytes, más que el límite de {{limit}} bytes. Acórtala para guardarla."
     },
-    "project-description": "La revisión con IA se configura para el espacio de trabajo. Agrega abajo una política opcional específica del proyecto.",
+    "project-description": "Un modelo de IA revisa el SQL de las incidencias de este proyecto. Se aplican tanto la política del espacio de trabajo como la política del proyecto de abajo.",
     "self": "Revisión con IA",
-    "set-for-workspace": "Se administra a nivel del espacio de trabajo.",
     "turn-on-ai": "Activar la IA",
     "view-workspace-setting": "Ver la configuración de IA del espacio de trabajo"
   },

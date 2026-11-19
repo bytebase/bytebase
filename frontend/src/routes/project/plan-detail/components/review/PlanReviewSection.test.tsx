@@ -317,9 +317,13 @@ vi.mock("../../hooks/usePlanReviewState", () => ({
 }));
 
 vi.mock("./AutomatedReviewSection", () => ({
-  AutomatedReviewSection: ({ besideV1 }: { besideV1?: boolean }) => (
+  AutomatedReviewSection: ({
+    state,
+  }: {
+    state: { rows?: { reviewer: string }[] };
+  }) => (
     <div
-      data-beside-v1={String(Boolean(besideV1))}
+      data-reviewers={state.rows?.map((row) => row.reviewer).join(",")}
       data-testid="automated-review"
     />
   ),
@@ -704,7 +708,7 @@ describe("PlanReviewSection — five review states", () => {
     const section = container.querySelector(
       "[data-testid='automated-review']"
     );
-    expect(section?.getAttribute("data-beside-v1")).toBe("true");
+    expect(section?.getAttribute("data-reviewers")).toBe("review,policy");
     // V1's footer still says what the rollout waits on.
     expect(container.textContent).toContain(
       "plan.review.footer.waiting-on-review"

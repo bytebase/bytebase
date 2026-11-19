@@ -590,6 +590,72 @@ func TestAIReviewStartsOnceTheIssueIsSubmitted(t *testing.T) {
 	require.Nil(t, getRun(otherUID), "no review starts while the AI review is off")
 }
 
+func TestAIReviewFollowsTheProjectSwitch(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	projectID := "project-a"
+	plan, _ := createReviewablePlan(ctx, t, stores, projectID)
+	issueService := newIssueServiceForTest(t, stores)
+	issueService.profile = &config.Profile{}
+
+	setProjectSwitch := func(enabled bool, enforce bool) {
+		t.Helper()
+		payload, err := protojson.Marshal(&storepb.ReviewAIPolicy{Enabled: &enabled})
+		require.NoError(t, err)
+		_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
+			Workspace:    "default",
+			ResourceType: storepb.Policy_PROJECT,
+			Resource:     common.FormatProject(projectID),
+			Type:         storepb.Policy_REVIEW_AI,
+			Payload:      string(payload),
+			Enforce:      enforce,
+		})
+		require.NoError(t, err)
+	}
+	// createIssue submits a new issue for review and reports whether its
+	// review started.
+	createIssue := func() (int64, bool) {
+		t.Helper()
+		issuePlan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: projectID,
+			Name:      "plan",
+			Config:    plan.Config,
+		}, "creator@example.com")
+		require.NoError(t, err)
+		created, err := issueService.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: "projects/" + projectID,
+			Issue: &v1pb.Issue{
+				Type: v1pb.Issue_DATABASE_CHANGE,
+				Plan: common.FormatPlan(projectID, issuePlan.UID),
+			},
+		}))
+		require.NoError(t, err)
+		_, issueUID, err := common.GetProjectIDIssueUID(created.Msg.Name)
+		require.NoError(t, err)
+		run, err := stores.GetReviewRun(ctx, projectID, issueUID)
+		require.NoError(t, err)
+		return issueUID, run != nil
+	}
+
+	setAIReviewForTest(ctx, t, stores, false)
+	setProjectSwitch(true, true)
+	_, started := createIssue()
+	require.True(t, started, "a project switched on is reviewed while the workspace is off")
+
+	setAIReviewForTest(ctx, t, stores, true)
+	setProjectSwitch(false, true)
+	issueUID, started := createIssue()
+	require.False(t, started, "a project switched off is not reviewed while the workspace is on")
+	_, err := issueService.RunReview(ctx, connect.NewRequest(&v1pb.RunReviewRequest{Name: reviewRunName(projectID, issueUID)}))
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	require.ErrorContains(t, err, "turned off for the project")
+
+	setProjectSwitch(false, false)
+	_, started = createIssue()
+	require.True(t, started, "a project policy that is not enforced follows the workspace")
+}
+
 func TestGetReviewRunReportsAnOutdatedRun(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()

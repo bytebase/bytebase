@@ -134,6 +134,17 @@ vi.mock("@/components/plan-check/PlanCheckSection", async () => {
   };
 });
 
+// The project follows the workspace: these tests switch the AI review
+// through the server info.
+vi.mock("../../hooks/useAIReviewOn", () => ({
+  useAIReviewOn: () => {
+    const info = mocks.serverInfo as
+      | { aiEnabled?: boolean; aiSqlReviewEnabled?: boolean }
+      | undefined;
+    return Boolean(info?.aiEnabled && info.aiSqlReviewEnabled);
+  },
+}));
+
 vi.mock("@/stores/app", () => {
   const getState = () => ({
       getIssueComments: () => mocks.comments,
@@ -757,7 +768,7 @@ describe("AutomatedReviewSection", () => {
     expect(mocks.runReview).not.toHaveBeenCalled();
   });
 
-  test("beside V1 shows the AI review with the checks, and no project SQL Review page", () => {
+  test("beside V1 shows the AI review with the checks, and the project SQL Review page", () => {
     mocks.review = {
       loadFailed: false,
       reload: mocks.reload,
@@ -765,7 +776,6 @@ describe("AutomatedReviewSection", () => {
     };
     render(
       <AutomatedReviewSection
-        besideV1
         state={{
           rows: [
             row("review", "open", findings({ open: 1, p1: 1 })),
@@ -777,8 +787,8 @@ describe("AutomatedReviewSection", () => {
       />
     );
     expect(
-      screen.queryByRole("button", { name: "common.configure" })
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "common.configure" })
+    ).toBeInTheDocument();
     expect(screen.getByTestId("automated-review-policy")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "common.more" })

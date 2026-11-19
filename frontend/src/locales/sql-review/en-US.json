@@ -4,6 +4,10 @@
   "ai-review": {
     "ai-off": "AI is off for the workspace, so no AI review runs.",
     "comments-description": "An AI model reviews the SQL of an issue once it is submitted for review, and comments on the risks it finds. Its comments do not block the rollout.",
+    "customize": {
+      "description": "When disabled, this project follows the workspace setting.",
+      "self": "Customize for this project"
+    },
     "description": "An AI model that reviews the SQL of an issue for risks the standard rules cannot see.",
     "enable": {
       "description": "Each review sends the statements as written to the AI provider, and can send the schema of the target databases and their table statistics. It reads no rows from the databases.",
@@ -26,9 +30,8 @@
       "standard-rules-hint": "The AI review does not repeat the standard rules, and skips the ones that are off. To have it check one anyway, name it in the policy, such as \"Every UPDATE needs a WHERE clause\".",
       "too-large": "The policy is {{size}} bytes, over the {{limit}}-byte limit. Shorten it to save."
     },
-    "project-description": "AI review is configured for the workspace. Add an optional project-specific policy below.",
+    "project-description": "An AI model reviews the SQL of this project's issues. The workspace policy and the project policy below both apply.",
     "self": "AI review",
-    "set-for-workspace": "Managed at the workspace level.",
     "turn-on-ai": "Turn on AI",
     "view-workspace-setting": "View workspace AI settings"
   },

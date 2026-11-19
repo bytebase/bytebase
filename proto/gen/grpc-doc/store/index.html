@@ -6391,7 +6391,7 @@ version of the plan&#39;s SQL this run reviews. Completion keeps it. </p></td>
                   <td><p>The kind of failure behind `error`, for the FAILED status. Unset when
 the failure fits no more specific code. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -7742,6 +7742,14 @@ Disallow running DDL statements in the SQL editor. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enabled</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td>optional</td>
+                  <td><p>A project&#39;s own switch for the AI review; unset, the project follows the
+workspace&#39;s AISetting.sql_review_enabled. </p></td>
                 </tr>
               
             </tbody>

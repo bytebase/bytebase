@@ -1,7 +1,6 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import type { PlanCheckSummary } from "@/lib/plan/check";
-import { useAppStore } from "@/stores/app";
 import {
   type ReviewRun,
   ReviewRun_State,
@@ -14,7 +13,7 @@ import {
 } from "../components/threads/useUnresolvedThreadCounts";
 import { PROJECT_NAME_PREFIX } from "../shell/constants";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
-import { aiReviewEnabled } from "../utils/reviewRun";
+import { useAIReviewOn } from "./useAIReviewOn";
 import {
   type EffectiveStandardRules,
   useEffectiveStandardRules,
@@ -54,7 +53,7 @@ export function PlanReviewProvider({ children }: { children: ReactNode }) {
   const page = usePlanDetailContext();
   const projectName = `${PROJECT_NAME_PREFIX}${page.projectId}`;
   const project = useProjectByName(projectName);
-  const aiReviewOn = useAppStore((state) => aiReviewEnabled(state.serverInfo));
+  const aiReviewOn = useAIReviewOn();
   const v2 = sqlReviewV2Enabled();
   const enabled = v2 && !!page.issue;
   const aiBesideV1 = !v2 && aiReviewOn && !!page.issue && !page.issue.draft;

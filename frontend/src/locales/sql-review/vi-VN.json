@@ -4,6 +4,10 @@
   "ai-review": {
     "ai-off": "AI đang tắt trong không gian làm việc nên không có lần đánh giá bằng AI nào được chạy.",
     "comments-description": "Sau khi issue được gửi để xem xét, một mô hình AI sẽ xem xét SQL của issue và bình luận về các rủi ro tìm thấy. Các bình luận này không chặn việc triển khai.",
+    "customize": {
+      "description": "Khi bị vô hiệu hóa, dự án này tuân theo thiết lập của không gian làm việc.",
+      "self": "Tùy chỉnh cho dự án này"
+    },
     "description": "Một mô hình AI đánh giá SQL của issue để tìm các rủi ro mà quy tắc tiêu chuẩn không phát hiện được.",
     "enable": {
       "description": "Mỗi lần đánh giá sẽ gửi nguyên văn các câu lệnh tới nhà cung cấp AI, và có thể gửi lược đồ của các cơ sở dữ liệu đích cùng số liệu thống kê bảng của chúng. Tính năng này không đọc bất kỳ hàng dữ liệu nào trong cơ sở dữ liệu.",
@@ -26,9 +30,8 @@
       "standard-rules-hint": "Đánh giá bằng AI không lặp lại các quy tắc tiêu chuẩn và bỏ qua những quy tắc đang tắt. Để AI vẫn kiểm tra một quy tắc, hãy nêu rõ trong chính sách, ví dụ: \"Mọi câu lệnh UPDATE đều cần mệnh đề WHERE\".",
       "too-large": "Chính sách có dung lượng {{size}} byte, vượt quá giới hạn {{limit}} byte. Hãy rút gọn để lưu."
     },
-    "project-description": "Tính năng đánh giá bằng AI được cấu hình cho không gian làm việc. Hãy thêm chính sách tùy chọn dành riêng cho dự án bên dưới.",
+    "project-description": "Một mô hình AI đánh giá SQL trong các issue của dự án này. Cả chính sách của không gian làm việc và chính sách dự án bên dưới đều được áp dụng.",
     "self": "Đánh giá bằng AI",
-    "set-for-workspace": "Được quản lý ở cấp không gian làm việc.",
     "turn-on-ai": "Bật AI",
     "view-workspace-setting": "Xem thiết lập AI của không gian làm việc"
   },

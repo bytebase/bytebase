@@ -10489,7 +10489,8 @@ the reviewer, and the project policy wins where they conflict.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| content | [string](#string) |  | The policy text. Must not be blank, at most 64 KiB. |
+| content | [string](#string) |  | The policy text, at most 64 KiB. Must not be blank unless `enabled` is set. |
+| enabled | [bool](#bool) | optional | A project&#39;s own switch for the AI review, in place of the workspace&#39;s `AISetting.sql_review_enabled`. Unset, the project follows the workspace. Only a project policy may set it, and the review still needs AI on for the workspace. |
 
 
 

@@ -250,7 +250,7 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 			if requestType, err := convertV1PBToStorePBPolicyType(req.Msg.Policy.Type); err != nil || requestType != policy.Type {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("policy type %s does not match the policy's type %s", req.Msg.Policy.Type, policy.Type))
 			}
-			if err := validatePolicyPayload(policy.Type, req.Msg.Policy); err != nil {
+			if err := validatePolicyPayload(policy.Type, policy.ResourceType, req.Msg.Policy); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 			}
 			payloadStr, err := s.convertPolicyPayloadToString(ctx, req.Msg.Policy)
@@ -465,7 +465,7 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 		return nil, err
 	}
 
-	if err := validatePolicyPayload(policyType, policy); err != nil {
+	if err := validatePolicyPayload(policyType, resourceType, policy); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid policy"))
 	}
 
@@ -563,7 +563,7 @@ func (s *OrgPolicyService) checkPolicyFeatureGuard(ctx context.Context, policyTy
 	return nil
 }
 
-func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) error {
+func validatePolicyPayload(policyType storepb.Policy_Type, resourceType storepb.Policy_Resource, policy *v1pb.Policy) error {
 	switch policyType {
 	case storepb.Policy_MASKING_RULE:
 		maskingRulePolicy, ok := policy.Policy.(*v1pb.Policy_MaskingRulePolicy)
@@ -618,7 +618,7 @@ func validatePolicyPayload(policyType storepb.Policy_Type, policy *v1pb.Policy) 
 		if reviewAIPolicy.ReviewAiPolicy == nil {
 			return connect.NewError(connect.CodeInvalidArgument, errors.New("AI review policy must be set"))
 		}
-		if err := validateReviewAIPolicyContent(reviewAIPolicy.ReviewAiPolicy.Content); err != nil {
+		if err := validateReviewAIPolicy(resourceType, reviewAIPolicy.ReviewAiPolicy); err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
 	default:
@@ -649,16 +649,20 @@ func validateReviewRules(rules []v1pb.ReviewRuleType) error {
 // every review prompt, so the bound is a prompt budget, not a storage limit.
 const maxReviewAIPolicyBytes = 64 << 10
 
-// validateReviewAIPolicyContent rejects blank text, which would count as a
-// policy in force that says nothing, and text over the prompt budget. To
-// switch the AI review off for a resource, delete the policy or set enforce
-// to false.
-func validateReviewAIPolicyContent(content string) error {
-	if strings.TrimSpace(content) == "" {
+// validateReviewAIPolicy rejects text over the prompt budget, and blank text,
+// which would count as a policy in force that says nothing, unless the policy
+// holds a project's own switch for the AI review. Only a project has one: the
+// workspace's is AISetting.sql_review_enabled. To drop a resource's policy,
+// delete it or set enforce to false.
+func validateReviewAIPolicy(resourceType storepb.Policy_Resource, policy *v1pb.ReviewAIPolicy) error {
+	if policy.Enabled != nil && resourceType != storepb.Policy_PROJECT {
+		return errors.New("only a project AI review policy can switch the AI review")
+	}
+	if policy.Enabled == nil && strings.TrimSpace(policy.Content) == "" {
 		return errors.New("AI review policy content must not be blank")
 	}
-	if len(content) > maxReviewAIPolicyBytes {
-		return errors.Errorf("AI review policy content is %d bytes, the limit is %d", len(content), maxReviewAIPolicyBytes)
+	if len(policy.Content) > maxReviewAIPolicyBytes {
+		return errors.Errorf("AI review policy content is %d bytes, the limit is %d", len(policy.Content), maxReviewAIPolicyBytes)
 	}
 	return nil
 }

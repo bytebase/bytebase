@@ -4,6 +4,10 @@
   "ai-review": {
     "ai-off": "工作空间尚未启用 AI，因此不会运行 AI 审核。",
     "comments-description": "工单提交审核后，AI 模型会审核其中的 SQL，并以评论指出发现的风险。这些评论不会阻塞发布。",
+    "customize": {
+      "description": "禁用后，此项目遵循工作空间的设置。",
+      "self": "为此项目自定义"
+    },
     "description": "由 AI 模型审核工单中的 SQL，发现标准规则无法识别的风险。",
     "enable": {
       "description": "每次审核会将语句原文发送给 AI 提供方，并可能发送目标数据库的 Schema 及其表的统计信息，但不会读取数据库中的任何数据行。",
@@ -26,9 +30,8 @@
       "standard-rules-hint": "AI 审核不会重复标准规则的检查，也会跳过已关闭的规则。如需让 AI 审核仍然检查某项，请在策略中写明，例如“每条 UPDATE 语句都必须带有 WHERE 子句”。",
       "too-large": "策略大小为 {{size}} 字节，超过了 {{limit}} 字节的上限。请缩短后再保存。"
     },
-    "project-description": "AI 审核在工作空间中配置。请在下方添加可选的项目专属策略。",
+    "project-description": "AI 模型审核此项目工单的 SQL。工作空间策略和下方的项目策略同时生效。",
     "self": "AI 审核",
-    "set-for-workspace": "由工作空间统一管理。",
     "turn-on-ai": "启用 AI",
     "view-workspace-setting": "查看工作空间 AI 设置"
   },

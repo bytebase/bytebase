@@ -61,12 +61,12 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI setting")
 	}
-	if allowed := aireview.CheckSetting(aiSetting) == nil; !allowed {
-		return nil, nil
-	}
 	policy, err := e.store.GetEffectiveReviewAIPolicy(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get AI review policy")
+	}
+	if allowed := aireview.CheckSetting(aiSetting, policy.ProjectEnabled) == nil; !allowed {
+		return nil, nil
 	}
 	// Without a standard rule review the policy of its rules means nothing,
 	// so the AI review states no standard rule.
@@ -109,7 +109,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	// The setting is read again before every provider call, retries included,
 	// so switching the review off stops a run in flight at its next call.
 	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
-		return e.checkAISetting(ctx, project.Workspace)
+		return e.checkAISetting(ctx, project.Workspace, projectID)
 	})))
 	results, reviewErrs := reviewUnits(ctx, e.slots, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
 		// The schema is loaded once the unit holds its slot and dropped when
@@ -215,7 +215,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	// The merge and the summary fall back when a model call fails, the call
 	// that a switch-off refused included, so the setting is read again before
 	// the results post.
-	if err := e.checkAISetting(ctx, project.Workspace); err != nil {
+	if err := e.checkAISetting(ctx, project.Workspace, projectID); err != nil {
 		return nil, err
 	}
 	comments := aiReviewComments(projectID, issueUID, problems)
@@ -223,16 +223,16 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	return comments, nil
 }
 
-// checkAISetting reports why the workspace AI setting does not allow the
-// review, if it does not. It reads past the setting cache, which only this
-// process's writes refresh, so a switch-off written anywhere else stops the
-// review too.
-func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string) error {
-	setting, err := e.store.GetAISettingUncached(ctx, workspace)
+// checkAISetting reports why the workspace AI setting or the project's own
+// switch does not allow the review, if they do not. It reads past the setting
+// cache, which only this process's writes refresh, so a switch-off written
+// anywhere else stops the review too.
+func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace, projectID string) error {
+	setting, projectEnabled, err := e.store.GetAIReviewSwitches(ctx, workspace, projectID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get AI setting")
+		return err
 	}
-	return aireview.CheckSetting(setting)
+	return aireview.CheckSetting(setting, projectEnabled)
 }
 
 // earlierResults returns, for each sheet with findings, the results earlier

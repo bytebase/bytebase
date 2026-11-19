@@ -14,12 +14,12 @@ import {
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { usePlanDetailContext } from "../shell/PlanDetailContext";
 import {
-  aiReviewEnabled,
   hasReviewableSQL,
   isReviewRunActive,
   loadedMatchedDatabaseCount,
   reviewRunName,
 } from "../utils/reviewRun";
+import { useAIReviewOn } from "./useAIReviewOn";
 import { usePlanReviewRun } from "./useSqlReviewV2";
 
 // Starts the issue's review again on the saved SQL. The SQL is not the only
@@ -33,7 +33,7 @@ export function useReviewRerun() {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
   const review = usePlanReviewRun();
-  const serverInfo = useAppStore((state) => state.serverInfo);
+  const aiReviewOn = useAIReviewOn();
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
   const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);
   const [starting, setStarting] = useState(false);
@@ -87,7 +87,7 @@ export function useReviewRerun() {
     // A finished run of the AI review is paid for in model calls, so running
     // it again asks first.
     confirmFirst:
-      aiReviewEnabled(serverInfo) &&
+      aiReviewOn &&
       current?.state === ReviewRun_State.SUCCEEDED &&
       !current.outdated,
     run,

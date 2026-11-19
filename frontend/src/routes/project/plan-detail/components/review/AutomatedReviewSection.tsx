@@ -60,6 +60,7 @@ import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
 import { extractDatabaseResourceName } from "@/utils";
 import { engineNameV1 } from "@/utils/v1/instance";
+import { useAIReviewOn } from "../../hooks/useAIReviewOn";
 import { useFocusThread } from "../../hooks/useFocusThread";
 import { usePlanCheckActions } from "../../hooks/usePlanCheckActions";
 import type { PlanReviewState } from "../../hooks/usePlanReviewState";
@@ -78,7 +79,6 @@ import {
   findingTitle,
 } from "../../utils/planGates";
 import { reviewerLabel, reviewerName } from "../../utils/reviewLabels";
-import { aiReviewEnabled } from "../../utils/reviewRun";
 import { reviewScope } from "../../utils/reviewScope";
 import {
   FINDING_PRIORITIES,
@@ -108,15 +108,11 @@ function diagnosticPlanResource(planName: string, projectId: string) {
 // The review and the plan checks, one line each, between Approval and
 // Activity: the conclusion, the open findings by priority, what people
 // resolved, and what the review covered on hover. The findings themselves
-// live in the editor; every count opens it there. `besideV1` is the AI
-// review with V1's plan checks, whose settings are the workspace's, not the
-// project SQL Review page's.
+// live in the editor; every count opens it there.
 export function AutomatedReviewSection({
   state,
-  besideV1 = false,
 }: {
   state: Pick<PlanReviewState, "rows">;
-  besideV1?: boolean;
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
@@ -204,21 +200,19 @@ export function AutomatedReviewSection({
           {t("plan.automated-review.self")}
         </h4>
         <div className="flex-1" />
-        {!besideV1 && (
-          <Button
-            appearance="link"
-            className="text-control-light"
-            onClick={() =>
-              void router.push({
-                name: PROJECT_V1_ROUTE_SQL_REVIEW,
-                params: { projectId: page.projectId },
-              })
-            }
-            size="xs"
-          >
-            {t("common.configure")}
-          </Button>
-        )}
+        <Button
+          appearance="link"
+          className="text-control-light"
+          onClick={() =>
+            void router.push({
+              name: PROJECT_V1_ROUTE_SQL_REVIEW,
+              params: { projectId: page.projectId },
+            })
+          }
+          size="xs"
+        >
+          {t("common.configure")}
+        </Button>
         {allowRunChecks && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -973,7 +967,7 @@ function ScopeInfo() {
   const page = usePlanDetailContext();
   const sqlReviewV2 = useSqlReviewV2();
   const rules = sqlReviewV2?.standardRules;
-  const aiReviewOn = useAppStore((s) => aiReviewEnabled(s.serverInfo));
+  const aiReviewOn = useAIReviewOn();
   const databasesByName = useAppStore((s) => s.databasesByName);
   const dbGroupsByName = useAppStore((s) => s.dbGroupsByName);
   const dbGroupViewByName = useAppStore((s) => s.dbGroupViewByName);

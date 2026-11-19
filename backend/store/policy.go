@@ -528,31 +528,55 @@ func (s *Store) getReviewRulePolicy(ctx context.Context, workspaceID string, res
 	return p, nil
 }
 
-// EffectiveReviewAIPolicy is the AI review policy text in force for a project.
-// Both levels apply: the reviewer reads the workspace policy and the project
-// policy, and the project policy wins where they conflict. A level without an
-// enforced policy is the empty string.
+// EffectiveReviewAIPolicy is the AI review policy in force for a project.
+// Both levels of text apply: the reviewer reads the workspace policy and the
+// project policy, and the project policy wins where they conflict. A level
+// without an enforced policy is the empty string. ProjectEnabled is the
+// project's own switch for the AI review, nil when the project follows the
+// workspace's.
 type EffectiveReviewAIPolicy struct {
-	Workspace string
-	Project   string
+	Workspace      string
+	Project        string
+	ProjectEnabled *bool
 }
 
-// GetEffectiveReviewAIPolicy returns the policy text of both levels.
+// GetEffectiveReviewAIPolicy returns the policy text of both levels and the
+// project's switch.
 func (s *Store) GetEffectiveReviewAIPolicy(ctx context.Context, workspaceID string, projectID string) (*EffectiveReviewAIPolicy, error) {
-	workspace, err := s.getReviewAIPolicyContent(ctx, workspaceID, storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID))
+	workspace, err := s.getReviewAIPolicy(ctx, workspaceID, storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID))
 	if err != nil {
 		return nil, err
 	}
-	project, err := s.getReviewAIPolicyContent(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(projectID))
+	project, err := s.getReviewAIPolicy(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(projectID))
 	if err != nil {
 		return nil, err
 	}
-	return &EffectiveReviewAIPolicy{Workspace: workspace, Project: project}, nil
+	return &EffectiveReviewAIPolicy{
+		Workspace:      workspace.GetContent(),
+		Project:        project.GetContent(),
+		ProjectEnabled: project.Enabled,
+	}, nil
 }
 
-// getReviewAIPolicyContent returns "" when the resource has no enforced AI
-// review policy.
-func (s *Store) getReviewAIPolicyContent(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (string, error) {
+// GetAIReviewSwitches returns what decides whether a project gets the AI
+// review: the workspace AI setting, read past its cache, and the project's own
+// switch, nil when the project follows the workspace's. aireview.CheckSetting
+// judges them.
+func (s *Store) GetAIReviewSwitches(ctx context.Context, workspaceID string, projectID string) (*storepb.AISetting, *bool, error) {
+	setting, err := s.GetAISettingUncached(ctx, workspaceID)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get AI setting")
+	}
+	policy, err := s.getReviewAIPolicy(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(projectID))
+	if err != nil {
+		return nil, nil, err
+	}
+	return setting, policy.Enabled, nil
+}
+
+// getReviewAIPolicy returns an empty policy when the resource has no enforced
+// AI review policy.
+func (s *Store) getReviewAIPolicy(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewAIPolicy, error) {
 	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
 		ResourceType: &resourceType,
@@ -560,16 +584,16 @@ func (s *Store) getReviewAIPolicyContent(ctx context.Context, workspaceID string
 		Type:         new(storepb.Policy_REVIEW_AI),
 	})
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get AI review policy for %s", resource)
-	}
-	if policy == nil || !policy.Enforce {
-		return "", nil
+		return nil, errors.Wrapf(err, "failed to get AI review policy for %s", resource)
 	}
 	p := &storepb.ReviewAIPolicy{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
-		return "", errors.Wrapf(err, "failed to unmarshal AI review policy for %s", resource)
+	if policy == nil || !policy.Enforce {
+		return p, nil
 	}
-	return p.Content, nil
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal AI review policy for %s", resource)
+	}
+	return p, nil
 }
 
 type reviewConfigResource struct {

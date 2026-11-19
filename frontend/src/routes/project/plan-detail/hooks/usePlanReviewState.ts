@@ -19,10 +19,10 @@ import {
   statementReportFails,
 } from "../utils/planGates";
 import {
-  aiReviewEnabled,
   hasReviewableSQL,
   loadedMatchedDatabaseCount,
 } from "../utils/reviewRun";
+import { useAIReviewOn } from "./useAIReviewOn";
 import { usePlanReviewRun, useSqlReviewV2 } from "./useSqlReviewV2";
 
 const NO_COMMENTS: IssueComment[] = [];
@@ -43,9 +43,9 @@ export function usePlanReviewState(): PlanReviewState | undefined {
     issue ? state.getIssueComments(issue.name) : NO_COMMENTS
   );
   const review = sqlReview?.review;
-  // The review is off when the project applies no standard rule and the
-  // workspace has no AI review. Rules not known yet count as on.
-  const aiReviewOn = useAppStore((state) => aiReviewEnabled(state.serverInfo));
+  // The review is off when the project applies no standard rule and gets no
+  // AI review. Rules not known yet count as on.
+  const aiReviewOn = useAIReviewOn();
   const off = sqlReview?.standardRules?.rules.length === 0 && !aiReviewOn;
   const dbGroupsByName = useAppStore((state) => state.dbGroupsByName);
   const dbGroupViewByName = useAppStore((state) => state.dbGroupViewByName);

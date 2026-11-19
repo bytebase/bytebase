@@ -98,12 +98,7 @@ export function PlanReviewSection() {
           <ReviewRejectionBanner comments={comments} issue={issue} />
         </>
       )}
-      {automatedReview && (
-        <AutomatedReviewSection
-          besideV1={!reviewState}
-          state={automatedReview}
-        />
-      )}
+      {automatedReview && <AutomatedReviewSection state={automatedReview} />}
       <ReviewActivityTimeline
         comments={comments}
         issue={issue}

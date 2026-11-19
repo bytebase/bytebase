@@ -45,7 +45,7 @@ func (e *ReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID
 		}
 	}
 
-	aiOn, err := e.aiReviewOn(ctx, project.Workspace)
+	aiOn, err := e.aiReviewOn(ctx, project.Workspace, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (e *ReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID
 		}
 		// Switched off while it ran: a reviewer that is off is skipped, so the
 		// review ends with the rules' results.
-		if aiOn, settingErr := e.aiReviewOn(ctx, project.Workspace); settingErr == nil && !aiOn {
+		if aiOn, settingErr := e.aiReviewOn(ctx, project.Workspace, projectID); settingErr == nil && !aiOn {
 			return results, nil
 		}
 		return nil, err
@@ -70,14 +70,15 @@ func (e *ReviewExecutor) RunOnce(ctx context.Context, projectID string, issueUID
 	return results, nil
 }
 
-// aiReviewOn reports whether the workspace AI setting allows the AI review.
-// It reads past the setting cache, as the AI review does.
-func (e *ReviewExecutor) aiReviewOn(ctx context.Context, workspace string) (bool, error) {
-	setting, err := e.store.GetAISettingUncached(ctx, workspace)
+// aiReviewOn reports whether the workspace AI setting and the project's own
+// switch allow the AI review. It reads past the setting cache, as the AI
+// review does.
+func (e *ReviewExecutor) aiReviewOn(ctx context.Context, workspace, projectID string) (bool, error) {
+	setting, projectEnabled, err := e.store.GetAIReviewSwitches(ctx, workspace, projectID)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to get AI setting")
+		return false, err
 	}
-	return aireview.CheckSetting(setting) == nil, nil
+	return aireview.CheckSetting(setting, projectEnabled) == nil, nil
 }
 
 // errorCode is the canonical code of the failure that ended a run, for a
