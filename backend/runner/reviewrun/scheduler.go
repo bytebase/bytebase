@@ -177,14 +177,14 @@ func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.Claime
 			slog.Int64("attempt", claimed.Attempt))
 		return
 	}
-	if s.profile.SQLReviewV2 {
-		s.requestRolloutCheck(ctx, claimed)
-	}
+	s.requestRolloutCheck(ctx, claimed)
 }
 
 // requestRolloutCheck asks the rollout creator to look at the issue's plan
 // again: under SQL Review V2 the review holds the automatic rollout until it
-// completes.
+// completes, and in either mode a completed run resolves the findings it
+// supersedes, whose open threads held the rollout. The rollout creator acts
+// only on these requests, so a missed one leaves the issue waiting.
 func (s *Scheduler) requestRolloutCheck(ctx context.Context, claimed *store.ClaimedReviewRun) {
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{claimed.ProjectID}, UID: &claimed.IssueUID})
 	if err != nil {

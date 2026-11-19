@@ -187,12 +187,12 @@ func TestReviewExecutorSkipsTheAIReviewWithoutThePlan(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	stores, issues := setupReviewFixture(ctx, t, 1)
-	rule := &stubRules{results: []*ruleResult{ruleResultAt(1, storepb.ReviewRuleType_REQUIRE_WHERE)}}
+	rule := &stubRules{results: []*ruleResult{ruleResultAt(1, storepb.ReviewRuleType_SYNTAX)}}
 	aiReview := &stubAIReview{}
 
 	results, err := (&ReviewExecutor{store: stores, license: withoutEnterprise, rule: rule, ai: aiReview}).RunOnce(ctx, "p", issues[0])
 	require.NoError(t, err)
-	require.Equal(t, []string{"1 P1 RULE"}, places(results))
+	require.Equal(t, []string{"1 P0 RULE"}, places(results))
 	require.Zero(t, aiReview.calls.Load())
 }
 
