@@ -180,12 +180,12 @@ func newServerWithIdleTimeout(stores serverStore, profile *config.Profile, secre
 	// or when a multi-file CreateRelease needs more than the cap.
 	//
 	// SessionTimeout closes a session that has had no request for that long.
-	// The MCP spec only says clients SHOULD send DELETE when they are done, and
-	// many don't. Each session left open holds a goroutine and its state, and
-	// with no timeout the SDK keeps them until the process exits (BYT-10375). A
-	// request in flight pauses the clock and an open GET stream does not. A
-	// client that returns after expiry gets 404 and must initialize again, as
-	// the spec requires.
+	// The MCP spec only says clients SHOULD send DELETE when they are done, so
+	// a client may leave without one. Each session left open holds a goroutine
+	// and its state, and with no timeout the SDK keeps them until the process
+	// exits (BYT-10375). A request in flight pauses the clock and an open GET
+	// stream does not. A client that returns after expiry gets 404 and must
+	// initialize again, as the spec requires.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
 	}, &mcp.StreamableHTTPOptions{

@@ -38,9 +38,10 @@ func TestIdleSessionCloses(t *testing.T) {
 }
 
 // TestRequestInFlightKeepsItsSessionOpen pins that the timeout counts idle
-// time only. The user gains a long tool call, or a confirmation form left open
-// while they decide, that is not cut off when it outlasts the timeout. Once
-// the call returns, the session is idle again and closes like any other.
+// time only. The user gains a long tool call that is not cut off when it
+// outlasts the timeout. A confirmation form is held open the same way: the SDK
+// shows it inside the tool call (TestAmbiguousDatabaseElicitsUnderLegacyClient).
+// Once the call returns, the session is idle again and closes like any other.
 func TestRequestInFlightKeepsItsSessionOpen(t *testing.T) {
 	server, client := newIdleTimeoutServer(t)
 	hold := addHoldTool(t, server)
@@ -114,9 +115,10 @@ const (
 	holdResult   = "released"
 	callHold     = `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"` + holdToolName + `","arguments":{}}}`
 	listTools    = `{"jsonrpc":"2.0","id":3,"method":"tools/list"}`
-	// A notification, because a POST that carries a call to a session that is
-	// already closing gets 200 and an empty stream, not 404: the SDK writes the
-	// stream's headers before it learns the session is gone.
+	// A notification, because a POST that carries a call to a closing session
+	// gets 200 and an empty stream: the SDK writes the stream's headers before
+	// it learns the session is gone. A notification gets 404 once the session
+	// leaves the SDK's map, so requireClosed retries until it does.
 	probeNotification = `{"jsonrpc":"2.0","method":"notifications/roots/list_changed"}`
 )
 
@@ -245,9 +247,21 @@ func (c *rawMCPClient) waitUntilClosed(session string) {
 	require.NoError(c.t, err, "the server must end the GET stream when the session closes")
 }
 
+// requireClosed waits for the session to answer 404. Call it after
+// waitUntilClosed: the GET stream ends when the transport closes, a moment
+// before the SDK drops the session from its map, and in that moment the
+// transport's buffered queue can still accept a notification with 202. A
+// request then cannot reopen the session, so retrying is safe.
 func (c *rawMCPClient) requireClosed(session string) {
 	c.t.Helper()
-	status, body, err := c.post(context.Background(), session, probeNotification)
-	require.NoError(c.t, err)
-	require.Equal(c.t, http.StatusNotFound, status, "a closed session must answer 404, got %q", body)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		status, body, err := c.post(context.Background(), session, probeNotification)
+		require.NoError(c.t, err)
+		if status == http.StatusNotFound {
+			return
+		}
+		require.True(c.t, time.Now().Before(deadline), "a closed session must answer 404, last got %d %q", status, body)
+		time.Sleep(20 * time.Millisecond)
+	}
 }
