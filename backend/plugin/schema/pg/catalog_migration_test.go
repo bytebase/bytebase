@@ -1177,7 +1177,9 @@ func TestPgCatalogTypesNameNoRelation(t *testing.T) {
 	_, ok := referencedRelation("text", relations, []string{"public"})
 	require.False(t, ok, "the built-in is not public.text")
 	_, ok = referencedRelation(`"text"`, relations, []string{"public"})
-	require.True(t, ok, "a quoted name is the user relation")
+	require.False(t, ok, "quoting an exact built-in name does not make it the user relation")
+	_, ok = referencedRelation(`"Text"`, map[string]bool{objectKey("public", "Text"): true}, []string{"public"})
+	require.True(t, ok, `"Text" is not the built-in lowercase name`)
 	require.True(t, builtinMultiwordType("double precision[]"), "an array marker does not hide the built-in")
 	require.False(t, builtinMultiwordType("public.precision"))
 }
@@ -2834,4 +2836,24 @@ func TestViewDependencySeesSequences(t *testing.T) {
 	paths := []string{"$user", "public"}
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."s"`)
+}
+
+// TestViewDependencyQualificationSkipsCTEs covers a CTE named like the
+// dependency: only the CTE body's qualified relation is a relation reference,
+// so the final FROM t is safe.
+func TestViewDependencyQualificationSkipsCTEs(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "WITH t AS (SELECT * FROM public.t) SELECT * FROM t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }

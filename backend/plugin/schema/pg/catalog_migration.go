@@ -1221,6 +1221,7 @@ func ambiguousViewDependencies(viewSchema, viewName, definition string, dependen
 // literals, so `FROM public.t AS t` is safe while `FROM public.t JOIN t` is not.
 func definitionQualifies(definition, schemaName, objectName string) bool {
 	tokens := definitionTokens(definition)
+	ctes := definitionCTEs(tokens)
 	qualified := false
 	inRelations := false
 	for i := 0; i < len(tokens); i++ {
@@ -1258,12 +1259,82 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			i = skipRelationAlias(tokens, i+2)
 			continue
 		}
-		if first.matches(objectName) {
+		if first.matches(objectName) && !ctes[identifierKey(first)] {
 			return false
 		}
 		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
+}
+
+func identifierKey(identifier identifier) string {
+	if identifier.quoted {
+		return "q:" + identifier.name
+	}
+	return "u:" + strings.ToLower(identifier.name)
+}
+
+// definitionCTEs collects the names declared by WITH, so a CTE reference is not
+// mistaken for a reference to a same-named dependency relation.
+func definitionCTEs(tokens []definitionToken) map[string]bool {
+	ctes := make(map[string]bool)
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i].punct != 0 || tokens[i].quoted || !strings.EqualFold(tokens[i].text, "WITH") {
+			continue
+		}
+		i++
+		if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "RECURSIVE") {
+			i++
+		}
+		for i < len(tokens) {
+			if tokens[i].punct != 0 {
+				break
+			}
+			name := identifier{name: tokens[i].text, quoted: tokens[i].quoted}
+			i++
+			if i < len(tokens) && tokens[i].punct == '(' {
+				i = skipParenthesized(tokens, i) + 1
+			}
+			if i >= len(tokens) || tokens[i].punct != 0 || tokens[i].quoted || !strings.EqualFold(tokens[i].text, "AS") {
+				break
+			}
+			i++
+			if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "NOT") {
+				i++
+			}
+			if i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted && strings.EqualFold(tokens[i].text, "MATERIALIZED") {
+				i++
+			}
+			if i >= len(tokens) || tokens[i].punct != '(' {
+				break
+			}
+			i = skipParenthesized(tokens, i) + 1
+			ctes[identifierKey(name)] = true
+			if i < len(tokens) && tokens[i].punct == ',' {
+				i++
+				continue
+			}
+			break
+		}
+	}
+	return ctes
+}
+
+func skipParenthesized(tokens []definitionToken, index int) int {
+	depth := 0
+	for i := index; i < len(tokens); i++ {
+		switch tokens[i].punct {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i
+			}
+		default:
+		}
+	}
+	return len(tokens) - 1
 }
 
 // definitionToken is an identifier or a punctuation byte outside literals and
@@ -1465,7 +1536,10 @@ func builtinType(name string) bool {
 // type. pg_catalog is implicit first only when the path does not list it; an
 // explicit position lets an earlier user schema's same-named relation shadow it.
 func builtinTypeWins(reference typeReference, relations map[string]bool, searchPath []string) bool {
-	if reference.object.quoted || !builtinType(reference.object.name) {
+	if reference.object.quoted && reference.object.name != strings.ToLower(reference.object.name) {
+		return false
+	}
+	if !builtinType(reference.object.name) {
 		return false
 	}
 	pgCatalogIndex := slices.Index(searchPath, "pg_catalog")
