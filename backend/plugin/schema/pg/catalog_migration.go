@@ -31,18 +31,10 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load target schema")
 	}
-	searchPath := getConfiguredSearchPath(oldSchema)
-	owner := ""
-	if oldSchema != nil {
-		owner = oldSchema.GetProto().GetOwner()
+	paths := searchPaths{
+		from: resolveSearchPathUser(getConfiguredSearchPath(oldSchema), schemaOwner(oldSchema)),
+		to:   resolveSearchPathUser(getConfiguredSearchPath(newSchema), schemaOwner(newSchema)),
 	}
-	if len(searchPath) == 0 {
-		searchPath = getConfiguredSearchPath(newSchema)
-		if newSchema != nil {
-			owner = newSchema.GetProto().GetOwner()
-		}
-	}
-	searchPath = resolveSearchPathUser(searchPath, owner)
 	sourceDrops := sourceOnlyMissingDrops(oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err := unloadableChanges(oldSchema.GetProto(), newSchema.GetProto(), sourceDrops, fromReport, toReport); err != nil {
 		return "", err
@@ -51,17 +43,17 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 	if diff.IsEmpty() && len(sourceDrops) == 0 {
 		return "", nil
 	}
-	if err := rejectAmbiguousUserTypes(oldSchema.GetProto(), newSchema.GetProto(), searchPath); err != nil {
+	if err := rejectAmbiguousUserTypes(oldSchema.GetProto(), newSchema.GetProto(), paths); err != nil {
 		return "", err
 	}
 	plan := catalog.GenerateMigration(from, to, diff)
-	orderTypeAndTableCreates(plan, newSchema.GetProto(), searchPath)
+	orderTypeAndTableCreates(plan, newSchema.GetProto(), paths.to)
 	restoreIndexDefinitions(plan, newSchema.GetProto())
 	restored, err := restoreUnloadableDependentViews(plan, from, oldSchema.GetProto(), newSchema.GetProto(), fromReport, toReport)
 	if err != nil {
 		return "", err
 	}
-	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored, searchPath); err != nil {
+	if err := releaseCompositeBeforeTableDrop(plan, oldSchema.GetProto(), newSchema.GetProto(), restored, paths); err != nil {
 		return "", err
 	}
 	restoreRecreatedViewComments(plan, newSchema.GetProto())
@@ -70,6 +62,19 @@ func diffMetadataMigration(oldSchema, newSchema *model.DatabaseMetadata) (string
 		return op.SchemaName != "bbdataarchive"
 	})
 	return plan.SQL(), nil
+}
+
+// searchPaths are each snapshot's resolved search path. A type name resolves with
+// the path of the snapshot that declares it, because the two can differ.
+type searchPaths struct {
+	from, to []string
+}
+
+func schemaOwner(d *model.DatabaseMetadata) string {
+	if d == nil {
+		return ""
+	}
+	return d.GetProto().GetOwner()
 }
 
 // loadMetadataCatalog installs a snapshot under the search path its database is
@@ -241,7 +246,7 @@ type typeReference struct {
 // recreated or added by the target. A table column or a composite type that holds
 // one of their row types cannot be ordered around that, so the migration is
 // refused instead.
-func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
+func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, paths searchPaths) error {
 	dropped := relationSet(oldMeta, newMeta)
 	if len(dropped) == 0 && len(restored) == 0 {
 		return nil
@@ -249,10 +254,10 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 	for key := range restored {
 		dropped[key] = true
 	}
-	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored, searchPath); err != nil {
+	if err := refuseRestoredViewRowTypeDependents(oldMeta, newMeta, restored, paths); err != nil {
 		return err
 	}
-	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored, searchPath); err != nil {
+	if err := refuseRestoredViewRoutines(oldMeta, newMeta, restored, paths); err != nil {
 		return err
 	}
 	created := relationSet(newMeta, oldMeta)
@@ -263,7 +268,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 			if newComposite == nil {
 				continue
 			}
-			releaseCompositeAttributes(plan, schema.GetName(), composite, newComposite, dropped, created, restored, searchPath)
+			releaseCompositeAttributes(plan, schema.GetName(), composite, newComposite, dropped, created, restored, paths)
 		}
 	}
 	return nil
@@ -273,7 +278,7 @@ func releaseCompositeBeforeTableDrop(plan *catalog.MigrationPlan, oldMeta, newMe
 // re-added when its released type needs a create, or when its target type is a
 // restored view's row type, which the catalog cannot order against the drop. The
 // first such target position fixes where the re-added suffix starts.
-func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, restored map[string]bool, searchPath []string) {
+func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, oldComposite, newComposite *metadatapb.CompositeTypeMetadata, dropped, created, restored map[string]bool, paths searchPaths) {
 	compositeName := oldComposite.GetName()
 	firstTarget := -1
 	dropKeys := make(map[string]bool)
@@ -281,10 +286,10 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 		old := attributeByName(oldComposite, target.GetName())
 		dropKey := ""
 		if old != nil {
-			dropKey, _ = referencedRelation(old.GetType(), dropped, searchPath)
+			dropKey, _ = referencedRelation(old.GetType(), dropped, paths.from)
 		}
-		restoredKey, restoredType := referencedRelation(target.GetType(), restored, searchPath)
-		if !restoredType && (dropKey == "" || !typeNeedsCreate(target.GetType(), created, restored, searchPath)) {
+		restoredKey, restoredType := referencedRelation(target.GetType(), restored, paths.to)
+		if !restoredType && (dropKey == "" || !typeNeedsCreate(target.GetType(), created, restored, paths.to)) {
 			continue
 		}
 		if firstTarget < 0 {
@@ -301,7 +306,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 	// catalog's own release only has to move ahead of the relation drop. One the
 	// target removes needs no re-add at all.
 	for _, attribute := range oldComposite.GetAttributes() {
-		dropKey, ok := referencedRelation(attribute.GetType(), dropped, searchPath)
+		dropKey, ok := referencedRelation(attribute.GetType(), dropped, paths.from)
 		if !ok {
 			continue
 		}
@@ -321,7 +326,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 		if old == nil {
 			continue
 		}
-		if dropKey, ok := referencedRelation(old.GetType(), dropped, searchPath); ok {
+		if dropKey, ok := referencedRelation(old.GetType(), dropped, paths.from); ok {
 			dropKeys[dropKey] = true
 		}
 	}
@@ -358,7 +363,7 @@ func releaseCompositeAttributes(plan *catalog.MigrationPlan, schemaName string, 
 	}
 	anchor := -1
 	for _, target := range suffix {
-		for key := range createKeysFor(target.GetType(), created, restored, searchPath) {
+		for key := range createKeysFor(target.GetType(), created, restored, paths.to) {
 			if index := findCreateOp(plan.Ops, key); index > anchor {
 				anchor = index
 			}
@@ -422,15 +427,15 @@ func createKeysFor(typeName string, created, restored map[string]bool, searchPat
 // column would discard its data, and a created composite type would need the view
 // before its CREATE TYPE. An existing composite's attributes are re-added after
 // the recreation instead.
-func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
+func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, paths searchPaths) error {
 	if len(restored) == 0 {
 		return nil
 	}
-	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
-		for _, schema := range meta.GetSchemas() {
+	for _, side := range []snapshotSide{{oldMeta, paths.from}, {newMeta, paths.to}} {
+		for _, schema := range side.meta.GetSchemas() {
 			for _, table := range schema.GetTables() {
 				for _, column := range table.GetColumns() {
-					key, ok := referencedRelation(column.GetType(), restored, searchPath)
+					key, ok := referencedRelation(column.GetType(), restored, side.path)
 					if !ok {
 						continue
 					}
@@ -446,7 +451,7 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 				continue
 			}
 			for _, attribute := range composite.GetAttributes() {
-				key, ok := referencedRelation(attribute.GetType(), restored, searchPath)
+				key, ok := referencedRelation(attribute.GetType(), restored, paths.to)
 				if !ok {
 					continue
 				}
@@ -460,23 +465,29 @@ func refuseRestoredViewRowTypeDependents(oldMeta, newMeta *metadatapb.DatabaseSc
 // refuseRestoredViewRoutines rejects a routine whose parameter or return type is a
 // restored view's row type: the view cannot be dropped while the routine holds it,
 // and the routine's body mentioning the view is not such a dependency.
-func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, searchPath []string) error {
-	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
-		objects := typeObjects(meta)
-		for _, schema := range meta.GetSchemas() {
+func refuseRestoredViewRoutines(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, restored map[string]bool, paths searchPaths) error {
+	for _, side := range []snapshotSide{{oldMeta, paths.from}, {newMeta, paths.to}} {
+		objects := typeObjects(side.meta)
+		for _, schema := range side.meta.GetSchemas() {
 			for _, function := range schema.GetFunctions() {
-				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, objects, searchPath); err != nil {
+				if err := refuseRoutine(schema.GetName(), function.GetName(), function.GetSignature(), function.GetDefinition(), restored, objects, side.path); err != nil {
 					return err
 				}
 			}
 			for _, procedure := range schema.GetProcedures() {
-				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, objects, searchPath); err != nil {
+				if err := refuseRoutine(schema.GetName(), procedure.GetName(), procedure.GetSignature(), procedure.GetDefinition(), restored, objects, side.path); err != nil {
 					return err
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// snapshotSide pairs a snapshot with the search path its type names resolve with.
+type snapshotSide struct {
+	meta *metadatapb.DatabaseSchemaMetadata
+	path []string
 }
 
 // typeObjects is every object a type name can resolve to, including a sequence's
@@ -979,11 +990,16 @@ func resolveSearchPathUser(searchPath []string, user string) []string {
 // rejectAmbiguousUserTypes refuses a migration whose unqualified type depends on
 // an unresolved $user entry: no known schema before it names the object, and some
 // relation does, so whether the user's schema shadows that relation is unknown.
-func rejectAmbiguousUserTypes(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, searchPath []string) error {
-	if !slices.Contains(searchPath, "$user") {
+func rejectAmbiguousUserTypes(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, paths searchPaths) error {
+	if !slices.Contains(paths.from, "$user") && !slices.Contains(paths.to, "$user") {
 		return nil
 	}
-	for _, meta := range []*metadatapb.DatabaseSchemaMetadata{oldMeta, newMeta} {
+	for _, side := range []snapshotSide{{oldMeta, paths.from}, {newMeta, paths.to}} {
+		if !slices.Contains(side.path, "$user") {
+			continue
+		}
+		searchPath := side.path
+		meta := side.meta
 		objects := typeObjects(meta)
 		for _, schema := range meta.GetSchemas() {
 			for _, table := range schema.GetTables() {
