@@ -1175,7 +1175,10 @@ export function DataSourceForm({
                                   : undefined
                               }
                             >
-                              <div className="flex flex-col gap-2">
+                              <div
+                                className="flex flex-col gap-2"
+                                data-connection-primary-secret
+                              >
                                 <SecretInput
                                   resetKey={dataSource.id}
                                   aria-label={t("common.password")}
@@ -1998,6 +2001,7 @@ export function DataSourceForm({
                     </FormField>
                     <FormField
                       validationField="updatedToken"
+                      data-connection-primary-secret
                       title={
                         <>
                           {t("common.token")}{" "}

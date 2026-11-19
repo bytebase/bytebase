@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSource_AuthenticationType,
+  DataSource_RedisType,
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecretSchema,
   DataSourceSchema,
   DataSourceType,
+  KerberosConfigSchema,
+  SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -36,14 +39,42 @@ const makeDraft = (
 });
 
 describe("supportsConnectionString", () => {
-  it("enables connection string input for MySQL, PostgreSQL, MSSQL, and Oracle only", () => {
-    expect(supportsConnectionString(Engine.MYSQL)).toBe(true);
-    expect(supportsConnectionString(Engine.POSTGRES)).toBe(true);
-    expect(supportsConnectionString(Engine.MSSQL)).toBe(true);
-    expect(supportsConnectionString(Engine.ORACLE)).toBe(true);
-    expect(supportsConnectionString(Engine.MARIADB)).toBe(false);
-    expect(supportsConnectionString(Engine.SNOWFLAKE)).toBe(false);
-    expect(supportsConnectionString(Engine.MONGODB)).toBe(false);
+  it("enables connection string input for the 20 credential/endpoint engines and excludes cloud-IAM-only engines", () => {
+    const supported = [
+      Engine.MYSQL,
+      Engine.POSTGRES,
+      Engine.MSSQL,
+      Engine.ORACLE,
+      Engine.MARIADB,
+      Engine.TIDB,
+      Engine.OCEANBASE,
+      Engine.STARROCKS,
+      Engine.DORIS,
+      Engine.COCKROACHDB,
+      Engine.REDSHIFT,
+      Engine.MONGODB,
+      Engine.REDIS,
+      Engine.CASSANDRA,
+      Engine.ELASTICSEARCH,
+      Engine.CLICKHOUSE,
+      Engine.SNOWFLAKE,
+      Engine.TRINO,
+      Engine.HIVE,
+      Engine.DATABRICKS,
+    ];
+    for (const engine of supported) {
+      expect(supportsConnectionString(engine)).toBe(true);
+    }
+
+    const excluded = [
+      Engine.SPANNER,
+      Engine.BIGQUERY,
+      Engine.DYNAMODB,
+      Engine.COSMOSDB,
+    ];
+    for (const engine of excluded) {
+      expect(supportsConnectionString(engine)).toBe(false);
+    }
   });
 });
 
@@ -499,5 +530,826 @@ describe("detectConnectionStringEngine", () => {
     expect(
       detectConnectionStringEngine("db.example.com:5432/mydb", Engine.POSTGRES)
     ).toBeUndefined();
+    expect(
+      detectConnectionStringEngine(
+        "https://search.example.com:9200",
+        Engine.MYSQL
+      )
+    ).toBeUndefined();
+    expect(
+      detectConnectionStringEngine(
+        "http://trino.example.com:8080/catalog",
+        Engine.MYSQL
+      )
+    ).toBeUndefined();
+  });
+
+  it("identifies unambiguous strings for newly supported engines", () => {
+    expect(
+      detectConnectionStringEngine(
+        "mariadb://admin:secret@db.example.com:3306/app",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.MARIADB);
+    expect(
+      detectConnectionStringEngine(
+        "cockroachdb://root@roach.example.com:26257/defaultdb?sslmode=verify-full",
+        Engine.POSTGRES
+      )
+    ).toBe(Engine.COCKROACHDB);
+    expect(
+      detectConnectionStringEngine(
+        'cockroach sql --url "postgresql://user:secret@roach.example.com:26257/defaultdb"',
+        Engine.MYSQL
+      )
+    ).toBe(Engine.COCKROACHDB);
+    expect(
+      detectConnectionStringEngine(
+        "jdbc:redshift://cluster.example.com:5439/dev?user=admin&password=secret",
+        Engine.POSTGRES
+      )
+    ).toBe(Engine.REDSHIFT);
+    expect(
+      detectConnectionStringEngine(
+        "mongodb+srv://user:secret@cluster0.example.mongodb.net/mydb",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.MONGODB);
+    expect(
+      detectConnectionStringEngine(
+        "redis-sentinel://sentinel.example.com:26379?service_name=mymaster",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.REDIS);
+    expect(
+      detectConnectionStringEngine(
+        "clickhouses://default:secret@ch.example.com:9440/default",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.CLICKHOUSE);
+    expect(
+      detectConnectionStringEngine(
+        "https://xy12345.us-east-1.snowflakecomputing.com",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.SNOWFLAKE);
+    expect(
+      detectConnectionStringEngine(
+        "opensearch://admin:secret@search.example.com:9200",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.ELASTICSEARCH);
+    expect(
+      detectConnectionStringEngine(
+        "cassandra://cass:secret@n1.example.com:9042,n2.example.com:9042",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.CASSANDRA);
+    expect(
+      detectConnectionStringEngine(
+        "trino://user@trino.example.com:8080/hive/default",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.TRINO);
+    expect(
+      detectConnectionStringEngine(
+        "jdbc:hive2://hive.example.com:10000/default;user=hive;password=secret",
+        Engine.MSSQL
+      )
+    ).toBe(Engine.HIVE);
+    expect(
+      detectConnectionStringEngine(
+        "https://dbc-12345.cloud.databricks.com/sql/1.0/warehouses/wh123",
+        Engine.MYSQL
+      )
+    ).toBe(Engine.DATABRICKS);
+    expect(
+      detectConnectionStringEngine(
+        "jdbc:databricks://dbc.example.com:443/default;httpPath=/sql/1.0/warehouses/wh1;PWD=dapi123",
+        Engine.POSTGRES
+      )
+    ).toBe(Engine.DATABRICKS);
+  });
+});
+
+describe("parseConnectionString - MySQL-family engines", () => {
+  it("parses MariaDB, TiDB, OceanBase, StarRocks, and Doris URLs with engine default ports", () => {
+    expect(
+      parseConnectionString(
+        Engine.MARIADB,
+        "mariadb://admin:s3cr3t@maria.example.com/appdb?ssl-mode=REQUIRED"
+      )
+    ).toEqual({
+      host: "maria.example.com",
+      port: "3306",
+      username: "admin",
+      password: "s3cr3t",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.TIDB,
+        "mysql://user:pass@tidb.example.com/appdb?ssl-mode=VERIFY_IDENTITY"
+      )
+    ).toEqual({
+      host: "tidb.example.com",
+      port: "4000",
+      username: "user",
+      password: "pass",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.OCEANBASE,
+        "mysql://root@sys#obcluster:s3cr3t@ob.example.com/test#frag"
+      )
+    ).toEqual({
+      host: "ob.example.com",
+      port: "2883",
+      username: "root@sys#obcluster",
+      password: "s3cr3t",
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.STARROCKS,
+        "starrocks://sr:secret@sr.example.com/analytics"
+      )
+    ).toEqual({
+      host: "sr.example.com",
+      port: "9030",
+      username: "sr",
+      password: "secret",
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.DORIS,
+        "doris://admin:pass@doris.example.com:9031/db"
+      )
+    ).toEqual({
+      host: "doris.example.com",
+      port: "9031",
+      username: "admin",
+      password: "pass",
+      tls: undefined,
+    });
+  });
+});
+
+describe("parseConnectionString - CockroachDB and Redshift", () => {
+  it("parses CockroachDB URIs, cockroach sql CLI, placeholder passwords, and libpq", () => {
+    expect(
+      parseConnectionString(
+        Engine.COCKROACHDB,
+        'cockroach sql --url "postgresql://app_user:<ENTER-SQL-USER-PASSWORD>@roach.example.com:26257/defaultdb?sslmode=verify-full"'
+      )
+    ).toEqual({
+      host: "roach.example.com",
+      port: "26257",
+      username: "app_user",
+      password: undefined,
+      database: "defaultdb",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.COCKROACHDB,
+        "cockroachdb://root:pass@roach.example.com/bank?sslmode=require"
+      )
+    ).toEqual({
+      host: "roach.example.com",
+      port: "26257",
+      username: "root",
+      password: "pass",
+      database: "bank",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.COCKROACHDB,
+        "host=roach.example.com dbname=bank user=root sslmode=verify-ca"
+      )
+    ).toEqual({
+      host: "roach.example.com",
+      port: "26257",
+      username: "root",
+      password: undefined,
+      database: "bank",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+  });
+
+  it("parses Redshift URIs and JDBC URLs while omitting TLS controls", () => {
+    expect(
+      parseConnectionString(
+        Engine.REDSHIFT,
+        "redshift://admin:s3cr3t@rs.example.com/dev?sslmode=require"
+      )
+    ).toEqual({
+      host: "rs.example.com",
+      port: "5439",
+      username: "admin",
+      password: "s3cr3t",
+      database: "dev",
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.REDSHIFT,
+        "jdbc:redshift://rs.example.com:5439/analytics?UID=analyst&PWD=secret&ssl=true"
+      )
+    ).toEqual({
+      host: "rs.example.com",
+      port: "5439",
+      username: "analyst",
+      password: "secret",
+      database: "analytics",
+      tls: undefined,
+    });
+  });
+});
+
+describe("parseConnectionString - MongoDB", () => {
+  it("parses mongodb+srv:// without forcing useSsl and preserves explicit authSource", () => {
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:<db_password>@cluster0.example.mongodb.net/storefront?retryWrites=true&w=majority"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: undefined,
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: undefined,
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://app:pass@cluster0.example.mongodb.net/storefront?tls=true&tlsAllowInvalidCertificates=true&authSource=admin"
+      )
+    ).toEqual({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      username: "app",
+      password: "pass",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase: "admin",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://cluster0.example.mongodb.net:27017/db"
+      )
+    ).toBeUndefined();
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb+srv://n1.example.net,n2.example.net/db"
+      )
+    ).toBeUndefined();
+  });
+
+  it("parses multi-host mongodb:// URIs and mongosh commands", () => {
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        "mongodb://admin:pass@n1.example.com,n2.example.com:27018/appdb?replicaSet=rs0&authSource=admin&tls=true"
+      )
+    ).toEqual({
+      host: "n1.example.com",
+      port: "27017",
+      username: "admin",
+      password: "pass",
+      srv: false,
+      additionalAddresses: [{ host: "n2.example.com", port: "27018" }],
+      replicaSet: "rs0",
+      directConnection: false,
+      authenticationDatabase: "admin",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MONGODB,
+        'mongosh "mongodb://localhost:27017/mydb?directConnection=true" --apiVersion 1 --username admin --password secret --authenticationDatabase admin'
+      )
+    ).toEqual({
+      host: "localhost",
+      port: "27017",
+      username: "admin",
+      password: "secret",
+      srv: false,
+      additionalAddresses: [],
+      replicaSet: undefined,
+      directConnection: true,
+      authenticationDatabase: "admin",
+      tls: undefined,
+    });
+  });
+});
+
+describe("parseConnectionString - Redis", () => {
+  it("parses standalone, password-only, redis-cli, cluster, and sentinel strings", () => {
+    expect(
+      parseConnectionString(Engine.REDIS, "redis://:s3cr3t@redis.example.com")
+    ).toEqual({
+      host: "redis.example.com",
+      port: "6379",
+      username: "",
+      password: "s3cr3t",
+      redisType: DataSource_RedisType.STANDALONE,
+      additionalAddresses: [],
+      masterName: undefined,
+      masterUsername: undefined,
+      masterPassword: undefined,
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.REDIS,
+        "redis-cli --tls -u rediss://default:pass@redis.example.com:6380/0?ssl_cert_reqs=none"
+      )
+    ).toEqual({
+      host: "redis.example.com",
+      port: "6380",
+      username: "default",
+      password: "pass",
+      redisType: DataSource_RedisType.STANDALONE,
+      additionalAddresses: [],
+      masterName: undefined,
+      masterUsername: undefined,
+      masterPassword: undefined,
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.REDIS,
+        "redis://n1.example.com,n2.example.com:6380"
+      )
+    ).toEqual({
+      host: "n1.example.com",
+      port: "6379",
+      username: undefined,
+      password: undefined,
+      redisType: DataSource_RedisType.CLUSTER,
+      additionalAddresses: [{ host: "n2.example.com", port: "6380" }],
+      masterName: undefined,
+      masterUsername: undefined,
+      masterPassword: undefined,
+      tls: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.REDIS,
+        "rediss-sentinel://sentuser:sentpass@s1.example.com,s2.example.com:26380?master=mymaster&master_username=muser&master_password=mpass"
+      )
+    ).toEqual({
+      host: "s1.example.com",
+      port: "26379",
+      username: "sentuser",
+      password: "sentpass",
+      redisType: DataSource_RedisType.SENTINEL,
+      additionalAddresses: [{ host: "s2.example.com", port: "26380" }],
+      masterName: "mymaster",
+      masterUsername: "muser",
+      masterPassword: "mpass",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+  });
+});
+
+describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandra, Trino, Hive, Databricks", () => {
+  it("parses ClickHouse native schemes and rejects https://", () => {
+    expect(
+      parseConnectionString(
+        Engine.CLICKHOUSE,
+        "clickhouses://default:secret@ch.example.com/analytics"
+      )
+    ).toEqual({
+      host: "ch.example.com",
+      port: "9440",
+      username: "default",
+      password: "secret",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.CLICKHOUSE,
+        "clickhouse+native://user:pass@ch.example.com:9001?secure=true&skip_verify=true"
+      )
+    ).toEqual({
+      host: "ch.example.com",
+      port: "9001",
+      username: "user",
+      password: "pass",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(Engine.CLICKHOUSE, "https://ch.example.com:8443")
+    ).toBeUndefined();
+  });
+
+  it("parses Snowflake URLs, strips .snowflakecomputing.com, and rejects bare domain", () => {
+    expect(
+      parseConnectionString(
+        Engine.SNOWFLAKE,
+        "snowflake://bytebase:secret@org-account.snowflakecomputing.com/ANALYTICS/PUBLIC"
+      )
+    ).toEqual({
+      host: "org-account",
+      port: "",
+      username: "bytebase",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.SNOWFLAKE,
+        "jdbc:snowflake://xy12345.us-east-1.snowflakecomputing.com:443/?user=bytebase&password=secret"
+      )
+    ).toEqual({
+      host: "xy12345.us-east-1",
+      port: "",
+      username: "bytebase",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.SNOWFLAKE,
+        "https://xy12345.us-east-1.snowflakecomputing.com/"
+      )
+    ).toEqual({
+      host: "xy12345.us-east-1",
+      port: "",
+      username: undefined,
+      password: undefined,
+    });
+
+    expect(
+      parseConnectionString(Engine.SNOWFLAKE, "https://snowflakecomputing.com")
+    ).toBeUndefined();
+  });
+
+  it("parses Elasticsearch URLs and rejects non-empty paths or Snowflake domains", () => {
+    expect(
+      parseConnectionString(
+        Engine.ELASTICSEARCH,
+        "https://elastic:secret@search.example.com/"
+      )
+    ).toEqual({
+      host: "search.example.com",
+      port: "443",
+      username: "elastic",
+      password: "secret",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(Engine.ELASTICSEARCH, "http://search.example.com")
+    ).toEqual({
+      host: "search.example.com",
+      port: "80",
+      username: undefined,
+      password: undefined,
+      tls: { useSsl: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.ELASTICSEARCH,
+        "opensearch://admin:secret@os.example.com?ssl=true&skip_verify=true"
+      )
+    ).toEqual({
+      host: "os.example.com",
+      port: "9200",
+      username: "admin",
+      password: "secret",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.ELASTICSEARCH,
+        "https://search.example.com/_search"
+      )
+    ).toBeUndefined();
+    expect(
+      parseConnectionString(
+        Engine.ELASTICSEARCH,
+        "https://xy12345.snowflakecomputing.com"
+      )
+    ).toBeUndefined();
+  });
+
+  it("parses Cassandra multi-host URIs", () => {
+    expect(
+      parseConnectionString(
+        Engine.CASSANDRA,
+        "cassandra://cass:secret@n1.example.com,n2.example.com:9142/myks?ssl=true"
+      )
+    ).toEqual({
+      host: "n1.example.com",
+      port: "9042",
+      username: "cass",
+      password: "secret",
+      additionalAddresses: [{ host: "n2.example.com", port: "9142" }],
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+  });
+
+  it("parses Trino URIs with up to two path segments and SSLVerification", () => {
+    expect(
+      parseConnectionString(
+        Engine.TRINO,
+        "trino://analyst:secret@trino.example.com/hive/default?SSLVerification=NONE"
+      )
+    ).toEqual({
+      host: "trino.example.com",
+      port: "8080",
+      username: "analyst",
+      password: "secret",
+      tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(Engine.TRINO, "https://trino.example.com/hive")
+    ).toEqual({
+      host: "trino.example.com",
+      port: "443",
+      username: undefined,
+      password: undefined,
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.TRINO,
+        "https://dbc.example.com/sql/1.0/warehouses"
+      )
+    ).toBeUndefined();
+    expect(
+      parseConnectionString(
+        Engine.TRINO,
+        "https://xy12345.snowflakecomputing.com"
+      )
+    ).toBeUndefined();
+  });
+
+  it("parses Hive JDBC URLs and beeline commands while rejecting ZooKeeper discovery", () => {
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://hive.example.com:10000/default;user=hive;password=secret"
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10000",
+      username: "hive",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        'beeline -u "jdbc:hive2://hive.example.com/app" -n admin -p s3cr3t'
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10000",
+      username: "admin",
+      password: "s3cr3t",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "hive://hive.example.com:10001/default"
+      )
+    ).toEqual({
+      host: "hive.example.com",
+      port: "10001",
+      username: undefined,
+      password: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.HIVE,
+        "jdbc:hive2://zk1.example.com:2181,zk2.example.com:2181/;serviceDiscoveryMode=zooKeeper"
+      )
+    ).toBeUndefined();
+  });
+
+  it("parses Databricks URIs, JDBC URLs, and warehouse web URLs", () => {
+    expect(
+      parseConnectionString(
+        Engine.DATABRICKS,
+        "databricks://token:dapi123@dbc.cloud.databricks.com/main?http_path=/sql/1.0/warehouses/wh123"
+      )
+    ).toEqual({
+      host: "https://dbc.cloud.databricks.com",
+      port: "",
+      warehouseId: "wh123",
+      token: "dapi123",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.DATABRICKS,
+        "jdbc:databricks://dbc.example.com:8443/default;transportMode=http;ssl=1;httpPath=/sql/1.0/warehouses/wh456;UID=token;PWD=abc#def"
+      )
+    ).toEqual({
+      host: "https://dbc.example.com:8443",
+      port: "",
+      warehouseId: "wh456",
+      token: "abc#def",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.DATABRICKS,
+        "https://dbc.cloud.databricks.com/sql/1.0/warehouses/wh789?o=12345"
+      )
+    ).toEqual({
+      host: "https://dbc.cloud.databricks.com",
+      port: "",
+      warehouseId: "wh789",
+      token: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.DATABRICKS,
+        "databricks://token:<personal-access-token>@dbc.cloud.databricks.com?http_path=/sql/1.0/warehouses/wh123"
+      )
+    ).toEqual({
+      host: "https://dbc.cloud.databricks.com",
+      port: "",
+      warehouseId: "wh123",
+      token: undefined,
+    });
+  });
+});
+
+describe("applyParsedConnectionString - additional engines", () => {
+  it("switches MongoDB between SRV and multi-host while clearing stale fields", () => {
+    const multiHost = applyParsedConnectionString(makeDraft(), Engine.MONGODB, {
+      host: "n1.example.com",
+      port: "27017",
+      srv: false,
+      additionalAddresses: [{ host: "n2.example.com", port: "27018" }],
+      replicaSet: "rs0",
+      directConnection: false,
+      authenticationDatabase: "admin",
+    });
+    expect(multiHost.srv).toBe(false);
+    expect(multiHost.additionalAddresses).toHaveLength(1);
+    expect(multiHost.replicaSet).toBe("rs0");
+    expect(multiHost.authenticationDatabase).toBe("admin");
+
+    const srvDraft = applyParsedConnectionString(multiHost, Engine.MONGODB, {
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+    });
+    expect(srvDraft.srv).toBe(true);
+    expect(srvDraft.port).toBe("");
+    expect(srvDraft.additionalAddresses).toEqual([]);
+    expect(srvDraft.replicaSet).toBe("");
+    expect(srvDraft.directConnection).toBe(false);
+    expect(srvDraft.authenticationDatabase).toBe("");
+  });
+
+  it("clears stale Redis Sentinel fields when importing Standalone and allows empty username", () => {
+    const sentinel = applyParsedConnectionString(makeDraft(), Engine.REDIS, {
+      host: "s1.example.com",
+      port: "26379",
+      redisType: DataSource_RedisType.SENTINEL,
+      additionalAddresses: [{ host: "s2.example.com", port: "26379" }],
+      masterName: "mymaster",
+      masterUsername: "muser",
+      masterPassword: "mpass",
+    });
+    expect(sentinel.redisType).toBe(DataSource_RedisType.SENTINEL);
+    expect(sentinel.masterName).toBe("mymaster");
+    expect(sentinel.updatedMasterPassword).toBe("mpass");
+
+    const standalone = applyParsedConnectionString(sentinel, Engine.REDIS, {
+      host: "redis.example.com",
+      port: "6379",
+      username: "",
+      password: "secret",
+      redisType: DataSource_RedisType.STANDALONE,
+      additionalAddresses: [],
+    });
+    expect(standalone.username).toBe("");
+    expect(standalone.updatedPassword).toBe("secret");
+    expect(standalone.redisType).toBe(DataSource_RedisType.STANDALONE);
+    expect(standalone.additionalAddresses).toEqual([]);
+    expect(standalone.masterName).toBe("");
+    expect(standalone.masterUsername).toBe("");
+    expect(standalone.updatedMasterPassword).toBe("");
+    expect(standalone.updatedSecretFields).not.toContain("masterPassword");
+  });
+
+  it("populates Cassandra additionalAddresses, clears Hive saslConfig, and sets database for CockroachDB/Redshift", () => {
+    const cass = applyParsedConnectionString(makeDraft(), Engine.CASSANDRA, {
+      host: "n1.example.com",
+      port: "9042",
+      additionalAddresses: [{ host: "n2.example.com", port: "9142" }],
+    });
+    expect(cass.additionalAddresses).toHaveLength(1);
+    expect(cass.additionalAddresses[0]).toMatchObject({
+      host: "n2.example.com",
+      port: "9142",
+    });
+
+    const hive = applyParsedConnectionString(
+      makeDraft({
+        saslConfig: create(SASLConfigSchema, {
+          mechanism: {
+            case: "krbConfig",
+            value: create(KerberosConfigSchema, { primary: "hive" }),
+          },
+        }),
+      }),
+      Engine.HIVE,
+      { host: "hive.example.com", port: "10000" }
+    );
+    expect(hive.saslConfig).toBeUndefined();
+
+    const crdb = applyParsedConnectionString(makeDraft(), Engine.COCKROACHDB, {
+      host: "roach.example.com",
+      port: "26257",
+      database: "defaultdb",
+    });
+    expect(crdb.database).toBe("defaultdb");
+
+    const rs = applyParsedConnectionString(makeDraft(), Engine.REDSHIFT, {
+      host: "rs.example.com",
+      port: "5439",
+      database: "dev",
+    });
+    expect(rs.database).toBe("dev");
+  });
+
+  it("populates Databricks warehouseId and token and clears stale token when omitted", () => {
+    const withToken = applyParsedConnectionString(
+      makeDraft(),
+      Engine.DATABRICKS,
+      {
+        host: "https://dbc.cloud.databricks.com",
+        port: "",
+        warehouseId: "wh123",
+        token: "dapi123",
+      }
+    );
+    expect(withToken.host).toBe("https://dbc.cloud.databricks.com");
+    expect(withToken.port).toBe("");
+    expect(withToken.warehouseId).toBe("wh123");
+    expect(withToken.updatedToken).toBe("dapi123");
+    expect(withToken.updatedSecretFields).toContain("authenticationPrivateKey");
+
+    const withoutToken = applyParsedConnectionString(
+      withToken,
+      Engine.DATABRICKS,
+      {
+        host: "https://dbc2.cloud.databricks.com",
+        port: "",
+        warehouseId: "wh456",
+      }
+    );
+    expect(withoutToken.warehouseId).toBe("wh456");
+    expect(withoutToken.updatedToken).toBe("");
+    expect(withoutToken.authenticationPrivateKey).toBe("");
+    expect(withoutToken.updatedSecretFields).not.toContain(
+      "authenticationPrivateKey"
+    );
   });
 });

@@ -1,7 +1,14 @@
+import { create } from "@bufbuild/protobuf";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { DataSource_AuthenticationType } from "@/types/proto-es/v1/instance_service_pb";
+import {
+  DataSource_AddressSchema,
+  DataSource_AuthenticationType,
+  DataSource_RedisType,
+  DataSourceType,
+} from "@/types/proto-es/v1/instance_service_pb";
 import { type EditDataSource, updateDataSourceSecret } from "./common";
 import { defaultPortForEngine } from "./constants";
+import { hasConnectionDatabase } from "./specs";
 import {
   applyLocalTlsPosture,
   disableLocalTls,
@@ -12,7 +19,28 @@ export type ConnectionStringEngine =
   | Engine.MYSQL
   | Engine.POSTGRES
   | Engine.MSSQL
-  | Engine.ORACLE;
+  | Engine.ORACLE
+  | Engine.MARIADB
+  | Engine.TIDB
+  | Engine.OCEANBASE
+  | Engine.STARROCKS
+  | Engine.DORIS
+  | Engine.COCKROACHDB
+  | Engine.REDSHIFT
+  | Engine.MONGODB
+  | Engine.REDIS
+  | Engine.CASSANDRA
+  | Engine.ELASTICSEARCH
+  | Engine.CLICKHOUSE
+  | Engine.SNOWFLAKE
+  | Engine.TRINO
+  | Engine.HIVE
+  | Engine.DATABRICKS;
+
+export type ParsedAddress = {
+  host: string;
+  port: string;
+};
 
 export type ParsedTls =
   | { useSsl: false }
@@ -27,25 +55,55 @@ export type ParsedConnectionString = {
   sid?: string;
   serviceName?: string;
   tls?: ParsedTls;
+  additionalAddresses?: ParsedAddress[];
+  srv?: boolean;
+  replicaSet?: string;
+  directConnection?: boolean;
+  authenticationDatabase?: string;
+  redisType?: DataSource_RedisType;
+  masterName?: string;
+  masterUsername?: string;
+  masterPassword?: string;
+  warehouseId?: string;
+  token?: string;
 };
 
+const CONNECTION_STRING_ENGINES = new Set<Engine>([
+  Engine.MYSQL,
+  Engine.POSTGRES,
+  Engine.MSSQL,
+  Engine.ORACLE,
+  Engine.MARIADB,
+  Engine.TIDB,
+  Engine.OCEANBASE,
+  Engine.STARROCKS,
+  Engine.DORIS,
+  Engine.COCKROACHDB,
+  Engine.REDSHIFT,
+  Engine.MONGODB,
+  Engine.REDIS,
+  Engine.CASSANDRA,
+  Engine.ELASTICSEARCH,
+  Engine.CLICKHOUSE,
+  Engine.SNOWFLAKE,
+  Engine.TRINO,
+  Engine.HIVE,
+  Engine.DATABRICKS,
+]);
+
 // Cloud consoles copy template tokens in place of real secrets (e.g. Azure
-// `{your_password}`, Supabase `[YOUR-PASSWORD]`, or masked bullets). Treating
-// them as omitted avoids submitting literal placeholder text as a password.
+// `{your_password}`, Supabase `[YOUR-PASSWORD]`, MongoDB `<db_password>`,
+// CockroachDB `<ENTER-SQL-USER-PASSWORD>`, Databricks `<personal-access-token>`,
+// or masked bullets). Treating them as omitted avoids submitting placeholder text.
 const PASSWORD_PLACEHOLDER_PATTERN =
-  /^(?:\{your[_ -]?password(?:[_ -]?here)?\}|\[your[_ -]?password\]|<(?:your[_ -]?)?password>|\u2022+)$/i;
+  /^(?:\{your[_ -]?password(?:[_ -]?here)?\}|\[your[_ -]?password\]|<(?:(?:your|db)[_ -]?)?password>|<enter[_ -]?sql[_ -]?user[_ -]?password>|<(?:(?:your|personal[_ -]?access|access)[_ -]?)?token>|\u2022+)$/i;
 
 const SCHEME_PREFIX_PATTERN = /^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//;
 
 export function supportsConnectionString(
   engine: Engine
 ): engine is ConnectionStringEngine {
-  return (
-    engine === Engine.MYSQL ||
-    engine === Engine.POSTGRES ||
-    engine === Engine.MSSQL ||
-    engine === Engine.ORACLE
-  );
+  return CONNECTION_STRING_ENGINES.has(engine);
 }
 
 const decodePercent = (value: string): string => {
@@ -81,6 +139,76 @@ const validatePort = (value: string): string | undefined => {
   return String(numeric);
 };
 
+function parseBooleanValue(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  switch (value.trim().toLowerCase()) {
+    case "true":
+    case "1":
+    case "yes":
+    case "on":
+    case "enable":
+    case "enabled":
+      return true;
+    case "false":
+    case "0":
+    case "no":
+    case "off":
+    case "disable":
+    case "disabled":
+      return false;
+    default:
+      return undefined;
+  }
+}
+
+function tokenizeCliArgs(input: string): string[] | undefined {
+  const tokens: string[] = [];
+  let index = 0;
+  const length = input.length;
+
+  while (index < length) {
+    while (index < length && /\s/.test(input[index])) index++;
+    if (index >= length) break;
+
+    let token = "";
+    let quote: "'" | '"' | null = null;
+    while (index < length) {
+      const ch = input[index];
+      if (quote === "'") {
+        index++;
+        if (ch === "'") {
+          quote = null;
+        } else {
+          token += ch;
+        }
+      } else if (quote === '"') {
+        index++;
+        if (ch === "\\") {
+          if (index >= length) return undefined;
+          const next = input[index++];
+          token += next === '"' || next === "\\" ? next : `\\${next}`;
+        } else if (ch === '"') {
+          quote = null;
+        } else {
+          token += ch;
+        }
+      } else {
+        if (/\s/.test(ch)) break;
+        index++;
+        if (ch === "'" || ch === '"') {
+          quote = ch;
+        } else {
+          token += ch;
+        }
+      }
+    }
+    if (quote !== null) return undefined;
+    tokens.push(token);
+  }
+
+  return tokens;
+}
+
 // Parses `host[:port]` or `[ipv6][:port]`, returning the unbracketed host so
 // Go drivers can pass it to `net.JoinHostPort` without double-bracketing.
 function parseHostPort(
@@ -113,21 +241,34 @@ function parseHostPort(
 type ParsedUriParts = {
   scheme: string;
   username?: string;
+  hasExplicitEmptyUser: boolean;
   password?: string;
   host?: string;
   port?: string;
+  hosts: { host: string; port?: string }[];
   path: string;
   query: Map<string, string>;
 };
 
-// Custom database schemes (`postgresql:`, `mysql:`, `sqlserver:`, `oracle:`)
+// Custom database schemes (`postgresql:`, `mysql:`, `sqlserver:`, `oracle:`, etc.)
 // are non-special in WHATWG URL, so `new URL()` treats their authority as an
 // opaque path when credentials contain `@` or `#` or when host is omitted.
-function parseStandardUri(input: string): ParsedUriParts | undefined {
+function parseStandardUri(
+  input: string,
+  options?: { allowMultipleHosts?: boolean }
+): ParsedUriParts | undefined {
   const schemeMatch = input.match(SCHEME_PREFIX_PATTERN);
   if (!schemeMatch) return undefined;
   const scheme = schemeMatch[1].toLowerCase();
-  const withoutFragment = input.slice(schemeMatch[0].length).split("#", 1)[0];
+  const rest = input.slice(schemeMatch[0].length);
+  const slashOrQueryIndex = rest.search(/[/?]/);
+  const beforePathOrQuery =
+    slashOrQueryIndex === -1 ? rest : rest.slice(0, slashOrQueryIndex);
+  const authorityAtIndex = beforePathOrQuery.lastIndexOf("@");
+  const hashSearchStart = authorityAtIndex === -1 ? 0 : authorityAtIndex + 1;
+  const hashIndex = rest.indexOf("#", hashSearchStart);
+  const withoutFragment = hashIndex === -1 ? rest : rest.slice(0, hashIndex);
+
   const queryIndex = withoutFragment.indexOf("?");
   const authorityAndPath =
     queryIndex === -1 ? withoutFragment : withoutFragment.slice(0, queryIndex);
@@ -142,6 +283,7 @@ function parseStandardUri(input: string): ParsedUriParts | undefined {
   const path = slashIndex === -1 ? "" : authorityAndPath.slice(slashIndex + 1);
 
   let username: string | undefined;
+  let hasExplicitEmptyUser = false;
   let password: string | undefined;
   let hostPortPart = authority;
 
@@ -154,18 +296,28 @@ function parseStandardUri(input: string): ParsedUriParts | undefined {
       if (userInfo) username = decodePercent(userInfo);
     } else {
       const rawUser = userInfo.slice(0, colonIndex);
-      if (rawUser) username = decodePercent(rawUser);
+      if (rawUser) {
+        username = decodePercent(rawUser);
+      } else {
+        hasExplicitEmptyUser = true;
+      }
       password = decodePercent(userInfo.slice(colonIndex + 1));
     }
   }
 
-  let host: string | undefined;
-  let port: string | undefined;
+  const hosts: { host: string; port?: string }[] = [];
   if (hostPortPart) {
-    const parsedHostPort = parseHostPort(hostPortPart);
-    if (!parsedHostPort) return undefined;
-    host = parsedHostPort.host;
-    port = parsedHostPort.port;
+    if (options?.allowMultipleHosts) {
+      for (const segment of hostPortPart.split(",")) {
+        const parsedHostPort = parseHostPort(segment);
+        if (!parsedHostPort) return undefined;
+        hosts.push(parsedHostPort);
+      }
+    } else {
+      const parsedHostPort = parseHostPort(hostPortPart);
+      if (!parsedHostPort) return undefined;
+      hosts.push(parsedHostPort);
+    }
   }
 
   const query = new Map<string, string>();
@@ -173,7 +325,100 @@ function parseStandardUri(input: string): ParsedUriParts | undefined {
     query.set(key.toLowerCase(), value);
   }
 
-  return { scheme, username, password, host, port, path, query };
+  return {
+    scheme,
+    username,
+    hasExplicitEmptyUser,
+    password,
+    host: hosts[0]?.host,
+    port: hosts[0]?.port,
+    hosts,
+    path,
+    query,
+  };
+}
+
+function parseUriWithJdbcParams(
+  input: string
+): { uri: ParsedUriParts; params: Map<string, string> } | undefined {
+  const schemeMatch = input.match(SCHEME_PREFIX_PATTERN);
+  if (!schemeMatch) return undefined;
+  const rest = input.slice(schemeMatch[0].length);
+  const slashOrQueryIndex = rest.search(/[/?]/);
+  const beforePathOrQuery =
+    slashOrQueryIndex === -1 ? rest : rest.slice(0, slashOrQueryIndex);
+  const authorityAtIndex = beforePathOrQuery.lastIndexOf("@");
+  const afterAuthStart = authorityAtIndex === -1 ? 0 : authorityAtIndex + 1;
+  const firstQuery = rest.indexOf("?", afterAuthStart);
+  const beforeQuery = firstQuery === -1 ? rest : rest.slice(0, firstQuery);
+  const semiIndex = beforeQuery.indexOf(";", afterAuthStart);
+
+  if (semiIndex === -1) {
+    const uri = parseStandardUri(input);
+    return uri ? { uri, params: new Map() } : undefined;
+  }
+
+  const queryPart =
+    firstQuery === -1 ? "" : rest.slice(firstQuery).split("#", 1)[0];
+  const uri = parseStandardUri(
+    `${schemeMatch[0]}${rest.slice(0, semiIndex)}${queryPart}`
+  );
+  if (!uri) return undefined;
+
+  const semiSegment = beforeQuery.slice(semiIndex + 1);
+  if (!semiSegment.trim()) {
+    return { uri, params: new Map() };
+  }
+  const params = parseAdoNetKeyValue(semiSegment);
+  return params ? { uri, params } : undefined;
+}
+
+function parseTlsSkipVerify(
+  query: Map<string, string>,
+  extraSkip = false
+): boolean {
+  return (
+    extraSkip ||
+    parseBooleanValue(query.get("insecure")) === true ||
+    parseBooleanValue(query.get("tls_insecure")) === true ||
+    parseBooleanValue(query.get("skip_verify")) === true ||
+    parseBooleanValue(query.get("tls_skip_verify")) === true ||
+    parseBooleanValue(query.get("ssl_verify")) === false ||
+    parseBooleanValue(query.get("verify")) === false
+  );
+}
+
+function parseSchemeOrQueryTls(
+  scheme: string,
+  query: Map<string, string>,
+  {
+    tlsSchemes = [],
+    plainSchemes = [],
+    queryKeys = ["tls", "ssl"],
+    skipVerify = false,
+  }: {
+    tlsSchemes?: string[];
+    plainSchemes?: string[];
+    queryKeys?: string[];
+    skipVerify?: boolean;
+  }
+): ParsedTls | undefined {
+  if (tlsSchemes.includes(scheme)) {
+    return { useSsl: true, verifyTlsCertificate: !skipVerify };
+  }
+  if (plainSchemes.includes(scheme)) {
+    return { useSsl: false };
+  }
+  for (const key of queryKeys) {
+    const raw = query.get(key);
+    if (raw === undefined) continue;
+    const enabled = parseBooleanValue(raw);
+    if (enabled === false) return { useSsl: false };
+    if (enabled === true) {
+      return { useSsl: true, verifyTlsCertificate: !skipVerify };
+    }
+  }
+  return undefined;
 }
 
 function parsePostgresTls(
@@ -210,7 +455,7 @@ function parsePostgresTls(
 }
 
 function parseLibpqKeyValue(input: string): Map<string, string> | undefined {
-  if (SCHEME_PREFIX_PATTERN.test(input)) {
+  if (SCHEME_PREFIX_PATTERN.test(input) || /^jdbc:/i.test(input)) {
     return undefined;
   }
   const pairs = new Map<string, string>();
@@ -263,19 +508,64 @@ function parseLibpqKeyValue(input: string): Map<string, string> | undefined {
   return pairs.size > 0 ? pairs : undefined;
 }
 
-function parsePostgresConnectionString(
-  raw: string
-): ParsedConnectionString | undefined {
-  const unwrapped = stripSurroundingQuotes(
-    raw
-      .trim()
-      .replace(/^psql\s+/, "")
-      .trim()
-  );
-  if (!unwrapped) return undefined;
+function extractCockroachCliUrl(raw: string): string | undefined {
+  const tokens = tokenizeCliArgs(raw);
+  if (
+    !tokens ||
+    tokens[0]?.toLowerCase() !== "cockroach" ||
+    tokens[1]?.toLowerCase() !== "sql"
+  ) {
+    return undefined;
+  }
+  for (let i = 2; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token === "--url") {
+      return tokens[i + 1];
+    }
+    if (token.startsWith("--url=")) {
+      return token.slice("--url=".length);
+    }
+  }
+  return undefined;
+}
 
-  if (/^postgres(?:ql)?:\/\//i.test(unwrapped)) {
-    const uri = parseStandardUri(unwrapped);
+function parsePostgresFamilyConnectionString(
+  raw: string,
+  {
+    schemes,
+    defaultPort,
+    includeTls,
+    allowJdbc = false,
+    allowCockroachCli = false,
+  }: {
+    schemes: string[];
+    defaultPort: string;
+    includeTls: boolean;
+    allowJdbc?: boolean;
+    allowCockroachCli?: boolean;
+  }
+): ParsedConnectionString | undefined {
+  const trimmed = raw.trim();
+  let candidate = trimmed;
+
+  if (allowCockroachCli && /^cockroach\s+sql\b/i.test(trimmed)) {
+    const urlArg = extractCockroachCliUrl(trimmed);
+    if (!urlArg) return undefined;
+    candidate = urlArg;
+  } else {
+    candidate = stripSurroundingQuotes(trimmed.replace(/^psql\s+/i, "").trim());
+  }
+  if (!candidate) return undefined;
+
+  if (allowJdbc && /^jdbc:redshift:\/\//i.test(candidate)) {
+    candidate = candidate.slice("jdbc:".length);
+  }
+
+  const schemeMatch = candidate.match(SCHEME_PREFIX_PATTERN);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    if (!schemes.includes(scheme)) return undefined;
+    const uri = parseStandardUri(candidate);
     if (!uri || uri.path.includes("/")) return undefined;
     const rawHost =
       uri.host ?? uri.query.get("host") ?? uri.query.get("hostaddr");
@@ -292,17 +582,21 @@ function parsePostgresConnectionString(
     const database = uri.path
       ? decodePercent(uri.path)
       : uri.query.get("dbname");
-    const username = uri.username ?? uri.query.get("user");
+    const username =
+      uri.username ??
+      uri.query.get("user") ??
+      (allowJdbc ? uri.query.get("uid") : undefined);
     const password = normalizePassword(
-      uri.password ?? uri.query.get("password")
+      uri.password ??
+        uri.query.get("password") ??
+        (allowJdbc ? uri.query.get("pwd") : undefined)
     );
-    const tls = parsePostgresTls(
-      uri.query.get("sslmode"),
-      uri.query.get("ssl")
-    );
+    const tls = includeTls
+      ? parsePostgresTls(uri.query.get("sslmode"), uri.query.get("ssl"))
+      : undefined;
     return {
       host,
-      port: port ?? "5432",
+      port: port ?? defaultPort,
       username: username || undefined,
       password,
       database: database || undefined,
@@ -310,7 +604,7 @@ function parsePostgresConnectionString(
     };
   }
 
-  const kv = parseLibpqKeyValue(unwrapped);
+  const kv = parseLibpqKeyValue(candidate);
   if (!kv) return undefined;
   const rawHost = kv.get("host") || kv.get("hostaddr");
   if (!rawHost || /[\s;=]/.test(rawHost)) return undefined;
@@ -318,7 +612,7 @@ function parsePostgresConnectionString(
     rawHost.startsWith("[") && rawHost.endsWith("]")
       ? rawHost.slice(1, -1)
       : rawHost;
-  let port = "5432";
+  let port = defaultPort;
   if (kv.has("port") && kv.get("port") !== "") {
     const validated = validatePort(kv.get("port") ?? "");
     if (!validated) return undefined;
@@ -330,7 +624,9 @@ function parsePostgresConnectionString(
     username: kv.get("user") || undefined,
     password: normalizePassword(kv.get("password")),
     database: kv.get("dbname") || undefined,
-    tls: parsePostgresTls(kv.get("sslmode"), kv.get("ssl")),
+    tls: includeTls
+      ? parsePostgresTls(kv.get("sslmode"), kv.get("ssl"))
+      : undefined,
   };
 }
 
@@ -411,16 +707,20 @@ function parseMysqlTls(query: Map<string, string>): ParsedTls | undefined {
   return undefined;
 }
 
-function parseMysqlConnectionString(
-  raw: string
+function parseMysqlFamilyConnectionString(
+  raw: string,
+  { schemes, defaultPort }: { schemes: string[]; defaultPort: string }
 ): ParsedConnectionString | undefined {
   const unwrapped = stripSurroundingQuotes(raw.trim());
-  if (!/^mysql:\/\//i.test(unwrapped)) return undefined;
+  const schemeMatch = unwrapped.match(SCHEME_PREFIX_PATTERN);
+  if (!schemeMatch || !schemes.includes(schemeMatch[1].toLowerCase())) {
+    return undefined;
+  }
   const uri = parseStandardUri(unwrapped);
   if (!uri || !uri.host || uri.path.includes("/")) return undefined;
   return {
     host: uri.host,
-    port: uri.port ?? "3306",
+    port: uri.port ?? defaultPort,
     username: uri.username || undefined,
     password: normalizePassword(uri.password),
     tls: parseMysqlTls(uri.query),
@@ -668,7 +968,7 @@ function parseMssqlConnectionString(
   raw: string
 ): ParsedConnectionString | undefined {
   const unwrapped = stripSurroundingQuotes(raw.trim());
-  if (!unwrapped) return undefined;
+  if (!unwrapped || /^jdbc:/i.test(unwrapped)) return undefined;
 
   if (/^sqlserver:\/\//i.test(unwrapped)) {
     const afterScheme = unwrapped.slice("sqlserver://".length);
@@ -777,10 +1077,9 @@ function parseOracleConnectionString(
       .replace(/^sqlplus\s+(?:-[ls]\s+)*/i, "")
       .trim()
   );
-  if (!unwrapped || unwrapped.includes(";")) {
+  if (!unwrapped || unwrapped.includes(";") || /^jdbc:/i.test(unwrapped)) {
     return undefined;
   }
-  if (/^jdbc:/i.test(unwrapped)) return undefined;
 
   if (/^oracle:\/\//i.test(unwrapped)) {
     const uri = parseStandardUri(unwrapped);
@@ -915,26 +1214,737 @@ function parseOracleConnectionString(
   };
 }
 
+function readFlagValue(
+  tokens: string[],
+  index: number,
+  allowStandaloneMissing = false
+): { value: string | undefined; nextIndex: number } {
+  const current = tokens[index];
+  const eqIndex = current.indexOf("=");
+  if (eqIndex !== -1) {
+    return { value: current.slice(eqIndex + 1), nextIndex: index };
+  }
+  const next = tokens[index + 1];
+  if (
+    next === undefined ||
+    (allowStandaloneMissing &&
+      (next.startsWith("-") ||
+        /^(?:mongodb(?:\+srv)?|jdbc:|hive2?:)/i.test(next)))
+  ) {
+    return { value: undefined, nextIndex: index };
+  }
+  return { value: next, nextIndex: index + 1 };
+}
+
+function parseMongoConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const trimmed = raw.trim();
+  let uriInput = stripSurroundingQuotes(trimmed);
+  let cliUsername: string | undefined;
+  let cliPassword: string | undefined;
+  let cliAuthDb: string | undefined;
+
+  if (/^mongosh\b/i.test(trimmed)) {
+    const tokens = tokenizeCliArgs(trimmed);
+    if (!tokens || tokens[0]?.toLowerCase() !== "mongosh") return undefined;
+    let foundUri: string | undefined;
+    for (let i = 1; i < tokens.length; i++) {
+      const token = tokens[i];
+      const lower = token.toLowerCase();
+      const flag = lower.split("=", 1)[0];
+      if (flag === "--username" || flag === "-u") {
+        const res = readFlagValue(tokens, i);
+        cliUsername = res.value;
+        i = res.nextIndex;
+      } else if (flag === "--password" || flag === "-p") {
+        const res = readFlagValue(tokens, i, true);
+        cliPassword = res.value;
+        i = res.nextIndex;
+      } else if (flag === "--authenticationdatabase") {
+        const res = readFlagValue(tokens, i);
+        cliAuthDb = res.value;
+        i = res.nextIndex;
+      } else if (flag === "--apiversion") {
+        const res = readFlagValue(tokens, i);
+        i = res.nextIndex;
+      } else if (/^mongodb(?:\+srv)?:\/\//i.test(token)) {
+        foundUri = token;
+      }
+    }
+    if (!foundUri) return undefined;
+    uriInput = foundUri;
+  }
+
+  if (!/^mongodb(?:\+srv)?:\/\//i.test(uriInput)) return undefined;
+  const uri = parseStandardUri(uriInput, { allowMultipleHosts: true });
+  if (!uri || uri.hosts.length === 0 || uri.path.includes("/")) {
+    return undefined;
+  }
+
+  const isSrv = uri.scheme === "mongodb+srv";
+  if (isSrv && (uri.hosts.length !== 1 || uri.hosts[0].port !== undefined)) {
+    return undefined;
+  }
+
+  const username = (cliUsername ?? uri.username)?.trim() || undefined;
+  const password = normalizePassword(cliPassword ?? uri.password);
+  const authenticationDatabase =
+    (cliAuthDb ?? uri.query.get("authsource"))?.trim() || undefined;
+
+  // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` is explicit:
+  // `util.GetTLSConfig` verifies certificates against the SRV hostname rather
+  // than shard hostnames, whereas the Go driver already negotiates SRV TLS.
+  const allowInvalid =
+    parseBooleanValue(uri.query.get("tlsallowinvalidcertificates")) === true ||
+    parseBooleanValue(uri.query.get("tlsinsecure")) === true ||
+    parseBooleanValue(uri.query.get("sslinsecure")) === true;
+  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    skipVerify: allowInvalid,
+  });
+
+  if (isSrv) {
+    return {
+      host: uri.hosts[0].host,
+      port: "",
+      username,
+      password,
+      srv: true,
+      additionalAddresses: [],
+      directConnection: false,
+      authenticationDatabase,
+      tls,
+    };
+  }
+
+  const primary = uri.hosts[0];
+  const additionalAddresses = uri.hosts.slice(1).map((addr) => ({
+    host: addr.host,
+    port: addr.port ?? "27017",
+  }));
+  const replicaSet = uri.query.get("replicaset")?.trim() || undefined;
+  const directConnection =
+    additionalAddresses.length === 0 &&
+    parseBooleanValue(uri.query.get("directconnection")) === true;
+
+  return {
+    host: primary.host,
+    port: primary.port ?? "27017",
+    username,
+    password,
+    srv: false,
+    additionalAddresses,
+    replicaSet,
+    directConnection,
+    authenticationDatabase,
+    tls,
+  };
+}
+
+function parseRedisConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const trimmed = raw.trim();
+  let uriInput = stripSurroundingQuotes(trimmed);
+  let cliTls = false;
+  let cliInsecure = false;
+
+  if (/^redis-cli\b/i.test(trimmed)) {
+    const tokens = tokenizeCliArgs(trimmed);
+    if (!tokens || tokens[0]?.toLowerCase() !== "redis-cli") return undefined;
+    let foundUri: string | undefined;
+    for (let i = 1; i < tokens.length; i++) {
+      const token = tokens[i];
+      const lower = token.toLowerCase();
+      const flag = lower.split("=", 1)[0];
+      if (lower === "--tls") {
+        cliTls = true;
+      } else if (lower === "--insecure") {
+        cliInsecure = true;
+      } else if (flag === "-u" || flag === "--uri") {
+        const res = readFlagValue(tokens, i);
+        foundUri = res.value;
+        i = res.nextIndex;
+      }
+    }
+    if (!foundUri) return undefined;
+    uriInput = foundUri;
+  }
+
+  const schemeMatch = uriInput.match(SCHEME_PREFIX_PATTERN);
+  if (
+    !schemeMatch ||
+    !["redis", "rediss", "redis-sentinel", "rediss-sentinel"].includes(
+      schemeMatch[1].toLowerCase()
+    )
+  ) {
+    return undefined;
+  }
+
+  const uri = parseStandardUri(uriInput, { allowMultipleHosts: true });
+  if (!uri || uri.hosts.length === 0 || uri.path.includes("/")) {
+    return undefined;
+  }
+
+  const username =
+    uri.username ??
+    (uri.query.get("user") || undefined) ??
+    (uri.hasExplicitEmptyUser ? "" : undefined);
+  const password = normalizePassword(uri.password ?? uri.query.get("password"));
+  const masterName =
+    (
+      uri.query.get("master") ??
+      uri.query.get("master_name") ??
+      uri.query.get("sentinel_master") ??
+      uri.query.get("sentinelmasterid") ??
+      uri.query.get("service_name")
+    )?.trim() || undefined;
+  const isSentinel =
+    uri.scheme === "redis-sentinel" ||
+    uri.scheme === "rediss-sentinel" ||
+    masterName !== undefined;
+
+  let redisType: DataSource_RedisType;
+  let defaultPort: string;
+  if (isSentinel) {
+    redisType = DataSource_RedisType.SENTINEL;
+    defaultPort = "26379";
+  } else if (
+    uri.hosts.length > 1 ||
+    parseBooleanValue(uri.query.get("cluster")) === true
+  ) {
+    redisType = DataSource_RedisType.CLUSTER;
+    defaultPort = "6379";
+  } else {
+    redisType = DataSource_RedisType.STANDALONE;
+    defaultPort = "6379";
+  }
+
+  const primary = uri.hosts[0];
+  const additionalAddresses = uri.hosts.slice(1).map((addr) => ({
+    host: addr.host,
+    port: addr.port ?? defaultPort,
+  }));
+
+  const skipVerify = parseTlsSkipVerify(
+    uri.query,
+    cliInsecure ||
+      uri.query.get("ssl_cert_reqs")?.trim().toLowerCase() === "none"
+  );
+  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    tlsSchemes: cliTls
+      ? ["redis", "rediss", "redis-sentinel", "rediss-sentinel"]
+      : ["rediss", "rediss-sentinel"],
+    skipVerify,
+  });
+
+  return {
+    host: primary.host,
+    port: primary.port ?? defaultPort,
+    username,
+    password,
+    redisType,
+    additionalAddresses,
+    masterName,
+    masterUsername:
+      (
+        uri.query.get("master_username") ?? uri.query.get("master_user")
+      )?.trim() || undefined,
+    masterPassword: normalizePassword(uri.query.get("master_password")),
+    tls,
+  };
+}
+
+function parseClickHouseConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const uri = parseStandardUri(unwrapped);
+  if (
+    !uri ||
+    !["clickhouse", "clickhouses", "clickhouse+native"].includes(uri.scheme) ||
+    !uri.host ||
+    uri.path.includes("/")
+  ) {
+    return undefined;
+  }
+
+  const defaultPort = uri.scheme === "clickhouses" ? "9440" : "9000";
+  const skipVerify = parseTlsSkipVerify(uri.query);
+  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    tlsSchemes: ["clickhouses"],
+    queryKeys: ["secure", "tls", "ssl"],
+    skipVerify,
+  });
+
+  return {
+    host: uri.host,
+    port: uri.port ?? defaultPort,
+    username: uri.username ?? (uri.query.get("user") || undefined),
+    password: normalizePassword(uri.password ?? uri.query.get("password")),
+    tls,
+  };
+}
+
+function parseSnowflakeConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const normalized = /^jdbc:snowflake:\/\//i.test(unwrapped)
+    ? unwrapped.slice("jdbc:".length)
+    : unwrapped;
+  const uri = parseStandardUri(normalized);
+  if (!uri || !uri.host) return undefined;
+  if (uri.scheme === "https") {
+    if (!/\.snowflakecomputing\.com$/i.test(uri.host)) return undefined;
+  } else if (uri.scheme !== "snowflake") {
+    return undefined;
+  }
+  if (/^snowflakecomputing\.com$/i.test(uri.host)) return undefined;
+
+  const host = uri.host.replace(/\.snowflakecomputing\.com$/i, "");
+  if (!host) return undefined;
+
+  return {
+    host,
+    port: "",
+    username: uri.username ?? (uri.query.get("user") || undefined),
+    password: normalizePassword(uri.password ?? uri.query.get("password")),
+  };
+}
+
+function parseElasticsearchConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const uri = parseStandardUri(unwrapped);
+  if (
+    !uri ||
+    !["https", "http", "elasticsearch", "opensearch"].includes(uri.scheme) ||
+    !uri.host ||
+    uri.path !== "" ||
+    /^(?:.+\.)?snowflakecomputing\.com$/i.test(uri.host)
+  ) {
+    return undefined;
+  }
+
+  const defaultPort =
+    uri.scheme === "https" ? "443" : uri.scheme === "http" ? "80" : "9200";
+  const skipVerify = parseTlsSkipVerify(uri.query);
+  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    tlsSchemes: ["https"],
+    plainSchemes: ["http"],
+    queryKeys: ["ssl", "tls"],
+    skipVerify,
+  });
+
+  return {
+    host: uri.host,
+    port: uri.port ?? defaultPort,
+    username: uri.username || undefined,
+    password: normalizePassword(uri.password),
+    tls,
+  };
+}
+
+function parseCassandraConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const uri = parseStandardUri(unwrapped, { allowMultipleHosts: true });
+  if (
+    !uri ||
+    uri.scheme !== "cassandra" ||
+    uri.hosts.length === 0 ||
+    uri.path.includes("/")
+  ) {
+    return undefined;
+  }
+
+  const primary = uri.hosts[0];
+  const additionalAddresses = uri.hosts.slice(1).map((addr) => ({
+    host: addr.host,
+    port: addr.port ?? "9042",
+  }));
+  const skipVerify = parseTlsSkipVerify(uri.query);
+  const tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    queryKeys: ["ssl", "tls"],
+    skipVerify,
+  });
+
+  return {
+    host: primary.host,
+    port: primary.port ?? "9042",
+    username: uri.username ?? (uri.query.get("user") || undefined),
+    password: normalizePassword(uri.password ?? uri.query.get("password")),
+    additionalAddresses,
+    tls,
+  };
+}
+
+function parseTrinoConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const uri = parseStandardUri(unwrapped);
+  if (
+    !uri ||
+    !["trino", "https", "http"].includes(uri.scheme) ||
+    !uri.host ||
+    /^(?:.+\.)?snowflakecomputing\.com$/i.test(uri.host)
+  ) {
+    return undefined;
+  }
+
+  const trimmedPath = uri.path.replace(/\/+$/, "");
+  const segments = trimmedPath ? trimmedPath.split("/") : [];
+  if (segments.length > 2 || segments.some((segment) => !segment)) {
+    return undefined;
+  }
+
+  const defaultPort =
+    uri.scheme === "https" ? "443" : uri.scheme === "http" ? "80" : "8080";
+  const sslVerification = uri.query
+    .get("sslverification")
+    ?.trim()
+    .toLowerCase();
+  const skipVerify = parseTlsSkipVerify(uri.query, sslVerification === "none");
+  let tls = parseSchemeOrQueryTls(uri.scheme, uri.query, {
+    tlsSchemes: ["https"],
+    plainSchemes: ["http"],
+    queryKeys: ["ssl", "tls"],
+    skipVerify,
+  });
+  if (!tls && uri.scheme === "trino") {
+    if (sslVerification === "none") {
+      tls = { useSsl: true, verifyTlsCertificate: false };
+    } else if (sslVerification === "ca" || sslVerification === "full") {
+      tls = { useSsl: true, verifyTlsCertificate: true };
+    }
+  }
+
+  return {
+    host: uri.host,
+    port: uri.port ?? defaultPort,
+    username: uri.username ?? (uri.query.get("user") || undefined),
+    password: normalizePassword(uri.password ?? uri.query.get("password")),
+    tls,
+  };
+}
+
+function parseHiveConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const trimmed = raw.trim();
+  let uriInput = stripSurroundingQuotes(trimmed);
+  let cliUser: string | undefined;
+  let cliPassword: string | undefined;
+
+  if (/^beeline\b/i.test(trimmed)) {
+    const tokens = tokenizeCliArgs(trimmed);
+    if (!tokens || tokens[0]?.toLowerCase() !== "beeline") return undefined;
+    let foundUri: string | undefined;
+    for (let i = 1; i < tokens.length; i++) {
+      const flag = tokens[i].toLowerCase().split("=", 1)[0];
+      if (flag === "-u" || flag === "--url") {
+        const res = readFlagValue(tokens, i);
+        foundUri = res.value;
+        i = res.nextIndex;
+      } else if (flag === "-n" || flag === "--username") {
+        const res = readFlagValue(tokens, i);
+        cliUser = res.value;
+        i = res.nextIndex;
+      } else if (flag === "-p" || flag === "--password") {
+        const res = readFlagValue(tokens, i, true);
+        cliPassword = res.value;
+        i = res.nextIndex;
+      }
+    }
+    if (!foundUri) return undefined;
+    uriInput = foundUri;
+  }
+
+  const normalized = /^jdbc:hive2:\/\//i.test(uriInput)
+    ? uriInput.slice("jdbc:".length)
+    : uriInput;
+  const schemeMatch = normalized.match(SCHEME_PREFIX_PATTERN);
+  if (
+    !schemeMatch ||
+    !["hive2", "hive"].includes(schemeMatch[1].toLowerCase())
+  ) {
+    return undefined;
+  }
+
+  const parsed = parseUriWithJdbcParams(normalized);
+  if (!parsed) return undefined;
+  const { uri, params } = parsed;
+  if (!uri.host || uri.path.includes("/")) return undefined;
+
+  const discoveryMode =
+    params.get("servicediscoverymode") ?? uri.query.get("servicediscoverymode");
+  if (discoveryMode?.trim().toLowerCase() === "zookeeper") {
+    return undefined;
+  }
+
+  const username =
+    (
+      cliUser ||
+      uri.username ||
+      params.get("user") ||
+      params.get("uid") ||
+      uri.query.get("user") ||
+      uri.query.get("uid")
+    )?.trim() || undefined;
+  const rawPassword =
+    cliPassword ??
+    uri.password ??
+    params.get("password") ??
+    params.get("pwd") ??
+    uri.query.get("password") ??
+    uri.query.get("pwd");
+
+  return {
+    host: uri.host,
+    port: uri.port ?? "10000",
+    username,
+    password: normalizePassword(rawPassword),
+  };
+}
+
+function extractDatabricksWarehouseId(
+  httpPath: string | undefined
+): string | undefined {
+  if (!httpPath) return undefined;
+  const match = httpPath
+    .trim()
+    .match(/^\/?sql\/(?:1\.0\/)?warehouses\/([^/?;#\s]+)\/?$/i);
+  return match?.[1];
+}
+
+function parseDatabricksConnectionString(
+  raw: string
+): ParsedConnectionString | undefined {
+  const unwrapped = stripSurroundingQuotes(raw.trim());
+  const normalized = /^jdbc:databricks:\/\//i.test(unwrapped)
+    ? unwrapped.slice("jdbc:".length)
+    : unwrapped;
+  const parsed = parseUriWithJdbcParams(normalized);
+  if (!parsed) return undefined;
+  const { uri, params } = parsed;
+  if (!uri.host) return undefined;
+  if (uri.scheme !== "databricks" && uri.scheme !== "https") {
+    return undefined;
+  }
+
+  const pathWarehouseId = extractDatabricksWarehouseId(uri.path);
+  const httpPath =
+    params.get("httppath") ??
+    uri.query.get("http_path") ??
+    uri.query.get("httppath");
+  const warehouseId =
+    pathWarehouseId ??
+    extractDatabricksWarehouseId(httpPath) ??
+    (
+      params.get("warehouseid") ??
+      uri.query.get("warehouse_id") ??
+      uri.query.get("warehouseid")
+    )?.trim() ??
+    undefined;
+
+  if (uri.scheme === "https" && !pathWarehouseId) {
+    return undefined;
+  }
+
+  const rawToken =
+    uri.password ??
+    (uri.scheme === "databricks" &&
+    uri.username &&
+    uri.username.toLowerCase() !== "token"
+      ? uri.username
+      : undefined) ??
+    params.get("pwd") ??
+    params.get("password") ??
+    params.get("token") ??
+    params.get("access_token") ??
+    uri.query.get("pwd") ??
+    uri.query.get("password") ??
+    uri.query.get("token") ??
+    uri.query.get("access_token");
+  const normalizedToken = normalizePassword(rawToken);
+  const token = normalizedToken || undefined;
+
+  const formattedHost = uri.host.includes(":") ? `[${uri.host}]` : uri.host;
+  const portSuffix = uri.port && uri.port !== "443" ? `:${uri.port}` : "";
+
+  return {
+    host: `https://${formattedHost}${portSuffix}`,
+    port: "",
+    warehouseId: warehouseId || undefined,
+    token,
+  };
+}
+
 export function parseConnectionString(
   engine: Engine,
   value: string
 ): ParsedConnectionString | undefined {
   switch (engine) {
-    case Engine.POSTGRES:
-      return parsePostgresConnectionString(value);
     case Engine.MYSQL:
-      return parseMysqlConnectionString(value);
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["mysql"],
+        defaultPort: "3306",
+      });
+    case Engine.MARIADB:
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["mariadb", "mysql"],
+        defaultPort: "3306",
+      });
+    case Engine.TIDB:
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["mysql", "tidb"],
+        defaultPort: "4000",
+      });
+    case Engine.OCEANBASE:
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["mysql", "oceanbase"],
+        defaultPort: "2883",
+      });
+    case Engine.STARROCKS:
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["starrocks", "mysql"],
+        defaultPort: "9030",
+      });
+    case Engine.DORIS:
+      return parseMysqlFamilyConnectionString(value, {
+        schemes: ["doris", "mysql"],
+        defaultPort: "9030",
+      });
+    case Engine.POSTGRES:
+      return parsePostgresFamilyConnectionString(value, {
+        schemes: ["postgres", "postgresql"],
+        defaultPort: "5432",
+        includeTls: true,
+      });
+    case Engine.COCKROACHDB:
+      return parsePostgresFamilyConnectionString(value, {
+        schemes: ["postgres", "postgresql", "cockroachdb"],
+        defaultPort: "26257",
+        includeTls: true,
+        allowCockroachCli: true,
+      });
+    case Engine.REDSHIFT:
+      return parsePostgresFamilyConnectionString(value, {
+        schemes: ["redshift", "postgres", "postgresql"],
+        defaultPort: "5439",
+        includeTls: false,
+        allowJdbc: true,
+      });
     case Engine.MSSQL:
       return parseMssqlConnectionString(value);
     case Engine.ORACLE:
       return parseOracleConnectionString(value);
+    case Engine.MONGODB:
+      return parseMongoConnectionString(value);
+    case Engine.REDIS:
+      return parseRedisConnectionString(value);
+    case Engine.CASSANDRA:
+      return parseCassandraConnectionString(value);
+    case Engine.ELASTICSEARCH:
+      return parseElasticsearchConnectionString(value);
+    case Engine.CLICKHOUSE:
+      return parseClickHouseConnectionString(value);
+    case Engine.SNOWFLAKE:
+      return parseSnowflakeConnectionString(value);
+    case Engine.TRINO:
+      return parseTrinoConnectionString(value);
+    case Engine.HIVE:
+      return parseHiveConnectionString(value);
+    case Engine.DATABRICKS:
+      return parseDatabricksConnectionString(value);
     default:
       return undefined;
   }
 }
 
-// Oracle requires an explicit Oracle scheme, prefix, or query key here so a
-// schemeless `host:port/db` typo isn't misclassified as Easy Connect.
+const ENGINE_DETECTORS: ReadonlyArray<{
+  engine: ConnectionStringEngine;
+  matches: (unwrapped: string) => boolean;
+}> = [
+  { engine: Engine.MARIADB, matches: (s) => /^mariadb:\/\//i.test(s) },
+  { engine: Engine.TIDB, matches: (s) => /^tidb:\/\//i.test(s) },
+  { engine: Engine.OCEANBASE, matches: (s) => /^oceanbase:\/\//i.test(s) },
+  { engine: Engine.STARROCKS, matches: (s) => /^starrocks:\/\//i.test(s) },
+  { engine: Engine.DORIS, matches: (s) => /^doris:\/\//i.test(s) },
+  { engine: Engine.MYSQL, matches: (s) => /^mysql:\/\//i.test(s) },
+  {
+    engine: Engine.COCKROACHDB,
+    matches: (s) =>
+      /^cockroachdb:\/\//i.test(s) || /^cockroach\s+sql\b/i.test(s),
+  },
+  {
+    engine: Engine.REDSHIFT,
+    matches: (s) => /^(?:jdbc:)?redshift:\/\//i.test(s),
+  },
+  {
+    engine: Engine.POSTGRES,
+    matches: (s) =>
+      /^(?:postgres(?:ql)?:\/\/|psql\s+)/i.test(s) ||
+      parseLibpqKeyValue(s) !== undefined,
+  },
+  {
+    engine: Engine.MONGODB,
+    matches: (s) => /^mongodb(?:\+srv)?:\/\//i.test(s) || /^mongosh\b/i.test(s),
+  },
+  // Check Redis before Oracle so `redis-sentinel://...?service_name=` never
+  // triggers Oracle's query-key heuristic.
+  {
+    engine: Engine.REDIS,
+    matches: (s) =>
+      /^rediss?(?:-sentinel)?:\/\//i.test(s) || /^redis-cli\b/i.test(s),
+  },
+  {
+    engine: Engine.CLICKHOUSE,
+    matches: (s) => /^clickhouse(?:s|\+native)?:\/\//i.test(s),
+  },
+  {
+    engine: Engine.SNOWFLAKE,
+    matches: (s) =>
+      /^(?:jdbc:)?snowflake:\/\//i.test(s) ||
+      /^https:\/\/[^/?#]+\.snowflakecomputing\.com(?:[/?#]|$)/i.test(s),
+  },
+  {
+    engine: Engine.ELASTICSEARCH,
+    matches: (s) => /^(?:elasticsearch|opensearch):\/\//i.test(s),
+  },
+  { engine: Engine.CASSANDRA, matches: (s) => /^cassandra:\/\//i.test(s) },
+  { engine: Engine.TRINO, matches: (s) => /^trino:\/\//i.test(s) },
+  {
+    engine: Engine.HIVE,
+    matches: (s) =>
+      /^(?:jdbc:hive2|hive2?):\/\//i.test(s) || /^beeline\b/i.test(s),
+  },
+  {
+    engine: Engine.DATABRICKS,
+    matches: (s) =>
+      /^(?:jdbc:)?databricks:\/\//i.test(s) ||
+      /^https:\/\/[^/?#]+\/sql\/(?:1\.0\/)?warehouses\//i.test(s),
+  },
+  {
+    engine: Engine.MSSQL,
+    matches: (s) =>
+      /^sqlserver:\/\//i.test(s) || (!/^jdbc:/i.test(s) && s.includes(";")),
+  },
+  // Oracle requires an explicit Oracle scheme, prefix, or query key here so a
+  // schemeless `host:port/db` typo isn't misclassified as Easy Connect.
+  {
+    engine: Engine.ORACLE,
+    matches: (s) =>
+      /^(?:oracle|tcps?):\/\//i.test(s) ||
+      /^sqlplus\s+/i.test(s) ||
+      /[?&](?:sid|service_name)=/i.test(s),
+  },
+];
+
 export function detectConnectionStringEngine(
   value: string,
   excludeEngine?: Engine
@@ -942,42 +1952,52 @@ export function detectConnectionStringEngine(
   const unwrapped = stripSurroundingQuotes(value.trim());
   if (!unwrapped) return undefined;
 
-  if (
-    excludeEngine !== Engine.MYSQL &&
-    /^mysql:\/\//i.test(unwrapped) &&
-    parseMysqlConnectionString(value)
-  ) {
-    return Engine.MYSQL;
-  }
-
-  if (
-    excludeEngine !== Engine.POSTGRES &&
-    (/^(?:postgres(?:ql)?:\/\/|psql\s+)/i.test(unwrapped) ||
-      parseLibpqKeyValue(unwrapped) !== undefined) &&
-    parsePostgresConnectionString(value)
-  ) {
-    return Engine.POSTGRES;
-  }
-
-  if (
-    excludeEngine !== Engine.MSSQL &&
-    (/^sqlserver:\/\//i.test(unwrapped) || unwrapped.includes(";")) &&
-    parseMssqlConnectionString(value)
-  ) {
-    return Engine.MSSQL;
-  }
-
-  if (
-    excludeEngine !== Engine.ORACLE &&
-    (/^(?:oracle|tcps?):\/\//i.test(unwrapped) ||
-      /^sqlplus\s+/i.test(unwrapped) ||
-      /[?&](?:sid|service_name)=/i.test(unwrapped)) &&
-    parseOracleConnectionString(value)
-  ) {
-    return Engine.ORACLE;
+  for (const detector of ENGINE_DETECTORS) {
+    if (detector.engine === excludeEngine) continue;
+    if (
+      detector.matches(unwrapped) &&
+      parseConnectionString(detector.engine, value)
+    ) {
+      return detector.engine;
+    }
   }
 
   return undefined;
+}
+
+function clearPasswordField(ds: EditDataSource): EditDataSource {
+  return {
+    ...ds,
+    password: "",
+    updatedPassword: "",
+    useEmptyPassword: false,
+    updatedSecretFields: (ds.updatedSecretFields ?? []).filter(
+      (field) => field !== "password"
+    ),
+  };
+}
+
+function clearTokenField(ds: EditDataSource): EditDataSource {
+  return {
+    ...ds,
+    authenticationPrivateKey: "",
+    updatedToken: "",
+    updatedSecretFields: (ds.updatedSecretFields ?? []).filter(
+      (field) => field !== "authenticationPrivateKey"
+    ),
+  };
+}
+
+function clearMasterPasswordField(ds: EditDataSource): EditDataSource {
+  return {
+    ...ds,
+    masterPassword: "",
+    updatedMasterPassword: "",
+    useEmptyMasterPassword: false,
+    updatedSecretFields: (ds.updatedSecretFields ?? []).filter(
+      (field) => field !== "masterPassword"
+    ),
+  };
 }
 
 export function applyParsedConnectionString(
@@ -989,37 +2009,67 @@ export function applyParsedConnectionString(
     ...ds,
     authenticationType: DataSource_AuthenticationType.PASSWORD,
     externalSecret: undefined,
+    saslConfig: undefined,
     host: parsed.host,
-    port: parsed.port ?? defaultPortForEngine(engine),
+    port:
+      engine === Engine.MONGODB && parsed.srv
+        ? ""
+        : (parsed.port ?? defaultPortForEngine(engine)),
   };
 
-  if (parsed.username !== undefined) {
-    next.username = parsed.username;
+  if (engine === Engine.DATABRICKS) {
+    next.warehouseId = parsed.warehouseId ?? "";
+    next = clearPasswordField(next);
+    next =
+      parsed.token !== undefined
+        ? updateDataSourceSecret(next, "authenticationPrivateKey", parsed.token)
+        : clearTokenField(next);
+  } else {
+    if (parsed.username !== undefined) {
+      next.username = parsed.username;
+    }
+    next =
+      parsed.password !== undefined
+        ? updateDataSourceSecret(next, "password", parsed.password)
+        : clearPasswordField(next);
   }
 
-  if (parsed.password !== undefined) {
-    next = updateDataSourceSecret(next, "password", parsed.password);
-  } else {
-    next = {
-      ...next,
-      password: "",
-      updatedPassword: "",
-      useEmptyPassword: false,
-      updatedSecretFields: (next.updatedSecretFields ?? []).filter(
-        (field) => field !== "password"
-      ),
-    };
-  }
-
-  if (engine === Engine.POSTGRES || engine === Engine.MSSQL) {
-    next.database = parsed.database ?? "";
-  } else {
-    next.database = "";
-  }
+  next.database = hasConnectionDatabase(engine, DataSourceType.ADMIN)
+    ? (parsed.database ?? "")
+    : "";
 
   if (engine === Engine.ORACLE) {
     next.sid = parsed.sid ?? "";
     next.serviceName = parsed.serviceName ?? "";
+  }
+
+  if (engine === Engine.MONGODB) {
+    next.srv = parsed.srv ?? false;
+    next.additionalAddresses = (parsed.additionalAddresses ?? []).map((addr) =>
+      create(DataSource_AddressSchema, addr)
+    );
+    next.replicaSet = parsed.replicaSet ?? "";
+    next.directConnection = parsed.directConnection ?? false;
+    next.authenticationDatabase = parsed.authenticationDatabase ?? "";
+  }
+
+  if (engine === Engine.REDIS) {
+    next.redisType = parsed.redisType ?? DataSource_RedisType.STANDALONE;
+    next.additionalAddresses = (parsed.additionalAddresses ?? []).map((addr) =>
+      create(DataSource_AddressSchema, addr)
+    );
+    next.masterName = parsed.masterName ?? "";
+    next.masterUsername = parsed.masterUsername ?? "";
+    next =
+      parsed.masterPassword !== undefined
+        ? updateDataSourceSecret(next, "masterPassword", parsed.masterPassword)
+        : clearMasterPasswordField(next);
+  }
+
+  if (engine === Engine.CASSANDRA) {
+    next.additionalAddresses = (parsed.additionalAddresses ?? []).map((addr) =>
+      create(DataSource_AddressSchema, addr)
+    );
   }
 
   if (parsed.tls !== undefined) {

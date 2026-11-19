@@ -34,6 +34,9 @@ const mocks = vi.hoisted(() => ({
   RealDataSourceForm: null as
     | typeof import("./DataSourceForm")["DataSourceForm"]
     | null,
+  RealRedisSentinelFields: null as
+    | typeof import("./DataSourceForm")["RedisSentinelFields"]
+    | null,
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -89,7 +92,19 @@ vi.mock("./DataSourceForm", () => ({
       />
     );
   },
-  RedisSentinelFields: () => null,
+  RedisSentinelFields: (props: {
+    dataSource: EditDataSource;
+    isCreating: boolean;
+    allowEdit: boolean;
+    allowUsingEmptyPassword: boolean;
+    onDataSourceChange: (dataSource: EditDataSource) => void;
+  }) => {
+    if (mocks.RealRedisSentinelFields) {
+      const Real = mocks.RealRedisSentinelFields;
+      return <Real {...props} />;
+    }
+    return null;
+  },
 }));
 
 vi.mock("./permission", () => ({
@@ -1170,14 +1185,21 @@ test("Import from URL flags engine mismatches, clears errors on fix, and resets 
 });
 
 test("Import from URL trigger is hidden for unsupported engines, Neon vendor, and edit mode", () => {
-  mountCreate(Engine.MARIADB);
-  expect(
-    screen.queryByRole("button", {
-      name: "instance.connection-string.trigger",
-    })
-  ).not.toBeInTheDocument();
+  for (const engine of [
+    Engine.DYNAMODB,
+    Engine.BIGQUERY,
+    Engine.SPANNER,
+    Engine.COSMOSDB,
+  ]) {
+    mountCreate(engine);
+    expect(
+      screen.queryByRole("button", {
+        name: "instance.connection-string.trigger",
+      })
+    ).not.toBeInTheDocument();
+    cleanup();
+  }
 
-  cleanup();
   mountCreate(Engine.POSTGRES);
   selectHosting(/^instance.vendor.neon/);
   expect(
@@ -1241,4 +1263,140 @@ test("importing an Oracle SID URL updates OracleConnectionFields, TLS controls, 
     mocks.RealDataSourceForm = null;
     mocks.hasSSL = false;
   }
+});
+
+test("importing MongoDB SRV and multi-host URLs updates schema radio, additional addresses, replica set, and auth database", async () => {
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    mocks.RealDataSourceForm = DataSourceForm;
+    mountCreate(Engine.MONGODB);
+
+    let { field } = openImportUrlPopover();
+    paste(
+      field,
+      "mongodb+srv://app:secret@cluster0.example.mongodb.net/storefront?authSource=admin"
+    );
+
+    expect(
+      screen.getByRole("radio", { name: "mongodb+srv://" })
+    ).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByDisplayValue("admin")).toBeInTheDocument();
+    expect(context.adminDataSource).toMatchObject({
+      host: "cluster0.example.mongodb.net",
+      port: "",
+      srv: true,
+      authenticationDatabase: "admin",
+      additionalAddresses: [],
+    });
+
+    ({ field } = openImportUrlPopover());
+    paste(
+      field,
+      "mongodb://app:secret@n1.example.com:27017,n2.example.com:27018/storefront?replicaSet=rs0&authSource=authdb"
+    );
+
+    expect(screen.getByRole("radio", { name: "mongodb://" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect(screen.getByDisplayValue("n2.example.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("27018")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("rs0")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("authdb")).toBeInTheDocument();
+  } finally {
+    mocks.RealDataSourceForm = null;
+  }
+});
+
+test("importing a Redis Sentinel URL without password switches mode, fills master and nodes, and focuses primary password", async () => {
+  try {
+    const { DataSourceForm, RedisSentinelFields } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    mocks.RealDataSourceForm = DataSourceForm;
+    mocks.RealRedisSentinelFields = RedisSentinelFields;
+    mountCreate(Engine.REDIS);
+
+    const { field } = openImportUrlPopover();
+    paste(
+      field,
+      "redis-sentinel://sentinel@s1.example.com:26379,s2.example.com:26380?master=mymaster"
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: "data-source.connection-type" })
+    ).toHaveTextContent("Sentinel");
+    expect(screen.getByDisplayValue("mymaster")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("s2.example.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("26380")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("instance.master-password")
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("common.password")).toHaveFocus();
+    });
+    expect(screen.getByLabelText("instance.master-password")).not.toHaveFocus();
+  } finally {
+    mocks.RealDataSourceForm = null;
+    mocks.RealRedisSentinelFields = null;
+  }
+});
+
+test("importing a Databricks URL without PWD fills host and warehouseId, notifies missing token, and focuses token", async () => {
+  try {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    mocks.RealDataSourceForm = DataSourceForm;
+    mountCreate(Engine.DATABRICKS);
+
+    const { field } = openImportUrlPopover();
+    paste(
+      field,
+      "jdbc:databricks://dbc.example.com:443/default;transportMode=http;httpPath=/sql/1.0/warehouses/wh123"
+    );
+
+    expect(context.adminDataSource).toMatchObject({
+      host: "https://dbc.example.com",
+      port: "",
+      warehouseId: "wh123",
+      updatedToken: "",
+    });
+    expect(screen.getByDisplayValue("wh123")).toBeInTheDocument();
+    expect(mocks.pushNotification).toHaveBeenLastCalledWith({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: "instance.connection-string.filled-missing-token",
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText("common.token")).toHaveFocus();
+    });
+  } finally {
+    mocks.RealDataSourceForm = null;
+  }
+});
+
+test("Import from URL calls out cross-engine mismatches for newly supported engines", () => {
+  mountCreate(Engine.MYSQL);
+  let { field } = openImportUrlPopover();
+  paste(field, "mongodb+srv://user:pass@cluster0.example.mongodb.net/mydb");
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.engine-mismatch"
+  );
+  fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+
+  act(() =>
+    context.setBasicInfo((previous) => ({
+      ...previous,
+      engine: Engine.CLICKHOUSE,
+    }))
+  );
+  ({ field } = openImportUrlPopover());
+  paste(field, "redis://default:pass@redis.example.com:6379");
+  expect(field).toHaveAccessibleDescription(
+    "instance.connection-string.invalid.engine-mismatch"
+  );
 });
