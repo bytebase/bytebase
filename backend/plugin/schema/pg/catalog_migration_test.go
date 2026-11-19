@@ -1924,6 +1924,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "returns followed by a tab",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rt",
+				Signature:  "rt()",
+				Definition: "CREATE FUNCTION public.rt() RETURNS public.v\tLANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
@@ -3775,4 +3784,24 @@ func TestViewDependencyQualificationSkipsNestedBlockComment(t *testing.T) {
 	}
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationKeepsQuotedTypedConstant covers a quoted type
+// name before a literal: it is a typed constant, not a string prefix.
+func TestViewDependencyQualificationKeepsQuotedTypedConstant(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("e", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `SELECT "e" '(1)', NULL::public.e FROM public.e`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "e"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."e"`)
 }

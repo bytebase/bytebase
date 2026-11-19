@@ -721,10 +721,13 @@ func routineReturnClause(definition string) string {
 	}
 	rest := definition[skipSQLWhitespace(definition, index+len("RETURNS")):]
 	end := len(rest)
-	for _, marker := range []string{"\nAS ", "\n AS ", " LANGUAGE ", "\nLANGUAGE ", " IMMUTABLE", " STABLE", " VOLATILE", " STRICT", " SECURITY ", " COST ", " ROWS ", " WINDOW ", "\n"} {
-		if i := indexOutsideQuotes(rest, marker); i >= 0 && i < end {
+	for _, keyword := range []string{"AS", "LANGUAGE", "IMMUTABLE", "STABLE", "VOLATILE", "STRICT", "SECURITY", "COST", "ROWS", "WINDOW"} {
+		if i := indexOutsideQuotesKeyword(rest, keyword); i >= 0 && i < end {
 			end = i
 		}
+	}
+	if i := indexOutsideQuotes(rest, "\n"); i >= 0 && i < end {
+		end = i
 	}
 	return rest[:end]
 }
@@ -1374,7 +1377,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
 				typeEnd = i + 2
 			}
-			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal && !isStringLiteralPrefix(token.text) {
+			if typeEnd+1 < len(tokens) && tokens[typeEnd+1].literal {
 				end, matched, unqualified := typeReferenceAt(tokens, i, schemaName, objectName, objects, searchPath)
 				if matched {
 					qualified = true
@@ -1432,18 +1435,6 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
-}
-
-func isStringLiteralPrefix(text string) bool {
-	if len(text) != 1 {
-		return false
-	}
-	switch text[0] {
-	case 'e', 'E', 'b', 'B', 'x', 'X', 'n', 'N':
-		return true
-	default:
-		return false
-	}
 }
 
 func hasPrefixFold(text, prefix string) bool {
@@ -1774,6 +1765,10 @@ func definitionTokens(text string) []definitionToken {
 		case text[i] == '\'':
 			end := closingQuote(text, i, '\'')
 			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
+			i = end + 1
+		case (text[i] == 'E' || text[i] == 'e' || text[i] == 'B' || text[i] == 'b' || text[i] == 'X' || text[i] == 'x' || text[i] == 'N' || text[i] == 'n') && i+1 < len(text) && text[i+1] == '\'':
+			end := closingQuote(text, i+1, '\'')
+			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+2:end], "''", "'"), literal: true})
 			i = end + 1
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '\'':
 			end := closingQuote(text, i+2, '\'')
