@@ -268,11 +268,13 @@ func keepFactsOnlyComments(rules []*ruleResult, problems []*aiReviewProblem) {
 // addRuleFacts sets the facts of each rule finding from what the reviews
 // added to it, for the results that write their comment again. A finding
 // that holds a problem of this run gets none, since the problem's text
-// already says what its statement touches. One database's facts are the text. The facts of several go to summarize, at
-// most aiReviewRunConcurrency at a time and maxFactSummaries in a run, and a
-// finding whose summary fails or is over the limit shows the facts of its
-// first database, named, and counts the rest. The error is ctx's, when it
-// ends.
+// already says what its statement touches. One database's facts are the
+// text. The facts of several go to summarize, at most aiReviewRunConcurrency
+// at a time and maxFactSummaries in a run, and a finding whose summary fails
+// or is over the limit shows the facts of its first database and counts the
+// rest. Facts from only part of the finding's databases name the databases
+// they are from, since they say nothing about the others. The error is
+// ctx's, when it ends.
 func addRuleFacts(ctx context.Context, summarize summarizeFactsFunc, findings map[aiReviewSheet][]*standardFinding, results []*aiReviewResult, sheets map[string]string) error {
 	facts := make(map[*standardFinding][]aireview.DatabaseFact)
 	for _, result := range results {
@@ -304,11 +306,16 @@ func addRuleFacts(ctx context.Context, summarize summarizeFactsFunc, findings ma
 			}
 			slices.SortStableFunc(added, func(a, b aireview.DatabaseFact) int { return cmp.Compare(a.Database, b.Database) })
 			labels := databaseLabels(f.Finding.targets)
-			if len(added) == 1 {
-				f.Finding.facts = added[0].Text
-				if len(f.Finding.targets) > 1 {
-					f.Finding.facts = labels[added[0].Database] + ": " + added[0].Text
+			scope := ""
+			if len(added) < len(f.Finding.targets) {
+				from := make([]string, 0, len(added))
+				for _, fact := range added {
+					from = append(from, fact.Database)
 				}
+				scope = databaseList(from, labels) + ": "
+			}
+			if len(added) == 1 {
+				f.Finding.facts = scope + added[0].Text
 				continue
 			}
 			// The fallback stands unless the summary replaces it.
@@ -343,7 +350,7 @@ func addRuleFacts(ctx context.Context, summarize summarizeFactsFunc, findings ma
 					}
 					return nil
 				}
-				f.Finding.facts = factsText(summary, labels)
+				f.Finding.facts = factsText(summary, labels, scope)
 				return nil
 			})
 		}
@@ -354,11 +361,12 @@ func addRuleFacts(ctx context.Context, summarize summarizeFactsFunc, findings ma
 
 // factsText renders a facts summary as the note under a rule finding: what
 // every database shares, then one line for each group of databases with the
-// facts that set it apart. One group needs no line, since the thread names
-// its databases.
-func factsText(summary *aireview.FactsSummary, labels map[string]string) string {
+// facts that set it apart. One group needs no line. scope names the
+// summary's databases when they are only part of the finding's, and is empty
+// otherwise, since the thread names the finding's databases.
+func factsText(summary *aireview.FactsSummary, labels map[string]string, scope string) string {
 	if len(summary.Groups) == 1 {
-		return strings.TrimSpace(summary.Shared + " " + summary.Groups[0].Facts)
+		return scope + strings.TrimSpace(summary.Shared+" "+summary.Groups[0].Facts)
 	}
 	var lines []string
 	for _, group := range summary.Groups {
@@ -371,7 +379,7 @@ func factsText(summary *aireview.FactsSummary, labels map[string]string) string 
 	if summary.Shared == "" {
 		return strings.Join(lines, "\n")
 	}
-	return summary.Shared + "\n\n" + strings.Join(lines, "\n")
+	return scope + summary.Shared + "\n\n" + strings.Join(lines, "\n")
 }
 
 // aiReviewTarget states what the prompt says about a database: the engine,

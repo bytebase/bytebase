@@ -86,7 +86,7 @@ func TestAddRuleFacts(t *testing.T) {
 
 		both := onBoth()
 		require.NoError(t, addRuleFacts(context.Background(), failing, standardFindings([]*ruleResult{both}), []*aiReviewResult{factsOf("db2", "S1", "The column is empty.")}, sheets))
-		require.Equal(t, "db2: The column is empty.", both.members[0].facts, "named, since the finding is on another database too")
+		require.Equal(t, "db2: The column is empty.", both.members[0].facts, "named, since the fact says nothing about db1")
 	})
 
 	t.Run("the facts of several databases are summarized", func(t *testing.T) {
@@ -104,6 +104,16 @@ func TestAddRuleFacts(t *testing.T) {
 			{Database: "instances/prod/databases/db2", Text: "It holds 12,000 values."},
 		}, requests[0].Facts)
 		require.Equal(t, "S1", requests[0].Finding.ID)
+	})
+
+	t.Run("facts from part of the finding's databases name them", func(t *testing.T) {
+		t.Parallel()
+		summary := &recordingFacts{}
+		rule := onBoth()
+		rule.members[0].targets = append(rule.members[0].targets, "instances/prod/databases/db3")
+		results := []*aiReviewResult{factsOf("db2", "S1", "It holds 12,000 values."), factsOf("db1", "S1", "It is empty.")}
+		require.NoError(t, addRuleFacts(context.Background(), summary.summarize, standardFindings([]*ruleResult{rule}), results, sheets))
+		require.Equal(t, "db1, db2: Nothing else reads it.\n\n- db2: It holds 12,000 values.\n- db1", rule.members[0].facts, "db3 added no fact, so the shared sentence is not about it")
 	})
 
 	t.Run("a failed summary shows one database's facts and counts the rest", func(t *testing.T) {
@@ -134,8 +144,10 @@ func TestAddRuleFacts(t *testing.T) {
 
 	t.Run("one group needs no list", func(t *testing.T) {
 		t.Parallel()
-		require.Equal(t, "Nothing reads it. It is empty.", factsText(&aireview.FactsSummary{Shared: "Nothing reads it.", Groups: []aireview.SummaryGroup{{Databases: []string{"a", "b"}, Facts: "It is empty."}}}, nil))
-		require.Equal(t, "- a: x\n- b: y", factsText(&aireview.FactsSummary{Groups: []aireview.SummaryGroup{{Databases: []string{"a"}, Facts: "x"}, {Databases: []string{"b"}, Facts: "y"}}}, map[string]string{"a": "a", "b": "b"}))
+		one := &aireview.FactsSummary{Shared: "Nothing reads it.", Groups: []aireview.SummaryGroup{{Databases: []string{"a", "b"}, Facts: "It is empty."}}}
+		require.Equal(t, "Nothing reads it. It is empty.", factsText(one, nil, ""))
+		require.Equal(t, "a, b: Nothing reads it. It is empty.", factsText(one, nil, "a, b: "), "named when the finding is on more databases")
+		require.Equal(t, "- a: x\n- b: y", factsText(&aireview.FactsSummary{Groups: []aireview.SummaryGroup{{Databases: []string{"a"}, Facts: "x"}, {Databases: []string{"b"}, Facts: "y"}}}, map[string]string{"a": "a", "b": "b"}, "a, b: "), "every line names its databases already")
 	})
 
 	t.Run("stops when the run ends", func(t *testing.T) {
