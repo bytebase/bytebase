@@ -1235,7 +1235,7 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		}
 		if !token.quoted {
 			switch strings.ToUpper(token.text) {
-			case "FROM", "JOIN", "UPDATE", "INTO":
+			case "FROM", "JOIN", "UPDATE", "INTO", "TABLE":
 				inRelations = true
 				continue
 			case "ONLY", "LATERAL":
