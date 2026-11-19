@@ -1453,7 +1453,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 					continue
 				}
 				if !token.quoted && strings.EqualFold(token.text, "AS") {
-					if i+1 < len(tokens) && tokens[i+1].punct == 0 {
+					if i+1 < len(tokens) && (tokens[i+1].punct == 0 || tokens[i+1].punct == '(') {
 						var matched, unqualified bool
 						i, matched, unqualified = consumeAliasColumnList(tokens, i+1, fromFunctionCall, schemaName, objectName, objects, searchPath)
 						if matched {
@@ -1627,7 +1627,6 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			}
 		}
 		if !token.quoted && strings.EqualFold(token.text, "ROWS") && i+2 < len(tokens) && tokens[i+1].punct == 0 && !tokens[i+1].quoted && strings.EqualFold(tokens[i+1].text, "FROM") && tokens[i+2].punct == '(' {
-			pendingFunctionArgs = true
 			i++
 			continue
 		}
@@ -2236,14 +2235,18 @@ func relationClauseKeyword(upper string) bool {
 }
 
 func consumeAliasColumnList(tokens []definitionToken, alias int, scan bool, schemaName, objectName string, objects map[string]bool, searchPath []string) (int, bool, bool) {
-	if alias+1 >= len(tokens) || tokens[alias+1].punct != '(' {
+	open := alias + 1
+	if alias < len(tokens) && tokens[alias].punct == '(' {
+		open = alias
+	}
+	if open >= len(tokens) || tokens[open].punct != '(' {
 		return alias, false, false
 	}
-	closeIndex := skipParenthesized(tokens, alias+1)
+	closeIndex := skipParenthesized(tokens, open)
 	if !scan {
 		return closeIndex, false, false
 	}
-	qualified, unqualified := scanAliasColumnTypes(tokens, alias+1, closeIndex, schemaName, objectName, objects, searchPath)
+	qualified, unqualified := scanAliasColumnTypes(tokens, open, closeIndex, schemaName, objectName, objects, searchPath)
 	return closeIndex, qualified, unqualified
 }
 

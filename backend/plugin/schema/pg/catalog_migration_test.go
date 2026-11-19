@@ -77,7 +77,17 @@ func TestDiffMigrationRouting(t *testing.T) {
 // TestPostgresSchemaEntryPoints pins the public schema surface the API uses to
 // omni's pg catalog. This cutover changes only CockroachDB's registration; every
 // Postgres entry point below keeps the implementation it had.
-func TestPostgresSchemaEntryPoints(t *testing.T) {
+type postgresEntryPoint struct {
+	metadata         *metadatapb.DatabaseSchemaMetadata
+	schema           *metadatapb.SchemaMetadata
+	table            *metadatapb.TableMetadata
+	view             *metadatapb.ViewMetadata
+	materializedView *metadatapb.MaterializedViewMetadata
+	function         *metadatapb.FunctionMetadata
+	sequence         *metadatapb.SequenceMetadata
+}
+
+func newPostgresEntryPoint() postgresEntryPoint {
 	table := &metadatapb.TableMetadata{
 		Name:    "t",
 		Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}},
@@ -100,13 +110,25 @@ func TestPostgresSchemaEntryPoints(t *testing.T) {
 		Sequences:         []*metadatapb.SequenceMetadata{sequence},
 		EnumTypes:         []*metadatapb.EnumTypeMetadata{enum},
 	}
-	metadata := &metadatapb.DatabaseSchemaMetadata{
-		Extensions: []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
-		Schemas:    []*metadatapb.SchemaMetadata{schemaMeta},
+	return postgresEntryPoint{
+		metadata: &metadatapb.DatabaseSchemaMetadata{
+			Extensions: []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
+			Schemas:    []*metadatapb.SchemaMetadata{schemaMeta},
+		},
+		schema:           schemaMeta,
+		table:            table,
+		view:             view,
+		materializedView: materializedView,
+		function:         function,
+		sequence:         sequence,
 	}
+}
+
+func TestPostgresDefinitionEntryPoints(t *testing.T) {
+	entry := newPostgresEntryPoint()
 	ctx := schema.GetDefinitionContext{PrintHeader: true}
 
-	definition, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, ctx, metadata)
+	definition, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, ctx, entry.metadata)
 	require.NoError(t, err)
 	require.Contains(t, definition, `CREATE TABLE`)
 	require.Contains(t, definition, `"public"."t"`)
@@ -121,45 +143,65 @@ func TestPostgresSchemaEntryPoints(t *testing.T) {
 	require.Contains(t, definition, `"public"."e"`)
 	require.Contains(t, definition, `CREATE EXTENSION IF NOT EXISTS "pg_trgm"`)
 
-	schemaDefinition, err := schema.GetSchemaDefinition(storepb.Engine_POSTGRES, schemaMeta)
+	schemaDefinition, err := schema.GetSchemaDefinition(storepb.Engine_POSTGRES, entry.schema)
 	require.NoError(t, err)
 	require.Contains(t, schemaDefinition, `COMMENT ON SCHEMA`)
 	require.Contains(t, schemaDefinition, `CREATE TABLE`)
-	tableDefinition, err := schema.GetTableDefinition(storepb.Engine_POSTGRES, "public", table, []*metadatapb.SequenceMetadata{sequence})
+	tableDefinition, err := schema.GetTableDefinition(storepb.Engine_POSTGRES, "public", entry.table, []*metadatapb.SequenceMetadata{entry.sequence})
 	require.NoError(t, err)
 	require.Contains(t, tableDefinition, `CREATE TABLE`)
 	require.Contains(t, tableDefinition, `"public"."t"`)
-	viewDefinition, err := schema.GetViewDefinition(storepb.Engine_POSTGRES, "public", view)
+	viewDefinition, err := schema.GetViewDefinition(storepb.Engine_POSTGRES, "public", entry.view)
 	require.NoError(t, err)
 	require.Contains(t, viewDefinition, `CREATE VIEW`)
 	require.Contains(t, viewDefinition, `"public"."v"`)
-	materializedViewDefinition, err := schema.GetMaterializedViewDefinition(storepb.Engine_POSTGRES, "public", materializedView)
+	materializedViewDefinition, err := schema.GetMaterializedViewDefinition(storepb.Engine_POSTGRES, "public", entry.materializedView)
 	require.NoError(t, err)
 	require.Contains(t, materializedViewDefinition, `CREATE MATERIALIZED VIEW`)
 	require.Contains(t, materializedViewDefinition, `"public"."mv"`)
-	functionDefinition, err := schema.GetFunctionDefinition(storepb.Engine_POSTGRES, "public", function)
+	functionDefinition, err := schema.GetFunctionDefinition(storepb.Engine_POSTGRES, "public", entry.function)
 	require.NoError(t, err)
 	require.Contains(t, functionDefinition, `CREATE FUNCTION`)
 	require.Contains(t, functionDefinition, `public.f()`)
-	sequenceDefinition, err := schema.GetSequenceDefinition(storepb.Engine_POSTGRES, "public", sequence)
+	sequenceDefinition, err := schema.GetSequenceDefinition(storepb.Engine_POSTGRES, "public", entry.sequence)
 	require.NoError(t, err)
 	require.Contains(t, sequenceDefinition, `CREATE SEQUENCE`)
 	require.Contains(t, sequenceDefinition, `"public"."s"`)
 
-	multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, ctx, metadata)
+	multiFile, err := schema.GetMultiFileDatabaseDefinition(storepb.Engine_POSTGRES, ctx, entry.metadata)
 	require.NoError(t, err)
 	require.NotEmpty(t, multiFile.Files)
+}
 
-	db := model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
+func TestPostgresMetadataToSDL(t *testing.T) {
+	entry := newPostgresEntryPoint()
+	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
 	sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, db)
 	require.NoError(t, err)
 	require.NotEmpty(t, sdl)
-	sdlDiff, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sdl, sdl, "")
+}
+
+func TestPostgresDiffSDLMigration(t *testing.T) {
+	entry := newPostgresEntryPoint()
+	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
+	sdl, err := schema.MetadataToSDL(storepb.Engine_POSTGRES, db)
 	require.NoError(t, err)
-	require.Empty(t, sdlDiff)
+	diff, err := schema.DiffSDLMigration(storepb.Engine_POSTGRES, sdl, sdl, "")
+	require.NoError(t, err)
+	require.Empty(t, diff)
+}
+
+func TestPostgresDiffMigration(t *testing.T) {
+	entry := newPostgresEntryPoint()
+	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
 	migration, err := schema.DiffMigration(storepb.Engine_POSTGRES, db, db)
 	require.NoError(t, err)
 	require.Empty(t, migration)
+}
+
+func TestPostgresSDLDropAdvices(t *testing.T) {
+	entry := newPostgresEntryPoint()
+	db := model.NewDatabaseMetadata(entry.metadata, nil, nil, storepb.Engine_POSTGRES, true)
 	advices, err := schema.SDLDropAdvices(storepb.Engine_POSTGRES, "", db, "")
 	require.NoError(t, err)
 	require.NotEmpty(t, advices)
@@ -4421,4 +4463,24 @@ func TestUnqualifiedRegclassRespectsSearchPath(t *testing.T) {
 	}
 	paths := []string{"types", "$user", "public", "pg_catalog"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationScansRowsFromColumnTypes covers a column
+// definition list inside ROWS FROM.
+func TestViewDependencyQualificationScansRowsFromColumnTypes(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT x.c, NULL::public.t FROM ROWS FROM (record_func() AS (c t)) AS x",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
