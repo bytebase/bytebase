@@ -1282,7 +1282,7 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 }
 
 func identifierKey(identifier identifier) string {
-	if identifier.quoted {
+	if identifier.quoted && identifier.name != strings.ToLower(identifier.name) {
 		return "q:" + identifier.name
 	}
 	return "u:" + strings.ToLower(identifier.name)

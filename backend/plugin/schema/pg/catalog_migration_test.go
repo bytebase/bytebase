@@ -3052,3 +3052,25 @@ func TestViewDependencyQualificationKeepsOuterRelationList(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestCTENameMatchesEquivalentQuotedSpelling covers a lowercase quoted CTE name:
+// `"t"` is the same identifier as unquoted `t`, but `"T"` is not.
+func TestCTENameMatchesEquivalentQuotedSpelling(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        `WITH "t" AS (SELECT * FROM public.t) SELECT * FROM public.t UNION ALL SELECT * FROM t`,
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+
+	meta.Schemas[0].Views[0].Definition = `WITH "T" AS (SELECT * FROM public.t) SELECT * FROM public.t UNION ALL SELECT * FROM t`
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."t"`)
+}
