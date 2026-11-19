@@ -3,6 +3,7 @@ package aireview
 import (
 	jsonv2 "encoding/json/v2"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -27,9 +28,34 @@ type Finding struct {
 	Fix      string
 }
 
+// StandardFinding is a finding the standard review posted on the database
+// under review.
+type StandardFinding struct {
+	// ID names the finding in the prompt and in the reply, such as "S1".
+	ID   string
+	Line int
+	Rule string
+	// Codes are the finding codes of the conditions it reports.
+	Codes []string
+	// Text is the comment the finding posts.
+	Text string
+}
+
+// Fact is what a review adds to a standard finding: something the database
+// shows about the finding's statement that the finding's text lacks.
+type Fact struct {
+	// Standard is the ID of the standard finding.
+	Standard string
+	Text     string
+}
+
+// maxFactBytes bounds the text of one fact, which is one or two sentences.
+const maxFactBytes = 400
+
 // reply is the model's final answer once parsed and validated.
 type reply struct {
 	Findings []Finding
+	Facts    []Fact
 	// Notes name what the model could not check and why. They are for the
 	// backend, never for the user, and they never count as findings.
 	Notes []string
@@ -39,7 +65,13 @@ type replyJSON struct {
 	// Findings is a pointer so that a reply without the key is told apart from
 	// an empty list, which means the change passes.
 	Findings *[]findingJSON `json:"findings"`
+	Facts    []factJSON     `json:"facts"`
 	Notes    []string       `json:"notes"`
+}
+
+type factJSON struct {
+	Standard string `json:"standard"`
+	Text     string `json:"text"`
 }
 
 type findingJSON struct {
@@ -56,8 +88,9 @@ const maxReportedProblems = 10
 // parseReply reads the model's final reply. It returns the problems that make
 // the reply invalid, worded for the model to correct. One invalid finding
 // invalidates the whole reply: dropping it instead could empty the list, and an
-// empty list passes the change.
-func parseReply(text string, lineCount int) (*reply, []string) {
+// empty list passes the change. A fact changes no verdict, so one that names
+// none of standard, or says nothing, is dropped.
+func parseReply(text string, lineCount int, standard []StandardFinding) (*reply, []string) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil, []string{"the reply is empty"}
@@ -91,6 +124,20 @@ func parseReply(text string, lineCount int) (*reply, []string) {
 		if note = strings.TrimSpace(note); note != "" {
 			result.Notes = append(result.Notes, note)
 		}
+	}
+	for _, raw := range decoded.Facts {
+		id := strings.TrimSpace(raw.Standard)
+		// A fact is one paragraph, since it sits inside a comment's list.
+		fact := strings.Join(strings.Fields(raw.Text), " ")
+		if fact == "" || !slices.ContainsFunc(standard, func(finding StandardFinding) bool { return finding.ID == id }) {
+			continue
+		}
+		fact = clip(fact, maxFactBytes)
+		if i := slices.IndexFunc(result.Facts, func(f Fact) bool { return f.Standard == id }); i >= 0 {
+			result.Facts[i].Text += " " + fact
+			continue
+		}
+		result.Facts = append(result.Facts, Fact{Standard: id, Text: fact})
 	}
 	return result, nil
 }

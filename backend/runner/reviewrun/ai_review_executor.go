@@ -106,6 +106,9 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 		units = append(units, &aiReviewUnit{Check: checkTarget, Statement: statement, Policies: []string{policy.Workspace, policy.Project}})
 	}
 
+	// Each review is told the rule findings on its database, to add facts to.
+	standard := standardFindings(rules)
+
 	// The setting is read again before every provider call, retries included,
 	// so switching the review off stops a run in flight at its next call.
 	reviewer := aireview.NewReviewer(e.newModel(aiSetting, aireview.CheckBeforeEachCall(func(ctx context.Context) error {
@@ -117,9 +120,10 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 		// slot however many databases they review. The store's schema cache
 		// keeps its own bounded copies.
 		request := &aireview.Request{
-			WorkspacePolicy: policy.Workspace,
-			ProjectPolicy:   policy.Project,
-			Statement:       unit.Statement,
+			WorkspacePolicy:  policy.Workspace,
+			ProjectPolicy:    policy.Project,
+			Statement:        unit.Statement,
+			StandardFindings: standardFindingsOn(standard[aiReviewSheet{specID: unit.Check.SpecID, sheetSha256: unit.Check.SheetSha256}], unit.Check.Target),
 		}
 		tools, engine, err := e.resolveAIReviewTarget(ctx, unit.Check, rulePolicy, request)
 		if err != nil {
@@ -140,6 +144,7 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 			slog.Int("model_calls", result.Calls),
 			slog.Int("tokens", result.TotalTokens),
 			slog.Int("findings", len(result.Findings)),
+			slog.Int("facts", len(result.Facts)),
 			slog.Any("notes", result.Notes))
 		return result, nil
 	})
@@ -156,7 +161,7 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
 		return nil, err
 	}
-	earlier, threads, err := e.earlierResults(ctx, projectID, issueUID, results, sheets)
+	earlier, threads, err := e.earlierResults(ctx, projectID, issueUID, results, sheets, len(rules) > 0)
 	if err != nil {
 		return nil, err
 	}
@@ -215,12 +220,6 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 	}, problems); err != nil {
 		return nil, err
 	}
-	// The merge and the summary fall back when a model call fails, the call
-	// that a switch-off refused included, so the setting is read again before
-	// the results post.
-	if err := e.checkAISetting(ctx, project.Workspace); err != nil {
-		return nil, err
-	}
 	for _, problem := range problems {
 		if problem.Rule == nil {
 			continue
@@ -238,6 +237,37 @@ func (e *AIReviewExecutor) reviewWith(ctx context.Context, projectID string, iss
 			slog.Bool("unchanged", problem.Unchanged))
 	}
 	foldAIReviewProblems(problems)
+	keepFactsOnlyComments(rules, problems)
+	err = addRuleFacts(ctx, func(ctx context.Context, request *aireview.FactsRequest) (*aireview.FactsSummary, error) {
+		// A summary is a model call like a review, so it takes a slot too.
+		if err := e.slots.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+		defer e.slots.Release(1)
+		summary, err := reviewer.SummarizeFacts(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("AI review summarized the facts of a rule finding",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.Int("databases", len(request.Facts)),
+			slog.Int("groups", len(summary.Groups)),
+			slog.Int("model_calls", summary.Calls),
+			slog.Int("tokens", summary.TotalTokens))
+		return summary, nil
+	}, standard, results, sheets)
+	// The merge and the summaries fall back when a model call fails, the call
+	// that a switch-off refused included, so the setting is read again before
+	// the results post.
+	if err == nil {
+		err = e.checkAISetting(ctx, project.Workspace)
+	}
+	if err != nil {
+		// The caller posts the rule results alone when the AI review is off.
+		dropAIReview(rules)
+		return nil, err
+	}
 	return append(aiReviewComments(projectID, issueUID, problems), ruleResultComments(projectID, issueUID, rules)...), nil
 }
 
@@ -258,8 +288,9 @@ func (e *AIReviewExecutor) checkAISetting(ctx context.Context, workspace string)
 // current roots on the issue that carry a fingerprint, with the sheet each is
 // anchored to. A result whose sheet cannot be read is left out, so its problem
 // is posted again. It also returns the thread of each current root of the
-// standard rules, by fingerprint, when any sheet has findings.
-func (e *AIReviewExecutor) earlierResults(ctx context.Context, projectID string, issueUID int64, results []*aiReviewResult, sheets map[string]string) (map[aiReviewSheet][]*aiReviewEarlier, map[string]*ruleThread, error) {
+// standard rules, by fingerprint, when the run has rule results or any sheet
+// has findings.
+func (e *AIReviewExecutor) earlierResults(ctx context.Context, projectID string, issueUID int64, results []*aiReviewResult, sheets map[string]string, hasRules bool) (map[aiReviewSheet][]*aiReviewEarlier, map[string]*ruleThread, error) {
 	bySpec := make(map[string]aiReviewSheet)
 	for _, result := range results {
 		if result != nil && len(result.Findings) > 0 {
@@ -267,7 +298,7 @@ func (e *AIReviewExecutor) earlierResults(ctx context.Context, projectID string,
 			bySpec[check.SpecID] = aiReviewSheet{specID: check.SpecID, sheetSha256: check.SheetSha256}
 		}
 	}
-	if len(bySpec) == 0 {
+	if len(bySpec) == 0 && !hasRules {
 		return nil, nil, nil
 	}
 

@@ -15,6 +15,7 @@ A standard finding that names a thread already has a comment, from an earlier re
 
 - Put the thread in `same` when its comment already states every problem that you put in a list with one of its standard findings, and states no other problem. Its comment then stays as it is.
 - Wording, numbers, the order of the problems, and the databases named do not make a difference. A problem that the comment lacks does, and so does a problem it states that no finding of this review reports.
+- The comment can also state facts about the statement without calling them a problem, such as how much data it touches or what else uses an object. A fact that no finding reports makes no difference. A problem is stated when the comment states its effect, even as a fact and with no fix.
 - When you are unsure, leave the thread out of `same`. Its comment is then written again from the findings of this review.
 
 # Answer format with standard findings

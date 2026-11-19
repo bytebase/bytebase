@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -40,6 +41,11 @@ const (
 	maxAIReviewProblems = 10
 )
 
+// maxFactSummaries is how many rule findings of one run get a model call to
+// write their facts across databases. A finding past it shows the facts of
+// one database.
+const maxFactSummaries = 20
+
 // reviewSlots is the limit on reviews in flight that every run of an executor
 // shares. The server uses a *semaphore.Weighted.
 type reviewSlots interface {
@@ -58,10 +64,12 @@ type aiReviewUnit struct {
 	Engine storepb.Engine
 }
 
-// aiReviewResult is the findings of one completed unit.
+// aiReviewResult is the findings of one completed unit, and the facts it adds
+// to the unit's standard findings.
 type aiReviewResult struct {
 	Unit     *aiReviewUnit
 	Findings []aireview.Finding
+	Facts    []aireview.Fact
 }
 
 // aiReviewFinding is one finding of one database.
@@ -165,6 +173,233 @@ type mergeFunc func(context.Context, *aireview.MergeRequest) (*aireview.MergeRes
 // summarizeFunc asks the model to write the comment of a problem that more
 // than one database reports.
 type summarizeFunc func(context.Context, *aireview.SummaryRequest) (*aireview.Summary, error)
+
+// summarizeFactsFunc asks the model to write the note of a rule finding from
+// the facts more than one database adds to it.
+type summarizeFactsFunc func(context.Context, *aireview.FactsRequest) (*aireview.FactsSummary, error)
+
+// standardFinding is a rule finding as the reviews of its sheet know it.
+type standardFinding struct {
+	ID      string
+	Result  *ruleResult
+	Finding *ruleFinding
+}
+
+// standardFindings gives each rule finding on a statement an id that holds
+// for every review of its sheet, by sheet.
+func standardFindings(rules []*ruleResult) map[aiReviewSheet][]*standardFinding {
+	bySheet := make(map[aiReviewSheet][]*standardFinding)
+	for _, rule := range rules {
+		key := aiReviewSheet{specID: rule.specID, sheetSha256: rule.sheetSha256}
+		for _, finding := range rule.members {
+			// A finding on the whole change has no statement to look up.
+			if finding.anchor == nil {
+				continue
+			}
+			bySheet[key] = append(bySheet[key], &standardFinding{
+				ID:      fmt.Sprintf("S%d", len(bySheet[key])+1),
+				Result:  rule,
+				Finding: finding,
+			})
+		}
+	}
+	return bySheet
+}
+
+// standardFindingsOn returns the findings of a sheet that are on target, as a
+// review of that database is told them.
+func standardFindingsOn(findings []*standardFinding, target string) []aireview.StandardFinding {
+	var on []aireview.StandardFinding
+	for _, f := range findings {
+		if slices.Contains(f.Finding.targets, target) {
+			on = append(on, f.prompt())
+		}
+	}
+	return on
+}
+
+func (f *standardFinding) prompt() aireview.StandardFinding {
+	return aireview.StandardFinding{
+		ID:    f.ID,
+		Line:  int(f.Finding.anchor.GetStartPosition().GetLine()),
+		Rule:  f.Finding.rule.String(),
+		Codes: f.Finding.codes,
+		Text:  f.Finding.message,
+	}
+}
+
+// statesProblem reports whether the comment of a rule result holds a problem
+// of the AI review, which always ends in its fix. A merged result indents the
+// fix under its item.
+func statesProblem(comment string) bool {
+	label := strings.TrimLeft(aiReviewFixLabel, "\n")
+	for _, line := range strings.Split(comment, "\n") {
+		if strings.HasPrefix(strings.TrimLeft(line, " "), label) {
+			return true
+		}
+	}
+	return false
+}
+
+// dropAIReview leaves the rule results as the standard rules gave them, for a
+// review that ends without the AI review's results.
+func dropAIReview(rules []*ruleResult) {
+	for _, rule := range rules {
+		rule.keepsEarlier = false
+		for _, member := range rule.members {
+			member.facts, member.folded = "", nil
+			member.raised = storepb.IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED
+		}
+	}
+}
+
+// holdsFactsOnly reports whether the comment an earlier run left on a rule
+// result states facts and no problem, under every line of the rules' text as
+// it is now. Unlike canKeepEarlier, it lets the facts name the one database
+// they came from, since facts say nothing about which databases have a problem.
+func holdsFactsOnly(rule *ruleResult) bool {
+	if rule.earlier == nil || statesProblem(rule.earlier.Comment) {
+		return false
+	}
+	text := rule.ruleText()
+	return rule.earlier.Comment != text && holdsLines(rule.earlier.Comment, text)
+}
+
+// keepFactsOnlyComments keeps the comment an earlier run left on each rule
+// result that no problem of this run is on, when that comment states facts
+// and no problem: facts stay as they were first written, so an unchanged
+// statement keeps its text and costs no model call. A comment that states a
+// problem is written again, since the problem is gone.
+func keepFactsOnlyComments(rules []*ruleResult, problems []*aiReviewProblem) {
+	hasProblem := make(map[*ruleResult]bool)
+	for _, problem := range problems {
+		if problem.Rule != nil {
+			hasProblem[problem.Rule.result] = true
+		}
+	}
+	for _, rule := range rules {
+		if !hasProblem[rule] && holdsFactsOnly(rule) {
+			rule.keepsEarlier = true
+		}
+	}
+}
+
+// addRuleFacts sets the facts of each rule finding from what the reviews
+// added to it, for the results that write their comment again. A finding
+// that holds a problem of this run gets none, since the problem's text
+// already says what its statement touches. One database's facts are the
+// text. The facts of several go to summarize, at most aiReviewRunConcurrency
+// at a time and maxFactSummaries in a run, and a finding whose summary fails
+// or is over the limit shows the facts of its first database and counts the
+// rest. Facts from only part of the finding's databases name the databases
+// they are from, since they say nothing about the others. The error is
+// ctx's, when it ends.
+func addRuleFacts(ctx context.Context, summarize summarizeFactsFunc, findings map[aiReviewSheet][]*standardFinding, results []*aiReviewResult, sheets map[string]string) error {
+	facts := make(map[*standardFinding][]aireview.DatabaseFact)
+	for _, result := range results {
+		if result == nil {
+			continue
+		}
+		check := result.Unit.Check
+		for _, fact := range result.Facts {
+			for _, f := range findings[aiReviewSheet{specID: check.SpecID, sheetSha256: check.SheetSha256}] {
+				if f.ID == fact.Standard && slices.Contains(f.Finding.targets, check.Target) {
+					facts[f] = append(facts[f], aireview.DatabaseFact{Database: check.Target, Text: fact.Text})
+				}
+			}
+		}
+	}
+
+	var group errgroup.Group
+	group.SetLimit(aiReviewRunConcurrency)
+	summaries := 0
+	// The findings are walked in id order, so the same ones get a summary on
+	// every run.
+	for _, key := range slices.SortedFunc(maps.Keys(findings), func(a, b aiReviewSheet) int {
+		return cmp.Or(cmp.Compare(a.specID, b.specID), cmp.Compare(a.sheetSha256, b.sheetSha256))
+	}) {
+		for _, f := range findings[key] {
+			added := facts[f]
+			if len(added) == 0 || f.Result.keepsEarlier || len(f.Finding.folded) > 0 {
+				continue
+			}
+			slices.SortStableFunc(added, func(a, b aireview.DatabaseFact) int { return cmp.Compare(a.Database, b.Database) })
+			labels := databaseLabels(f.Finding.targets)
+			scope := ""
+			if len(added) < len(f.Finding.targets) {
+				from := make([]string, 0, len(added))
+				for _, fact := range added {
+					from = append(from, fact.Database)
+				}
+				scope = databaseList(from, labels) + ": "
+			}
+			if len(added) == 1 {
+				f.Finding.facts = scope + added[0].Text
+				continue
+			}
+			// The fallback stands unless the summary replaces it.
+			f.Finding.facts = fmt.Sprintf("%s: %s\n\n%d more databases added facts.", labels[added[0].Database], added[0].Text, len(added)-1)
+			if summaries >= maxFactSummaries {
+				continue
+			}
+			summaries++
+			statement := sheets[key.sheetSha256]
+			line := int(f.Finding.anchor.GetStartPosition().GetLine())
+			block := aireview.LineRange{Start: line, End: max(line, int(f.Finding.anchor.GetEndPosition().GetLine()))}
+			if blocks, split := statementBlocks(f.Result.engine, statement); split {
+				if i := slices.IndexFunc(blocks, func(b aireview.LineRange) bool { return line >= b.Start && line <= b.End }); i >= 0 {
+					block = blocks[i]
+				}
+			}
+			group.Go(func() error {
+				// The scheduler's recovery covers only the goroutine that called
+				// RunOnce.
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("AI review facts PANIC RECOVER", slog.Any("panic", r), log.BBStack("panic-stack"))
+					}
+				}()
+				summary, err := summarize(ctx, &aireview.FactsRequest{Statement: statement, Block: block, Finding: f.prompt(), Facts: added})
+				if err != nil {
+					if ctx.Err() == nil {
+						slog.Warn("AI review could not summarize the facts of a rule finding, posting those of one database",
+							slog.String("spec", key.specID),
+							slog.Int("databases", len(added)),
+							log.BBError(err))
+					}
+					return nil
+				}
+				f.Finding.facts = factsText(summary, labels, scope)
+				return nil
+			})
+		}
+	}
+	_ = group.Wait()
+	return ctx.Err()
+}
+
+// factsText renders a facts summary as the note under a rule finding: what
+// every database shares, then one line for each group of databases with the
+// facts that set it apart. One group needs no line. scope names the
+// summary's databases when they are only part of the finding's, and is empty
+// otherwise, since the thread names the finding's databases.
+func factsText(summary *aireview.FactsSummary, labels map[string]string, scope string) string {
+	if len(summary.Groups) == 1 {
+		return scope + strings.TrimSpace(summary.Shared+" "+summary.Groups[0].Facts)
+	}
+	var lines []string
+	for _, group := range summary.Groups {
+		line := "- " + databaseList(group.Databases, labels)
+		if group.Facts != "" {
+			line += ": " + group.Facts
+		}
+		lines = append(lines, line)
+	}
+	if summary.Shared == "" {
+		return strings.Join(lines, "\n")
+	}
+	return scope + summary.Shared + "\n\n" + strings.Join(lines, "\n")
+}
 
 // aiReviewTarget states what the prompt says about a database: the engine,
 // its version, the environment, the database's defaults and owner, and every
@@ -406,7 +641,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		rule := member.result
 		thread := slices.Index(threads, rule)
 		if thread < 0 {
-			if !canKeepEarlier(rule) {
+			if !offersEarlier(rule) {
 				continue
 			}
 			thread = len(threads)
@@ -491,6 +726,43 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	return problems, nil
 }
 
+// offersEarlier reports whether the merge is asked if the comment an earlier
+// run left on a rule result already states this run's problems. A comment of
+// facts is offered only when its facts name no database: facts that do are
+// about that database, and the merge, which is shown no database name, cannot
+// tell whether they state a problem on another one.
+func offersEarlier(rule *ruleResult) bool {
+	if rule.earlier == nil {
+		return false
+	}
+	if statesProblem(rule.earlier.Comment) {
+		return canKeepEarlier(rule)
+	}
+	if !holdsFactsOnly(rule) {
+		return false
+	}
+	// The names are those addRuleFacts gives the databases of each finding.
+	names := make(map[string]bool)
+	for _, member := range rule.members {
+		for _, label := range databaseLabels(member.targets) {
+			names[label] = true
+		}
+	}
+	own := strings.Split(rule.ruleText(), "\n")
+	for _, line := range strings.Split(rule.earlier.Comment, "\n") {
+		// The rules' own lines name databases in a merged result.
+		if slices.Contains(own, line) {
+			continue
+		}
+		for name := range names {
+			if strings.Contains(line, name) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // canKeepEarlier reports whether the comment an earlier run left on a rule
 // result can stay as it is. It holds more than the rules' own text, which is
 // what the AI review added then. It holds every line of the rules' text as it
@@ -502,7 +774,7 @@ func canKeepEarlier(rule *ruleResult) bool {
 	if rule.earlier == nil {
 		return false
 	}
-	text := rule.payload().Comment
+	text := rule.ruleText()
 	if rule.earlier.Comment == text || !holdsLines(rule.earlier.Comment, text) {
 		return false
 	}
@@ -535,8 +807,10 @@ func canKeepEarlier(rule *ruleResult) bool {
 // out, and their comment is written again. One is a result its problems raise
 // above the priority that comment was posted with: nobody read the comment at
 // the higher priority. The other is a result with a problem that is not on
-// every database of its rule finding: canKeepEarlier offers only a comment
-// written for all of them.
+// every database of its rule finding, when the comment states a problem:
+// canKeepEarlier offers only such a comment written for all of them. A comment
+// of facts is offered only when it names no database, so its facts hold for
+// whichever databases the problem is on, and it stays either way.
 func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
 	priority := make(map[*ruleResult]storepb.IssueCommentPayload_ReviewMetadata_Priority)
 	partial := make(map[*ruleResult]bool)
@@ -562,7 +836,7 @@ func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
 			continue
 		}
 		rule := problem.Rule.result
-		if p, ok := priority[rule]; ok && !partial[rule] && priorityRank(p) >= priorityRank(rule.earlier.Priority) {
+		if p, ok := priority[rule]; ok && priorityRank(p) >= priorityRank(rule.earlier.Priority) && (!partial[rule] || !statesProblem(rule.earlier.Comment)) {
 			problem.Unchanged = true
 		}
 	}
@@ -1306,7 +1580,7 @@ func reviewUnits(ctx context.Context, slots reviewSlots, units []*aiReviewUnit, 
 				errs[i] = errors.Wrapf(err, "%s", unit.Check.Target)
 				return nil
 			}
-			results[i] = &aiReviewResult{Unit: unit, Findings: result.Findings}
+			results[i] = &aiReviewResult{Unit: unit, Findings: result.Findings, Facts: result.Facts}
 			return nil
 		})
 	}

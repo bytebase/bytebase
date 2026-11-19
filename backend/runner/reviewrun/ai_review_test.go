@@ -442,6 +442,33 @@ func TestMergeAIReviewFindingsPutsProblemsOnRuleFindings(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, problems[0].Rule)
 		require.False(t, problems[0].Unchanged, "the problem is on part of the rule finding's databases now")
+
+		// A comment of facts that names no database states them for every
+		// database, so it can stay whichever ones the problem is on.
+		const facts = "Drops column `legacy_status`.\n\nv_orders reads it."
+		low := finding("view", aireview.SeverityP1, 1, breakageSentence)
+		everywhere.earlier, everywhere.keepsEarlier = &ruleThread{Comment: facts, Priority: p1}, false
+		stated := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+		problems, err = mergeAIReviewFindings(context.Background(), stated.merge, results(low), nil, []*ruleResult{everywhere})
+		require.NoError(t, err)
+		require.Equal(t, []aireview.MergeThread{{Comment: facts, Candidates: []int{1}}}, stated.requests[0].Threads)
+		require.True(t, problems[0].Unchanged, "the facts already state the problem, and it is no higher than the rule")
+
+		// Facts that name a database are about that database, and the merge
+		// cannot tell whether they state a problem on another one.
+		for _, scoped := range []string{"db2: v_orders reads it.", "db1, db2: v_orders reads it.", "Views differ.\n\n- db2: v_orders reads it.\n- db1"} {
+			everywhere.earlier, everywhere.keepsEarlier = &ruleThread{Comment: "Drops column `legacy_status`.\n\n" + scoped, Priority: p1}, false
+			named := &recordingMerge{groups: [][]int{{0, 1}}, same: []int{0}}
+			problems, err = mergeAIReviewFindings(context.Background(), named.merge, results(low), nil, []*ruleResult{everywhere})
+			require.NoError(t, err)
+			require.Empty(t, named.requests[0].Threads, scoped)
+			require.False(t, problems[0].Unchanged, scoped)
+		}
+
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, nil, low)
+		require.False(t, kept, "the merge did not say the facts state it")
+		kept, _ = unchanged(&ruleThread{Comment: facts, Priority: p1}, []int{0}, view)
+		require.False(t, kept, "nobody read the facts at P0, so the problem is written")
 	})
 }
 
