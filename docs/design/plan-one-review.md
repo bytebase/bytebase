@@ -26,8 +26,7 @@ change the SQL or resolve the finding.
 
 - Merging an AI finding with the standard rule finding it repeats. Today the AI review leaves such
   a finding out. Merging is better, because the AI review explains why the SQL is a problem where a
-  rule only says it is not allowed. [One thread for one operation](review-one-thread-per-operation.md)
-  covers it.
+  rule only says it is not allowed. A separate document will cover it.
 
 ## Lifecycle of a review
 
