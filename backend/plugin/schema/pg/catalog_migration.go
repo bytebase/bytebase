@@ -2958,6 +2958,7 @@ func sourceOnlyMissingDrops(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata,
 				if constraints := index.GetConstraints(); len(constraints) > 0 {
 					constraintName = constraints[0].GetName()
 				}
+				key = "con:" + schemaName + "." + owner + "." + constraintName
 				add(key, catalog.MigrationOp{
 					Type:         catalog.OpDropConstraint,
 					SchemaName:   schemaName,
@@ -3088,6 +3089,20 @@ func routineDropArguments(signature, definition string) string {
 // depends on, and other metadata-derived drops after them, so an index is gone
 // before the column it names changes.
 func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.MigrationOp) []catalog.MigrationOp {
+	if len(drops) == 0 {
+		return ops
+	}
+	droppedSchemas := make(map[string]bool)
+	for _, op := range ops {
+		if op.Type == catalog.OpDropSchema {
+			droppedSchemas[op.SchemaName] = true
+		}
+	}
+	for key, drop := range drops {
+		if droppedSchemas[drop.SchemaName] {
+			delete(drops, key)
+		}
+	}
 	if len(drops) == 0 {
 		return ops
 	}

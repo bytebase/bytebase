@@ -3240,3 +3240,40 @@ func TestViewDependencyQualificationSkipsTablesample(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestSourceOnlyConstraintIndexUsesConstraintKey covers a constraint-backed index
+// reported missing under its constraint key: the synthesized drop must use con:.
+func TestSourceOnlyConstraintIndexUsesConstraintKey(t *testing.T) {
+	withIndex := func() *metadatapb.DatabaseSchemaMetadata {
+		return &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name: "t",
+				Indexes: []*metadatapb.IndexMetadata{{
+					Name:         "t_pkey_idx",
+					IsConstraint: true,
+					Constraints:  []*metadatapb.IndexConstraintMetadata{{Name: "t_pkey"}},
+				}},
+			}},
+		}}}
+	}
+	withoutIndex := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public", Tables: []*metadatapb.TableMetadata{{Name: "t"}}}}}
+	drops := sourceOnlyMissingDrops(withIndex(), withoutIndex, &catalog.LoadMetadataReport{Missing: map[string]error{"con:public.t.t_pkey": nil}})
+	drop, ok := drops["con:public.t.t_pkey"]
+	require.True(t, ok)
+	require.Equal(t, catalog.OpDropConstraint, drop.Type)
+	require.Equal(t, "t_pkey", drop.ObjectName)
+}
+
+// TestInsertSourceOnlyDropsSkipsSchemaCoveredChildren covers a source-only child
+// whose schema is dropped: the schema CASCADE already removes it.
+func TestInsertSourceOnlyDropsSkipsSchemaCoveredChildren(t *testing.T) {
+	ops := []catalog.MigrationOp{{Type: catalog.OpDropSchema, SchemaName: "gone", Phase: catalog.PhasePre}}
+	drops := map[string]catalog.MigrationOp{
+		"type:gone.t": {Type: catalog.OpDropType, SchemaName: "gone", ObjectName: "t"},
+		"seq:gone.s":  {Type: catalog.OpDropSequence, SchemaName: "gone", ObjectName: "s"},
+	}
+	result := insertSourceOnlyDrops(ops, drops)
+	require.Len(t, result, 1)
+	require.Equal(t, catalog.OpDropSchema, result[0].Type)
+}
