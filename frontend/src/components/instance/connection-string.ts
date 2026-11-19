@@ -210,7 +210,7 @@ function parsePostgresTls(
 }
 
 function parseLibpqKeyValue(input: string): Map<string, string> | undefined {
-  if (input.includes(";") || SCHEME_PREFIX_PATTERN.test(input)) {
+  if (SCHEME_PREFIX_PATTERN.test(input)) {
     return undefined;
   }
   const pairs = new Map<string, string>();
@@ -313,7 +313,7 @@ function parsePostgresConnectionString(
   const kv = parseLibpqKeyValue(unwrapped);
   if (!kv) return undefined;
   const rawHost = kv.get("host") || kv.get("hostaddr");
-  if (!rawHost || /\s/.test(rawHost)) return undefined;
+  if (!rawHost || /[\s;=]/.test(rawHost)) return undefined;
   const host =
     rawHost.startsWith("[") && rawHost.endsWith("]")
       ? rawHost.slice(1, -1)
@@ -671,14 +671,16 @@ function parseMssqlConnectionString(
   if (!unwrapped) return undefined;
 
   if (/^sqlserver:\/\//i.test(unwrapped)) {
-    const afterScheme = unwrapped.slice("sqlserver://".length).split("#", 1)[0];
+    const afterScheme = unwrapped.slice("sqlserver://".length);
     const semicolonIndex = afterScheme.indexOf(";");
     const queryIndex = afterScheme.indexOf("?");
+    const hashIndex = afterScheme.indexOf("#");
     // Prisma's `sqlserver://host:1433;database=mydb;user=sa;password=...`
     // embeds ADO.NET properties directly after the host instead of `?query`.
     if (
       semicolonIndex !== -1 &&
-      (queryIndex === -1 || semicolonIndex < queryIndex)
+      (queryIndex === -1 || semicolonIndex < queryIndex) &&
+      (hashIndex === -1 || semicolonIndex < hashIndex)
     ) {
       const hostSegment = afterScheme.slice(0, semicolonIndex);
       const kvSegment = afterScheme.slice(semicolonIndex + 1);

@@ -108,17 +108,17 @@ describe("parseConnectionString - PostgreSQL", () => {
     });
   });
 
-  it("parses libpq keyword=value strings with single-quoted escapes", () => {
+  it("parses libpq keyword=value strings with single-quoted escapes and semicolons", () => {
     expect(
       parseConnectionString(
         Engine.POSTGRES,
-        "host=mydb.postgres.database.azure.com port=5432 dbname=appdb user=myadmin password='it\\'s \\\\ secret' sslmode=require"
+        "host=mydb.postgres.database.azure.com port=5432 dbname=appdb user=myadmin password='it\\'s \\\\ a;b' sslmode=require"
       )
     ).toEqual({
       host: "mydb.postgres.database.azure.com",
       port: "5432",
       username: "myadmin",
-      password: "it's \\ secret",
+      password: "it's \\ a;b",
       database: "appdb",
       tls: { useSsl: true, verifyTlsCertificate: false },
     });
@@ -138,6 +138,12 @@ describe("parseConnectionString - PostgreSQL", () => {
       parseConnectionString(
         Engine.POSTGRES,
         "Server=tcp:db.example.com,1433;Database=app;"
+      )
+    ).toBeUndefined();
+    expect(
+      parseConnectionString(
+        Engine.POSTGRES,
+        "host=db.example.com;port=5432;dbname=app"
       )
     ).toBeUndefined();
   });
@@ -258,6 +264,34 @@ describe("parseConnectionString - SQL Server", () => {
       password: "secret",
       database: "appdb",
       tls: { useSsl: true, verifyTlsCertificate: false },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MSSQL,
+        "sqlserver://db.example.com:1433;user=sa;password={abc#def};database=app;encrypt=true"
+      )
+    ).toEqual({
+      host: "db.example.com",
+      port: "1433",
+      username: "sa",
+      password: "abc#def",
+      database: "app",
+      tls: { useSsl: true, verifyTlsCertificate: true },
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.MSSQL,
+        "sqlserver://db.example.com:1433;user=sa;password=abc#def;database=app;encrypt=true"
+      )
+    ).toEqual({
+      host: "db.example.com",
+      port: "1433",
+      username: "sa",
+      password: "abc#def",
+      database: "app",
+      tls: { useSsl: true, verifyTlsCertificate: true },
     });
   });
 
