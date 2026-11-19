@@ -3369,3 +3369,40 @@ func TestCTECollectsNestedWith(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationSeesUnqualifiedCast covers a row-type cast
+// outside the FROM list: `NULL::t` still depends on the table's row type.
+func TestViewDependencyQualificationSeesUnqualifiedCast(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT NULL::t AS r FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT NULL::public.t AS r FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestUnloadableBackupChangeIsIgnored covers changed unparseable metadata in
+// bbdataarchive: the plan filters it, so preflight must not refuse it.
+func TestUnloadableBackupChangeIsIgnored(t *testing.T) {
+	snapshot := func(definition string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "public"},
+			{Name: "bbdataarchive", Views: []*metadatapb.ViewMetadata{{Name: "v", Definition: definition}}},
+		}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("SELECT @@@old@@@"), snapshot("SELECT @@@new@@@"))
+	require.NoError(t, err)
+	require.Empty(t, sql)
+}

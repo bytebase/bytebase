@@ -1267,6 +1267,22 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 			}
 			continue
 		}
+		if token.punct == ':' && i+1 < len(tokens) && tokens[i+1].punct == ':' {
+			i += 2
+			if i < len(tokens) && tokens[i].punct == 0 {
+				first := identifier{name: tokens[i].text, quoted: tokens[i].quoted}
+				if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
+					second := identifier{name: tokens[i+2].text, quoted: tokens[i+2].quoted}
+					if first.matches(schemaName) && second.matches(objectName) {
+						qualified = true
+					}
+					i += 2
+				} else if first.matches(objectName) {
+					return false
+				}
+			}
+			continue
+		}
 		if token.punct != 0 {
 			switch token.punct {
 			case '(':
@@ -1621,7 +1637,7 @@ func definitionTokens(text string) []definitionToken {
 			}
 			tokens = append(tokens, definitionToken{text: name, quoted: quoted})
 			i = next
-		case strings.ContainsRune(".,()[]", rune(text[i])):
+		case strings.ContainsRune(".,()[]:", rune(text[i])):
 			tokens = append(tokens, definitionToken{punct: text[i]})
 			i++
 		default:
@@ -2569,6 +2585,13 @@ func dependencyKeys(dependencies []*metadatapb.DependencyColumn) []string {
 	return keys
 }
 
+func isBackupReportKey(key string) bool {
+	if index := strings.IndexByte(key, ':'); index >= 0 {
+		key = key[index+1:]
+	}
+	return key == "bbdataarchive" || strings.HasPrefix(key, "bbdataarchive.")
+}
+
 func reportedRelKey(key string) string {
 	schemaName, objectName := splitObjectKey(key)
 	return "rel:" + schemaName + "." + objectName
@@ -2929,6 +2952,9 @@ func unloadableChanges(oldMeta, newMeta *metadatapb.DatabaseSchemaMetadata, sour
 	oldObjects, newObjects := snapshotObjects(oldMeta), snapshotObjects(newMeta)
 	var changed []string
 	for key, err := range reasons {
+		if isBackupReportKey(key) {
+			continue
+		}
 		if newObjects[key] == nil && (standIns[key] || sourceDrops[key].Type != "") {
 			continue
 		}
