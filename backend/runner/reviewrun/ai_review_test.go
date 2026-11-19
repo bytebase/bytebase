@@ -109,8 +109,7 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, int32(4), anchor.StartPosition.Line, "the line most of the findings start on")
 	require.Equal(t, int32(4), anchor.EndPosition.Line)
 	metadata := merged.Payload.ReviewMetadata
-	require.Equal(t, storepb.ReviewRun_AI, metadata.RunType)
-	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType)
+	require.Equal(t, storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED, metadata.RuleType, "a result of the AI review names no rule")
 	require.Equal(t, storepb.IssueCommentPayload_ReviewMetadata_P0, metadata.Priority)
 	require.Equal(t, []string{"instances/prod-1/databases/db", "instances/prod-2/databases/db", "instances/staging/databases/app"}, metadata.Targets)
 	require.Equal(t, "Drop orders_summary and orders_report before legacy_status", metadata.Title)
@@ -532,7 +531,6 @@ func TestFoldAIReviewProblems(t *testing.T) {
 		payload := rule.payload()
 		require.Equal(t, "Drops column `legacy_status`.\n\norders.legacy_status holds 12,000 values.\n\nSuggested fix: Archive the column first.", payload.Comment)
 		require.Equal(t, p1, payload.ReviewMetadata.Priority, "the rule sets the priority of its own condition")
-		require.Equal(t, storepb.ReviewRun_RULE, payload.ReviewMetadata.RunType)
 		require.Equal(t, storepb.ReviewRuleType_DISALLOW_DROP_OBJECT, payload.ReviewMetadata.RuleType)
 		require.Equal(t, []string{"DO101"}, payload.ReviewMetadata.Codes)
 		require.Equal(t, "drop", payload.ReviewMetadata.Fingerprint)

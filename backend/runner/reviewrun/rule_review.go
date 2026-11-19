@@ -324,7 +324,6 @@ func findingPayload(f *ruleFinding) *storepb.IssueCommentPayload {
 		Comment:         strings.Join(append([]string{f.message}, f.added()...), "\n\n"),
 		StatementAnchor: f.anchor,
 		ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-			RunType:     storepb.ReviewRun_RULE,
 			RuleType:    f.rule,
 			Priority:    f.priority(),
 			Targets:     f.targets,
@@ -366,7 +365,6 @@ func mergedPayload(members []*ruleFinding, statements int) *storepb.IssueComment
 		Comment:         mergedComment(members, statements, targets),
 		StatementAnchor: first.anchor,
 		ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
-			RunType:     storepb.ReviewRun_RULE,
 			RuleType:    first.rule,
 			Priority:    priority,
 			Targets:     targets,
