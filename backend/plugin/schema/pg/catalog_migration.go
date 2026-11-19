@@ -1242,6 +1242,16 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 	var relationState []bool
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
+		if token.literal {
+			if token.regclass {
+				if matched, unqualified := literalRelationReference(token.text, schemaName, objectName); matched {
+					qualified = true
+				} else if unqualified {
+					return false
+				}
+			}
+			continue
+		}
 		if token.punct != 0 {
 			switch token.punct {
 			case '(':
@@ -1421,12 +1431,62 @@ func skipParenthesized(tokens []definitionToken, index int) int {
 	return len(tokens) - 1
 }
 
+func isRegclassToken(text string, index int) bool {
+	skip := func(i int) int {
+		for i < len(text) && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r') {
+			i++
+		}
+		return i
+	}
+	index = skip(index)
+	if !strings.HasPrefix(text[index:], "::") {
+		return false
+	}
+	index = skip(index + 2)
+	last, next, lastQuoted, ok := scanIdentifier(text, index)
+	if !ok {
+		return false
+	}
+	if next < len(text) && text[next] == '.' {
+		last, _, lastQuoted, ok = scanIdentifier(text, next+1)
+		if !ok {
+			return false
+		}
+	}
+	if lastQuoted {
+		return last == "regclass"
+	}
+	return strings.EqualFold(last, "regclass")
+}
+
+func literalRelationReference(text, schemaName, objectName string) (bool, bool) {
+	text = strings.TrimSpace(text)
+	first, next, firstQuoted, ok := scanIdentifier(text, 0)
+	if !ok {
+		return false, false
+	}
+	if next < len(text) && text[next] == '.' {
+		second, next, secondQuoted, ok := scanIdentifier(text, next+1)
+		if !ok || next != len(text) {
+			return false, false
+		}
+		return (identifier{name: first, quoted: firstQuoted}).matches(schemaName) &&
+			(identifier{name: second, quoted: secondQuoted}).matches(objectName), false
+	}
+	if next != len(text) {
+		return false, false
+	}
+	return false, (identifier{name: first, quoted: firstQuoted}).matches(objectName)
+}
+
 // definitionToken is an identifier or a punctuation byte outside literals and
 // comments.
 type definitionToken struct {
-	text   string
-	quoted bool
-	punct  byte
+	text     string
+	quoted   bool
+	literal  bool
+	regclass bool
+	punct    byte
 }
 
 func definitionTokens(text string) []definitionToken {
@@ -1434,7 +1494,11 @@ func definitionTokens(text string) []definitionToken {
 	for i := 0; i < len(text); {
 		switch {
 		case text[i] == '\'':
-			i = closingQuote(text, i, '\'') + 1
+			end := closingQuote(text, i, '\'')
+			if isRegclassToken(text, end+1) {
+				tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: true})
+			}
+			i = end + 1
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
 				i = end + 1

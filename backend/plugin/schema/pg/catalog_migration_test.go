@@ -3179,3 +3179,26 @@ func TestMarkSchemaRelationsAffected(t *testing.T) {
 		require.Contains(t, affected, objectKey("gone", strings.TrimPrefix(key, "gone.")), key)
 	}
 }
+
+// TestViewDependencyQualificationSeesRegclass covers a qualified regclass
+// literal: it names the sequence explicitly, while an unqualified regclass still
+// follows the ambiguous $user path.
+func TestViewDependencyQualificationSeesRegclass(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:      "public",
+			Sequences: []*metadatapb.SequenceMetadata{{Name: "s", DataType: "bigint", Start: "1", Increment: "1"}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT nextval('public.s'::regclass)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "s"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+
+	meta.Schemas[0].Views[0].Definition = "SELECT nextval('s'::regclass)"
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."s"`)
+}
