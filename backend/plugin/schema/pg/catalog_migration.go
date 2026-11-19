@@ -757,7 +757,7 @@ func routineReturnClause(definition string) string {
 // name is resolved first, so it names only the relation the search path makes
 // visible, not every relation that shares its name.
 func namesType(text, key string, objects map[string]bool, searchPath []string) bool {
-	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(stripSQLComments(text))
 	if builtinMultiwordType(text) {
 		return false
 	}
@@ -2323,7 +2323,7 @@ func ambiguousParameters(parameters string, objects map[string]bool, searchPath 
 }
 
 func ambiguousTypeText(text string, objects map[string]bool, searchPath []string) bool {
-	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(stripSQLComments(text))
 	if builtinMultiwordType(text) {
 		return false
 	}

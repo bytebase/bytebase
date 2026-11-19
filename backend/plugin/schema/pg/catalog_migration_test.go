@@ -1996,6 +1996,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "comment after out parameter type",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "rcp",
+				Signature:  "rcp()",
+				Definition: "CREATE FUNCTION public.rcp(OUT x public.v /* note */) RETURNS record LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "quoted parameter before an out parameter",
 			world: world{function: &metadatapb.FunctionMetadata{
 				Name:       "q",
