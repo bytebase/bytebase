@@ -1492,7 +1492,7 @@ func skipRelationAlias(tokens []definitionToken, index int) int {
 		upper := strings.ToUpper(next.text)
 		if upper == "AS" {
 			if index+2 < len(tokens) && tokens[index+2].punct == 0 {
-				return index + 2
+				return skipAliasColumnList(tokens, index+2)
 			}
 			return index + 1
 		}
@@ -1502,7 +1502,14 @@ func skipRelationAlias(tokens []definitionToken, index int) int {
 		default:
 		}
 	}
-	return index + 1
+	return skipAliasColumnList(tokens, index+1)
+}
+
+func skipAliasColumnList(tokens []definitionToken, alias int) int {
+	if alias+1 < len(tokens) && tokens[alias+1].punct == '(' {
+		return skipParenthesized(tokens, alias+1)
+	}
+	return alias
 }
 
 func ambiguousRoutineTypes(signature, definition string, objects map[string]bool, searchPath []string) bool {
@@ -1751,20 +1758,6 @@ func planChangesRoutines(plan *catalog.MigrationPlan) bool {
 	return false
 }
 
-// planDropsRelations reports whether the plan drops a relation an unloadable
-// view may depend on without a catalog edge: a table, view, materialized view or
-// sequence. The view must be restored around that drop.
-func planDropsRelations(plan *catalog.MigrationPlan) bool {
-	for _, op := range plan.Ops {
-		switch op.Type {
-		case catalog.OpDropTable, catalog.OpDropView, catalog.OpDropSequence:
-			return true
-		default:
-		}
-	}
-	return false
-}
-
 // releaseRoutineOps moves routine drops and replacements that hold a dropped
 // view's row type ahead of the view drops. Target routines that still hold the
 // type are refused elsewhere; a source-only or changed-away routine can be
@@ -1834,8 +1827,18 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 			}
 		}
 	}
-	forced := routineForced || planDropsRelations(plan)
+	forced := routineForced
 	affected := affectedTableColumns(oldMeta, newMeta)
+	for _, op := range plan.Ops {
+		switch op.Type {
+		case catalog.OpDropTable, catalog.OpDropView, catalog.OpDropSequence:
+			key := objectKey(op.SchemaName, op.ObjectName)
+			if affected[key] == nil {
+				affected[key] = make(map[string]bool)
+			}
+		default:
+		}
+	}
 	if len(affected) == 0 && !forced {
 		return nil, nil, nil
 	}
@@ -2498,7 +2501,7 @@ func dependsOnAffectedColumn(dependencies []*metadatapb.DependencyColumn, affect
 		if !ok {
 			continue
 		}
-		if dependency.GetColumn() == "" || columns[dependency.GetColumn()] {
+		if dependency.GetColumn() == "" || len(columns) == 0 || columns[dependency.GetColumn()] {
 			return true
 		}
 	}

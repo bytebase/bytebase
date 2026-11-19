@@ -3094,3 +3094,48 @@ func TestViewDependencyQualificationSeesParenthesizedJoin(t *testing.T) {
 	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
 	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
 }
+
+// TestProviderRelationDropLeavesUnrelatedViews covers a materialized-view drop:
+// only the unloadable view whose dependency graph reaches the dropped relation is
+// restored, so an unrelated populated materialized view is not rebuilt WITHOUT
+// DATA.
+func TestProviderRelationDropLeavesUnrelatedViews(t *testing.T) {
+	snapshot := func(materializedDefinition string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{
+				{Name: "changed", Definition: materializedDefinition},
+				{Name: "unrelated", Definition: "SELECT FROM"},
+			},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "v",
+				Definition:        "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "changed"}},
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+
+	sql, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("SELECT 1"), snapshot("SELECT 2"))
+	require.NoError(t, err)
+	require.Contains(t, sql, `DROP VIEW IF EXISTS "public"."v"`, sql)
+	require.NotContains(t, sql, `"unrelated"`, sql)
+}
+
+// TestViewDependencyQualificationSkipsAliasColumnList covers `FROM public.t AS
+// x(t)`: the parenthesized alias column list is not a joined relation.
+func TestViewDependencyQualificationSkipsAliasColumnList(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM public.t AS x(t)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
