@@ -1426,6 +1426,18 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 				visibleFrom = recursiveStart
 			}
 			scopes = append(scopes, cteScope{name: name, start: visibleFrom, end: end})
+			for i < len(tokens) && tokens[i].punct == 0 && !tokens[i].quoted {
+				switch strings.ToUpper(tokens[i].text) {
+				case "SEARCH":
+					i = skipCTESearch(tokens, i)
+					continue
+				case "CYCLE":
+					i = skipCTECycle(tokens, i)
+					continue
+				default:
+				}
+				break
+			}
 			if i < len(tokens) && tokens[i].punct == ',' {
 				i++
 				continue
@@ -1434,6 +1446,55 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 		}
 	}
 	return scopes
+}
+
+func skipCTESearch(tokens []definitionToken, index int) int {
+	index++
+	if index < len(tokens) && !tokens[index].quoted && (strings.EqualFold(tokens[index].text, "DEPTH") || strings.EqualFold(tokens[index].text, "BREADTH")) {
+		index++
+	}
+	if index < len(tokens) && !tokens[index].quoted && strings.EqualFold(tokens[index].text, "FIRST") {
+		index++
+	}
+	if index < len(tokens) && !tokens[index].quoted && strings.EqualFold(tokens[index].text, "BY") {
+		index++
+	}
+	for index < len(tokens) {
+		if tokens[index].punct == 0 && !tokens[index].quoted && strings.EqualFold(tokens[index].text, "SET") {
+			index++
+			if index < len(tokens) && tokens[index].punct == 0 {
+				index++
+			}
+			return index
+		}
+		index++
+	}
+	return index
+}
+
+func skipCTECycle(tokens []definitionToken, index int) int {
+	index++
+	for index < len(tokens) {
+		if tokens[index].punct == 0 && !tokens[index].quoted && strings.EqualFold(tokens[index].text, "SET") {
+			index++
+			if index < len(tokens) && tokens[index].punct == 0 {
+				index++
+			}
+			break
+		}
+		index++
+	}
+	for index < len(tokens) {
+		if tokens[index].punct == 0 && !tokens[index].quoted && strings.EqualFold(tokens[index].text, "USING") {
+			index++
+			if index < len(tokens) && tokens[index].punct == 0 {
+				index++
+			}
+			return index
+		}
+		index++
+	}
+	return index
 }
 
 func skipParenthesized(tokens []definitionToken, index int) int {
@@ -1975,7 +2036,7 @@ func restoreUnloadableDependentViews(plan *catalog.MigrationPlan, from *catalog.
 				affected[key] = make(map[string]bool)
 			}
 		case catalog.OpDropSchema:
-			markSchemaRelationsAffected(affected, schemaByName(oldMeta, op.SchemaName))
+			markDroppedSchemaAffected(affected, oldMeta, op.SchemaName)
 		default:
 		}
 	}
@@ -2642,6 +2703,22 @@ func markAffectedPartitionColumn(affected affectedColumnSet, parentSchema string
 	})
 }
 
+// markDroppedSchemaAffected marks the dropped schema's own relations and every
+// partition whose effective schema is the dropped schema, wherever its parent
+// table lives.
+func markDroppedSchemaAffected(affected affectedColumnSet, meta *metadatapb.DatabaseSchemaMetadata, schemaName string) {
+	markSchemaRelationsAffected(affected, schemaByName(meta, schemaName))
+	for _, schema := range meta.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			forEachPartitionWithSchema(table.GetPartitions(), schema.GetName(), func(partition *metadatapb.TablePartitionMetadata, partitionSchema string) {
+				if partitionSchema == schemaName {
+					markAffected(affected, objectKey(partitionSchema, partition.GetName()))
+				}
+			})
+		}
+	}
+}
+
 // markSchemaRelationsAffected marks every relation in a removed schema, whose
 // DROP SCHEMA ... CASCADE can remove retained dependents without an individual
 // relation drop op.
@@ -2901,8 +2978,7 @@ func snapshotObjects(meta *metadatapb.DatabaseSchemaMetadata) map[string]proto.M
 				partition := partitionSchema + "." + p.GetName()
 				objects["rel:"+partition] = p
 				for _, idx := range p.GetIndexes() {
-					objects["idx:"+partition+"."+idx.GetName()] = idx
-					objects["con:"+partition+"."+idx.GetName()] = idx
+					addIndexObjects(objects, partition, idx)
 				}
 				for _, check := range p.GetCheckConstraints() {
 					objects["con:"+partition+"."+check.GetName()] = check
@@ -3133,12 +3209,23 @@ func insertSourceOnlyDrops(ops []catalog.MigrationOp, drops map[string]catalog.M
 	return result
 }
 
+func addIndexObjects(objects map[string]proto.Message, table string, idx *metadatapb.IndexMetadata) {
+	objects["idx:"+table+"."+idx.GetName()] = idx
+	objects["con:"+table+"."+idx.GetName()] = idx
+	if idx.GetIsConstraint() {
+		constraintName := idx.GetName()
+		if constraints := idx.GetConstraints(); len(constraints) > 0 {
+			constraintName = constraints[0].GetName()
+		}
+		objects["con:"+table+"."+constraintName] = idx
+	}
+}
+
 // addTableParts indexes a table's indexes and constraints by their own metadata,
 // so an unchanged unloadable object does not refuse an unrelated table change.
 func addTableParts(objects map[string]proto.Message, table string, t *metadatapb.TableMetadata) {
 	for _, idx := range t.GetIndexes() {
-		objects["idx:"+table+"."+idx.GetName()] = idx
-		objects["con:"+table+"."+idx.GetName()] = idx
+		addIndexObjects(objects, table, idx)
 	}
 	for _, c := range t.GetCheckConstraints() {
 		objects["con:"+table+"."+c.GetName()] = c

@@ -3277,3 +3277,58 @@ func TestInsertSourceOnlyDropsSkipsSchemaCoveredChildren(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, catalog.OpDropSchema, result[0].Type)
 }
+
+// TestSnapshotObjectsUsesConstraintName covers an index whose constraint has a
+// different name from the index: the report key uses the constraint name.
+func TestSnapshotObjectsUsesConstraintName(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+		Name: "public",
+		Tables: []*metadatapb.TableMetadata{{
+			Name: "t",
+			Indexes: []*metadatapb.IndexMetadata{{
+				Name:         "t_pkey_idx",
+				IsConstraint: true,
+				Constraints:  []*metadatapb.IndexConstraintMetadata{{Name: "t_pkey"}},
+			}},
+		}},
+	}}}
+	objects := snapshotObjects(meta)
+	require.NotNil(t, objects["con:public.t.t_pkey"])
+}
+
+// TestMarkDroppedSchemaAffectedIncludesCrossSchemaPartition covers a partition in
+// the dropped schema whose parent table lives elsewhere.
+func TestMarkDroppedSchemaAffectedIncludesCrossSchemaPartition(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{
+		{Name: "main", Tables: []*metadatapb.TableMetadata{{
+			Name:       "t",
+			Partitions: []*metadatapb.TablePartitionMetadata{{Name: "p", Schema: "parted"}},
+		}}},
+		{Name: "parted"},
+	}}
+	affected := make(affectedColumnSet)
+	markDroppedSchemaAffected(affected, meta, "parted")
+	require.Contains(t, affected, objectKey("parted", "p"))
+}
+
+// TestCTESearchAndCycleClausesDoNotHideSiblings covers SEARCH and CYCLE clauses
+// between a CTE body and the next sibling declaration.
+func TestCTESearchAndCycleClausesDoNotHideSiblings(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "WITH RECURSIVE x AS (SELECT 1) SEARCH DEPTH FIRST BY id SET ord, t AS (SELECT 1) SELECT * FROM public.t UNION ALL SELECT * FROM t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+
+	meta.Schemas[0].Views[0].Definition = "WITH RECURSIVE x AS (SELECT 1) CYCLE id SET is_cycle USING path, t AS (SELECT 1) SELECT * FROM public.t UNION ALL SELECT * FROM t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
