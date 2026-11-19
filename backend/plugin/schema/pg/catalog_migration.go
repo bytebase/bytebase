@@ -728,7 +728,17 @@ func routineReturnClause(definition string) string {
 			break
 		}
 	}
-	if _, typeEnd, ok := parseTypeReferenceAt(rest, typeStart); ok {
+	if hasKeywordPrefix(rest[typeStart:], "TABLE") {
+		if open := indexOutsideQuotes(rest[typeStart:], "("); open >= 0 {
+			if closeIndex, ok := matchingParenOutsideQuotes(rest, typeStart+open); ok {
+				searchStart = closeIndex + 1
+			} else {
+				searchStart = typeStart + len("TABLE")
+			}
+		} else {
+			searchStart = typeStart + len("TABLE")
+		}
+	} else if _, typeEnd, ok := parseTypeReferenceAt(rest, typeStart); ok {
 		searchStart = typeEnd
 	}
 	tail := rest[searchStart:]
@@ -2862,6 +2872,41 @@ func skipSQLWhitespace(text string, index int) int {
 		index++
 	}
 	return index
+}
+
+func matchingParenOutsideQuotes(text string, open int) (int, bool) {
+	depth := 0
+	for i := open; i < len(text); i++ {
+		switch text[i] {
+		case '"', '\'':
+			i = closingQuote(text, i, text[i])
+		case '$':
+			if end, ok := dollarQuoteEnd(text, i); ok {
+				i = end
+			}
+		case '/':
+			if strings.HasPrefix(text[i:], "/*") {
+				i = blockCommentEnd(text, i) - 1
+			}
+		case '-':
+			if strings.HasPrefix(text[i:], "--") {
+				if end := strings.IndexByte(text[i+2:], '\n'); end >= 0 {
+					i += 2 + end
+				} else {
+					return 0, false
+				}
+			}
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i, true
+			}
+		default:
+		}
+	}
+	return 0, false
 }
 
 func indexOutsideQuotesKeyword(text, keyword string) int {

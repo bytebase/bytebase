@@ -2048,6 +2048,15 @@ func TestRestoredViewRefusesRoutinesHoldingItsRowType(t *testing.T) {
 			refused: true,
 		},
 		{
+			name: "returns table with a keyword column name",
+			world: world{function: &metadatapb.FunctionMetadata{
+				Name:       "tk",
+				Signature:  "tk()",
+				Definition: "CREATE FUNCTION public.tk() RETURNS TABLE (x public.v, cost integer) LANGUAGE sql AS $$ SELECT $$",
+			}},
+			refused: true,
+		},
+		{
 			name: "return type with a clause word in its name",
 			world: world{viewName: "v LANGUAGE suffix", function: &metadatapb.FunctionMetadata{
 				Name:       "w",
