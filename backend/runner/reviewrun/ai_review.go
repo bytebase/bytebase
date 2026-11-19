@@ -641,7 +641,7 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 		rule := member.result
 		thread := slices.Index(threads, rule)
 		if thread < 0 {
-			if !canKeepEarlier(rule) && !holdsFactsOnly(rule) {
+			if !offersEarlier(rule) {
 				continue
 			}
 			thread = len(threads)
@@ -726,6 +726,40 @@ func mergeSheetFindings(ctx context.Context, merge mergeFunc, findings []*aiRevi
 	return problems, nil
 }
 
+// offersEarlier reports whether the merge is asked if the comment an earlier
+// run left on a rule result already states this run's problems. A comment of
+// facts is offered only when its facts name no database: facts that do are
+// about that database, and the merge, which is shown no database name, cannot
+// tell whether they state a problem on another one.
+func offersEarlier(rule *ruleResult) bool {
+	if rule.earlier == nil {
+		return false
+	}
+	if statesProblem(rule.earlier.Comment) {
+		return canKeepEarlier(rule)
+	}
+	if !holdsFactsOnly(rule) {
+		return false
+	}
+	var targets []string
+	for _, member := range rule.members {
+		targets = append(targets, member.targets...)
+	}
+	own := strings.Split(rule.ruleText(), "\n")
+	for _, line := range strings.Split(rule.earlier.Comment, "\n") {
+		// The rules' own lines name databases in a merged result.
+		if slices.Contains(own, line) {
+			continue
+		}
+		for _, label := range databaseLabels(targets) {
+			if strings.Contains(line, label) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // canKeepEarlier reports whether the comment an earlier run left on a rule
 // result can stay as it is. It holds more than the rules' own text, which is
 // what the AI review added then. It holds every line of the rules' text as it
@@ -772,7 +806,8 @@ func canKeepEarlier(rule *ruleResult) bool {
 // the higher priority. The other is a result with a problem that is not on
 // every database of its rule finding, when the comment states a problem:
 // canKeepEarlier offers only such a comment written for all of them. A comment
-// of facts alone says no problem is on any database, so it stays either way.
+// of facts is offered only when it names no database, so its facts hold for
+// whichever databases the problem is on, and it stays either way.
 func markUnchanged(problems []*aiReviewProblem, same map[*ruleResult]bool) {
 	priority := make(map[*ruleResult]storepb.IssueCommentPayload_ReviewMetadata_Priority)
 	partial := make(map[*ruleResult]bool)
