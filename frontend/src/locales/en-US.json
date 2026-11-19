@@ -4507,7 +4507,7 @@
     "access-type-export": "Export the query result",
     "access-type-unmask": "See unmasked sensitive data",
     "activate-access": "Activate",
-    "activate-confirm": "Are you sure you want to activate this access grant?",
+    "activate-confirm": "This access grant will allow its approved query to run.",
     "add-a-new-instance": "Add new instance",
     "admin-mode": {
       "exit": "Exit admin mode",
@@ -4816,7 +4816,7 @@
     },
     "result-view-mode": "Result view mode",
     "revoke-access": "Revoke",
-    "revoke-confirm": "Are you sure you want to revoke this access grant?",
+    "revoke-confirm": "This access grant will no longer authorize its approved query.",
     "rows": {
       "self": "rows"
     },

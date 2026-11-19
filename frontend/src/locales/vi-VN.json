@@ -4507,7 +4507,7 @@
     "access-type-export": "Xuất kết quả truy vấn",
     "access-type-unmask": "Xem dữ liệu nhạy cảm chưa che",
     "activate-access": "Kích hoạt",
-    "activate-confirm": "Bạn có chắc chắn muốn kích hoạt cấp quyền truy cập này không?",
+    "activate-confirm": "Khi được kích hoạt, quyền truy cập này sẽ cho phép chạy truy vấn đã được phê duyệt.",
     "add-a-new-instance": "Thêm phiên bản mới",
     "admin-mode": {
       "exit": "Thoát chế độ quản trị",
@@ -4816,7 +4816,7 @@
     },
     "result-view-mode": "Chế độ xem kết quả",
     "revoke-access": "Thu hồi",
-    "revoke-confirm": "Bạn có chắc chắn muốn thu hồi cấp quyền truy cập này không?",
+    "revoke-confirm": "Quyền truy cập này sẽ không còn cho phép chạy truy vấn đã được phê duyệt.",
     "rows": {
       "self": "dòng"
     },

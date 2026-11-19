@@ -4507,7 +4507,7 @@
     "access-type-export": "Exportar el resultado de la consulta",
     "access-type-unmask": "Ver datos sensibles sin enmascarar",
     "activate-access": "Activar",
-    "activate-confirm": "¿Está seguro de que desea activar esta concesión de acceso?",
+    "activate-confirm": "Al activar esta concesión, se permitirá ejecutar la consulta aprobada.",
     "add-a-new-instance": "Agregar nueva instancia",
     "admin-mode": {
       "exit": "Salir del modo administrador",
@@ -4816,7 +4816,7 @@
     },
     "result-view-mode": "Modo de vista de resultados",
     "revoke-access": "Revocar",
-    "revoke-confirm": "¿Está seguro de que desea revocar esta concesión de acceso?",
+    "revoke-confirm": "Esta concesión dejará de autorizar la consulta aprobada.",
     "rows": {
       "self": "filas"
     },
