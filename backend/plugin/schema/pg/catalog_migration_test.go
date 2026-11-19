@@ -3448,3 +3448,67 @@ func TestBackupRoutineChangeDoesNotRestoreManagedMatview(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, sql)
 }
+
+// TestRoutineReturnsClauseIsCaseInsensitive covers lowercase SQL in a routine
+// definition.
+func TestRoutineReturnsClauseIsCaseInsensitive(t *testing.T) {
+	snapshot := func(columnType string) *model.DatabaseMetadata {
+		return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: columnType})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "v",
+				Definition:        "SELECT FROM",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t", Column: "id"}},
+			}},
+			Functions: []*metadatapb.FunctionMetadata{{
+				Name:       "f",
+				Signature:  "f()",
+				Definition: "create function public.f() returns public.v language sql as $$ select 1 $$",
+			}},
+		}}}, nil, nil, storepb.Engine_COCKROACHDB, true)
+	}
+	_, err := schema.DiffMigration(storepb.Engine_COCKROACHDB, snapshot("integer"), snapshot("bigint"))
+	require.ErrorContains(t, err, `routine "public"."f" uses the row type of view "public"."v"`)
+}
+
+// TestViewDependencyQualificationSeesCastRegclass covers CAST('s' AS regclass)
+// alongside a qualified regclass literal.
+func TestViewDependencyQualificationSeesCastRegclass(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:      "public",
+			Sequences: []*metadatapb.SequenceMetadata{{Name: "s", DataType: "bigint", Start: "1", Increment: "1"}},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT nextval(CAST('s' AS regclass)), nextval('public.s'::regclass)",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "s"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.ErrorContains(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), `view "public"."w" has an unqualified reference to "public"."s"`)
+
+	meta.Schemas[0].Views[0].Definition = "SELECT nextval(CAST('public.s' AS regclass)), nextval('public.s'::regclass)"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSeesThreePartRelation covers CockroachDB's
+// database.schema.relation form.
+func TestViewDependencyQualificationSeesThreePartRelation(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT * FROM db.public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}

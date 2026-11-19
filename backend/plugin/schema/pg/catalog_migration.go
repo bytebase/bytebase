@@ -706,7 +706,7 @@ func dollarQuoteEnd(text string, start int) (int, bool) {
 // type: its RETURNS clause, or the columns of RETURNS TABLE.
 func routineResultNamesType(definition, key string, objects map[string]bool, searchPath []string) bool {
 	clause := routineReturnClause(definition)
-	if strings.HasPrefix(clause, "TABLE") {
+	if hasPrefixFold(clause, "TABLE") {
 		return parametersNameType(routineArgumentList(clause), key, objects, searchPath)
 	}
 	return namesType(clause, key, objects, searchPath)
@@ -1270,7 +1270,15 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		if !token.quoted && strings.EqualFold(token.text, "CAST") && i+1 < len(tokens) && tokens[i+1].punct == '(' {
 			castEnd := skipParenthesized(tokens, i+1)
 			if asIndex := topLevelCastAS(tokens, i+2, castEnd); asIndex >= 0 {
-				if matched, unqualified := typeReferenceAfter(tokens, asIndex+1, schemaName, objectName); matched {
+				if isRegclassType(tokens, asIndex+1) {
+					if asIndex > i+2 && tokens[asIndex-1].literal {
+						if matched, unqualified := literalRelationReference(tokens[asIndex-1].text, schemaName, objectName); matched {
+							qualified = true
+						} else if unqualified {
+							return false
+						}
+					}
+				} else if matched, unqualified := typeReferenceAfter(tokens, asIndex+1, schemaName, objectName); matched {
 					qualified = true
 				} else if unqualified {
 					return false
@@ -1338,11 +1346,21 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		}
 		first := identifier{name: token.text, quoted: token.quoted}
 		if i+2 < len(tokens) && tokens[i+1].punct == '.' && tokens[i+2].punct == 0 {
-			second := identifier{name: tokens[i+2].text, quoted: tokens[i+2].quoted}
+			secondIndex := i + 2
+			if secondIndex+2 < len(tokens) && tokens[secondIndex+1].punct == '.' && tokens[secondIndex+2].punct == 0 {
+				schema := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
+				object := identifier{name: tokens[secondIndex+2].text, quoted: tokens[secondIndex+2].quoted}
+				if schema.matches(schemaName) && object.matches(objectName) {
+					qualified = true
+				}
+				i = skipRelationAlias(tokens, secondIndex+2)
+				continue
+			}
+			second := identifier{name: tokens[secondIndex].text, quoted: tokens[secondIndex].quoted}
 			if first.matches(schemaName) && second.matches(objectName) {
 				qualified = true
 			}
-			i = skipRelationAlias(tokens, i+2)
+			i = skipRelationAlias(tokens, secondIndex)
 			continue
 		}
 		if first.matches(objectName) && !isCTEReference(ctes, first, i) {
@@ -1351,6 +1369,24 @@ func definitionQualifies(definition, schemaName, objectName string) bool {
 		i = skipRelationAlias(tokens, i)
 	}
 	return qualified
+}
+
+func hasPrefixFold(text, prefix string) bool {
+	return len(text) >= len(prefix) && strings.EqualFold(text[:len(prefix)], prefix)
+}
+
+func isRegclassType(tokens []definitionToken, index int) bool {
+	if index >= len(tokens) || tokens[index].punct != 0 {
+		return false
+	}
+	last := identifier{name: tokens[index].text, quoted: tokens[index].quoted}
+	if index+2 < len(tokens) && tokens[index+1].punct == '.' && tokens[index+2].punct == 0 {
+		last = identifier{name: tokens[index+2].text, quoted: tokens[index+2].quoted}
+	}
+	if last.quoted {
+		return last.name == "regclass"
+	}
+	return strings.EqualFold(last.name, "regclass")
 }
 
 func topLevelCastAS(tokens []definitionToken, start, end int) int {
@@ -1638,9 +1674,7 @@ func definitionTokens(text string) []definitionToken {
 		switch {
 		case text[i] == '\'':
 			end := closingQuote(text, i, '\'')
-			if isRegclassToken(text, end+1) {
-				tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: true})
-			}
+			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+1:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
 			i = end + 1
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
@@ -1776,7 +1810,7 @@ func ambiguousRoutineTypes(signature, definition string, objects map[string]bool
 		return true
 	}
 	clause := routineReturnClause(definition)
-	if strings.HasPrefix(clause, "TABLE") {
+	if hasPrefixFold(clause, "TABLE") {
 		return ambiguousParameters(routineArgumentList(clause), objects, searchPath)
 	}
 	return ambiguousTypeText(clause, objects, searchPath)
@@ -2518,7 +2552,7 @@ func indexOutsideQuotes(text, needle string) int {
 			}
 		default:
 		}
-		if strings.HasPrefix(text[i:], needle) {
+		if i+len(needle) <= len(text) && strings.EqualFold(text[i:i+len(needle)], needle) {
 			return i
 		}
 	}
