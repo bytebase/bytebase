@@ -1135,6 +1135,82 @@ func startsUnquotedIdentifier(text string, index int) bool {
 	return isIdentifierRune(r)
 }
 
+func decodeEscapeString(text string) string {
+	var result strings.Builder
+	for i := 0; i < len(text); i++ {
+		if text[i] != '\\' || i+1 >= len(text) {
+			result.WriteByte(text[i])
+			continue
+		}
+		i++
+		switch text[i] {
+		case 'b':
+			result.WriteByte('\b')
+		case 'f':
+			result.WriteByte('\f')
+		case 'n':
+			result.WriteByte('\n')
+		case 'r':
+			result.WriteByte('\r')
+		case 't':
+			result.WriteByte('\t')
+		case 'x':
+			if i+2 < len(text) {
+				if value, ok := hexNumber(text[i+1:i+3], 2); ok {
+					result.WriteRune(rune(value))
+					i += 2
+					continue
+				}
+			}
+			result.WriteByte(text[i])
+		case 'u':
+			if i+4 < len(text) {
+				if value, ok := hexNumber(text[i+1:i+5], 4); ok {
+					result.WriteRune(rune(value))
+					i += 4
+					continue
+				}
+			}
+			result.WriteByte(text[i])
+		case 'U':
+			if i+8 < len(text) {
+				if value, ok := hexNumber(text[i+1:i+9], 8); ok && utf8.ValidRune(rune(value)) {
+					result.WriteRune(rune(value))
+					i += 8
+					continue
+				}
+			}
+			result.WriteByte(text[i])
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			value := 0
+			for count := 0; count < 3 && i < len(text) && text[i] >= '0' && text[i] <= '7'; count++ {
+				value = value*8 + int(text[i]-'0')
+				i++
+			}
+			i--
+			result.WriteRune(rune(value))
+		default:
+			result.WriteByte(text[i])
+		}
+	}
+	return result.String()
+}
+
+func hexNumber(text string, length int) (int, bool) {
+	if len(text) != length {
+		return 0, false
+	}
+	value := 0
+	for i := 0; i < length; i++ {
+		digit := hexValue(text[i])
+		if digit < 0 {
+			return 0, false
+		}
+		value = value*16 + digit
+	}
+	return value, true
+}
+
 func decodeUnicodeIdentifier(text string, escape rune) (string, bool) {
 	var result strings.Builder
 	for i := 0; i < len(text); {
@@ -1412,7 +1488,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				if inRelations {
 					continue
 				}
-			case "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET":
+			case "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "FETCH", "OFFSET", "FOR":
 				inRelations = false
 				continue
 			default:
@@ -1846,7 +1922,11 @@ func definitionTokens(text string) []definitionToken {
 			i = end + 1
 		case (text[i] == 'E' || text[i] == 'e' || text[i] == 'B' || text[i] == 'b' || text[i] == 'X' || text[i] == 'x' || text[i] == 'N' || text[i] == 'n') && i+1 < len(text) && text[i+1] == '\'':
 			end := closingQuote(text, i+1, '\'')
-			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+2:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
+			content := strings.ReplaceAll(text[i+2:end], "''", "'")
+			if text[i] == 'E' || text[i] == 'e' {
+				content = decodeEscapeString(content)
+			}
+			tokens = append(tokens, definitionToken{text: content, literal: true, regclass: isRegclassToken(text, end+1)})
 			i = end + 1
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '"':
 			name, next, ok := quotedIdentifier(text, i+2)
@@ -1873,8 +1953,24 @@ func definitionTokens(text string) []definitionToken {
 			i = next
 		case (text[i] == 'U' || text[i] == 'u') && i+2 < len(text) && text[i+1] == '&' && text[i+2] == '\'':
 			end := closingQuote(text, i+2, '\'')
-			tokens = append(tokens, definitionToken{text: strings.ReplaceAll(text[i+3:end], "''", "'"), literal: true, regclass: isRegclassToken(text, end+1)})
-			i = end + 1
+			content := strings.ReplaceAll(text[i+3:end], "''", "'")
+			escape := '\\'
+			next := end + 1
+			if escapeIndex := skipSQLWhitespace(text, next); hasKeywordPrefix(text[escapeIndex:], "UESCAPE") {
+				escapeIndex = skipSQLWhitespace(text, escapeIndex+len("UESCAPE"))
+				if escapeIndex < len(text) && text[escapeIndex] == '\'' {
+					escapeEnd := closingQuote(text, escapeIndex, '\'')
+					if runes := []rune(text[escapeIndex+1 : escapeEnd]); len(runes) == 1 {
+						escape = runes[0]
+					}
+					next = escapeEnd + 1
+				}
+			}
+			if decoded, ok := decodeUnicodeIdentifier(content, escape); ok {
+				content = decoded
+			}
+			tokens = append(tokens, definitionToken{text: content, literal: true, regclass: isRegclassToken(text, next)})
+			i = next
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
 				if isRegclassToken(text, end+1) {
@@ -2001,7 +2097,7 @@ func skipTablesampleClause(tokens []definitionToken, after int) int {
 
 func relationClauseKeyword(upper string) bool {
 	switch upper {
-	case "FROM", "JOIN", "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
+	case "FROM", "JOIN", "WHERE", "GROUP", "ORDER", "HAVING", "LIMIT", "ON", "USING", "WINDOW", "UNION", "EXCEPT", "INTERSECT", "RETURNING", "SET", "FETCH", "OFFSET", "FOR", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
 		return true
 	default:
 		return false
