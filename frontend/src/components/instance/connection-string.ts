@@ -1512,7 +1512,7 @@ function parseSnowflakeConnectionString(
   return {
     host,
     port: "",
-    username: uri.username ?? (uri.query.get("user") || undefined),
+    username: uri.username || uri.query.get("user") || undefined,
     password: normalizePassword(uri.password ?? uri.query.get("password")),
   };
 }
@@ -1992,6 +1992,20 @@ function clearTokenField(ds: EditDataSource): EditDataSource {
   };
 }
 
+function clearSnowflakeKeyPairFields(ds: EditDataSource): EditDataSource {
+  return {
+    ...ds,
+    authenticationPrivateKey: "",
+    updatedToken: "",
+    authenticationPrivateKeyPassphrase: "",
+    updatedSecretFields: (ds.updatedSecretFields ?? []).filter(
+      (field) =>
+        field !== "authenticationPrivateKey" &&
+        field !== "authenticationPrivateKeyPassphrase"
+    ),
+  };
+}
+
 function clearMasterPasswordField(ds: EditDataSource): EditDataSource {
   return {
     ...ds,
@@ -2074,6 +2088,10 @@ export function applyParsedConnectionString(
     next.additionalAddresses = (parsed.additionalAddresses ?? []).map((addr) =>
       create(DataSource_AddressSchema, addr)
     );
+  }
+
+  if (engine === Engine.SNOWFLAKE) {
+    next = clearSnowflakeKeyPairFields(next);
   }
 
   if (parsed.tls !== undefined) {

@@ -83,13 +83,9 @@ export function validateDataSource(
     errors.serviceName = "oracle-service";
   if (engine === Engine.DATABRICKS) {
     require("warehouseId", ds.warehouseId);
-  }
-  if (engine === Engine.DATABRICKS || engine === Engine.SNOWFLAKE) {
     const key = getDataSourceSecretValue(ds, "authenticationPrivateKey");
     if (key !== undefined) {
-      require(engine === Engine.DATABRICKS
-        ? "updatedToken"
-        : "authenticationPrivateKey", key);
+      require("updatedToken", key);
     }
   }
   if (engine === Engine.REDIS && ds.redisType === DataSource_RedisType.SENTINEL)

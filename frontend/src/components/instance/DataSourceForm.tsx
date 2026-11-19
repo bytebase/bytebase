@@ -1919,10 +1919,7 @@ export function DataSourceForm({
                 {/* Snowflake keypair */}
                 {basicInfo.engine === Engine.SNOWFLAKE && (
                   <>
-                    <FormField
-                      validationField="authenticationPrivateKey"
-                      title={<>{t("data-source.ssh.private-key")}</>}
-                    >
+                    <FormField title={<>{t("data-source.ssh.private-key")}</>}>
                       <SecretInput
                         resetKey={dataSource.id}
                         aria-label={t("data-source.ssh.private-key")}
@@ -1933,7 +1930,6 @@ export function DataSourceForm({
                         isCreating={isCreating || dataSource.pendingCreate}
                         disabled={!allowEdit}
                         multiline
-                        allowEmpty={false}
                         onValueChange={(value) =>
                           onDataSourceChange(
                             updateDataSourceSecret(

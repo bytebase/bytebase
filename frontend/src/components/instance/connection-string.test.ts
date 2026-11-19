@@ -1041,6 +1041,30 @@ describe("parseConnectionString - ClickHouse, Snowflake, Elasticsearch, Cassandr
     expect(
       parseConnectionString(
         Engine.SNOWFLAKE,
+        "snowflake://bytebase@org-account.snowflakecomputing.com"
+      )
+    ).toEqual({
+      host: "org-account",
+      port: "",
+      username: "bytebase",
+      password: undefined,
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.SNOWFLAKE,
+        "snowflake://:secret@org-account.snowflakecomputing.com/?user=bytebase"
+      )
+    ).toEqual({
+      host: "org-account",
+      port: "",
+      username: "bytebase",
+      password: "secret",
+    });
+
+    expect(
+      parseConnectionString(
+        Engine.SNOWFLAKE,
         "jdbc:snowflake://xy12345.us-east-1.snowflakecomputing.com:443/?user=bytebase&password=secret"
       )
     ).toEqual({
@@ -1404,5 +1428,53 @@ describe("applyParsedConnectionString - additional engines", () => {
     expect(withoutToken.updatedSecretFields).not.toContain(
       "authenticationPrivateKey"
     );
+  });
+
+  it("clears stale Snowflake key-pair credentials when applying a Snowflake URL", () => {
+    const withKeyPair = makeDraft({
+      authenticationPrivateKey:
+        "-----BEGIN PRIVATE KEY-----\nstale\n-----END PRIVATE KEY-----",
+      updatedToken:
+        "-----BEGIN PRIVATE KEY-----\nstale\n-----END PRIVATE KEY-----",
+      authenticationPrivateKeyPassphrase: "stale-passphrase",
+      updatedSecretFields: [
+        "authenticationPrivateKey",
+        "authenticationPrivateKeyPassphrase",
+      ],
+    });
+
+    const withPassword = applyParsedConnectionString(
+      withKeyPair,
+      Engine.SNOWFLAKE,
+      {
+        host: "org-account",
+        port: "",
+        username: "bytebase",
+        password: "secret",
+      }
+    );
+    expect(withPassword.host).toBe("org-account");
+    expect(withPassword.username).toBe("bytebase");
+    expect(withPassword.updatedPassword).toBe("secret");
+    expect(withPassword.authenticationPrivateKey).toBe("");
+    expect(withPassword.updatedToken).toBe("");
+    expect(withPassword.authenticationPrivateKeyPassphrase).toBe("");
+    expect(withPassword.updatedSecretFields).toEqual(["password"]);
+
+    const withoutPassword = applyParsedConnectionString(
+      withKeyPair,
+      Engine.SNOWFLAKE,
+      {
+        host: "org-account-2",
+        port: "",
+        username: "bytebase",
+      }
+    );
+    expect(withoutPassword.host).toBe("org-account-2");
+    expect(withoutPassword.updatedPassword).toBe("");
+    expect(withoutPassword.authenticationPrivateKey).toBe("");
+    expect(withoutPassword.updatedToken).toBe("");
+    expect(withoutPassword.authenticationPrivateKeyPassphrase).toBe("");
+    expect(withoutPassword.updatedSecretFields).toEqual([]);
   });
 });
