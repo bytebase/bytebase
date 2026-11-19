@@ -98,13 +98,6 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		}
 	}
 
-	var tlsFunc func(host string) (*tls.Config, error)
-	if dataSource.GetUseSsl() {
-		tlsFunc = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(dataSource)
-		}
-	}
-
 	addrs := []string{formatAddress(dataSource.Host, dataSource.Port)}
 	for _, addr := range dataSource.AdditionalAddresses {
 		addrs = append(addrs, formatAddress(addr.Host, addr.Port))
@@ -115,7 +108,7 @@ func (*Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionC
 		Database:      config.ConnectionContext.DatabaseName,
 		User:          dataSource.Username,
 		Password:      config.Password,
-		TLS:           tlsFunc,
+		TLS:           tlsConfigFunc(dataSource),
 		Dial:          dial,
 		EngineVersion: config.ConnectionContext.EngineVersion,
 	})
@@ -380,6 +373,15 @@ func remoteTCPAddr(address string) *net.TCPAddr {
 		return &net.TCPAddr{}
 	}
 	return &net.TCPAddr{IP: net.ParseIP(host), Port: number}
+}
+
+func tlsConfigFunc(dataSource *storepb.DataSource) func(string) (*tls.Config, error) {
+	if !dataSource.GetUseSsl() {
+		return nil
+	}
+	return func(host string) (*tls.Config, error) {
+		return util.GetTLSConfigForHost(dataSource, host)
+	}
 }
 
 func formatAddress(host, port string) string {

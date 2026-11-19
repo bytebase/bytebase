@@ -112,8 +112,8 @@ func toDriverConfig(config db.ConnectionConfig) (omnidriver.Config, omnimongo.Op
 		Params:   connectionParams(dataSource),
 	}
 	if dataSource.GetUseSsl() {
-		driverConfig.TLS = func(string) (*tls.Config, error) {
-			return util.GetTLSConfig(dataSource)
+		driverConfig.TLS = func(host string) (*tls.Config, error) {
+			return util.GetTLSConfigForHost(dataSource, host)
 		}
 	}
 	return driverConfig, omnimongo.Options{SRV: dataSource.GetSrv()}, nil

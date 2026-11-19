@@ -1296,9 +1296,8 @@ function parseMongoConnectionString(
       (uri.path ? decodePercent(uri.path) : undefined)
     )?.trim() || undefined;
 
-  // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` is explicit:
-  // `util.GetTLSConfig` verifies certificates against the SRV hostname rather
-  // than shard hostnames, whereas the Go driver already negotiates SRV TLS.
+  // Leave `tls` unset for `mongodb+srv://` unless `?tls`/`?ssl` is explicit,
+  // since the MongoDB driver already enables TLS by default for SRV URIs.
   const allowInvalid =
     parseBooleanValue(uri.query.get("tlsallowinvalidcertificates")) === true ||
     parseBooleanValue(uri.query.get("tlsinsecure")) === true ||
