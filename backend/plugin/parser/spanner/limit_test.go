@@ -3,6 +3,7 @@ package spanner
 import (
 	"testing"
 
+	"github.com/bytebase/omni/googlesql/parser"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,16 +74,37 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:      "SELECT x FROM",
 		},
 		{
-			// The pipe syntax is part of the query the parser reads, so the
-			// limit lands after the pipeline's last operator.
-			name:      "a pipe query takes the limit after its pipeline",
+			// A pipe query's cap is a pipe operator: a bare LIMIT after the
+			// pipeline is a syntax error, so the rewrite appends `|> LIMIT`.
+			name:      "a pipe query takes the cap as a pipe operator",
 			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
-			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1 LIMIT 100",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1 |> LIMIT 100",
+		},
+		{
+			name:      "a pipe query's higher limit is lowered",
+			statement: "SELECT x FROM t |> WHERE x > 1 |> LIMIT 5000",
+			want:      "SELECT x FROM t |> WHERE x > 1 |> LIMIT 100",
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, statementWithResultLimit(tc.statement, 100, ""))
 		})
+	}
+}
+
+// TestResultLimitRewriteParses holds the rewrite to the one thing a cap cannot
+// trade away: the statement it hands the server must still be SQL Spanner reads,
+// which for a pipe query means the cap travels as a pipe operator.
+func TestResultLimitRewriteParses(t *testing.T) {
+	for _, statement := range []string{
+		"SELECT x FROM t",
+		"WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
+		"SELECT x FROM t |> WHERE x > 1 |> LIMIT 5000",
+		"SELECT x FROM t |> AGGREGATE COUNT(*) AS n",
+	} {
+		rewritten := statementWithResultLimit(statement, 100, "")
+		_, err := parser.Parse(rewritten)
+		require.NoError(t, err, "rewritten: %s", rewritten)
 	}
 }
