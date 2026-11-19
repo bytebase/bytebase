@@ -1360,6 +1360,7 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 			recursive = true
 			i++
 		}
+		recursiveStart := -1
 		for i < len(tokens) {
 			if tokens[i].punct != 0 {
 				break
@@ -1387,7 +1388,10 @@ func definitionCTEs(tokens []definitionToken) []cteScope {
 			i = bodyEnd + 1
 			visibleFrom := i
 			if recursive {
-				visibleFrom = bodyStart
+				if recursiveStart < 0 {
+					recursiveStart = bodyStart
+				}
+				visibleFrom = recursiveStart
 			}
 			scopes = append(scopes, cteScope{name: name, start: visibleFrom, end: end})
 			if i < len(tokens) && tokens[i].punct == ',' {

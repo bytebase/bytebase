@@ -2880,6 +2880,9 @@ func TestViewDependencyQualificationScopesCTEs(t *testing.T) {
 
 	meta.Schemas[0].Views[0].Definition = "WITH RECURSIVE t AS (SELECT * FROM t) SELECT * FROM public.t"
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), "a recursive CTE may reference itself")
+
+	meta.Schemas[0].Views[0].Definition = "WITH RECURSIVE x AS (SELECT * FROM t), t AS (SELECT 1) SELECT * FROM public.t"
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths), "a recursive CTE may reference a later sibling")
 }
 
 // TestSnapshotObjectsIncludesPartitionConstraints covers a partition CHECK
