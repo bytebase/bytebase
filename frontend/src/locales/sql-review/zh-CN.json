@@ -71,6 +71,7 @@
   },
   "delete": "删除审核策略",
   "delete-description": "SQL 审核策略及其所有规则将被永久删除，此操作无法撤销。",
+  "delete-policy-title": "删除 {{name}}？",
   "description": "检查每次 SQL 变更和 SQL 编辑器查询的规则。策略作用于它所绑定的环境或项目。",
   "disable-description": "禁用此策略将停止对已关联资源应用规则。您可以稍后重新启用。",
   "disabled": "SQL 审核策略已禁用",

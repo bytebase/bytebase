@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -31,6 +38,14 @@ const mocks = vi.hoisted(() => ({
   },
   pushNotification: vi.fn(),
   useUnsavedChangesGuard: vi.fn(),
+  policies: [] as {
+    id: string;
+    name: string;
+    resources: string[];
+    ruleList: unknown[];
+    enforce: boolean;
+  }[],
+  removeReviewPolicy: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -64,7 +79,10 @@ vi.mock("./SQLReviewAIReviewSection", () => ({
 }));
 
 vi.mock("@/stores/sqlReview", () => {
-  const useSQLReviewStore = () => ({ reviewPolicyList: [] });
+  const useSQLReviewStore = () => ({
+    reviewPolicyList: mocks.policies,
+    removeReviewPolicy: mocks.removeReviewPolicy,
+  });
   useSQLReviewStore.getState = () => ({
     fetchReviewPolicyList: mocks.fetchReviewPolicyList,
   });
@@ -116,6 +134,68 @@ describe("SQLReviewPage", () => {
     mocks.aiReview.enabled = true;
     mocks.pushNotification.mockReset();
     mocks.useUnsavedChangesGuard.mockReset();
+    mocks.policies = [];
+    mocks.removeReviewPolicy.mockReset().mockResolvedValue(undefined);
+  });
+
+  describe("deleting a review policy", () => {
+    beforeEach(() => {
+      mocks.sqlReviewV2.value = false;
+      mocks.policies = [
+        {
+          id: "reviewConfigs/prod",
+          name: "Prod policy",
+          resources: [],
+          ruleList: [],
+          enforce: true,
+        },
+      ];
+    });
+
+    // The table and the narrow-screen cards each have a delete button.
+    const askToDelete = () =>
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "common.delete" })[0]
+      );
+
+    test("asks in an alert dialog naming the policy, then deletes it", async () => {
+      render(<SQLReviewPage />);
+
+      askToDelete();
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("sql-review.delete-policy-title");
+      expect(dialog).toHaveTextContent("sql-review.delete-description");
+      expect(mocks.removeReviewPolicy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "common.delete" })
+        );
+      });
+
+      expect(mocks.removeReviewPolicy).toHaveBeenCalledExactlyOnceWith(
+        "reviewConfigs/prod"
+      );
+      expect(mocks.pushNotification).toHaveBeenCalledOnce();
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+      );
+    });
+
+    test("deletes nothing when the dialog is canceled", async () => {
+      render(<SQLReviewPage />);
+
+      askToDelete();
+      const dialog = await screen.findByRole("alertdialog");
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "common.cancel" })
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+      );
+      expect(mocks.removeReviewPolicy).not.toHaveBeenCalled();
+    });
   });
 
   test("shows the standard rules and the AI review under SQL Review V2", () => {

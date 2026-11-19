@@ -9,6 +9,13 @@ import {
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceLink } from "@/components/sql-review/ResourceLink";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormSection } from "@/components/ui/form";
@@ -101,7 +108,7 @@ function PolicyTable({
 }: {
   policies: SQLReviewPolicy[];
   searchText: string;
-  onDelete: (policy: SQLReviewPolicy) => void;
+  onDelete: (policy: SQLReviewPolicy) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
@@ -135,7 +142,20 @@ function PolicyTable({
     [sqlReviewStore, t]
   );
 
-  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  // The policy whose deletion awaits confirmation; a failed delete keeps the
+  // dialog open.
+  const [pendingDelete, setPendingDelete] = useState<SQLReviewPolicy>();
+  const [deleting, setDeleting] = useState(false);
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete(pendingDelete);
+      setPendingDelete(undefined);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -209,43 +229,19 @@ function PolicyTable({
                         <Pencil className="size-4" />
                       </Button>
                     </Tooltip>
-                    {hasDeletePermission &&
-                      (confirmingDelete === policy.id ? (
-                        <div className="flex items-center gap-x-2 text-xs">
-                          <span>
-                            {t("common.delete")} &apos;{policy.name}&apos;?
-                          </span>
-                          <Button
-                            appearance="outline"
-                            size="sm"
-                            onClick={() => setConfirmingDelete(null)}
-                          >
-                            {t("common.cancel")}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              onDelete(policy);
-                              setConfirmingDelete(null);
-                            }}
-                          >
-                            {t("common.delete")}
-                          </Button>
-                        </div>
-                      ) : (
-                        <Tooltip content={t("common.delete")}>
-                          <Button
-                            appearance="secondary"
-                            aria-label={t("common.delete")}
-                            size="sm"
-                            className="text-control-light hover:text-error"
-                            onClick={() => setConfirmingDelete(policy.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </Tooltip>
-                      ))}
+                    {hasDeletePermission && (
+                      <Tooltip content={t("common.delete")}>
+                        <Button
+                          appearance="secondary"
+                          aria-label={t("common.delete")}
+                          size="sm"
+                          className="text-control-light hover:text-error"
+                          onClick={() => setPendingDelete(policy)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </Tooltip>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -277,13 +273,7 @@ function PolicyTable({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
-                    if (
-                      window.confirm(`${t("common.delete")} '${policy.name}'?`)
-                    ) {
-                      onDelete(policy);
-                    }
-                  }}
+                  onClick={() => setPendingDelete(policy)}
                 >
                   {t("common.delete")}
                 </Button>
@@ -292,6 +282,38 @@ function PolicyTable({
           </div>
         ))}
       </div>
+
+      <AlertDialog
+        open={pendingDelete !== undefined}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setPendingDelete(undefined);
+        }}
+      >
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogTitle>
+            {t("sql-review.delete-policy-title", { name: pendingDelete?.name })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("sql-review.delete-description")}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <Button
+              appearance="outline"
+              disabled={deleting}
+              onClick={() => setPendingDelete(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void confirmDelete()}
+            >
+              {t("common.delete")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -217,8 +217,10 @@ func aiReviewStarts(ctx context.Context, stores *store.Store, licenseService *en
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get AI setting")
 	}
-	if licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil &&
-		aireview.CheckSetting(aiSetting) == nil {
+	// The plan is read only while the switch is on: a review the switch keeps
+	// off needs no license.
+	if aireview.CheckSetting(aiSetting) == nil &&
+		licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AI_SQL_REVIEW) == nil {
 		return true, nil
 	}
 	run, err := stores.GetReviewRun(ctx, issue.ProjectID, issue.UID)

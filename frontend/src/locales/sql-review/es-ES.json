@@ -71,6 +71,7 @@
   },
   "delete": "Eliminar política de revisión SQL",
   "delete-description": "La política de revisión SQL y todas sus reglas se eliminarán permanentemente. Esta acción no se puede deshacer.",
+  "delete-policy-title": "¿Eliminar {{name}}?",
   "description": "Reglas que revisan cada cambio de SQL y cada consulta del Editor SQL. Una política se aplica a los entornos o proyectos a los que está asociada.",
   "disable-description": "Deshabilitar esta política dejará de aplicar sus reglas a los recursos adjuntos. Puede volver a habilitarla más tarde.",
   "disabled": "La revisión de SQL está deshabilitada",

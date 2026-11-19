@@ -71,6 +71,7 @@
   },
   "delete": "Xóa chính sách đánh giá SQL",
   "delete-description": "Chính sách đánh giá SQL và tất cả các quy tắc của nó sẽ bị xóa vĩnh viễn. Không thể hoàn tác hành động này.",
+  "delete-policy-title": "Xóa {{name}}?",
   "description": "Các quy tắc kiểm tra mỗi thay đổi SQL và mỗi truy vấn trong SQL Editor. Một chính sách áp dụng cho các môi trường hoặc dự án mà nó được gắn vào.",
   "disable-description": "Tắt chính sách này sẽ ngừng áp dụng các quy tắc của nó trên các tài nguyên đã đính kèm. Bạn có thể bật lại sau.",
   "disabled": "Đánh giá SQL bị vô hiệu hóa",

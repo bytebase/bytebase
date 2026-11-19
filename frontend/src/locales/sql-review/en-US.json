@@ -71,6 +71,7 @@
   },
   "delete": "Delete SQL review policy",
   "delete-description": "The SQL review policy and all its rules will be permanently removed. This cannot be undone.",
+  "delete-policy-title": "Delete {{name}}?",
   "description": "Lint rules that check each SQL change and SQL Editor query. A policy applies to the environments or projects it is attached to.",
   "disable-description": "Disabling this policy will stop enforcing its rules on the attached resources. You can re-enable it later.",
   "disabled": "SQL review is disabled",
