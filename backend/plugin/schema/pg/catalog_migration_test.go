@@ -4038,3 +4038,41 @@ func TestViewDependencyQualificationStopsAtFetch(t *testing.T) {
 	paths := []string{"$user", "public"}
 	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
 }
+
+// TestViewDependencyQualificationKeepsOperatorAdjacency covers `t || 'x'`: the
+// operator prevents treating the column as a typed constant.
+func TestViewDependencyQualificationKeepsOperatorAdjacency(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "t", Type: "text"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT t || 'x' FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	require.NoError(t, rejectAmbiguousUserTypes(meta, meta, paths, paths))
+}
+
+// TestViewDependencyQualificationSeesDollarTypedConstant covers `t $$(1)$$`.
+func TestViewDependencyQualificationSeesDollarTypedConstant(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		SearchPath: `"$user", public`,
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name:   "public",
+			Tables: []*metadatapb.TableMetadata{pgTable("t", 0, &metadatapb.ColumnMetadata{Name: "id", Type: "integer"})},
+			Views: []*metadatapb.ViewMetadata{{
+				Name:              "w",
+				Definition:        "SELECT t $$(1)$$, NULL::public.t FROM public.t",
+				DependencyColumns: []*metadatapb.DependencyColumn{{Schema: "public", Table: "t"}},
+			}},
+		}},
+	}
+	paths := []string{"$user", "public"}
+	err := rejectAmbiguousUserTypes(meta, meta, paths, paths)
+	require.ErrorContains(t, err, `view "public"."w" has an unqualified reference to "public"."t"`)
+}

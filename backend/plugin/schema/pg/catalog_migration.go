@@ -1973,17 +1973,15 @@ func definitionTokens(text string) []definitionToken {
 			i = next
 		case text[i] == '$':
 			if end, ok := dollarQuoteEnd(text, i); ok {
-				if isRegclassToken(text, end+1) {
-					openEnd := i + 1
-					for openEnd < len(text) && text[openEnd] != '$' {
-						openEnd++
-					}
+				openEnd := i + 1
+				for openEnd < len(text) && text[openEnd] != '$' {
 					openEnd++
-					tagLength := openEnd - i
-					contentEnd := end - tagLength + 1
-					if openEnd <= contentEnd {
-						tokens = append(tokens, definitionToken{text: text[openEnd:contentEnd], literal: true, regclass: true})
-					}
+				}
+				openEnd++
+				tagLength := openEnd - i
+				contentEnd := end - tagLength + 1
+				if openEnd <= contentEnd {
+					tokens = append(tokens, definitionToken{text: text[openEnd:contentEnd], literal: true, regclass: isRegclassToken(text, end+1)})
 				}
 				i = end + 1
 			} else if isIdentifierByte(text[i]) {
@@ -2020,6 +2018,11 @@ func definitionTokens(text string) []definitionToken {
 			tokens = append(tokens, definitionToken{punct: text[i]})
 			i++
 		default:
+			if text[i] == ' ' || text[i] == '\t' || text[i] == '\n' || text[i] == '\r' {
+				i++
+				continue
+			}
+			tokens = append(tokens, definitionToken{punct: text[i]})
 			i++
 		}
 	}
