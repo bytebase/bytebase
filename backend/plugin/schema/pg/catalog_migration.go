@@ -805,21 +805,51 @@ func namesType(text, key string, objects map[string]bool, searchPath []string) b
 // builtinMultiwordType reports whether text declares a built-in type spelled with
 // several words. Its last word is part of that type, not a reference of its own.
 func builtinMultiwordType(text string) bool {
-	text = strings.ToLower(text)
+	if strings.ContainsRune(text, '"') {
+		return false
+	}
+	text = strings.Join(strings.Fields(strings.ToLower(text)), " ")
 	for _, prefix := range []string{"setof ", "variadic "} {
 		text = strings.TrimSpace(strings.TrimPrefix(text, prefix))
 	}
-	for strings.HasSuffix(text, "[]") {
-		text = strings.TrimSpace(strings.TrimSuffix(text, "[]"))
-	}
-	if open := strings.Index(text, "("); open >= 0 {
-		if closeIndex := strings.Index(text[open:], ")"); closeIndex >= 0 {
-			text = strings.TrimSpace(text[:open] + text[open+closeIndex+1:])
+	for {
+		switch {
+		case strings.HasSuffix(text, "[]"):
+			text = strings.TrimSpace(strings.TrimSuffix(text, "[]"))
+		case strings.HasSuffix(text, "]"):
+			if open := strings.LastIndexByte(text, '['); open >= 0 {
+				text = strings.TrimSpace(text[:open])
+				continue
+			}
+			return false
+		default:
+			goto strippedBounds
 		}
+	}
+strippedBounds:
+	if text == "array" || strings.HasSuffix(text, " array") {
+		text = strings.TrimSpace(strings.TrimSuffix(text, "array"))
+	}
+	for {
+		open := strings.IndexByte(text, '(')
+		if open < 0 {
+			break
+		}
+		closeIndex := strings.IndexByte(text[open:], ')')
+		if closeIndex < 0 {
+			break
+		}
+		text = strings.Join(strings.Fields(text[:open]+" "+text[open+closeIndex+1:]), " ")
 	}
 	for _, multiword := range []string{
 		"double precision",
 		"character varying",
+		"char varying",
+		"national character varying",
+		"national char varying",
+		"national character",
+		"national char",
+		"nchar varying",
 		"bit varying",
 		"time with time zone",
 		"time without time zone",

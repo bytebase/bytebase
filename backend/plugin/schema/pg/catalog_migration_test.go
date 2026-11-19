@@ -3084,12 +3084,31 @@ func TestSnapshotObjectsIncludesPartitionConstraints(t *testing.T) {
 // spelled in upper or mixed case; only quoted names remain case-sensitive.
 func TestBuiltinMultiwordTypeIsCaseInsensitive(t *testing.T) {
 	require.True(t, builtinMultiwordType("DOUBLE PRECISION"))
+	require.True(t, builtinMultiwordType("char varying"))
+	require.True(t, builtinMultiwordType("char varying(16)"))
+	require.True(t, builtinMultiwordType("national character"))
+	require.True(t, builtinMultiwordType("national char"))
+	require.True(t, builtinMultiwordType("national character varying(32)"))
+	require.True(t, builtinMultiwordType("national char varying"))
+	require.True(t, builtinMultiwordType("nchar varying"))
+	require.True(t, builtinMultiwordType("character\n\tvarying [ ]"))
+	require.True(t, builtinMultiwordType("character varying array[4]"))
 	require.True(t, builtinMultiwordType("timestamp WITHOUT TIME ZONE"))
 	require.True(t, builtinMultiwordType("timestamp(3) with time zone"))
 	require.True(t, builtinMultiwordType("time(6) without time zone"))
+	require.True(t, builtinMultiwordType("interval(6) day to second(3)"))
 	require.True(t, builtinMultiwordType("interval day to second"))
 	require.True(t, builtinMultiwordType("interval year to month"))
 	require.False(t, builtinMultiwordType("public.PRECISION"))
+	require.False(t, builtinMultiwordType(`character "varying"`))
+
+	objects := map[string]bool{
+		objectKey("public", "varying"):   true,
+		objectKey("public", "character"): true,
+	}
+	searchPath := []string{"$user", "public"}
+	require.False(t, ambiguousRoutineTypes("f()", "CREATE FUNCTION app.f() RETURNS char varying LANGUAGE sql AS $$SELECT 'x'$$", objects, searchPath))
+	require.False(t, ambiguousRoutineTypes("g()", "CREATE FUNCTION app.g() RETURNS national character varying LANGUAGE sql AS $$SELECT 'x'$$", objects, searchPath))
 }
 
 // TestReleasedSourceOnlyRoutineDropsAreSorted covers the map iteration order of
