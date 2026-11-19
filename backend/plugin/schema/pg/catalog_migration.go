@@ -1482,7 +1482,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 				} else {
 					parenthesized = parenthesizedRelationGroup(tokens, i+1)
 				}
-				derived := inRelations && !parenthesized
+				derived := inRelations
 				relationState = append(relationState, inRelations)
 				derivedState = append(derivedState, derived)
 				inRelations = inRelations && parenthesized
@@ -1517,7 +1517,7 @@ func definitionQualifies(definition, schemaName, objectName string, objects map[
 			case "FROM", "JOIN", "UPDATE", "INTO", "TABLE":
 				inRelations = true
 				continue
-			case "ONLY", "LATERAL":
+			case "ONLY", "LATERAL", "CROSS", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "NATURAL":
 				if inRelations {
 					continue
 				}
