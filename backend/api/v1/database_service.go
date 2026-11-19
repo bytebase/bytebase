@@ -849,7 +849,7 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v
 	// getParserEngine aliases MARIADB and OCEANBASE to MYSQL, which would otherwise route
 	// their raw-schema DiffSchema through the omni MySQL SDL path (canonicalizing MariaDB as
 	// MySQL 8.0 and emitting utf8mb4_0900_ai_ci, which MariaDB lacks). The downstream diff
-	// paths still take the parser engine, keeping the MySQL-registered differ/generator.
+	// paths still take the parser engine.
 	rawEngine, err := s.getRawEngine(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get engine"))
